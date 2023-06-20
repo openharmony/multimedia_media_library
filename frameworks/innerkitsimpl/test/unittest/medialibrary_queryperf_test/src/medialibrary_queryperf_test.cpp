@@ -53,7 +53,7 @@ void MakeTestData()
     datashareValues.Put(MEDIA_DATA_DB_MIME_TYPE, MimeTypeUtils::GetMimeTypeFromExtension(extension));
     datashareValues.Put(MEDIA_DATA_DB_RELATIVE_PATH, PIC_DIR_VALUES);
     datashareValues.Put(MEDIA_DATA_DB_NAME, displayName);
-    datashareValues.Put(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+    datashareValues.Put(MEDIA_DATA_DB_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
     datashareValues.Put(MEDIA_DATA_DB_SIZE, 0);
     datashareValues.Put(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
     datashareValues.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());

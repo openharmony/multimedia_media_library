@@ -144,7 +144,7 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     assetInfo.PutString(MEDIA_DATA_DB_MIME_TYPE, MimeTypeUtils::GetMimeTypeFromExtension(extension));
     assetInfo.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset.GetRelativePath());
     assetInfo.PutString(MEDIA_DATA_DB_NAME, displayName);
-    assetInfo.PutString(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+    assetInfo.PutString(MEDIA_DATA_DB_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
     struct stat statInfo {};
     if (stat(fileAsset.GetPath().c_str(), &statInfo) == 0) {
         assetInfo.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
@@ -284,7 +284,7 @@ int32_t MediaLibraryObjectUtils::DeleteRows(const vector<int64_t> &rowIds)
 int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t parentId)
 {
     string title = MediaFileUtils::GetFileName(path);
-    if (MediaFileUtils::CheckDisplayName(title) < 0) {
+    if (MediaFileUtils::CheckAlbumName(title) < 0) {
         MEDIA_ERR_LOG("Check display name failed!");
         return E_INVALID_DISPLAY_NAME;
     }
@@ -977,7 +977,7 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
     string displayName = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(dstPath);
     ValuesBucket values;
     values.PutString(MEDIA_DATA_DB_NAME, displayName);
-    values.PutString(MEDIA_DATA_DB_TITLE, MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+    values.PutString(MEDIA_DATA_DB_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
     values.PutString(MEDIA_DATA_DB_FILE_PATH, dstPath);
     values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, GetRelativePathFromFilePath(dstPath));
     values.PutString(MEDIA_DATA_DB_BUCKET_NAME, bucketName);

@@ -436,7 +436,7 @@ napi_value FileAssetNapi::JSSetFileDisplayName(napi_env env, napi_callback_info 
             string displayName = string(buffer);
             obj->fileAssetPtr->SetDisplayName(displayName);
 #ifdef MEDIALIBRARY_COMPATIBILITY
-            obj->fileAssetPtr->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(displayName));
+            obj->fileAssetPtr->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
 #endif
         }
     }
@@ -1063,31 +1063,6 @@ static string BuildCommitModifyUriApi10(FileAssetAsyncContext *context, string &
     return uri;
 }
 
-static bool CheckTitleAndDisplayName(const string &title, const string &displayName, bool isApiVersion10)
-{
-#ifdef MEDIALIBRARY_COMPATIBILITY
-    if (!isApiVersion10) {
-        if (MediaFileUtils::CheckTitle(title) < 0) {
-            return false;
-        }
-    } else {
-        if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
-            return false;
-        }
-    }
-#else
-    if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
-        return false;
-    }
-    if (!isApiVersion10) {
-        if (MediaFileUtils::CheckTitle(title) < 0) {
-            return false;
-        }
-    }
-#endif
-    return true;
-}
-
 static void JSCommitModifyExecute(napi_env env, void *data)
 {
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
@@ -1099,8 +1074,7 @@ static void JSCommitModifyExecute(napi_env env, void *data)
         isApiVersion10 = true;
     }
 
-    if (!CheckTitleAndDisplayName(context->objectPtr->GetTitle(),
-        context->objectPtr->GetDisplayName(), isApiVersion10)) {
+    if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
         context->error = JS_E_DISPLAYNAME;
         return;
     }
@@ -2466,7 +2440,7 @@ bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value)
 {
     if ((inputKey == MediaColumn::MEDIA_NAME) && (fileAssetPtr->GetMemberMap().count(MediaColumn::MEDIA_NAME))) {
         fileAssetPtr->SetDisplayName(value);
-        fileAssetPtr->SetTitle(MediaLibraryDataManagerUtils::GetFileTitle(value));
+        fileAssetPtr->SetTitle(MediaFileUtils::GetTitleFromDisplayName(value));
     } else {
         NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
         return false;

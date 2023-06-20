@@ -680,7 +680,7 @@ static void CommitModifyNative(const SmartAlbumNapiAsyncContext &albumContext)
     SmartAlbumNapiAsyncContext *context = const_cast<SmartAlbumNapiAsyncContext *>(&albumContext);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     NAPI_DEBUG_LOG("CommitModifyNative = %{private}s", context->objectInfo->GetSmartAlbumName().c_str());
-    if (MediaFileUtils::CheckDisplayName(context->objectInfo->GetSmartAlbumName()) < 0) {
+    if (MediaFileUtils::CheckAlbumName(context->objectInfo->GetSmartAlbumName()) < 0) {
         context->error = JS_E_DISPLAYNAME;
         NAPI_ERR_LOG("Failed to checkDisplayName");
         return;
