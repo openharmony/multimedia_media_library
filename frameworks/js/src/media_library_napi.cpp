@@ -4022,6 +4022,7 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], displayName) ==
         napi_ok, "Failed to get displayName");
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
+    NAPI_ASSERT(env, (mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO), "invalid file type");
 
     /* Parse the second argument into albumUri if exists */
     string albumUri;
@@ -4141,7 +4142,7 @@ static void JSGetAssetsExecute(napi_env env, void *data)
             return;
         }
     }
-    
+
     Uri uri(queryUri);
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
