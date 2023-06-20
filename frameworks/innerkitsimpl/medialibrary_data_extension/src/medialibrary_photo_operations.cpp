@@ -28,6 +28,9 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "photo_album_column.h"
+#include "photo_map_column.h"
+#include "photo_map_operations.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
@@ -230,6 +233,28 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
     return outRow;
 }
 
+void PhotoMapAddAsset(const int &albumId, const string &assetId)
+{
+    static const string INSERT_MAP_SQL = "INSERT INTO " + PhotoMap::TABLE +
+        " (" + PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ") " +
+        "SELECT ?, ? WHERE " +
+        "(NOT EXISTS (SELECT * FROM " + PhotoMap::TABLE + " WHERE " +
+            PhotoMap::ALBUM_ID + " = ? AND " + PhotoMap::ASSET_ID + " = ?)) " +
+        "AND (EXISTS (SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+            MediaColumn::MEDIA_ID + " = ?)) " +
+        "AND (EXISTS (SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
+            " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = ? AND " + PhotoAlbumColumns::ALBUM_TYPE + " = ? AND " +
+            PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?));";
+
+    vector<ValueObject> bindArgs = { albumId, assetId, albumId, assetId, assetId, albumId, PhotoAlbumType::USER, PhotoAlbumSubType::USER_GENERIC };
+    int errCode =  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (errCode > 0) {
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + assetId,
+            NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
 {
     FileAsset fileAsset;
@@ -245,6 +270,9 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         E_HAS_DB_ERROR);
     fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
     SetPhotoSubTypeFromCmd(cmd, fileAsset);
+
+    string albumUri;
+    GetStringFromValuesBucket(values, MEDIA_DATA_DB_ALARM_URI, albumUri);
 
     // Check rootdir and extension
     int32_t errCode = CheckDisplayNameWithType(displayName, mediaType);
@@ -268,6 +296,11 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     if (outRow <= 0) {
         MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
         return errCode;
+    }
+
+    if (!albumUri.empty()) {
+        string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(albumUri);
+        PhotoMapAddAsset(stoi(albumId), to_string(outRow));
     }
     transactionOprn.Finish();
     return outRow;
