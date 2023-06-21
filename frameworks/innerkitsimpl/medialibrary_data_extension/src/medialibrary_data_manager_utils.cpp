@@ -41,20 +41,6 @@ bool MediaLibraryDataManagerUtils::IsNumber(const string &str)
     return true;
 }
 
-std::string MediaLibraryDataManagerUtils::GetFileTitle(const std::string &displayName)
-{
-    std::string title;
-    if (!displayName.empty()) {
-        std::string::size_type pos = displayName.find_last_of('.');
-        if (pos == displayName.length()) {
-            return displayName;
-        }
-        title = displayName.substr(0, pos);
-        MEDIA_DEBUG_LOG("title substr = %{private}s", title.c_str());
-    }
-    return title;
-}
-
 string MediaLibraryDataManagerUtils::GetOperationType(const string &uri)
 {
     string oprn;

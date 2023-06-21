@@ -429,7 +429,7 @@ int32_t MediaFileExtentionUtils::CheckMkdirValid(MediaFileUriType uriType, const
     } else {
         auto ret = MediaFileExtentionUtils::CheckUriSupport(parentUriStr);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(displayName) == E_OK,
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckAlbumName(displayName) == E_OK,
             E_INVALID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
     }
     return E_SUCCESS;

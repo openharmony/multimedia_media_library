@@ -456,8 +456,7 @@ int64_t FileAsset::GetInt64Member(const string &name) const
 
 void FileAsset::CommitModify()
 {
-    if (!MediaFileUtils::CheckTitle(GetStrMember(MEDIA_DATA_DB_TITLE)) ||
-        !MediaFileUtils::CheckDisplayName(GetStrMember(MEDIA_DATA_DB_NAME))) {
+    if (!MediaFileUtils::CheckDisplayName(GetStrMember(MEDIA_DATA_DB_NAME))) {
         MEDIA_ERR_LOG("CommitModify CheckDisplayName fail, fileUri=%{private}s", GetUri().c_str());
         return;
     }

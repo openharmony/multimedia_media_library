@@ -1088,6 +1088,37 @@ static int32_t UpdateCloudPath(RdbStore &store)
     return ExecSqls(updateCloudPath, store);
 }
 
+void UpdatePhotoColumn(RdbStore &store)
+{
+    vector<string> updatePhotoColumn = {
+        {"virtual_path TEXT"},
+        {"dirty INT DEFAULT 1"},
+        {"cloud_id TEXT"},
+        {"meta_date_modified BIGINT DEFAULT 0"},
+        {"sync_status INT DEFAULT 0"},
+        {"position INT DEFAULT 1"},
+        {"subtype INT DEFAULT 0"}
+    };
+    for (auto col : updatePhotoColumn) {
+        string alterColumn = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + col;
+        if (store.ExecuteSql(alterColumn) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Upgrade rdb column error %{private}s", col.c_str());
+        }
+    }
+    string alterAudioColumn = "ALTER TABLE " + AudioColumn::AUDIOS_TABLE + " ADD COLUMN " + "virtual_path TEXT";
+    if (store.ExecuteSql(alterAudioColumn) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb column error %{private}s", alterAudioColumn.c_str());
+    }
+    string createIdx = "CREATE UNIQUE INDEX idx_ph_virtual_path ON " + PhotoColumn::PHOTOS_TABLE + "(virtual_path)";
+    if (store.ExecuteSql(createIdx) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb index error %{private}s", createIdx.c_str());
+    }
+    createIdx = "CREATE UNIQUE INDEX idx_audio_virtual_path ON " + AudioColumn::AUDIOS_TABLE + "(virtual_path)";
+    if (store.ExecuteSql(createIdx) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb index error %{private}s", createIdx.c_str());
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1117,6 +1148,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_UPDATE_CLOUD_PATH) {
         UpdateCloudPath(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_VIRTUAL_PATH) {
+        UpdatePhotoColumn(store);
     }
 
     return NativeRdb::E_OK;
