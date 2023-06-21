@@ -21,22 +21,23 @@
 #include "ability_info.h"
 #include "app_mgr_client.h"
 #include "dataobs_mgr_client.h"
-#include "media_datashare_stub_impl.h"
+#include "datashare_ext_ability_context.h"
 #include "hilog_wrapper.h"
 #include "ipc_skeleton.h"
-#include "datashare_ext_ability_context.h"
-#include "runtime.h"
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "media_datashare_stub_impl.h"
+#include "media_log.h"
+#include "media_scanner_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
-#include "media_scanner_manager.h"
-#include "media_log.h"
-#include "system_ability_definition.h"
-#include "singleton.h"
+#include "napi/native_api.h"
+#include "napi/native_node_api.h"
 #include "permission_utils.h"
+#include "photo_album_column.h"
+#include "runtime.h"
+#include "singleton.h"
+#include "system_ability_definition.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -226,42 +227,62 @@ vector<string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, const stri
     return ret;
 }
 
-static int CheckOpenFilePermission(string &uri, string &mode)
+static void FillV10Perms(const MediaType mediaType, const bool containsRead, const bool containsWrite,
+    vector<string> &perm)
 {
-    bool shouldCheckType = false;
-    string typeMask;
-    int err = ShouldCheckTypePermission(uri, shouldCheckType, typeMask);
-    if (err < 0) {
-        return err;
-    }
-    if (shouldCheckType) {
-        uri = uri.substr(0, uri.find('#'));
-        if (!PermissionUtils::IsSystemApp()) {
-            MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-            return E_CHECK_SYSTEMAPP_FAIL;
+    if (containsRead) {
+        if (mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO ||
+            mediaType == Media::MEDIA_TYPE_PHOTO || mediaType == Media::MEDIA_TYPE_ALBUM) {
+            perm.push_back(PERM_READ_IMAGEVIDEO);
+        } else if (mediaType == MEDIA_TYPE_AUDIO) {
+            perm.push_back(PERM_READ_AUDIO);
+        } else if (mediaType == MEDIA_TYPE_FILE) {
+            perm.push_back(PERM_READ_DOCUMENT);
         }
     }
+    if (containsWrite) {
+        if (mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO ||
+            mediaType == Media::MEDIA_TYPE_PHOTO || mediaType == Media::MEDIA_TYPE_ALBUM) {
+            perm.push_back(PERM_WRITE_IMAGEVIDEO);
+        } else if (mediaType == MEDIA_TYPE_AUDIO) {
+            perm.push_back(PERM_WRITE_AUDIO);
+        } else if (mediaType == MEDIA_TYPE_FILE) {
+            perm.push_back(PERM_WRITE_DOCUMENT);
+        }
+    }
+}
 
-    size_t rPos = mode.find('r');
-    if (rPos != string::npos) {
-        bool checkReadResult = CheckPerms(shouldCheckType, false, typeMask);
-        if (!checkReadResult) {
-            return E_PERMISSION_DENIED;
-        }
+static void FillDeprecatedPerms(const bool containsRead, const bool containsWrite, vector<string> &perm)
+{
+    if (containsRead) {
+        perm.push_back(PERMISSION_NAME_READ_MEDIA);
     }
-    size_t wPos = mode.find('w');
-    if (wPos != string::npos) {
-        bool checkWriteResult = CheckPerms(shouldCheckType, true, typeMask);
-        if (!checkWriteResult) {
-            return E_PERMISSION_DENIED;
-        }
+    if (containsWrite) {
+        perm.push_back(PERMISSION_NAME_WRITE_MEDIA);
     }
-    if ((rPos == string::npos) && (wPos == string::npos)) {
-        MEDIA_INFO_LOG("Mode is invalid: %{public}s, return err: %{public}d", mode.c_str(), E_PERMISSION_DENIED);
-        return E_PERMISSION_DENIED;
-    }
+}
 
-    return E_SUCCESS;
+static inline bool ContainsFlag(const string &mode, const char flag)
+{
+    return mode.find(flag) != string::npos;
+}
+
+static int32_t CheckOpenFilePermission(const string &uri, string &mode)
+{
+    MediaType mediaType = MediaFileUri::GetMediaTypeFromUri(uri);
+    const bool containsRead = ContainsFlag(mode, 'r');
+    const bool containsWrite = ContainsFlag(mode, 'w');
+
+    vector<string> perms;
+    FillV10Perms(mediaType, containsRead, containsWrite, perms);
+    int err = PermissionUtils::CheckCallerPermission(perms);
+    if (err == E_SUCCESS) {
+        return E_SUCCESS;
+    }
+    // Try to check deprecated permissions
+    perms.clear();
+    FillDeprecatedPerms(containsRead, containsWrite, perms);
+    return PermissionUtils::CheckCallerPermission(perms);
 }
 
 static int32_t CheckPermFromUri(string &uri, bool isWrite)
@@ -286,6 +307,7 @@ static int32_t CheckPermFromUri(string &uri, bool isWrite)
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
 {
     string uriStr = uri.ToString();
+    MediaFileUri::RemoveAllFragment(uriStr);
     string unifyMode = mode;
     transform(unifyMode.begin(), unifyMode.end(), unifyMode.begin(), ::tolower);
 

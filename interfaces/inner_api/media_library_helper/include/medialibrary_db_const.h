@@ -77,6 +77,12 @@ const std::string MEDIALIBRARY_TYPE_SMARTALBUM_CHANGE_URI  =  "/smartalbum";
 const std::string MEDIALIBRARY_TYPE_DEVICE_URI  =  "/device";
 const std::string MEDIALIBRARY_TYPE_SMART_URI = "/smart";
 
+const std::string AUDIO_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_AUDIO_URI;
+const std::string VIDEO_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_VIDEO_URI;
+const std::string IMAGE_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_IMAGE_URI;
+const std::string FILE_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_FILE_URI;
+const std::string ALBUM_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_ALBUM_URI;
+
 const std::string URI_TYPE_PHOTO = "Photo";
 const std::string URI_TYPE_AUDIO_V10 = "Audio";
 const std::string URI_TYPE_PHOTO_ALBUM = "PhotoAlbum";

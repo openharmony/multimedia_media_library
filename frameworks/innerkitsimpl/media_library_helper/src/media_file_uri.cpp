@@ -15,8 +15,10 @@
 #include <sstream>
 
 #include "media_file_uri.h"
-#include "medialibrary_helper_container.h"
+#include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_helper_container.h"
+#include "photo_album_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -272,6 +274,36 @@ bool MediaFileUri::IsApi10()
         return true;
     }
     return false;
+}
+
+MediaType MediaFileUri::GetMediaTypeFromUri(const std::string &uri)
+{
+    if (MediaFileUtils::StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
+        return MEDIA_TYPE_PHOTO;
+    } else if (MediaFileUtils::StartsWith(uri, AudioColumn::AUDIO_URI_PREFIX)) {
+        return MEDIA_TYPE_AUDIO;
+    } else if (MediaFileUtils::StartsWith(uri, PhotoAlbumColumns::ALBUM_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_ALBUM;
+    } else if (MediaFileUtils::StartsWith(uri, AUDIO_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_AUDIO;
+    } else if (MediaFileUtils::StartsWith(uri, VIDEO_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_VIDEO;
+    } else if (MediaFileUtils::StartsWith(uri, IMAGE_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_IMAGE;
+    } else if (MediaFileUtils::StartsWith(uri, ALBUM_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_ALBUM;
+    } else if (MediaFileUtils::StartsWith(uri, FILE_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_FILE;
+    }
+    return Media::MEDIA_TYPE_DEFAULT;
+}
+
+void MediaFileUri::RemoveAllFragment(std::string &uri)
+{
+    size_t fragIndex = uri.find_first_of('#');
+    if (fragIndex != std::string::npos) {
+        uri = uri.substr(0, fragIndex);
+    }
 }
 } // namespace Media
 } // namespace OHOS

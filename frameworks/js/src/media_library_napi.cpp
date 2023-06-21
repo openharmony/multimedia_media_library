@@ -1797,7 +1797,7 @@ static void JSTrashAssetExecute(napi_env env, void *data)
         context->error = ERR_INVALID_OUTPUT;
         return;
     }
-    MediaLibraryNapiUtils::UriRemoveAllFragment(uri);
+    MediaFileUri::RemoveAllFragment(uri);
     string trashId = MediaFileUtils::GetIdFromUri(uri);
     string trashUri;
     if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {

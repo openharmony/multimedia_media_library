@@ -218,20 +218,12 @@ void MediaLibraryNapiUtils::UriAddTableName(string &uri, const string tableName)
     }
 }
 
-void MediaLibraryNapiUtils::UriRemoveAllFragment(string &uri)
-{
-    size_t fragIndex = uri.find_first_of('#');
-    if (fragIndex != string::npos) {
-        uri = uri.substr(0, fragIndex);
-    }
-}
-
 string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
 {
     string id = "-1";
 
     string temp = uri;
-    UriRemoveAllFragment(temp);
+    MediaFileUri::RemoveAllFragment(temp);
     size_t pos = temp.rfind('/');
     if (pos != string::npos) {
         id = temp.substr(pos + 1);
@@ -284,7 +276,7 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
                 return false;
             }
             string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
-            UriRemoveAllFragment(uri);
+            MediaFileUri::RemoveAllFragment(uri);
             MediaFileUri fileUri(uri);
 #ifdef MEDIALIBRARY_COMPATIBILITY
             if ((fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
