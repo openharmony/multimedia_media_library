@@ -4030,7 +4030,7 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
         NAPI_ASSERT(env, napi_typeof(env, context->argv[ARGS_ONE], &valueType) == napi_ok, "Failed to get napi type");
         if (valueType == napi_string) {
             if (MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], albumUri) == napi_ok) {
-                context->valuesBucket.Put(MEDIA_DATA_DB_URI, albumUri);
+                context->valuesBucket.Put(MEDIA_DATA_DB_ALARM_URI, albumUri);
             }
         } else if (valueType == napi_object) {
             NAPI_ASSERT(env, ParseAssetCreateOption(env, context->argv[ARGS_ONE], *context) == napi_ok,
