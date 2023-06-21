@@ -59,6 +59,7 @@ const std::unordered_map<std::string, MediaTypeMaskInteger> PERM_MASK_MAP = {
 class PermissionUtils {
 public:
     static bool CheckCallerPermission(const std::string &permission);
+    static bool CheckCallerPermission(const std::vector<std::string> &perms);
     static bool CheckCallerPermission(const std::array<std::string, PERM_GRP_SIZE> &perms, const uint32_t permMask);
     static void GetClientBundle(const int uid, std::string &bundleName, bool &isSystemApp);
     static bool SystemApiCheck(const std::string &uri);

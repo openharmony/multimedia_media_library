@@ -18,12 +18,12 @@
 
 #include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
-#include "media_log.h"
+#include "iservice_registry.h"
 #include "media_file_utils.h"
+#include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_tracer.h"
 #include "privacy_kit.h"
-#include "iservice_registry.h"
 #include "system_ability_definition.h"
 #include "tokenid_kit.h"
 
@@ -107,6 +107,20 @@ void AddPermissionRecord(const AccessTokenID &token, const string &perm, const b
 
 bool PermissionUtils::CheckCallerPermission(const string &permission)
 {
+    return true;
+}
+
+bool PermissionUtils::CheckCallerPermission(const vector<string> &perms)
+{
+    if (perms.empty()) {
+        return false;
+    }
+
+    for (const auto &perm : perms) {
+        if (!CheckCallerPermission(perm)) {
+            return false;
+        }
+    }
     return true;
 }
 

@@ -47,6 +47,8 @@ public:
     std::unordered_map<std::string, std::string> &GetQueryKeys();
     bool IsValid();
     bool IsApi10();
+    static MediaType GetMediaTypeFromUri(const std::string &uri);
+    static void RemoveAllFragment(std::string &uri);
 };
 } // namespace Media
 } // namespace OHOS
