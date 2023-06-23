@@ -107,22 +107,6 @@ void AddPermissionRecord(const AccessTokenID &token, const string &perm, const b
 
 bool PermissionUtils::CheckCallerPermission(const string &permission)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("CheckCallerPermission");
-
-    AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
-    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
-    if (res != PermissionState::PERMISSION_GRANTED) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager Query: Have no media permission: %{public}s", permission.c_str());
-#ifdef OHOS_DEBUG
-        AddPermissionRecord(tokenCaller, permission, false);
-#endif
-        return false;
-    }
-#ifdef OHOS_DEBUG
-    AddPermissionRecord(tokenCaller, permission, true);
-#endif
-
     return true;
 }
 
