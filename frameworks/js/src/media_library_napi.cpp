@@ -1261,8 +1261,15 @@ static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibrary
     unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
     fileAsset->SetId(id);
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    string uri = MediaFileUtils::GetVirtualUriFromRealUri(MediaFileUri(mediaType,
-        to_string(id), networkId, MEDIA_API_VERSION_V9).ToString());
+    string uri;
+    if (MediaFileUtils::StartsWith(relativePath, DOC_DIR_VALUES) ||
+        MediaFileUtils::StartsWith(relativePath, DOWNLOAD_DIR_VALUES)) {
+        uri = MediaFileUtils::GetVirtualUriFromRealUri(MediaFileUri(MediaType::MEDIA_TYPE_FILE,
+            to_string(id), networkId, MEDIA_API_VERSION_V9).ToString());
+    } else {
+        uri = MediaFileUtils::GetVirtualUriFromRealUri(MediaFileUri(mediaType,
+            to_string(id), networkId, MEDIA_API_VERSION_V9).ToString());
+    }
     fileAsset->SetUri(uri);
     fileAsset->SetMediaType(mediaType);
     fileAsset->SetDisplayName(displayName);
@@ -1517,39 +1524,40 @@ static void GetCreateUri(MediaLibraryAsyncContext *context, string &uri)
 {
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         switch (context->assetType) {
-            case TYPE_PHOTO: {
+            case TYPE_PHOTO:
                 uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
                 break;
-            }
-            case TYPE_AUDIO: {
+            case TYPE_AUDIO:
                 uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
                 break;
-            }
-            default: {
+            default:
                 NAPI_ERR_LOG("Unsupported creation napitype %{public}d", static_cast<int32_t>(context->assetType));
                 return;
-            }
         }
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
+        bool isValid = false;
+        string relativePath = context->valuesBucket.Get(MEDIA_DATA_DB_RELATIVE_PATH, isValid);
+        if (MediaFileUtils::StartsWith(relativePath, DOC_DIR_VALUES) ||
+            MediaFileUtils::StartsWith(relativePath, DOWNLOAD_DIR_VALUES)) {
+            uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
+            MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V9));
+            return;
+        }
         switch (context->assetType) {
-            case TYPE_PHOTO: {
+            case TYPE_PHOTO:
                 uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
                 break;
-            }
-            case TYPE_AUDIO: {
+            case TYPE_AUDIO:
                 uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
                 break;
-            }
-            case TYPE_DEFAULT: {
+            case TYPE_DEFAULT:
                 uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
                 break;
-            }
-            default: {
+            default:
                 NAPI_ERR_LOG("Unsupported creation napitype %{public}d", static_cast<int32_t>(context->assetType));
                 return;
-            }
         }
         MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V9));
 #else
