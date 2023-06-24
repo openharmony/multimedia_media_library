@@ -240,18 +240,9 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_005, TestSize.Lev
     AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
     predicates.OrderByAsc(MEDIA_DATA_DB_DATE_ADDED);
-    vector<string> columns {
-        MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_PARENT_ID,
-        MEDIA_DATA_DB_RELATIVE_PATH,
-        MEDIA_DATA_DB_MIME_TYPE,
-        MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_TITLE,
-        MEDIA_DATA_DB_BUCKET_ID,
-        MEDIA_DATA_DB_BUCKET_NAME,
-        MEDIA_DATA_DB_DATE_ADDED,
-        MEDIA_DATA_DB_DATE_MODIFIED
-    };
+    vector<string> columns { MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_PARENT_ID, MEDIA_DATA_DB_RELATIVE_PATH,
+        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_BUCKET_ID,
+        MEDIA_DATA_DB_BUCKET_NAME, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_MODIFIED };
 
     int32_t mediaType;
     int32_t parentId;
@@ -299,19 +290,9 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_RdbQuery_test_006, TestSize.Lev
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
     predicates.OrderByAsc(MEDIA_DATA_DB_DATE_ADDED);
     predicates.Limit(50);
-    vector<string> columns {
-        MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_PARENT_ID,
-        MEDIA_DATA_DB_RELATIVE_PATH,
-        MEDIA_DATA_DB_MIME_TYPE,
-        MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_TITLE,
-        MEDIA_DATA_DB_BUCKET_ID,
-        MEDIA_DATA_DB_BUCKET_NAME,
-        MEDIA_DATA_DB_DATE_ADDED,
-        MEDIA_DATA_DB_DATE_MODIFIED
-    };
-
+    vector<string> columns { MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_PARENT_ID, MEDIA_DATA_DB_RELATIVE_PATH,
+        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_BUCKET_ID,
+        MEDIA_DATA_DB_BUCKET_NAME, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_MODIFIED };
     int32_t mediaType;
     int32_t parentId;
     int32_t bucketId;
@@ -486,18 +467,9 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_011, TestSi
 {
     Uri uri(MEDIALIBRARY_DATA_URI);
     DataSharePredicates predicates;
-    vector<string> columns {
-        MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_PARENT_ID,
-        MEDIA_DATA_DB_RELATIVE_PATH,
-        MEDIA_DATA_DB_MIME_TYPE,
-        MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_TITLE,
-        MEDIA_DATA_DB_BUCKET_ID,
-        MEDIA_DATA_DB_BUCKET_NAME,
-        MEDIA_DATA_DB_DATE_ADDED,
-        MEDIA_DATA_DB_DATE_MODIFIED
-    };
+    vector<string> columns { MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_PARENT_ID, MEDIA_DATA_DB_RELATIVE_PATH,
+        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_BUCKET_ID,
+        MEDIA_DATA_DB_BUCKET_NAME, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_MODIFIED };
 
     int32_t mediaType;
     int32_t parentId;
@@ -547,18 +519,9 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_012, TestSi
     vector<string> selectionArgs = { "0" };
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
-    vector<string> columns {
-        MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_PARENT_ID,
-        MEDIA_DATA_DB_RELATIVE_PATH,
-        MEDIA_DATA_DB_MIME_TYPE,
-        MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_TITLE,
-        MEDIA_DATA_DB_BUCKET_ID,
-        MEDIA_DATA_DB_BUCKET_NAME,
-        MEDIA_DATA_DB_DATE_ADDED,
-        MEDIA_DATA_DB_DATE_MODIFIED
-    };
+    vector<string> columns { MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_PARENT_ID, MEDIA_DATA_DB_RELATIVE_PATH,
+        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_BUCKET_ID,
+        MEDIA_DATA_DB_BUCKET_NAME, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_MODIFIED };
 
     int32_t mediaType;
     int32_t parentId;
@@ -570,7 +533,6 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_012, TestSi
     string displayName;
     string title;
     string bucketName;
-
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
     tracer.Start("DataShareGet10Columnlimit50");
