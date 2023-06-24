@@ -365,7 +365,8 @@ static OperationObject GetOprnObjectFromPath(const string &path)
 #ifdef MEDIALIBRARY_COMPATIBILITY
         { ROOT_MEDIA_DIR + PIC_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO },
         { ROOT_MEDIA_DIR + AUDIO_DIR_VALUES, OperationObject::FILESYSTEM_AUDIO },
-        { ROOT_MEDIA_DIR + VIDEO_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO }
+        { ROOT_MEDIA_DIR + VIDEO_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO },
+        { ROOT_MEDIA_DIR + CAMERA_DIR_VALUES, OperationObject::FILESYSTEM_PHOTO }
 #endif
     };
 
