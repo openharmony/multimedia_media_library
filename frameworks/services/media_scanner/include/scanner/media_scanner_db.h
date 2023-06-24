@@ -48,8 +48,10 @@ public:
     void NotifyDatabaseChange(const MediaType mediaType);
     void SetRdbHelper(void);
 
-    std::string InsertMetadata(const Metadata &metadata, MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    std::string UpdateMetadata(const Metadata &metadata, MediaLibraryApi api = MediaLibraryApi::API_OLD);
+    std::string InsertMetadata(const Metadata &metadata, bool &setScannedId,
+        MediaLibraryApi api = MediaLibraryApi::API_OLD);
+    std::string UpdateMetadata(const Metadata &metadata, bool &setScannedId,
+        MediaLibraryApi api = MediaLibraryApi::API_OLD);
     std::string GetFileDBUriFromPath(const std::string &path);
     std::vector<std::string> BatchInsert(const std::vector<Metadata> &metadataList);
 

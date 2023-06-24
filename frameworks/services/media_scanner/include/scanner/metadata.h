@@ -111,6 +111,9 @@ public:
 #ifdef MEDIALIBRARY_COMPATIBILITY
     void SetPhotoSubType(const VariantData &photoSubType);
     int32_t GetPhotoSubType() const;
+
+    void SetTableName(const std::string &tableName);
+    std::string GetTableName();
 #endif
 
     void Init();
@@ -165,6 +168,8 @@ private:
 #ifdef MEDIALIBRARY_COMPATIBILITY
     // photo subtype
     int32_t photoSubType_ = 0;
+
+    std::string tableName_;
 #endif
 };
 } // namespace Media
