@@ -437,5 +437,69 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFilename_Test_004, TestSi
     string filePath = "test/test";
     EXPECT_EQ(MediaFileUtils::GetFileName(filePath), "test");
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileTablePath_Test_001, TestSize.Level0)
+{
+    string filePath = "";
+    EXPECT_EQ(MediaFileUtils::IsFileTablePath(filePath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileTablePath_Test_002, TestSize.Level0)
+{
+    string filePath = "/1234546541315645464545165";
+    EXPECT_EQ(MediaFileUtils::IsFileTablePath(filePath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileTablePath_Test_003, TestSize.Level0)
+{
+    string filePath = ROOT_MEDIA_DIR;
+    EXPECT_EQ(MediaFileUtils::IsFileTablePath(filePath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileTablePath_Test_004, TestSize.Level0)
+{
+    string filePath = ROOT_MEDIA_DIR + DOC_DIR_VALUES;
+    EXPECT_EQ(MediaFileUtils::IsFileTablePath(filePath), true);
+    filePath = ROOT_MEDIA_DIR + DOWNLOAD_DIR_VALUES;
+    EXPECT_EQ(MediaFileUtils::IsFileTablePath(filePath), true);
+    filePath = ROOT_MEDIA_DIR + AUDIO_DIR_VALUES;
+    EXPECT_EQ(MediaFileUtils::IsFileTablePath(filePath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsPhotoTablePath_Test_001, TestSize.Level0)
+{
+    string filePath = "";
+    EXPECT_EQ(MediaFileUtils::IsPhotoTablePath(filePath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsPhotoTablePath_Test_002, TestSize.Level0)
+{
+    string filePath = "/1234546541315645464545165";
+    EXPECT_EQ(MediaFileUtils::IsPhotoTablePath(filePath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsPhotoTablePath_Test_003, TestSize.Level0)
+{
+    string filePath = ROOT_MEDIA_DIR;
+    EXPECT_EQ(MediaFileUtils::IsPhotoTablePath(filePath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsPhotoTablePath_Test_004, TestSize.Level0)
+{
+    string filePath = ROOT_MEDIA_DIR + PHOTO_BUCKET;
+    EXPECT_EQ(MediaFileUtils::IsPhotoTablePath(filePath), true);
+    filePath = ROOT_MEDIA_DIR + PIC_DIR_VALUES;
+    EXPECT_EQ(MediaFileUtils::IsPhotoTablePath(filePath), true);
+    filePath = ROOT_MEDIA_DIR + VIDEO_DIR_VALUES;
+    EXPECT_EQ(MediaFileUtils::IsPhotoTablePath(filePath), true);
+    filePath = ROOT_MEDIA_DIR + CAMERA_DIR_VALUES;
+    EXPECT_EQ(MediaFileUtils::IsPhotoTablePath(filePath), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsPhotoTablePath_Test_005, TestSize.Level0)
+{
+    string filePath = ROOT_MEDIA_DIR + AUDIO_DIR_VALUES;
+    EXPECT_EQ(MediaFileUtils::IsPhotoTablePath(filePath), false);
+}
 } // namespace Media
 } // namespace OHOS

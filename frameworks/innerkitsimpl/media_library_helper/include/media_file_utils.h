@@ -118,6 +118,7 @@ public:
 #endif
     static bool IsUriV10(const std::string &mediaType);
     static bool IsFileTablePath(const std::string &path);
+    static bool IsPhotoTablePath(const std::string &path);
 };
 } // namespace OHOS::Media
 

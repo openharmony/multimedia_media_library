@@ -63,8 +63,7 @@ void MediaLibraryInotify::WatchCallBack()
             if (watchList_.count(event->wd) == 0) {
                 continue;
             }
-            auto item = watchList_.at(event->wd);
-            lock.unlock();
+            auto &item = watchList_.at(event->wd);
             auto eventMask = event->mask;
             auto &meetEvent = item.meetEvent_;
             meetEvent = (eventMask & IN_MODIFY) ? (meetEvent | IN_MODIFY) : meetEvent;
@@ -75,8 +74,12 @@ void MediaLibraryInotify::WatchCallBack()
                 MEDIA_DEBUG_LOG("path:%s, meetEvent:%x file_id:%s", item.path_.c_str(),
                     meetEvent, item.uri_.c_str());
                 string id = MediaLibraryDataManagerUtils::GetIdFromUri(item.uri_);
+                string itemPath = item.path_;
+                string itemUri = item.uri_;
+                MediaLibraryApi itemApi = item.api_;
                 Remove(event->wd);
-                MediaLibraryObjectUtils::ScanFileAfterClose(item.path_, id, item.uri_, item.api_);
+                lock.unlock();
+                MediaLibraryObjectUtils::ScanFileAsync(itemPath, id, itemApi);
             }
         }
     }

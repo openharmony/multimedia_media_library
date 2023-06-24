@@ -1092,7 +1092,7 @@ int32_t MediaLibraryDataManager::RevertPendingByFileId(const std::string &fileId
     auto fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(fileId);
     string srcPath = fileAsset->GetPath();
     string srcUri = fileAsset->GetUri();
-    MediaLibraryObjectUtils::ScanFileAfterClose(srcPath, fileId, srcUri, MediaLibraryApi::API_10);
+    MediaLibraryObjectUtils::ScanFileAsync(srcPath, fileId, MediaLibraryApi::API_10);
     return E_SUCCESS;
 }
 
