@@ -720,25 +720,28 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     return fd;
 }
 
-int32_t MediaLibraryObjectUtils::ScanFileAfterClose(const string &srcPath, const string &id,
-    const string &uri, MediaLibraryApi api)
+void MediaLibraryObjectUtils::ScanFileAsync(const string &path, const string &id, MediaLibraryApi api)
 {
-    /*
-     * todo: when api9 has not divided tables yet, here use medialibraryapi to separate api 9&10
-     * after divide table, this function will discard
-     */
-    string tableName = MEDIALIBRARY_TABLE;
-    if (api != MediaLibraryApi::API_OLD) {
-        if ((uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos)) {
-            tableName = PhotoColumn::PHOTOS_TABLE;
-        } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
-            tableName = AudioColumn::AUDIOS_TABLE;
-        }
+    string tableName;
+    if (MediaFileUtils::IsFileTablePath(path)) {
+        tableName = MEDIALIBRARY_TABLE;
+    } else if (MediaFileUtils::IsPhotoTablePath(path)) {
+        tableName = PhotoColumn::PHOTOS_TABLE;
+    } else {
+        tableName = AudioColumn::AUDIOS_TABLE;
     }
 
     InvalidateThumbnail(id, tableName);
-    ScanFile(srcPath, api);
-    return E_SUCCESS;
+
+    shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
+    if (scanFileCb == nullptr) {
+        MEDIA_ERR_LOG("Failed to create scan file callback object");
+        return ;
+    }
+    int ret = MediaScannerManager::GetInstance()->ScanFile(path, scanFileCb, api);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Scan file failed!");
+    }
 }
 
 int32_t MediaLibraryObjectUtils::CloseFile(MediaLibraryCommand &cmd)
