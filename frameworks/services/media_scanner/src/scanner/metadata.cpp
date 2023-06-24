@@ -351,6 +351,16 @@ int32_t Metadata::GetPhotoSubType() const
 {
     return photoSubType_;
 }
+
+void Metadata::SetTableName(const string &tableName)
+{
+    tableName_ = tableName;
+}
+
+string Metadata::GetTableName()
+{
+    return tableName_;
+}
 #endif
 } // namespace Media
 } // namespace OHOS

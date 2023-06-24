@@ -116,7 +116,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_001, TestSize.Lev
     MediaScannerDb mediaScannerDb;
     mediaScannerDb.SetRdbHelper();
     Metadata metadata;
-    string ret = mediaScannerDb.InsertMetadata(metadata);
+    bool setScannedId = false;
+    string ret = mediaScannerDb.InsertMetadata(metadata, setScannedId);
     EXPECT_NE(ret, "");
     int32_t parentId = 1;
     string albumPath = "/storage/cloud/files/";
@@ -134,7 +135,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_001, TestSize.Lev
     metadata.SetParentId(parentId);
     metadata.SetAlbumName(albumName);
     metadata.SetFileId(albumId);
-    ret = mediaScannerDb.InsertMetadata(metadata);
+    ret = mediaScannerDb.InsertMetadata(metadata, setScannedId);
     EXPECT_NE(ret, "");
 }
 
@@ -209,7 +210,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_002, TestSize.Lev
     metadata.SetParentId(parentId);
     metadata.SetAlbumName(albumName);
     metadata.SetFileId(albumId);
-    string ret = mediaScannerDb.InsertMetadata(metadata);
+    bool setScannedId = false;
+    string ret = mediaScannerDb.InsertMetadata(metadata, setScannedId);
     EXPECT_NE(ret, "");
     unordered_map<string, Metadata> albumMap_;
     string pathTest = "";
@@ -296,7 +298,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateMetadata_test_001, TestSize.Lev
 {
     MediaScannerDb mediaScannerDb;
     Metadata metadata;
-    string ret = mediaScannerDb.UpdateMetadata(metadata);
+    bool setScannedId = false;
+    string ret = mediaScannerDb.UpdateMetadata(metadata, setScannedId);
     EXPECT_EQ(ret, "");
     int32_t parentId = 1;
     string albumPath = "/storage/cloud/files/";
@@ -314,7 +317,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateMetadata_test_001, TestSize.Lev
     metadata.SetParentId(parentId);
     metadata.SetAlbumName(albumName);
     metadata.SetFileId(albumId);
-    ret = mediaScannerDb.UpdateMetadata(metadata);
+    ret = mediaScannerDb.UpdateMetadata(metadata, setScannedId);
     EXPECT_EQ(ret, "");
 }
 

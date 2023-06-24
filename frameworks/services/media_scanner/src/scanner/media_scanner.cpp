@@ -118,11 +118,25 @@ int32_t MediaScannerObj::CommitTransaction()
     for (uint32_t i = 0; i < dataBuffer_.size(); i++) {
         data = move(dataBuffer_[i]);
         if (data->GetFileId() != FILE_ID_DEFAULT) {
-            uri = mediaScannerDb_->UpdateMetadata(*data);
+            bool setScannedId = false;
+            uri = mediaScannerDb_->UpdateMetadata(*data, setScannedId);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            if (setScannedId) {
+                scannedIds_.insert(data->GetFileId());
+            }
+#else
             scannedIds_.insert(data->GetFileId());
+#endif
         } else {
-            uri = mediaScannerDb_->InsertMetadata(*data);
+            bool setScannedId = false;
+            uri = mediaScannerDb_->InsertMetadata(*data, setScannedId);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            if (setScannedId) {
+                scannedIds_.insert(stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri)));
+            }
+#else
             scannedIds_.insert(stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri)));
+#endif
         }
 
         // set uri for callback
@@ -151,10 +165,11 @@ int32_t MediaScannerObj::AddToTransaction()
 
 int32_t MediaScannerObj::Commit()
 {
+    bool setScannedId = false;
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
-        uri_ = mediaScannerDb_->UpdateMetadata(*data_, api_);
+        uri_ = mediaScannerDb_->UpdateMetadata(*data_, setScannedId, api_);
     } else {
-        uri_ = mediaScannerDb_->InsertMetadata(*data_, api_);
+        uri_ = mediaScannerDb_->InsertMetadata(*data_, setScannedId, api_);
     }
 
     // notify change
@@ -266,7 +281,13 @@ int32_t MediaScannerObj::GetFileMetadata()
 
     // may need isPending here
     if ((data_->GetFileDateModified() == statInfo.st_mtime) && (data_->GetFileSize() == statInfo.st_size)) {
+#ifdef MEDIALIBRARY_COMPATIBILITY
+        if (data_->GetTableName() == MEDIALIBRARY_TABLE) {
+            scannedIds_.insert(data_->GetFileId());
+        }
+#else
         scannedIds_.insert(data_->GetFileId());
+#endif
         return E_SCANNED;
     }
 
