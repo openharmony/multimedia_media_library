@@ -35,6 +35,10 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS::Media {
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
+struct UniqueMemberValuesBucket {
+    std::string assetMediaType;
+    int32_t startNumber;
+};
 
 const std::string MediaLibraryRdbStore::CloudSyncTriggerFunc(const std::vector<std::string> &args)
 {
@@ -700,7 +704,18 @@ int32_t MediaLibraryDataCallBack::InsertSmartAlbumValues(const SmartAlbumValuesB
     return insertResult;
 }
 
-int32_t MediaLibraryDataCallBack::PrepareUniqueMemberTable(RdbStore &store)
+static int32_t InsertUniqueMemberTableValues(const UniqueMemberValuesBucket &uniqueMemberValues,
+    RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutString(ASSET_MEDIA_TYPE, uniqueMemberValues.assetMediaType);
+    valuesBucket.PutInt(UNIQUE_NUMBER, uniqueMemberValues.startNumber);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, ASSET_UNIQUE_NUMBER_TABLE, valuesBucket);
+    return insertResult;
+}
+
+static int32_t PrepareUniqueMemberTable(RdbStore &store)
 {
     string queryRowSql = "SELECT COUNT(*) as count FROM " + ASSET_UNIQUE_NUMBER_TABLE;
     auto resultSet = store.QuerySql(queryRowSql);
@@ -728,17 +743,6 @@ int32_t MediaLibraryDataCallBack::PrepareUniqueMemberTable(RdbStore &store)
         }
     }
     return NativeRdb::E_OK;
-}
-
-int32_t MediaLibraryDataCallBack::InsertUniqueMemberTableValues(const UniqueMemberValuesBucket &uniqueMemberValues,
-    RdbStore &store)
-{
-    ValuesBucket valuesBucket;
-    valuesBucket.PutString(ASSET_MEDIA_TYPE, uniqueMemberValues.assetMediaType);
-    valuesBucket.PutInt(UNIQUE_NUMBER, uniqueMemberValues.startNumber);
-    int64_t outRowId = -1;
-    int32_t insertResult = store.Insert(outRowId, ASSET_UNIQUE_NUMBER_TABLE, valuesBucket);
-    return insertResult;
 }
 
 static const string &TriggerDeleteAlbumClearMap()
@@ -1088,35 +1092,36 @@ static int32_t UpdateCloudPath(RdbStore &store)
     return ExecSqls(updateCloudPath, store);
 }
 
-void UpdatePhotoColumn(RdbStore &store)
+void UpdateAPI10Table(RdbStore &store)
 {
-    vector<string> updatePhotoColumn = {
-        {"virtual_path TEXT"},
-        {"dirty INT DEFAULT 1"},
-        {"cloud_id TEXT"},
-        {"meta_date_modified BIGINT DEFAULT 0"},
-        {"sync_status INT DEFAULT 0"},
-        {"position INT DEFAULT 1"},
-        {"subtype INT DEFAULT 0"}
-    };
-    for (auto col : updatePhotoColumn) {
-        string alterColumn = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + col;
-        if (store.ExecuteSql(alterColumn) != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Upgrade rdb column error %{private}s", col.c_str());
-        }
-    }
-    string alterAudioColumn = "ALTER TABLE " + AudioColumn::AUDIOS_TABLE + " ADD COLUMN " + "virtual_path TEXT";
-    if (store.ExecuteSql(alterAudioColumn) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Upgrade rdb column error %{private}s", alterAudioColumn.c_str());
-    }
-    string createIdx = "CREATE UNIQUE INDEX idx_ph_virtual_path ON " + PhotoColumn::PHOTOS_TABLE + "(virtual_path)";
-    if (store.ExecuteSql(createIdx) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Upgrade rdb index error %{private}s", createIdx.c_str());
-    }
-    createIdx = "CREATE UNIQUE INDEX idx_audio_virtual_path ON " + AudioColumn::AUDIOS_TABLE + "(virtual_path)";
-    if (store.ExecuteSql(createIdx) != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Upgrade rdb index error %{private}s", createIdx.c_str());
-    }
+    store.ExecuteSql("DROP INDEX IF EXISTS idx_sthp_dateadded");
+    store.ExecuteSql("DROP INDEX IF EXISTS photo_album_types");
+
+    store.ExecuteSql("DROP TRIGGER IF EXISTS photos_delete_trigger");
+    store.ExecuteSql("DROP TRIGGER IF EXISTS photos_fdirty_trigger");
+    store.ExecuteSql("DROP TRIGGER IF EXISTS photos_mdirty_trigger");
+    store.ExecuteSql("DROP TRIGGER IF EXISTS photo_insert_cloud_sync_trigger");
+
+    store.ExecuteSql("DROP TRIGGER IF EXISTS delete_trigger");
+    store.ExecuteSql("DROP TRIGGER IF EXISTS mdirty_trigger");
+    store.ExecuteSql("DROP TRIGGER IF EXISTS fdirty_trigger");
+    store.ExecuteSql("DROP TRIGGER IF EXISTS insert_cloud_sync_trigger");
+
+    store.ExecuteSql("DROP TRIGGER IF EXISTS photo_album_clear_map");
+    store.ExecuteSql("DROP TRIGGER IF EXISTS photo_album_insert_asset");
+    store.ExecuteSql("DROP TRIGGER IF EXISTS photo_album_delete_asset");
+    store.ExecuteSql("DROP TRIGGER IF EXISTS delete_photo_clear_map");
+    store.ExecuteSql("DROP TRIGGER IF EXISTS update_user_album_count");
+
+    store.ExecuteSql("DROP TABLE IF EXISTS Photos");
+    store.ExecuteSql("DROP TABLE IF EXISTS Audios");
+    store.ExecuteSql("DROP TABLE IF EXISTS UniqueNumber");
+    store.ExecuteSql("DROP TABLE IF EXISTS PhotoAlbum");
+    store.ExecuteSql("DROP TABLE IF EXISTS PhotoMap");
+
+    API10TableCreate(store);
+    PrepareSystemAlbums(store);
+    PrepareUniqueMemberTable(store);
 }
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
@@ -1150,8 +1155,8 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
         UpdateCloudPath(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_VIRTUAL_PATH) {
-        UpdatePhotoColumn(store);
+    if (oldVersion < VERSION_UPDATE_API10_TABLE) {
+        UpdateAPI10Table(store);
     }
 
     return NativeRdb::E_OK;
