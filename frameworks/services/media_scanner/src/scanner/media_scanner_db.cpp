@@ -193,7 +193,7 @@ static void GetTableNameByPath(int32_t mediaType, string &tableName, const strin
     }
 }
 
-string MediaScannerDb::InsertMetadata(const Metadata &metadata, MediaLibraryApi api)
+string MediaScannerDb::InsertMetadata(const Metadata &metadata, bool &setScannedId, MediaLibraryApi api)
 {
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri;
@@ -219,18 +219,19 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, MediaLibraryApi 
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
         GetTableNameByPath(mediaType, tableName, metadata.GetFilePath());
+        if (tableName == MEDIALIBRARY_TABLE) {
+            setScannedId = true;
+        } else {
+            setScannedId = false;
+        }
 #endif
         SetValuesFromMetaDataApi9(metadata, values, true, tableName);
     }
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return "";
-    }
+    CHECK_AND_RETURN_RET(rdbStore != nullptr, "");
     auto rdbStorePtr = rdbStore->GetRaw();
-    if (rdbStorePtr == nullptr) {
-        return "";
-    }
+    CHECK_AND_RETURN_RET(rdbStorePtr != nullptr, "");
 
     int64_t rowNum = 0;
     int32_t result = rdbStorePtr->Insert(rowNum, tableName, values);
@@ -252,7 +253,8 @@ vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
 {
     vector<string> insertUriList;
     for (auto itr : metadataList) {
-        insertUriList.push_back(InsertMetadata(itr));
+        bool setScannedId = false;
+        insertUriList.push_back(InsertMetadata(itr, setScannedId));
     }
 
     return insertUriList;
@@ -282,7 +284,7 @@ static inline void GetUriStringInUpdate(MediaType mediaType, MediaLibraryApi api
  * @param metadata The metadata object which has the information about the file
  * @return string The mediatypeUri corresponding to the given metadata
  */
-string MediaScannerDb::UpdateMetadata(const Metadata &metadata, MediaLibraryApi api)
+string MediaScannerDb::UpdateMetadata(const Metadata &metadata, bool &setScannedId, MediaLibraryApi api)
 {
     int32_t updateCount(0);
     ValuesBucket values;
@@ -299,6 +301,11 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, MediaLibraryApi 
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
         GetTableNameByPath(mediaType, tableName, metadata.GetFilePath());
+        if (tableName == MEDIALIBRARY_TABLE) {
+            setScannedId = true;
+        } else {
+            setScannedId = false;
+        }
 #endif
         SetValuesFromMetaDataApi9(metadata, values, false, tableName);
     }
@@ -458,6 +465,9 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
         MEDIA_ERR_LOG("failed to go to first row");
         return E_RDB;
     }
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    ptr->SetTableName(cmd.GetTableName());
+#endif
 
     return FillMetadata(resultSet, ptr);
 }
@@ -615,7 +625,8 @@ int32_t MediaScannerDb::InsertAlbum(const Metadata &metadata)
 {
     int32_t id = 0;
 
-    string uri = InsertMetadata(metadata);
+    bool setScannedId = false;
+    string uri = InsertMetadata(metadata, setScannedId);
     id = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri));
 
     return id;
@@ -625,7 +636,8 @@ int32_t MediaScannerDb::UpdateAlbum(const Metadata &metadata)
 {
     int32_t id = 0;
 
-    string uri = UpdateMetadata(metadata);
+    bool setScannedId = false;
+    string uri = UpdateMetadata(metadata, setScannedId);
     id = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri));
 
     return id;
