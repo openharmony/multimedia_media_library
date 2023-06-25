@@ -238,13 +238,31 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_002, T
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_003, TestSize.Level0)
 {
     string displayName = "test";
-    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), 0);
+    EXPECT_LT(MediaFileUtils::CheckDisplayName(displayName), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_004, TestSize.Level0)
 {
     string displayName = "test:*\'";
     EXPECT_LT(MediaFileUtils::CheckDisplayName(displayName), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_005, TestSize.Level0)
+{
+    string displayName = "test.test.jpg";
+    EXPECT_LT(MediaFileUtils::CheckDisplayName(displayName), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckDisplayName_Test_006, TestSize.Level0)
+{
+    string displayName = "test.jpg";
+    EXPECT_EQ(MediaFileUtils::CheckDisplayName(displayName), 0);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckFileDisplayName_Test_001, TestSize.Level0)
+{
+    string displayName = "test.test.jpg";
+    EXPECT_EQ(MediaFileUtils::CheckFileDisplayName(displayName), 0);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetAlbumDateModified_Test_001, TestSize.Level0)

@@ -80,6 +80,7 @@ public:
     static int32_t CheckStringSize(const std::string &str, const size_t max);
     static int32_t CheckAlbumName(const std::string &albumName);
     static int32_t CheckDisplayName(const std::string &displayName);
+    static int32_t CheckFileDisplayName(const std::string &displayName);
     static int32_t CheckRelativePath(const std::string &relativePath);
     static void FormatRelativePath(std::string &relativePath);
     static void GetRootDirFromRelativePath(const std::string &relativePath, std::string &rootDir);

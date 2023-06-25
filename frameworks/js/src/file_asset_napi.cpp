@@ -1063,6 +1063,22 @@ static string BuildCommitModifyUriApi10(FileAssetAsyncContext *context, string &
     return uri;
 }
 
+static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
+{
+    if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {
+        if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
+            context->error = JS_E_DISPLAYNAME;
+            return false;
+        }
+    } else {
+        if (MediaFileUtils::CheckFileDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
+            context->error = JS_E_DISPLAYNAME;
+            return false;
+        }
+    }
+    return true;
+}
+
 static void JSCommitModifyExecute(napi_env env, void *data)
 {
     FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
@@ -1074,11 +1090,9 @@ static void JSCommitModifyExecute(napi_env env, void *data)
         isApiVersion10 = true;
     }
 
-    if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
-        context->error = JS_E_DISPLAYNAME;
+    if (!CheckDisplayNameInCommitModify(context)) {
         return;
     }
-
     string uri = MEDIALIBRARY_DATA_URI + "/";
     if (!isApiVersion10) {
 #ifdef MEDIALIBRARY_COMPATIBILITY

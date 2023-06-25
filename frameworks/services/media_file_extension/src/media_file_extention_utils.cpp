@@ -124,7 +124,7 @@ static inline string GetUriFromId(int32_t id, const string &networkId)
 
 int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &displayName,  Uri &newFileUri)
 {
-    if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
+    if (MediaFileUtils::CheckFileDisplayName(displayName) < 0) {
         MEDIA_ERR_LOG("invalid file displayName %{private}s", displayName.c_str());
         return E_INVALID_DISPLAY_NAME;
     }
@@ -1249,7 +1249,7 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const string &
     string sourceUri = sourceFileUri.ToString();
     auto ret = MediaFileExtentionUtils::CheckUriSupport(sourceUri);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-    if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
+    if (MediaFileUtils::CheckFileDisplayName(displayName) < 0) {
         MEDIA_ERR_LOG("invalid displayName %{private}s", displayName.c_str());
         return E_INVALID_DISPLAY_NAME;
     }
