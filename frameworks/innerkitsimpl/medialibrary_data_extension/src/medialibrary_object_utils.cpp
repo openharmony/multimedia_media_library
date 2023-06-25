@@ -1511,8 +1511,8 @@ int32_t MediaLibraryObjectUtils::CheckDirExtension(const string &relativePath, c
     if (displayName.compare(MEDIA_NO_FILE) == 0) {
         return E_SUCCESS;
     }
-    if (MediaFileUtils::CheckDisplayName(displayName) < 0) {
-        MEDIA_ERR_LOG("CheckDisplayName failed, displayName: %{private}s", displayName.c_str());
+    if (MediaFileUtils::CheckFileDisplayName(displayName) < 0) {
+        MEDIA_ERR_LOG("Check File DisplayName failed, displayName: %{private}s", displayName.c_str());
         return E_FILE_NAME_INVALID;
     }
     DirAsset rootDirAsset;
