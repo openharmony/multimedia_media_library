@@ -71,11 +71,13 @@ int32_t UriPermissionOperations::HandleUriPermOperations(MediaLibraryCommand &cm
     return errCode;
 }
 
-int32_t UriPermissionOperations::GetUriPermissionMode(const string &fileId, const string &bundleName, string &mode)
+int32_t UriPermissionOperations::GetUriPermissionMode(const string &fileId, const string &bundleName,
+    int32_t tableType, string &mode)
 {
     MediaLibraryCommand cmd(Uri(MEDIALIBRARY_BUNDLEPERM_URI), OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(PERMISSION_FILE_ID, fileId);
     cmd.GetAbsRdbPredicates()->And()->EqualTo(PERMISSION_BUNDLE_NAME, bundleName);
+    cmd.GetAbsRdbPredicates()->And()->EqualTo(PERMISSION_TABLE_TYPE, to_string(tableType));
     auto queryResult = MediaLibraryObjectUtils::QueryWithCondition(cmd, {}, "");
     CHECK_AND_RETURN_RET_LOG(queryResult != nullptr, E_HAS_DB_ERROR, "Failed to obtain value from database");
     int count = -1;
@@ -90,7 +92,8 @@ int32_t UriPermissionOperations::GetUriPermissionMode(const string &fileId, cons
     return E_SUCCESS;
 }
 
-int32_t CheckUriPermValues(ValuesBucket &valuesBucket, int32_t &fileId, string &bundleName, string &inputMode)
+int32_t CheckUriPermValues(ValuesBucket &valuesBucket, int32_t &fileId, string &bundleName, int32_t &tableType,
+    string &inputMode)
 {
     ValueObject valueObject;
     if (valuesBucket.GetObject(PERMISSION_FILE_ID, valueObject)) {
@@ -113,6 +116,13 @@ int32_t CheckUriPermValues(ValuesBucket &valuesBucket, int32_t &fileId, string &
         MEDIA_ERR_LOG("ValueBucket does not have PERMISSION_MODE");
         return E_INVALID_VALUES;
     }
+
+    if (valuesBucket.GetObject(PERMISSION_TABLE_TYPE, valueObject)) {
+        valueObject.GetInt(tableType);
+    } else {
+        MEDIA_ERR_LOG("ValueBucket does not have PERMISSION_TABLE_NAME");
+        return E_INVALID_VALUES;
+    }
     if (!CheckMode(inputMode)) {
         return E_INVALID_MODE;
     }
@@ -126,12 +136,13 @@ int32_t UriPermissionOperations::HandleUriPermInsert(MediaLibraryCommand &cmd)
     int32_t fileId;
     string bundleName;
     string inputMode;
+    int32_t tableType;
     ValuesBucket &valuesBucket = cmd.GetValueBucket();
-    auto ret = CheckUriPermValues(valuesBucket, fileId, bundleName, inputMode);
+    auto ret = CheckUriPermValues(valuesBucket, fileId, bundleName, tableType, inputMode);
     CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
 
     string permissionMode;
-    ret = GetUriPermissionMode(to_string(fileId), bundleName, permissionMode);
+    ret = GetUriPermissionMode(to_string(fileId), bundleName, tableType, permissionMode);
     if ((ret != E_SUCCESS) && (ret != E_PERMISSION_DENIED)) {
         return ret;
     }
@@ -155,6 +166,39 @@ int32_t UriPermissionOperations::HandleUriPermInsert(MediaLibraryCommand &cmd)
     return uniStore->Update(updateCmd, updatedRows);
 }
 
+int32_t UriPermissionOperations::InsertBundlePermission(const int32_t &fileId, const std::string &bundleName,
+    const std::string &mode, int32_t tableType)
+{
+    string curMode;
+    auto ret = GetUriPermissionMode(to_string(fileId), bundleName, tableType, curMode);
+    if ((ret != E_SUCCESS) && (ret != E_PERMISSION_DENIED)) {
+        return ret;
+    }
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "uniStore is nullptr!");
+    if (ret == E_PERMISSION_DENIED) {
+        ValuesBucket addValues;
+        addValues.PutInt(PERMISSION_FILE_ID, fileId);
+        addValues.PutString(PERMISSION_BUNDLE_NAME, bundleName);
+        addValues.PutString(PERMISSION_MODE, mode);
+        addValues.PutInt(PERMISSION_TABLE_TYPE, tableType);
+        MediaLibraryCommand cmd(Uri(MEDIALIBRARY_BUNDLEPERM_URI), addValues);
+        int64_t outRowId = -1;
+        return uniStore->Insert(cmd, outRowId);
+    }
+    if (curMode.find(mode) != string::npos) {
+        return E_SUCCESS;
+    }
+    ValuesBucket updateValues;
+    updateValues.PutString(PERMISSION_MODE, mode);
+    MediaLibraryCommand updateCmd(Uri(MEDIALIBRARY_BUNDLEPERM_URI), updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PERMISSION_FILE_ID, to_string(fileId))->And()->
+        EqualTo(PERMISSION_BUNDLE_NAME, bundleName)->And()->
+        EqualTo(PERMISSION_TABLE_TYPE, to_string(tableType));
+    int32_t updatedRows = -1;
+    return uniStore->Update(updateCmd, updatedRows);
+}
+
 int32_t UriPermissionOperations::CheckUriPermission(const std::string &fileUri, std::string mode)
 {
     if (!CheckMode(mode)) {
@@ -163,9 +207,24 @@ int32_t UriPermissionOperations::CheckUriPermission(const std::string &fileUri, 
     string bundleName;
     bool isSystemApp = false;
     PermissionUtils::GetClientBundle(IPCSkeleton::GetCallingUid(), bundleName, isSystemApp);
-    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(fileUri);
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(fileUri);
+    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(realUri);
+    TableType tableType = TableType::TYPE_FILES;
+    static map<string, TableType> tableMap = {
+        { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
+        { MEDIALIBRARY_TYPE_VIDEO_URI, TableType::TYPE_PHOTOS },
+        { MEDIALIBRARY_TYPE_AUDIO_URI, TableType::TYPE_AUDIOS },
+        { MEDIALIBRARY_TYPE_FILE_URI, TableType::TYPE_FILES },
+        { PhotoColumn::PHOTO_TYPE_URI, TableType::TYPE_PHOTOS },
+        { AudioColumn::AUDIO_TYPE_URI, TableType::TYPE_AUDIOS }
+    };
+    for (const auto &iter : tableMap) {
+        if (fileUri.find(iter.first) != string::npos) {
+            tableType = iter.second;
+        }
+    }
     string permissionMode;
-    int32_t ret = GetUriPermissionMode(fileId, bundleName, permissionMode);
+    int32_t ret = GetUriPermissionMode(fileId, bundleName, static_cast<int32_t>(tableType), permissionMode);
     CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
     return (permissionMode.find(mode) != string::npos) ? E_SUCCESS : E_PERMISSION_DENIED;
 }

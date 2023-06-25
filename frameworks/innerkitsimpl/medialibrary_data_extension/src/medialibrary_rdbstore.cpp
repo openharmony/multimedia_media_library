@@ -994,6 +994,17 @@ void AddMetaModifiedColumn(RdbStore &store)
     }
 }
 
+void AddTableType(RdbStore &store)
+{
+    const std::string alterTableName =
+        "ALTER TABLE " + BUNDLE_PERMISSION_TABLE + " ADD COLUMN " +
+        PERMISSION_TABLE_TYPE + " INT";
+    int32_t result = store.ExecuteSql(alterTableName);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb table_name error %{private}d", result);
+    }
+}
+
 void API10TableCreate(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -1159,6 +1170,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_UPDATE_API10_TABLE) {
         UpdateAPI10Table(store);
+    }
+
+    if (oldVersion < VERSION_ADD_TABLE_TYPE) {
+        AddTableType(store);
     }
 
     return NativeRdb::E_OK;

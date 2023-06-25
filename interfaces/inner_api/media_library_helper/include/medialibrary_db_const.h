@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 9;
+const int32_t MEDIA_RDB_VERSION = 10;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -31,7 +31,8 @@ enum {
     VERSION_MODIFY_DELETE_TRIGGER = 6,
     VERSION_ADD_CLOUD_VERSION = 7,
     VERSION_UPDATE_CLOUD_PATH = 8,
-    VERSION_UPDATE_API10_TABLE = 9
+    VERSION_UPDATE_API10_TABLE = 9,
+    VERSION_ADD_TABLE_TYPE = 10,
 };
 
 enum {
@@ -184,6 +185,7 @@ const std::string PERMISSION_ID = "id";
 const std::string PERMISSION_BUNDLE_NAME = "bundle_name";
 const std::string PERMISSION_FILE_ID = "file_id";
 const std::string PERMISSION_MODE = "mode";
+const std::string PERMISSION_TABLE_TYPE = "table_type";
 
 const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_TABLE + " (" +
                                        MEDIA_DATA_DB_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -236,7 +238,8 @@ const std::string CREATE_BUNDLE_PREMISSION_TABLE = "CREATE TABLE IF NOT EXISTS "
                                       PERMISSION_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                                       PERMISSION_BUNDLE_NAME + " TEXT NOT NULL, " +
                                       PERMISSION_FILE_ID + " INT NOT NULL, " +
-                                      PERMISSION_MODE + " TEXT NOT NULL)";
+                                      PERMISSION_MODE + " TEXT NOT NULL, " +
+                                      PERMISSION_TABLE_TYPE + " INT )";
 
 const std::string CREATE_IMAGE_VIEW = "CREATE VIEW IF NOT EXISTS Image AS SELECT " +
                                       MEDIA_DATA_DB_ID + ", " +
