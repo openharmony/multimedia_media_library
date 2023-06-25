@@ -121,12 +121,11 @@ const std::string PhotoColumn::INDEX_STHP_ADDTIME =
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER photos_delete_trigger AFTER UPDATE ON " +
-                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN new.dirty = " +
-                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
-                        " AND OLD.cloud_id is NULL AND is_caller_self_func() = 'true'" +
-                        " BEGIN " +
-                        " DELETE FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE file_id = old.file_id;" +
-                        " END;";
+                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN new." + PhotoColumn::PHOTO_DIRTY +
+                        " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
+                        " AND OLD." + PhotoColumn::PHOTO_CLOUD_ID + " is NULL AND is_caller_self_func() = 'true'" +
+                        " BEGIN DELETE FROM " + PhotoColumn::PHOTOS_TABLE +
+                        " WHERE " + PhotoColumn::MEDIA_ID + " = old." + PhotoColumn::MEDIA_ID + "; END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
                         "CREATE TRIGGER photos_fdirty_trigger AFTER UPDATE ON " +

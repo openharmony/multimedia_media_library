@@ -32,6 +32,8 @@ public:
     static const std::string ALBUM_COVER_URI;
     static const std::string ALBUM_COUNT;
     static const std::string ALBUM_DATE_MODIFIED;
+    static const std::string ALBUM_DIRTY;
+    static const std::string ALBUM_CLOUD_ID;
 
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH;
@@ -45,6 +47,11 @@ public:
 
     // create indexes for PhotoAlbum
     static const std::string INDEX_ALBUM_TYPES;
+
+    // create triggers
+    static const std::string CREATE_ALBUM_INSERT_TRIGGER;
+    static const std::string CREATE_ALBUM_MDIRTY_TRIGGER;
+    static const std::string CREATE_ALBUM_DELETE_TRIGGER;
 
     // util constants
     static const std::string ALBUM_URI_PREFIX;
