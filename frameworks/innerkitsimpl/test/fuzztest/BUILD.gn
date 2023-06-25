@@ -15,5 +15,6 @@ group("media_library_fuzztest") {
   testonly = true
   deps = [
     # deps file
+    "medialibrary_fuzzer:MediaLibraryFuzzTest",
   ]
 }
