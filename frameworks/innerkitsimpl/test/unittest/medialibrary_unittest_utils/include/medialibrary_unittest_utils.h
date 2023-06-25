@@ -63,7 +63,8 @@ public:
     static void TrashFile(std::shared_ptr<FileAsset> &fileAsset);
     static void RecoveryFile(std::shared_ptr<FileAsset> &fileAsset);
     static void WaitForCallback(std::shared_ptr<TestScannerCallback> callback);
-    static int32_t GrantUriPermission(const int32_t fileId, const std::string &bundleName, const std::string &mode);
+    static int32_t GrantUriPermission(const int32_t fileId, const std::string &bundleName,
+        const std::string &mode, const int32_t tableType);
 private:
     static inline bool isValid_ = false;
     static inline std::unordered_map<std::string, std::shared_ptr<FileAsset>> rootDirAssetMap_;

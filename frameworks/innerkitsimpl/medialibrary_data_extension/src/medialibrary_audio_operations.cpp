@@ -29,6 +29,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_uripermission_operations.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
 
@@ -167,10 +168,10 @@ int32_t MediaLibraryAudioOperations::CreateV9(MediaLibraryCommand& cmd)
     fileAsset.SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
 
     int32_t errCode = CheckRelativePathWithType(relativePath, MediaType::MEDIA_TYPE_AUDIO);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check RelativePath and Extension, "
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check RelativePath and Extention, "
         "relativePath=%{private}s, mediaType=%{public}d", relativePath.c_str(), mediaType);
     errCode = CheckDisplayNameWithType(displayName, MediaType::MEDIA_TYPE_AUDIO);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extension, "
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extention, "
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
 
     TransactionOperations transactionOprn;
@@ -200,9 +201,14 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     ValuesBucket &values = cmd.GetValueBucket();
 
     string displayName;
-    CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, AudioColumn::MEDIA_NAME, displayName),
-        E_HAS_DB_ERROR);
-    fileAsset.SetDisplayName(displayName);
+    string extention;
+    bool isContains = false;
+    if (GetStringFromValuesBucket(values, AudioColumn::MEDIA_NAME, displayName)) {
+        fileAsset.SetDisplayName(displayName);
+        isContains = true;
+    } else {
+        CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, "extention", extention), E_HAS_DB_ERROR);
+    }
 
     int32_t mediaType = 0;
     CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, AudioColumn::MEDIA_TYPE, mediaType),
@@ -212,19 +218,13 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     }
     fileAsset.SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
 
-    // Check rootdir and extension
-    int32_t errCode = CheckDisplayNameWithType(displayName, MediaType::MEDIA_TYPE_AUDIO);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
-        "Failed to Check Dir and Extension, displayName=%{private}s, mediaType=%{public}d",
-        displayName.c_str(), mediaType);
-
+    // Check rootdir and extention
+    int32_t errCode = CheckWithType(isContains, displayName, extention, MediaType::MEDIA_TYPE_AUDIO);
+    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     TransactionOperations transactionOprn;
     errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        return errCode;
-    }
-
-    errCode = SetAssetPathInCreate(fileAsset);
+    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
+    errCode = isContains ? SetAssetPathInCreate(fileAsset) : SetAssetPath(fileAsset, extention);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
         return errCode;
@@ -234,6 +234,11 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     if (outRow <= 0) {
         MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
         return errCode;
+    }
+    string bdName = cmd.GetBundleName();
+    if (!bdName.empty()) {
+        errCode = UriPermissionOperations::InsertBundlePermission(outRow, bdName, MEDIA_FILEMODE_READWRITE,
+            static_cast<int32_t>(TableType::TYPE_AUDIOS));
     }
     transactionOprn.Finish();
     return outRow;
