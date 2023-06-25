@@ -703,8 +703,7 @@ static void UpdateCompatAlbumSelection(AlbumNapiAsyncContext *context)
         }
         case PhotoAlbumSubType::TRASH: {
             static const string TRASH_FILTER =
-                PhotoColumn::PHOTO_SYNC_STATUS + "=" + to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) +
-                " AND " + PhotoColumn::MEDIA_DATE_TRASHED + " > 0 AND " + MEDIA_DATA_DB_IS_TRASH + " <> " +
+                PhotoColumn::MEDIA_DATE_TRASHED + " > 0 AND " + MEDIA_DATA_DB_IS_TRASH + " <> " +
                 to_string(static_cast<int32_t>(TRASHED_DIR_CHILD));
             filterClause = TRASH_FILTER;
             break;

@@ -15,6 +15,7 @@
 
 #include "photo_album_column.h"
 
+#include "media_column.h"
 #include "photo_map_column.h"
 
 namespace OHOS::Media {
@@ -27,6 +28,8 @@ const std::string PhotoAlbumColumns::ALBUM_NAME = "album_name";
 const std::string PhotoAlbumColumns::ALBUM_COVER_URI = "cover_uri";
 const std::string PhotoAlbumColumns::ALBUM_COUNT = "count";
 const std::string PhotoAlbumColumns::ALBUM_DATE_MODIFIED = "date_modified";
+const std::string PhotoAlbumColumns::ALBUM_DIRTY = "dirty";
+const std::string PhotoAlbumColumns::ALBUM_CLOUD_ID = "cloud_id";
 // For api9 compatibility
 const std::string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
 // default fetch columns
@@ -47,11 +50,36 @@ const std::string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_COVER_URI + " TEXT, " +
     ALBUM_COUNT + " INT DEFAULT 0, " +
     ALBUM_DATE_MODIFIED + " BIGINT DEFAULT 0, " +
+    ALBUM_DIRTY + " INT DEFAULT " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) + ", " +
+    ALBUM_CLOUD_ID + " TEXT, " +
     ALBUM_RELATIVE_PATH + " TEXT)";
 
 // Create indexes
 const std::string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
     " (" + ALBUM_TYPE + "," + ALBUM_SUBTYPE + ");";
+
+// Create triggers
+const std::string PhotoAlbumColumns::CREATE_ALBUM_INSERT_TRIGGER =
+    " CREATE TRIGGER album_insert_cloud_sync_trigger AFTER INSERT ON " + TABLE +
+    " BEGIN SELECT cloud_sync_func(); END;";
+
+const std::string PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER =
+    "CREATE TRIGGER album_delete_trigger AFTER UPDATE ON " + TABLE +
+    " FOR EACH ROW WHEN new." + ALBUM_DIRTY + " = " +
+    std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
+    " AND old." + ALBUM_DIRTY + " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) +
+    " AND is_caller_self_func() = 'true' BEGIN DELETE FROM " + TABLE +
+    " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
+
+const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
+    "CREATE TRIGGER album_modify_trigger AFTER UPDATE ON " + TABLE +
+    " FOR EACH ROW WHEN old." + ALBUM_DIRTY + " = " +
+    std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
+    " AND old." + ALBUM_DIRTY + " = " + "new." + ALBUM_DIRTY +
+    " AND is_caller_self_func() = 'true'" +
+    " BEGIN UPDATE " + TABLE + " SET dirty = " +
+    std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
+    " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
 
 bool PhotoAlbumColumns::IsPhotoAlbumColumn(const std::string &columnName)
 {
