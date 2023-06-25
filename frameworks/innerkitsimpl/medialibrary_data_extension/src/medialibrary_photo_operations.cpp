@@ -85,7 +85,7 @@ static void HandleGroupBy(AbsPredicates &predicates, const vector<string> &colum
     }
     string whereClause = predicates.GetWhereClause();
     predicates.SetWhereClause(whereClause +
-        " GROUP BY (DATE(date_added, 'unixepoch')) ORDER BY date_added DESC ");
+        " GROUP BY (DATE(date_added, 'unixepoch', 'localtime')) ORDER BY date_added DESC ");
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
