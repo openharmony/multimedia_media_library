@@ -36,6 +36,7 @@ namespace OHOS {
 namespace Media {
 static const std::string FILE_ASSET_NAPI_CLASS_NAME = "FileAsset";
 static const std::string USERFILEMGR_FILEASSET_NAPI_CLASS_NAME = "UserFileMgrFileAsset";
+static const std::string PHOTOACCESSHELPER_FILEASSET_NAPI_CLASS_NAME = "PhotoAccessHelperFileAsset";
 
 class FileAssetNapi {
 public:
@@ -44,6 +45,7 @@ public:
 
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
+    static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
     static napi_value CreateFileAsset(napi_env env, std::unique_ptr<FileAsset> &iAsset);
 
     std::string GetFileDisplayName() const;
@@ -119,11 +121,19 @@ private:
     static napi_value JSGetReadOnlyFd(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrSetHidden(napi_env env, napi_callback_info info);
 
+    static napi_value PhotoAccessHelperOpen(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperClose(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperFavorite(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
+
     bool HandleParamSet(const std::string &inputKey, const std::string &value);
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
+    static thread_local napi_ref photoAccessHelperConstructor_;
     static thread_local FileAsset *sFileAsset_;
     std::shared_ptr<FileAsset> fileAssetPtr = nullptr;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;

@@ -30,6 +30,7 @@ namespace OHOS {
 namespace Media {
 static const std::string FETCH_FILE_RESULT_CLASS_NAME = "FetchFileResult";
 static const std::string UFM_FETCH_FILE_RESULT_CLASS_NAME = "UserFileMgrFetchFileResult";
+static const std::string PAH_FETCH_FILE_RESULT_CLASS_NAME = "PhotoAccessHelperFetchFileResult";
 
 class FetchResultProperty {
 public:
@@ -48,6 +49,7 @@ public:
 
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
+    static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
 
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<FileAsset>> fileResult);
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<AlbumAsset>> fileResult);
@@ -61,6 +63,9 @@ public:
     std::shared_ptr<FetchResult<FileAsset>> GetFetchFileResult() const;
     FetchResType GetFetchResType();
     bool CheckIfPropertyPtrNull();
+    static void SolveConstructorRef(unique_ptr<FetchResult<FileAsset>> &fileResult, napi_ref &constructorRef);
+    static void SolveConstructorRef(unique_ptr<FetchResult<AlbumAsset>> &fileResult, napi_ref &constructorRef);
+    static void SolveConstructorRef(unique_ptr<FetchResult<SmartAlbumAsset>> &fileResult, napi_ref &constructorRef);
 
 private:
     static void FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
@@ -80,6 +85,7 @@ private:
     std::shared_ptr<FetchResultProperty> propertyPtr;
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
+    static thread_local napi_ref photoAccessHelperConstructor_;
     static inline thread_local std::unique_ptr<FetchResult<FileAsset>> sFetchFileResult_ = nullptr;
     static inline thread_local std::unique_ptr<FetchResult<AlbumAsset>> sFetchAlbumResult_ = nullptr;
     static inline thread_local std::unique_ptr<FetchResult<PhotoAlbum>> sFetchPhotoAlbumResult_ = nullptr;
