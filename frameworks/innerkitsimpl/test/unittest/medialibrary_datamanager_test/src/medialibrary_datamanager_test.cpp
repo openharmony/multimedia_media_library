@@ -594,7 +594,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_00
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), false);
     Uri parent(trashRecovery_File_005->GetUri());
     Uri newUri("");
-    ASSERT_EQ(MediaFileExtentionUtils::Rename(parent, "trashRecovery_File_005_renamed", newUri), E_SUCCESS);
+    ASSERT_EQ(MediaFileExtentionUtils::Rename(parent, "trashRecovery_File_005_renamed.jpg", newUri), E_SUCCESS);
     MediaLibraryUnitTestUtils::RecoveryFile(file1);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_005::End");
@@ -746,7 +746,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_005
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), false);
     Uri parent(trashRecovery_Dir_005->GetUri());
     Uri newUri("");
-    ASSERT_EQ(MediaFileExtentionUtils::Rename(parent, "trashRecovery_Dir_005_renamed", newUri), E_SUCCESS);
+    ASSERT_EQ(MediaFileExtentionUtils::Rename(parent, "trashRecovery_Dir_005_renamed.png", newUri), E_SUCCESS);
     MediaLibraryUnitTestUtils::RecoveryFile(dir1);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_005::End");
@@ -1037,10 +1037,10 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateThumbnailAsync_Test_
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     string uri = "";
-    mediaLibraryDataManager->CreateThumbnailAsync(uri, "");
+    mediaLibraryDataManager->CreateThumbnailAsync(uri, "Download");
     EXPECT_NE(mediaLibraryDataManager->thumbnailService_, nullptr);
     string uriTest = "CreateThumbnailAsync";
-    mediaLibraryDataManager->CreateThumbnailAsync(uriTest, "");
+    mediaLibraryDataManager->CreateThumbnailAsync(uriTest, "Download");
     EXPECT_NE(mediaLibraryDataManager->thumbnailService_, nullptr);
 }
 
