@@ -1132,7 +1132,7 @@ string MediaFileUtils::GetTableFromVirtualUri(const std::string &virtualUri)
         return "";
     }
     string virtualId = uri.GetFileId();
-    if (!std::all_of(virtualId.begin(), virtualId.end(), ::isdigit)) {
+    if (std::all_of(virtualId.begin(), virtualId.end(), ::isdigit)) {
         int64_t id = stol(virtualId);
         int64_t remainNumber = id % VIRTUAL_ID_DIVIDER;
         switch (remainNumber) {
@@ -1188,7 +1188,7 @@ bool MediaFileUtils::IsPhotoTablePath(const string &path)
     }
 
     string relativePath = path.substr(ROOT_MEDIA_DIR.size());
-    
+
     const vector<string> photoPathVector = {
         PHOTO_BUCKET, PIC_DIR_VALUES, VIDEO_DIR_VALUES, CAMERA_DIR_VALUES
     };
