@@ -42,11 +42,13 @@ namespace OHOS {
 namespace Media {
 static const std::string ALBUM_NAPI_CLASS_NAME = "Album";
 static const std::string USERFILEMGR_ALBUM_NAPI_CLASS_NAME = "UserFileMgrAlbum";
+static const std::string PHOTOACCESSHELPER_ALBUM_NAPI_CLASS_NAME = "PhotoAccessHelperAlbum";
 
 class AlbumNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
+    static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
     static napi_value CreateAlbumNapi(napi_env env, std::unique_ptr<AlbumAsset> &albumData);
     int32_t GetAlbumId() const;
     std::string GetAlbumName() const;
@@ -85,10 +87,14 @@ private:
     static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
 
+    static napi_value PhotoAccessHelperGetAssets(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
+
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
+    static thread_local napi_ref photoAccessHelperConstructor_;
     static thread_local AlbumAsset *sAlbumData_;
     std::shared_ptr<AlbumAsset> albumAssetPtr = nullptr;
 };

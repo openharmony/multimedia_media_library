@@ -31,8 +31,8 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 thread_local napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
-
 thread_local napi_ref FetchFileResultNapi::userFileMgrConstructor_ = nullptr;
+thread_local napi_ref FetchFileResultNapi::photoAccessHelperConstructor_ = nullptr;
 
 FetchFileResultNapi::FetchFileResultNapi()
     : env_(nullptr) {}
@@ -167,13 +167,67 @@ FetchResType FetchFileResultNapi::GetFetchResType()
     return propertyPtr->fetchResType_;
 }
 
+void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<FileAsset>> &fileResult,
+    napi_ref &constructorRef)
+{
+    switch(fileResult->GetResultNapiType()) {
+        case ResultNapiType::TYPE_USERFILE_MGR: {
+            constructorRef = userFileMgrConstructor_;
+            break;
+        }
+        case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
+            constructorRef = photoAccessHelperConstructor_;
+            break;
+        }
+        default:
+            constructorRef = sConstructor_;
+            break;
+    }
+}
+
+void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<AlbumAsset>> &fileResult,
+    napi_ref &constructorRef)
+{
+    switch(fileResult->GetResultNapiType()) {
+        case ResultNapiType::TYPE_USERFILE_MGR: {
+            constructorRef = userFileMgrConstructor_;
+            break;
+        }
+        case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
+            constructorRef = photoAccessHelperConstructor_;
+            break;
+        }
+        default:
+            constructorRef = sConstructor_;
+            break;
+    }
+}
+
+void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<SmartAlbumAsset>> &fileResult,
+    napi_ref &constructorRef)
+{
+    switch(fileResult->GetResultNapiType()) {
+        case ResultNapiType::TYPE_USERFILE_MGR: {
+            constructorRef = userFileMgrConstructor_;
+            break;
+        }
+        case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
+            constructorRef = photoAccessHelperConstructor_;
+            break;
+        }
+        default:
+            constructorRef = sConstructor_;
+            break;
+    }
+}
+
 napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<FetchResult<FileAsset>> fileResult)
 {
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
-    napi_ref constructorRef = (fileResult->GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) ?
-        (userFileMgrConstructor_) : (sConstructor_);
+    napi_ref constructorRef;
+    FetchFileResultNapi::SolveConstructorRef(fileResult, constructorRef);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
     sFetchResType_ = fileResult->GetFetchResType();
     sFetchFileResult_ = move(fileResult);
@@ -188,8 +242,8 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<F
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
-    napi_ref constructorRef = (fileResult->GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) ?
-        (userFileMgrConstructor_) : (sConstructor_);
+    napi_ref constructorRef;
+    FetchFileResultNapi::SolveConstructorRef(fileResult, constructorRef);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
     sFetchResType_ = fileResult->GetFetchResType();
     sFetchAlbumResult_ = move(fileResult);
@@ -219,8 +273,8 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<F
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
-    napi_ref constructorRef = (fileResult->GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) ?
-        (userFileMgrConstructor_) : (sConstructor_);
+    napi_ref constructorRef;
+    FetchFileResultNapi::SolveConstructorRef(fileResult, constructorRef);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
     sFetchResType_ = fileResult->GetFetchResType();
     sFetchSmartAlbumResult_ = move(fileResult);
@@ -240,6 +294,27 @@ napi_value FetchFileResultNapi::UserFileMgrInit(napi_env env, napi_value exports
     NapiClassInfo info = {
         .name = UFM_FETCH_FILE_RESULT_CLASS_NAME,
         .ref = &userFileMgrConstructor_,
+        .constructor = FetchFileResultNapiConstructor,
+        .props = {
+            DECLARE_NAPI_FUNCTION("getCount", JSGetCount),
+            DECLARE_NAPI_FUNCTION("isAfterLast", JSIsAfterLast),
+            DECLARE_NAPI_FUNCTION("getFirstObject", JSGetFirstObject),
+            DECLARE_NAPI_FUNCTION("getNextObject", JSGetNextObject),
+            DECLARE_NAPI_FUNCTION("getLastObject", JSGetLastObject),
+            DECLARE_NAPI_FUNCTION("getPositionObject", JSGetPositionObject),
+            DECLARE_NAPI_FUNCTION("getAllObject", JSGetAllObject),
+            DECLARE_NAPI_FUNCTION("close", JSClose)
+        }
+    };
+    MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
+    return exports;
+}
+
+napi_value FetchFileResultNapi::PhotoAccessHelperInit(napi_env env, napi_value exports)
+{
+    NapiClassInfo info = {
+        .name = PAH_FETCH_FILE_RESULT_CLASS_NAME,
+        .ref = &photoAccessHelperConstructor_,
         .constructor = FetchFileResultNapiConstructor,
         .props = {
             DECLARE_NAPI_FUNCTION("getCount", JSGetCount),
