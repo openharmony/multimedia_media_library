@@ -181,7 +181,7 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
         return E_FAIL;
     }
 
-    std::string tempPath = ResultSetUtils::GetStringValFromColumn(0, resultSet);
+    std::string tempPath = ResultSetUtils::GetStringValFromColumn(1, resultSet);
     if (tempPath.find(ROOT_MEDIA_DIR) != 0) {
         return E_CHECK_ROOT_DIR_FAIL;
     }
