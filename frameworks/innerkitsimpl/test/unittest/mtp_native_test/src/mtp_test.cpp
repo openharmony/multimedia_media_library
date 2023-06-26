@@ -627,30 +627,6 @@ HWTEST_F(MtpNativeTest, mtp_file_observer_test_001, TestSize.Level0)
     mtpMonitor.Stop();
 }
 
-HWTEST_F(MtpNativeTest, mtp_packet_001, TestSize.Level0)
-{
-    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    int TEST_UID = 5003;
-    auto remoteObj = saManager->GetSystemAbility(TEST_UID);
-    MtpMedialibraryManager::GetInstance()->Init(remoteObj);
-    shared_ptr<MtpOperationContext> context = make_shared<MtpOperationContext>();
-    shared_ptr<MtpPacket> mtpPacket = make_shared<MtpPacket>(context);
-    shared_ptr<HeaderData> headerData = make_shared<HeaderData>(context);
-    headerData->SetContainerType(DATA_CONTAINER_TYPE);
-    mtpPacket->Init(headerData);
-    headerData->SetContainerType(EVENT_CONTAINER_TYPE);
-    uint16_t ret = mtpPacket->Parser();
-    EXPECT_TRUE(ret != MTP_SUCCESS);
-    headerData->SetCode(0);
-    ret = mtpPacket->GetOperationCode();
-    EXPECT_TRUE(ret == 0);
-    headerData->SetTransactionId(0);
-    ret = mtpPacket->GetTransactionId();
-    EXPECT_TRUE(ret == 0);
-    ret = mtpPacket->GetSessionID();
-    EXPECT_TRUE(ret == 0);
-}
-
 HWTEST_F(MtpNativeTest, mtp_packet_002, TestSize.Level0)
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();

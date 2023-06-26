@@ -523,6 +523,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_LoadSourceImage_test_001, TestSize.Le
     desiredSize.width = 20;
     desiredSize.height = 20;
     ThumbnailData data;
+    data.source = nullptr;
     data.mediaType = MEDIA_TYPE_VIDEO;
     bool isThumbnail = true;
     bool ret = ThumbnailUtils::LoadSourceImage(data, desiredSize, isThumbnail);
