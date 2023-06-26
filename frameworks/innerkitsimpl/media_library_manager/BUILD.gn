@@ -46,6 +46,9 @@ ohos_shared_library("media_library_manager") {
     debug = false
   }
 
+  defines = []
+  defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
+
   part_name = "media_library"
   subsystem_name = "multimedia"
 }
