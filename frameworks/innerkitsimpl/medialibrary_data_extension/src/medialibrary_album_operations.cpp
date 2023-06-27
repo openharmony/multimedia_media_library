@@ -162,7 +162,7 @@ static void GetSqlArgs(MediaLibraryCommand &cmd, string &sql, vector<string> &se
     string clause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     selectionArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     sql = "SELECT ";
-    for (int i = 0; i < columns.size(); i++) {
+    for (size_t i = 0; i < columns.size(); i++) {
         if (i != columns.size() - 1) {
             sql += columns[i] + ",";
         } else {
