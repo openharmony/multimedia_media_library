@@ -75,11 +75,12 @@ void MediaLibraryExtUnitTest::TearDown(void) {}
 HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteMetadata_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
+    string tableName = MEDIALIBRARY_TABLE;
     vector<string> idList;
-    bool ret = mediaScannerDb.DeleteMetadata(idList);
+    bool ret = mediaScannerDb.DeleteMetadata(idList, tableName);
     EXPECT_NE(ret, true);
     vector<string> idListTest = {"DeleteMetadata"};
-    ret = mediaScannerDb.DeleteMetadata(idListTest);
+    ret = mediaScannerDb.DeleteMetadata(idListTest, tableName);
     EXPECT_NE(ret, true);
 }
 
@@ -116,8 +117,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_001, TestSize.Lev
     MediaScannerDb mediaScannerDb;
     mediaScannerDb.SetRdbHelper();
     Metadata metadata;
-    bool setScannedId = false;
-    string ret = mediaScannerDb.InsertMetadata(metadata, setScannedId);
+    string tableName;
+    string ret = mediaScannerDb.InsertMetadata(metadata, tableName);
     EXPECT_NE(ret, "");
     int32_t parentId = 1;
     string albumPath = "/storage/cloud/files/";
@@ -135,7 +136,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_001, TestSize.Lev
     metadata.SetParentId(parentId);
     metadata.SetAlbumName(albumName);
     metadata.SetFileId(albumId);
-    ret = mediaScannerDb.InsertMetadata(metadata, setScannedId);
+    ret = mediaScannerDb.InsertMetadata(metadata, tableName);
     EXPECT_NE(ret, "");
 }
 
@@ -210,15 +211,15 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_002, TestSize.Lev
     metadata.SetParentId(parentId);
     metadata.SetAlbumName(albumName);
     metadata.SetFileId(albumId);
-    bool setScannedId = false;
-    string ret = mediaScannerDb.InsertMetadata(metadata, setScannedId);
+    string tableName;
+    string ret = mediaScannerDb.InsertMetadata(metadata, tableName);
     EXPECT_NE(ret, "");
     unordered_map<string, Metadata> albumMap_;
     string pathTest = "";
-    unordered_map<int32_t, MediaType> prevIdMap = mediaScannerDb.GetIdsFromFilePath(pathTest);
+    unordered_map<int32_t, MediaType> prevIdMap = mediaScannerDb.GetIdsFromFilePath(pathTest, tableName);
     EXPECT_GT(prevIdMap.size(), 0);
     string path = "/storage/cloud/files/";
-    prevIdMap = mediaScannerDb.GetIdsFromFilePath(path);
+    prevIdMap = mediaScannerDb.GetIdsFromFilePath(path, tableName);
     EXPECT_GT(prevIdMap.size(), 0);
 }
 
@@ -298,8 +299,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateMetadata_test_001, TestSize.Lev
 {
     MediaScannerDb mediaScannerDb;
     Metadata metadata;
-    bool setScannedId = false;
-    string ret = mediaScannerDb.UpdateMetadata(metadata, setScannedId);
+    string tableName;
+    string ret = mediaScannerDb.UpdateMetadata(metadata, tableName);
     EXPECT_EQ(ret, "");
     int32_t parentId = 1;
     string albumPath = "/storage/cloud/files/";
@@ -317,7 +318,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateMetadata_test_001, TestSize.Lev
     metadata.SetParentId(parentId);
     metadata.SetAlbumName(albumName);
     metadata.SetFileId(albumId);
-    ret = mediaScannerDb.UpdateMetadata(metadata, setScannedId);
+    ret = mediaScannerDb.UpdateMetadata(metadata, tableName);
     EXPECT_EQ(ret, "");
 }
 

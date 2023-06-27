@@ -121,7 +121,7 @@ private:
 
     std::unique_ptr<Metadata> data_;
     std::unordered_map<std::string, Metadata> albumMap_;
-    std::unordered_set<int32_t> scannedIds_;
+    std::set<std::pair<std::string, int32_t>> scannedIds_;
     std::vector<std::unique_ptr<Metadata>> dataBuffer_;
     MediaLibraryApi api_;
 };

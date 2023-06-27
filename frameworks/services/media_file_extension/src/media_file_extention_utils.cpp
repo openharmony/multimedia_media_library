@@ -1273,10 +1273,6 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const string &
     string sourceUri = sourceFileUri.ToString();
     auto ret = MediaFileExtentionUtils::CheckUriSupport(sourceUri);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-    if (MediaFileUtils::CheckFileDisplayName(displayName) < 0) {
-        MEDIA_ERR_LOG("invalid displayName %{private}s", displayName.c_str());
-        return E_INVALID_DISPLAY_NAME;
-    }
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_URI, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_RELATIVE_PATH };
     auto result = GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri, columns);
@@ -1299,8 +1295,16 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const string &
     result->Close();
 
     if (fileAsset->GetMediaType() == MediaType::MEDIA_TYPE_ALBUM) {
+        if (MediaFileUtils::CheckAlbumName(displayName) < 0) {
+            MEDIA_ERR_LOG("invalid albumName %{private}s", displayName.c_str());
+            return E_INVALID_DISPLAY_NAME;
+        }
         ret = HandleAlbumRename(fileAsset);
     } else {
+        if (MediaFileUtils::CheckFileDisplayName(displayName) < 0) {
+            MEDIA_ERR_LOG("invalid displayName %{private}s", displayName.c_str());
+            return E_INVALID_DISPLAY_NAME;
+        }
         ret = HandleFileRename(fileAsset);
     }
     if (ret == E_SUCCESS) {
