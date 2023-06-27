@@ -50,7 +50,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Open_test_003, TestSize.Level0)
     string mode = "";
     MediaPrivacyManager mediaPrivacyManager(path, mode);
     int32_t ret = mediaPrivacyManager.Open();
-    EXPECT_EQ(ret, -ENOMEM);
+    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_Open_test_004, TestSize.Level0)
@@ -77,7 +77,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Open_test_006, TestSize.Level0)
     string mode = "a";
     MediaPrivacyManager mediaPrivacyManager(path, mode);
     int32_t ret = mediaPrivacyManager.Open();
-    EXPECT_EQ(ret, -ENOMEM);
+    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_Open_test_007, TestSize.Level0)
