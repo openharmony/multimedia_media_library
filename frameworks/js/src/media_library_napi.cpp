@@ -2025,7 +2025,7 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
             return;
         }
         if (msg->changeInfo_.size_ > 0) {
-            msg->data_ = new (nothrow) uint8_t[msg->changeInfo_.size_];
+            msg->data_ = (uint8_t *)malloc(msg->changeInfo_.size_);
             if (msg->data_ == nullptr) {
                 NAPI_ERR_LOG("new msg->data failed");
                 return;
