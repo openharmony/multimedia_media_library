@@ -1225,9 +1225,10 @@ bool ThumbnailUtils::RemoveDataFromKv(const shared_ptr<SingleKvStore> &kvStore, 
 }
 
 // notice: return value is whether thumb/lcd is deleted
-bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
+bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
 {
     ThumbnailData tmpData;
+    tmpData.path = opts.path;
     bool isDelete = false;
     if (opts.path.empty()) {
         int err = 0;

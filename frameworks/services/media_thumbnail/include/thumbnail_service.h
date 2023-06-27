@@ -45,7 +45,8 @@ public:
     THUMBNAIL_API_EXPORT int32_t InvalidateDistributeThumbnail(const std::string &udid);
     THUMBNAIL_API_EXPORT int32_t CreateThumbnailAsync(const std::string &uri, const std::string &path);
     THUMBNAIL_API_EXPORT int32_t CreateThumbnail(const std::string &uri);
-    THUMBNAIL_API_EXPORT void InvalidateThumbnail(const std::string &id, const std::string &tableName);
+    THUMBNAIL_API_EXPORT void InvalidateThumbnail(const std::string &id, const std::string &tableName,
+        const std::string &path = "");
     THUMBNAIL_API_EXPORT int32_t Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);

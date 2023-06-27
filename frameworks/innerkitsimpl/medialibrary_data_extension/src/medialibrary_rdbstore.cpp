@@ -23,6 +23,7 @@
 #include "media_log.h"
 #include "medialibrary_device.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_object_utils.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
@@ -580,6 +581,7 @@ int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates)
             MEDIA_ERR_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
             return E_HAS_FS_ERROR;
         }
+        MediaLibraryObjectUtils::InvalidateThumbnail(to_string(fileId), predicates.GetTableName(), filePath);
         deletedRows += deletedRow;
     }
     return deletedRows;
