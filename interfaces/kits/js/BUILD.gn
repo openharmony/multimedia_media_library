@@ -14,7 +14,7 @@ import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
-import("../../../../../../arkcompiler/ets_frontend/ts2panda/ts2abc_config.gni")
+import("../../../../../../arkcompiler/ets_frontend/es2panda/es2abc_config.gni")
 import("../../../../../../foundation/arkui/ace_engine/ace_config.gni")
 
 js_declaration("medialibrary_js") {
@@ -25,23 +25,19 @@ js_declaration("medialibrary_js") {
 # compile .js to .abc.
 action("gen_medialibraryinf_abc") {
   visibility = [ ":*" ]
-  script = "../../../../../../arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+  script = "../../../../../../arkcompiler/ets_frontend/es2panda/scripts/generate_js_bytecode.py"
 
   args = [
     "--src-js",
     rebase_path("${MEDIALIB_JS_PATH}/src/medialibraryinf.js"),
     "--dst-file",
     rebase_path(target_out_dir + "/medialibraryinf.abc"),
-    "--node",
-    rebase_path("${node_path}"),
     "--frontend-tool-path",
-    rebase_path("${ts2abc_build_path}"),
-    "--node-modules",
-    rebase_path("${node_modules}"),
+    rebase_path("${es2abc_build_path}"),
     "--module",
   ]
   deps =
-      [ "../../../../../../arkcompiler/ets_frontend/ts2panda:ark_ts2abc_build" ]
+      [ "../../../../../../arkcompiler/ets_frontend/es2panda:es2panda_build" ]
 
   inputs = [ "${MEDIALIB_JS_PATH}/src/medialibraryinf.js" ]
   outputs = [ target_out_dir + "/medialibraryinf.abc" ]
@@ -171,23 +167,19 @@ ohos_copy("userfilemanager_declaration") {
 # compile .js to .abc.
 action("gen_userfilemanagerinf_abc") {
   visibility = [ ":*" ]
-  script = "../../../../../../arkcompiler/ets_frontend/ts2panda/scripts/generate_js_bytecode.py"
+  script = "../../../../../../arkcompiler/ets_frontend/es2panda/scripts/generate_js_bytecode.py"
 
   args = [
     "--src-js",
     rebase_path("${MEDIALIB_JS_PATH}/src/userfilemanagerinf.js"),
     "--dst-file",
     rebase_path(target_out_dir + "/userfilemanagerinf.abc"),
-    "--node",
-    rebase_path("${node_path}"),
     "--frontend-tool-path",
-    rebase_path("${ts2abc_build_path}"),
-    "--node-modules",
-    rebase_path("${node_modules}"),
+    rebase_path("${es2abc_build_path}"),
     "--module",
   ]
   deps =
-      [ "../../../../../../arkcompiler/ets_frontend/ts2panda:ark_ts2abc_build" ]
+      [ "../../../../../../arkcompiler/ets_frontend/es2panda:es2panda_build" ]
 
   inputs = [ "${MEDIALIB_JS_PATH}/src/userfilemanagerinf.js" ]
   outputs = [ target_out_dir + "/userfilemanagerinf.abc" ]
