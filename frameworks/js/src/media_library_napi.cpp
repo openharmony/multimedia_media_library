@@ -4768,7 +4768,7 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
-        context->SaveError(errCode);
+        context->SaveError(E_HAS_DB_ERROR);
         return;
     }
 
@@ -4804,7 +4804,7 @@ static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, v
     jsContext->status = false;
 
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
-    if (context->error != ERR_DEFAULT) {
+    if ((context->error != ERR_DEFAULT) || (context->fetchPhotoAlbumResult == nullptr)) {
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
         context->HandleError(env, jsContext->error);
     } else {
