@@ -193,7 +193,7 @@ static void GetTableNameByPath(int32_t mediaType, string &tableName, const strin
     }
 }
 
-string MediaScannerDb::InsertMetadata(const Metadata &metadata, bool &setScannedId, MediaLibraryApi api)
+string MediaScannerDb::InsertMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api)
 {
     MediaType mediaType = metadata.GetFileMediaType();
     string mediaTypeUri;
@@ -212,18 +212,13 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, bool &setScanned
 #endif
     }
 
-    string tableName = MEDIALIBRARY_TABLE;
+    tableName = MEDIALIBRARY_TABLE;
     if (api == MediaLibraryApi::API_10) {
         SetValuesFromMetaDataApi10(metadata, values, true);
         GetTableNameByPath(mediaType, tableName);
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
         GetTableNameByPath(mediaType, tableName, metadata.GetFilePath());
-        if (tableName == MEDIALIBRARY_TABLE) {
-            setScannedId = true;
-        } else {
-            setScannedId = false;
-        }
 #endif
         SetValuesFromMetaDataApi9(metadata, values, true, tableName);
     }
@@ -253,8 +248,8 @@ vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
 {
     vector<string> insertUriList;
     for (auto itr : metadataList) {
-        bool setScannedId = false;
-        insertUriList.push_back(InsertMetadata(itr, setScannedId));
+        string tableName;
+        insertUriList.push_back(InsertMetadata(itr, tableName));
     }
 
     return insertUriList;
@@ -284,7 +279,7 @@ static inline void GetUriStringInUpdate(MediaType mediaType, MediaLibraryApi api
  * @param metadata The metadata object which has the information about the file
  * @return string The mediatypeUri corresponding to the given metadata
  */
-string MediaScannerDb::UpdateMetadata(const Metadata &metadata, bool &setScannedId, MediaLibraryApi api)
+string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api)
 {
     int32_t updateCount(0);
     ValuesBucket values;
@@ -294,18 +289,13 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, bool &setScanned
     string mediaTypeUri;
     GetUriStringInUpdate(mediaType, api, mediaTypeUri, values);
 
-    string tableName = MEDIALIBRARY_TABLE;
+    tableName = MEDIALIBRARY_TABLE;
     if (api == MediaLibraryApi::API_10) {
         SetValuesFromMetaDataApi10(metadata, values, false);
         GetTableNameByPath(mediaType, tableName);
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
         GetTableNameByPath(mediaType, tableName, metadata.GetFilePath());
-        if (tableName == MEDIALIBRARY_TABLE) {
-            setScannedId = true;
-        } else {
-            setScannedId = false;
-        }
 #endif
         SetValuesFromMetaDataApi9(metadata, values, false, tableName);
     }
@@ -338,7 +328,7 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, bool &setScanned
  * @param idList The list of IDs to be deleted from the media db
  * @return bool Status of the delete operation
  */
-bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
+bool MediaScannerDb::DeleteMetadata(const vector<string> &idList, const string &tableName)
 {
     if (idList.size() == 0) {
         MEDIA_ERR_LOG("to-deleted idList size equals to 0");
@@ -351,7 +341,7 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList)
         return E_ERR;
     }
 
-    NativeRdb::RdbPredicates rdbPredicate(MEDIALIBRARY_TABLE);
+    NativeRdb::RdbPredicates rdbPredicate(tableName);
     rdbPredicate.In(MEDIA_DATA_DB_ID, idList);
     int32_t ret = rdbStore->Delete(rdbPredicate);
     return ret == static_cast<int32_t>(idList.size());
@@ -466,9 +456,7 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
         MEDIA_ERR_LOG("failed to go to first row");
         return E_RDB;
     }
-#ifdef MEDIALIBRARY_COMPATIBILITY
     ptr->SetTableName(cmd.GetTableName());
-#endif
 
     return FillMetadata(resultSet, ptr);
 }
@@ -479,50 +467,50 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
  * @param path The path from which to obtain the list of child IDs
  * @return unordered_map<int32_t, MediaType> The list of IDS along with mediaType information
  */
-unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const string &path)
+unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const string &path, const string &tableName)
 {
     unordered_map<int32_t, MediaType> idMap = {};
-
-    vector<string> columns = {};
-    columns.push_back(MEDIA_DATA_DB_ID);
-    columns.push_back(MEDIA_DATA_DB_MEDIA_TYPE);
-    columns.push_back(MEDIA_DATA_DB_RECYCLE_PATH);
-
-    DataShare::DataSharePredicates predicates;
-    // Append % to end of the path for using LIKE statement
-    vector<string> args= { path.back() != '/' ? path + "/%" : path + "%", to_string(NOT_TRASHED) };
-    predicates.SetWhereClause(MEDIA_DATA_DB_FILE_PATH + " like ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ");
-    predicates.SetWhereArgs(args);
-
-    Uri queryUri(MEDIALIBRARY_DATA_URI);
-    MediaLibraryCommand cmd(queryUri, OperationType::QUERY);
-    int errCode = 0;
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, idMap, "No entries found for this path");
-
-    int32_t id(0);
-    int32_t idIndex(0);
-    int32_t mediaType(0);
-    int32_t mediaTypeIndex(0);
-    std::string recyclePath;
-    int32_t recyclePathIndex(0);
-
-    resultSet->GetColumnIndex(MEDIA_DATA_DB_ID, idIndex);
-    resultSet->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, mediaTypeIndex);
-    resultSet->GetColumnIndex(MEDIA_DATA_DB_RECYCLE_PATH, recyclePathIndex);
-
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        recyclePath.clear();
-        resultSet->GetString(recyclePathIndex, recyclePath);
-        if (!recyclePath.empty()) {
-            continue;
-        }
-
-        resultSet->GetInt(idIndex, id);
-        resultSet->GetInt(mediaTypeIndex, mediaType);
-        idMap.emplace(make_pair(id, static_cast<MediaType>(mediaType)));
+    string querySql;
+    vector<string> args;
+    vector<string> columns;
+    if (tableName == MEDIALIBRARY_TABLE) {
+        querySql = MEDIA_DATA_DB_FILE_PATH + " like ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
+        args = { path.back() != '/' ? path + "/%" : path + "%", to_string(NOT_TRASHED) };
+        columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_RECYCLE_PATH };
+    } else {
+        querySql = MEDIA_DATA_DB_FILE_PATH + " like ? AND " + MediaColumn::MEDIA_TIME_PENDING + " <> ? ";
+        args= { path.back() != '/' ? path + "/%" : path + "%", to_string(UNCREATE_FILE_TIMEPENDING) };
+        columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE };
     }
 
+    AbsRdbPredicates predicates(tableName);
+    predicates.SetWhereClause(querySql);
+    predicates.SetWhereArgs(args);
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return idMap;
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        return idMap;
+    }
+    auto resultSet = rdbStorePtr->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        return idMap;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        if (tableName == MEDIALIBRARY_TABLE) {
+            string recyclePath = GetStringVal(MEDIA_DATA_DB_RECYCLE_PATH, resultSet);
+            if (!recyclePath.empty()) {
+                continue;
+            }
+        }
+        int32_t id = GetInt32Val(MEDIA_DATA_DB_ID, resultSet);
+        int32_t mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, resultSet);
+        idMap.emplace(make_pair(id, static_cast<MediaType>(mediaType)));
+    }
     return idMap;
 }
 
@@ -629,8 +617,8 @@ int32_t MediaScannerDb::InsertAlbum(const Metadata &metadata)
 {
     int32_t id = 0;
 
-    bool setScannedId = false;
-    string uri = InsertMetadata(metadata, setScannedId);
+    string tableName;
+    string uri = InsertMetadata(metadata, tableName);
     id = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri));
 
     return id;
@@ -640,8 +628,8 @@ int32_t MediaScannerDb::UpdateAlbum(const Metadata &metadata)
 {
     int32_t id = 0;
 
-    bool setScannedId = false;
-    string uri = UpdateMetadata(metadata, setScannedId);
+    string tableName;
+    string uri = UpdateMetadata(metadata, tableName);
     id = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri));
 
     return id;

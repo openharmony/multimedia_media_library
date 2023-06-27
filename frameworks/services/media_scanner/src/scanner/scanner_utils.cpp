@@ -227,17 +227,6 @@ bool ScannerUtils::CheckSkipScanList(const string &path)
     if (find(skipList_.begin(), skipList_.end(), hashPath) != skipList_.end()) {
         return true;
     }
-
-    vector<string> list = {
-        { ROOT_MEDIA_DIR + DOCUMENT_BUCKET },
-        { ROOT_MEDIA_DIR + AUDIO_BUCKET },
-        { ROOT_MEDIA_DIR + PHOTO_BUCKET },
-    };
-    // only skip path as "/storage/cloud/files/Photo" when scanDir
-    // doesn't work in scanFile as path likes "/storage/cloud/files/Photo/*"
-    if (find(list.begin(), list.end(), path) != list.end()) {
-        return true;
-    }
     return false;
 }
 } // namespace Media
