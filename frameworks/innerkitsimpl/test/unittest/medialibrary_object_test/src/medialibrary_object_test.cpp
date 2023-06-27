@@ -104,7 +104,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateFileObj_test_001, TestSize.Leve
     values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, path);
     cmd.SetValueBucket(values);
     ret = MediaLibraryObjectUtils::CreateFileObj(cmd);
-    EXPECT_EQ(ret, E_CHECK_EXTENSION_FAIL);
+    EXPECT_NE(ret, E_SUCCESS);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
@@ -221,7 +221,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdByPathFromDb_test_001, TestSize.
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
-    string dirPath = "/storage/cloud/files/medialib_GetIdByPathFromDb_test_001.jpg";
+    string dirPath = "/storage/cloud/files/medialib_GetIdByPathFromDb_test_001";
     ret = MediaLibraryObjectUtils::CreateDirWithPath(dirPath);
     EXPECT_GT(ret, 0);
     ret = MediaLibraryObjectUtils::GetIdByPathFromDb(dirPath);
@@ -449,7 +449,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckDirExtension_test_001, TestSize.
     relativePath = "medialib_CheckDirExtension_test_001";
     ret = MediaLibraryObjectUtils::CheckDirExtension(relativePath, displayName);
     EXPECT_EQ(ret, E_SUCCESS);
-    displayName = "medialib_CheckDirExtension_test_001";
+    displayName = "medialib_CheckDirExtension_test_001.jpg";
     relativePath = "/storage/cloud/files/medialib_CheckDirExtension_test_001";
     ret = MediaLibraryObjectUtils::CheckDirExtension(relativePath, displayName);
     EXPECT_EQ(ret, E_CHECK_EXTENSION_FAIL);

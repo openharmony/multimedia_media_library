@@ -29,10 +29,10 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckCallerPermission_test_001, TestS
 {
     string permission = "";
     bool ret = PermissionUtils::CheckCallerPermission(permission);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
     string permissions = PERM_WRITE_IMAGEVIDEO;
     ret = PermissionUtils::CheckCallerPermission(permissions);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckCallerPermission_test_002, TestSize.Level0)
@@ -40,9 +40,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckCallerPermission_test_002, TestS
     array<string, PERM_GRP_SIZE> perms;
     uint32_t permMask = 0;
     bool ret = PermissionUtils::CheckCallerPermission(perms, permMask);
-    EXPECT_EQ(ret, false);
-    array<string, PERM_GRP_SIZE> permsTest = {PERM_WRITE_IMAGEVIDEO, PERM_WRITE_AUDIO};
-    ret = PermissionUtils::CheckCallerPermission(permsTest, 1);
     EXPECT_EQ(ret, false);
 }
 

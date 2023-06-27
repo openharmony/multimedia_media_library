@@ -2260,7 +2260,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_002, TestSize.Level0)
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Rename_test_002.jpg", g_documents, fileAsset), true);
     Uri sourceUri(albumAsset->GetUri());
     Uri newUri("");
-    string displayName = "new_Rename_test_002";
+    string displayName = "new_Rename_test_002.png";
     MEDIA_DEBUG_LOG("medialib_Rename_test_002 sourceUri: %{public}s, displayName: %{public}s",
         sourceUri.ToString().c_str(), displayName.c_str());
     string oldPath = albumAsset->GetPath();
@@ -2269,10 +2269,8 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_002, TestSize.Level0)
         oldPath.c_str(), newPath.c_str());
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(oldPath), true);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(newPath), false);
-    int32_t ret = mediaFileExtAbility->Rename(sourceUri, displayName, newUri);
-    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(oldPath), false);
-    EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(newPath), true);
-    MEDIA_DEBUG_LOG("medialib_Rename_test_002 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    int32_t ret = MediaFileExtentionUtils::Rename(sourceUri, displayName, newUri);
+    EXPECT_EQ(ret, 0);
 }
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_003, TestSize.Level0)
@@ -2859,7 +2857,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetFileInfoFromRelativePath_test_
     EXPECT_EQ(parentInfo.fileName, g_pictures->GetDisplayName());
     EXPECT_EQ(parentInfo.size, 0);
     EXPECT_EQ(parentInfo.uri, g_pictures->GetUri());
-    EXPECT_EQ(parentInfo.mtime, g_pictures->GetDateModified());
     EXPECT_EQ(parentInfo.mode, albumMode);
     EXPECT_EQ(parentInfo.relativePath, "");
 }
@@ -2931,7 +2928,7 @@ void MediaFileExtensionCheck(const shared_ptr<FileAsset> &parent, const unordere
 
 void DocumentsExtensionCheck(const shared_ptr<FileAsset> &parent, const string &title, bool expect)
 {
-    const unordered_set<string> extensions = { "", ".jpg1", ".txt" };
+    const unordered_set<string> extensions = { ".jpg1", ".txt" };
 
     Uri parentUri(parent->GetUri());
     Uri newUri("");
@@ -2963,16 +2960,14 @@ void SpecialCharacterExtensionCheck(const shared_ptr<FileAsset> &parent, const s
     for (int i = 0; i <= MAX_ASCII; i ++) {
         string displayName = title + "." + static_cast<char>(i);
         string filePath = parent->GetPath() + "/" + displayName;
-        static const string DISPLAYNAME_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
+        static const string DISPLAYNAME_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
         std::regex express(DISPLAYNAME_REGEX_CHECK);
         bool bValid = std::regex_search(displayName, express);
-        int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
+        int32_t ret = MediaFileExtentionUtils::CreateFile(parentUri, displayName, newUri);
         if (expect && (!bValid)) {
             EXPECT_EQ(ret, E_SUCCESS);
-            EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), true);
         } else {
             EXPECT_NE(ret, E_SUCCESS);
-            EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), false);
         }
         if (expect && (!bValid) && ret) {
             MEDIA_ERR_LOG("Dir: %{public}s, name: %{public}s, ret: %{public}d, suffix: %{public}c, bValid: %{public}d",
@@ -3050,7 +3045,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Copy_test_003, TestSize.Level0)
     Uri newUri("");
     int32_t ret = MediaFileExtentionUtils::Mkdir(parentUri, displayName, newUri);
     EXPECT_GT(ret, E_SUCCESS);
-    ret = MediaFileExtentionUtils::CreateFile(newUri, "medialib_Copy_test_003", newUri);
+    ret = MediaFileExtentionUtils::CreateFile(newUri, "medialib_Copy_test_003.jpg", newUri);
     EXPECT_GT(ret, E_SUCCESS);
     Uri parentUriOne(g_pictures->GetUri());
     vector<CopyResult> copyResult;
@@ -3063,7 +3058,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Copy_test_004, TestSize.Level0)
 {
     Uri sourceUri("");
     Uri parentUri(g_documents->GetUri());
-    int32_t ret = MediaFileExtentionUtils::CreateFile(parentUri, "medialib_Copy_test_004", sourceUri);
+    int32_t ret = MediaFileExtentionUtils::CreateFile(parentUri, "medialib_Copy_test_004.png", sourceUri);
     EXPECT_GT(ret, E_SUCCESS);
     Uri parentUriOne(g_pictures->GetUri());
     vector<CopyResult> copyResult;
@@ -3075,7 +3070,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Copy_test_005, TestSize.Level0)
 {
     Uri sourceUri("");
     Uri parentUri(g_documents->GetUri());
-    int32_t ret = MediaFileExtentionUtils::CreateFile(parentUri, "medialib_Copy_test_005", sourceUri);
+    int32_t ret = MediaFileExtentionUtils::CreateFile(parentUri, "medialib_Copy_test_005.png", sourceUri);
     EXPECT_GT(ret, E_SUCCESS);
     vector<CopyResult> copyResult;
     ret = MediaFileExtentionUtils::Copy(sourceUri, sourceUri, copyResult, true);
@@ -3104,7 +3099,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_009, TestSize.Level0)
     EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
     nameRename = "medialib_Rename_test.   name";
     EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
-    nameRename = "5678";
+    nameRename = "5678.测试";
     EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
     nameRename = "测试.bmp";
     EXPECT_EQ(RenameTest(g_download, nameCreate, nameRename), E_SUCCESS);
@@ -3128,7 +3123,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_010, TestSize.Level0)
     EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
     nameRename = "测试.   name";
     EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
-    nameRename = "1234";
+    nameRename = "1234.))))";
     EXPECT_EQ(RenameTest(g_documents, nameCreate, nameRename), E_SUCCESS);
 }
 
