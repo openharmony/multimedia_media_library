@@ -246,7 +246,7 @@ int32_t ThumbnailAgingHelper::ClearKeyAndRecordFromMap(ThumbRdbOpt &opts)
 
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
-        if (ThumbnailUtils::DeleteOriginImage(opts, infos[i])) {
+        if (ThumbnailUtils::DeleteOriginImage(opts)) {
             ThumbnailUtils::DeleteDistributeThumbnailInfo(opts);
         }
     }
