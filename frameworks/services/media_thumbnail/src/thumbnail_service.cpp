@@ -326,15 +326,16 @@ int32_t ThumbnailService::InvalidateDistributeThumbnail(const string &udid)
     return err;
 }
 
-void ThumbnailService::InvalidateThumbnail(const std::string &id, const std::string &tableName)
+void ThumbnailService::InvalidateThumbnail(const std::string &id, const std::string &tableName, const std::string &path)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
+        .path = path,
         .table = tableName,
         .row = id,
     };
     ThumbnailData thumbnailData;
-    ThumbnailUtils::DeleteOriginImage(opts, thumbnailData);
+    ThumbnailUtils::DeleteOriginImage(opts);
 }
 } // namespace Media
 } // namespace OHOS
