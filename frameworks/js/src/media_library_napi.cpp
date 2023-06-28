@@ -3944,10 +3944,10 @@ static void JSStartImagePreviewExecute(MediaLibraryAsyncContext *context)
         return;
     }
     Want want;
-    want.SetUri(context->uri);
+    want.SetType("image/*");
     want.SetAction("ohos.want.action.viewData");
-    want.SetParam("index", context->imagePreviewIndex);
-    context->error = context->ability_->StartAbility(want);
+    want.SetParam("uri", context->uri);
+    want.SetParam("viewIndex", context->imagePreviewIndex + 1);
 }
 
 static void JSGetJSStartImagePreviewCompleteCallback(napi_env env, napi_status status,
