@@ -31,7 +31,9 @@ using namespace OHOS::DataShare;
 namespace OHOS::Media {
 thread_local PhotoAlbum *PhotoAlbumNapi::pAlbumData_ = nullptr;
 thread_local napi_ref PhotoAlbumNapi::constructor_ = nullptr;
+thread_local napi_ref PhotoAlbumNapi::photoAccessConstructor_ = nullptr;
 static const string PHOTO_ALBUM_CLASS = "UserFileMgrPhotoAlbum";
+static const string PHOTOACCESS_PHOTO_ALBUM_CLASS = "PhotoAccessPhotoAlbum";
 
 struct TrashAlbumExecuteOpt {
     napi_env env;
@@ -73,6 +75,32 @@ napi_value PhotoAlbumNapi::Init(napi_env env, napi_value exports)
     return exports;
 }
 
+napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
+{
+    NapiClassInfo info = {
+        .name = PHOTOACCESS_PHOTO_ALBUM_CLASS,
+        .ref = &photoAccessConstructor_,
+        .constructor = PhotoAlbumNapiConstructor,
+        .props = {
+            DECLARE_NAPI_GETTER_SETTER("albumName", JSPhotoAccessGetAlbumName, JSPhotoAccessSetAlbumName),
+            DECLARE_NAPI_GETTER("albumUri", JSPhotoAccessGetAlbumUri),
+            DECLARE_NAPI_GETTER("count", JSPhotoAccessGetAlbumCount),
+            DECLARE_NAPI_GETTER("albumType", JSGetPhotoAlbumType),
+            DECLARE_NAPI_GETTER("albumSubtype", JSGetPhotoAlbumSubType),
+            DECLARE_NAPI_GETTER_SETTER("coverUri", JSGetCoverUri, JSSetCoverUri),
+            DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
+            DECLARE_NAPI_FUNCTION("addAssets", PhotoAccessHelperAddAssets),
+            DECLARE_NAPI_FUNCTION("removeAssets", PhotoAccessHelperRemoveAssets),
+            DECLARE_NAPI_FUNCTION("getAssets", JSPhoteAccessGetPhotoAssets),
+            DECLARE_NAPI_FUNCTION("recoverAssets", PhotoAccessHelperRecoverPhotos),
+            DECLARE_NAPI_FUNCTION("deleteAssets", PhotoAccessHelperDeletePhotos),
+        }
+    };
+
+    MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
+    return exports;
+}
+
 napi_value PhotoAlbumNapi::CreatePhotoAlbumNapi(napi_env env, unique_ptr<PhotoAlbum> &albumData)
 {
     if (albumData == nullptr) {
@@ -80,7 +108,12 @@ napi_value PhotoAlbumNapi::CreatePhotoAlbumNapi(napi_env env, unique_ptr<PhotoAl
     }
 
     napi_value constructor;
-    napi_ref constructorRef = constructor_;
+    napi_ref constructorRef;
+    if (albumData->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        constructorRef = photoAccessConstructor_;
+    } else {
+        constructorRef = constructor_;
+    }
     CHECK_ARGS(env, napi_get_reference_value(env, constructorRef, &constructor), JS_INNER_FAIL);
 
     napi_value result = nullptr;
@@ -208,6 +241,17 @@ napi_value PhotoAlbumNapi::JSGetAlbumName(napi_env env, napi_callback_info info)
     return jsResult;
 }
 
+napi_value PhotoAlbumNapi::JSPhotoAccessGetAlbumName(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetAlbumName().c_str(), NAPI_AUTO_LENGTH, &jsResult),
+        JS_INNER_FAIL);
+    return jsResult;
+}
+
 napi_value PhotoAlbumNapi::JSGetAlbumUri(napi_env env, napi_callback_info info)
 {
     PhotoAlbumNapi *obj = nullptr;
@@ -219,7 +263,28 @@ napi_value PhotoAlbumNapi::JSGetAlbumUri(napi_env env, napi_callback_info info)
     return jsResult;
 }
 
+napi_value PhotoAlbumNapi::JSPhotoAccessGetAlbumUri(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetAlbumUri().c_str(), NAPI_AUTO_LENGTH, &jsResult),
+        JS_INNER_FAIL);
+    return jsResult;
+}
+
 napi_value PhotoAlbumNapi::JSGetAlbumCount(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_int32(env, obj->GetCount(), &jsResult), JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSPhotoAccessGetAlbumCount(napi_env env, napi_callback_info info)
 {
     PhotoAlbumNapi *obj = nullptr;
     CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
@@ -303,6 +368,18 @@ napi_value PhotoAlbumNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
     return result;
 }
 
+napi_value PhotoAlbumNapi::JSPhotoAccessSetAlbumName(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    string albumName;
+    CHECK_NULLPTR_RET(GetStringArg(env, info, &obj, albumName));
+    obj->photoAlbumPtr->SetAlbumName(albumName);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
+    return result;
+}
+
 napi_value PhotoAlbumNapi::JSSetCoverUri(napi_env env, napi_callback_info info)
 {
     PhotoAlbumNapi *obj = nullptr;
@@ -365,7 +442,9 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     tracer.Start("JSCommitModifyExecute");
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-    Uri uri(UFM_UPDATE_PHOTO_ALBUM);
+    string commitModifyUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+        UFM_UPDATE_PHOTO_ALBUM : PAH_UPDATE_PHOTO_ALBUM;
+    Uri uri(commitModifyUri);
     int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
     context->SaveError(changedRows);
     context->changedRows = changedRows;
@@ -376,7 +455,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
     MediaLibraryTracer tracer;
     tracer.Start("JSCommitModifyCompleteCallback");
 
-    PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
     auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
@@ -399,6 +478,17 @@ napi_value PhotoAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsCommitModify(env, info, asyncContext));
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCommitModify", JSCommitModifyExecute,
+        JSCommitModifyCompleteCallback);
+}
+
+napi_value PhotoAlbumNapi::PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsCommitModify(env, info, asyncContext));
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCommitModify", JSCommitModifyExecute,
         JSCommitModifyCompleteCallback);
@@ -499,7 +589,9 @@ static void JSPhotoAlbumAddAssetsExecute(napi_env env, void *data)
         return;
     }
 
-    Uri uri(UFM_PHOTO_ALBUM_ADD_ASSET);
+    string addAssetsUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+        UFM_PHOTO_ALBUM_ADD_ASSET : PAH_PHOTO_ALBUM_ADD_ASSET;
+    Uri uri(addAssetsUri);
     auto changedRows = UserFileClient::BatchInsert(uri, context->valuesBuckets);
     context->SaveError(changedRows);
 }
@@ -509,7 +601,7 @@ static void JSPhotoAlbumAddAssetsCompleteCallback(napi_env env, napi_status stat
     MediaLibraryTracer tracer;
     tracer.Start("JSPhotoAlbumAddAssetsCompleteCallback");
 
-    PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
@@ -532,6 +624,17 @@ napi_value PhotoAlbumNapi::JSPhotoAlbumAddAssets(napi_env env, napi_callback_inf
 {
     unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsAddAssets(env, info, asyncContext));
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSPhotoAlbumAddAssets",
+        JSPhotoAlbumAddAssetsExecute, JSPhotoAlbumAddAssetsCompleteCallback);
+}
+
+napi_value PhotoAlbumNapi::PhotoAccessHelperAddAssets(napi_env env, napi_callback_info info)
+{
+    unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsAddAssets(env, info, asyncContext));
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSPhotoAlbumAddAssets",
         JSPhotoAlbumAddAssetsExecute, JSPhotoAlbumAddAssetsCompleteCallback);
@@ -579,7 +682,9 @@ static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
         return;
     }
 
-    Uri uri(UFM_PHOTO_ALBUM_REMOVE_ASSET);
+    string removeAssetsUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+        UFM_PHOTO_ALBUM_REMOVE_ASSET : PAH_PHOTO_ALBUM_REMOVE_ASSET;
+    Uri uri(removeAssetsUri);
     auto deletedRows = UserFileClient::Delete(uri, context->predicates);
     if (deletedRows < 0) {
         context->SaveError(deletedRows);
@@ -591,7 +696,7 @@ static void JSPhotoAlbumRemoveAssetsCompleteCallback(napi_env env, napi_status s
     MediaLibraryTracer tracer;
     tracer.Start("JSPhotoAlbumRemoveAssetsCompleteCallback");
 
-    PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
@@ -614,6 +719,17 @@ napi_value PhotoAlbumNapi::JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_
 {
     auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsRemoveAssets(env, info, asyncContext));
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSPhotoAlbumRemoveAssets",
+        JSPhotoAlbumRemoveAssetsExecute, JSPhotoAlbumRemoveAssetsCompleteCallback);
+}
+
+napi_value PhotoAlbumNapi::PhotoAccessHelperRemoveAssets(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsRemoveAssets(env, info, asyncContext));
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSPhotoAlbumRemoveAssets",
         JSPhotoAlbumRemoveAssetsExecute, JSPhotoAlbumRemoveAssetsCompleteCallback);
@@ -676,7 +792,7 @@ static void JSGetPhotoAssetsExecute(napi_env env, void *data)
     MediaLibraryTracer tracer;
     tracer.Start("JSGetPhotoAssetsExecute");
 
-    auto context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
     string queryUri = UFM_QUERY_PHOTO_MAP;
     Uri uri(queryUri);
     int32_t errCode = 0;
@@ -687,6 +803,23 @@ static void JSGetPhotoAssetsExecute(napi_env env, void *data)
     }
     context->fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
+}
+
+static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSPhotoAccessGetPhotoAssetsExecute");
+
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    Uri uri(PAH_QUERY_PHOTO_MAP);
+    int32_t errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        context->SaveError(E_HAS_DB_ERROR);
+        return;
+    }
+    context->fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
 }
 
 static void GetPhotoMapQueryResult(napi_env env, PhotoAlbumNapiAsyncContext *context,
@@ -707,7 +840,7 @@ static void JSGetPhotoAssetsCallbackComplete(napi_env env, napi_status status, v
     MediaLibraryTracer tracer;
     tracer.Start("JSGetPhotoAssetsCallbackComplete");
 
-    auto context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
 
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -737,6 +870,15 @@ napi_value PhotoAlbumNapi::JSGetPhotoAssets(napi_env env, napi_callback_info inf
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets", JSGetPhotoAssetsExecute,
         JSGetPhotoAssetsCallbackComplete);
+}
+
+napi_value PhotoAlbumNapi::JSPhoteAccessGetPhotoAssets(napi_env env, napi_callback_info info)
+{
+    unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetPhotoAssets(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets",
+        JSPhotoAccessGetPhotoAssetsExecute, JSGetPhotoAssetsCallbackComplete);
 }
 
 static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,
@@ -814,7 +956,8 @@ static void RecoverPhotosExecute(napi_env env, void *data)
         .env = env,
         .data = data,
         .tracerLabel = "RecoverPhotosExecute",
-        .uri = UFM_RECOVER_PHOTOS,
+        .uri = (static_cast<PhotoAlbumNapiAsyncContext *>(data)->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+            UFM_RECOVER_PHOTOS : PAH_RECOVER_PHOTOS,
     };
     TrashAlbumExecute(opt);
 }
@@ -828,6 +971,17 @@ napi_value PhotoAlbumNapi::JSRecoverPhotos(napi_env env, napi_callback_info info
 {
     auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(TrashAlbumParseArgs(env, info, asyncContext));
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRecoverPhotos", RecoverPhotosExecute,
+        RecoverPhotosComplete);
+}
+
+napi_value PhotoAlbumNapi::PhotoAccessHelperRecoverPhotos(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(TrashAlbumParseArgs(env, info, asyncContext));
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRecoverPhotos", RecoverPhotosExecute,
         RecoverPhotosComplete);
@@ -839,7 +993,8 @@ static void DeletePhotosExecute(napi_env env, void *data)
         .env = env,
         .data = data,
         .tracerLabel = "DeletePhotosExecute",
-        .uri = UFM_DELETE_PHOTOS,
+        .uri = (static_cast<PhotoAlbumNapiAsyncContext *>(data)->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+            UFM_RECOVER_PHOTOS : PAH_RECOVER_PHOTOS,
     };
     TrashAlbumExecute(opt);
 }
@@ -853,6 +1008,17 @@ napi_value PhotoAlbumNapi::JSDeletePhotos(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(TrashAlbumParseArgs(env, info, asyncContext));
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSDeletePhotos", DeletePhotosExecute,
+        DeletePhotosComplete);
+}
+
+napi_value PhotoAlbumNapi::PhotoAccessHelperDeletePhotos(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(TrashAlbumParseArgs(env, info, asyncContext));
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSDeletePhotos", DeletePhotosExecute,
         DeletePhotosComplete);

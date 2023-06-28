@@ -66,6 +66,7 @@ public:
     static void SolveConstructorRef(unique_ptr<FetchResult<FileAsset>> &fileResult, napi_ref &constructorRef);
     static void SolveConstructorRef(unique_ptr<FetchResult<AlbumAsset>> &fileResult, napi_ref &constructorRef);
     static void SolveConstructorRef(unique_ptr<FetchResult<SmartAlbumAsset>> &fileResult, napi_ref &constructorRef);
+    static void SolveConstructorRef(unique_ptr<FetchResult<PhotoAlbum>> &fileResult, napi_ref &constructorRef);
 
 private:
     static void FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);

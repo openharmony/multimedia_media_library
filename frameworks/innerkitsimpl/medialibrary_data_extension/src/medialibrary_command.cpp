@@ -225,6 +225,9 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { UFM_AUDIO, OperationObject::UFM_AUDIO },
         { UFM_ALBUM, OperationObject::UFM_ALBUM },
         { UFM_MAP, OperationObject::UFM_MAP },
+        { PAH_PHOTO, OperationObject::PAH_PHOTO },
+        { PAH_ALBUM, OperationObject::PAH_ALBUM },
+        { PAH_MAP, OperationObject::PAH_MAP },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -284,6 +287,7 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { OPRN_RECOVER_PHOTOS, OperationType::ALBUM_RECOVER_ASSETS },
         { OPRN_DELETE_PHOTOS, OperationType::ALBUM_DELETE_ASSETS },
         { OPRN_CLOSE, OperationType::CLOSE },
+        { OPRN_TRASH, OperationType::TRASH_PHOTO },
     };
 
     const string opType = MediaFileUri::GetPathSecondDentry(uri_);
@@ -338,6 +342,9 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::UFM_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
         { OperationObject::UFM_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
         { OperationObject::UFM_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
+        { OperationObject::PAH_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::PAH_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
+        { OperationObject::PAH_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
     };
 
     if (TABLE_NAME_MAP.find(oprnObject_) != TABLE_NAME_MAP.end()) {

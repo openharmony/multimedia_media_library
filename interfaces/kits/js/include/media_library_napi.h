@@ -193,6 +193,7 @@ private:
     static napi_value CreateDirectoryTypeEnum(napi_env env);
     static napi_value CreateVirtualAlbumTypeEnum(napi_env env);
     static napi_value CreatePrivateAlbumTypeEnum(napi_env env);
+    static napi_value CreatePhotoKeysEnum(napi_env env);
 
     static napi_value CreateMediaTypeUserFileEnum(napi_env env);
 
@@ -228,6 +229,10 @@ private:
     static napi_value PhotoAccessHelperTrashAsset(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperOnCallback(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperOffCallback(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessCreatePhotoAlbum(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessDeletePhotoAlbums(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
 
     static napi_value CreateAlbumTypeEnum(napi_env env);
     static napi_value CreateAlbumSubTypeEnum(napi_env env);
@@ -260,6 +265,7 @@ private:
     static thread_local napi_ref sUserFileMgrFileKeyEnumRef_;
     static thread_local napi_ref sAudioKeyEnumRef_;
     static thread_local napi_ref sImageVideoKeyEnumRef_;
+    static thread_local napi_ref sPhotoKeysEnumRef_;
     static thread_local napi_ref sAlbumKeyEnumRef_;
     static thread_local napi_ref sAlbumType_;
     static thread_local napi_ref sAlbumSubType_;
@@ -316,6 +322,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<uint32_t> mediaTypes;
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
+    std::vector<std::string> uris;
 };
 } // namespace Media
 } // namespace OHOS
