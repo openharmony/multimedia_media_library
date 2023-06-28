@@ -171,6 +171,11 @@ const std::string FAVORIT_SMART_ALBUM_NAME = "FavoritAlbum";
 
 const std::string API_VERSION = "api_version";
 
+const std::string SILENT_QUERY_PHOTO_URI =
+    "datashare:///com.ohos.medialibrary.medialibrarydata/entry/media_library/Photos?Proxy=true";
+const std::string SILENT_QUERY_PHOTO_ALBUM_URI =
+    "datashare:///com.ohos.medialibrary.medialibrarydata/entry/media_library/PhotoAlbum?Proxy=true";
+
 enum NapiAssetType {
     TYPE_DEFAULT = 0,
     TYPE_AUDIO = 1,
@@ -455,6 +460,7 @@ public:
 
     static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
 
+    static bool IsSystemApp();
     static napi_value AddDefaultAssetColumns(napi_env env, std::vector<std::string> &fetchColumn,
         std::function<bool(const std::string &columnName)> isValidColumn,
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);

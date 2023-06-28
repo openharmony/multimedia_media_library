@@ -4176,22 +4176,26 @@ static void JSGetAssetsExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     string queryUri;
-    switch (context->assetType) {
-        case TYPE_AUDIO: {
-            queryUri = URI_QUERY_AUDIO;
-            MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-            MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, AUDIO_TYPE_MASK);
-            break;
-        }
-        case TYPE_PHOTO: {
-            queryUri = URI_QUERY_PHOTO;
-            MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-            MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
-            break;
-        }
-        default: {
-            context->SaveError(-EINVAL);
-            return;
+    if (!UserFileClient::sIsSystemApp_) {
+        queryUri = SILENT_QUERY_PHOTO_URI;
+    } else {
+        switch (context->assetType) {
+            case TYPE_AUDIO: {
+                queryUri = URI_QUERY_AUDIO;
+                MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+                MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, AUDIO_TYPE_MASK);
+                break;
+            }
+            case TYPE_PHOTO: {
+                queryUri = URI_QUERY_PHOTO;
+                MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+                MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
+                break;
+            }
+            default: {
+                context->SaveError(-EINVAL);
+                return;
+            }
         }
     }
 
@@ -4762,7 +4766,11 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     string queryUri = URI_QUERY_PHOTO_ALBUM;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
+    if (!UserFileClient::sIsSystemApp_) {
+        queryUri = SILENT_QUERY_PHOTO_ALBUM_URI;
+    } else {
+        MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
+    }
     Uri uri(queryUri);
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);

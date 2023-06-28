@@ -686,6 +686,9 @@ static void JSGetPhotoAssetsExecute(napi_env env, void *data)
     auto context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
 
     string queryUri = URI_QUERY_PHOTO_MAP;
+    if (!UserFileClient::sIsSystemApp_) {
+        queryUri = SILENT_QUERY_PHOTO_URI;
+    }
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
     Uri uri(queryUri);
     int32_t errCode = 0;

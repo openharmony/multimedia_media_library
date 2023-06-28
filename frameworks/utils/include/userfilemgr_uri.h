@@ -21,6 +21,8 @@
 namespace OHOS {
 namespace Media {
 const std::string MEDIALIBRARY_DATA_URI = "datashare:///media";
+const std::string SILENT_MEDIALIBRARY_DATA_URI = "datashare:///com.ohos.medialibrary.medialibrarydata?Proxy=true";
+const std::string URI_SILENT_MARK = "Proxy=true";
 const std::string MEDIA_OPERN_KEYWORD = "operation";
 const std::string MEDIA_QUERYOPRN = "query_operation";
 const std::string OPRN_CREATE = "create";
