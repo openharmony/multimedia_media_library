@@ -1189,5 +1189,73 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_030, TestSize.Level
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_030::End");
 }
+
+/**
+ * @tc.number    : MediaSpaceStatistics_test_031
+ * @tc.name      : get Media(image,video,audio,file) size
+ * @tc.desc      : 1.delete all media
+ *                 2.query media size
+ *                 3.make sure size is 0
+ */
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_031, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_031::Start");
+    ClearFile();
+    MediaVolume mediaVolume;
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    EXPECT_NE(mediaVolume.GetFilesSize(), 0);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_031::End");
+}
+
+/**
+ * @tc.number    : MediaSpaceStatistics_test_032
+ * @tc.name      : get Media(image,video,audio,file) size
+ * @tc.desc      : 1.delete all media
+ *                 2.query media size
+ *                 3.make sure size is 0
+ */
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_032, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_032::Start");
+    ClearFile();
+    MediaVolume mediaVolume;
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    EXPECT_NE(mediaVolume.GetVideosSize(), 0);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_032::End");
+}
+
+/**
+ * @tc.number    : MediaSpaceStatistics_test_033
+ * @tc.name      : get Media(image,video,audio,file) size
+ * @tc.desc      : 1.delete all media
+ *                 2.query media size
+ *                 3.make sure size is 0
+ */
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_033, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_033::Start");
+    ClearFile();
+    MediaVolume mediaVolume;
+    mediaLibraryManager->QueryTotalSize(mediaVolume);
+    EXPECT_NE(mediaVolume.GetAudiosSize(), 0);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_033::End");
+}
+
+/**
+ * @tc.number    : MediaSpaceStatistics_test_032
+ * @tc.name      : get Media(image,video,audio,file) size
+ * @tc.desc      : 1.delete all media
+ *                 2.query media size
+ *                 3.make sure size is 0
+ */
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_034, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_034::Start");
+    ClearFile();
+    MediaVolume mediaVolume;
+    int ret = mediaLibraryManager->QueryTotalSize(mediaVolume);
+    EXPECT_EQ(ret, E_SUCCESS);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_034::End");
+}
 } // namespace Media
 } // namespace OHOS
