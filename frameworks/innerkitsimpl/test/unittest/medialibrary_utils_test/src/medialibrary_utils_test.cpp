@@ -439,7 +439,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteOriginImage_test_001, TestSize.
         .table = MEDIALIBRARY_TABLE,
         .row = row
     };
-    bool ret = ThumbnailUtils::DeleteOriginImage(opts, thumbnailData);
+    bool ret = ThumbnailUtils::DeleteOriginImage(opts);
     EXPECT_EQ(ret, false);
 }
 

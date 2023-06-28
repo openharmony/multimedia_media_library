@@ -95,7 +95,7 @@ public:
 
     static bool GetKvResultSet(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore, const std::string &key,
         const std::string &networkId, std::shared_ptr<DataShare::ResultSetBridge> &outResultSet);
-    static bool DeleteOriginImage(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
+    static bool DeleteOriginImage(ThumbRdbOpt &opts);
     static std::string GetThumbPath(const std::string &path, const std::string &key);
     // Steps
     static bool LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail = true);
