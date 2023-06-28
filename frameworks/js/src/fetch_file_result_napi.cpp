@@ -221,12 +221,31 @@ void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<SmartAlbumA
     }
 }
 
+void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<PhotoAlbum>> &fileResult,
+    napi_ref &constructorRef)
+{
+    switch(fileResult->GetResultNapiType()) {
+        case ResultNapiType::TYPE_USERFILE_MGR: {
+            constructorRef = userFileMgrConstructor_;
+            break;
+        }
+        case ResultNapiType::TYPE_PHOTOACCESS_HELPER: {
+            constructorRef = photoAccessHelperConstructor_;
+            break;
+        }
+        default:
+            constructorRef = sConstructor_;
+            break;
+    }
+}
+
 napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<FetchResult<FileAsset>> fileResult)
 {
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
     napi_ref constructorRef;
+
     FetchFileResultNapi::SolveConstructorRef(fileResult, constructorRef);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
     sFetchResType_ = fileResult->GetFetchResType();
@@ -258,7 +277,8 @@ napi_value FetchFileResultNapi::CreateFetchFileResult(napi_env env, unique_ptr<F
     MediaLibraryTracer tracer;
     tracer.Start("CreateFetchFileResult");
     napi_value constructor;
-    napi_ref constructorRef = userFileMgrConstructor_;
+    napi_ref constructorRef;
+    FetchFileResultNapi::SolveConstructorRef(fileResult, constructorRef);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
     sFetchResType_ = fileResult->GetFetchResType();
     sFetchPhotoAlbumResult_ = move(fileResult);
@@ -322,8 +342,8 @@ napi_value FetchFileResultNapi::PhotoAccessHelperInit(napi_env env, napi_value e
             DECLARE_NAPI_FUNCTION("getFirstObject", JSGetFirstObject),
             DECLARE_NAPI_FUNCTION("getNextObject", JSGetNextObject),
             DECLARE_NAPI_FUNCTION("getLastObject", JSGetLastObject),
-            DECLARE_NAPI_FUNCTION("getPositionObject", JSGetPositionObject),
-            DECLARE_NAPI_FUNCTION("getAllObject", JSGetAllObject),
+            DECLARE_NAPI_FUNCTION("getObjectByPosition", JSGetPositionObject),
+            DECLARE_NAPI_FUNCTION("getAllObjects", JSGetAllObject),
             DECLARE_NAPI_FUNCTION("close", JSClose)
         }
     };

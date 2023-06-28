@@ -32,6 +32,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "photo_map_operations.h"
+#include "rdb_predicates.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
@@ -337,8 +338,37 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     return deleteRows;
 }
 
+int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(cmd.GetDataSharePred(),
+        PhotoColumn::PHOTOS_TABLE);
+    ValuesBucket values;
+    values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
+    cmd.SetValueBucket(values);
+    int32_t updateRows = 0;
+    int32_t err = rdbStore->Update(updateRows, values, rdbPredicate);
+    if (err < 0) {
+        MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", err);
+        return E_HAS_DB_ERROR;
+    }
+    for (auto &fileId : cmd.GetAbsRdbPredicates()->GetWhereArgs()) {
+        SendTrashNotify(cmd, stoi(fileId));
+    }
+
+    return updateRows;
+}
+
 int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
 {
+    if (cmd.GetOprnType() == OperationType::TRASH_PHOTO) {
+        return TrashPhotos(cmd);
+    }
+
     vector<string> columns = {
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,

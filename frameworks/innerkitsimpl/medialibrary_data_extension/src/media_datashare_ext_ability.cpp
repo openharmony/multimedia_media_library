@@ -264,6 +264,21 @@ static int32_t UserFileMgrPermissionCheck(const OperationObject &obj, const bool
     return PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
+static int32_t PhotoAccessHelperPermCheck(const OperationObject &obj, const bool isWrite)
+{
+    static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
+        OperationObject::PAH_PHOTO,
+        OperationObject::PAH_ALBUM,
+        OperationObject::PAH_MAP,
+    };
+
+    if (PHOTO_ACCESS_HELPER_OBJECTS.find(obj) == PHOTO_ACCESS_HELPER_OBJECTS.end()) {
+        return E_NEED_FURTHER_CHECK;
+    }
+    return PermissionUtils::CheckCallerPermission(
+        isWrite ? PERM_WRITE_IMAGEVIDEO : PERM_READ_IMAGEVIDEO) ? E_SUCCESS : E_PERMISSION_DENIED;
+}
+
 static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
 {
     static const set<string> NO_NEED_PERM_CHECK_URI = {
@@ -309,6 +324,9 @@ static void UnifyOprnObject(MediaLibraryCommand &cmd)
         { OperationObject::UFM_AUDIO, OperationObject::FILESYSTEM_AUDIO },
         { OperationObject::UFM_ALBUM, OperationObject::PHOTO_ALBUM },
         { OperationObject::UFM_MAP, OperationObject::PHOTO_MAP },
+        { OperationObject::PAH_PHOTO, OperationObject::FILESYSTEM_PHOTO },
+        { OperationObject::PAH_ALBUM, OperationObject::PHOTO_ALBUM },
+        { OperationObject::PAH_MAP, OperationObject::PHOTO_MAP },
     };
 
     OperationObject obj = cmd.GetOprnObject();
@@ -327,6 +345,11 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
         return err;
     }
 
+    err = PhotoAccessHelperPermCheck(obj, isWrite);
+    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+        UnifyOprnObject(cmd);
+        return err;
+    }
     err = UserFileMgrPermissionCheck(obj, isWrite);
     if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);

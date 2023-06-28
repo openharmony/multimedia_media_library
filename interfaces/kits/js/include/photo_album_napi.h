@@ -31,6 +31,7 @@ public:
     ~PhotoAlbumNapi();
 
     static napi_value Init(napi_env env, napi_value exports);
+    static napi_value PhotoAccessInit(napi_env env, napi_value exports);
     static napi_value CreatePhotoAlbumNapi(napi_env env, std::unique_ptr<PhotoAlbum> &albumData);
 
     int32_t GetAlbumId() const;
@@ -66,10 +67,23 @@ private:
     static napi_value JSRecoverPhotos(napi_env env, napi_callback_info info);
     static napi_value JSDeletePhotos(napi_env env, napi_callback_info info);
 
+    static napi_value JSPhotoAccessGetAlbumName(napi_env env, napi_callback_info info);
+    static napi_value JSPhotoAccessSetAlbumName(napi_env env, napi_callback_info info);
+    static napi_value JSPhotoAccessGetAlbumUri(napi_env env, napi_callback_info info);
+    static napi_value JSPhotoAccessGetAlbumCount(napi_env env, napi_callback_info info);
+    static napi_value JSPhoteAccessGetPhotoAssets(napi_env env, napi_callback_info info);
+
+    static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperAddAssets(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperRemoveAssets(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperRecoverPhotos(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperDeletePhotos(napi_env env, napi_callback_info info);
+
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;
     static thread_local PhotoAlbum *pAlbumData_;
     static thread_local napi_ref constructor_;
+    static thread_local napi_ref photoAccessConstructor_;
 };
 
 struct PhotoAlbumNapiAsyncContext : public NapiError {
@@ -80,6 +94,7 @@ struct PhotoAlbumNapiAsyncContext : public NapiError {
     std::vector<DataShare::DataShareValuesBucket> valuesBuckets;
     std::string networkId;
     std::unique_ptr<FetchResult<FileAsset>> fetchResult;
+    ResultNapiType resultNapiType;
 
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];

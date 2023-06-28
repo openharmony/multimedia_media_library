@@ -51,6 +51,9 @@ enum class OperationObject : uint32_t {
     UFM_AUDIO,
     UFM_ALBUM,
     UFM_MAP,
+    PAH_PHOTO,
+    PAH_ALBUM,
+    PAH_MAP,
 };
 
 enum class OperationType : uint32_t {
@@ -75,6 +78,7 @@ enum class OperationType : uint32_t {
     ALBUM_REMOVE_PHOTOS,
     ALBUM_RECOVER_ASSETS,
     ALBUM_DELETE_ASSETS,                // Delete assets permanently from system
+    TRASH_PHOTO,
 };
 
 class MediaLibraryCommand {
