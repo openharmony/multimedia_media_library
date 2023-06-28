@@ -257,7 +257,6 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { MEDIA_FILEOPRN_MODIFYASSET, OperationType::UPDATE },
         { MEDIA_ALBUMOPRN_MODIFYALBUM, OperationType::UPDATE },
         { MEDIA_ALBUMOPRN_QUERYALBUM, OperationType::QUERY },
-        { MEDIA_FILEOPRN_ISDIRECTORY, OperationType::ISDICTIONARY },
         { MEDIA_FILEOPRN_GETALBUMCAPACITY, OperationType::QUERY },
         { MEDIA_QUERYOPRN_QUERYVOLUME, OperationType::QUERY },
         { MEDIA_BOARDCASTOPRN, OperationType::SCAN },

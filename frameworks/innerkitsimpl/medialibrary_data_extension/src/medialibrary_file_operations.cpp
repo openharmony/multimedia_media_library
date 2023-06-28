@@ -66,9 +66,6 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd
         case OperationType::CLOSE:
             errCode = CloseFileOperation(cmd);
             break;
-        case OperationType::ISDICTIONARY:
-            errCode = IsDirectoryOperation(cmd);
-            break;
         case OperationType::GETCAPACITY:
             errCode = GetAlbumCapacityOperation(cmd);
             break;
@@ -171,28 +168,6 @@ int32_t MediaLibraryFileOperations::ModifyFileOperation(MediaLibraryCommand &cmd
         return E_SAME_PATH;
     }
     return MediaLibraryObjectUtils::RenameFileObj(cmd, srcPath, dstFilePath);
-}
-
-int32_t MediaLibraryFileOperations::IsDirectoryOperation(MediaLibraryCommand &cmd)
-{
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr");
-        return E_HAS_DB_ERROR;
-    }
-
-    string fileId = cmd.GetOprnFileId();
-    if (fileId.empty()) {
-        MEDIA_ERR_LOG("not dictionary id, can't do the judgement!");
-        return E_INVALID_FILEID;
-    }
-    string path = MediaLibraryObjectUtils::GetPathByIdFromDb(fileId);
-    if (MediaFileUtils::IsDirectory(path)) {
-        MEDIA_INFO_LOG("%{private}s is a dictionary!", path.c_str());
-        return E_SUCCESS;
-    }
-    MEDIA_INFO_LOG("%{private}s is NOT a dictionary!", path.c_str());
-    return E_CHECK_DIR_FAIL;
 }
 
 constexpr bool START_PENDING = false;

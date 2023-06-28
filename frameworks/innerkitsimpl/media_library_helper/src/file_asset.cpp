@@ -20,7 +20,9 @@
 #include <fstream>
 #include <unistd.h>
 
+#include "datashare_business_error.h"
 #include "datashare_predicates.h"
+#include "datashare_result_set.h"
 #include "directory_ex.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -491,27 +493,47 @@ void FileAsset::CommitModify()
 
 bool FileAsset::IsDirectory()
 {
-    string filePath = GetStrMember(MEDIA_DATA_DB_FILE_PATH);
-    if (filePath.empty()) {
-        shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-            MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
-        if (dataShareHelper == nullptr) {
-            MEDIA_ERR_LOG("Get DataShareHelper fail");
-            return false;
-        }
-        Uri isDirectoryAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_ISDIRECTORY);
-        DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(MEDIA_DATA_DB_ID, GetInt32Member(MEDIA_DATA_DB_ID));
-        int retVal = dataShareHelper->Insert(isDirectoryAssetUri, valuesBucket);
-        if (retVal == SUCCESS) {
-            return true;
-        } else {
-            MEDIA_ERR_LOG("Insert value fail");
-            return false;
-        }
-    } else {
-        return MediaFileUtils::IsDirectory(filePath);
+    int32_t mediaType = -1;
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if ((GetMediaType() == MediaType::MEDIA_TYPE_AUDIO) ||
+        (GetMediaType() == MediaType::MEDIA_TYPE_IMAGE) ||
+        (GetMediaType() == MediaType::MEDIA_TYPE_VIDEO)) {
+        return false;
     }
+    int64_t virtualId = MediaFileUtils::GetVirtualIdByType(GetId(), MediaType::MEDIA_TYPE_FILE);
+    vector<string> selectionArgs = { to_string(virtualId)};
+#else
+    vector<string> selectionArgs = { to_string(GetId())};
+#endif
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("Get DataShareHelper fail");
+        return false;
+    }
+    vector<string> columns = { MEDIA_DATA_DB_MEDIA_TYPE };
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ?");
+    predicates.SetWhereArgs(selectionArgs);
+    string queryUri = MEDIALIBRARY_DATA_URI;
+    Uri uri(queryUri);
+    DataShare::DatashareBusinessError businessError;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = dataShareHelper->Query(uri,
+        predicates, columns, &businessError);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != ERR_OK) {
+        MEDIA_ERR_LOG("Query IsDirectory failed");
+        return false;
+    }
+    int32_t index = 0;
+    if (resultSet->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, index) != ERR_OK) {
+        MEDIA_ERR_LOG("Query Directory failed");
+        return false;
+    }
+    if (resultSet->GetInt(index, mediaType) != ERR_OK) {
+        MEDIA_ERR_LOG("Can not get file path");
+        return false;
+    }
+    return mediaType == static_cast<int>(MediaType::MEDIA_TYPE_ALBUM);
 }
 }  // namespace Media
 }  // namespace OHOS

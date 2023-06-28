@@ -125,34 +125,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CloseAsset_Test_001, TestS
     MEDIA_INFO_LOG("DataManager_CloseAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_IsDirectory_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("DataManager_IsDirectory_Test_001::Start");
-    shared_ptr<FileAsset> albumAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("IsDirectory_Test_001", g_pictures, albumAsset), true);
-    Uri isDirectoryUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_ISDIRECTORY);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_ID, albumAsset->GetId());
-    MediaLibraryCommand cmd(isDirectoryUri);
-    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    EXPECT_EQ(retVal, E_SUCCESS);
-    MEDIA_INFO_LOG("DataManager_IsDirectory_Test_001::retVal = %{public}d. End", retVal);
-}
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_IsDirectory_Test_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("DataManager_IsDirectory_Test_002::Start");
-    shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("IsDirectory_Test_002.jpg", g_pictures, fileAsset), true);
-    Uri isDirectoryUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_ISDIRECTORY);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_ID, fileAsset->GetId());
-    MediaLibraryCommand cmd(isDirectoryUri);
-    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    EXPECT_EQ(retVal, E_CHECK_DIR_FAIL);
-    MEDIA_INFO_LOG("DataManager_IsDirectory_Test_002::retVal = %{public}d. End", retVal);
-}
-
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAlbum_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_CreateAlbum_Test_001::Start");

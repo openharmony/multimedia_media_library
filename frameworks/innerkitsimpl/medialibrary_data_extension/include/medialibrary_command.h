@@ -61,7 +61,6 @@ enum class OperationType : uint32_t {
     DELETE,
     UPDATE,
     QUERY,
-    ISDICTIONARY,
     GETCAPACITY,
     SCAN,
     TRASH,

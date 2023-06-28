@@ -47,7 +47,7 @@ const std::string MEDIA_FILEOPRN_DELETEASSET = "delete_asset";
 const std::string MEDIA_FILEOPRN_TRASHASSET = "trash_asset";
 const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
 const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
-const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
+
 // API9 compat photo operations constants
 const std::string URI_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
 const std::string URI_CLOSE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
