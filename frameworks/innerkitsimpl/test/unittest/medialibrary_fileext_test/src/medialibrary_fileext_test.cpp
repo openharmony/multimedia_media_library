@@ -859,7 +859,7 @@ void ListFileFromRootResult(vector<FileInfo> rootFileList, int offset, int maxCo
     const size_t URI_MEDIA_ROOT_IMAGE_SIZE = 1;
     const size_t URI_MEDIA_ROOT_VIDEO_SIZE = 1;
     const size_t URI_MEDIA_ROOT_AUDIO_SIZE = 0;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
     // URI_FILE_ROOT & URI_MEDIA_ROOT
     for (auto mediaRootInfo : rootFileList) {
         vector<FileInfo> fileList;
@@ -922,7 +922,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_001, TestSize.Level
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("ListFile_test_001_1.mp4", g_videos, tempAsset), true);
     const int64_t offset = 0;
     const int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
 
     // URI_ROOT
     FileInfo rootInfo;
@@ -949,7 +949,7 @@ void ListFileTestLimit(FileInfo dirInfo)
     const int DIR_RESULT = 8;
     const int ALBUM_RESULT = 6;
 
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
     for (auto limit : limits) {
         // URI_DIR
         dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
@@ -975,8 +975,8 @@ void ListFileTestFilter(FileInfo dirInfo)
     const int32_t PNG_COUNT = 2;
     const vector<int32_t> DIR_RESULT = {JPG_COUNT, PNG_COUNT, JPG_COUNT + PNG_COUNT};
     const vector<int32_t> ALBUM_RESULT = {JPG_COUNT, PNG_COUNT, JPG_COUNT + PNG_COUNT};
-    vector<DistributedFS::FileFilter> filters;
-    DistributedFS::FileFilter tempFilter;
+    vector<FileAccessFwk::FileFilter> filters;
+    FileAccessFwk::FileFilter tempFilter;
     tempFilter.SetHasFilter(true);
     tempFilter.SetSuffix({ SUFFIX_1 });
     filters.push_back(tempFilter);
@@ -1031,7 +1031,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_002, TestSize.Level
     const int32_t ALBUM_RESULT = 6;
     const int64_t offset = 0;
     const int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
 
     // URI_DIR
     FileInfo dirInfo;
@@ -1105,7 +1105,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_001, TestSize.Level
 
     int64_t offset = 0;
     int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
 
     // URI_DIR
     FileInfo dirInfo;
@@ -1139,7 +1139,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_002, TestSize.Level
 
     int64_t offset = 0;
     int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
 
     // URI_DIR
     FileInfo dirInfo;
@@ -1174,7 +1174,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_003, TestSize.Level
 
     int64_t offset = 0;
     int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
     vector<string> suffix { ".jpg" };
     filter.SetSuffix(suffix);
     // URI_DIR
@@ -2397,7 +2397,7 @@ void ListFileFromRootResult(vector<FileInfo> rootFileList, int offset, int maxCo
     const size_t URI_MEDIA_ROOT_IMAGE_SIZE = 0;
     const size_t URI_MEDIA_ROOT_VIDEO_SIZE = 0;
     const size_t URI_MEDIA_ROOT_AUDIO_SIZE = 0;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
     // URI_FILE_ROOT & URI_MEDIA_ROOT
     for (auto mediaRootInfo : rootFileList) {
         vector<FileInfo> fileList;
@@ -2469,7 +2469,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_001, TestSize.Level
     EXPECT_GE(ret, 0);
     const int64_t offset = 0;
     const int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
 
     // URI_ROOT
     FileInfo rootInfo;
@@ -2495,7 +2495,7 @@ void ListFileTestLimit(FileInfo dirInfo)
         make_pair(OFFSET_2, MAX_COUNT_1), make_pair(OFFSET_1, MAX_COUNT_2), make_pair(OFFSET_2, MAX_COUNT_2) };
     const int DIR_RESULT = 8;
 
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
     for (auto limit : limits) {
         // URI_DIR
         dirInfo.mimeType = DEFAULT_FILE_MIME_TYPE;
@@ -2515,8 +2515,8 @@ void ListFileTestFilter(FileInfo dirInfo)
     const int32_t PNG_COUNT = 2;
     const vector<int32_t> DIR_RESULT = {JPG_COUNT, PNG_COUNT, JPG_COUNT + PNG_COUNT};
     const vector<int32_t> ALBUM_RESULT = {JPG_COUNT, PNG_COUNT, JPG_COUNT + PNG_COUNT};
-    vector<DistributedFS::FileFilter> filters;
-    DistributedFS::FileFilter tempFilter;
+    vector<FileAccessFwk::FileFilter> filters;
+    FileAccessFwk::FileFilter tempFilter;
     tempFilter.SetHasFilter(true);
     tempFilter.SetSuffix({ SUFFIX_1 });
     filters.push_back(tempFilter);
@@ -2562,7 +2562,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ListFile_test_002, TestSize.Level
     const int32_t DIR_RESULT = 8;
     const int64_t offset = 0;
     const int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
 
     // URI_DIR
     FileInfo dirInfo;
@@ -2624,7 +2624,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_001, TestSize.Level
 
     int64_t offset = 0;
     int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
 
     // URI_DIR
     FileInfo dirInfo;
@@ -2658,7 +2658,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_002, TestSize.Level
 
     int64_t offset = 0;
     int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
 
     // URI_DIR
     FileInfo dirInfo;
@@ -2693,7 +2693,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_ScanFile_test_003, TestSize.Level
 
     int64_t offset = 0;
     int64_t maxCount = 100;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
     vector<string> suffix { ".jpg" };
     filter.SetSuffix(suffix);
     // URI_DIR
