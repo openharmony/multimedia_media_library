@@ -25,6 +25,7 @@ class PermissionUtilsUnitTest {
 public:
     static void SetAccessTokenPermission(const std::string &processName,
         const std::vector<std::string> &permission, uint64_t &tokenId);
+    static int32_t SetHapPermission(const std::string &bundleName, const int32_t userId);
 };
 } // namespace Media
 } // namespace OHOS

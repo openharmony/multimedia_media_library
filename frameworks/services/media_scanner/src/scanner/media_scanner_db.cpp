@@ -495,8 +495,9 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
     predicates.SetWhereArgs(args);
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
+    MediaLibraryCommand cmd(queryUri, OperationType::QUERY);
     int errCode = 0;
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates, errCode);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, idMap, "No entries found for this path");
 
     int32_t id(0);
@@ -538,8 +539,9 @@ string MediaScannerDb::GetFileDBUriFromPath(const string &path)
     predicates.SetWhereArgs(args);
 
     Uri queryUri(MEDIALIBRARY_DATA_URI);
+    MediaLibraryCommand cmd(queryUri, OperationType::QUERY);
     int errCode = 0;
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates, errCode);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, uri, "No entries found for this path");
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
         MEDIA_ERR_LOG("No result found for this path");
@@ -565,9 +567,10 @@ int32_t MediaScannerDb::GetIdFromPath(const string &path)
     predicates.SetWhereArgs(args);
 
     Uri uri(MEDIALIBRARY_DATA_URI);
+    MediaLibraryCommand cmd(uri, OperationType::QUERY);
     vector<string> columns = {MEDIA_DATA_DB_ID};
     int errCode = 0;
-    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
     if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
         MEDIA_ERR_LOG("No data found for the given path %{private}s", path.c_str());
         return id;

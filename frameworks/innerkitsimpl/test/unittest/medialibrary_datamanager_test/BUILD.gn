@@ -27,8 +27,6 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-
-    #"${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_file_extension/include",
   ]
 
@@ -66,6 +64,9 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "relational_store:native_rdb",
     "user_file_service:file_access_extension_ability_kit",
   ]
+
+  defines = []
+  defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
   if (is_standard_system) {
     external_deps += [ "hiviewdfx_hilog_native:libhilog" ]

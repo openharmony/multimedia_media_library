@@ -89,7 +89,7 @@ int32_t MediaLibraryAssetOperations::CreateOperation(MediaLibraryCommand &cmd)
             MEDIA_ERR_LOG("create asset by FileSysetm_Asset is deperated");
             return E_INVALID_VALUES;
         default:
-            MEDIA_ERR_LOG("error operation object");
+            MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());
             return E_INVALID_VALUES;
     }
 }
@@ -106,7 +106,7 @@ int32_t MediaLibraryAssetOperations::DeleteOperation(MediaLibraryCommand &cmd)
             MEDIA_ERR_LOG("delete asset by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
         default:
-            MEDIA_ERR_LOG("error operation object");
+            MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());
             return E_INVALID_VALUES;
     }
 }
@@ -124,7 +124,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryOperation(
             MEDIA_ERR_LOG("api9 operation is not finished");
             return nullptr;
         default:
-            MEDIA_ERR_LOG("error operation object");
+            MEDIA_ERR_LOG("error operation objec: %{public}d", cmd.GetOprnObject());
             return nullptr;
     }
 }
@@ -144,7 +144,7 @@ int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
             MEDIA_ERR_LOG("create asset by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
         default:
-            MEDIA_ERR_LOG("error operation object");
+            MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());
             return E_INVALID_VALUES;
     }
 }
@@ -161,7 +161,7 @@ int32_t MediaLibraryAssetOperations::OpenOperation(MediaLibraryCommand &cmd, con
             MEDIA_ERR_LOG("open by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
         default:
-            MEDIA_ERR_LOG("error operation object");
+            MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());
             return E_INVALID_VALUES;
     }
 }
@@ -178,7 +178,7 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
             MEDIA_ERR_LOG("close by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
         default:
-            MEDIA_ERR_LOG("error operation object");
+            MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());
             return E_INVALID_VALUES;
     }
 }

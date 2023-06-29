@@ -26,9 +26,13 @@ const std::string URI_SILENT_MARK = "Proxy=true";
 const std::string MEDIA_OPERN_KEYWORD = "operation";
 const std::string MEDIA_QUERYOPRN = "query_operation";
 const std::string OPRN_CREATE = "create";
+const std::string OPRN_CLOSE = "close";
 const std::string OPRN_DELETE = "delete";
 const std::string OPRN_QUERY = "query";
 const std::string OPRN_UPDATE = "update";
+const std::string OPRN_SCAN = "scan";
+const std::string OPRN_ALBUM_ADD_PHOTOS = "add_photos";
+const std::string OPRN_ALBUM_REMOVE_PHOTOS = "remove_photos";
 const std::string OPRN_RECOVER_PHOTOS = "recover_photos";
 const std::string OPRN_DELETE_PHOTOS = "delete_photos_permanently";   // Delete photos permanently from system
 
@@ -44,16 +48,21 @@ const std::string MEDIA_FILEOPRN_TRASHASSET = "trash_asset";
 const std::string MEDIA_FILEOPRN_OPENASSET = "open_asset";
 const std::string MEDIA_FILEOPRN_CLOSEASSET = "close_asset";
 const std::string MEDIA_FILEOPRN_ISDIRECTORY = "isdirectory_asset";
-const std::string URI_QUERY_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + OPRN_QUERY;
-const std::string URI_QUERY_AUDIO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + OPRN_QUERY;
+// API9 compat photo operations constants
+const std::string URI_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
 const std::string URI_CLOSE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
+const std::string URI_UPDATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + OPRN_UPDATE;
+const std::string URI_QUERY_PHOTO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_PHOTOOPRN + "/" + OPRN_QUERY;
+// API9 compat audio operations constants
+const std::string URI_QUERY_AUDIO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + OPRN_QUERY;
 const std::string URI_CLOSE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
+const std::string URI_UPDATE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + MEDIA_AUDIOOPRN + "/" + OPRN_UPDATE;
+const std::string URI_CLOSE_FILE = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
+const std::string URI_UPDATE_FILE = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET;
+const std::string URI_CREATE_FILE = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
 
 // Thumbnail operations constants
-const std::string THU_OPRN_GENERATES = "thumbnail_generate_operation";
-const std::string THU_OPRN_AGING = "thumbnail_aging_operation";
 const std::string DISTRIBUTE_THU_OPRN_GENERATES = "thumbnail_distribute_generate_operation";
-const std::string DISTRIBUTE_THU_OPRN_AGING = "thumbnail_distribute_aging_operation";
 const std::string DISTRIBUTE_THU_OPRN_CREATE = "thumbnail_distribute_create_operation";
 const std::string BUNDLE_PERMISSION_INSERT = "bundle_permission_insert_operation";
 
@@ -67,22 +76,11 @@ const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
 
 // Photo album operations constants
 const std::string PHOTO_ALBUM_OPRN = "photo_album_v10_operation";
-const std::string URI_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_CREATE;
-const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_UPDATE;
-const std::string URI_DELETE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_DELETE;
 const std::string URI_QUERY_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_QUERY;
-const std::string URI_RECOVER_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_RECOVER_PHOTOS;
-const std::string URI_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_DELETE_PHOTOS;
 
 // Photo map operations constants
 const std::string PHOTO_MAP_OPRN = "photo_map_v10_operation";
-const std::string OPRN_ALBUM_ADD_ASSETS = "add_assets";
-const std::string OPRN_ALBUM_REMOVE_ASSETS = "remove_assets";
 const std::string URI_QUERY_PHOTO_MAP = MEDIALIBRARY_DATA_URI + "/" + PHOTO_MAP_OPRN + "/" + OPRN_QUERY;
-const std::string URI_PHOTO_ALBUM_ADD_ASSET = MEDIALIBRARY_DATA_URI + "/" + PHOTO_MAP_OPRN + "/" +
-        OPRN_ALBUM_ADD_ASSETS;
-const std::string URI_PHOTO_ALBUM_REMOVE_ASSET = MEDIALIBRARY_DATA_URI + "/" + PHOTO_MAP_OPRN + "/" +
-        OPRN_ALBUM_REMOVE_ASSETS;
 
 // SmartAlbum operations constants
 const std::string MEDIA_SMARTALBUMOPRN = "albumsmart_operation";
@@ -111,6 +109,56 @@ const std::string MEDIA_BOARDCASTOPRN = "boardcast";
 const std::string MEDIA_SCAN_OPERATION = "boardcast_scan";
 const std::string MEDIA_DEVICE_QUERYALLDEVICE = "query_all_device";
 const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";
+
+// Scanner tool operation constants
+const std::string SCANNER_OPRN = "scanner";
+const std::string URI_SCANNER = MEDIALIBRARY_DATA_URI + "/" + SCANNER_OPRN + "/" + OPRN_SCAN;
+
+// UserFileManager operation constants
+const std::string UFM_PHOTO = "userfilemgr_photo_operation";
+const std::string UFM_AUDIO = "userfilemgr_audio_operation";
+const std::string UFM_ALBUM = "userfilemgr_photo_album_operation";
+const std::string UFM_MAP = "userfilemgr_photo_map_operation";
+
+// UserFileManager photo operation constants
+const std::string UFM_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + UFM_PHOTO + "/" + OPRN_CREATE;
+const std::string UFM_CLOSE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + UFM_PHOTO + "/" + OPRN_CLOSE;
+const std::string UFM_UPDATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + UFM_PHOTO + "/" + OPRN_UPDATE;
+const std::string UFM_QUERY_PHOTO = MEDIALIBRARY_DATA_URI + "/" + UFM_PHOTO + "/" + OPRN_QUERY;
+
+// UserFileManager audio operation constants
+const std::string UFM_CREATE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + UFM_AUDIO + "/" + OPRN_CREATE;
+const std::string UFM_CLOSE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + UFM_AUDIO + "/" + OPRN_CLOSE;
+const std::string UFM_QUERY_AUDIO = MEDIALIBRARY_DATA_URI + "/" + UFM_AUDIO + "/" + OPRN_QUERY;
+const std::string UFM_UPDATE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + UFM_AUDIO + "/" + OPRN_UPDATE;
+
+// UserFileManager album operation constants
+const std::string UFM_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + UFM_ALBUM + "/" + OPRN_CREATE;
+const std::string UFM_DELETE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + UFM_ALBUM + "/" + OPRN_DELETE;
+const std::string UFM_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + UFM_ALBUM + "/" + OPRN_UPDATE;
+const std::string UFM_QUERY_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + UFM_ALBUM + "/" + OPRN_QUERY;
+const std::string UFM_PHOTO_ALBUM_ADD_ASSET = MEDIALIBRARY_DATA_URI + "/" + UFM_MAP + "/" +
+        OPRN_ALBUM_ADD_PHOTOS;
+const std::string UFM_PHOTO_ALBUM_REMOVE_ASSET = MEDIALIBRARY_DATA_URI + "/" + UFM_MAP + "/" +
+        OPRN_ALBUM_REMOVE_PHOTOS;
+const std::string UFM_QUERY_PHOTO_MAP = MEDIALIBRARY_DATA_URI + "/" + UFM_MAP + "/" + OPRN_QUERY;
+const std::string UFM_RECOVER_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + UFM_ALBUM + "/" + OPRN_RECOVER_PHOTOS;
+const std::string UFM_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + UFM_ALBUM + "/" + OPRN_DELETE_PHOTOS;
+
+// PhotoAccessHelper operation constants
+const std::string PHACCESS_PHOTO = "phaccess_photo_operation";
+const std::string PHACCESS_AUDIO = "phaccess_audio_operation";
+
+// UserFileManager photo operation constants
+const std::string PHA_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PHACCESS_PHOTO + "/" + OPRN_CREATE;
+const std::string PHA_CLOSE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PHACCESS_PHOTO + "/" + OPRN_CLOSE;
+const std::string PHA_UPDATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PHACCESS_PHOTO + "/" + OPRN_UPDATE;
+const std::string PHA_QUERY_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PHACCESS_PHOTO + "/" + OPRN_QUERY;
+
+// UserFileManager audio operation constants
+const std::string PHA_QUERY_AUDIO = MEDIALIBRARY_DATA_URI + "/" + PHACCESS_AUDIO + "/" + OPRN_QUERY;
+const std::string PHA_CLOSE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + PHACCESS_AUDIO + "/" + OPRN_CLOSE;
+
 } // namespace Media
 } // namespace OHOS
 
