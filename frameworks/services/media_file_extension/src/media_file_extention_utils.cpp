@@ -74,6 +74,9 @@ static const std::unordered_map<int32_t, std::pair<int32_t, string>> mediaErrCod
 #ifdef MEDIALIBRARY_COMPATIBILITY
 bool CheckDestRelativePath(const string destRelativePath)
 {
+    if (destRelativePath == "") {
+        return true;
+    }
     size_t size = destRelativePath.find_first_of("/");
     if (size == string::npos) {
         return false;
@@ -809,7 +812,7 @@ int32_t GetScanFileFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<Nat
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "the result is nullptr");
 #else
     if (result == nullptr) {
-        return JS_ERR_PERMISSION_DENIED;
+        return E_ERR;
     }
 #endif
     string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
