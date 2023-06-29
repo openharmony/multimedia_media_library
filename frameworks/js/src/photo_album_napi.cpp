@@ -365,10 +365,7 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     tracer.Start("JSCommitModifyExecute");
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-
-    string updateUri = URI_UPDATE_PHOTO_ALBUM;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(updateUri, PHOTO_TYPE_MASK);
-    Uri uri(updateUri);
+    Uri uri(UFM_UPDATE_PHOTO_ALBUM);
     int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
     context->SaveError(changedRows);
     context->changedRows = changedRows;
@@ -380,7 +377,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
     tracer.Start("JSCommitModifyCompleteCallback");
 
     PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     if (context->error == ERR_DEFAULT) {
@@ -400,7 +397,7 @@ static void JSCommitModifyCompleteCallback(napi_env env, napi_status status, voi
 
 napi_value PhotoAlbumNapi::JSCommitModify(napi_env env, napi_callback_info info)
 {
-    unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsCommitModify(env, info, asyncContext));
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCommitModify", JSCommitModifyExecute,
@@ -502,9 +499,7 @@ static void JSPhotoAlbumAddAssetsExecute(napi_env env, void *data)
         return;
     }
 
-    string addAssetUri = URI_PHOTO_ALBUM_ADD_ASSET;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(addAssetUri, PHOTO_TYPE_MASK);
-    Uri uri(addAssetUri);
+    Uri uri(UFM_PHOTO_ALBUM_ADD_ASSET);
     auto changedRows = UserFileClient::BatchInsert(uri, context->valuesBuckets);
     context->SaveError(changedRows);
 }
@@ -584,9 +579,7 @@ static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
         return;
     }
 
-    string removeAssetUri = URI_PHOTO_ALBUM_REMOVE_ASSET;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(removeAssetUri, PHOTO_TYPE_MASK);
-    Uri uri(removeAssetUri);
+    Uri uri(UFM_PHOTO_ALBUM_REMOVE_ASSET);
     auto deletedRows = UserFileClient::Delete(uri, context->predicates);
     if (deletedRows < 0) {
         context->SaveError(deletedRows);
@@ -619,7 +612,7 @@ static void JSPhotoAlbumRemoveAssetsCompleteCallback(napi_env env, napi_status s
 
 napi_value PhotoAlbumNapi::JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_info info)
 {
-    unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsRemoveAssets(env, info, asyncContext));
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSPhotoAlbumRemoveAssets",
@@ -684,12 +677,10 @@ static void JSGetPhotoAssetsExecute(napi_env env, void *data)
     tracer.Start("JSGetPhotoAssetsExecute");
 
     auto context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
-
-    string queryUri = URI_QUERY_PHOTO_MAP;
+    string queryUri = UFM_QUERY_PHOTO_MAP;
     if (!UserFileClient::sIsSystemApp_) {
         queryUri = SILENT_QUERY_PHOTO_URI;
     }
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, PHOTO_TYPE_MASK);
     Uri uri(queryUri);
     int32_t errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
@@ -791,9 +782,7 @@ static void TrashAlbumExecute(const TrashAlbumExecuteOpt &opt)
     if (context->predicates.GetOperationList().empty()) {
         return;
     }
-    string uriStr = opt.uri;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriStr, PHOTO_TYPE_MASK);
-    Uri uri(uriStr);
+    Uri uri(opt.uri);
     int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
@@ -804,8 +793,8 @@ static void TrashAlbumExecute(const TrashAlbumExecuteOpt &opt)
 
 static void TrashAlbumComplete(napi_env env, napi_status status, void *data)
 {
-    PhotoAlbumNapiAsyncContext *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
-    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
+    auto jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
     if (context->error == ERR_DEFAULT) {
@@ -828,7 +817,7 @@ static void RecoverPhotosExecute(napi_env env, void *data)
         .env = env,
         .data = data,
         .tracerLabel = "RecoverPhotosExecute",
-        .uri = URI_RECOVER_PHOTOS,
+        .uri = UFM_RECOVER_PHOTOS,
     };
     TrashAlbumExecute(opt);
 }
@@ -853,7 +842,7 @@ static void DeletePhotosExecute(napi_env env, void *data)
         .env = env,
         .data = data,
         .tracerLabel = "DeletePhotosExecute",
-        .uri = URI_DELETE_PHOTOS,
+        .uri = UFM_DELETE_PHOTOS,
     };
     TrashAlbumExecute(opt);
 }

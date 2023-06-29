@@ -15,8 +15,12 @@
 #include <sstream>
 
 #include "media_file_uri.h"
-#include "medialibrary_helper_container.h"
+#include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_errno.h"
+#include "medialibrary_helper_container.h"
+#include "medialibrary_type_const.h"
+#include "photo_album_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -272,6 +276,103 @@ bool MediaFileUri::IsApi10()
         return true;
     }
     return false;
+}
+
+MediaType MediaFileUri::GetMediaTypeFromUri(const std::string &uri)
+{
+    if (MediaFileUtils::StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
+        return MEDIA_TYPE_PHOTO;
+    } else if (MediaFileUtils::StartsWith(uri, AudioColumn::AUDIO_URI_PREFIX)) {
+        return MEDIA_TYPE_AUDIO;
+    } else if (MediaFileUtils::StartsWith(uri, PhotoAlbumColumns::ALBUM_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_ALBUM;
+    } else if (MediaFileUtils::StartsWith(uri, AUDIO_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_AUDIO;
+    } else if (MediaFileUtils::StartsWith(uri, VIDEO_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_VIDEO;
+    } else if (MediaFileUtils::StartsWith(uri, IMAGE_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_IMAGE;
+    } else if (MediaFileUtils::StartsWith(uri, ALBUM_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_ALBUM;
+    } else if (MediaFileUtils::StartsWith(uri, FILE_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_FILE;
+    }
+    return Media::MEDIA_TYPE_DEFAULT;
+}
+
+void MediaFileUri::RemoveAllFragment(std::string &uri)
+{
+    size_t fragIndex = uri.find_first_of('#');
+    if (fragIndex != std::string::npos) {
+        uri = uri.substr(0, fragIndex);
+    }
+}
+
+static int32_t UriValidCheck(Uri &uri)
+{
+    std::string scheme = uri.GetScheme();
+    if (scheme != ML_FILE_SCHEME && scheme != ML_DATA_SHARE_SCHEME) {
+        MEDIA_ERR_LOG("scheme is invalid, uri is %{private}s", uri.ToString().c_str());
+        return E_INVALID_URI;
+    }
+
+    if (uri.GetAuthority() != ML_URI_AUTHORITY && uri.GetPath().find(MEDIALIBRARY_DATA_URI_IDENTIFIER) != 0) {
+        MEDIA_ERR_LOG("failed to find /media, uri is %{private}s", uri.ToString().c_str());
+        return E_INVALID_URI;
+    }
+    return E_OK;
+}
+
+static inline void HandleOldUriPath(std::string &path)
+{
+    // Handle datashare:///media and datashare:///media/file_operation case
+    if (MediaFileUtils::StartsWith(path, MEDIALIBRARY_DATA_URI_IDENTIFIER)) {
+        path = path.substr(MEDIALIBRARY_DATA_URI_IDENTIFIER.size());
+        return;
+    }
+}
+
+static inline void RemovePrecedSlash(std::string &path)
+{
+    if (MediaFileUtils::StartsWith(path, SLASH_STR)) {
+        path = path.substr(SLASH_STR.size());
+    }
+}
+
+static void GetValidPath(Uri &uri, std::string &path)
+{
+    if (UriValidCheck(uri) < 0) {
+        path = "";
+        return;
+    }
+
+    path = uri.GetPath();
+    HandleOldUriPath(path);
+    RemovePrecedSlash(path);
+}
+
+std::string MediaFileUri::GetPathFirstDentry(Uri &uri)
+{
+    std::string path;
+    GetValidPath(uri, path);
+    // Example: file:://media/photo_operation/query, return the "photo_operation" part
+    return path.substr(0, path.find_first_of('/'));
+}
+
+std::string MediaFileUri::GetPathSecondDentry(Uri &uri)
+{
+    std::string ret;
+    std::string firstDentry = GetPathFirstDentry(uri);
+    if (firstDentry.empty()) {
+        return ret;
+    }
+    std::string path;
+    GetValidPath(uri, path);
+    if (path.size() < firstDentry.size() + 1) {
+        return ret;
+    }
+    // Example: file:://media/photo_operation/query, return the "query" part
+    return path.substr(firstDentry.size() + 1);
 }
 } // namespace Media
 } // namespace OHOS

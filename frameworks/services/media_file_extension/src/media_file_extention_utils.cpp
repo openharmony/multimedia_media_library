@@ -107,7 +107,13 @@ int MediaFileExtentionUtils::OpenFile(const Uri &uri, const int flags, int &fd)
         MEDIA_ERR_LOG("invalid OpenFile flags %{public}d", flags);
         return E_OPENFILE_INVALID_FLAG;
     }
-    auto ret = MediaLibraryDataManager::GetInstance()->OpenFile(uri, mode);
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(uri.ToString());
+    MediaLibraryCommand cmd(Uri(realUri), OperationType::OPEN);
+#else
+    MediaLibraryCommand cmd(uri, OperationType::OPEN);
+#endif
+    auto ret = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, mode);
     if (ret > 0) {
         fd = ret;
     }
@@ -149,7 +155,8 @@ int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &disp
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MediaFileUtils::GetMediaType(displayName));
     Uri createFileUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR + MEDIA_FILEOPRN_CREATEASSET);
-    ret = MediaLibraryDataManager::GetInstance()->Insert(createFileUri, valuesBucket);
+    MediaLibraryCommand cmd(createFileUri);
+    ret = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     if (ret > 0) {
 #ifdef MEDIALIBRARY_COMPATIBILITY
         newFileUri = Uri(GetUriFromId(ret, ""));
@@ -192,7 +199,8 @@ int MediaFileExtentionUtils::Mkdir(const Uri &parentUri, const string &displayNa
 #endif
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    ret = MediaLibraryDataManager::GetInstance()->Insert(mkdirUri, valuesBucket);
+    MediaLibraryCommand cmd(mkdirUri);
+    ret = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     if (ret > 0) {
 #ifdef MEDIALIBRARY_COMPATIBILITY
         newFileUri = Uri(GetUriFromId(ret, ""));
@@ -231,7 +239,8 @@ int MediaFileExtentionUtils::Delete(const Uri &sourceFileUri)
 #endif
         Uri trashAlbumUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DIROPRN + SLASH_CHAR +
             MEDIA_DIROPRN_FMS_TRASHDIR);
-        ret = MediaLibraryDataManager::GetInstance()->Insert(trashAlbumUri, valuesBucket);
+        MediaLibraryCommand cmd(trashAlbumUri);
+        ret = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     } else {
         valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
 #ifdef MEDIALIBRARY_COMPATIBILITY
@@ -242,7 +251,8 @@ int MediaFileExtentionUtils::Delete(const Uri &sourceFileUri)
 #endif
         Uri trashAssetUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_SMARTALBUMMAPOPRN + SLASH_CHAR +
             MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
-        ret = MediaLibraryDataManager::GetInstance()->Insert(trashAssetUri, valuesBucket);
+        MediaLibraryCommand cmd(trashAssetUri);
+        ret = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     }
     return ret;
 }
@@ -286,10 +296,11 @@ shared_ptr<NativeRdb::ResultSet> MediaFileExtentionUtils::GetResultSetFromDb(str
         input = MediaLibraryDataManagerUtils::GetIdFromUri(input);
     }
     Uri queryUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER);
+    MediaLibraryCommand cmd(queryUri, OperationType::QUERY);
     DataSharePredicates predicates;
     predicates.EqualTo(field, input)->And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, NOT_TRASHED);
     int errCode = 0;
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(queryUri, columns, predicates, errCode);
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, nullptr,
         "Failed to obtain value from database, field: %{public}s, value: %{public}s", field.c_str(), input.c_str());
     auto ret = queryResultSet->GoToFirstRow();
@@ -542,6 +553,7 @@ static int32_t RootListFile(const FileInfo &parentInfo, vector<FileInfo> &fileLi
 shared_ptr<NativeRdb::ResultSet> GetResult(const Uri &uri, MediaFileUriType uriType, const string &selection,
     const vector<string> &selectionArgs)
 {
+    MediaLibraryCommand cmd(uri, OperationType::QUERY);
     DataSharePredicates predicates;
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
@@ -549,7 +561,7 @@ shared_ptr<NativeRdb::ResultSet> GetResult(const Uri &uri, MediaFileUriType uriT
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_DATE_MODIFIED, MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_RELATIVE_PATH };
-    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
 }
 
 static string MimeType2MediaType(const string &mimeType)
@@ -569,6 +581,7 @@ shared_ptr<NativeRdb::ResultSet> GetMediaRootResult(const FileInfo &parentInfo, 
 {
 #ifndef MEDIALIBRARY_COMPATIBILITY
     Uri uri(GetQueryUri(parentInfo, uriType));
+    MediaLibraryCommand cmd(uri, OperationType::QUERY);
     DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MimeType2MediaType(parentInfo.mimeType));
     predicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
@@ -590,7 +603,8 @@ shared_ptr<NativeRdb::ResultSet> GetMediaRootResult(const FileInfo &parentInfo, 
     vector<string> columns = { MediaColumn::MEDIA_RELATIVE_PATH, MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_ID,
         MediaColumn::MEDIA_DATE_MODIFIED };
 #endif
-    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
+    MediaLibraryCommand cmd(uri, OperationType::QUERY);
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
 }
 
 shared_ptr<NativeRdb::ResultSet> GetListRootResult(const FileInfo &parentInfo, MediaFileUriType uriType,
@@ -810,6 +824,7 @@ int32_t GetScanFileFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<Nat
 shared_ptr<NativeRdb::ResultSet> GetScanFileResult(const Uri &uri, MediaFileUriType uriType, const string &selection,
     const vector<string> &selectionArgs)
 {
+    MediaLibraryCommand cmd(uri, OperationType::QUERY);
     DataSharePredicates predicates;
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
@@ -825,7 +840,7 @@ shared_ptr<NativeRdb::ResultSet> GetScanFileResult(const Uri &uri, MediaFileUriT
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_RELATIVE_PATH
     };
-    return MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
+    return MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
 }
 
 shared_ptr<NativeRdb::ResultSet> SetScanFileSelection(const FileInfo &parentInfo, MediaFileUriType uriType,
@@ -989,8 +1004,9 @@ void GetActivePeer(shared_ptr<NativeRdb::ResultSet> &result)
     predicates.SetWhereClause(strQueryCondition);
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_DEVICE_QUERYACTIVEDEVICE);
+    MediaLibraryCommand cmd(uri, OperationType::QUERY);
     int errCode = 0;
-    result = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
+    result = MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
 }
 
 int32_t MediaFileExtentionUtils::GetRoots(vector<RootInfo> &rootList)
@@ -1053,9 +1069,16 @@ int MediaFileExtentionUtils::GetThumbnail(const Uri &uri, const Size &size, std:
         MEDIA_ERR_LOG("GetThumbnail::invalid uri: %{public}s", queryUriStr.c_str());
         return E_URI_INVALID;
     }
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(queryUriStr);
+    string pixelMapUri = realUri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
+        MEDIA_DATA_DB_WIDTH + "=" + std::to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" +
+        std::to_string(size.height);
+#else
     string pixelMapUri = queryUriStr + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
         MEDIA_DATA_DB_WIDTH + "=" + std::to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" +
         std::to_string(size.height);
+#endif
     UniqueFd uniqueFd(MediaLibraryDataManager::GetInstance()->GetThumbnail(pixelMapUri));
     if (uniqueFd.Get() < 0) {
         MEDIA_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
@@ -1145,7 +1168,8 @@ int32_t HandleFileRename(const shared_ptr<FileAsset> &fileAsset)
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
     predicates.SetWhereArgs({ to_string(fileAsset->GetId()) });
-    auto ret = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
+    MediaLibraryCommand cmd(updateAssetUri);
+    auto ret = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucket, predicates);
     if (ret > 0) {
         return E_SUCCESS;
     } else {
@@ -1303,7 +1327,8 @@ int32_t HandleFileMove(const shared_ptr<FileAsset> &fileAsset, const string &des
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, destRelativePath);
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
     predicates.SetWhereArgs({ to_string(fileAsset->GetId()) });
-    auto ret = MediaLibraryDataManager::GetInstance()->Update(updateAssetUri, valuesBucket, predicates);
+    MediaLibraryCommand cmd(updateAssetUri);
+    auto ret = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucket, predicates);
     if (ret > 0) {
         return E_SUCCESS;
     } else {
@@ -1369,8 +1394,9 @@ void GetMoveSubFile(const string &srcPath, shared_ptr<NativeRdb::ResultSet> &res
     predicates.SetWhereClause(selection);
     predicates.SetWhereArgs(selectionArgs);
     Uri uri(queryUri);
+    MediaLibraryCommand cmd(uri, OperationType::QUERY);
     int errCode = 0;
-    result = MediaLibraryDataManager::GetInstance()->QueryRdb(uri, columns, predicates, errCode);
+    result = MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
 }
 
 bool CheckSubFileExtension(const string &srcPath, const string &destRelPath)
@@ -1558,7 +1584,8 @@ int32_t InsertFileOperation(string &destRelativePath, string &srcUriStr)
     valuesBucket.Put(MEDIA_DATA_DB_URI, srcUriStr);
     Uri copyUri(MEDIALIBRARY_DATA_URI + SLASH_CHAR + MEDIA_FILEOPRN + SLASH_CHAR +
                     MEDIA_FILEOPRN_COPYASSET);
-    return MediaLibraryDataManager::GetInstance()->Insert(copyUri, valuesBucket);
+    MediaLibraryCommand cmd(copyUri);
+    return MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 }
 
 int CopyFileOperation(string &srcUriStr, string &destRelativePath, CopyResult &copyResult, bool force)

@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "medialibrary_command.h"
 #define MLOG_TAG "PhotoAlbumTest"
 
 #include "photo_album_test.h"
@@ -39,6 +40,8 @@ using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 
 static shared_ptr<RdbStore> g_rdbStore;
+const std::string URI_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_CREATE;
+const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_UPDATE;
 
 int32_t ClearTable(const string &table)
 {
@@ -77,12 +80,16 @@ inline int32_t CreatePhotoAlbum(const string &albumName)
 {
     DataShareValuesBucket values;
     values.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
-    return MediaLibraryDataManager::GetInstance()->Insert(Uri(URI_CREATE_PHOTO_ALBUM), values);
+    Uri uri(URI_CREATE_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(uri);
+    return MediaLibraryDataManager::GetInstance()->Insert(cmd, values);
 }
 
 inline int32_t DeletePhotoAlbum(DataSharePredicates &predicates)
 {
-    return MediaLibraryDataManager::GetInstance()->Delete(Uri(URI_CREATE_PHOTO_ALBUM), predicates);
+    Uri uri(URI_CREATE_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(uri, OperationType::DELETE);
+    return MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
 void DoCheckAlbumData(const string &name, const bool isRelativePath)
@@ -162,7 +169,9 @@ int32_t QueryAlbumById(int32_t id, string &albumName, string &cover)
 
 inline int32_t UpdatePhotoAlbum(const DataShareValuesBucket &values, const DataSharePredicates &predicates)
 {
-    return MediaLibraryDataManager::GetInstance()->Update(Uri(URI_UPDATE_PHOTO_ALBUM), values, predicates);
+    Uri uri(URI_UPDATE_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(uri, OperationType::UPDATE);
+    return MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
 }
 
 void CheckUpdatedAlbum(int32_t albumId, const string &expectedName, const string &expectedCover)

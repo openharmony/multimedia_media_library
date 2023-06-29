@@ -47,6 +47,10 @@ enum class OperationObject : uint32_t {
     BUNDLE_PERMISSION,
     PHOTO_ALBUM,
     PHOTO_MAP,
+    UFM_PHOTO,
+    UFM_AUDIO,
+    UFM_ALBUM,
+    UFM_MAP,
 };
 
 enum class OperationType : uint32_t {
@@ -67,8 +71,8 @@ enum class OperationType : uint32_t {
     DISTRIBUTE_CREATE,
     COPY,
     INSERT_PERMISSION,
-    ALBUM_ADD_ASSETS,
-    ALBUM_REMOVE_ASSETS,
+    ALBUM_ADD_PHOTOS,
+    ALBUM_REMOVE_PHOTOS,
     ALBUM_RECOVER_ASSETS,
     ALBUM_DELETE_ASSETS,                // Delete assets permanently from system
 };
@@ -101,15 +105,13 @@ public:
     const Uri &GetUri() const;
     const std::string &GetBundleName();
     const std::string &GetDeviceName();
-    std::string GetUriStringWithoutSegment();
+    std::string GetUriStringWithoutSegment() const;
     MediaLibraryApi GetApi();
     std::string GetQuerySetParam(const std::string &key);
     void SetDataSharePred(const DataShare::DataSharePredicates &pred);
     const DataShare::DataSharePredicates &GetDataSharePred() const;
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
     void SetOprnObject(OperationObject object);
-#endif
     void SetOprnAssetId(const std::string &oprnId);
     void SetValueBucket(const NativeRdb::ValuesBucket &value);
     void SetTableName(const std::string &tableName);

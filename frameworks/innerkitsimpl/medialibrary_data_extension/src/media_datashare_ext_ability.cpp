@@ -21,22 +21,24 @@
 #include "ability_info.h"
 #include "app_mgr_client.h"
 #include "dataobs_mgr_client.h"
-#include "media_datashare_stub_impl.h"
+#include "datashare_ext_ability_context.h"
 #include "hilog_wrapper.h"
 #include "ipc_skeleton.h"
-#include "datashare_ext_ability_context.h"
-#include "runtime.h"
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
+#include "media_datashare_stub_impl.h"
+#include "media_file_utils.h"
+#include "media_log.h"
+#include "media_scanner_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
-#include "media_scanner_manager.h"
-#include "media_log.h"
-#include "system_ability_definition.h"
-#include "singleton.h"
+#include "napi/native_api.h"
+#include "napi/native_node_api.h"
 #include "permission_utils.h"
+#include "photo_album_column.h"
+#include "runtime.h"
+#include "singleton.h"
+#include "system_ability_definition.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -139,159 +141,230 @@ sptr<IRemoteObject> MediaDataShareExtAbility::OnConnect(const AAFwk::Want &want)
     return remoteObject->AsObject();
 }
 
-static uint32_t TypeMaskStringToInteger(const string &typeMask)
-{
-    uint32_t mask = 0;
-    for (auto &item : MEDIA_TYPE_TUPLE_VEC) {
-        if (typeMask[get<POS_TYPE_MASK_STRING_INDEX>(item)] == TYPE_MASK_BIT_SET) {
-            mask |= static_cast<uint32_t>(get<POS_TYPE_MASK_INTEGER>(item));
-        }
-    }
-    return mask;
-}
-
-// Parse uri(eg. datashare::///media/image/10#key1:value1#key2:value2#key3:value3) to key-value pairs
-static int32_t GetKeyValueFromUri(const string &uri, vector<pair<string, string>> &pairs)
-{
-    constexpr size_t sharpPos = 1;
-    size_t nextPairIndex = uri.find('#');
-    if (nextPairIndex == string::npos) {
-        return E_SUCCESS;
-    }
-    string keyValueString;
-    for (string remain = uri.substr(nextPairIndex); nextPairIndex != string::npos;) {
-        nextPairIndex = remain.find('#', sharpPos);
-        if (nextPairIndex == string::npos) {
-            keyValueString = remain.substr(sharpPos);
-        } else {
-            keyValueString = remain.substr(sharpPos, nextPairIndex - 1);
-            remain = remain.substr(nextPairIndex);
-        }
-        size_t splitIndex = keyValueString.find(':');
-        if (splitIndex == string::npos) {
-            MEDIA_ERR_LOG("Key-Value string should have format: #key:value");
-            return -EINVAL;
-        }
-        pairs.push_back(make_pair(keyValueString.substr(0, splitIndex), keyValueString.substr(splitIndex + 1)));
-    }
-    return E_SUCCESS;
-}
-
-static int32_t ShouldCheckTypePermission(const string &uri, bool &shouldCheckType, string &typeMask)
-{
-    typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
-    shouldCheckType = false;
-    size_t paramIndex = uri.rfind('#');
-    if (paramIndex == string::npos) {
-        return E_SUCCESS;
-    }
-
-    vector<pair<string, string>> pairs;
-    int err = GetKeyValueFromUri(uri, pairs);
-    if (err < 0) {
-        MEDIA_ERR_LOG("Failed to parse key value pair from uri: %{public}s, err: %{public}d", uri.c_str(), err);
-        return err;
-    }
-
-    for (auto &item : pairs) {
-        if (item.first == URI_PARAM_KEY_TYPE) {
-            typeMask = item.second;
-            shouldCheckType = true;
-            return E_SUCCESS;
-        }
-    }
-    return E_SUCCESS;
-}
-
-static bool CheckPerms(bool shouldCheckType, bool isWrite, const string &typeMask)
-{
-    if (!shouldCheckType) {
-        string perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
-        if (PermissionUtils::CheckCallerPermission(perm)) {
-            return true;
-        }
-        return false;
-    }
-
-    if (PermissionUtils::CheckCallerPermission((isWrite ? WRITE_PERMS : READ_PERMS),
-        TypeMaskStringToInteger(typeMask))) {
-        return true;
-    }
-    return false;
-}
-
 vector<string> MediaDataShareExtAbility::GetFileTypes(const Uri &uri, const string &mimeTypeFilter)
 {
     vector<string> ret;
     return ret;
 }
 
-static int CheckOpenFilePermission(string &uri, string &mode)
+static void FillV10Perms(const MediaType mediaType, const bool containsRead, const bool containsWrite,
+    vector<string> &perm)
 {
-    bool shouldCheckType = false;
-    string typeMask;
-    int err = ShouldCheckTypePermission(uri, shouldCheckType, typeMask);
-    if (err < 0) {
-        return err;
+    if (containsRead) {
+        if (mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO ||
+            mediaType == Media::MEDIA_TYPE_PHOTO || mediaType == Media::MEDIA_TYPE_ALBUM) {
+            perm.push_back(PERM_READ_IMAGEVIDEO);
+        } else if (mediaType == MEDIA_TYPE_AUDIO) {
+            perm.push_back(PERM_READ_AUDIO);
+        } else if (mediaType == MEDIA_TYPE_FILE) {
+            perm.push_back(PERM_READ_DOCUMENT);
+        }
     }
-    if (shouldCheckType) {
-        uri = uri.substr(0, uri.find('#'));
+    if (containsWrite) {
+        if (mediaType == MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO ||
+            mediaType == Media::MEDIA_TYPE_PHOTO || mediaType == Media::MEDIA_TYPE_ALBUM) {
+            perm.push_back(PERM_WRITE_IMAGEVIDEO);
+        } else if (mediaType == MEDIA_TYPE_AUDIO) {
+            perm.push_back(PERM_WRITE_AUDIO);
+        } else if (mediaType == MEDIA_TYPE_FILE) {
+            perm.push_back(PERM_WRITE_DOCUMENT);
+        }
+    }
+}
+
+static void FillDeprecatedPerms(const bool containsRead, const bool containsWrite, vector<string> &perm)
+{
+    if (containsRead) {
+        perm.push_back(PERMISSION_NAME_READ_MEDIA);
+    }
+    if (containsWrite) {
+        perm.push_back(PERMISSION_NAME_WRITE_MEDIA);
+    }
+}
+
+static inline bool ContainsFlag(const string &mode, const char flag)
+{
+    return mode.find(flag) != string::npos;
+}
+
+static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
+{
+    MEDIA_DEBUG_LOG("uri: %{public}s mode: %{public}s", cmd.GetUri().ToString().c_str(), mode.c_str());
+    MediaType mediaType = MediaFileUri::GetMediaTypeFromUri(cmd.GetUri().ToString());
+    const bool containsRead = ContainsFlag(mode, 'r');
+    const bool containsWrite = ContainsFlag(mode, 'w');
+
+    vector<string> perms;
+    FillV10Perms(mediaType, containsRead, containsWrite, perms);
+    int err = PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
+    if (err == E_SUCCESS) {
+        return E_SUCCESS;
+    }
+    // Try to check deprecated permissions
+    perms.clear();
+    FillDeprecatedPerms(containsRead, containsWrite, perms);
+    return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
+}
+
+static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
+{
+    OperationObject obj = cmd.GetOprnObject();
+    static const set<OperationObject> SYSTEM_API_OBJECTS = {
+        OperationObject::UFM_PHOTO,
+        OperationObject::UFM_AUDIO,
+        OperationObject::UFM_ALBUM,
+        OperationObject::UFM_MAP,
+        OperationObject::SMART_ALBUM,
+        OperationObject::SMART_ALBUM_MAP,
+
+        OperationObject::ALL_DEVICE,
+        OperationObject::ACTIVE_DEVICE,
+    };
+
+    if (SYSTEM_API_OBJECTS.find(obj) != SYSTEM_API_OBJECTS.end() ||
+        // Delete asset permanently from system is only allowed for system apps.
+        ((obj == OperationObject::FILESYSTEM_ASSET) && (cmd.GetOprnType() == Media::OperationType::DELETE))) {
         if (!PermissionUtils::IsSystemApp()) {
             MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
             return E_CHECK_SYSTEMAPP_FAIL;
         }
     }
-
-    size_t rPos = mode.find('r');
-    if (rPos != string::npos) {
-        bool checkReadResult = CheckPerms(shouldCheckType, false, typeMask);
-        if (!checkReadResult) {
-            return E_PERMISSION_DENIED;
-        }
-    }
-    size_t wPos = mode.find('w');
-    if (wPos != string::npos) {
-        bool checkWriteResult = CheckPerms(shouldCheckType, true, typeMask);
-        if (!checkWriteResult) {
-            return E_PERMISSION_DENIED;
-        }
-    }
-    if ((rPos == string::npos) && (wPos == string::npos)) {
-        MEDIA_INFO_LOG("Mode is invalid: %{public}s, return err: %{public}d", mode.c_str(), E_PERMISSION_DENIED);
-        return E_PERMISSION_DENIED;
-    }
-
     return E_SUCCESS;
 }
 
-static int32_t CheckPermFromUri(string &uri, bool isWrite)
+static inline int32_t HandleMediaVolumePerm()
 {
-    bool shouldCheckType = false;
-    string typeMask;
-    int32_t err = ShouldCheckTypePermission(uri, shouldCheckType, typeMask);
+    return PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA) ? E_SUCCESS : E_PERMISSION_DENIED;
+}
+
+static inline int32_t HandleBundlePermCheck()
+{
+    return PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA) ? E_SUCCESS : E_PERMISSION_DENIED;
+}
+
+static int32_t UserFileMgrPermissionCheck(const OperationObject &obj, const bool isWrite)
+{
+    static const set<OperationObject> USER_FILE_MGR_OBJECTS = {
+        OperationObject::UFM_PHOTO,
+        OperationObject::UFM_AUDIO,
+        OperationObject::UFM_ALBUM,
+        OperationObject::UFM_MAP,
+    };
+
+    if (USER_FILE_MGR_OBJECTS.find(obj) == USER_FILE_MGR_OBJECTS.end()) {
+        return E_NEED_FURTHER_CHECK;
+    }
+
+    string perm;
+    if (obj == OperationObject::UFM_AUDIO) {
+        perm = isWrite ? PERM_WRITE_AUDIO : PERM_READ_AUDIO;
+    } else {
+        perm = isWrite ? PERM_WRITE_IMAGEVIDEO : PERM_READ_IMAGEVIDEO;
+    }
+    return PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
+}
+
+static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
+{
+    static const set<string> NO_NEED_PERM_CHECK_URI = {
+        URI_CLOSE_FILE,
+        MEDIALIBRARY_DIRECTORY_URI,
+    };
+
+    static const set<OperationObject> NO_NEED_PERM_CHECK_OBJ = {
+        OperationObject::ALL_DEVICE,
+        OperationObject::ACTIVE_DEVICE,
+    };
+
+    string uri = cmd.GetUri().ToString();
+    OperationObject obj = cmd.GetOprnObject();
+    if (NO_NEED_PERM_CHECK_URI.find(uri) != NO_NEED_PERM_CHECK_URI.end() ||
+        NO_NEED_PERM_CHECK_OBJ.find(obj) != NO_NEED_PERM_CHECK_OBJ.end()) {
+        return E_SUCCESS;
+    }
+    return E_NEED_FURTHER_CHECK;
+}
+
+static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWrite)
+{
+    int err = HandleNoPermCheck(cmd);
+    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+        return err;
+    }
+
+    OperationObject obj = cmd.GetOprnObject();
+    if (obj == OperationObject::MEDIA_VOLUME) {
+        return HandleMediaVolumePerm();
+    } else if (obj == OperationObject::BUNDLE_PERMISSION) {
+        return HandleBundlePermCheck();
+    }
+
+    return E_NEED_FURTHER_CHECK;
+}
+
+static void UnifyOprnObject(MediaLibraryCommand &cmd)
+{
+    static const unordered_map<OperationObject, OperationObject> UNIFY_OP_OBJECT_MAP = {
+        { OperationObject::UFM_PHOTO, OperationObject::FILESYSTEM_PHOTO },
+        { OperationObject::UFM_AUDIO, OperationObject::FILESYSTEM_AUDIO },
+        { OperationObject::UFM_ALBUM, OperationObject::PHOTO_ALBUM },
+        { OperationObject::UFM_MAP, OperationObject::PHOTO_MAP },
+    };
+
+    OperationObject obj = cmd.GetOprnObject();
+    if (UNIFY_OP_OBJECT_MAP.find(obj) != UNIFY_OP_OBJECT_MAP.end()) {
+        cmd.SetOprnObject(UNIFY_OP_OBJECT_MAP.at(obj));
+    }
+}
+
+static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
+{
+    MEDIA_DEBUG_LOG("uri: %{public}s object: %{public}d, opType: %{public}d isWrite: %{public}d",
+        cmd.GetUri().ToString().c_str(), cmd.GetOprnObject(), cmd.GetOprnType(), isWrite);
+    OperationObject obj = cmd.GetOprnObject();
+    int err = SystemApiCheck(cmd);
+    if (err != E_SUCCESS) {
+        return err;
+    }
+
+    err = UserFileMgrPermissionCheck(obj, isWrite);
+    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+        UnifyOprnObject(cmd);
+        return err;
+    }
+    err = HandleSpecialObjectPermission(cmd, isWrite);
+    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+        UnifyOprnObject(cmd);
+        return err;
+    }
+
+    // Finally, we should check the permission of medialibrary interfaces.
+    string perm = isWrite ? PERMISSION_NAME_WRITE_MEDIA : PERMISSION_NAME_READ_MEDIA;
+    err = PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
     if (err < 0) {
         return err;
     }
-    if (shouldCheckType) {
-        /* position of '#' should not be string::npos here */
-        uri = uri.substr(0, uri.find('#'));
-        if (!PermissionUtils::IsSystemApp()) {
-            MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-            return E_CHECK_SYSTEMAPP_FAIL;
-        }
-    }
-    return CheckPerms(shouldCheckType, isWrite, typeMask) ? E_SUCCESS : E_PERMISSION_DENIED;
+    UnifyOprnObject(cmd);
+    return E_SUCCESS;
 }
 
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
 {
-    string uriStr = uri.ToString();
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string realUriStr = MediaFileUtils::GetRealUriFromVirtualUri(uri.ToString());
+    Uri realUri(realUriStr);
+    MediaLibraryCommand command(realUri, Media::OperationType::OPEN);
+    
+#else
+    MediaLibraryCommand command(uri, Media::OperationType::OPEN);
+#endif
+
     string unifyMode = mode;
     transform(unifyMode.begin(), unifyMode.end(), unifyMode.begin(), ::tolower);
 
-    int err = CheckOpenFilePermission(uriStr, unifyMode);
+    int err = CheckOpenFilePermission(command, unifyMode);
     if (err == E_PERMISSION_DENIED) {
-        err = UriPermissionOperations::CheckUriPermission(uriStr, unifyMode);
+        err = UriPermissionOperations::CheckUriPermission(command.GetUriStringWithoutSegment(), unifyMode);
         if (err != E_OK) {
             MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
             return err;
@@ -299,8 +372,10 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     } else if (err < 0) {
         return err;
     }
-
-    return MediaLibraryDataManager::GetInstance()->OpenFile(Uri(uriStr), unifyMode);
+    if (command.GetUri().ToString().find(MEDIA_DATA_DB_THUMBNAIL) != string::npos) {
+        command.SetOprnObject(OperationObject::THUMBNAIL);
+    }
+    return MediaLibraryDataManager::GetInstance()->OpenFile(command, unifyMode);
 }
 
 int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const string &mode)
@@ -310,73 +385,50 @@ int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const string &mode)
 
 int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket &value)
 {
-    string closeUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
-    string insertUri = uri.ToString();
-    if (!PermissionUtils::SystemApiCheck(insertUri)) {
-        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-        return E_CHECK_SYSTEMAPP_FAIL;
-    }
-    bool isWrite = (insertUri == closeUri) ? false : true;
-    int32_t err = CheckPermFromUri(insertUri, isWrite);
+    MediaLibraryCommand cmd(uri);
+    int32_t err = CheckPermFromUri(cmd, true);
     if (err < 0) {
         return err;
     }
 
-    return MediaLibraryDataManager::GetInstance()->Insert(Uri(insertUri), value);
+    return MediaLibraryDataManager::GetInstance()->Insert(cmd, value);
 }
 
 int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &predicates,
     const DataShareValuesBucket &value)
 {
-    string updateUri = uri.ToString();
-    if (!PermissionUtils::SystemApiCheck(updateUri)) {
-        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-        return E_CHECK_SYSTEMAPP_FAIL;
-    }
-    int32_t err = CheckPermFromUri(updateUri, true);
+    MediaLibraryCommand cmd(uri);
+    int32_t err = CheckPermFromUri(cmd, true);
     if (err < 0) {
         return err;
     }
 
-    return MediaLibraryDataManager::GetInstance()->Update(Uri(updateUri), value, predicates);
+    return MediaLibraryDataManager::GetInstance()->Update(cmd, value, predicates);
 }
 
 int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
-    string uriStr = uri.ToString();
-    if (!PermissionUtils::SystemApiCheck(uriStr)) {
-        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-        return E_CHECK_SYSTEMAPP_FAIL;
-    }
-    int err = CheckPermFromUri(uriStr, true);
+    MediaLibraryCommand cmd(uri, Media::OperationType::DELETE);
+    int err = CheckPermFromUri(cmd, true);
     if (err < 0) {
         return err;
     }
 
-    return MediaLibraryDataManager::GetInstance()->Delete(Uri(uriStr), predicates);
+    return MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
 shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, vector<string> &columns, DatashareBusinessError &businessError)
 {
-    static const set<string> noPermissionCheck = {
-        MEDIALIBRARY_DIRECTORY_URI,
-        MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE,
-        MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE
-    };
+    MediaLibraryCommand cmd(uri, Media::OperationType::QUERY);
+    int32_t err = CheckPermFromUri(cmd, false);
+    if (err < 0) {
+        businessError.SetCode(err);
+        return nullptr;
+    }
 
-    string uriStr = uri.ToString();
-    if (!PermissionUtils::SystemApiCheck(uriStr)) {
-        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-        businessError.SetCode(E_PERMISSION_DENIED);
-        return nullptr;
-    }
-    if ((noPermissionCheck.find(uriStr) == noPermissionCheck.end()) && (CheckPermFromUri(uriStr, false) < 0)) {
-        businessError.SetCode(E_PERMISSION_DENIED);
-        return nullptr;
-    }
     int errCode = businessError.GetCode();
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(Uri(uriStr), columns, predicates, errCode);
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
     businessError.SetCode(to_string(errCode));
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("queryResultSet is nullptr! errCode: %{public}d", errCode);
@@ -396,16 +448,12 @@ string MediaDataShareExtAbility::GetType(const Uri &uri)
 
 int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShareValuesBucket> &values)
 {
-    string insertUri = uri.ToString();
-    if (!PermissionUtils::SystemApiCheck(insertUri)) {
-        MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
-        return E_CHECK_SYSTEMAPP_FAIL;
-    }
-    int32_t err = CheckPermFromUri(insertUri, true);
+    MediaLibraryCommand cmd(uri);
+    int32_t err = CheckPermFromUri(cmd, true);
     if (err < 0) {
         return err;
     }
-    return MediaLibraryDataManager::GetInstance()->BatchInsert(Uri(insertUri), values);
+    return MediaLibraryDataManager::GetInstance()->BatchInsert(cmd, values);
 }
 
 bool MediaDataShareExtAbility::RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver)

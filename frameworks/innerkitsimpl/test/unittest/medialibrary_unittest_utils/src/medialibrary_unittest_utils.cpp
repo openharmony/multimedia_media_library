@@ -107,7 +107,8 @@ bool MediaLibraryUnitTestUtils::GetFileAsset(const int fileId, shared_ptr<FileAs
     predicates.SetWhereClause(selections);
     Uri queryFileUri(MEDIALIBRARY_DATA_URI);
     int errCode = 0;
-    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(queryFileUri, columns, predicates, errCode);
+    MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
+    auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("GetFileAsset::resultSet == nullptr");
         return false;
@@ -144,7 +145,8 @@ bool MediaLibraryUnitTestUtils::CreateAlbum(string displayName, shared_ptr<FileA
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_FILE_PATH, dirPath);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
-    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(createAlbumUri, valuesBucket);
+    MediaLibraryCommand cmd(createAlbumUri);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     MEDIA_INFO_LOG("CreateAlbum:: %{public}s, retVal: %{public}d", dirPath.c_str(), retVal);
     if (retVal <= 0) {
         MEDIA_ERR_LOG("CreateAlbum::create failed, %{public}s", dirPath.c_str());
@@ -172,7 +174,8 @@ bool MediaLibraryUnitTestUtils::CreateFile(string displayName, shared_ptr<FileAs
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    int32_t retVal = MediaLibraryDataManager::GetInstance()->Insert(createAssetUri, valuesBucket);
+    MediaLibraryCommand cmd(createAssetUri);
+    int32_t retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     MEDIA_INFO_LOG("CreateFile:: %{public}s, retVal: %{public}d", (relativePath + displayName).c_str(), retVal);
     if (retVal <= 0) {
         MEDIA_ERR_LOG("CreateFile::create failed, %{public}s", (relativePath + displayName).c_str());
@@ -230,7 +233,8 @@ void MediaLibraryUnitTestUtils::TrashFile(shared_ptr<FileAsset> &fileAsset)
     string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
         MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM;
     Uri uri(uriString);
-    MediaLibraryDataManager::GetInstance()->Insert(uri, valuesBucket);
+    MediaLibraryCommand cmd(uri);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 }
 
 void MediaLibraryUnitTestUtils::RecoveryFile(shared_ptr<FileAsset> &fileAsset)
@@ -241,7 +245,8 @@ void MediaLibraryUnitTestUtils::RecoveryFile(shared_ptr<FileAsset> &fileAsset)
     string uriString = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
         MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
     Uri uri(uriString);
-    MediaLibraryDataManager::GetInstance()->Insert(uri, valuesBucket);
+    MediaLibraryCommand cmd(uri);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 }
 
 void MediaLibraryUnitTestUtils::WaitForCallback(shared_ptr<TestScannerCallback> callback)
@@ -260,7 +265,8 @@ int32_t MediaLibraryUnitTestUtils::GrantUriPermission(const int32_t fileId, cons
     values.Put(PERMISSION_FILE_ID, fileId);
     values.Put(PERMISSION_BUNDLE_NAME, bundleName);
     values.Put(PERMISSION_MODE, mode);
-    return MediaLibraryDataManager::GetInstance()->Insert(addPermission, values);
+    MediaLibraryCommand cmd(addPermission);
+    return MediaLibraryDataManager::GetInstance()->Insert(cmd, values);
 }
 
 TestScannerCallback::TestScannerCallback() : status_(-1) {}

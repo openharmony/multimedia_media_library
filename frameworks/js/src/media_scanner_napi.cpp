@@ -221,7 +221,7 @@ napi_value MediaScannerNapi::ScanDir(napi_env env, napi_callback_info info)
 void MediaScannerNapi::DataShareScanBoardcast(const std::string &event)
 {
     NAPI_INFO_LOG("MediaScannerNapi::DataShareScanBoardcast start, event: %{public}s", event.c_str());
-    Uri insertUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_BOARDCASTOPRN + "/" + MEDIA_SCAN_OPERATION);
+    Uri insertUri(URI_SCANNER);
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, event);
     int index = UserFileClient::Insert(insertUri, valuesBucket);
