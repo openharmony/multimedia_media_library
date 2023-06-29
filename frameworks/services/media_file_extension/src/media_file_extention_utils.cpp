@@ -482,7 +482,7 @@ void ChangeToLowerCase(vector<string> &vec)
     }
 }
 
-int32_t GetListFilePredicates(const FileInfo &parentInfo, const DistributedFS::FileFilter &filter, string &selection,
+int32_t GetListFilePredicates(const FileInfo &parentInfo, const FileAccessFwk::FileFilter &filter, string &selection,
     vector<string> &selectionArgs)
 {
     string selectUri = parentInfo.uri;
@@ -612,7 +612,7 @@ shared_ptr<NativeRdb::ResultSet> GetListRootResult(const FileInfo &parentInfo, M
 }
 
 shared_ptr<NativeRdb::ResultSet> GetListDirResult(const FileInfo &parentInfo, MediaFileUriType uriType,
-    const int64_t offset, const int64_t maxCount, const DistributedFS::FileFilter &filter)
+    const int64_t offset, const int64_t maxCount, const FileAccessFwk::FileFilter &filter)
 {
     string selection;
     vector<string> selectionArgs;
@@ -628,7 +628,7 @@ shared_ptr<NativeRdb::ResultSet> GetListDirResult(const FileInfo &parentInfo, Me
 
 #ifndef MEDIALIBRARY_COMPATIBILITY
 shared_ptr<NativeRdb::ResultSet> GetListAlbumResult(const FileInfo &parentInfo, MediaFileUriType uriType,
-    const int64_t offset, const int64_t maxCount, const DistributedFS::FileFilter &filter)
+    const int64_t offset, const int64_t maxCount, const FileAccessFwk::FileFilter &filter)
 {
     string selection;
     vector<string> selectionArgs;
@@ -746,7 +746,7 @@ int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::
 #endif
 
 int32_t MediaFileExtentionUtils::ListFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-    const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
+    const FileAccessFwk::FileFilter &filter, vector<FileInfo> &fileList)
 {
     MediaFileUriType uriType;
     auto ret = MediaFileExtentionUtils::ResolveUri(parentInfo, uriType);
@@ -829,7 +829,7 @@ shared_ptr<NativeRdb::ResultSet> GetScanFileResult(const Uri &uri, MediaFileUriT
 }
 
 shared_ptr<NativeRdb::ResultSet> SetScanFileSelection(const FileInfo &parentInfo, MediaFileUriType uriType,
-    const int64_t offset, const int64_t maxCount, const DistributedFS::FileFilter &filter)
+    const int64_t offset, const int64_t maxCount, const FileAccessFwk::FileFilter &filter)
 {
     string filePath;
     vector<string> selectionArgs;
@@ -872,7 +872,7 @@ shared_ptr<NativeRdb::ResultSet> SetScanFileSelection(const FileInfo &parentInfo
 }
 
 int32_t MediaFileExtentionUtils::ScanFile(const FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
-    const DistributedFS::FileFilter &filter, vector<FileInfo> &fileList)
+    const FileAccessFwk::FileFilter &filter, vector<FileInfo> &fileList)
 {
     MediaFileUriType uriType;
     auto ret = MediaFileExtentionUtils::ResolveUri(parentInfo, uriType);
@@ -888,7 +888,7 @@ int32_t MediaFileExtentionUtils::ScanFile(const FileInfo &parentInfo, const int6
 static int QueryDirSize(FileInfo fileInfo)
 {
     vector<FileInfo> fileInfoVec;
-    DistributedFS::FileFilter filter;
+    FileAccessFwk::FileFilter filter;
     int64_t offset { 0 };
     int32_t ret = E_ERR;
     int64_t size = 0;
@@ -1614,7 +1614,7 @@ int CopyFileOperation(string &srcUriStr, string &destRelativePath, CopyResult &c
 int CopyDirectoryOperation(FileInfo &fileInfo, Uri &destUri, vector<CopyResult> &copyResult, bool force)
 {
     vector<FileInfo> fileInfoVec;
-    DistributedFS::FileFilter filter { {}, {}, {}, 0, 0, false, false };
+    FileAccessFwk::FileFilter filter { {}, {}, {}, -1, -1, false, false };
     int64_t offset = 0;
     int copyRet = E_SUCCESS;
     int ret = E_SUCCESS;

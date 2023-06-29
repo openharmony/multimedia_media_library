@@ -45,7 +45,6 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
 
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
-    "../../../../../distributeddatamgr/distributedfile/interfaces/kits/js/src/common",
   ]
   include_dirs += include_fileext
   include_dirs += include_distributed
