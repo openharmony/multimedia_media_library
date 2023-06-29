@@ -237,7 +237,6 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { SMARTALBUM_TABLE, OperationObject::SMART_ALBUM },
         { SMARTALBUM_MAP_TABLE, OperationObject::SMART_ALBUM_MAP },
         { MEDIA_QUERYOPRN_QUERYVOLUME, OperationObject::MEDIA_VOLUME },
-        { BUNDLE_PERMISSION_TABLE, OperationObject::BUNDLE_PERMISSION },
     };
 
     const string opObject = MediaFileUri::GetPathFirstDentry(uri_);
