@@ -276,5 +276,46 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_GetFileId_Test_006, TestSize.L
     string uri = "data://data/test/123";
     EXPECT_EQ(MediaFileUri(uri).GetFileId(), "123");
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_GetFilePath_Test_001, TestSize.Level0)
+{
+    string uri = "";
+    EXPECT_EQ(MediaFileUri(uri).GetFilePath(), "");
+    uri = "data://data/test/123";
+    EXPECT_EQ(MediaFileUri(uri).GetFilePath(), "");
+    uri = "file://data/test/123";
+    EXPECT_EQ(MediaFileUri(uri).GetFilePath(), "");
+    uri = "datashare://data/test/123";
+    EXPECT_EQ(MediaFileUri(uri).GetFilePath(), "");
+    uri = "file://data/test/tt";
+    EXPECT_EQ(MediaFileUri(uri).GetFilePath(), "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsApi10_Test_001, TestSize.Level0)
+{
+    string uri = "/data/test/";
+    EXPECT_EQ(MediaFileUri(uri).IsApi10(), false);
+    uri = "datashare://data/test/";
+    EXPECT_EQ(MediaFileUri(uri).IsApi10(), false);
+    uri = "datashare://media/test/";
+    EXPECT_EQ(MediaFileUri(uri).IsApi10(), false);
+    uri = "datashare://media/test/6";
+    EXPECT_EQ(MediaFileUri(uri).IsApi10(), false);
+    uri = "";
+    EXPECT_EQ(MediaFileUri(uri).IsApi10(), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetQueryKeys_Test_001, TestSize.Level0)
+{
+    string uri = "";
+    auto &queryKey = MediaFileUri(uri).GetQueryKeys();
+    EXPECT_EQ(queryKey.count("operation"), 0);
+    uri = "file://data/test/123";
+    queryKey = MediaFileUri(uri).GetQueryKeys();
+    EXPECT_EQ(queryKey.count("operation"), 0);
+    uri = "datashare://media/test/";
+    queryKey = MediaFileUri(uri).GetQueryKeys();
+    EXPECT_GE(queryKey.count("operation"), 0);
+}
 } // namespace Media
 } // namespace OHOS
