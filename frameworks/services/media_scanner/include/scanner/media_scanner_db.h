@@ -44,13 +44,13 @@ public:
     ~MediaScannerDb() = default;
 
     static std::unique_ptr<MediaScannerDb> GetDatabaseInstance();
-    bool DeleteMetadata(const std::vector<std::string> &idList);
+    bool DeleteMetadata(const std::vector<std::string> &idList, const std::string &tableName);
     void NotifyDatabaseChange(const MediaType mediaType);
     void SetRdbHelper(void);
 
-    std::string InsertMetadata(const Metadata &metadata, bool &setScannedId,
+    std::string InsertMetadata(const Metadata &metadata, std::string &tableName,
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    std::string UpdateMetadata(const Metadata &metadata, bool &setScannedId,
+    std::string UpdateMetadata(const Metadata &metadata, std::string &tableName,
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
     std::string GetFileDBUriFromPath(const std::string &path);
     std::vector<std::string> BatchInsert(const std::vector<Metadata> &metadataList);
@@ -58,7 +58,7 @@ public:
     int32_t InsertAlbum(const Metadata &metadata);
     int32_t UpdateAlbum(const Metadata &metadata);
     int32_t ReadAlbums(const std::string &path, std::unordered_map<std::string, Metadata> &albumMap);
-    std::unordered_map<int32_t, MediaType> GetIdsFromFilePath(const std::string &path);
+    std::unordered_map<int32_t, MediaType> GetIdsFromFilePath(const std::string &path, const std::string &tableName);
 
     int32_t GetIdFromPath(const std::string &path);
     int32_t GetFileBasicInfo(const std::string &path, std::unique_ptr<Metadata> &ptr,
