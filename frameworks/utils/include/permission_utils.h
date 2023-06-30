@@ -65,6 +65,7 @@ public:
     static std::string GetClientBundleName();
     static uint32_t GetTokenId();
     static bool IsSystemApp();
+    static std::string GetPackageNameByBundleName(const std::string &bundleName);
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
