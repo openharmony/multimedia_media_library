@@ -713,8 +713,8 @@ MediaType MediaFileUtils::GetMediaType(const string &filePath)
         return MEDIA_TYPE_ALL;
     }
 
-    string extension = GetExtensionFromPath(filePath);
-    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
+    string extention = GetExtensionFromPath(filePath);
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extention, MEDIA_MIME_TYPE_MAP);
     return MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
 }
 
@@ -726,11 +726,11 @@ string MediaFileUtils::SplitByChar(const string &str, const char split)
 
 string MediaFileUtils::GetExtensionFromPath(const string &path)
 {
-    string extension = SplitByChar(path, '.');
-    if (!extension.empty()) {
-        transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+    string extention = SplitByChar(path, '.');
+    if (!extention.empty()) {
+        transform(extention.begin(), extention.end(), extention.begin(), ::tolower);
     }
-    return extension;
+    return extention;
 }
 
 int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)

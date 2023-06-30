@@ -258,13 +258,14 @@ void MediaLibraryUnitTestUtils::WaitForCallback(shared_ptr<TestScannerCallback> 
 }
 
 int32_t MediaLibraryUnitTestUtils::GrantUriPermission(const int32_t fileId, const string &bundleName,
-    const string &mode)
+    const string &mode, const int32_t tableType)
 {
     Uri addPermission(MEDIALIBRARY_BUNDLEPERM_URI + "/" + BUNDLE_PERMISSION_INSERT);
     DataShareValuesBucket values;
     values.Put(PERMISSION_FILE_ID, fileId);
     values.Put(PERMISSION_BUNDLE_NAME, bundleName);
     values.Put(PERMISSION_MODE, mode);
+    values.Put(PERMISSION_TABLE_TYPE, tableType);
     MediaLibraryCommand cmd(addPermission);
     return MediaLibraryDataManager::GetInstance()->Insert(cmd, values);
 }

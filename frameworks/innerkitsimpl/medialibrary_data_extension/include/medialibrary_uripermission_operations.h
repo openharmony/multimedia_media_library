@@ -22,10 +22,13 @@ namespace OHOS {
 namespace Media {
 class UriPermissionOperations {
 public:
-    static int32_t GetUriPermissionMode(const std::string &fileId, const std::string &bundleName, std::string &mode);
+    static int32_t GetUriPermissionMode(const std::string &fileId, const std::string &bundleName,
+        int32_t tableType, std::string &mode);
     static int32_t CheckUriPermission(const std::string &fileUri, std::string mode);
     static int32_t HandleUriPermOperations(MediaLibraryCommand &cmd);
     static int32_t HandleUriPermInsert(MediaLibraryCommand &cmd);
+    static int32_t InsertBundlePermission(const int32_t &fileId, const std::string &bundleName,
+        const std::string &mode, int32_t tableType);
 };
 
 } // Media

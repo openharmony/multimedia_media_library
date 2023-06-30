@@ -370,6 +370,17 @@ static bool CheckTypeFromRootDir(const std::string &rootDirName, int32_t type)
     return false;
 }
 
+int32_t MediaLibraryAssetOperations::CheckWithType(bool isContains, const string &displayName,
+    const string &extention, int32_t mediaType)
+{
+    string name = isContains ? displayName : extention;
+    int32_t errCode =  isContains ? CheckDisplayNameWithType(name, mediaType) : CheckExtWithType(name, mediaType);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to Check Dir and extention, (displayName or extention)=%{private}s, mediaType=%{public}d",
+        name.c_str(), mediaType);
+    return errCode;
+}
+
 int32_t MediaLibraryAssetOperations::CheckDisplayNameWithType(const string &displayName, int32_t mediaType)
 {
     int32_t ret = MediaFileUtils::CheckDisplayName(displayName);
@@ -384,6 +395,16 @@ int32_t MediaLibraryAssetOperations::CheckDisplayNameWithType(const string &disp
     CHECK_AND_RETURN_RET_LOG(typeFromExt == mediaType, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL,
         "cannot match, mediaType=%{public}d, ext=%{public}s, type from ext=%{public}d",
         mediaType, ext.c_str(), typeFromExt);
+    return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::CheckExtWithType(const string &extention, int32_t mediaType)
+{
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extention);
+    auto typeFromExt = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
+    CHECK_AND_RETURN_RET_LOG(typeFromExt == mediaType, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL,
+        "cannot match, mediaType=%{public}d, ext=%{public}s, type from ext=%{public}d",
+        mediaType, extention.c_str(), typeFromExt);
     return E_OK;
 }
 
@@ -436,6 +457,24 @@ int32_t MediaLibraryAssetOperations::SetAssetPathInCreate(FileAsset &fileAsset)
 
     // filePath can not be empty
     fileAsset.SetPath(filePath);
+    return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::SetAssetPath(FileAsset &fileAsset, const string &extension)
+{
+    string filePath;
+    int32_t uniqueId = CreateAssetUniqueId(fileAsset.GetMediaType());
+    int32_t errCode = CreateAssetPathById(uniqueId, fileAsset.GetMediaType(), extension, filePath);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
+        return errCode;
+    }
+
+    // filePath can not be empty
+    fileAsset.SetPath(filePath);
+    string fileName = MediaFileUtils::GetFileName(filePath);
+    string displayName = fileName.substr(0, fileName.find('_')) + fileName.substr(fileName.rfind('_') + 1);
+    fileAsset.SetDisplayName(displayName);
     return E_OK;
 }
 
