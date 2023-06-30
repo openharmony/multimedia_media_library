@@ -365,14 +365,24 @@ const string FileAsset::GetOwnerPackage() const
     return GetStrMember(MEDIA_DATA_DB_OWNER_PACKAGE);
 }
 
-void FileAsset::SetOwnerPackage(const string &packageName)
+void FileAsset::SetOwnerPackage(const string &ownerPackage)
 {
-    member_[MEDIA_DATA_DB_OWNER_PACKAGE] = packageName;
+    member_[MEDIA_DATA_DB_OWNER_PACKAGE] = ownerPackage;
 }
 
 ResultNapiType FileAsset::GetResultNapiType() const
 {
     return resultNapiType_;
+}
+
+const string FileAsset::GetPackageName() const
+{
+    return GetStrMember(MediaColumn::MEDIA_PACKAGE_NAME);
+}
+
+void FileAsset::SetPackageName(const string &packageName)
+{
+    member_[MediaColumn::MEDIA_PACKAGE_NAME] = packageName;
 }
 
 void FileAsset::SetResultNapiType(const ResultNapiType type)

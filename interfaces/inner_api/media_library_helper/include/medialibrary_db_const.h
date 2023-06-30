@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 10;
+const int32_t MEDIA_RDB_VERSION = 11;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -33,6 +33,7 @@ enum {
     VERSION_UPDATE_CLOUD_PATH = 8,
     VERSION_UPDATE_API10_TABLE = 9,
     VERSION_ADD_TABLE_TYPE = 10,
+    VERSION_ADD_PACKAGE_NAME = 11,
 };
 
 enum {
@@ -142,6 +143,7 @@ const std::string MEDIA_DATA_DB_MEDIA_TYPE = "media_type";
 const std::string MEDIA_DATA_DB_HEIGHT = "height";
 const std::string MEDIA_DATA_DB_WIDTH = "width";
 const std::string MEDIA_DATA_DB_OWNER_PACKAGE = "owner_package";
+const std::string MEDIA_DATA_DB_PACKAGE_NAME = "package_name";
 
 const std::string MEDIA_DATA_DB_IS_FAV = "is_favorite";
 const std::string MEDIA_DATA_DB_IS_TRASH = "is_trash";
@@ -217,6 +219,7 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        MEDIA_DATA_DB_RECYCLE_PATH + " TEXT, " +
                                        MEDIA_DATA_DB_IS_FAV + " BOOL DEFAULT 0, " +
                                        MEDIA_DATA_DB_OWNER_PACKAGE + " TEXT, " +
+                                       MEDIA_DATA_DB_PACKAGE_NAME + " TEXT, " +
                                        MEDIA_DATA_DB_DEVICE_NAME + " TEXT, " +
                                        MEDIA_DATA_DB_IS_PENDING + " BOOL DEFAULT 0, " +
                                        MEDIA_DATA_DB_TIME_PENDING + " BIGINT DEFAULT 0, " +
