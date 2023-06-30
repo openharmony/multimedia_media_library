@@ -17,7 +17,6 @@
 #include "medialibrary_napi_utils.h"
 
 #include "datashare_predicates_proxy.h"
-#include "ipc_skeleton.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_library_napi.h"
@@ -28,11 +27,9 @@
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
 #include "smart_album_napi.h"
-#include "tokenid_kit.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
-using namespace OHOS::Security::AccessToken;
 
 namespace OHOS {
 namespace Media {
@@ -694,12 +691,6 @@ void MediaLibraryNapiUtils::UriAppendKeyValue(string &uri, const string &key, co
     } else {
         uri.insert(posJ, append);
     }
-}
-
-bool MediaLibraryNapiUtils::IsSystemApp()
-{
-    uint64_t tokenId = IPCSkeleton::GetCallingFullTokenID();
-    return TokenIdKit::IsSystemAppByFullTokenID(tokenId);
 }
 
 napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<string> &fetchColumn,
