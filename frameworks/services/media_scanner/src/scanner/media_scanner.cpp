@@ -113,30 +113,18 @@ int32_t MediaScannerObj::CommitTransaction()
     unordered_set<MediaType> mediaTypeSet = {};
     string uri;
     unique_ptr<Metadata> data;
+    string tableName;
 
     // will begin a transaction in later pr
     for (uint32_t i = 0; i < dataBuffer_.size(); i++) {
         data = move(dataBuffer_[i]);
         if (data->GetFileId() != FILE_ID_DEFAULT) {
-            bool setScannedId = false;
-            uri = mediaScannerDb_->UpdateMetadata(*data, setScannedId);
-#ifdef MEDIALIBRARY_COMPATIBILITY
-            if (setScannedId) {
-                scannedIds_.insert(data->GetFileId());
-            }
-#else
-            scannedIds_.insert(data->GetFileId());
-#endif
+            uri = mediaScannerDb_->UpdateMetadata(*data, tableName);
+            scannedIds_.insert(make_pair(tableName, data->GetFileId()));
         } else {
-            bool setScannedId = false;
-            uri = mediaScannerDb_->InsertMetadata(*data, setScannedId);
-#ifdef MEDIALIBRARY_COMPATIBILITY
-            if (setScannedId) {
-                scannedIds_.insert(stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri)));
-            }
-#else
-            scannedIds_.insert(stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri)));
-#endif
+            uri = mediaScannerDb_->InsertMetadata(*data, tableName);
+            scannedIds_.insert(make_pair(tableName,
+                stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri))));
         }
 
         // set uri for callback
@@ -165,11 +153,11 @@ int32_t MediaScannerObj::AddToTransaction()
 
 int32_t MediaScannerObj::Commit()
 {
-    bool setScannedId = false;
+    string tableName;
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
-        uri_ = mediaScannerDb_->UpdateMetadata(*data_, setScannedId, api_);
+        uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_);
     } else {
-        uri_ = mediaScannerDb_->InsertMetadata(*data_, setScannedId, api_);
+        uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_);
     }
 
     // notify change
@@ -215,9 +203,26 @@ void MediaScannerObj::SetPhotoSubType(const string &parent)
 }
 #endif
 
+static bool SkipBucket(const string &albumPath)
+{
+    string path = albumPath;
+    if (path.back() != SLASH_CHAR) {
+        path += SLASH_CHAR;
+    }
+
+    if (path.find(ROOT_MEDIA_DIR + AUDIO_BUCKET + SLASH_CHAR) != string::npos) {
+        return true;
+    }
+
+    if (path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET + SLASH_CHAR) != string::npos) {
+        return true;
+    }
+    return false;
+}
+
 int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId)
 {
-    if (api_ == MediaLibraryApi::API_10) {
+    if (api_ == MediaLibraryApi::API_10 || SkipBucket(parent)) {
         return E_OK;
     }
     size_t len = ROOT_MEDIA_DIR.length();
@@ -281,13 +286,7 @@ int32_t MediaScannerObj::GetFileMetadata()
 
     // may need isPending here
     if ((data_->GetFileDateModified() == statInfo.st_mtime) && (data_->GetFileSize() == statInfo.st_size)) {
-#ifdef MEDIALIBRARY_COMPATIBILITY
-        if (data_->GetTableName() == MEDIALIBRARY_TABLE) {
-            scannedIds_.insert(data_->GetFileId());
-        }
-#else
-        scannedIds_.insert(data_->GetFileId());
-#endif
+        scannedIds_.insert(make_pair(data_->GetTableName(), data_->GetFileId()));
         return E_SCANNED;
     }
 
@@ -409,13 +408,15 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
         MEDIA_ERR_LOG("stat dir error %{public}d", errno);
         return UNKNOWN_ID;
     }
-
+    if (SkipBucket(albumPath)) {
+        return FILE_ID_DEFAULT;
+    }
     if (albumMap_.find(albumPath) != albumMap_.end()) {
         Metadata albumInfo = albumMap_.at(albumPath);
         albumId = albumInfo.GetFileId();
 
         if (albumInfo.GetFileDateModified() == statInfo.st_mtime) {
-            scannedIds_.insert(albumId);
+            scannedIds_.insert(make_pair(MEDIALIBRARY_TABLE, albumId));
             return albumId;
         } else {
             update = true;
@@ -441,7 +442,7 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
     } else {
         albumId = mediaScannerDb_->InsertAlbum(metadata);
     }
-    scannedIds_.insert(albumId);
+    scannedIds_.insert(make_pair(MEDIALIBRARY_TABLE, albumId));
 
     return albumId;
 }
@@ -450,27 +451,33 @@ int32_t MediaScannerObj::CleanupDirectory()
 {
     vector<int32_t> toBeDeletedIds;
     unordered_set<MediaType> mediaTypeSet;
-    unordered_map<int32_t, MediaType> prevIdMap;
+    vector<string> scanTables = {
+        MEDIALIBRARY_TABLE, PhotoColumn::PHOTOS_TABLE, AudioColumn::AUDIOS_TABLE
+    };
 
-    prevIdMap = mediaScannerDb_->GetIdsFromFilePath(dir_);
-    for (auto itr : prevIdMap) {
-        auto it = scannedIds_.find(itr.first);
-        if (it != scannedIds_.end()) {
-            scannedIds_.erase(it);
-        } else {
-            toBeDeletedIds.push_back(itr.first);
-            mediaTypeSet.insert(itr.second);
+    for (auto table : scanTables) {
+        // clean up table
+        unordered_map<int32_t, MediaType> prevIdMap;
+        prevIdMap = mediaScannerDb_->GetIdsFromFilePath(dir_, table);
+        for (auto itr : prevIdMap) {
+            auto it = scannedIds_.find(make_pair(table, itr.first));
+            if (it != scannedIds_.end()) {
+                scannedIds_.erase(it);
+            } else {
+                toBeDeletedIds.push_back(itr.first);
+                mediaTypeSet.insert(itr.second);
+            }
         }
-    }
 
-    // convert deleted id list to vector of strings
-    vector<string> deleteIdList;
-    for (auto id : toBeDeletedIds) {
-        deleteIdList.push_back(to_string(id));
-    }
+        // convert deleted id list to vector of strings
+        vector<string> deleteIdList;
+        for (auto id : toBeDeletedIds) {
+            deleteIdList.push_back(to_string(id));
+        }
 
-    if (!deleteIdList.empty()) {
-        mediaScannerDb_->DeleteMetadata(deleteIdList);
+        if (!deleteIdList.empty()) {
+            mediaScannerDb_->DeleteMetadata(deleteIdList, table);
+        }
     }
 
     for (const MediaType &mediaType : mediaTypeSet) {

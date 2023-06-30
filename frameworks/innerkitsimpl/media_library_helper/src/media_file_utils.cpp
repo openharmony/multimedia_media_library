@@ -550,7 +550,7 @@ int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
         return err;
     }
 
-    static const string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
+    static const string TITLE_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
     if (RegexCheck(albumName, TITLE_REGEX_CHECK)) {
         MEDIA_ERR_LOG("Failed to check title regex: %{private}s", albumName.c_str());
         return -EINVAL;
