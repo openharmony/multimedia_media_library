@@ -4150,24 +4150,20 @@ static void JSGetAssetsExecute(napi_env env, void *data)
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     string queryUri;
-    if (!UserFileClient::sIsSystemApp_) {
-        queryUri = SILENT_QUERY_PHOTO_URI;
-    } else {
-        switch (context->assetType) {
-            case TYPE_AUDIO: {
-                queryUri = UFM_QUERY_AUDIO;
-                MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-                break;
-            }
-            case TYPE_PHOTO: {
-                queryUri = UFM_QUERY_PHOTO;
-                MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-                break;
-            }
-            default: {
-                context->SaveError(-EINVAL);
-                return;
-            }
+    switch (context->assetType) {
+        case TYPE_AUDIO: {
+            queryUri = UFM_QUERY_AUDIO;
+            MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+            break;
+        }
+        case TYPE_PHOTO: {
+            queryUri = UFM_QUERY_PHOTO;
+            MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+            break;
+        }
+        default: {
+            context->SaveError(-EINVAL);
+            return;
         }
     }
 
@@ -4224,12 +4220,7 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     tracer.Start("JSGetPhotoAlbumsExecute");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
-    string queryUri;
-    if (!UserFileClient::sIsSystemApp_) {
-        queryUri = SILENT_QUERY_PHOTO_ALBUM_URI;
-    } else {
-        queryUri = UFM_QUERY_PHOTO_ALBUM;
-    }
+    string queryUri = UFM_QUERY_PHOTO_ALBUM;
     Uri uri(queryUri);
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
