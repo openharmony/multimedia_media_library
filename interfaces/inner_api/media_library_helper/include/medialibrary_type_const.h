@@ -99,6 +99,12 @@ enum class SyncStatusType : int32_t {
     TYPE_UPLOAD,
 };
 
+enum class TableType : int32_t {
+    TYPE_FILES = 0,
+    TYPE_PHOTOS,
+    TYPE_AUDIOS,
+};
+
 const int32_t SUCCESS = 0;
 
 constexpr int32_t DEFAULT_INT32 = 0;

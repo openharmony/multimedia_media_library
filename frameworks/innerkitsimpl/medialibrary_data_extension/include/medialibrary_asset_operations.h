@@ -53,10 +53,14 @@ protected:
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
 
     static int32_t InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset);
+    static int32_t CheckWithType(bool isContains, const std::string &displayName,
+         const std::string &extention, int32_t mediaType);
     static int32_t CheckDisplayNameWithType(const std::string &displayName, int32_t mediaType);
+    static int32_t CheckExtWithType(const std::string &extention, int32_t mediaType);
     static int32_t CheckRelativePathWithType(const std::string &relativePath, int32_t mediaType);
     static void GetAssetRootDir(int32_t mediaType, std::string &rootDirPath);
     static int32_t SetAssetPathInCreate(FileAsset &fileAsset);
+    static int32_t SetAssetPath(FileAsset &fileAsset, const std::string &extention);
     static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
 
     static bool IsContainsValue(NativeRdb::ValuesBucket &values, const std::string &key);
