@@ -2013,15 +2013,14 @@ napi_value GetJSArgsForFavorite(napi_env env, size_t argc, const napi_value argv
 static void FavoriteByUpdate(FileAssetAsyncContext *context)
 {
     DataShareValuesBucket valuesBucket;
-    string uriString = MEDIALIBRARY_DATA_URI + "/";
+    string uriString;
     if ((context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE) ||
         (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO)) {
-        uriString = Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+        uriString = URI_UPDATE_PHOTO;
     } else {
-        uriString = Media::MEDIA_AUDIOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+        uriString = URI_UPDATE_PHOTO;
     }
     valuesBucket.Put(MEDIA_DATA_DB_IS_FAV, (context->isFavorite ? IS_FAV : NOT_FAV));
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
     DataSharePredicates predicates;
     int32_t fileId = context->objectPtr->GetId();
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
