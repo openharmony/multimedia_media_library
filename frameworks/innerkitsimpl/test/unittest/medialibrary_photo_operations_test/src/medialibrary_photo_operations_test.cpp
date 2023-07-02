@@ -326,7 +326,7 @@ bool QueryAndVerifyPhotoAsset(const string &columnName, const string &value,
         for (const auto &iter : verifyColumnAndValuesMap) {
             string resStr = GetFileAssetValueToStr(*fileAsset, iter.first);
             if (resStr.empty()) {
-                MEDIA_ERR_LOG("verify failed! Param %{public}s is empty", resStr.c_str());
+                MEDIA_ERR_LOG("verify failed! Param %{public}s is empty", iter.first.c_str());
                 return false;
             }
             if (resStr != iter.second) {
@@ -884,6 +884,28 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_004");
 }
 #endif
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_005");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    string extention = "jpg";
+    ValuesBucket values;
+    values.PutString("extention", extention);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutInt(PERMISSION_TABLE_TYPE, static_cast<int32_t>(TableType::TYPE_PHOTOS));
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_GE(ret, 0);
+    unordered_map<string, string> verifyMap = {
+        { PhotoColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_IMAGE) },
+        { PhotoColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING) },
+    };
+    bool res = QueryAndVerifyPhotoAsset(PhotoColumn::MEDIA_ID, to_string(ret), verifyMap);
+    EXPECT_EQ(res, true);
+    MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_005");
+}
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_001, TestSize.Level0)
 {
