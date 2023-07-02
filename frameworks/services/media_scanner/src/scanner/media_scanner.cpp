@@ -449,7 +449,6 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
 
 int32_t MediaScannerObj::CleanupDirectory()
 {
-    vector<int32_t> toBeDeletedIds;
     unordered_set<MediaType> mediaTypeSet;
     vector<string> scanTables = {
         MEDIALIBRARY_TABLE, PhotoColumn::PHOTOS_TABLE, AudioColumn::AUDIOS_TABLE
@@ -457,6 +456,7 @@ int32_t MediaScannerObj::CleanupDirectory()
 
     for (auto table : scanTables) {
         // clean up table
+        vector<string> deleteIdList;
         unordered_map<int32_t, MediaType> prevIdMap;
         prevIdMap = mediaScannerDb_->GetIdsFromFilePath(dir_, table);
         for (auto itr : prevIdMap) {
@@ -464,15 +464,9 @@ int32_t MediaScannerObj::CleanupDirectory()
             if (it != scannedIds_.end()) {
                 scannedIds_.erase(it);
             } else {
-                toBeDeletedIds.push_back(itr.first);
+                deleteIdList.push_back(to_string(itr.first));
                 mediaTypeSet.insert(itr.second);
             }
-        }
-
-        // convert deleted id list to vector of strings
-        vector<string> deleteIdList;
-        for (auto id : toBeDeletedIds) {
-            deleteIdList.push_back(to_string(id));
         }
 
         if (!deleteIdList.empty()) {
