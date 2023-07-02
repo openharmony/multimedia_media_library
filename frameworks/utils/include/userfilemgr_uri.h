@@ -75,6 +75,7 @@ const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
 // Photo album operations constants
 const std::string PHOTO_ALBUM_OPRN = "photo_album_v10_operation";
 const std::string URI_QUERY_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_QUERY;
+const std::string URI_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_DELETE_PHOTOS;
 
 // Photo map operations constants
 const std::string PHOTO_MAP_OPRN = "photo_map_v10_operation";
