@@ -1667,7 +1667,7 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
 static void HandleCompatDeletePhoto(MediaLibraryAsyncContext *context,
     const string &mediaType, const string &deleteId)
 {
-    Uri uri(UFM_DELETE_PHOTOS);
+    Uri uri(URI_DELETE_PHOTOS);
     DataSharePredicates predicates;
     predicates.In(MediaColumn::MEDIA_ID, vector<string>({ deleteId }));
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
