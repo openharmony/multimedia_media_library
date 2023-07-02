@@ -27,43 +27,38 @@ using namespace OHOS::AppExecFwk;
 namespace OHOS {
 namespace Media {
 
-void UserFileClient::GetDataShareHelper(napi_env env, napi_callback_info info)
+shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE] = {0};
     napi_value thisVar = nullptr;
-    NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
 
+    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = nullptr;
     bool isStageMode = false;
     napi_status status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], isStageMode);
     if (status != napi_ok || !isStageMode) {
         auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
         if (ability == nullptr) {
             NAPI_ERR_LOG("Failed to get native ability instance");
-            return;
+            return nullptr;
         }
         auto context = ability->GetContext();
         if (context == nullptr) {
             NAPI_ERR_LOG("Failed to get native context instance");
-            return;
+            return nullptr;
         }
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
-        if (!sIsSystemApp_) {
-            sSilentDataShareHelper_ = DataShare::DataShareHelper::Creator(context, SILENT_MEDIALIBRARY_DATA_URI);
-        }
+        dataShareHelper = DataShare::DataShareHelper::Creator(context, MEDIALIBRARY_DATA_URI);
     } else {
         auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
         if (context == nullptr) {
             NAPI_ERR_LOG("Failed to get native stage context instance");
-            return;
+            return nullptr;
         }
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(context->GetToken(), MEDIALIBRARY_DATA_URI);
-        if (!sIsSystemApp_) {
-            sSilentDataShareHelper_ = DataShare::DataShareHelper::Creator(context->GetToken(),
-                SILENT_MEDIALIBRARY_DATA_URI);
-        }
+        dataShareHelper = DataShare::DataShareHelper::Creator(context->GetToken(), MEDIALIBRARY_DATA_URI);
     }
-    MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(sDataShareHelper_);
+    MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(dataShareHelper);
+    return dataShareHelper;
 }
 
 bool UserFileClient::IsValid()
@@ -78,36 +73,18 @@ void UserFileClient::Init(const sptr<IRemoteObject> &token)
 
 void UserFileClient::Init(napi_env env, napi_callback_info info)
 {
-    sIsSystemApp_ = MediaLibraryNapiUtils::IsSystemApp();
-    GetDataShareHelper(env, info);
+    sDataShareHelper_ = GetDataShareHelper(env, info);
 }
 
 shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePredicates &predicates,
     std::vector<std::string> &columns, int &errCode)
 {
-    if (!sIsSystemApp_)  {
-        return SilentQuery(uri, predicates, columns, errCode);
-    }
-
     if (!IsValid()) {
         NAPI_ERR_LOG("Query fail, helper null");
         return nullptr;
     }
     DatashareBusinessError businessError;
     auto resultSet = sDataShareHelper_->Query(uri, predicates, columns, &businessError);
-    errCode = businessError.GetCode();
-    return resultSet;
-}
-
-shared_ptr<DataShareResultSet> UserFileClient::SilentQuery(Uri &uri, const DataSharePredicates &predicates,
-    std::vector<std::string> &columns, int &errCode)
-{
-    if (sSilentDataShareHelper_ == nullptr) {
-        NAPI_ERR_LOG("SilentQuery fail, helper null");
-        return nullptr;
-    }
-    DatashareBusinessError businessError;
-    auto resultSet = sSilentDataShareHelper_->Query(uri, predicates, columns, &businessError);
     errCode = businessError.GetCode();
     return resultSet;
 }

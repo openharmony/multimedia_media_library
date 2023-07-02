@@ -678,9 +678,6 @@ static void JSGetPhotoAssetsExecute(napi_env env, void *data)
 
     auto context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
     string queryUri = UFM_QUERY_PHOTO_MAP;
-    if (!UserFileClient::sIsSystemApp_) {
-        queryUri = SILENT_QUERY_PHOTO_URI;
-    }
     Uri uri(queryUri);
     int32_t errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);

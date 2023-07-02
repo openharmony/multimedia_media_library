@@ -2018,7 +2018,7 @@ static void FavoriteByUpdate(FileAssetAsyncContext *context)
         (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO)) {
         uriString = URI_UPDATE_PHOTO;
     } else {
-        uriString = URI_UPDATE_PHOTO;
+        uriString = URI_UPDATE_AUDIO;
     }
     valuesBucket.Put(MEDIA_DATA_DB_IS_FAV, (context->isFavorite ? IS_FAV : NOT_FAV));
     DataSharePredicates predicates;
