@@ -326,7 +326,7 @@ bool QueryAndVerifyAudioAsset(const string &columnName, const string &value,
         for (const auto &iter : verifyColumnAndValuesMap) {
             string resStr = GetFileAssetValueToStr(*fileAsset, iter.first);
             if (resStr.empty()) {
-                MEDIA_ERR_LOG("verify failed! Param %{public}s is empty", resStr.c_str());
+                MEDIA_ERR_LOG("verify failed! Param %{public}s is empty", iter.first.c_str());
                 return false;
             }
             if (resStr != iter.second) {
@@ -860,6 +860,28 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_003");
 }
 #endif
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd audio_oprn_create_api10_test_005");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    string extention = "mp3";
+    ValuesBucket values;
+    values.PutString("extention", extention);
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_AUDIO);
+    values.PutInt(PERMISSION_TABLE_TYPE, static_cast<int32_t>(TableType::TYPE_PHOTOS));
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryAudioOperations::Create(cmd);
+    EXPECT_GE(ret, 0);
+    unordered_map<string, string> verifyMap = {
+        { PhotoColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_AUDIO) },
+        { PhotoColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING) },
+    };
+    bool res = QueryAndVerifyAudioAsset(PhotoColumn::MEDIA_ID, to_string(ret), verifyMap);
+    EXPECT_EQ(res, true);
+    MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_005");
+}
 
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_delete_api10_test_001, TestSize.Level0)
 {
