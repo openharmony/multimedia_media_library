@@ -373,7 +373,7 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
 {
     oprnObject = GetOprnObjectFromPath(path);
     if (api == MediaLibraryApi::API_10) {
-        whereClause = MediaColumn::MEDIA_FILE_PATH + " = ? And " + MediaColumn::MEDIA_DATE_TRASHED + " = ? ";
+        whereClause = MediaColumn::MEDIA_FILE_PATH + " = ?";
         if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
@@ -390,13 +390,13 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
         oprnObject = OperationObject::FILESYSTEM_ASSET;
 #endif
         if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
-            whereClause = MediaColumn::MEDIA_FILE_PATH + " = ? And " + MediaColumn::MEDIA_DATE_TRASHED + " = ? ";
+            whereClause = MediaColumn::MEDIA_FILE_PATH + " = ?";
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
                 MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
-            whereClause = MediaColumn::MEDIA_FILE_PATH + " = ? And " + MediaColumn::MEDIA_DATE_TRASHED + " = ? ";
+            whereClause = MediaColumn::MEDIA_FILE_PATH + " = ?";
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
                 MediaColumn::MEDIA_NAME
@@ -424,7 +424,12 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
     OperationObject oprnObject = OperationObject::FILESYSTEM_ASSET;
     GetQueryParamsByPath(path, api, columns, oprnObject, whereClause);
 
-    vector<string> args = { path, to_string(NOT_TRASHED) };
+    vector<string> args;
+    if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
+        args = { path };
+    } else {
+        args = { path, to_string(NOT_TRASHED) };
+    }
 
     MediaLibraryCommand cmd(oprnObject, OperationType::QUERY, api);
     cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
