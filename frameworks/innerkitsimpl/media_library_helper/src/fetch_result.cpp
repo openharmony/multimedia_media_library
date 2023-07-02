@@ -340,7 +340,8 @@ template<class T>
 void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
 {
     string uri;
-    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
+    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR ||
+        resultNapiType_ == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         string typeMask;
         MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
         fileAsset->SetTypeMask(typeMask);
@@ -492,7 +493,8 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
     // Get album asset count index and value
     albumData->SetCount(get<int32_t>(GetRowValFromColumn(MEDIA_DATA_DB_COUNT, TYPE_INT32, resultSet)));
     string albumUri;
-    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
+    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR ||
+        resultNapiType_ == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         albumUri = PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(albumData->GetAlbumId());
     } else {
         albumUri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_ALBUM_URI + "/" + to_string(albumData->GetAlbumId());

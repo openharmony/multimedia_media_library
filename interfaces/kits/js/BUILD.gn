@@ -263,3 +263,64 @@ ohos_shared_library("userfilemanager") {
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
+
+ohos_shared_library("photoaccesshelper") {
+  configs = [ ":napi_config" ]
+
+  sources = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/media_thumbnail_helper.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_data_manager_utils.cpp",
+    "${MEDIALIB_JS_PATH}/src/album_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/fetch_file_result_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/file_asset_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/media_library_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/media_scanner_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/medialibrary_napi_utils.cpp",
+    "${MEDIALIB_JS_PATH}/src/napi_error.cpp",
+    "${MEDIALIB_JS_PATH}/src/native_module_ohos_photoaccess_helper.cpp",
+    "${MEDIALIB_JS_PATH}/src/photo_album_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/smart_album_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_UTILS_PATH}:permission_utils",
+  ]
+
+  external_deps = [
+    "ability_base:want",
+    "ability_base:zuri",
+    "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:dataobs_manager",
+    "ability_runtime:napi_base_context",
+    "access_token:libtokenid_sdk",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "hitrace_native:hitrace_meter",
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+    "ipc_js:rpc",
+    "kv_store:distributeddata_inner",
+    "multimedia_image_framework:image",
+    "napi:ace_napi",
+    "player_framework:media_client",
+    "relational_store:native_dataability",
+    "relational_store:native_rdb",
+  ]
+
+  defines = []
+  defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
+
+  sanitize = {
+    cfi = true
+    debug = false
+  }
+
+  relative_install_dir = "module/file"
+  subsystem_name = "multimedia"
+  part_name = "media_library"
+}

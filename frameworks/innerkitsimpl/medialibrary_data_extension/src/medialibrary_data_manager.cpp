@@ -452,7 +452,7 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
     }
 
     string uriString = cmd.GetUri().ToString();
-    if (uriString == UFM_PHOTO_ALBUM_ADD_ASSET) {
+    if (uriString == UFM_PHOTO_ALBUM_ADD_ASSET || uriString == PAH_PHOTO_ALBUM_ADD_ASSET) {
         return PhotoMapOperations::AddPhotoAssets(values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
@@ -548,6 +548,7 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
 #endif
 
     cmd.SetValueBucket(value);
+    cmd.SetDataSharePred(predicates);
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
 
