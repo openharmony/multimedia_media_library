@@ -48,15 +48,9 @@ public:
     static void RegisterObserverExt(const Uri &uri,
         std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants);
     static void UnregisterObserverExt(const Uri &uri, std::shared_ptr<DataShare::DataShareObserver> dataObserver);
-
-    static inline bool sIsSystemApp_ = true;
 private:
-    static void GetDataShareHelper(napi_env env, napi_callback_info info);
-    static std::shared_ptr<DataShare::DataShareResultSet> SilentQuery(Uri &uri,
-        const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode);
-
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
-    static inline std::shared_ptr<DataShare::DataShareHelper> sSilentDataShareHelper_ = nullptr;
+    static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);
 };
 }
 }
