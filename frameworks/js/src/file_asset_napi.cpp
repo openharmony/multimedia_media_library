@@ -182,11 +182,12 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("open", PhotoAccessHelperOpen),
             DECLARE_NAPI_FUNCTION("close", PhotoAccessHelperClose),
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
-            DECLARE_NAPI_FUNCTION("favorite", PhotoAccessHelperFavorite),
+            DECLARE_NAPI_FUNCTION("setFavorite", PhotoAccessHelperFavorite),
             DECLARE_NAPI_GETTER("uri", JSGetFileUri),
-            DECLARE_NAPI_GETTER("fileType", JSGetMediaType),
+            DECLARE_NAPI_GETTER("photoType", JSGetMediaType),
             DECLARE_NAPI_GETTER_SETTER("displayName", JSGetFileDisplayName, JSSetFileDisplayName),
             DECLARE_NAPI_FUNCTION("getThumbnail", PhotoAccessHelperGetThumbnail),
+            DECLARE_NAPI_FUNCTION("getReadOnlyFd", JSGetReadOnlyFd),
             DECLARE_NAPI_FUNCTION("setHidden", PhotoAccessHelperSetHidden),
         }
     };
@@ -1087,7 +1088,7 @@ static void BuildCommitModifyUriApi10(FileAssetAsyncContext *context, string &ur
 {
     if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
-        uri = UFM_UPDATE_PHOTO;
+        uri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ? UFM_UPDATE_PHOTO : PAH_UPDATE_PHOTO;
     } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
         uri = UFM_UPDATE_AUDIO;
     }
@@ -1111,11 +1112,12 @@ static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
 
 static void JSCommitModifyExecute(napi_env env, void *data)
 {
-    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
+    auto *context = static_cast<FileAssetAsyncContext*>(data);
     MediaLibraryTracer tracer;
     tracer.Start("JSCommitModifyExecute");
     bool isApiVersion10 = false;
-    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
+        context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         isApiVersion10 = true;
     }
 
@@ -1595,7 +1597,8 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
     tracer.Start("JSGetThumbnailExecute");
 
     Size size = { .width = context->thumbWidth, .height = context->thumbHeight };
-    bool isApiVersion10 = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR);
+    bool isApiVersion10 = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
+        context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     string path = context->objectPtr->GetPath();
 #ifndef MEDIALIBRARY_COMPATIBILITY
     if (path.empty()
@@ -2470,6 +2473,9 @@ bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value)
     if ((inputKey == MediaColumn::MEDIA_NAME) && (fileAssetPtr->GetMemberMap().count(MediaColumn::MEDIA_NAME))) {
         fileAssetPtr->SetDisplayName(value);
         fileAssetPtr->SetTitle(MediaFileUtils::GetTitleFromDisplayName(value));
+    } else if ((inputKey == MediaColumn::MEDIA_TITLE) &&
+        (fileAssetPtr->GetMemberMap().count(MediaColumn::MEDIA_TITLE))) {
+        fileAssetPtr->SetTitle(value);
     } else {
         NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
         return false;
@@ -2588,7 +2594,6 @@ napi_value FileAssetNapi::UserFileMgrFavorite(napi_env env, napi_callback_info i
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrFavorite",
         UserFileMgrFavoriteExecute, UserFileMgrFavoriteComplete);
 }
-
 napi_value FileAssetNapi::UserFileMgrGetThumbnail(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -2943,9 +2948,7 @@ static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperOpenExecute");
 
-    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
+    auto *context = static_cast<FileAssetAsyncContext*>(data);
     bool isValid = false;
     string mode = context->valuesBucket.Get(MEDIA_FILEMODE, isValid);
     if (!isValid) {
@@ -3044,9 +3047,7 @@ static void PhotoAccessHelperCloseExecute(napi_env env, void *data)
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperCloseExecute");
 
-    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
+    auto *context = static_cast<FileAssetAsyncContext*>(data);
     UniqueFd unifd(context->fd);
     if (!CheckFileOpenStatus(context, unifd.Get())) {
         return;
@@ -3054,9 +3055,7 @@ static void PhotoAccessHelperCloseExecute(napi_env env, void *data)
     string closeUri;
     if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
-        closeUri = URI_CLOSE_PHOTO;
-    } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
-        closeUri = URI_CLOSE_AUDIO;
+        closeUri = PAH_CLOSE_PHOTO;
     } else {
         context->SaveError(-EINVAL);
         return;
@@ -3119,7 +3118,7 @@ napi_value FileAssetNapi::PhotoAccessHelperCommitModify(napi_env env, napi_callb
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
         "Failed to parse js args");
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
@@ -3158,23 +3157,21 @@ static void PhotoAccessHelperFavoriteExecute(napi_env env, void *data)
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperFavoriteExecute");
 
-    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext *>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
     string uri;
     if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
-        uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
-    } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
-        uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_AUDIOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+        uri = PAH_UPDATE_PHOTO;
+    } else {
+        context->SaveError(-EINVAL);
+        return;
     }
 
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
     Uri updateAssetUri(uri);
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
-    int32_t changedRows;
+    int32_t changedRows = 0;
     valuesBucket.Put(MediaColumn::MEDIA_IS_FAV, context->isFavorite ? IS_FAV : NOT_FAV);
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
@@ -3197,7 +3194,7 @@ napi_value FileAssetNapi::PhotoAccessHelperFavorite(napi_env env, napi_callback_
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     NAPI_ASSERT(
         env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isFavorite) == napi_ok,
         "Failed to parse js args");
@@ -3211,7 +3208,7 @@ napi_value FileAssetNapi::PhotoAccessHelperFavorite(napi_env env, napi_callback_
 napi_value FileAssetNapi::PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("UserFileMgrGetThumbnail");
+    tracer.Start("PhotoAccessHelperGetThumbnail");
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
@@ -3224,8 +3221,8 @@ napi_value FileAssetNapi::PhotoAccessHelperGetThumbnail(napi_env env, napi_callb
     ASSERT_NULLPTR_CHECK(env, result);
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
-    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetThumbnail",
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    result = MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperGetThumbnail",
         [](napi_env env, void *data) {
             auto context = static_cast<FileAssetAsyncContext*>(data);
             JSGetThumbnailExecute(context);
@@ -3240,7 +3237,7 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperSetHiddenExecute");
 
-    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext *>(data);
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectPtr->GetMediaType() != MEDIA_TYPE_IMAGE &&
         context->objectPtr->GetMediaType() != MEDIA_TYPE_VIDEO) {
@@ -3248,13 +3245,12 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
         return;
     }
 
-    string uri = MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_MODIFYASSET;
+    string uri = PAH_UPDATE_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->objectPtr->GetTypeMask());
     Uri updateAssetUri(uri);
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
-    int32_t changedRows;
+    int32_t changedRows = 0;
     valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, context->isHidden ? IS_HIDDEN : NOT_HIDDEN);
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
@@ -3271,7 +3267,7 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
 
 static void PhotoAccessHelperSetHiddenComplete(napi_env env, napi_status status, void *data)
 {
-    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
+    auto *context = static_cast<FileAssetAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
@@ -3301,7 +3297,7 @@ napi_value FileAssetNapi::PhotoAccessHelperSetHidden(napi_env env, napi_callback
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     NAPI_ASSERT(
         env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isHidden) == napi_ok,
         "Failed to parse js args");

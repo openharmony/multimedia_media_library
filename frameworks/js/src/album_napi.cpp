@@ -116,7 +116,7 @@ napi_value AlbumNapi::PhotoAccessHelperInit(napi_env env, napi_value exports)
         .ref = &photoAccessHelperConstructor_,
         .constructor = AlbumNapiConstructor,
         .props = {
-            DECLARE_NAPI_FUNCTION("getPhotoAssets", PhotoAccessHelperGetAssets),
+            DECLARE_NAPI_FUNCTION("getAssets", PhotoAccessHelperGetAssets),
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
             DECLARE_NAPI_GETTER_SETTER("albumName", JSGetAlbumName, JSAlbumNameSetter),
             DECLARE_NAPI_GETTER("albumUri", JSGetAlbumUri),
@@ -725,7 +725,8 @@ static void UpdateCompatAlbumSelection(AlbumNapiAsyncContext *context)
 
 static void UpdateSelection(AlbumNapiAsyncContext *context)
 {
-    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
+        context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         context->predicates.EqualTo(MEDIA_DATA_DB_DATE_TRASHED, 0);
         context->predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_ALBUM);
         context->predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, context->objectPtr->GetAlbumId());
@@ -783,7 +784,8 @@ static void GetFileAssetsNative(napi_env env, void *data)
     }
     context->fetchResult = std::make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchResult->SetNetworkId(MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri()));
-    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
+        context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         context->fetchResult->SetResultNapiType(context->resultNapiType);
     }
 }
@@ -1012,7 +1014,7 @@ napi_value AlbumNapi::PhotoAccessHelperGetAssets(napi_env env, napi_callback_inf
     asyncContext->mediaTypes.push_back(MEDIA_TYPE_VIDEO);
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext),
         JS_ERR_PARAMETER_INVALID);
-    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
     asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "AlbumAsset is nullptr");
@@ -1029,7 +1031,7 @@ napi_value AlbumNapi::PhotoAccessHelperCommitModify(napi_env env, napi_callback_
     napi_value ret = nullptr;
     unique_ptr<AlbumNapiAsyncContext> asyncContext = make_unique<AlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext), JS_ERR_PARAMETER_INVALID);
     asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
     asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;

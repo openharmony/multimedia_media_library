@@ -335,7 +335,8 @@ void FileAsset::SetSelfId(const string &selfId)
 
 int32_t FileAsset::GetIsTrash() const
 {
-    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR) {
+    if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR ||
+        resultNapiType_ == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
         return static_cast<int32_t>(GetInt64Member(MediaColumn::MEDIA_DATE_TRASHED));
     }
 

@@ -311,6 +311,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DISPLAY_NAME",              MediaColumn::MEDIA_NAME),
     std::make_pair("DATE_ADDED",                MediaColumn::MEDIA_DATE_ADDED),
     std::make_pair("FILE_TYPE",                 MediaColumn::MEDIA_TYPE),
+    std::make_pair("PHOTO_TYPE",                MediaColumn::MEDIA_TYPE),
     std::make_pair("DATE_MODIFIED",             MediaColumn::MEDIA_DATE_MODIFIED),
     std::make_pair("TITLE",                     MediaColumn::MEDIA_TITLE),
     std::make_pair("DURATION",                  MediaColumn::MEDIA_DURATION),
@@ -371,6 +372,7 @@ public:
         std::string &propValue);
     static napi_status GetArrayProperty(napi_env env, napi_value arg, const std::string &propName,
         std::vector<std::string> &array);
+    static napi_status GetStringArray(napi_env env, napi_value arg, std::vector<std::string> &array);
     static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
     static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
     static void UriAddTableName(std::string &uri, const std::string tableName);
@@ -412,6 +414,9 @@ public:
     template <class AsyncContext>
     static napi_status ParseArgsStringCallback(napi_env env, napi_callback_info info, AsyncContext &context,
         std::string &param);
+    template <class AsyncContext>
+    static napi_status ParseArgsStringArrayCallback(napi_env env, napi_callback_info info,
+    AsyncContext &context, std::vector<std::string> &array);
 
     template <class AsyncContext>
     static napi_status ParseArgsNumberCallback(napi_env env, napi_callback_info info, AsyncContext &context,

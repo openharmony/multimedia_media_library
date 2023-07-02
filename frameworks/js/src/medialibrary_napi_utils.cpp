@@ -139,27 +139,33 @@ napi_status MediaLibraryNapiUtils::GetProperty(napi_env env, const napi_value ar
     return napi_ok;
 }
 
+napi_status MediaLibraryNapiUtils::GetStringArray(napi_env env, napi_value arg, vector<string> &array)
+{
+    bool isArray = false;
+    uint32_t len = 0;
+    CHECK_STATUS_RET(napi_is_array(env, arg, &isArray), "Failed to check array type");
+    CHECK_COND_RET(isArray, napi_array_expected, "Expected array type");
+    CHECK_STATUS_RET(napi_get_array_length(env, arg, &len), "Failed to get array length");
+    for (uint32_t i = 0; i < len; i++) {
+        napi_value item = nullptr;
+        string val;
+        CHECK_STATUS_RET(napi_get_element(env, arg, i, &item), "Failed to get array item");
+        CHECK_STATUS_RET(GetParamStringPathMax(env, item, val), "Failed to get string buffer");
+        array.push_back(val);
+    }
+    return napi_ok;
+}
+
 napi_status MediaLibraryNapiUtils::GetArrayProperty(napi_env env, napi_value arg, const string &propName,
     vector<string> &array)
 {
     bool present = false;
     CHECK_STATUS_RET(napi_has_named_property(env, arg, propName.c_str(), &present), "Failed to check property name");
     if (present) {
-        uint32_t len = 0;
         napi_value property = nullptr;
-        bool isArray = false;
         CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property),
             "Failed to get selectionArgs property");
-        CHECK_STATUS_RET(napi_is_array(env, property, &isArray), "Failed to check array type");
-        CHECK_COND_RET(isArray, napi_array_expected, "Expected array type");
-        CHECK_STATUS_RET(napi_get_array_length(env, property, &len), "Failed to get array length");
-        for (uint32_t i = 0; i < len; i++) {
-            napi_value item = nullptr;
-            string val = "";
-            CHECK_STATUS_RET(napi_get_element(env, property, i, &item), "Failed to get array item");
-            CHECK_STATUS_RET(GetParamStringPathMax(env, item, val), "Failed to get string buffer");
-            array.push_back(val);
-        }
+        GetStringArray(env, property, array);
     }
     return napi_ok;
 }
@@ -431,6 +437,20 @@ napi_status MediaLibraryNapiUtils::ParseArgsStringCallback(napi_env env, napi_ca
         "Failed to get object info");
 
     CHECK_STATUS_RET(GetParamStringPathMax(env, context->argv[ARGS_ZERO], param), "Failed to get string argument");
+    CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
+    return napi_ok;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::ParseArgsStringArrayCallback(napi_env env, napi_callback_info info,
+    AsyncContext &context, vector<string> &array)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_STATUS_RET(AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        "Failed to get object info");
+
+    CHECK_STATUS_RET(GetStringArray(env, context->argv[ARGS_ZERO], array), "Failed to get string array");
     CHECK_STATUS_RET(GetParamCallback(env, context), "Failed to get callback");
     return napi_ok;
 }
@@ -925,6 +945,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<M
 
 template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<SmartAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &context, string &param);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsStringArrayCallback<unique_ptr<MediaLibraryAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context, vector<string> &array);
 
 template napi_status MediaLibraryNapiUtils::GetParamCallback<unique_ptr<PhotoAlbumNapiAsyncContext>>(napi_env env,
     unique_ptr<PhotoAlbumNapiAsyncContext> &context);

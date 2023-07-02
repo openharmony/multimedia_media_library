@@ -28,7 +28,6 @@ PhotoAlbum::PhotoAlbum()
     type_ = USER;
     subType_ = USER_GENERIC;
     count_ = DEFAULT_COUNT;
-    resultNapiType_ = ResultNapiType::TYPE_USERFILE_MGR;
 }
 
 PhotoAlbum::~PhotoAlbum() = default;

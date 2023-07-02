@@ -95,7 +95,8 @@ int UserFileClient::Insert(Uri &uri, const DataShareValuesBucket &value)
         NAPI_ERR_LOG("insert fail, helper null");
         return E_FAIL;
     }
-    return sDataShareHelper_->Insert(uri, value);
+    int index = sDataShareHelper_->Insert(uri, value);
+    return index;
 }
 
 int UserFileClient::BatchInsert(Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values)
