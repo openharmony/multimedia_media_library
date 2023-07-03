@@ -632,6 +632,18 @@ void TestAudioCreateParamsApi10(const string &displayName, int32_t type, int32_t
     EXPECT_EQ(ret, result);
 }
 
+void TestAudioCreateWithExtApi10(const string &extention, int32_t type, int32_t result)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutString("extention", extention);
+    values.PutInt(MediaColumn::MEDIA_TYPE, type);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryAudioOperations::Create(cmd);
+    EXPECT_EQ(ret, result);
+}
+
 void TestAudioDeleteParamsApi10(OperationObject oprnObject, int32_t fileId, ExceptIntFunction func)
 {
     MediaLibraryCommand cmd(oprnObject, OperationType::DELETE, MediaLibraryApi::API_10);
@@ -860,6 +872,19 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_003");
 }
 #endif
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd audio_oprn_create_api10_test_004");
+    TestAudioCreateWithExtApi10("", MediaType::MEDIA_TYPE_AUDIO, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    TestAudioCreateWithExtApi10(".", MediaType::MEDIA_TYPE_AUDIO, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    TestAudioCreateWithExtApi10(".mp3", MediaType::MEDIA_TYPE_AUDIO, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    int32_t firstId = 1;
+    TestAudioCreateWithExtApi10("mp3", MediaType::MEDIA_TYPE_AUDIO, firstId);
+    TestAudioCreateWithExtApi10("mp4", MediaType::MEDIA_TYPE_AUDIO, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    TestAudioCreateWithExtApi10("abc", MediaType::MEDIA_TYPE_AUDIO, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_004");
+}
 
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_005, TestSize.Level0)
 {
