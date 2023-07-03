@@ -684,17 +684,6 @@ static string GetVirtualIdFromApi10Uri(const string &uri)
 
 static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
 {
-#ifdef MEDIALIBRARY_COMPATIBILITY
-    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, MediaColumn::ASSETS_QUERY_FILTER);
-#else
-    string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
-    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
-    context->selectionArgs.emplace_back("0");
-#endif
-    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
-    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, prefix);
-    context->selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
-
     if (!context->uri.empty()) {
         NAPI_ERR_LOG("context->uri is = %{public}s", context->uri.c_str());
         context->networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(context->uri);
@@ -705,10 +694,27 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
 #endif
         if (!fileId.empty()) {
             string idPrefix = MEDIA_DATA_DB_ID + " = ? ";
+#ifdef MEDIALIBRARY_COMPATIBILITY
+            context->selection = idPrefix;
+            context->selectionArgs.clear();
+            context->selectionArgs.emplace_back(fileId);
+#else
             MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, idPrefix);
             context->selectionArgs.emplace_back(fileId);
+#endif
         }
     }
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, MediaColumn::ASSETS_QUERY_FILTER);
+#else
+    string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
+    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
+    context->selectionArgs.emplace_back("0");
+#endif
+    string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> ? ";
+    MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, prefix);
+    context->selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
 }
 
 static void GetFileAssetsExecute(napi_env env, void *data)
