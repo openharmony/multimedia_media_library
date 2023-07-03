@@ -631,6 +631,18 @@ void TestPhotoCreateParamsApi10(const string &displayName, int32_t type, int32_t
     EXPECT_EQ(ret, result);
 }
 
+void TestPhotoCreateWithExtApi10(const string &extention, int32_t type, int32_t result)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutString("extention", extention);
+    values.PutInt(MediaColumn::MEDIA_TYPE, type);
+    cmd.SetValueBucket(values);
+    int32_t ret = MediaLibraryPhotoOperations::Create(cmd);
+    EXPECT_EQ(ret, result);
+}
+
 void TestPhotoDeleteParamsApi10(OperationObject oprnObject, int32_t fileId, ExceptIntFunction func)
 {
     MediaLibraryCommand cmd(oprnObject, OperationType::DELETE, MediaLibraryApi::API_10);
@@ -905,6 +917,19 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, Test
     bool res = QueryAndVerifyPhotoAsset(PhotoColumn::MEDIA_ID, to_string(ret), verifyMap);
     EXPECT_EQ(res, true);
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_005");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_006");
+    TestPhotoCreateWithExtApi10("", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    TestPhotoCreateWithExtApi10(".", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    TestPhotoCreateWithExtApi10(".jpg", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    TestPhotoCreateWithExtApi10("jpg", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    int32_t firstId = 1;
+    TestPhotoCreateWithExtApi10("mp3", MediaType::MEDIA_TYPE_IMAGE, firstId);
+    TestPhotoCreateWithExtApi10("abc", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_006");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api9_test_001, TestSize.Level0)
