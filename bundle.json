@@ -55,6 +55,7 @@
           "relational_store",
           "safwk",
           "samgr",
+          "security_component",
           "storage_service",
           "user_file_service",
           "window_manager"

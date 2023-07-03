@@ -672,10 +672,7 @@ static int32_t OpenAsset(const string &filePath, const string &mode)
 
 static bool CheckIsOwner(const string &bundleName)
 {
-    int uid = IPCSkeleton::GetCallingUid();
-    string clientBundle;
-    bool isSystemApp = false;
-    PermissionUtils::GetClientBundle(uid, clientBundle, isSystemApp);
+    string clientBundle = PermissionUtils::GetClientBundleName();
     if (strcmp(bundleName.c_str(), clientBundle.c_str()) == 0) {
         return true;
     }

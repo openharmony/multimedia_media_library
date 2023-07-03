@@ -61,6 +61,8 @@ public:
     static bool CheckCallerPermission(const std::string &permission);
     static bool CheckCallerPermission(const std::vector<std::string> &perms);
     static void GetClientBundle(const int uid, std::string &bundleName, bool &isSystemApp);
+    static std::string GetClientBundleName();
+    static uint32_t GetTokenId();
     static bool IsSystemApp();
 
 private:

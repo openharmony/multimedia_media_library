@@ -582,6 +582,9 @@ const std::string CAMERA_ALBUM_NAME = "Camera";
 const std::string SCREEN_SHOT_ALBUM_NAME = "Screenshots";
 const std::string SCREEN_RECORD_ALBUM_NAME = "ScreenRecordings";
 
+// extension
+const std::string ASSET_EXTENTION = "extention";
+
 } // namespace Media
 } // namespace OHOS
 

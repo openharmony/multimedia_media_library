@@ -285,6 +285,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     napi_ref callbackRef;
     bool status;
     bool isDelete;
+    bool isCreateByComponent;
     NapiAssetType assetType;
     AlbumType albumType;
     MediaLibraryNapi *objectInfo;

@@ -279,6 +279,7 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { MEDIA_SMARTALBUMOPRN_MODIFYALBUM, OperationType::UPDATE },
         { BUNDLE_PERMISSION_INSERT, OperationType::INSERT_PERMISSION },
         { OPRN_CREATE, OperationType::CREATE },
+        { OPRN_CREATE_COMPONENT, OperationType::CREATE },
         { OPRN_DELETE, OperationType::DELETE },
         { OPRN_QUERY, OperationType::QUERY },
         { OPRN_UPDATE, OperationType::UPDATE },

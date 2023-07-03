@@ -410,11 +410,6 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     if (oprnType == OperationType::SCAN) {
         return MediaScannerManager::GetInstance()->ScanDir(ROOT_MEDIA_DIR, nullptr);
     }
-    if (ShouldCheckFileName(cmd.GetOprnObject())) {
-        if (oprnType == OperationType::CREATE && !CheckFileNameValid(dataShareValue)) {
-            return E_FILE_NAME_INVALID;
-        }
-    }
     return SolveInsertCmd(cmd);
 }
 
@@ -962,21 +957,6 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
     return MediaLibraryObjectUtils::OpenFile(cmd, mode);
 }
 
-bool MediaLibraryDataManager::CheckFileNameValid(const DataShareValuesBucket &value)
-{
-    bool isValid = false;
-    string displayName = value.Get(MEDIA_DATA_DB_NAME, isValid);
-    if (!isValid) {
-        return false;
-    }
-
-    if (displayName.empty()) {
-        return false;
-    }
-
-    return true;
-}
-
 void MediaLibraryDataManager::NotifyChange(const Uri &uri)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
@@ -1022,12 +1002,9 @@ int32_t ScanFileCallback::OnScanFinished(const int32_t status, const string &uri
 
 int32_t MediaLibraryDataManager::SetCmdBundleAndDevice(MediaLibraryCommand &outCmd)
 {
-    int uid = IPCSkeleton::GetCallingUid();
-    string clientBundle;
-    bool isSystemApp = false;
-    PermissionUtils::GetClientBundle(uid, clientBundle, isSystemApp);
+    string clientBundle = PermissionUtils::GetClientBundleName();
     if (clientBundle.empty()) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager::GetClientBundle failed");
+        MEDIA_ERR_LOG("MediaLibraryDataManager::GetClientBundleName failed");
         return E_GET_CLIENTBUNDLE_FAIL;
     }
     outCmd.SetBundleName(clientBundle);
@@ -1040,18 +1017,6 @@ int32_t MediaLibraryDataManager::SetCmdBundleAndDevice(MediaLibraryCommand &outC
         outCmd.SetDeviceName(deviceInfo.deviceName);
     }
     return ret;
-}
-
-bool MediaLibraryDataManager::ShouldCheckFileName(const OperationObject &oprnObject)
-{
-    if ((oprnObject == OperationObject::SMART_ALBUM_MAP) ||
-        (oprnObject == OperationObject::SMART_ALBUM) ||
-        (oprnObject == OperationObject::FILESYSTEM_DIR) ||
-        (oprnObject == OperationObject::PHOTO_ALBUM)) {
-        return false;
-    } else {
-        return true;
-    }
 }
 
 int32_t MediaLibraryDataManager::DoTrashAging()
