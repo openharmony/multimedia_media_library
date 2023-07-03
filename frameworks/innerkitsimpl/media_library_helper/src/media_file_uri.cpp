@@ -179,6 +179,26 @@ std::string MediaFileUri::GetFileId()
     return this->fileId_;
 }
 
+std::string MediaFileUri::GetTableName()
+{
+    static std::map<std::string, std::string> tableNameMap = {
+        { MEDIALIBRARY_TYPE_IMAGE_URI, PhotoColumn::PHOTOS_TABLE },
+        { MEDIALIBRARY_TYPE_VIDEO_URI, PhotoColumn::PHOTOS_TABLE },
+        { MEDIALIBRARY_TYPE_AUDIO_URI, AudioColumn::AUDIOS_TABLE },
+        { MEDIALIBRARY_TYPE_FILE_URI, MEDIALIBRARY_TABLE },
+        { AudioColumn::AUDIO_TYPE_URI, AudioColumn::AUDIOS_TABLE },
+        { PhotoColumn::PHOTO_TYPE_URI, PhotoColumn::PHOTOS_TABLE }
+    };
+
+    std::string uriString = ToString();
+    for (const auto &iter : tableNameMap) {
+        if (uriString.find(iter.first) != std::string::npos) {
+            return iter.second;
+        }
+    }
+    return "";
+}
+
 std::string MediaFileUri::GetFilePath()
 {
     /* get helper */

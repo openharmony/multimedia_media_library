@@ -1162,36 +1162,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_HandleThumbnailOperations_
     EXPECT_EQ(ret, NativeRdb::E_EMPTY_VALUES_BUCKET);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_ShouldCheckFileName_Test_001, TestSize.Level0)
-{
-    OperationObject oprnObject = OperationObject::SMART_ALBUM_MAP;
-    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    bool ret = mediaLibraryDataManager->ShouldCheckFileName(oprnObject);
-    EXPECT_EQ(ret, false);
-    OperationObject oprnObjectTest = OperationObject::FILESYSTEM_ASSET;
-    ret = mediaLibraryDataManager->ShouldCheckFileName(oprnObjectTest);
-    EXPECT_EQ(ret, true);
-}
-
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckFileNameValid_Test_001, TestSize.Level0)
-{
-    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    DataShare::DataShareValuesBucket values;
-    string displayName = "";
-    values.Put(MEDIA_DATA_DB_NAME, displayName);
-    bool ret = mediaLibraryDataManager->CheckFileNameValid(values);
-    EXPECT_EQ(ret, false);
-    DataShare::DataShareValuesBucket valuesBucket;
-    ret = mediaLibraryDataManager->CheckFileNameValid(valuesBucket);
-    EXPECT_EQ(ret, false);
-    string displayNameTest = "DataManager_CheckFileNameValid_Test_001";
-    DataShare::DataShareValuesBucket valuesTest;
-    valuesTest.Put(MEDIA_DATA_DB_NAME, displayNameTest);
-    ret = mediaLibraryDataManager->CheckFileNameValid(valuesTest);
-    EXPECT_EQ(ret, true);
-}
-
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_NeedQuerySync_Test_001, TestSize.Level0)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();

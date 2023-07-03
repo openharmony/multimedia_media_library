@@ -85,6 +85,15 @@ void PermissionUtils::GetClientBundle(const int uid, string &bundleName, bool &i
     isSystemApp = bundleMgr_->CheckIsSystemAppByUid(uid);
 }
 
+string PermissionUtils::GetClientBundleName()
+{
+    int uid = IPCSkeleton::GetCallingUid();
+    string clientBundle;
+    bool isSystemApp = false;
+    GetClientBundle(uid, clientBundle, isSystemApp);
+    return clientBundle;
+}
+
 #ifdef OHOS_DEBUG
 bool inline ShouldAddPermissionRecord(const AccessTokenID &token)
 {
@@ -139,6 +148,11 @@ bool PermissionUtils::CheckCallerPermission(const vector<string> &perms)
         }
     }
     return true;
+}
+
+uint32_t PermissionUtils::GetTokenId()
+{
+    return IPCSkeleton::GetCallingTokenID();
 }
 
 bool PermissionUtils::IsSystemApp()

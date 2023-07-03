@@ -98,7 +98,6 @@ public:
 private:
     bool QuerySync(const std::string &networkId, const std::string &tableName);
     int32_t HandleThumbnailOperations(MediaLibraryCommand &cmd);
-    bool CheckFileNameValid(const DataShare::DataShareValuesBucket &value);
     void NeedQuerySync(const std::string &networkId, OperationObject oprnObject);
     int32_t SolveInsertCmd(MediaLibraryCommand &cmd);
     int32_t SetCmdBundleAndDevice(MediaLibraryCommand &outCmd);
@@ -108,7 +107,6 @@ private:
     int32_t CreateThumbnail(const NativeRdb::ValuesBucket &values);
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();
-    bool ShouldCheckFileName(const OperationObject &oprnObject);
     std::shared_ptr<ThumbnailService> thumbnailService_;
     int32_t RevertPendingByFileId(const std::string &fileId);
     int32_t SyncPullThumbnailKeys(const Uri &uri);
