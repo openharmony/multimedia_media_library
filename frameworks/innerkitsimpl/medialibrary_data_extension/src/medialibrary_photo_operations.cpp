@@ -28,6 +28,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_type_const.h"
 #include "medialibrary_uripermission_operations.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -131,11 +132,15 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     };
     auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
         OperationObject::FILESYSTEM_PHOTO, columns);
+    fileAsset->SetUri(uriString);
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
         return E_INVALID_URI;
     }
 
+    if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
+        return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10);
+    }
     return OpenAsset(fileAsset, mode, cmd.GetApi());
 }
 
@@ -265,12 +270,18 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     ValuesBucket &values = cmd.GetValueBucket();
     string displayName;
     string extention;
+    string title;
     bool isContains = false;
     if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName)) {
         fileAsset.SetDisplayName(displayName);
         isContains = true;
     } else {
-        CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, "extention", extention), E_HAS_DB_ERROR);
+        CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, ASSET_EXTENTION, extention), E_HAS_DB_ERROR);
+        if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_TITLE, title)) {
+            displayName = title + "." + extention;
+            fileAsset.SetDisplayName(displayName);
+            isContains = true;
+        }
     }
     int32_t mediaType = 0;
     CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_TYPE, mediaType),
@@ -286,15 +297,10 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     errCode = transactionOprn.Start();
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     errCode = isContains ? SetAssetPathInCreate(fileAsset) : SetAssetPath(fileAsset, extention);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
-    if (outRow <= 0) {
-        MEDIA_ERR_LOG("insert file in db failed, error = %{public}d", outRow);
-        return errCode;
-    }
+    CHECK_AND_RETURN_RET_LOG(outRow > 0, errCode, "insert file in db failed, error = %{public}d", outRow);
     if (!albumUri.empty()) {
         string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(albumUri);
         PhotoMapAddAsset(stoi(albumId), to_string(outRow));
@@ -302,7 +308,8 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     string bdName = cmd.GetBundleName();
     if (!bdName.empty()) {
         errCode = UriPermissionOperations::InsertBundlePermission(outRow, bdName, MEDIA_FILEMODE_READWRITE,
-            static_cast<int32_t>(TableType::TYPE_PHOTOS));
+            PhotoColumn::PHOTOS_TABLE);
+        CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "InsertBundlePermission failed, err=%{public}d", errCode);
     }
     transactionOprn.Finish();
     return outRow;

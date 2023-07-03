@@ -19,17 +19,18 @@
 #include "ipc_skeleton.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_type_const.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "permission_utils.h"
 #include "result_set_utils.h"
 
+namespace OHOS {
+namespace Media {
+
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
-
-namespace OHOS {
-namespace Media {
 
 static bool CheckMode(string& mode)
 {
@@ -120,7 +121,7 @@ int32_t CheckUriPermValues(ValuesBucket &valuesBucket, int32_t &fileId, string &
     if (valuesBucket.GetObject(PERMISSION_TABLE_TYPE, valueObject)) {
         valueObject.GetInt(tableType);
     } else {
-        MEDIA_ERR_LOG("ValueBucket does not have PERMISSION_TABLE_NAME");
+        MEDIA_ERR_LOG("ValueBucket does not have PERMISSION_TABLE_TYPE");
         return E_INVALID_VALUES;
     }
     if (!CheckMode(inputMode)) {
@@ -166,10 +167,22 @@ int32_t UriPermissionOperations::HandleUriPermInsert(MediaLibraryCommand &cmd)
     return uniStore->Update(updateCmd, updatedRows);
 }
 
+static inline int32_t GetTableTypeFromTableName(const std::string &tableName)
+{
+    if (tableName == PhotoColumn::PHOTOS_TABLE) {
+        return static_cast<int32_t>(TableType::TYPE_PHOTOS);
+    } else if (tableName == AudioColumn::AUDIOS_TABLE) {
+        return static_cast<int32_t>(TableType::TYPE_AUDIOS);
+    } else {
+        return static_cast<int32_t>(TableType::TYPE_FILES);
+    }
+}
+
 int32_t UriPermissionOperations::InsertBundlePermission(const int32_t &fileId, const std::string &bundleName,
-    const std::string &mode, int32_t tableType)
+    const std::string &mode, const std::string &tableName)
 {
     string curMode;
+    int32_t tableType = GetTableTypeFromTableName(tableName);
     auto ret = GetUriPermissionMode(to_string(fileId), bundleName, tableType, curMode);
     if ((ret != E_SUCCESS) && (ret != E_PERMISSION_DENIED)) {
         return ret;
@@ -197,6 +210,29 @@ int32_t UriPermissionOperations::InsertBundlePermission(const int32_t &fileId, c
         EqualTo(PERMISSION_TABLE_TYPE, to_string(tableType));
     int32_t updatedRows = -1;
     return uniStore->Update(updateCmd, updatedRows);
+}
+
+int32_t UriPermissionOperations::DeleteBundlePermission(const std::string &fileId, const std::string &bundleName,
+    const std::string &tableName)
+{
+    string curMode;
+    int32_t tableType = GetTableTypeFromTableName(tableName);
+
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "uniStore is nullptr!");
+    Uri uri(MEDIALIBRARY_BUNDLEPERM_URI);
+    MediaLibraryCommand deleteCmd(uri);
+    deleteCmd.GetAbsRdbPredicates()->EqualTo(PERMISSION_FILE_ID, fileId)->And()->
+        EqualTo(PERMISSION_BUNDLE_NAME, bundleName)->And()->
+        EqualTo(PERMISSION_TABLE_TYPE, to_string(tableType));
+    int32_t deleteRows = -1;
+    int32_t ret = uniStore->Delete(deleteCmd, deleteRows);
+    if (deleteRows > 0 && ret == NativeRdb::E_OK) {
+        MEDIA_DEBUG_LOG("DeleteBundlePermission success:fileId:%{private}s, bundleName:%{private}s, table:%{private}s",
+            fileId.c_str(), bundleName.c_str(), tableName.c_str());
+        return E_OK;
+    }
+    return E_HAS_DB_ERROR;
 }
 
 int32_t UriPermissionOperations::CheckUriPermission(const std::string &fileUri, std::string mode)

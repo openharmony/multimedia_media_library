@@ -28,7 +28,9 @@ public:
     static int32_t HandleUriPermOperations(MediaLibraryCommand &cmd);
     static int32_t HandleUriPermInsert(MediaLibraryCommand &cmd);
     static int32_t InsertBundlePermission(const int32_t &fileId, const std::string &bundleName,
-        const std::string &mode, int32_t tableType);
+        const std::string &mode, const std::string &tableName);
+    static int32_t DeleteBundlePermission(const std::string &fileId, const std::string &bundleName,
+        const std::string &tableName);
 };
 
 } // Media
