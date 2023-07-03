@@ -1636,7 +1636,7 @@ static void JSCreateAssetExecute(napi_env env, void *data)
         context->error = JS_E_DISPLAYNAME;
         return;
     }
-    if ((context->resultNapiType != ResultNapiType::TYPE_MEDIALIBRARY) && (!CheckRelativePathParams(context))) {
+    if ((context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) && (!CheckRelativePathParams(context))) {
         context->error = JS_E_RELATIVEPATH;
         return;
     }
