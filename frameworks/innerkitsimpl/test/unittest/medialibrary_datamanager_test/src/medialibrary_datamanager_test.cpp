@@ -962,7 +962,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
 
     string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
-    string virtualUri = MediaFileUtils::GetVirtualUriFromRealUri(uri);
     unordered_map<string, int32_t> expect {
         { MEDIA_FILEMODE_READONLY, E_SUCCESS },
         { MEDIA_FILEMODE_WRITEONLY, E_PERMISSION_DENIED },
@@ -973,7 +972,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
         { MEDIA_FILEMODE_READWRITEAPPEND, E_PERMISSION_DENIED },
     };
     for (const auto &inputMode : MEDIA_OPEN_MODES) {
-        auto ret = UriPermissionOperations::CheckUriPermission(virtualUri, inputMode);
+        auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
         EXPECT_EQ(ret, expect[inputMode]);
         MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
             mode.c_str(), inputMode.c_str(), ret);
@@ -993,7 +992,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
 
     string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
-    string virtualUri = MediaFileUtils::GetVirtualUriFromRealUri(uri);
     unordered_map<string, int32_t> expect {
         { MEDIA_FILEMODE_READONLY, E_PERMISSION_DENIED },
         { MEDIA_FILEMODE_WRITEONLY, E_SUCCESS },
@@ -1004,7 +1002,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
         { MEDIA_FILEMODE_READWRITEAPPEND, E_PERMISSION_DENIED },
     };
     for (const auto &inputMode : MEDIA_OPEN_MODES) {
-        auto ret = UriPermissionOperations::CheckUriPermission(virtualUri, inputMode);
+        auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
         EXPECT_EQ(ret, expect[inputMode]);
         MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
             mode.c_str(), inputMode.c_str(), ret);
@@ -1024,9 +1022,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
 
     string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
-    string virtualUri = MediaFileUtils::GetVirtualUriFromRealUri(uri);
     for (const auto &inputMode : MEDIA_OPEN_MODES) {
-        auto ret = UriPermissionOperations::CheckUriPermission(virtualUri, inputMode);
+        auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
         EXPECT_EQ(ret, E_SUCCESS);
         MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
             mode.c_str(), inputMode.c_str(), ret);
@@ -1046,9 +1043,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
 
     string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
-    string virtualUri = MediaFileUtils::GetVirtualUriFromRealUri(uri);
     string inputMode = "rWt";
-    auto ret = UriPermissionOperations::CheckUriPermission(virtualUri, inputMode);
+    auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
     EXPECT_EQ(ret, E_SUCCESS);
     MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
         mode.c_str(), inputMode.c_str(), ret);
