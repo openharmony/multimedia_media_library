@@ -27,10 +27,11 @@
 namespace OHOS {
 namespace Media {
 struct WatchInfo {
-    WatchInfo(const std::string &path, const std::string &uri, MediaLibraryApi api) : path_(path),
-        uri_(uri), api_(api), meetEvent_(0){};
+    WatchInfo(const std::string &path, const std::string &uri, const std::string &bundleName,
+        MediaLibraryApi api): path_(path), uri_(uri), bundleName_(bundleName), api_(api), meetEvent_(0){};
     std::string path_;
     std::string uri_;
+    std::string bundleName_;
     MediaLibraryApi api_;
     int32_t meetEvent_;
 };

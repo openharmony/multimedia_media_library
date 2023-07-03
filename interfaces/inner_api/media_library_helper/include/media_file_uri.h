@@ -45,6 +45,7 @@ public:
     std::string GetFileId();
     std::string GetFilePath();
     std::unordered_map<std::string, std::string> &GetQueryKeys();
+    std::string GetTableName();
     bool IsValid();
     bool IsApi10();
     static MediaType GetMediaTypeFromUri(const std::string &uri);

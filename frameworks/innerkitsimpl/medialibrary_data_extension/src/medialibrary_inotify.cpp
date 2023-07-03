@@ -20,9 +20,12 @@
 
 #include "unistd.h"
 #include "media_log.h"
+#include "media_file_uri.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_uripermission_operations.h"
+#include "permission_utils.h"
 
 using namespace std;
 namespace OHOS {
@@ -75,10 +78,13 @@ void MediaLibraryInotify::WatchCallBack()
                     meetEvent, item.uri_.c_str());
                 string id = MediaLibraryDataManagerUtils::GetIdFromUri(item.uri_);
                 string itemPath = item.path_;
+                string bundleName = item.bundleName_;
+                MediaFileUri itemUri(item.uri_);
                 MediaLibraryApi itemApi = item.api_;
                 Remove(event->wd);
                 lock.unlock();
                 MediaLibraryObjectUtils::ScanFileAsync(itemPath, id, itemApi);
+                UriPermissionOperations::DeleteBundlePermission(id, bundleName, itemUri.GetTableName());
             }
         }
     }
@@ -157,7 +163,8 @@ int32_t MediaLibraryInotify::AddWatchList(const string &path, const string &uri,
     }
     int32_t wd = inotify_add_watch(inotifyFd_, path.c_str(), IN_CLOSE | IN_MODIFY);
     if (wd > 0) {
-        struct WatchInfo item(path, uri, api);
+        string bundleName = PermissionUtils::GetClientBundleName();
+        struct WatchInfo item(path, uri, bundleName, api);
         watchList_.emplace(wd, item);
     }
     if (!isWatching_.load()) {

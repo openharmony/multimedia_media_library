@@ -39,6 +39,9 @@
 #include "runtime.h"
 #include "singleton.h"
 #include "system_ability_definition.h"
+#ifdef MEDIALIBRARY_SECURITY_OPEN
+#include "sec_comp_kit.h"
+#endif
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -224,6 +227,11 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
     if (SYSTEM_API_OBJECTS.find(obj) != SYSTEM_API_OBJECTS.end() ||
         // Delete asset permanently from system is only allowed for system apps.
         ((obj == OperationObject::FILESYSTEM_ASSET) && (cmd.GetOprnType() == Media::OperationType::DELETE))) {
+#ifdef MEDIALIBRARY_SECURITY_OPEN
+        if (cmd.GetUri().ToString().find(OPRN_CREATE_COMPONENT) != string::npos) {
+            return E_SUCCESS;
+        }
+#endif
         if (!PermissionUtils::IsSystemApp()) {
             MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
             return E_CHECK_SYSTEMAPP_FAIL;
@@ -242,7 +250,24 @@ static inline int32_t HandleBundlePermCheck()
     return PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
-static int32_t UserFileMgrPermissionCheck(const OperationObject &obj, const bool isWrite)
+static int32_t HandleSecurityComponentPermission(MediaLibraryCommand &cmd)
+{
+    if (cmd.GetUri().ToString().find(OPRN_CREATE_COMPONENT) != string::npos) {
+#ifdef MEDIALIBRARY_SECURITY_OPEN
+        auto tokenId = PermissionUtils::GetTokenId();
+        if (!Security::SecurityComponent::SecCompKit::ReduceAfterVerifySavePermission(tokenId)) {
+            return E_NEED_FURTHER_CHECK;
+        }
+        return E_SUCCESS;
+#else
+        MEDIA_ERR_LOG("Security component is not existed");
+        return E_NEED_FURTHER_CHECK;
+#endif
+    }
+    return E_NEED_FURTHER_CHECK;
+}
+
+static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool isWrite)
 {
     static const set<OperationObject> USER_FILE_MGR_OBJECTS = {
         OperationObject::UFM_PHOTO,
@@ -251,8 +276,14 @@ static int32_t UserFileMgrPermissionCheck(const OperationObject &obj, const bool
         OperationObject::UFM_MAP,
     };
 
+    OperationObject obj = cmd.GetOprnObject();
     if (USER_FILE_MGR_OBJECTS.find(obj) == USER_FILE_MGR_OBJECTS.end()) {
         return E_NEED_FURTHER_CHECK;
+    }
+
+    int32_t err = HandleSecurityComponentPermission(cmd);
+    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+        return err;
     }
 
     string perm;
@@ -264,7 +295,7 @@ static int32_t UserFileMgrPermissionCheck(const OperationObject &obj, const bool
     return PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
-static int32_t PhotoAccessHelperPermCheck(const OperationObject &obj, const bool isWrite)
+static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool isWrite)
 {
     static const set<OperationObject> PHOTO_ACCESS_HELPER_OBJECTS = {
         OperationObject::PAH_PHOTO,
@@ -272,6 +303,12 @@ static int32_t PhotoAccessHelperPermCheck(const OperationObject &obj, const bool
         OperationObject::PAH_MAP,
     };
 
+    int32_t err = HandleSecurityComponentPermission(cmd);
+    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+        return err;
+    }
+
+    OperationObject obj = cmd.GetOprnObject();
     if (PHOTO_ACCESS_HELPER_OBJECTS.find(obj) == PHOTO_ACCESS_HELPER_OBJECTS.end()) {
         return E_NEED_FURTHER_CHECK;
     }
@@ -339,18 +376,18 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
 {
     MEDIA_DEBUG_LOG("uri: %{public}s object: %{public}d, opType: %{public}d isWrite: %{public}d",
         cmd.GetUri().ToString().c_str(), cmd.GetOprnObject(), cmd.GetOprnType(), isWrite);
-    OperationObject obj = cmd.GetOprnObject();
+
     int err = SystemApiCheck(cmd);
     if (err != E_SUCCESS) {
         return err;
     }
 
-    err = PhotoAccessHelperPermCheck(obj, isWrite);
+    err = PhotoAccessHelperPermCheck(cmd, isWrite);
     if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);
         return err;
     }
-    err = UserFileMgrPermissionCheck(obj, isWrite);
+    err = UserFileMgrPermissionCheck(cmd, isWrite);
     if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);
         return err;

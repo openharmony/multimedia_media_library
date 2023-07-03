@@ -904,7 +904,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, Test
         MediaLibraryApi::API_10);
     string extention = "jpg";
     ValuesBucket values;
-    values.PutString("extention", extention);
+    values.PutString(ASSET_EXTENTION, extention);
     values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
     values.PutInt(PERMISSION_TABLE_TYPE, static_cast<int32_t>(TableType::TYPE_PHOTOS));
     cmd.SetValueBucket(values);
