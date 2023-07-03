@@ -75,7 +75,6 @@ void MediaLibraryInotify::WatchCallBack()
                     meetEvent, item.uri_.c_str());
                 string id = MediaLibraryDataManagerUtils::GetIdFromUri(item.uri_);
                 string itemPath = item.path_;
-                string itemUri = item.uri_;
                 MediaLibraryApi itemApi = item.api_;
                 Remove(event->wd);
                 lock.unlock();
