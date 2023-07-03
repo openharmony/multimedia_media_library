@@ -131,6 +131,23 @@ int32_t CheckUriPermValues(ValuesBucket &valuesBucket, int32_t &fileId, string &
     return E_SUCCESS;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
+static void ConvertVirtualIdToRealId(ValuesBucket &valuesBucket, int32_t &fileId, int32_t tableType)
+{
+    if (tableType == static_cast<int32_t>(TableType::TYPE_PHOTOS)) {
+        fileId = MediaFileUtils::GetRealIdByTable(fileId, PhotoColumn::PHOTOS_TABLE);
+    } else if (tableType == static_cast<int32_t>(TableType::TYPE_AUDIOS)) {
+        fileId = MediaFileUtils::GetRealIdByTable(fileId, AudioColumn::AUDIOS_TABLE);
+    } else {
+        fileId = MediaFileUtils::GetRealIdByTable(fileId, MEDIALIBRARY_TABLE);
+    }
+
+    valuesBucket.Delete(PERMISSION_FILE_ID);
+    valuesBucket.PutInt(PERMISSION_FILE_ID, fileId);
+}
+#endif
+
+
 int32_t UriPermissionOperations::HandleUriPermInsert(MediaLibraryCommand &cmd)
 {
     int32_t fileId;
@@ -140,6 +157,12 @@ int32_t UriPermissionOperations::HandleUriPermInsert(MediaLibraryCommand &cmd)
     ValuesBucket &valuesBucket = cmd.GetValueBucket();
     auto ret = CheckUriPermValues(valuesBucket, fileId, bundleName, tableType, inputMode);
     CHECK_AND_RETURN_RET(ret == E_SUCCESS, ret);
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (cmd.GetApi() != MediaLibraryApi::API_10) {
+        ConvertVirtualIdToRealId(valuesBucket, fileId, tableType);
+    }
+#endif
 
     string permissionMode;
     ret = GetUriPermissionMode(to_string(fileId), bundleName, tableType, permissionMode);
@@ -207,8 +230,7 @@ int32_t UriPermissionOperations::CheckUriPermission(const std::string &fileUri, 
     string bundleName;
     bool isSystemApp = false;
     PermissionUtils::GetClientBundle(IPCSkeleton::GetCallingUid(), bundleName, isSystemApp);
-    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(fileUri);
-    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(realUri);
+    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(fileUri);
     TableType tableType = TableType::TYPE_FILES;
     static map<string, TableType> tableMap = {
         { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },
