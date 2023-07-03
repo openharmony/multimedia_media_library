@@ -1193,7 +1193,7 @@ bool MediaFileUtils::IsPhotoTablePath(const string &path)
         PHOTO_BUCKET, PIC_DIR_VALUES, VIDEO_DIR_VALUES, CAMERA_DIR_VALUES
     };
     for (auto &photoPath : photoPathVector) {
-        if (path.find(photoPath) != string::npos) {
+        if (relativePath.find(photoPath) == 0) {
             return true;
         }
     }
