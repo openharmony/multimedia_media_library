@@ -136,6 +136,23 @@ bool PermissionUtils::CheckCallerPermission(const string &permission)
     return true;
 }
 
+/* Check whether caller has at least one of @perms */
+bool PermissionUtils::CheckHasPermission(const vector<string> &perms)
+{
+    if (perms.empty()) {
+        return false;
+    }
+
+    for (const auto &perm : perms) {
+        if (CheckCallerPermission(perm)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/* Check whether caller has all the @perms */
 bool PermissionUtils::CheckCallerPermission(const vector<string> &perms)
 {
     if (perms.empty()) {

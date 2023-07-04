@@ -160,6 +160,8 @@ static void FillV10Perms(const MediaType mediaType, const bool containsRead, con
         } else if (mediaType == MEDIA_TYPE_AUDIO) {
             perm.push_back(PERM_READ_AUDIO);
         } else if (mediaType == MEDIA_TYPE_FILE) {
+            perm.push_back(PERM_READ_IMAGEVIDEO);
+            perm.push_back(PERM_READ_AUDIO);
             perm.push_back(PERM_READ_DOCUMENT);
         }
     }
@@ -170,6 +172,8 @@ static void FillV10Perms(const MediaType mediaType, const bool containsRead, con
         } else if (mediaType == MEDIA_TYPE_AUDIO) {
             perm.push_back(PERM_WRITE_AUDIO);
         } else if (mediaType == MEDIA_TYPE_FILE) {
+            perm.push_back(PERM_WRITE_IMAGEVIDEO);
+            perm.push_back(PERM_WRITE_AUDIO);
             perm.push_back(PERM_WRITE_DOCUMENT);
         }
     }
@@ -199,7 +203,9 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
 
     vector<string> perms;
     FillV10Perms(mediaType, containsRead, containsWrite, perms);
-    int err = PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
+    int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
+        (PermissionUtils::CheckHasPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED) :
+        (PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED);
     if (err == E_SUCCESS) {
         return E_SUCCESS;
     }
@@ -247,7 +253,12 @@ static inline int32_t HandleMediaVolumePerm()
 
 static inline int32_t HandleBundlePermCheck()
 {
-    return PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA) ? E_SUCCESS : E_PERMISSION_DENIED;
+    bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA);
+    if (ret) {
+        return E_SUCCESS;
+    }
+
+    return PermissionUtils::CheckHasPermission(WRITE_PERMS_V10) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 static int32_t HandleSecurityComponentPermission(MediaLibraryCommand &cmd)
