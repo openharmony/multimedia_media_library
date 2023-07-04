@@ -994,7 +994,7 @@ static void DeletePhotosExecute(napi_env env, void *data)
         .data = data,
         .tracerLabel = "DeletePhotosExecute",
         .uri = (static_cast<PhotoAlbumNapiAsyncContext *>(data)->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-            UFM_RECOVER_PHOTOS : PAH_RECOVER_PHOTOS,
+            UFM_DELETE_PHOTOS : PAH_DELETE_PHOTOS,
     };
     TrashAlbumExecute(opt);
 }
