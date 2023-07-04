@@ -217,8 +217,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         {
             DECLARE_NAPI_FUNCTION("getAssets", PhotoAccessGetPhotoAssets),
             DECLARE_NAPI_FUNCTION("createAsset", PhotoAccessHelperCreatePhotoAsset),
-            DECLARE_NAPI_FUNCTION("on", PhotoAccessHelperOnCallback),
-            DECLARE_NAPI_FUNCTION("off", PhotoAccessHelperOffCallback),
+            DECLARE_NAPI_FUNCTION("registerChange", PhotoAccessHelperOnCallback),
+            DECLARE_NAPI_FUNCTION("unRegisterChange", PhotoAccessHelperOffCallback),
             DECLARE_NAPI_FUNCTION("deleteAssets", PhotoAccessHelperTrashAsset),
             DECLARE_NAPI_FUNCTION("release", JSRelease),
             DECLARE_NAPI_FUNCTION("createAlbum", PhotoAccessCreatePhotoAlbum),
