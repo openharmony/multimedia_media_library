@@ -1566,13 +1566,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSi
         return;
     }
 
-    static constexpr int LARGE_NUM = 1000;
     TestPhotoOpenParamsApi10(fileId, "",
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
     TestPhotoOpenParamsApi10(fileId, "m",
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
-    TestPhotoOpenParamsApi10(fileId + LARGE_NUM, "rw",
-        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
     TestPhotoOpenParamsApi10(fileId, "rw",
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
 

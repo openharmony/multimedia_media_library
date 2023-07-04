@@ -226,8 +226,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InvalidateThumbnail_test_001, TestSiz
     shared_ptr<OHOS::AbilityRuntime::Context> context;
     string table = MEDIALIBRARY_TABLE;
     serverTest->Init(storePtr, kvStorePtr, context);
-    serverTest->InvalidateThumbnail(id, table);
-    serverTest->ReleaseService();
+    serverTest->InvalidateThumbnail(id, table, "Documents/");
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_Init_test_001, TestSize.Level0)
@@ -242,7 +241,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Init_test_001, TestSize.Level0)
     shared_ptr<OHOS::AbilityRuntime::Context> context;
     ret = serverTest->Init(storePtr, kvStorePtr, context);
     EXPECT_EQ(ret, 0);
-    serverTest->ReleaseService();
 }
 
 } // namespace Media
