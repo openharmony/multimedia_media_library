@@ -2045,7 +2045,7 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
         napi_create_string_utf8(env, subUri.c_str(), NAPI_AUTO_LENGTH, &subUriRet);
         napi_set_element(env, subUriArray, subElementIndex++, subUriRet);
     }
-    status = napi_set_named_property(env, result, "subUris", subUriArray);
+    status = napi_set_named_property(env, result, "extraUris", subUriArray);
     if (status != napi_ok) {
         NAPI_ERR_LOG("Set subUri named property error!");
     }
