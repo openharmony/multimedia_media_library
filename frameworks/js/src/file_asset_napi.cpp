@@ -1847,21 +1847,41 @@ static bool GetIsDirectoryiteNative(napi_env env, const FileAssetAsyncContext &f
     if ((context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_AUDIO) ||
         (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_IMAGE) ||
         (context->objectPtr->GetMediaType() == MediaType::MEDIA_TYPE_VIDEO)) {
+        context->status = true;
         return false;
     }
-#endif
-    bool IsDirectory = false;
-    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-    Uri isDirectoryAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_ISDIRECTORY);
-    context->valuesBucket.Put(Media::MEDIA_DATA_DB_ID, context->objectPtr->GetId());
-    int retVal = UserFileClient::Insert(isDirectoryAssetUri, context->valuesBucket);
-    NAPI_DEBUG_LOG("GetIsDirectoryiteNative retVal = %{public}d", retVal);
-    if (retVal == SUCCESS) {
-        IsDirectory = true;
-    }
 
-    return IsDirectory;
+    int64_t virtualId = MediaFileUtils::GetVirtualIdByType(context->objectPtr->GetId(), MediaType::MEDIA_TYPE_FILE);
+    vector<string> selectionArgs = { to_string(virtualId) };
+#else
+    vector<string> selectionArgs = { to_string(context->objectPtr->GetId()) };
+#endif
+    vector<string> columns = { MEDIA_DATA_DB_MEDIA_TYPE };
+    DataSharePredicates predicates;
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ?");
+    predicates.SetWhereArgs(selectionArgs);
+    string queryUri = MEDIALIBRARY_DATA_URI;
+    Uri uri(queryUri);
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("Query IsDirectory failed");
+        return false;
+    }
+    int32_t index = 0;
+    if (resultSet->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, index) != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("Query Directory failed");
+        return false;
+    }
+    int32_t mediaType = 0;
+    if (resultSet->GetInt(index, mediaType) != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("Can not get file path");
+        return false;
+    }
+    context->status = true;
+    return  mediaType == static_cast<int>(MediaType::MEDIA_TYPE_ALBUM);
 }
+
 static void JSIsDirectoryCallbackComplete(napi_env env, napi_status status,
                                           FileAssetAsyncContext* context)
 {
@@ -1940,8 +1960,8 @@ napi_value FileAssetNapi::JSIsDirectory(napi_env env, napi_callback_info info)
         CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
         status = napi_create_async_work(env, nullptr, resource, [](napi_env env, void *data) {
                 FileAssetAsyncContext* context = static_cast<FileAssetAsyncContext*>(data);
+                context->status = false;
                 context->isDirectory = GetIsDirectoryiteNative(env, *context);
-                context->status = true;
             },
             reinterpret_cast<CompleteCallback>(JSIsDirectoryCallbackComplete),
             static_cast<void *>(asyncContext.get()), &asyncContext->work);
