@@ -42,7 +42,7 @@ const std::array<std::string, PERM_GRP_SIZE> READ_PERMS = {
     PERM_READ_DOCUMENT
 };
 
-const std::array<std::string, PERM_GRP_SIZE> WRITE_PERMS = {
+const std::vector<std::string> WRITE_PERMS_V10 = {
     PERM_WRITE_IMAGEVIDEO,
     PERM_WRITE_AUDIO,
     PERM_WRITE_DOCUMENT
@@ -60,6 +60,7 @@ class PermissionUtils {
 public:
     static bool CheckCallerPermission(const std::string &permission);
     static bool CheckCallerPermission(const std::vector<std::string> &perms);
+    static bool CheckHasPermission(const std::vector<std::string> &perms);
     static void GetClientBundle(const int uid, std::string &bundleName, bool &isSystemApp);
     static std::string GetClientBundleName();
     static uint32_t GetTokenId();
