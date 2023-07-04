@@ -1096,15 +1096,17 @@ static void BuildCommitModifyUriApi10(FileAssetAsyncContext *context, string &ur
 
 static bool CheckDisplayNameInCommitModify(FileAssetAsyncContext *context)
 {
-    if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {
-        if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
-            context->error = JS_E_DISPLAYNAME;
-            return false;
-        }
-    } else {
-        if (MediaFileUtils::CheckFileDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
-            context->error = JS_E_DISPLAYNAME;
-            return false;
+    if (context->resultNapiType != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        if (context->objectPtr->GetMediaType() != MediaType::MEDIA_TYPE_FILE) {
+            if (MediaFileUtils::CheckDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
+                context->error = JS_E_DISPLAYNAME;
+                return false;
+            }
+        } else {
+            if (MediaFileUtils::CheckFileDisplayName(context->objectPtr->GetDisplayName()) != E_OK) {
+                context->error = JS_E_DISPLAYNAME;
+                return false;
+            }
         }
     }
     return true;
@@ -2468,16 +2470,24 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     return jsResult;
 }
 
-bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value)
+bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value, ResultNapiType resultNapiType)
 {
-    if ((inputKey == MediaColumn::MEDIA_NAME) && (fileAssetPtr->GetMemberMap().count(MediaColumn::MEDIA_NAME))) {
-        fileAssetPtr->SetDisplayName(value);
-        fileAssetPtr->SetTitle(MediaFileUtils::GetTitleFromDisplayName(value));
-    } else if ((inputKey == MediaColumn::MEDIA_TITLE) &&
-        (fileAssetPtr->GetMemberMap().count(MediaColumn::MEDIA_TITLE))) {
-        fileAssetPtr->SetTitle(value);
+    if (resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        if (inputKey == MediaColumn::MEDIA_TITLE) {
+            fileAssetPtr->SetTitle(value);
+        } else {
+            NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
+            return false;
+        }
+    } else if (resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        if (inputKey == MediaColumn::MEDIA_NAME) {
+            fileAssetPtr->SetDisplayName(value);
+        } else {
+            NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
+            return false;
+        }
     } else {
-        NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
+        NAPI_ERR_LOG("invalid resultNapiType");
         return false;
     }
     return true;
@@ -2500,7 +2510,7 @@ napi_value FileAssetNapi::UserFileMgrSet(napi_env env, napi_callback_info info)
     napi_value jsResult = nullptr;
     napi_get_undefined(env, &jsResult);
     auto obj = asyncContext->objectInfo;
-    if (!obj->HandleParamSet(inputKey, value)) {
+    if (!obj->HandleParamSet(inputKey, value, asyncContext->resultNapiType)) {
         NapiError::ThrowError(env, JS_E_FILE_KEY);
         return jsResult;
     }
