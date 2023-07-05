@@ -56,7 +56,7 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "multimedia_image_framework:image_native",
@@ -69,7 +69,7 @@ ohos_unittest("medialibrary_datamanager_unittest") {
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
   if (is_standard_system) {
-    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hilog:libhilog" ]
   } else {
     external_deps += [ "hilog:libhilog" ]
   }
