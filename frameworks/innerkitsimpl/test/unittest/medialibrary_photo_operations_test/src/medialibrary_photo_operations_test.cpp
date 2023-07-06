@@ -925,10 +925,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_006, Test
     TestPhotoCreateWithExtApi10("", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
     TestPhotoCreateWithExtApi10(".", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
     TestPhotoCreateWithExtApi10(".jpg", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
-    TestPhotoCreateWithExtApi10("jpg", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
-    int32_t firstId = 1;
-    TestPhotoCreateWithExtApi10("mp3", MediaType::MEDIA_TYPE_IMAGE, firstId);
+    TestPhotoCreateWithExtApi10("mp3", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
     TestPhotoCreateWithExtApi10("abc", MediaType::MEDIA_TYPE_IMAGE, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL);
+    int32_t firstId = 1;
+    TestPhotoCreateWithExtApi10("jpg", MediaType::MEDIA_TYPE_IMAGE, firstId++);
+    TestPhotoCreateWithExtApi10("mov", MediaType::MEDIA_TYPE_VIDEO, firstId++);
+    TestPhotoCreateWithExtApi10("mp4", MediaType::MEDIA_TYPE_VIDEO, firstId++);
+    TestPhotoCreateWithExtApi10("mkv", MediaType::MEDIA_TYPE_VIDEO, firstId);
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_006");
 }
 
