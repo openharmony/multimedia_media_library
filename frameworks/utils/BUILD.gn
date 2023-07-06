@@ -26,8 +26,8 @@ ohos_static_library("medialibrary_common_utils") {
   deps = [ "//third_party/openssl:libcrypto_shared" ]
 
   external_deps = [
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
   ]
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
 
@@ -52,8 +52,8 @@ ohos_static_library("permission_utils") {
     "access_token:libprivacy_sdk",
     "access_token:libtokenid_sdk",
     "bundle_framework:appexecfwk_core",
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "ipc:ipc_core",
     "samgr:samgr_proxy",
   ]

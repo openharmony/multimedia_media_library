@@ -61,8 +61,8 @@ ohos_static_library("mediatoollib") {
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
     "device_auth:deviceauth_sdk",
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "samgr:samgr_proxy",
   ]
 
@@ -98,8 +98,8 @@ ohos_executable("mediatool") {
     "data_share:datashare_consumer",
     "data_share:datashare_provider",
     "device_auth:deviceauth_sdk",
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "samgr:samgr_proxy",
   ]
 

@@ -25,8 +25,8 @@ ohos_static_library("medialibrary_async_worker") {
   deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
 
   external_deps = [
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
   ]
 
   subsystem_name = "multimedia"
