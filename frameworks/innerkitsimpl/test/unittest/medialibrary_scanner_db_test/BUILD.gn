@@ -49,7 +49,7 @@ ohos_unittest("medialibrary_scanner_db_test") {
     "data_share:datashare_common",
     "data_share:datashare_provider",
     "device_manager:devicemanagersdk",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "player_framework:media_client",

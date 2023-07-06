@@ -52,8 +52,8 @@ ohos_unittest("medialibrary_queryperf_unittest") {
     "access_token:libtoken_setproc",
     "c_utils:utils",
     "data_share:datashare_consumer",
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "relational_store:native_rdb",
@@ -62,7 +62,7 @@ ohos_unittest("medialibrary_queryperf_unittest") {
   ]
 
   if (is_standard_system) {
-    external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps += [ "hilog:libhilog" ]
   } else {
     external_deps += [ "hilog:libhilog" ]
   }
