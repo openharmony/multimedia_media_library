@@ -114,6 +114,7 @@ public:
     static std::string GetVirtualUriFromRealUri(const std::string &uri);
     static std::string GetRealUriFromVirtualUri(const std::string &uri);
     static bool StartsWith(const std::string &str, const std::string &prefix);
+    static void UriAppendKeyValue(std::string &uri, const std::string &key, std::string value = "10");
 #ifdef MEDIALIBRARY_COMPATIBILITY
     static std::string GetTableFromVirtualUri(const std::string &uri);
 #endif
