@@ -413,7 +413,7 @@ int32_t MediaLibraryAssetOperations::CheckRelativePathWithType(const string &rel
     int32_t ret = MediaFileUtils::CheckRelativePath(relativePath);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INVALID_PATH, "Check relativePath failed, "
         "relativePath=%{private}s", relativePath.c_str());
-    
+
     // get rootdir and check if it match mediatype
     string rootDirName;
     MediaFileUtils::GetRootDirFromRelativePath(relativePath, rootDirName);
@@ -772,10 +772,6 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     string path = fileAsset->GetPath();
     InvalidateThumbnail(fileId, fileAsset->GetMediaType());
     ScanFile(path);
-    auto notifyWatch = MediaLibraryNotify::GetInstance();
-    if (notifyWatch != nullptr) {
-        notifyWatch->Notify(fileAsset);
-    }
     return E_OK;
 }
 
@@ -846,7 +842,7 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
             watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ADD);
         }
     }
-    
+
     return E_OK;
 }
 

@@ -23,6 +23,7 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_notify.h"
 #include "mimetype_utils.h"
 
 namespace OHOS {
@@ -151,13 +152,34 @@ int32_t MediaScannerObj::AddToTransaction()
     return E_OK;
 }
 
+string GetUriWithoutSeg(const string &oldUri)
+{
+    size_t questionMaskPoint = oldUri.rfind('?');
+    if (questionMaskPoint != string::npos) {
+        return oldUri.substr(0, questionMaskPoint);
+    }
+    return oldUri;
+}
+
+
 int32_t MediaScannerObj::Commit()
 {
     string tableName;
+    auto watch = MediaLibraryNotify::GetInstance();
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
         uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_);
+        if (watch != nullptr) {
+            if (data_->GetForAdd()) {
+                watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
+            } else {
+                watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_UPDATE);
+            }
+        }
     } else {
         uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_);
+        if (watch != nullptr) {
+            watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
+        }
     }
 
     // notify change
@@ -282,6 +304,9 @@ int32_t MediaScannerObj::GetFileMetadata()
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get file basic info");
         return err;
+    }
+    if (data_->GetFileDateModified() == 0) {
+        data_->SetForAdd(true);
     }
 
     // may need isPending here

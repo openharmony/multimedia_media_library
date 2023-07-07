@@ -112,7 +112,8 @@ public:
     void SetPhotoSubType(const VariantData &photoSubType);
     int32_t GetPhotoSubType() const;
 #endif
-
+    void SetForAdd(bool forAdd);
+    bool GetForAdd() const;
     void SetTableName(const std::string &tableName);
     std::string GetTableName();
 
@@ -169,7 +170,7 @@ private:
     // photo subtype
     int32_t photoSubType_ = 0;
 #endif
-
+    bool forAdd_ = false;
     std::string tableName_;
 };
 } // namespace Media
