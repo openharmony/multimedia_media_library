@@ -1134,6 +1134,7 @@ static void UpdateSelection(SmartAlbumNapiAsyncContext *context)
 {
     if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         context->predicates.EqualTo(SMARTALBUMMAP_DB_ALBUM_ID, context->objectPtr->GetAlbumId());
+        context->predicates.EqualTo(MEDIA_DATA_DB_TIME_PENDING, to_string(0));
         if (context->objectPtr->GetAlbumId() == TRASH_ALBUM_ID_VALUES) {
             context->predicates.NotEqualTo(MEDIA_DATA_DB_DATE_TRASHED, "0");
         } else {

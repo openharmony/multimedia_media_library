@@ -114,16 +114,16 @@ int32_t MediaLibraryFileOperations::GetAlbumCapacityOperation(MediaLibraryComman
 
     auto values = cmd.GetValueBucket();
     ValueObject valueObject;
-    bool isFavourite = false;
+    int32_t isFavourite = 0;
     bool isTrash = false;
     if (values.GetObject(MEDIA_DATA_DB_IS_FAV, valueObject)) {
-        valueObject.GetBool(isFavourite);
+        valueObject.GetInt(isFavourite);
     }
     if (values.GetObject(MEDIA_DATA_DB_IS_TRASH, valueObject)) {
         valueObject.GetBool(isTrash);
     }
 
-    if (isFavourite) {
+    if (isFavourite != 0) {
         resultSet = QueryFavFiles(cmd);
     } else if (isTrash) {
         resultSet = QueryTrashFiles(cmd);
