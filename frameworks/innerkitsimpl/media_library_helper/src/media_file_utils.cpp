@@ -920,10 +920,10 @@ std::string MediaFileUtils::GetMediaTypeUriV10(MediaType mediaType)
 {
     switch (mediaType) {
         case MEDIA_TYPE_AUDIO:
-            return AudioColumn::AUDIO_URI_PREFIX;
+            return AudioColumn::DEFAULT_AUDIO_URI;
         case MEDIA_TYPE_VIDEO:
         case MEDIA_TYPE_IMAGE:
-            return PhotoColumn::PHOTO_URI_PREFIX;
+            return PhotoColumn::DEFAULT_PHOTO_URI;
         case MEDIA_TYPE_SMARTALBUM:
             return MEDIALIBRARY_SMARTALBUM_CHANGE_URI;
         case MEDIA_TYPE_DEVICE:
