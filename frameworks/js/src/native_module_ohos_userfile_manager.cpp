@@ -13,12 +13,6 @@
  * limitations under the License.
  */
 #include "native_module_ohos_medialibrary.h"
-#include "napi/native_node_api.h"
-extern const char _binary_userfilemanagerinf_js_start[];
-extern const char _binary_userfilemanagerinf_js_end[];
-extern const char _binary_userfilemanagerinf_abc_start[];
-extern const char _binary_userfilemanagerinf_abc_end[];
-
 
 namespace OHOS {
 namespace Media {
@@ -34,30 +28,6 @@ static napi_value UserFileMgrExport(napi_env env, napi_value exports)
     PhotoAlbumNapi::Init(env, exports);
     SmartAlbumNapi::UserFileMgrInit(env, exports);
     return exports;
-}
-
-extern "C" __attribute__((visibility("default"))) void NAPI_filemanagement_userFileManager_GetJSCode(const char** buf,
-    int* bufLen)
-{
-    if (buf != nullptr) {
-        *buf = _binary_userfilemanagerinf_js_start;
-    }
-
-    if (bufLen != nullptr) {
-        *bufLen = _binary_userfilemanagerinf_js_end - _binary_userfilemanagerinf_js_start;
-    }
-}
-
-extern "C" __attribute__((visibility("default"))) void NAPI_filemanagement_userFileManager_GetABCCode(const char** buf,
-    int* bufLen)
-{
-    if (buf != nullptr) {
-        *buf = _binary_userfilemanagerinf_abc_start;
-    }
-
-    if (bufLen != nullptr) {
-        *bufLen = _binary_userfilemanagerinf_abc_end - _binary_userfilemanagerinf_abc_start;
-    }
 }
 
 /*
