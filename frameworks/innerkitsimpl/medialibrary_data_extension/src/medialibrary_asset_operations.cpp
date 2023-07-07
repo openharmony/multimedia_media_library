@@ -853,15 +853,15 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
 void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId)
 {
     ValueObject value;
-    bool isFavorite = false;
+    int32_t isFavorite = 0;
     if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_IS_FAV, value)) {
         return;
     }
-    value.GetBool(isFavorite);
+    value.GetInt(isFavorite);
     auto watch = MediaLibraryNotify::GetInstance();
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
-        if (isFavorite) {
+        if (isFavorite != 0) {
             if (favAlbumId > 0) {
                 watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
                     NotifyType::NOTIFY_ALBUM_ADD_ASSERT, favAlbumId);
