@@ -251,7 +251,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_002 enter");
     string albumName = "photoalbum_create_album_002";
-    const static string TITLE_REGEX_CHECK = R"([\.\\/:*?"'`<>|{}\[\]])";
+    const static string TITLE_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
     for (const auto &ch : TITLE_REGEX_CHECK) {
         albumName.append(1, ch);
         EXPECT_EQ(CreatePhotoAlbum(albumName), -EINVAL);
@@ -284,7 +284,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_003, TestSize.Level0)
 
     for (const auto &albumName : testAlbumNames) {
         MEDIA_INFO_LOG("Creating album: %{public}s", albumName.c_str());
-        EXPECT_EQ(CreatePhotoAlbum(albumName), -EINVAL);
+        EXPECT_GT(CreatePhotoAlbum(albumName), E_SUCCESS);
     }
     MEDIA_INFO_LOG("photoalbum_create_album_003 exit");
 }
