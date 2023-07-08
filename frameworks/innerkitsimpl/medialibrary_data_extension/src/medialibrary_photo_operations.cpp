@@ -95,7 +95,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(
+    predicates.And()->EqualTo(
         PhotoColumn::PHOTO_SYNC_STATUS, std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     HandleGroupBy(predicates, columns);
     return MediaLibraryRdbStore::Query(predicates, columns);
