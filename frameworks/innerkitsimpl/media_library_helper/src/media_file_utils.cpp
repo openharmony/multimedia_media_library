@@ -1204,4 +1204,23 @@ bool MediaFileUtils::StartsWith(const std::string &str, const std::string &prefi
 {
     return str.compare(0, prefix.size(), prefix) == 0;
 }
+
+void MediaFileUtils::UriAppendKeyValue(string &uri, const string &key, std::string value)
+{
+    string uriKey = key + '=';
+    if (uri.find(uriKey) != string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
+    string append = queryMark + key + '=' + value;
+
+    size_t pos = uri.find('#');
+    if (pos == string::npos) {
+        uri += append;
+    } else {
+        uri.insert(pos, append);
+    }
+}
+
 } // namespace OHOS::Media
