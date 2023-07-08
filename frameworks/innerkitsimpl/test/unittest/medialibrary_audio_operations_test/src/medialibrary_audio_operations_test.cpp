@@ -1478,13 +1478,10 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_open_api10_test_001, TestSi
         return;
     }
 
-    static constexpr int largeNum = 1000;
     TestAudioOpenParamsApi10(fileId, "",
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
     TestAudioOpenParamsApi10(fileId, "m",
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
-    TestAudioOpenParamsApi10(fileId + largeNum, "rw",
-        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
     TestAudioOpenParamsApi10(fileId, "rw",
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
 

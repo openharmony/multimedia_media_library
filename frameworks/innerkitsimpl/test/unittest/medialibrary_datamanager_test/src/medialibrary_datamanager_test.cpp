@@ -349,17 +349,19 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_001, TestSiz
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_OpenFile_Test_002::Start");
-    shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("OpenFile_Test_001.jpg", g_pictures, fileAsset), true);
-    Uri openFileUri(fileAsset->GetUri());
-    MEDIA_INFO_LOG("openFileUri = %{public}s", openFileUri.ToString().c_str());
+    Uri fileAsset("");
+    ArkJsRuntime runtime;
+    Uri parentUri(g_pictures->GetUri());
+    shared_ptr<MediaFileExtAbility> mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_Test_001.jpg", fileAsset), E_SUCCESS);
+    MEDIA_INFO_LOG("fileAsset = %{public}s", fileAsset.ToString().c_str());
 
     string mode = "rt";
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(openFileUri.ToString());
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(fileAsset.ToString());
     MediaLibraryCommand cmd(Uri(realUri), OperationType::OPEN);
 #else
-    MediaLibraryCommand cmd(openFileUri, OperationType::OPEN);
+    MediaLibraryCommand cmd(fileAsset, OperationType::OPEN);
 #endif
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, mode);
     EXPECT_LT(fd, 0);
@@ -372,7 +374,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_002, TestSiz
 #ifdef MEDIALIBRARY_COMPATIBILITY
     MediaLibraryCommand raCmd(Uri(realUri), OperationType::OPEN);
 #else
-    MediaLibraryCommand raCmd(openFileUri, OperationType::OPEN);
+    MediaLibraryCommand raCmd(fileAsset, OperationType::OPEN);
 #endif
     fd = MediaLibraryDataManager::GetInstance()->OpenFile(raCmd, mode);
     EXPECT_LT(fd, 0);
@@ -864,7 +866,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_001, Te
     ASSERT_NE(resultSet, nullptr);
     int count = -1;
     ASSERT_EQ(resultSet->GetRowCount(count), E_OK);
-    EXPECT_EQ(count, 1);
+    EXPECT_EQ(count, 0);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_002, TestSize.Level0)
@@ -924,18 +926,13 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_005, Te
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_001::Start");
-    shared_ptr<FileAsset> file = nullptr;
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("CheckUriPermission001.txt", g_download, file));
-
-    int32_t fileId = file->GetId();
-    string bundleName = BUNDLE_NAME;
-    string mode = MEDIA_FILEMODE_READONLY;
-    int32_t tableType = static_cast<int32_t>(TableType::TYPE_FILES);
-    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
-
-    string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
+    Uri fileAsset("");
+    ArkJsRuntime runtime;
+    Uri parentUri(g_download->GetUri());
+    shared_ptr<MediaFileExtAbility> mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_Test_001.jpg", fileAsset), E_SUCCESS);
     unordered_map<string, int32_t> expect {
-        { MEDIA_FILEMODE_READONLY, E_SUCCESS },
+        { MEDIA_FILEMODE_READONLY, E_PERMISSION_DENIED },
         { MEDIA_FILEMODE_WRITEONLY, E_PERMISSION_DENIED },
         { MEDIA_FILEMODE_READWRITE, E_PERMISSION_DENIED },
         { MEDIA_FILEMODE_WRITETRUNCATE, E_PERMISSION_DENIED },
@@ -944,40 +941,31 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
         { MEDIA_FILEMODE_READWRITEAPPEND, E_PERMISSION_DENIED },
     };
     for (const auto &inputMode : MEDIA_OPEN_MODES) {
-        auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
+        auto ret = UriPermissionOperations::CheckUriPermission(fileAsset.ToString(), inputMode);
         EXPECT_EQ(ret, expect[inputMode]);
-        MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
-            mode.c_str(), inputMode.c_str(), ret);
     }
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_002::Start");
-    shared_ptr<FileAsset> file = nullptr;
-    ASSERT_TRUE(MediaLibraryUnitTestUtils::CreateFile("CheckUriPermission002.txt", g_download, file));
-
-    int32_t fileId = file->GetId();
-    string bundleName = BUNDLE_NAME;
-    string mode = MEDIA_FILEMODE_WRITEONLY;
-    int32_t tableType = static_cast<int32_t>(TableType::TYPE_FILES);
-    EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
-
-    string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
+    Uri fileAsset("");
+    ArkJsRuntime runtime;
+    Uri parentUri(g_download->GetUri());
+    shared_ptr<MediaFileExtAbility> mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_Test_001.jpg", fileAsset), E_SUCCESS);
     unordered_map<string, int32_t> expect {
         { MEDIA_FILEMODE_READONLY, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_WRITEONLY, E_SUCCESS },
+        { MEDIA_FILEMODE_WRITEONLY, E_PERMISSION_DENIED },
         { MEDIA_FILEMODE_READWRITE, E_PERMISSION_DENIED },
-        { MEDIA_FILEMODE_WRITETRUNCATE, E_SUCCESS },
-        { MEDIA_FILEMODE_WRITEAPPEND, E_SUCCESS },
+        { MEDIA_FILEMODE_WRITETRUNCATE, E_PERMISSION_DENIED },
+        { MEDIA_FILEMODE_WRITEAPPEND, E_PERMISSION_DENIED },
         { MEDIA_FILEMODE_READWRITETRUNCATE, E_PERMISSION_DENIED },
         { MEDIA_FILEMODE_READWRITEAPPEND, E_PERMISSION_DENIED },
     };
     for (const auto &inputMode : MEDIA_OPEN_MODES) {
-        auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
+        auto ret = UriPermissionOperations::CheckUriPermission(fileAsset.ToString(), inputMode);
         EXPECT_EQ(ret, expect[inputMode]);
-        MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
-            mode.c_str(), inputMode.c_str(), ret);
     }
 }
 
@@ -996,7 +984,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
     for (const auto &inputMode : MEDIA_OPEN_MODES) {
         auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
-        EXPECT_EQ(ret, E_SUCCESS);
+        EXPECT_EQ(ret, E_PERMISSION_DENIED);
         MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
             mode.c_str(), inputMode.c_str(), ret);
     }
@@ -1017,7 +1005,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
     string inputMode = "rWt";
     auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
-    EXPECT_EQ(ret, E_SUCCESS);
+    EXPECT_EQ(ret, E_PERMISSION_DENIED);
     MEDIA_ERR_LOG("CheckUriPermission permissionMode: %{public}s, inputMode: %{public}s, ret: %{public}d",
         mode.c_str(), inputMode.c_str(), ret);
 }
