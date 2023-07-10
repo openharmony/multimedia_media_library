@@ -130,7 +130,9 @@ public:
     int32_t GetIsTrash() const;
     void SetIsTrash(int32_t isTrash);
     const std::string GetOwnerPackage() const;
-    void SetOwnerPackage(const std::string &packageName);
+    void SetOwnerPackage(const std::string &ownerPackage);
+    const std::string GetPackageName() const;
+    void SetPackageName(const std::string &packageName);
 
     const std::string &GetRecyclePath() const;
     void SetRecyclePath(const std::string &recyclePath);
