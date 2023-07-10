@@ -378,12 +378,10 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
         return E_INVALID_PATH;
     }
 
-    AlbumAsset dirAsset;
-    dirAsset.SetAlbumPath(dirPath);
     rowId = GetIdByPathFromDb(dirPath);
     MEDIA_DEBUG_LOG("dirPath %{private}s id in database is %{private}d", dirPath.c_str(), static_cast<int>(rowId));
     if ((rowId < 0) || (!MediaFileUtils::IsDirectory(dirPath))) {
-        if (!dirAsset.CreateAlbumAsset()) {
+        if ((!MediaFileUtils::CreateDirectory(dirPath)) && (errno != EEXIST)) {
             return E_FAIL;
         }
         return InsertDirToDbRecursively(dirPath, rowId);
