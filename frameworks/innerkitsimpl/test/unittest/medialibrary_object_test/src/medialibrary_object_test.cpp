@@ -75,7 +75,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetDirAsset_test_001, TestSize.Level0
     EXPECT_EQ(dirAsset.GetAlbumId(), E_INVALID_PATH);
     path = "//data/app/el1";
     dirAsset = MediaLibraryObjectUtils::GetDirAsset(path);
-    EXPECT_EQ(dirAsset.GetAlbumId(), E_FAIL);
+    EXPECT_EQ(dirAsset.GetAlbumId(), E_INVALID_PATH);
     path = "/storage/cloud/files/medialib_GetDirAsset_test_001";
     dirAsset = MediaLibraryObjectUtils::GetDirAsset(path);
     EXPECT_GT(dirAsset.GetAlbumId(), 0);
