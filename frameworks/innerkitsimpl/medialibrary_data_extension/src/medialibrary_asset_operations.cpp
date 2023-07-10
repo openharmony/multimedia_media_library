@@ -40,6 +40,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
+#include "permission_utils.h"
 #include "rdb_errno.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
@@ -278,6 +279,19 @@ static inline string GetVirtualPath(const string &relativePath, const string &di
     }
 }
 
+static string GetAssetPackageName(const FileAsset &fileAsset, const string &bundleName)
+{
+    if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::SCREENSHOT)) {
+        if (fileAsset.GetMediaType() == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE) ||
+            fileAsset.GetMediaType() == static_cast<int32_t>(MediaType::MEDIA_TYPE_PHOTO)) {
+            return "截图";
+        } else if (fileAsset.GetMediaType() == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+            return "屏幕录制";
+        }
+    }
+    return PermissionUtils::GetPackageNameByBundleName(bundleName);
+}
+
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // Fill basic file information into DB
@@ -304,6 +318,11 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     }
 
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
+    if (!cmd.GetBundleName().empty()) {
+        assetInfo.PutString(MediaColumn::MEDIA_PACKAGE_NAME,
+            GetAssetPackageName(fileAsset, cmd.GetBundleName()));
+    }
+    
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
     assetInfo.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(assetInfo);
@@ -1039,6 +1058,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_TYPE, { Forbidden } },
     { MediaColumn::MEDIA_MIME_TYPE, { Forbidden } },
     { MediaColumn::MEDIA_OWNER_PACKAGE, { Forbidden } },
+    { MediaColumn::MEDIA_PACKAGE_NAME, { Forbidden } },
     { MediaColumn::MEDIA_DEVICE_NAME, { Forbidden } },
     { MediaColumn::MEDIA_DATE_MODIFIED, { Forbidden } },
     { MediaColumn::MEDIA_DATE_ADDED, { Forbidden } },

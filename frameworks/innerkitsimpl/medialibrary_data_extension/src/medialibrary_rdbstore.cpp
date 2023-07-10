@@ -1137,6 +1137,29 @@ void UpdateAPI10Table(RdbStore &store)
     PrepareUniqueMemberTable(store);
 }
 
+static void AddPackageNameColumnOnTables(RdbStore &store)
+{
+    static const string ADD_PACKAGE_NAME_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+        " ADD COLUMN " + PhotoColumn::MEDIA_PACKAGE_NAME + " TEXT";
+    static const string ADD_PACKAGE_NAME_ON_AUDIOS = "ALTER TABLE " + AudioColumn::AUDIOS_TABLE +
+        " ADD COLUMN " + AudioColumn::MEDIA_PACKAGE_NAME + " TEXT";
+    static const string ADD_PACKAGE_NAME_ON_FILES = "ALTER TABLE " + MEDIALIBRARY_TABLE +
+        " ADD COLUMN " + MEDIA_DATA_DB_PACKAGE_NAME + " TEXT";
+
+    int32_t result = store.ExecuteSql(ADD_PACKAGE_NAME_ON_PHOTOS);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to update PHOTOS");
+    }
+    result = store.ExecuteSql(ADD_PACKAGE_NAME_ON_AUDIOS);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to update AUDIOS");
+    }
+    result = store.ExecuteSql(ADD_PACKAGE_NAME_ON_FILES);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to update FILES");
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1174,6 +1197,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_TABLE_TYPE) {
         AddTableType(store);
+    }
+
+    if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
+        AddPackageNameColumnOnTables(store);
     }
 
     return NativeRdb::E_OK;

@@ -32,6 +32,7 @@ const std::unordered_map<std::string, ResultSetDataType> RESULT_TYPE_MAP = {
     { MediaColumn::MEDIA_TYPE, ResultSetDataType::TYPE_INT32 },
     { MediaColumn::MEDIA_MIME_TYPE, ResultSetDataType::TYPE_STRING },
     { MediaColumn::MEDIA_OWNER_PACKAGE, ResultSetDataType::TYPE_STRING },
+    { MediaColumn::MEDIA_PACKAGE_NAME, ResultSetDataType::TYPE_STRING },
     { MediaColumn::MEDIA_DEVICE_NAME, ResultSetDataType::TYPE_STRING },
     { MediaColumn::MEDIA_DATE_ADDED, ResultSetDataType::TYPE_INT64 },
     { MediaColumn::MEDIA_DATE_MODIFIED, ResultSetDataType::TYPE_INT64 },
