@@ -60,10 +60,8 @@ using OHOS::DataShare::DataSharePredicates;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
 const string COMMON_PREFIX = "datashare:///media/";
 const string ROOT_URI = "root";
-#endif
 
 using ExceptIntFunction = void (*) (int32_t);
 using ExceptLongFunction = void (*) (int64_t);
@@ -125,7 +123,6 @@ void CleanTestTables()
     }
 }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
 class ArkJsRuntime : public AbilityRuntime::JsRuntime {
 public:
     ArkJsRuntime() {};
@@ -163,7 +160,6 @@ void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
             t.uri.c_str(), t.fileName.c_str(), t.mode, t.mimeType.c_str());
     }
 }
-#endif
 
 struct UniqueMemberValuesBucket {
     string assetMediaType;
@@ -832,7 +828,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_002, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_002");
 }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_create_api10_test_003");
@@ -896,7 +891,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, Test
     DisplayFileList(rootFileList);
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_004");
 }
-#endif
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, TestSize.Level0)
 {

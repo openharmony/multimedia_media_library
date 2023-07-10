@@ -65,9 +65,6 @@ ohos_unittest("medialibrary_datamanager_unittest") {
     "user_file_service:file_access_extension_ability_kit",
   ]
 
-  defines = []
-  defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
-
   if (is_standard_system) {
     external_deps += [ "hilog:libhilog" ]
   } else {
