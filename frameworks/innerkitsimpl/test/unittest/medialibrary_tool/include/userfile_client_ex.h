@@ -30,7 +30,8 @@ public:
     static int32_t Query(const MediaType mediaType, const std::string &uri,
         std::shared_ptr<FetchResult<FileAsset>> &fetchResult);
     static int Open(const std::string &uri, const std::string &mode);
-    static int Close(const std::string &uri, const int fileFd, const std::string &mode);
+    static int Close(const std::string &uri, const int fileFd, const std::string &mode,
+        bool isCreateThumbSync = false);
     static int32_t CreateThumbnail(const std::string &uri);
     static std::string GetTableNameByMediaType(const MediaType mediaType);
     static std::string GetTableNameByUri(const std::string &uri);

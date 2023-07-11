@@ -28,7 +28,9 @@ struct ExecEnv {
     OptionArgs optArgs;
     std::vector<std::string> args;
     std::string path; // real path for the path in optArgs
-    bool isFile {true};
+    bool isFile = true;
+    bool isCreateThumbSyncInSend = false;
+    bool isRemoveOriginFileInSend = true;
     std::string uri;
     std::string recvPath; // real path for the recvPath in optArgs
     DumpOpt dumpOpt;
