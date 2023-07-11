@@ -331,12 +331,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_001, TestSiz
     Uri parentUri(albumAsset->GetUri());
     ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_test_001.jpg", fileAsset), E_SUCCESS);
     for (auto const &mode : MEDIA_OPEN_MODES) {
-#ifdef MEDIALIBRARY_COMPATIBILITY
         string realUri = MediaFileUtils::GetRealUriFromVirtualUri(fileAsset.ToString());
         MediaLibraryCommand cmd(Uri(realUri), OperationType::OPEN);
-#else
-        MediaLibraryCommand cmd(fileAsset, OperationType::OPEN);
-#endif
         int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, mode);
         EXPECT_GT(fd, 0);
         if (fd > 0) {
@@ -357,12 +353,8 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_002, TestSiz
     MEDIA_INFO_LOG("fileAsset = %{public}s", fileAsset.ToString().c_str());
 
     string mode = "rt";
-#ifdef MEDIALIBRARY_COMPATIBILITY
     string realUri = MediaFileUtils::GetRealUriFromVirtualUri(fileAsset.ToString());
     MediaLibraryCommand cmd(Uri(realUri), OperationType::OPEN);
-#else
-    MediaLibraryCommand cmd(fileAsset, OperationType::OPEN);
-#endif
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, mode);
     EXPECT_LT(fd, 0);
     if (fd > 0) {
@@ -371,11 +363,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_002, TestSiz
     MEDIA_INFO_LOG("DataManager_OpenFile_Test_002 mode: %{public}s, fd: %{public}d.", mode.c_str(), fd);
 
     mode = "ra";
-#ifdef MEDIALIBRARY_COMPATIBILITY
     MediaLibraryCommand raCmd(Uri(realUri), OperationType::OPEN);
-#else
-    MediaLibraryCommand raCmd(fileAsset, OperationType::OPEN);
-#endif
     fd = MediaLibraryDataManager::GetInstance()->OpenFile(raCmd, mode);
     EXPECT_LT(fd, 0);
     if (fd > 0) {
