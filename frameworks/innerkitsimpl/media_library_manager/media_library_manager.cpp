@@ -15,6 +15,7 @@
 #define MLOG_TAG "MediaLibraryManager"
 
 #include "media_library_manager.h"
+#include <unistd.h>
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "media_log.h"

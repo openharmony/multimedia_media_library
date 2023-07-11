@@ -18,6 +18,7 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <unistd.h>
 
 #include "datashare_abs_result_set.h"
 #include "datashare_predicates.h"
