@@ -195,24 +195,9 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateThumbnailAsync_test_001, TestSi
     }
     string url = "";
     ThumbnailService serverTest;
-    int32_t ret = serverTest.CreateThumbnailAsync(url, "");
+    int32_t ret = serverTest.CreateThumbnail(url, "");
     EXPECT_EQ(ret, E_OK);
     serverTest.ReleaseService();
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateThumbnail_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string url = "";
-    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    int32_t ret = serverTest->CreateThumbnail(url);
-    EXPECT_EQ(ret, -1);
-    url = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL;
-    ret = serverTest->CreateThumbnail(url);
-    EXPECT_EQ(ret, -1);
-    serverTest->ReleaseService();
 }
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_InvalidateThumbnail_test_001, TestSize.Level0)
