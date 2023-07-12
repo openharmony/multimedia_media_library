@@ -94,10 +94,22 @@ void MediaLibraryDataManagerUnitTest::SetUp(void)
 
 void MediaLibraryDataManagerUnitTest::TearDown(void) {}
 
+string ReturnUri(string UriType, string MainUri, string SubUri = "")
+{
+    if(SubUri.empty())
+    {
+        return (UriType + "/" + MainUri);
+    }
+    else
+    {
+        return (UriType + "/" + MainUri + "/" + SubUri);
+    }
+}
+
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAsset_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_CreateAsset_Test_001::Start");
-    Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
+    Uri createAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_FILEOPRN, MEDIA_FILEOPRN_CREATEASSET));
     DataShare::DataShareValuesBucket valuesBucket;
     string relativePath = "Pictures/";
     string displayName = "CreateAsset_Test_001.jpg";
@@ -128,7 +140,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CloseAsset_Test_001, TestS
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAlbum_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_CreateAlbum_Test_001::Start");
-    Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
+    Uri createAlbumUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_ALBUMOPRN, MEDIA_ALBUMOPRN_CREATEALBUM));
     DataShare::DataShareValuesBucket valuesBucket;
     string dirPath = ROOT_MEDIA_DIR + "Pictures/CreateAlbum_Test_001/";
     valuesBucket.Put(MEDIA_DATA_DB_NAME, "CreateAlbum_Test_001");
@@ -142,7 +154,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateAlbum_Test_001, Test
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateDir_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_CreateDir_Test_001::Start");
-    Uri createDirUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_FMS_CREATEDIR);
+    Uri createDirUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_DIROPRN, MEDIA_DIROPRN_FMS_CREATEDIR));
     DataShare::DataShareValuesBucket valuesBucket;
     string relativePath = "Pictures/CreateDir_Test_001/";
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
@@ -157,7 +169,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashDir_Test_001, TestSiz
     MEDIA_INFO_LOG("DataManager_TrashDir_Test_001::Start");
     shared_ptr<FileAsset> albumAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateAlbum("TrashDir_Test_001", g_pictures, albumAsset), true);
-    Uri trashDirUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_FMS_TRASHDIR);
+    Uri trashDirUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_DIROPRN, MEDIA_DIROPRN_FMS_TRASHDIR));
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_ID, albumAsset->GetId());
     MediaLibraryCommand cmd(trashDirUri);
@@ -174,13 +186,13 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Favorite_Test_001, TestSiz
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileAsset->GetId());
-    Uri addSmartAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
-        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
+    Uri addSmartAlbumUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_SMARTALBUMMAPOPRN,
+        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM));
     MediaLibraryCommand cmd(addSmartAlbumUri);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_EQ((retVal > 0), true);
-    Uri removeSmartAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
-        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
+    Uri removeSmartAlbumUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_SMARTALBUMMAPOPRN,
+        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM));
     MediaLibraryCommand removeCmd(removeSmartAlbumUri);
     retVal = MediaLibraryDataManager::GetInstance()->Insert(removeCmd, valuesBucket);
     EXPECT_EQ((retVal > 0), true);
@@ -195,13 +207,13 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_Trash_Test_001, TestSize.L
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, fileAsset->GetId());
-    Uri addSmartAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
-        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
+    Uri addSmartAlbumUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_SMARTALBUMMAPOPRN, 
+        MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM));
     MediaLibraryCommand cmd(addSmartAlbumUri);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_EQ((retVal > 0), true);
-    Uri removeSmartAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
-        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
+    Uri removeSmartAlbumUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_SMARTALBUMMAPOPRN,
+        MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM));
     MediaLibraryCommand removeCmd(removeSmartAlbumUri);
     retVal = MediaLibraryDataManager::GetInstance()->Insert(removeCmd, valuesBucket);
     EXPECT_EQ((retVal > 0), true);
@@ -213,7 +225,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DeleteAsset_Test_001, Test
     MEDIA_INFO_LOG("DataManager_DeleteAsset_Test_001::Start");
     shared_ptr<FileAsset> fileAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("DeleteAsset_Test_001.jpg", g_pictures, fileAsset), true);
-    Uri deleteAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET);
+    Uri deleteAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_FILEOPRN, MEDIA_FILEOPRN_DELETEASSET));
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_ID, to_string(fileAsset->GetId()));
     MediaLibraryCommand cmd(deleteAssetUri, Media::OperationType::DELETE);
@@ -229,7 +241,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryDirTable_Test_001, Te
     DataShare::DataSharePredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
-    Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIATYPE_DIRECTORY_TABLE);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIATYPE_DIRECTORY_TABLE));
     int errCode = 0;
     MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
     auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
@@ -243,7 +255,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryAlbum_Test_001, TestS
     DataShare::DataSharePredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
-    Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN_QUERYALBUM);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_ALBUMOPRN_QUERYALBUM));
     int errCode = 0;
     MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
     auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
@@ -257,7 +269,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QueryVolume_Test_001, Test
     DataShare::DataSharePredicates predicates;
     string prefix = MEDIA_DATA_DB_MEDIA_TYPE + " <> " + to_string(MEDIA_TYPE_ALBUM);
     predicates.SetWhereClause(prefix);
-    Uri queryFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
+    Uri queryFileUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_QUERYOPRN_QUERYVOLUME));
     int errCode = 0;
     MediaLibraryCommand cmd(queryFileUri, Media::OperationType::QUERY);
     auto resultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
@@ -292,7 +304,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateFileAsset_Test_001, 
     valuesBucketUpdate.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + to_string(fileAsset->GetId()));
-    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
+    Uri updateAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI,MEDIA_FILEOPRN, MEDIA_FILEOPRN_MODIFYASSET));
     MediaLibraryCommand cmd(updateAssetUri);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
     EXPECT_EQ((retVal > 0), true);
@@ -313,7 +325,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_001,
     valuesBucketUpdate.Put(MEDIA_DATA_DB_RELATIVE_PATH, albumAsset->GetRelativePath());
     valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "U" + albumAsset->GetDisplayName());
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_001::GetUri = %{public}s", albumAsset->GetUri().c_str());
-    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM);
+    Uri updateAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_ALBUMOPRN, MEDIA_ALBUMOPRN_MODIFYALBUM));
     MediaLibraryCommand cmd(updateAssetUri);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
     EXPECT_EQ(retVal, E_SUCCESS);
@@ -389,7 +401,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Leve
     valuesBucketUpdate.Put(MEDIA_DATA_DB_TIME_PENDING, to_string(time));
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + to_string(fileAsset->GetId()));
-    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
+    Uri updateAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_FILEOPRN, MEDIA_FILEOPRN_MODIFYASSET));
     MediaLibraryCommand cmd(updateAssetUri);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
     EXPECT_GT(retVal, 0);
@@ -437,7 +449,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_BY_DAY_Test_001, TestSize.Level
     valuesBucketUpdate.Put(MEDIA_DATA_DB_TIME_PENDING, to_string(time));
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + to_string(fileAsset->GetId()));
-    Uri updateAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_MODIFYASSET);
+    Uri updateAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_FILEOPRN, MEDIA_FILEOPRN_MODIFYASSET));
     MediaLibraryCommand cmd(updateAssetUri);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
     EXPECT_GT(retVal, 0);
@@ -860,7 +872,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_001, Te
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_UriPermission_Test_002::Start");
-    Uri addPermission(MEDIALIBRARY_BUNDLEPERM_URI + "/" + BUNDLE_PERMISSION_INSERT);
+    Uri addPermission(ReturnUri(MEDIALIBRARY_BUNDLEPERM_URI, BUNDLE_PERMISSION_INSERT));
     DataShare::DataShareValuesBucket values;
     MediaLibraryCommand cmd(addPermission);
     int retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, values);
@@ -871,7 +883,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_002, Te
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_UriPermission_Test_003::Start");
-    Uri addPermission(MEDIALIBRARY_BUNDLEPERM_URI + "/" + BUNDLE_PERMISSION_INSERT);
+    Uri addPermission(ReturnUri(MEDIALIBRARY_BUNDLEPERM_URI, BUNDLE_PERMISSION_INSERT));
     DataShare::DataShareValuesBucket values;
     values.Put(PERMISSION_FILE_ID, 1);
     MediaLibraryCommand cmd(addPermission);
@@ -883,7 +895,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_003, Te
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_UriPermission_Test_004::Start");
-    Uri addPermission(MEDIALIBRARY_BUNDLEPERM_URI + "/" + BUNDLE_PERMISSION_INSERT);
+    Uri addPermission(ReturnUri(MEDIALIBRARY_BUNDLEPERM_URI, BUNDLE_PERMISSION_INSERT));
     DataShare::DataShareValuesBucket values;
     values.Put(PERMISSION_FILE_ID, 1);
     values.Put(PERMISSION_BUNDLE_NAME, BUNDLE_NAME);
