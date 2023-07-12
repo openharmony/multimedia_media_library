@@ -206,6 +206,14 @@ ohos_shared_library("userfilemanager") {
     debug = false
   }
 
+  if (purgeable_ashmem_enable) {
+    defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
+    external_deps += [
+      "memory_utils:libpurgeablemem",
+      "memory_utils:pixelmap_builder",
+    ]
+  }
+
   relative_install_dir = "module/filemanagement"
   subsystem_name = "multimedia"
   part_name = "media_library"
@@ -265,6 +273,14 @@ ohos_shared_library("photoaccesshelper") {
   sanitize = {
     cfi = true
     debug = false
+  }
+
+  if (purgeable_ashmem_enable) {
+    defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
+    external_deps += [
+      "memory_utils:libpurgeablemem",
+      "memory_utils:pixelmap_builder",
+    ]
   }
 
   relative_install_dir = "module/file"
