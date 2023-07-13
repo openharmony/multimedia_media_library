@@ -61,6 +61,21 @@ static inline std::string GetThumbnailPath(const std::string &path, const std::s
     }
     return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + "/" + key + ".jpg";
 }
+
+static inline std::string GetSandboxPath(const std::string &path, bool isThumb)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + (isThumb ? "/THM.jpg" : "/LCD.jpg");
+    return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
+}
+
+static inline bool IsThumbnail(const int32_t width, const int32_t height)
+{
+    return (width <= DEFAULT_THUMBNAIL_SIZE) && (height <= DEFAULT_THUMBNAIL_SIZE);
+}
+
 } // namespace Media
 } // namespace OHOS
 
