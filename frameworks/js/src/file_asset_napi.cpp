@@ -2546,7 +2546,7 @@ napi_value FileAssetNapi::UserFileMgrSet(napi_env env, napi_callback_info info)
     napi_value jsResult = nullptr;
     napi_get_undefined(env, &jsResult);
     auto obj = asyncContext->objectInfo;
-    if (!obj->HandleParamSet(inputKey, value, asyncContext->resultNapiType)) {
+    if (!obj->HandleParamSet(inputKey, value, obj->fileAssetPtr->GetResultNapiType())) {
         NapiError::ThrowError(env, JS_E_FILE_KEY);
         return jsResult;
     }
@@ -2691,8 +2691,6 @@ static napi_value ParseArgsUserFileMgrOpen(napi_env env, napi_callback_info info
         context->valuesBucket.Put(MEDIA_FILEMODE, mode);
     }
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
-
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -2803,8 +2801,6 @@ static napi_value ParseArgsUserFileMgrClose(napi_env env, napi_callback_info inf
         return nullptr;
     }
     context->fd = fd;
-
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -2982,8 +2978,6 @@ static napi_value ParseArgsPhotoAccessHelperOpen(napi_env env, napi_callback_inf
         context->valuesBucket.Put(MEDIA_FILEMODE, mode);
     }
 
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
-
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -3080,8 +3074,6 @@ static napi_value ParseArgsPhotoAccessHelperClose(napi_env env, napi_callback_in
         return nullptr;
     }
     context->fd = fd;
-
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamCallback(env, context), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
