@@ -36,6 +36,7 @@ public:
 
     int32_t GetAlbumId() const;
     int32_t GetCount() const;
+    void SetCount(int32_t count);
     const std::string& GetAlbumUri() const;
     const std::string& GetCoverUri() const;
     int64_t GetDateModified() const;
