@@ -362,10 +362,20 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
     return result;
 }
 
+static bool IsSystemApp()
+{
+    return Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
+}
+
 napi_value MediaLibraryNapi::GetUserFileMgr(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("getUserFileManager");
+
+    if (!IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Only system apps can get userFileManger instance");
+        return nullptr;
+    }
 
     return CreateNewInstance(env, info, userFileMgrConstructor_);
 }
@@ -2079,13 +2089,6 @@ string ChangeListenerNapi::GetTrashAlbumUri()
     }
     trashAlbumUri_ = albumSet->GetFirstObject()->GetAlbumUri();
     return trashAlbumUri_;
-}
-
-static bool IsSystemApp()
-{
-    auto tokenId = IPCSkeleton::GetSelfTokenID();
-    bool isSystemApp = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(tokenId);
-    return isSystemApp;
 }
 
 napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
