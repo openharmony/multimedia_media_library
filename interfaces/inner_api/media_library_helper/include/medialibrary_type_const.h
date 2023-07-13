@@ -158,6 +158,7 @@ const std::string DEFAULT_STRING_MEDIA_TYPE = "";
 const std::string DEFAULT_EXTENSION = "";
 const int32_t DEFAULT_MEDIAVOLUME = 0;
 const std::string ROOT_MEDIA_DIR = "/storage/cloud/files/";
+const std::string ROOT_SANDBOX_DIR = "/storage/Share/";
 const std::string FS_TYPE_EPFS = "epfs";
 const std::string EPFS_MOUNT_POINT = "/storage/cloud/epfs";
 const char SLASH_CHAR = '/';

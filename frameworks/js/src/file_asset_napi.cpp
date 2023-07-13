@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <fcntl.h>
 #include <sys/stat.h>
 
 #include "abs_shared_result_set.h"
@@ -1543,6 +1544,22 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     return result;
 }
 
+static int OpenThumbnail(const string &uriStr, const string &path, const Size &size)
+{
+    if (!path.empty()) {
+        string sandboxPath = GetSandboxPath(path, IsThumbnail(size.width, size.height));
+        int fd = -1;
+        if (!sandboxPath.empty()) {
+            fd = open(sandboxPath.c_str(), O_RDONLY);
+        }
+        if (fd > 0) {
+            return fd;
+        }
+    }
+    Uri openUri(uriStr);
+    return UserFileClient::OpenFile(openUri, "R");
+}
+
 static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
     const bool isApiVersion10, const string &path = "")
 {
@@ -1558,8 +1575,7 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
         MediaLibraryNapiUtils::UriAppendKeyValue(openUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     }
     tracer.Start("DataShare::OpenFile");
-    Uri openUri(openUriStr);
-    UniqueFd uniqueFd(UserFileClient::OpenFile(openUri, "R"));
+    UniqueFd uniqueFd(OpenThumbnail(openUriStr, path, size));
     if (uniqueFd.Get() < 0) {
         NAPI_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
         return nullptr;
