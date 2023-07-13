@@ -458,13 +458,9 @@ int32_t MediaFileUtils::CheckFileDisplayName(const string &displayName)
     if (displayName.at(0) == '.') {
         return -EINVAL;
     }
-    string title = GetTitleFromDisplayName(displayName);
-    if (title.empty()) {
-        return -EINVAL;
-    }
     static const string TITLE_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
-    if (RegexCheck(title, TITLE_REGEX_CHECK)) {
-        MEDIA_ERR_LOG("Failed to check title regex: %{private}s", title.c_str());
+    if (RegexCheck(displayName, TITLE_REGEX_CHECK)) {
+        MEDIA_ERR_LOG("Failed to check displayName regex: %{private}s", displayName.c_str());
         return -EINVAL;
     }
     return E_OK;
