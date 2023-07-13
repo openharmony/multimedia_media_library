@@ -14,8 +14,8 @@
  */
 
 #include "medialibrary_helper_test.h"
-
 #include "media_file_uri.h"
+#include "media_log.h"
 #include "userfile_manager_types.h"
 
 using namespace std;
@@ -27,10 +27,33 @@ namespace Media {
 static const string networkId_ = "1d3cb099659d53b3ee15faaab3c00a8ff983382ebc8b01aabde039ed084e167b";
 static const int32_t fd_ = 12;
 
+const int32_t TYPE_URI = 1;
+const int32_t TYPE_URI_FD = 2;
+const int32_t TYPE_URI_PREFIX = 3;
+
+string PathSplicing(string subpath, int32_t type)
+{
+    string Uri = "";
+    switch (type) {
+        case TYPE_URI:
+            Uri = (ML_FILE_URI_PREFIX + subpath + "/" + to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_);
+            break;
+        case TYPE_URI_FD:
+            Uri = (ML_FILE_URI_PREFIX + subpath + "/" + to_string(fd_));
+            break;
+        case TYPE_URI_PREFIX:
+            Uri = (subpath + to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_);
+            break;
+        default:
+            MEDIA_ERR_LOG("ERROR: No such type");
+            break;
+    }
+    return Uri;
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_001, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_AUDIO_URI + "/" +
-                 to_string(fd_) +ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_AUDIO_URI, TYPE_URI);
     MediaFileUri fileUri(uri);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -38,8 +61,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_001, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_002, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_IMAGE_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_IMAGE_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_IMAGE, to_string(fd_), networkId_);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -47,8 +69,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_002, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_003, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_AUDIO_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_AUDIO_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_AUDIO, to_string(fd_), networkId_);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -56,8 +77,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_003, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_004, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_VIDEO_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_VIDEO_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_VIDEO, to_string(fd_), networkId_);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -65,8 +85,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_004, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_005, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_FILE_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_FILE_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_FILE, to_string(fd_), networkId_);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -78,8 +97,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_005, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_006, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_IMAGE_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_IMAGE_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_IMAGE, to_string(fd_), networkId_, MEDIA_API_VERSION_DEFAULT);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -87,8 +105,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_006, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_007, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_AUDIO_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_AUDIO_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_AUDIO, to_string(fd_), networkId_, MEDIA_API_VERSION_DEFAULT);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -96,8 +113,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_007, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_008, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_VIDEO_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_VIDEO_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_VIDEO, to_string(fd_), networkId_, MEDIA_API_VERSION_DEFAULT);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -105,8 +121,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_008, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_009, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_FILE_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_FILE_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_FILE, to_string(fd_), networkId_, MEDIA_API_VERSION_DEFAULT);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -118,8 +133,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_009, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_010, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_ALBUM_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_ALBUM_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_ALBUM, to_string(fd_), networkId_, MEDIA_API_VERSION_DEFAULT);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -127,8 +141,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_010, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_011, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_SMART_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_SMART_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_SMARTALBUM, to_string(fd_), networkId_, MEDIA_API_VERSION_DEFAULT);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -136,8 +149,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_011, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_012, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + PhotoColumn::PHOTO_TYPE_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(PhotoColumn::PHOTO_TYPE_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_IMAGE, to_string(fd_), networkId_, MEDIA_API_VERSION_V10);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -150,7 +162,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_012, TestSize.Level0)
     
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_013, TestSize.Level0)
 {
-    string uri = AudioColumn::AUDIO_URI_PREFIX + to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(AudioColumn::AUDIO_URI_PREFIX, TYPE_URI_PREFIX);
     MediaFileUri fileUri(MEDIA_TYPE_AUDIO, to_string(fd_), networkId_, MEDIA_API_VERSION_V10);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -158,8 +170,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_013, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_014, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_FILE_URI + "/" +
-                 to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_;
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_FILE_URI, TYPE_URI);
     MediaFileUri fileUri(MEDIA_TYPE_FILE, to_string(fd_), networkId_, MEDIA_API_VERSION_V10);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
@@ -171,7 +182,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_014, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_015, TestSize.Level0)
 {
-    string uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_FILE_URI + "/" + to_string(fd_);
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_FILE_URI, TYPE_URI_FD);
     MediaFileUri fileUri(MEDIA_TYPE_FILE, to_string(fd_));
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
