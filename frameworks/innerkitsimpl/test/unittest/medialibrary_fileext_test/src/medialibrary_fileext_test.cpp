@@ -119,9 +119,9 @@ void MediaLibraryFileExtUnitTest::SetUp()
 
 void MediaLibraryFileExtUnitTest::TearDown(void) {}
 
-string ReturnUri(string PrefixType, string UriType, string SubUri = "")
+string ReturnUri(string prefixType, string uriType, string subUri = "")
 {
-    return (PrefixType + UriType + SubUri);
+    return (prefixType + uriType + subUri);
 }
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_OpenFile_test_001, TestSize.Level0)
