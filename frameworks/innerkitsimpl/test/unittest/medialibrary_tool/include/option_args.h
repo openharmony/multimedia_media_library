@@ -35,6 +35,7 @@ struct OptionArgs {
     std::string path; // dir or file
     std::string uri; // such as "datashare:///media/Photo/54"
     std::string recvPath; // dir or file
+    std::vector<std::string> extraArgs;
 };
 } // namespace MediaTool
 } // namespace Media

@@ -133,7 +133,12 @@ int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo)
     if (!ret) {
         printf("%s send data failed. rfd:%d, wfd:%d\n", STR_FAIL.c_str(), rfd, wfd);
     }
-    UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE);
+    if (env.isCreateThumbSyncInSend) {
+        UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, true);
+    } else {
+        UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, false);
+    }
+    
     close(rfd);
     return ret ? Media::E_OK : Media::E_ERR;
 }
@@ -178,7 +183,9 @@ int32_t SendCommandV10::Start(const ExecEnv &env)
         return ret;
     }
     ret = SendFiles(env, fileInfos);
-    RemoveFiles(env, fileInfos);
+    if (env.isRemoveOriginFileInSend) {
+        RemoveFiles(env, fileInfos);
+    }
     return ret;
 }
 } // namespace MediaTool
