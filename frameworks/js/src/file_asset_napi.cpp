@@ -1561,16 +1561,13 @@ static int OpenThumbnail(const string &uriStr, const string &path, const Size &s
 }
 
 static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
-    const bool isApiVersion10, const string &path = "")
+    const bool isApiVersion10, const string &path)
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnail");
 
     string openUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
         "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
-    if (!path.empty() && IsAsciiString(path)) {
-        openUriStr.append("&" + THUMBNAIL_PATH + "=" + path);
-    }
     if (isApiVersion10) {
         MediaLibraryNapiUtils::UriAppendKeyValue(openUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     }
@@ -1781,42 +1778,70 @@ extern "C" __attribute__((visibility("default"))) void *OHOS_MEDIA_NativeGetThum
     return ret.release();
 }
 
+static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOldVer, Size &size, string &path)
+{
+    MediaFileUri mediaUri(uri);
+    if (!mediaUri.IsValid()) {
+        return false;
+    }
+    if (isOldVer) {
+        auto index = uri.find("thumbnail");
+        if (index == string::npos) {
+            return false;
+        }
+        fileUri = uri.substr(0, index - 1);
+        index += strlen("thumbnail");
+        index = uri.find("/", index);
+        if (index == string::npos) {
+            return false;
+        }
+        index += 1;
+        auto tmpIdx = uri.find("/", index);
+        if (tmpIdx == string::npos) {
+            return false;
+        }
+
+        int32_t width = 0;
+        StrToInt(uri.substr(index, tmpIdx - index), width);
+        int32_t height = 0;
+        StrToInt(uri.substr(tmpIdx + 1), height);
+        size = { .width = width, .height = height };
+    } else {
+        auto qIdx = uri.find("?");
+        if (qIdx == string::npos) {
+            return false;
+        }
+        fileUri = uri.substr(0, qIdx);
+        auto &queryKey = mediaUri.GetQueryKeys();
+        if (queryKey.count(THUMBNAIL_PATH) != 0) {
+            path = queryKey[THUMBNAIL_PATH];
+        }
+        if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
+            size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        }
+        if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
+            size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        }
+    }
+    return true;
+}
+
 std::unique_ptr<PixelMap> FileAssetNapi::NativeGetThumbnail(const string &uri,
     const std::shared_ptr<AbilityRuntime::Context> &context)
 {
     // uri is dataability:///media/image/<id>/thumbnail/<width>/<height>
-    auto index = uri.find("//");
-    if (index == string::npos) {
+    auto thumbLatIdx = uri.find("thumbnail") + strlen("thumbnail");
+    if (thumbLatIdx > uri.length()) {
         return nullptr;
     }
-    auto tmpIdx = index + 2; // "//" len
-    if (uri.substr(0, tmpIdx) != MEDIALIBRARY_DATA_ABILITY_PREFIX &&
-        uri.substr(0, tmpIdx) != ML_FILE_PREFIX) {
+    bool isOldVersion = uri[thumbLatIdx] == '/';
+    string path;
+    string fileUri;
+    Size size;
+    if (!GetParamsFromUri(uri, fileUri, isOldVersion, size, path)) {
         return nullptr;
     }
-    index = uri.find("thumbnail");
-    if (index == string::npos) {
-        return nullptr;
-    }
-    auto fileUri = uri.substr(0, index - 1);
-    tmpIdx = fileUri.rfind("/");
-    index += strlen("thumbnail");
-    index = uri.find("/", index);
-    if (index == string::npos) {
-        return nullptr;
-    }
-    index += 1;
-    tmpIdx = uri.find("/", index);
-    if (index == string::npos) {
-        return nullptr;
-    }
-    int32_t width = 0;
-    StrToInt(uri.substr(index, tmpIdx - index), width);
-    int32_t height = 0;
-    StrToInt(uri.substr(tmpIdx + 1), height);
-
-    Size size = { .width = width, .height = height };
-    return QueryThumbnail(fileUri, size, false);
+    return QueryThumbnail(fileUri, size, false, path);
 }
 
 static void JSFavoriteCallbackComplete(napi_env env, napi_status status, void *data)
