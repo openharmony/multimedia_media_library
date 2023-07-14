@@ -29,6 +29,11 @@ public:
     static const std::string TABLE;
     static const std::string ALBUM_ID;
     static const std::string ASSET_ID;
+    static const std::string DIRTY;
+
+    // create triggers
+    static const std::string CREATE_NEW_TRIGGER;
+    static const std::string CREATE_DELETE_TRIGGER;
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_MAP_COLUMNS_H
