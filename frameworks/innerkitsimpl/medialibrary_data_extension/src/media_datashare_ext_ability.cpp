@@ -217,27 +217,29 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
 
 static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
 {
-    OperationObject obj = cmd.GetOprnObject();
     static const set<OperationObject> SYSTEM_API_OBJECTS = {
         OperationObject::UFM_PHOTO,
         OperationObject::UFM_AUDIO,
         OperationObject::UFM_ALBUM,
         OperationObject::UFM_MAP,
         OperationObject::SMART_ALBUM,
-        OperationObject::SMART_ALBUM_MAP,
 
         OperationObject::ALL_DEVICE,
         OperationObject::ACTIVE_DEVICE,
     };
 
+    static const set<string> SYSTEM_API_URIS = {
+        // Deleting asset permanently from system is only allowed for system apps.
+        URI_DELETE_PHOTOS,
+        // Deleting asset to trash album directly without a pop-up box is only allowed for system apps.
+        UFM_DELETE_PHOTOS,
+        PAH_DELETE_PHOTOS,
+    };
+
+    OperationObject obj = cmd.GetOprnObject();
+    string uri = cmd.GetUriStringWithoutSegment();
     if (SYSTEM_API_OBJECTS.find(obj) != SYSTEM_API_OBJECTS.end() ||
-        // Delete asset permanently from system is only allowed for system apps.
-        ((obj == OperationObject::FILESYSTEM_ASSET) && (cmd.GetOprnType() == Media::OperationType::DELETE))) {
-#ifdef MEDIALIBRARY_SECURITY_OPEN
-        if (cmd.GetUri().ToString().find(OPRN_CREATE_COMPONENT) != string::npos) {
-            return E_SUCCESS;
-        }
-#endif
+        (SYSTEM_API_URIS.find(uri) != SYSTEM_API_URIS.end())) {
         if (!PermissionUtils::IsSystemApp()) {
             MEDIA_ERR_LOG("Systemapi should only be called by system applications!");
             return E_CHECK_SYSTEMAPP_FAIL;

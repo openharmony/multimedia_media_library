@@ -211,19 +211,19 @@ std::string MediaFileUri::GetFilePath()
 
     DataShare::DatashareBusinessError error;
     const std::string uriString = ToString();
-    Uri uri(uriString);
+    std::string queryUri(UFM_QUERY_PHOTO);
     DataShare::DataSharePredicates predicates;
     std::vector<std::string> columns;
     /* check api version */
     if (uriString.find(PhotoColumn::PHOTO_TYPE_URI) != std::string::npos) {
-        predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ?");
+        predicates.EqualTo(MediaColumn::MEDIA_ID, GetFileId());
         columns.emplace_back(MediaColumn::MEDIA_FILE_PATH);
+        MediaFileUtils::UriAppendKeyValue(queryUri, URI_PARAM_API_VERSION);
     } else {
-        predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ?");
+        predicates.EqualTo(MEDIA_DATA_DB_ID, GetFileId());
         columns.emplace_back(MEDIA_DATA_DB_FILE_PATH);
     }
-    predicates.SetWhereArgs({ GetFileId() });
-
+    Uri uri(queryUri);
     /* query and check */
     auto resultSet = dataShareHelper->Query(uri, predicates, columns, &error);
     int32_t ret = error.GetCode();

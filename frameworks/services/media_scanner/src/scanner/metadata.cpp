@@ -362,5 +362,15 @@ string Metadata::GetTableName()
 {
     return tableName_;
 }
+
+void Metadata::SetForAdd(bool forAdd)
+{
+    forAdd_ = forAdd;
+}
+
+bool Metadata::GetForAdd() const
+{
+    return forAdd_;
+}
 } // namespace Media
 } // namespace OHOS

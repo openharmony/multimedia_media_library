@@ -22,6 +22,7 @@
 #include "mtp_operation_context.h"
 #include "object_info.h"
 #include "property.h"
+#include "pixel_map.h"
 
 namespace OHOS {
 namespace Media {

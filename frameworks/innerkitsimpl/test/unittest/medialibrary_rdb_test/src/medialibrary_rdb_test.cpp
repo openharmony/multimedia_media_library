@@ -18,6 +18,8 @@
 #include "context.h"
 #include "ability_context_impl.h"
 #include "js_runtime.h"
+#include "photo_album_column.h"
+#include "media_file_utils.h"
 #include "medialibrary_sync_operation.h"
 #define private public
 #include "medialibrary_object_utils.h"
@@ -385,5 +387,63 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UnSubscribeRdbStoreObserver_test_001,
     ret = rdbStorePtr->UnSubscribeRdbStoreObserver();
     EXPECT_EQ(ret, false);
 }
+
+inline void PrepareUserAlbum(const string &albumName, const string &relativePath, ValuesBucket &values)
+{
+    values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
+    values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+
+    if (!relativePath.empty()) {
+        values.PutString(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, relativePath);
+    }
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_BuildValuesSql_test_001, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    string sql;
+    vector<ValueObject> bindArgs;
+    sql.append("INSERT").append(" OR ROLLBACK").append(" INTO ").append(PhotoAlbumColumns::TABLE).append(" ");
+    ValuesBucket albumValues;
+    PrepareUserAlbum("BuildValuesSql", "Documents/", albumValues);
+    MediaLibraryRdbStore::BuildValuesSql(albumValues, bindArgs, sql);
+    AbsRdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    vector<std::string> columns;
+    MediaLibraryRdbStore::BuildQuerySql(predicates, columns, bindArgs, sql);
+    int32_t ret = MediaLibraryRdbStore::ExecuteForLastInsertedRowId(sql, bindArgs);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    ret = MediaLibraryRdbStore::DeleteFromDisk(predicates);
+    EXPECT_EQ(ret, E_SUCCESS);
+    string retTest = MediaLibraryRdbStore::CloudSyncTriggerFunc(columns);
+    EXPECT_EQ(retTest, "");
+    retTest = MediaLibraryRdbStore::IsCallerSelfFunc(columns);
+    EXPECT_EQ(retTest, "true");
+    rdbStorePtr->Stop();
+    ret = MediaLibraryRdbStore::ExecuteForLastInsertedRowId(sql, bindArgs);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_TransactionOperations_test_001, TestSize.Level0)
+{
+    TransactionOperations transactionOperations;
+    transactionOperations.Finish();
+    int32_t ret = transactionOperations.Start();
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    transactionOperations.Finish();
+    ret = transactionOperations.BeginTransaction();
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    ret = transactionOperations.TransactionCommit();
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    ret = transactionOperations.TransactionRollback();
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    ret = transactionOperations.Start();
+    EXPECT_EQ(ret, E_OK);
+    transactionOperations.Finish();
+}
+
 } // namespace Media
 } // namespace OHOS

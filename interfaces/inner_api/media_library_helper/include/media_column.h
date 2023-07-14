@@ -41,6 +41,7 @@ public:
     static const std::string MEDIA_TYPE;
     static const std::string MEDIA_MIME_TYPE;
     static const std::string MEDIA_OWNER_PACKAGE;
+    static const std::string MEDIA_PACKAGE_NAME;
     static const std::string MEDIA_DEVICE_NAME;
 
     // As set Parameter about time

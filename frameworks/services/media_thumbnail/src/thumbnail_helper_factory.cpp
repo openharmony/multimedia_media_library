@@ -26,7 +26,7 @@ namespace OHOS {
 namespace Media {
 shared_ptr<IThumbnailHelper> ThumbnailHelperFactory::GetThumbnailHelper(const Size &size)
 {
-    if (IsThumbnail(size)) {
+    if (IsThumbnail(size.width, size.height)) {
         shared_ptr<DefaultThumbnailHelper> resultHelper = make_shared<DefaultThumbnailHelper>();
         return resultHelper;
     } else {
@@ -35,10 +35,5 @@ shared_ptr<IThumbnailHelper> ThumbnailHelperFactory::GetThumbnailHelper(const Si
     }
 }
 
-bool ThumbnailHelperFactory::IsThumbnail(const Size &size)
-{
-    return (size.width <= DEFAULT_THUMBNAIL_SIZE) &&
-            (size.height <= DEFAULT_THUMBNAIL_SIZE);
-}
 } // namespace Media
 } // namespace OHOS

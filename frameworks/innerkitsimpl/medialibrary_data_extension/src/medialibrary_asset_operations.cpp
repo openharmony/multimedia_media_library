@@ -40,6 +40,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
+#include "permission_utils.h"
 #include "rdb_errno.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
@@ -278,6 +279,19 @@ static inline string GetVirtualPath(const string &relativePath, const string &di
     }
 }
 
+static string GetAssetPackageName(const FileAsset &fileAsset, const string &bundleName)
+{
+    if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::SCREENSHOT)) {
+        if (fileAsset.GetMediaType() == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE) ||
+            fileAsset.GetMediaType() == static_cast<int32_t>(MediaType::MEDIA_TYPE_PHOTO)) {
+            return "截图";
+        } else if (fileAsset.GetMediaType() == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+            return "屏幕录制";
+        }
+    }
+    return PermissionUtils::GetPackageNameByBundleName(bundleName);
+}
+
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // Fill basic file information into DB
@@ -304,6 +318,11 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     }
 
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
+    if (!cmd.GetBundleName().empty()) {
+        assetInfo.PutString(MediaColumn::MEDIA_PACKAGE_NAME,
+            GetAssetPackageName(fileAsset, cmd.GetBundleName()));
+    }
+    
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
     assetInfo.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(assetInfo);
@@ -413,7 +432,7 @@ int32_t MediaLibraryAssetOperations::CheckRelativePathWithType(const string &rel
     int32_t ret = MediaFileUtils::CheckRelativePath(relativePath);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, E_INVALID_PATH, "Check relativePath failed, "
         "relativePath=%{private}s", relativePath.c_str());
-    
+
     // get rootdir and check if it match mediatype
     string rootDirName;
     MediaFileUtils::GetRootDirFromRelativePath(relativePath, rootDirName);
@@ -772,10 +791,6 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     string path = fileAsset->GetPath();
     InvalidateThumbnail(fileId, fileAsset->GetMediaType());
     ScanFile(path);
-    auto notifyWatch = MediaLibraryNotify::GetInstance();
-    if (notifyWatch != nullptr) {
-        notifyWatch->Notify(fileAsset);
-    }
     return E_OK;
 }
 
@@ -846,22 +861,22 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
             watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ADD);
         }
     }
-    
+
     return E_OK;
 }
 
 void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId)
 {
     ValueObject value;
-    bool isFavorite = false;
+    int32_t isFavorite = 0;
     if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_IS_FAV, value)) {
         return;
     }
-    value.GetBool(isFavorite);
+    value.GetInt(isFavorite);
     auto watch = MediaLibraryNotify::GetInstance();
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
-        if (isFavorite) {
+        if (isFavorite != 0) {
             if (favAlbumId > 0) {
                 watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
                     NotifyType::NOTIFY_ALBUM_ADD_ASSERT, favAlbumId);
@@ -1043,6 +1058,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_TYPE, { Forbidden } },
     { MediaColumn::MEDIA_MIME_TYPE, { Forbidden } },
     { MediaColumn::MEDIA_OWNER_PACKAGE, { Forbidden } },
+    { MediaColumn::MEDIA_PACKAGE_NAME, { Forbidden } },
     { MediaColumn::MEDIA_DEVICE_NAME, { Forbidden } },
     { MediaColumn::MEDIA_DATE_MODIFIED, { Forbidden } },
     { MediaColumn::MEDIA_DATE_ADDED, { Forbidden } },

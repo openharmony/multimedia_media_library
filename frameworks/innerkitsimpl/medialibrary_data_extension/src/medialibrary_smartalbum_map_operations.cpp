@@ -447,7 +447,7 @@ static int32_t RemoveTrashAssetsInfoUtil(const int32_t fileAssetId)
 static int32_t UpdateFavoriteAssetsInfoUtil(const int32_t fileAssetId, const bool isFavorites)
 {
     ValuesBucket values;
-    values.PutBool(MEDIA_DATA_DB_IS_FAV, isFavorites);
+    values.PutInt(MEDIA_DATA_DB_IS_FAV, isFavorites ? 1 : 0);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE, values);
     return MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, to_string(fileAssetId));
 }

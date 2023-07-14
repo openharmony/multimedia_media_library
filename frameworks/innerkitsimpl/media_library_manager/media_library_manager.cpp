@@ -15,6 +15,7 @@
 #define MLOG_TAG "MediaLibraryManager"
 
 #include "media_library_manager.h"
+#include <unistd.h>
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "media_log.h"
@@ -112,7 +113,11 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
     predicates.EqualTo(columnName, value);
     predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     DatashareBusinessError businessError;
-
+    
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("sDataShareHelper_ is null");
+        return nullptr;
+    }
     return sDataShareHelper_->Query(uri, predicates, columns, &businessError);
 }
 
