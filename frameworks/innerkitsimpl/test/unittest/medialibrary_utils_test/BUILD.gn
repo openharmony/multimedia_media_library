@@ -42,6 +42,7 @@ ohos_unittest("medialibrary_utils_test") {
     "data_share:datashare_provider",
     "hilog:libhilog",
     "kv_store:distributeddata_inner",
+    "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",

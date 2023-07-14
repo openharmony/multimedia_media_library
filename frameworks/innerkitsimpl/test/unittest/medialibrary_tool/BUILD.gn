@@ -63,6 +63,7 @@ ohos_static_library("mediatoollib") {
     "device_auth:deviceauth_sdk",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "napi:ace_napi",
     "samgr:samgr_proxy",
   ]
 
