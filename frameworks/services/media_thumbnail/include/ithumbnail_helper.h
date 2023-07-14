@@ -77,7 +77,6 @@ protected:
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool DoThumbnailSync(ThumbRdbOpt &opts, ThumbnailData &outData);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
 };
@@ -90,20 +89,6 @@ public:
         CMD_INSERT = 4,
     };
     virtual int Insert(const Uri &uri, const DataShare::DataShareValuesBucket &value) = 0;
-};
-
-class ThumbnailConnection : public AAFwk::AbilityConnectionStub {
-public:
-    ThumbnailConnection() = default;
-    virtual ~ThumbnailConnection() = default;
-    void OnAbilityConnectDone(
-        const AppExecFwk::ElementName &element, const sptr<IRemoteObject> &remoteObject, int resultCode) override;
-    void OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int resultCode) override;
-    int32_t GetRemoteDataShareHelper(ThumbRdbOpt &opts, sptr<AAFwk::IAbilityConnection> &callback);
-
-private:
-    sptr<IDataShareThumb> dataShareProxy_;
-    SyncStatus status_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -274,7 +274,8 @@ int UserFileClientEx::Open(const std::string &uri, const std::string &mode)
     return UserFileClient::OpenFile(openUri, mode);
 }
 
-int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std::string &mode)
+int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std::string &mode,
+    bool isCreateThumbSync)
 {
     if (!UserFileClient::IsValid()) {
         MEDIA_ERR_LOG("close failed. helper:null. uri:%{public}s, fileFd:%{public}d, mode:%{public}s",
@@ -291,6 +292,9 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
     }
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_URI, uri);
+    if (isCreateThumbSync) {
+        valuesBucket.Put(CLOSE_CREATE_THUMB_STATUS, CREATE_THUMB_SYNC_STATUS);
+    }
     std::string closeUriStr = GetCloseUri(uri);
     if (closeUriStr.empty()) {
         MEDIA_ERR_LOG("get close uri failed. uri:%{public}s", uri.c_str());
