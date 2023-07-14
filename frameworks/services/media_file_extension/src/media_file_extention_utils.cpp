@@ -30,6 +30,7 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_type_const.h"
+#include "media_file_utils.h"
 #include "mimetype_utils.h"
 #include "result_set_utils.h"
 #include "scanner_utils.h"
@@ -402,26 +403,6 @@ int32_t MediaFileExtentionUtils::ResolveUri(const FileInfo &fileInfo, MediaFileU
     return E_INVALID_URI;
 }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
-void UriAppendKeyValue(string &uri, const string &key, string value = "10")
-{
-    string uriKey = key + '=';
-    if (uri.find(uriKey) != string::npos) {
-        return;
-    }
-
-    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
-    string append = queryMark + key + '=' + value;
-
-    size_t pos = uri.find('#');
-    if (pos == string::npos) {
-        uri += append;
-    } else {
-        uri.insert(pos, append);
-    }
-}
-#endif
-
 bool MediaFileExtentionUtils::CheckValidDirName(const string &displayName)
 {
     for (auto &dir : directoryEnumValues) {
@@ -483,7 +464,7 @@ string GetQueryUri(const FileInfo &parentInfo, MediaFileUriType uriType)
                 MEDIA_ERR_LOG("GetMediaTypeFromMimeType failed");
                 break;
         }
-        UriAppendKeyValue(queryUri, URI_PARAM_API_VERSION);
+        MediaFileUtils::UriAppendKeyValue(queryUri, URI_PARAM_API_VERSION);
 #endif
     }
     return queryUri;

@@ -14,6 +14,7 @@
  */
 #define MLOG_TAG "scan_demo"
 
+#include <unistd.h>
 #include "accesstoken_kit.h"
 #include "datashare_helper.h"
 #include "get_self_permissions.h"

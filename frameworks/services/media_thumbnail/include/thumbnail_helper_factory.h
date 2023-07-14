@@ -26,7 +26,6 @@ public:
     virtual ~ThumbnailHelperFactory() = delete;
 
     static std::shared_ptr<IThumbnailHelper> GetThumbnailHelper(const Size &size);
-    static bool IsThumbnail(const Size &size);
 };
 } // namespace Media
 } // namespace OHOS

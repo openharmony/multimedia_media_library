@@ -128,7 +128,7 @@ private:
     static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
 
-    bool HandleParamSet(const std::string &inputKey, const std::string &value);
+    bool HandleParamSet(const std::string &inputKey, const std::string &value, ResultNapiType resultNapiType);
     napi_env env_;
 
     static thread_local napi_ref sConstructor_;

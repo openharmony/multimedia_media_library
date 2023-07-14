@@ -15,6 +15,7 @@
 
 #include "mtp_medialibrary_manager.h"
 
+#include <unistd.h>
 #include "datashare_predicates.h"
 #include "datashare_abs_result_set.h"
 #include "fetch_result.h"

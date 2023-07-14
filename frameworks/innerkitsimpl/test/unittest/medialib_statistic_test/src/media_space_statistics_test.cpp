@@ -284,7 +284,6 @@ void CreateFile(std::string baseURI, std::string targetPath, std::string newName
     }
 
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-#ifdef MEDIALIBRARY_COMPATIBILITY
     if (MediaFileUtils::StartsWith(targetPath, "Pictures/") ||
         MediaFileUtils::StartsWith(targetPath, "Videos/")) {
         abilityUri += Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET;
@@ -294,21 +293,14 @@ void CreateFile(std::string baseURI, std::string targetPath, std::string newName
         abilityUri += Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET;
     }
     Uri createAssetUri(abilityUri);
-#else
-    Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
-#endif
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, newName);
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, targetPath);
 
     int32_t index = sDataShareHelper_->Insert(createAssetUri, valuesBucket);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualIndex = MediaFileUtils::GetVirtualIdByType(index, mediaType);
     string destUri = baseURI + "/" + std::to_string(virtualIndex);
-#else
-    string destUri = baseURI + "/" + std::to_string(index);
-#endif
 
     Uri openFileUriDest(destUri);
     int32_t destFd = sDataShareHelper_->OpenFile(openFileUriDest, MEDIA_FILEMODE_READWRITE);
@@ -335,7 +327,6 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
     EXPECT_NE(srcFd <= 0, true);
 
     string abilityUri = Media::MEDIALIBRARY_DATA_URI;
-#ifdef MEDIALIBRARY_COMPATIBILITY
     if (MediaFileUtils::StartsWith(targetPath, "Pictures/") ||
         MediaFileUtils::StartsWith(targetPath, "Videos/")) {
         abilityUri += Media::MEDIA_PHOTOOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET;
@@ -345,20 +336,13 @@ void CopyFile(std::string srcUri, std::string baseURI, std::string targetPath, s
         abilityUri += Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET;
     }
     Uri createAssetUri(abilityUri);
-#else
-    Uri createAssetUri(abilityUri + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
-#endif
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, newName);
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, targetPath);
     int32_t index = sDataShareHelper_->Insert(createAssetUri, valuesBucket);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualIndex = MediaFileUtils::GetVirtualIdByType(index, mediaType);
     string destUri = baseURI + "/" + std::to_string(virtualIndex);
-#else
-    string destUri = baseURI + "/" + std::to_string(index);
-#endif
     Uri openFileUriDest(destUri);
     int32_t destFd = sDataShareHelper_->OpenFile(openFileUriDest, MEDIA_FILEMODE_READWRITE);
     EXPECT_NE(destFd <= 0, true);
@@ -399,7 +383,7 @@ void CheckQuerySize(std::string testNo, int mediaTypeId, int targetFileNumber)
     }
     MEDIA_INFO_LOG("%s QueryTotalSize querySize = %{public}lld", testNo.c_str(), (long long)querySize);
     MEDIA_INFO_LOG("%s QueryTotalSize targetSize = %{public}lld", testNo.c_str(), (long long)targetSize);
-    EXPECT_EQ(querySize > 0, true);
+    EXPECT_EQ(querySize, targetSize);
 }
 
 int32_t CreateTestFile(MediaType MediaType, string fileName, string relativePath)
@@ -411,6 +395,11 @@ int32_t CreateTestFile(MediaType MediaType, string fileName, string relativePath
     valuesBucket.Put(MEDIA_DATA_DB_NAME, fileName);
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     return sDataShareHelper_->Insert(createAssetUri, valuesBucket);
+}
+
+string ReturnUri(string type)
+{
+    return (ML_FILE_URI_PREFIX + '/' + "file" + "/" + type);
 }
 
 /**
@@ -427,6 +416,9 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_001, TestSize.Level
         return;
     }
     CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_FILE, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_IMAGE, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_VIDEO, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_AUDIO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_001::End");
 }
 
@@ -445,10 +437,10 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_002, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
-    CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/",
-                    "copy_MediaSpaceStatistics_test.jpg", MEDIA_TYPE_FILE, 10);
-    CheckQuerySize("MediaSpaceStatistics_test_002", MEDIA_TYPE_FILE, 2);
+    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_IMAGE);
+    CopyFile(fileAsset->GetUri(), MEDIALIBRARY_IMAGE_URI, "Pictures/",
+                    "copy_MediaSpaceStatistics_test.jpg", MEDIA_TYPE_IMAGE, 10);
+    CheckQuerySize("MediaSpaceStatistics_test_002", MEDIA_TYPE_IMAGE, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_002::End");
 }
 
@@ -466,9 +458,9 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_003, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
+    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_IMAGE);
     DeleteFile(fileAsset->GetUri());
-    CheckQuerySize("MediaSpaceStatistics_test_003", MEDIA_TYPE_FILE, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_003", MEDIA_TYPE_IMAGE, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_003::End");
 }
 
@@ -486,18 +478,18 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_004, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
+    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_IMAGE);
 
     for (int i = 0; i < COPY_TIME; i++)
     {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".jpg";
         int sleepSecond = 3;
 
-        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/", newName, MEDIA_TYPE_FILE, sleepSecond);
+        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_IMAGE_URI, "Pictures/", newName, MEDIA_TYPE_IMAGE, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004:: Copy finish!!!");
 
-    CheckQuerySize("MediaSpaceStatistics_test_004", MEDIA_TYPE_FILE, COPY_TIME + 1);
+    CheckQuerySize("MediaSpaceStatistics_test_004", MEDIA_TYPE_IMAGE, 1);
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::End");
 }
@@ -515,7 +507,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_005, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    CheckQuerySize("MediaSpaceStatistics_test_005", MEDIA_TYPE_FILE, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_005", MEDIA_TYPE_VIDEO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_005::End");
 }
 
@@ -533,10 +525,10 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_006, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
-    CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/",
-                    "copy_MediaSpaceStatistics_test.mp4", MEDIA_TYPE_FILE, 10);
-    CheckQuerySize("MediaSpaceStatistics_test_006", MEDIA_TYPE_FILE, 2);
+    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_VIDEO);
+    CopyFile(fileAsset->GetUri(), MEDIALIBRARY_VIDEO_URI, "Videos/",
+                    "copy_MediaSpaceStatistics_test.mp4", MEDIA_TYPE_VIDEO, 10);
+    CheckQuerySize("MediaSpaceStatistics_test_006", MEDIA_TYPE_VIDEO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_006::End");
 }
 
@@ -554,9 +546,9 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_007, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
+    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_VIDEO);
     DeleteFile(fileAsset->GetUri());
-    CheckQuerySize("MediaSpaceStatistics_test_007", MEDIA_TYPE_FILE, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_007", MEDIA_TYPE_VIDEO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_007::End");
 }
 
@@ -574,15 +566,15 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_008, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
+    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_VIDEO);
     for (int i = 0; i < COPY_TIME; i++)
     {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".mp4";
         int sleepSecond = 3;
-        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/", newName, MEDIA_TYPE_FILE, sleepSecond);
+        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_VIDEO_URI, "Videos/", newName, MEDIA_TYPE_VIDEO, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_008:: Copy finish!!!");
-    CheckQuerySize("MediaSpaceStatistics_test_008", MEDIA_TYPE_FILE, COPY_TIME + 1);
+    CheckQuerySize("MediaSpaceStatistics_test_008", MEDIA_TYPE_VIDEO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_008::End");
 }
 
@@ -599,7 +591,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_009, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    CheckQuerySize("MediaSpaceStatistics_test_009", MEDIA_TYPE_FILE, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_009", MEDIA_TYPE_AUDIO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_009::End");
 }
 
@@ -617,10 +609,10 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_010, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
-    CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/",
-                    "copy_MediaSpaceStatistics_test.mp3", MEDIA_TYPE_FILE, 10);
-    CheckQuerySize("MediaSpaceStatistics_test_010", MEDIA_TYPE_FILE, 2);
+    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_AUDIO);
+    CopyFile(fileAsset->GetUri(), MEDIALIBRARY_AUDIO_URI, "Audios/",
+                    "copy_MediaSpaceStatistics_test.mp3", MEDIA_TYPE_AUDIO, 10);
+    CheckQuerySize("MediaSpaceStatistics_test_010", MEDIA_TYPE_AUDIO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_010::End");
 }
 
@@ -638,9 +630,9 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_011, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
+    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_AUDIO);
     DeleteFile(fileAsset->GetUri());
-    CheckQuerySize("MediaSpaceStatistics_test_011", MEDIA_TYPE_FILE, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_011", MEDIA_TYPE_AUDIO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_011::End");
 }
 
@@ -658,15 +650,15 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_012, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
+    std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_AUDIO);
     for (int i = 0; i < COPY_TIME; i++)
     {
         string newName = "copy_MediaSpaceStatistics_test_" + std::to_string(i) + ".mp3";
         int sleepSecond = 3;
-        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/", newName, MEDIA_TYPE_AUDIO, sleepSecond);
+        CopyFile(fileAsset->GetUri(), MEDIALIBRARY_AUDIO_URI, "Audios/", newName, MEDIA_TYPE_AUDIO, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012:: Copy finish!!!");
-    CheckQuerySize("MediaSpaceStatistics_test_012", MEDIA_TYPE_FILE, COPY_TIME + 1);
+    CheckQuerySize("MediaSpaceStatistics_test_012", MEDIA_TYPE_AUDIO, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012::End");
 }
 
@@ -704,7 +696,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_014, TestSize.Level
     std::unique_ptr<FileAsset> fileAsset = GetFile(MEDIA_TYPE_FILE);
     CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/",
                     "copy_MediaSpaceStatistics_test.txt", MEDIA_TYPE_FILE, 10);
-    CheckQuerySize("MediaSpaceStatistics_test_014", MEDIA_TYPE_FILE, 2);
+    CheckQuerySize("MediaSpaceStatistics_test_014", MEDIA_TYPE_FILE, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_014::End");
 }
 
@@ -750,7 +742,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_016, TestSize.Level
         CopyFile(fileAsset->GetUri(), MEDIALIBRARY_FILE_URI, "Documents/", newName, MEDIA_TYPE_FILE, sleepSecond);
     }
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_012:: Copy finish!!!");
-    CheckQuerySize("MediaSpaceStatistics_test_015", MEDIA_TYPE_FILE, COPY_TIME + 1);
+    CheckQuerySize("MediaSpaceStatistics_test_015", MEDIA_TYPE_FILE, 1);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_016::End");
 }
 
@@ -800,12 +792,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_019, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_019::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_IMAGE, "MediaSpaceStatistics_test_019.jpg", "Pictures/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Pictures/MediaSpaceStatistics_test_019.jpg";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -833,12 +821,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_020, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_020::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_020.txt", "Documents/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Documents/MediaSpaceStatistics_test_020.txt";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -868,12 +852,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_021, TestSize.Level
 
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_021.txt", "Download/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Download/MediaSpaceStatistics_test_021.txt";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -900,7 +880,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_021, TestSize.Level
 HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_022, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_022::Start");
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + "1");
+    const Uri realUri(ReturnUri("1"));
     const string realPath = "/storage/cloud/100/files/Documents/MediaSpaceStatistics_test_022.txt";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -928,12 +908,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_023, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_023::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_023.txt", "Documents/test1/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Documents/test1/MediaSpaceStatistics_test_023.txt";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -963,12 +939,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_024, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_024::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "test.txt", "Documents/weixin/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Documents/weixin/test.txt";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -998,12 +970,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_025, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_025::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_AUDIO, "MediaSpaceStatistics_test_025.mp3", "Download/weixin/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Download/weixin/MediaSpaceStatistics_test_025.mp3";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -1033,12 +1001,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_026, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_026::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_IMAGE, "MediaSpaceStatistics_test_026.jpg", "Camera/weixin/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Camera/weixin/MediaSpaceStatistics_test_026.jpg";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -1066,12 +1030,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_027, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_027::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_IMAGE, "MediaSpaceStatistics_test_027.jpg", "Download/weixin/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Download/weixin/MediaSpaceStatistics_test_027.jpg";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -1101,12 +1061,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_028, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_028::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_FILE, "MediaSpaceStatistics_test_028.xxx", "Download/weixin/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Download/weixin/MediaSpaceStatistics_test_028.xxx";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -1136,12 +1092,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_029, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_029::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_VIDEO, "MediaSpaceStatistics_test_029.mp4", "Videos/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Videos/MediaSpaceStatistics_test_029.mp4";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -1169,12 +1121,8 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_030, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_030::Start");
     int32_t index = CreateTestFile(MEDIA_TYPE_AUDIO, "MediaSpaceStatistics_test_030.mp3", "Audios/");
     EXPECT_EQ((index > 0), true);
-#ifdef MEDIALIBRARY_COMPATIBILITY
     int64_t virtualId = MediaFileUtils::GetVirtualIdByType(index, MediaType::MEDIA_TYPE_FILE);
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(virtualId));
-#else
-    const Uri realUri(ML_FILE_URI_PREFIX + '/' + "file" + "/" + to_string(index));
-#endif
+    const Uri realUri(ReturnUri(to_string(virtualId)));
     const string realPath = "/storage/cloud/100/files/Audios/MediaSpaceStatistics_test_030.mp3";
     Uri fileUri(ML_FILE_URI_PREFIX);
     string filePath;
@@ -1190,72 +1138,5 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_030, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_030::End");
 }
 
-/**
- * @tc.number    : MediaSpaceStatistics_test_031
- * @tc.name      : get Media(image,video,audio,file) size
- * @tc.desc      : 1.delete all media
- *                 2.query media size
- *                 3.make sure size is 0
- */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_031, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_031::Start");
-    ClearFile();
-    MediaVolume mediaVolume;
-    mediaLibraryManager->QueryTotalSize(mediaVolume);
-    EXPECT_NE(mediaVolume.GetFilesSize(), 0);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_031::End");
-}
-
-/**
- * @tc.number    : MediaSpaceStatistics_test_032
- * @tc.name      : get Media(image,video,audio,file) size
- * @tc.desc      : 1.delete all media
- *                 2.query media size
- *                 3.make sure size is 0
- */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_032, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_032::Start");
-    ClearFile();
-    MediaVolume mediaVolume;
-    mediaLibraryManager->QueryTotalSize(mediaVolume);
-    EXPECT_NE(mediaVolume.GetVideosSize(), 0);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_032::End");
-}
-
-/**
- * @tc.number    : MediaSpaceStatistics_test_033
- * @tc.name      : get Media(image,video,audio,file) size
- * @tc.desc      : 1.delete all media
- *                 2.query media size
- *                 3.make sure size is 0
- */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_033, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_033::Start");
-    ClearFile();
-    MediaVolume mediaVolume;
-    mediaLibraryManager->QueryTotalSize(mediaVolume);
-    EXPECT_NE(mediaVolume.GetAudiosSize(), 0);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_033::End");
-}
-
-/**
- * @tc.number    : MediaSpaceStatistics_test_032
- * @tc.name      : get Media(image,video,audio,file) size
- * @tc.desc      : 1.delete all media
- *                 2.query media size
- *                 3.make sure size is 0
- */
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_034, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_034::Start");
-    ClearFile();
-    MediaVolume mediaVolume;
-    int ret = mediaLibraryManager->QueryTotalSize(mediaVolume);
-    EXPECT_EQ(ret, E_SUCCESS);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_034::End");
-}
 } // namespace Media
 } // namespace OHOS

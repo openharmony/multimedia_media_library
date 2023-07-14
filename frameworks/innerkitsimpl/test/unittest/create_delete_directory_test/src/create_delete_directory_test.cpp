@@ -60,9 +60,14 @@ static inline int32_t GetAlbumId(string &&relativePath)
     return MediaLibraryObjectUtils::GetIdByPathFromDb("/storage/cloud/files/" + relativePath);
 }
 
+string PathSplicing(string subpath, string path = MEDIA_DIROPRN)
+{
+    return (MEDIALIBRARY_DATA_URI + "/" + path + "/" + subpath);
+}
+
 static int32_t CreateDir(string &&relativePath)
 {
-    Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_FMS_CREATEDIR);
+    Uri createAssetUri(PathSplicing(MEDIA_DIROPRN_FMS_CREATEDIR));
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     int32_t res = MediaLibraryDataManager::GetInstance()->Insert(createAssetUri, valuesBucket);
@@ -74,7 +79,7 @@ static int32_t CreateDir(string &&relativePath)
 
 static int32_t DeleteDir(string &relativePath)
 {
-    Uri deleteDirUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_FMS_DELETEDIR);
+    Uri deleteDirUri(PathSplicing(MEDIA_DIROPRN_FMS_DELETEDIR));
     DataShareValuesBucket deleteValuesBucket;
     deleteValuesBucket.Put(MEDIA_DATA_DB_URI, relativePath);
     int32_t res = MediaLibraryDataManager::GetInstance()->Insert(deleteDirUri, deleteValuesBucket);
@@ -87,7 +92,7 @@ static int32_t DeleteDir(string &relativePath)
 static int32_t TrashDir(string &&testNum)
 {
     DataShareValuesBucket valuesBucket;
-    Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
+    Uri createAssetUri(PathSplicing(MEDIA_FILEOPRN_CREATEASSET, MEDIA_FILEOPRN));
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_IMAGE);
     valuesBucket.Put(MEDIA_DATA_DB_NAME, testNum + ".jpg");
     string relativePath = "Pictures/" + testNum + "/";
@@ -98,7 +103,7 @@ static int32_t TrashDir(string &&testNum)
         return E_FAIL;
     }
 
-    Uri deleteDirUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DIROPRN + "/" + MEDIA_DIROPRN_FMS_TRASHDIR);
+    Uri deleteDirUri(PathSplicing(MEDIA_DIROPRN_FMS_TRASHDIR));
     relativePath.pop_back();
     int32_t albumId = GetAlbumId("/storage/cloud/files/" + relativePath);
     if (albumId <= 0) {

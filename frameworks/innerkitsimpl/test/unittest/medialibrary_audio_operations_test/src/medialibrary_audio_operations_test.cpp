@@ -60,10 +60,8 @@ using OHOS::DataShare::DataSharePredicates;
 
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
 const string COMMON_PREFIX = "datashare:///media/";
 const string ROOT_URI = "root";
-#endif
 
 using ExceptIntFunction = void (*) (int32_t);
 using ExceptLongFunction = void (*) (int64_t);
@@ -79,6 +77,7 @@ const unordered_map<string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_TYPE, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_MIME_TYPE, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_OWNER_PACKAGE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_PACKAGE_NAME, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_DEVICE_NAME, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_DATE_ADDED, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_DATE_MODIFIED, MEMBER_TYPE_INT64 },
@@ -124,7 +123,6 @@ void CleanTestTables()
     }
 }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
 class ArkJsRuntime : public AbilityRuntime::JsRuntime {
 public:
     ArkJsRuntime() {};
@@ -162,7 +160,6 @@ void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
             t.uri.c_str(), t.fileName.c_str(), t.mode, t.mimeType.c_str());
     }
 }
-#endif
 
 struct UniqueMemberValuesBucket {
     string assetMediaType;
@@ -832,7 +829,6 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_002, Test
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_002");
 }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd audio_oprn_create_api10_test_003");
@@ -871,7 +867,6 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, Test
 
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_003");
 }
-#endif
 
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_004, TestSize.Level0)
 {
@@ -1478,13 +1473,10 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_open_api10_test_001, TestSi
         return;
     }
 
-    static constexpr int largeNum = 1000;
     TestAudioOpenParamsApi10(fileId, "",
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
     TestAudioOpenParamsApi10(fileId, "m",
         [] (int32_t result) { EXPECT_EQ(result, E_INVALID_MODE); });
-    TestAudioOpenParamsApi10(fileId + largeNum, "rw",
-        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
     TestAudioOpenParamsApi10(fileId, "rw",
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
 

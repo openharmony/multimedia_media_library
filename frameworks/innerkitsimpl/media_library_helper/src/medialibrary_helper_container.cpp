@@ -41,14 +41,6 @@ void MediaLibraryHelperContainer::CreateDataShareHelper(const sptr<IRemoteObject
     }
 }
 
-void MediaLibraryHelperContainer::CreateDataShareHelper(const std::shared_ptr<AppExecFwk::Context> &context,
-    const std::string &uri)
-{
-    if (dataShareHelper_ == nullptr) {
-        dataShareHelper_ = DataShare::DataShareHelper::Creator(context, uri);
-    }
-}
-
 void MediaLibraryHelperContainer::SetDataShareHelper(const std::shared_ptr<DataShare::DataShareHelper> &helper)
 {
     dataShareHelper_ = helper;

@@ -532,6 +532,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_LoadSourceImage_test_001, TestSize.Le
     ret = ThumbnailUtils::LoadSourceImage(data, desiredSize, isThumbnail);
     EXPECT_EQ(ret, false);
     data.mediaType = MEDIA_TYPE_MEDIA;
+    data.path = "Documents/";
     ret = ThumbnailUtils::LoadSourceImage(data, desiredSize, isThumbnail);
     EXPECT_EQ(ret, false);
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
