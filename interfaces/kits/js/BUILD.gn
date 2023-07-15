@@ -134,7 +134,6 @@ ohos_shared_library("medialibrary") {
 
   sanitize = {
     cfi = true
-    cfi_cross_dso = true
     debug = false
   }
 
@@ -204,7 +203,6 @@ ohos_shared_library("userfilemanager") {
 
   sanitize = {
     cfi = true
-    cfi_cross_dso = true
     debug = false
   }
 
@@ -274,7 +272,6 @@ ohos_shared_library("photoaccesshelper") {
 
   sanitize = {
     cfi = true
-    cfi_cross_dso = true
     debug = false
   }
 
