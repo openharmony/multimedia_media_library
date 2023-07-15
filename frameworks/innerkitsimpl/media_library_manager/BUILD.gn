@@ -43,7 +43,6 @@ ohos_shared_library("media_library_manager") {
 
   sanitize = {
     cfi = true
-    cfi_cross_dso = true
     debug = false
   }
 

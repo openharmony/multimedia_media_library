@@ -217,7 +217,6 @@ ohos_shared_library("medialibrary_data_extension") {
 
   sanitize = {
     cfi = true
-    cfi_cross_dso = true
     debug = false
     blocklist = "./extension_blocklist.txt"
   }

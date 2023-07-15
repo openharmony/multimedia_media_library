@@ -106,7 +106,6 @@ ohos_executable("mediatool") {
 
   sanitize = {
     cfi = true
-    cfi_cross_dso = true
     debug = false
   }
 
