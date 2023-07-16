@@ -34,7 +34,7 @@ public:
         const std::vector<ColumnInfo> &columnInfos, std::string &rowStr);
     static int FieldToStr(const DumpOpt &opt, const ColumnInfo &columnInfo,
         const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, std::string &value);
-    static int32_t GetColumnInfo(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
+    static int32_t GetColumnInfo(const DumpOpt &opt, const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
         std::vector<ColumnInfo> &columnInfos);
 };
 } // namespace MediaTool

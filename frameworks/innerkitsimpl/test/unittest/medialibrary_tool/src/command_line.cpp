@@ -21,6 +21,7 @@
 #include "medialibrary_errno.h"
 #include "userfile_client_ex.h"
 #include "utils/file_utils.h"
+#include <string>
 
 namespace OHOS {
 namespace Media {
@@ -40,7 +41,7 @@ const std::string SEND_CREATE_THUMBNAIL_ASYNC = "-tas";
 const std::string SEND_CREATE_REMOVE_ORIGIN_FILE = "-rf";
 const std::string SEND_CREATE_UNREMOVE_ORIGIN_FILE = "-urf";
 
-void ShowUsage()
+static inline void ShowUsage()
 {
     std::string str;
     str.append("usage:\n");
@@ -50,9 +51,36 @@ void ShowUsage()
     printf("%s", str.c_str());
 }
 
-bool CheckRecvPath(ExecEnv &env)
+static inline bool IsDirPath(const std::string path)
 {
-    std::string path = (env.isFile) ? ExtractFilePath(env.recvPath) : env.recvPath;
+    if (path.empty()) {
+        return false;
+    }
+    string subName;
+    string::size_type delimiterPos = path.rfind(CHAR_PATH_DELIMITER);
+    if (delimiterPos == std::string::npos) {
+        subName = path;
+    } else {
+        subName = path.substr(delimiterPos + 1);
+    }
+    if (subName.find('.') == std::string::npos || subName == "." || subName == "..") {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static bool CheckRecvPath(ExecEnv &env)
+{
+    std::string path;
+    if (IsDirPath(env.recvParam.recvPath)) {
+        env.recvParam.isRecvPathDir = true;
+        path = env.recvParam.recvPath;
+    } else {
+        env.recvParam.isRecvPathDir = false;
+        path = ExtractFilePath(env.recvParam.recvPath);
+    }
+
     if (!MediaFileUtils::IsDirectory(path)) {
         ForceCreateDirectory(path);
     }
@@ -60,63 +88,61 @@ bool CheckRecvPath(ExecEnv &env)
         printf("%s path issue. path:%s\n", STR_FAIL.c_str(), path.c_str());
         return false;
     }
-    if (env.isFile) {
-        if (FileExists(env.recvPath)) {
-            printf("%s file has exist. file:%s\n", STR_FAIL.c_str(), env.recvPath.c_str());
+    if (!env.recvParam.isRecvPathDir) {
+        if (FileExists(env.recvParam.recvPath)) {
+            printf("%s file has exist. file:%s\n", STR_FAIL.c_str(), env.recvParam.recvPath.c_str());
             return false;
         }
     } else {
-        if (!IsEmptyFolder(env.recvPath)) {
-            printf("%s path is not empty. path:%s\n", STR_FAIL.c_str(), env.recvPath.c_str());
-            return false;
-        }
-        env.recvPath = IncludeTrailingPathDelimiter(env.recvPath);
+        env.recvParam.recvPath = IncludeTrailingPathDelimiter(env.recvParam.recvPath);
     }
     return true;
 }
 
-bool CheckList(ExecEnv &env)
+static bool CheckList(ExecEnv &env)
 {
     if (env.optArgs.uri == OPT_STR_ALL) {
-        env.uri.clear();
+        env.listParam.isListAll = true;
+        env.listParam.listUri.clear();
+    } else if (!env.optArgs.uri.empty()) {
+        std::string tableName = UserFileClientEx::GetTableNameByUri(env.optArgs.uri);
+        if (tableName.empty()) {
+            printf("%s uri invalid. uri:%s\n", STR_FAIL.c_str(), env.optArgs.uri.c_str());
+            return false;
+        }
+        env.listParam.listUri = env.optArgs.uri;
+    } else {
+        printf("%s input uri incorrect.\n", STR_FAIL.c_str());
+        return false;
+    }
+    return true;
+}
+
+static bool CheckRecv(ExecEnv &env)
+{
+    if (env.optArgs.uri == OPT_STR_ALL) {
+        env.recvParam.recvUri.clear();
+        env.recvParam.isRecvAll = true;
     } else if (!env.optArgs.uri.empty()) {
         std::string tableName = UserFileClientEx::GetTableNameByUri(env.optArgs.uri);
         if (tableName.empty()) {
             printf("%s uri issue. uri:%s\n", STR_FAIL.c_str(), env.optArgs.uri.c_str());
             return false;
         }
-        env.uri = env.optArgs.uri;
+        env.recvParam.recvUri = env.optArgs.uri;
+        env.recvParam.isRecvAll = false;
     } else {
-        env.uri.clear();
-    }
-    return true;
-}
-
-bool CheckRecv(ExecEnv &env)
-{
-    if (env.optArgs.uri == OPT_STR_ALL) {
-        env.uri.clear();
-        env.isFile = false;
-    } else if (!env.optArgs.uri.empty()) {
-        std::string tableName = UserFileClientEx::GetTableNameByUri(env.optArgs.uri);
-        if (tableName.empty()) {
-            printf("%s uri issue. uri:%s\n", STR_FAIL.c_str(), env.optArgs.uri.c_str());
-            return false;
-        }
-        env.uri = env.optArgs.uri;
-        env.isFile = true;
-    } else {
-        env.uri.clear();
-        env.isFile = false;
+        printf("%s input uri incorrect.\n", STR_FAIL.c_str());
+        return false;
     }
     if (env.optArgs.recvPath.empty()) {
         printf("%s recv path empty.\n", STR_FAIL.c_str());
         return false;
     }
     if (env.optArgs.recvPath.find(CHAR_PATH_DELIMITER) == 0) {
-        env.recvPath = env.optArgs.recvPath;
+        env.recvParam.recvPath = env.optArgs.recvPath;
     } else {
-        env.recvPath = env.workPath + env.optArgs.recvPath;
+        env.recvParam.recvPath = env.workPath + env.optArgs.recvPath;
     }
     if (!CheckRecvPath(env)) {
         return false;
@@ -129,44 +155,45 @@ static void CheckExtraArgsInSend(ExecEnv &env)
     for (size_t i = 0; i < env.optArgs.extraArgs.size(); i++) {
         string param = env.optArgs.extraArgs[i];
         if (param == SEND_CREATE_THUMBNAIL_SYNC) {
-            env.isCreateThumbSyncInSend = true;
+            env.sendParam.isCreateThumbSyncInSend = true;
         }
         if (param == SEND_CREATE_THUMBNAIL_ASYNC) {
-            env.isCreateThumbSyncInSend = false;
+            env.sendParam.isCreateThumbSyncInSend = false;
         }
         if (param == SEND_CREATE_REMOVE_ORIGIN_FILE) {
-            env.isRemoveOriginFileInSend = true;
+            env.sendParam.isRemoveOriginFileInSend = true;
         }
         if (param == SEND_CREATE_UNREMOVE_ORIGIN_FILE) {
-            env.isRemoveOriginFileInSend = false;
+            env.sendParam.isRemoveOriginFileInSend = false;
         }
     }
 }
 
-bool CheckSend(ExecEnv &env)
+static bool CheckSend(ExecEnv &env)
 {
     if (env.optArgs.path.empty()) {
         printf("%s path empty.\n", STR_FAIL.c_str());
         return false;
     }
-    if (!PathToRealPath(env.optArgs.path, env.path)) {
+    if (!PathToRealPath(env.optArgs.path, env.sendParam.sendPath)) {
         printf("%s path issue. errno:%d, path:%s.\n", STR_FAIL.c_str(), errno, env.optArgs.path.c_str());
         return false;
     }
-    if (FileUtils::IsFile(env.path)) {
-        env.isFile = true;
-    } else if (MediaFileUtils::IsDirectory(env.path)) {
-        env.path = IncludeTrailingPathDelimiter(env.path);
-        env.isFile = false;
+    if (FileUtils::IsFile(env.sendParam.sendPath)) {
+        env.sendParam.isFile = true;
+    } else if (MediaFileUtils::IsDirectory(env.sendParam.sendPath)) {
+        env.sendParam.sendPath = IncludeTrailingPathDelimiter(env.sendParam.sendPath);
+        env.sendParam.isFile = false;
     } else {
-        printf("%s path issue. not file and not directory. path:%s.\n", STR_FAIL.c_str(), env.path.c_str());
+        printf("%s path issue. not file and not directory. path:%s.\n", STR_FAIL.c_str(),
+            env.sendParam.sendPath.c_str());
         return false;
     }
     CheckExtraArgsInSend(env);
     return true;
 }
 
-bool Check(ExecEnv &env)
+static bool Check(ExecEnv &env)
 {
     if (env.optArgs.cmdType == OptCmdType::TYPE_SEND) {
         return CheckSend(env);
