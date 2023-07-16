@@ -34,7 +34,7 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
-int32_t InitPermission()
+static int32_t InitPermission()
 {
     std::vector<std::string> perms;
     perms.emplace_back("ohos.permission.READ_AUDIO");
@@ -55,7 +55,7 @@ int32_t InitPermission()
     return Media::E_OK;
 }
 
-int32_t InitDataShareHelper()
+static int32_t InitDataShareHelper()
 {
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saManager == nullptr) {
@@ -74,7 +74,7 @@ int32_t InitDataShareHelper()
     return Media::E_OK;
 }
 
-int32_t Init(ExecEnv &env, const std::vector<std::string> &args)
+static int32_t Init(ExecEnv &env, const std::vector<std::string> &args)
 {
     env.args.assign(args.begin(), args.end());
     std::array<char, PATH_MAX> buffer {0};
