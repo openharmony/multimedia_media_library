@@ -201,29 +201,45 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     return ret;
 }
 
+static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPredicates &predicates,
+    int32_t deletedRows)
+{
+    int32_t ret = NativeRdb::E_ERROR;
+    string tableName = predicates.GetTableName();
+    ValuesBucket valuesBucket;
+    if (tableName == MEDIALIBRARY_TABLE || tableName == PhotoColumn::PHOTOS_TABLE) {
+        valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        valuesBucket.PutInt(MEDIA_DATA_DB_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_UPLOAD));
+        ret = rdb.Update(deletedRows, tableName, valuesBucket, predicates.GetWhereClause(),
+            predicates.GetWhereArgs());
+    } else if (tableName == PhotoAlbumColumns::TABLE) {
+        valuesBucket.PutInt(PhotoAlbumColumns::ALBUM_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        ret = rdb.Update(deletedRows, tableName, valuesBucket, predicates.GetWhereClause(),
+            predicates.GetWhereArgs());
+    } else if (tableName == PhotoMap::TABLE) {
+        valuesBucket.PutInt(PhotoMap::DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
+        ret = rdb.Update(deletedRows, tableName, valuesBucket, predicates.GetWhereClause(),
+            predicates.GetWhereArgs());
+    } else {
+        ret = rdb.Delete(deletedRows, tableName, predicates.GetWhereClause(), predicates.GetWhereArgs());
+    }
+    return ret;
+}
+
 int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedRows)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-    int32_t ret = NativeRdb::E_ERROR;
-    if (cmd.GetTableName() == MEDIALIBRARY_TABLE || cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        ValuesBucket valuesBucket;
-        valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
-        valuesBucket.PutInt(MEDIA_DATA_DB_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_UPLOAD));
-        ret = rdbStore_->Update(deletedRows, cmd.GetTableName(), valuesBucket,
-            cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
-        CloudSyncHelper::GetInstance()->StartSync();
-    } else {
-        ret = rdbStore_->Delete(deletedRows, cmd.GetTableName(), cmd.GetAbsRdbPredicates()->GetWhereClause(),
-            cmd.GetAbsRdbPredicates()->GetWhereArgs());
-    }
+    /* local delete */
+    int32_t ret = DoDeleteFromPredicates(*rdbStore_, *(cmd.GetAbsRdbPredicates()), deletedRows);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Delete failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-
+    CloudSyncHelper::GetInstance()->StartSync();
+    /* sync remote devices */
     vector<string> devices = vector<string>();
     GetAllNetworkId(devices);
     SyncPushTable(bundleName_, cmd.GetTableName(), deletedRows, devices);
@@ -251,6 +267,23 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     return ret;
 }
 
+static inline string GetQueryFilter(const string &tableName)
+{
+    if (tableName == MEDIALIBRARY_TABLE) {
+        return MEDIALIBRARY_TABLE + "." + MEDIA_DATA_DB_SYNC_STATUS + " = " +
+            to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
+    } else if (tableName == PhotoColumn::PHOTOS_TABLE) {
+        return PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS + " = " +
+            to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
+    } else if (tableName == PhotoAlbumColumns::TABLE) {
+        return PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_DIRTY + " != " +
+            to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
+    } else if (tableName == PhotoMap::TABLE) {
+        return PhotoMap::TABLE + "." + PhotoMap::DIRTY + " != " + to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
+    }
+    return "";
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
@@ -258,15 +291,10 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return nullptr;
     }
-    if (cmd.GetTableName() == MEDIALIBRARY_TABLE || cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        string queryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
-        string filterCondition = "sync_status = " + std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
-        queryCondition = queryCondition.empty() ? filterCondition : filterCondition + " AND " + queryCondition;
-        cmd.GetAbsRdbPredicates()->SetWhereClause(queryCondition);
-    }
-    auto *predicates = cmd.GetAbsRdbPredicates();
+
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    MEDIA_DEBUG_LOG("tablename = %{public}s", cmd.GetTableName().c_str());
+    auto predicates = cmd.GetAbsRdbPredicates();
+    MEDIA_DEBUG_LOG("tablename = %{public}s", predicates->GetTableName().c_str());
     for (const auto &col : columns) {
         MEDIA_DEBUG_LOG("col = %{public}s", col.c_str());
     }
@@ -277,7 +305,38 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
     MEDIA_DEBUG_LOG("limit = %{public}d", predicates->GetLimit());
 #endif
 
-    return rdbStore_->Query(*predicates, columns);
+    /*
+     * adapter pattern:
+     * Reuse predicates-based query so that no need to modify both func
+     * if later logic changes take place
+     */
+    return Query(*cmd.GetAbsRdbPredicates(), columns);
+}
+
+static void AddQueryFilter(AbsRdbPredicates &predicates)
+{
+    /* build all-table vector */
+    string tableName = predicates.GetTableName();
+    vector<string> joinTables = predicates.GetJoinTableNames();
+    joinTables.push_back(tableName);
+    /* add filters */
+    string filters;
+    for (auto &t : joinTables) {
+        string filter = GetQueryFilter(t);
+        if (filters.empty()) {
+            filters += filter;
+        } else {
+            filters += " AND " + filter;
+        }
+    }
+    if (filters.empty()) {
+        return;
+    }
+
+    /* rebuild */
+    string queryCondition = predicates.GetWhereClause();
+    queryCondition = queryCondition.empty() ? filters : filters + " AND " + queryCondition;
+    predicates.SetWhereClause(queryCondition);
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredicates &predicates,
@@ -287,6 +346,10 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredica
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
         return nullptr;
     }
+
+    /* add filter */
+    AddQueryFilter(const_cast<AbsRdbPredicates &>(predicates));
+
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QueryByPredicates");
     return rdbStore_->Query(predicates, columns);
@@ -363,20 +426,12 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
     }
     int err = E_ERR;
     int32_t deletedRows = 0;
-    if (predicates.GetTableName() == MEDIALIBRARY_TABLE || predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-        ValuesBucket valuesBucket;
-        valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
-        valuesBucket.PutInt(MEDIA_DATA_DB_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_UPLOAD));
-        err = rdbStore_->Update(deletedRows, valuesBucket, predicates);
-        CloudSyncHelper::GetInstance()->StartSync();
-    } else {
-        err = rdbStore_->Delete(deletedRows, predicates);
-    }
-
+    err = DoDeleteFromPredicates(*rdbStore_, predicates, deletedRows);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute delete, err: %{public}d", err);
         return E_HAS_DB_ERROR;
     }
+    CloudSyncHelper::GetInstance()->StartSync();
     return deletedRows;
 }
 
@@ -907,7 +962,12 @@ static int32_t ExecuteSql(RdbStore &store)
         CREATE_INSERT_CLOUD_SYNC_TRIGGER,
         PhotoAlbumColumns::CREATE_TABLE,
         PhotoAlbumColumns::INDEX_ALBUM_TYPES,
+        PhotoAlbumColumns::CREATE_ALBUM_INSERT_TRIGGER,
+        PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER,
+        PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER,
         PhotoMap::CREATE_TABLE,
+        PhotoMap::CREATE_NEW_TRIGGER,
+        PhotoMap::CREATE_DELETE_TRIGGER,
         TriggerDeleteAlbumClearMap(),
         TriggerAddAssets(),
         TriggerRemoveAssets(),
@@ -1160,6 +1220,54 @@ static void AddPackageNameColumnOnTables(RdbStore &store)
     }
 }
 
+void UpdateCloudAlbum(RdbStore &store)
+{
+    /* album - add columns */
+    const std::string addAlbumDirty = "ALTER TABLE " + PhotoAlbumColumns::TABLE +
+        " ADD COLUMN " + PhotoAlbumColumns::ALBUM_DIRTY + " INT DEFAULT " +
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) + ";";
+    int32_t ret = store.ExecuteSql(addAlbumDirty);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("upgrade fail %{public}d: add ablum dirty", ret);
+    }
+    const std::string addAlbumCloudId = "ALTER TABLE " + PhotoAlbumColumns::TABLE +
+        " ADD COLUMN " + PhotoAlbumColumns::ALBUM_CLOUD_ID + " TEXT;";
+    ret = store.ExecuteSql(addAlbumCloudId);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("upgrade fail %{public}d: add ablum cloud id", ret);
+    }
+    /* album - add triggers */
+    ret = store.ExecuteSql(PhotoAlbumColumns::CREATE_ALBUM_INSERT_TRIGGER);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("upgrade fail %{public}d: create album insert trigger", ret);
+    }
+    ret = store.ExecuteSql(PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("upgrade fail %{public}d: create album modify trigger", ret);
+    }
+    ret = store.ExecuteSql(PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("upgrade fail %{public}d: create album delete trigger", ret);
+    }
+    /* album map - add columns */
+    const std::string addAlbumMapColumns = "ALTER TABLE " + PhotoMap::TABLE +
+        " ADD COLUMN " + PhotoMap::DIRTY +" INT DEFAULT " +
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) + ";";
+    ret = store.ExecuteSql(addAlbumMapColumns);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("upgrade fail %{public}d: add ablum columns", ret);
+    }
+    /* album map - add triggers */
+    ret = store.ExecuteSql(PhotoMap::CREATE_NEW_TRIGGER);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("upgrade fail %{public}d: create album map insert trigger", ret);
+    }
+    ret = store.ExecuteSql(PhotoMap::CREATE_DELETE_TRIGGER);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("upgrade fail %{public}d: create album map delete trigger", ret);
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1201,6 +1309,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
         AddPackageNameColumnOnTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_CLOUD_ALBUM) {
+        UpdateCloudAlbum(store);
     }
 
     return NativeRdb::E_OK;

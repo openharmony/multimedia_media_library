@@ -89,6 +89,7 @@ public:
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
     void ClearMediaLibraryMgr();
     int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
+    void CreateThumbnailSync(const std::string &uri, const std::string &path);
     void CreateThumbnailAsync(const std::string &uri, const std::string &path);
     static std::unordered_map<std::string, DirAsset> GetDirQuerySetMap();
     std::shared_ptr<MediaDataShareExtAbility> GetOwner();
@@ -104,7 +105,6 @@ private:
     void ScanFile(const NativeRdb::ValuesBucket &values, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore1);
     int32_t InitDeviceData();
     int32_t InitialiseThumbnailService(const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
-    int32_t CreateThumbnail(const NativeRdb::ValuesBucket &values);
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();
     std::shared_ptr<ThumbnailService> thumbnailService_;
@@ -130,6 +130,12 @@ public:
     ScanFileCallback() = default;
     ~ScanFileCallback() = default;
     int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
+    void SetSync(bool isSync)
+    {
+        isCreateThumbSync = isSync;
+    }
+private:
+    bool isCreateThumbSync = false;
 };
 } // namespace Media
 } // namespace OHOS

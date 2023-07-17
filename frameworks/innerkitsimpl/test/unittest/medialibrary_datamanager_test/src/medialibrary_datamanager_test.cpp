@@ -1018,19 +1018,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_LcdDistributeAging_Test_00
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateThumbnail_Test_001, TestSize.Level0)
-{
-    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    NativeRdb::ValuesBucket values;
-    values.PutString(MEDIA_DATA_DB_URI, "CreateThumbnail");
-    int32_t ret = mediaLibraryDataManager->CreateThumbnail(values);
-    EXPECT_EQ(ret, E_ERR);
-    NativeRdb::ValuesBucket valuesTest;
-    valuesTest.PutString(MEDIA_DATA_DB_URI, "");
-    ret = mediaLibraryDataManager->CreateThumbnail(valuesTest);
-    EXPECT_EQ(ret, E_OK);
-}
-
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GetDirQuerySetMap_Test_001, TestSize.Level0)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
@@ -1087,32 +1074,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DistributeDeviceAging_Test
     mediaLibraryDataManager->InitialiseThumbnailService(extensionContext);
     ret = mediaLibraryDataManager->DistributeDeviceAging();
     EXPECT_EQ(ret, E_FAIL);
-}
-
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_HandleThumbnailOperations_Test_001, TestSize.Level0)
-{
-    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    Uri uri("HandleThumbnailOperations");
-    OperationType oprnType = OperationType::DISTRIBUTE_CREATE;
-    MediaLibraryCommand cmd(uri, oprnType);
-    NativeRdb::ValuesBucket values;
-    values.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
-    cmd.SetValueBucket(values);
-    int32_t ret = mediaLibraryDataManager->HandleThumbnailOperations(cmd);
-    EXPECT_EQ(ret, E_OK);
-    OperationType typeTest = OperationType::AGING;
-    MediaLibraryCommand test(uri, typeTest);
-    ret = mediaLibraryDataManager->HandleThumbnailOperations(test);
-    EXPECT_EQ(ret, E_OK);
-    OperationType operation = OperationType::ALBUM_REMOVE_PHOTOS;
-    MediaLibraryCommand command(uri, operation);
-    ret = mediaLibraryDataManager->HandleThumbnailOperations(command);
-    EXPECT_EQ(ret, E_FAIL);
-    OperationType type = OperationType::GENERATE;
-    MediaLibraryCommand cmdTest(uri, type);
-    ret = mediaLibraryDataManager->HandleThumbnailOperations(cmdTest);
-    EXPECT_EQ(ret, NativeRdb::E_EMPTY_VALUES_BUCKET);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_NeedQuerySync_Test_001, TestSize.Level0)

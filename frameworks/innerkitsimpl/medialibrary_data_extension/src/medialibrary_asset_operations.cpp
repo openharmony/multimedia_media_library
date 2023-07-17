@@ -773,7 +773,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     return fd;
 }
 
-int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fileAsset)
+int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync)
 {
     if (fileAsset == nullptr) {
         return E_INVALID_VALUES;
@@ -790,7 +790,7 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     string fileId = to_string(fileAsset->GetId());
     string path = fileAsset->GetPath();
     InvalidateThumbnail(fileId, fileAsset->GetMediaType());
-    ScanFile(path);
+    ScanFile(path, isCreateThumbSync);
     return E_OK;
 }
 
@@ -815,13 +815,17 @@ void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int3
     ThumbnailService::GetInstance()->InvalidateThumbnail(fileId, tableName);
 }
 
-void MediaLibraryAssetOperations::ScanFile(const string &path)
+void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync)
 {
     shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
     if (scanFileCb == nullptr) {
         MEDIA_ERR_LOG("Failed to create scan file callback object");
-        return ;
+        return;
     }
+    if (isCreateThumbSync) {
+        scanFileCb->SetSync(true);
+    }
+
     int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanFileCb, MediaLibraryApi::API_10);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
