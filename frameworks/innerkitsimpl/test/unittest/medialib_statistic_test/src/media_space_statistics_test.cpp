@@ -233,7 +233,14 @@ std::unique_ptr<FileAsset> GetFile(int mediaTypeId)
 void ClearAllFile()
 {
     system("rm -rf /storage/media/100/local/files/.thumbs/*");
-    system("rm -rf /storage/media/100/local/files/*");
+    system("rm -rf /storage/cloud/files/Audio/*");
+    system("rm -rf /storage/cloud/files/Audios/*");
+    system("rm -rf /storage/cloud/files/Camera/*");
+    system("rm -rf /storage/cloud/files/Documents/*");
+    system("rm -rf /storage/cloud/files/Photo/*");
+    system("rm -rf /storage/cloud/files/Pictures/*");
+    system("rm -rf /storage/cloud/files/Videos/*");
+    system("rm -rf /storage/cloud/files/.*");
     system("rm -rf /data/app/el2/100/database/com.ohos.medialibrary.medialibrarydata/*");
     system("kill -9 `pidof com.ohos.medialibrary.medialibrarydata`");
     system("scanner");
