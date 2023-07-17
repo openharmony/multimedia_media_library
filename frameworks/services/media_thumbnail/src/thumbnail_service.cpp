@@ -153,7 +153,7 @@ int ThumbnailService::GetThumbnailFd(const string &uri)
     return fd;
 }
 
-int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri, const string &path)
+int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &path, bool isSync)
 {
     string fileId;
     string networkId;
@@ -176,7 +176,7 @@ int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri, const str
         MEDIA_ERR_LOG("thumbnailHelper nullptr");
         return E_ERR;
     }
-    int32_t err = thumbnailHelper->CreateThumbnail(opts);
+    int32_t err = thumbnailHelper->CreateThumbnail(opts, isSync);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CreateThumbnail failed : %{public}d", err);
         return err;
@@ -188,39 +188,7 @@ int32_t ThumbnailService::CreateThumbnailAsync(const std::string &uri, const str
         MEDIA_ERR_LOG("lcdHelper nullptr");
         return E_ERR;
     }
-    err = lcdHelper->CreateThumbnail(opts);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("CreateLcd failed : %{public}d", err);
-        return err;
-    }
-    return err;
-}
-
-int32_t ThumbnailService::CreateThumbnail(const std::string &uri)
-{
-    string fileId;
-    string path;
-    Size size;
-    string tableName;
-    bool success = ThumbnailUriUtils::ParseThumbnailInfo(uri, fileId, size, path, tableName);
-    if (!success) {
-        MEDIA_ERR_LOG("ParseThumbnailInfo faild %{public}s", uri.c_str());
-        return E_ERR;
-    }
-
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .path = path,
-        .table = tableName,
-        .row = fileId,
-        .screenSize = screenSize_
-    };
-    shared_ptr<IThumbnailHelper> thumbnailHelper = ThumbnailHelperFactory::GetThumbnailHelper(size);
-    if (thumbnailHelper == nullptr) {
-        MEDIA_ERR_LOG("thumbnailHelper nullptr");
-        return E_ERR;
-    }
-    int32_t err = thumbnailHelper->CreateThumbnail(opts, true);
+    err = lcdHelper->CreateThumbnail(opts, isSync);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CreateLcd failed : %{public}d", err);
         return err;

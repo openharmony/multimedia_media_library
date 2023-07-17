@@ -73,7 +73,7 @@ protected:
     static int32_t UpdateFileInDb(MediaLibraryCommand &cmd);
     static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
         MediaLibraryApi api);
-    static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId);
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId);
@@ -90,7 +90,7 @@ private:
         std::string &name);
     static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &filePath);
-    static void ScanFile(const std::string &path);
+    static void ScanFile(const std::string &path, bool isCreateThumbSync = false);
     
     static constexpr int ASSET_IN_BUCKET_NUM_MAX = 1000;
     static constexpr int ASSET_DIR_START_NUM = 16;

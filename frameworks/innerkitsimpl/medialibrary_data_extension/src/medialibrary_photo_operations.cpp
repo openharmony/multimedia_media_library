@@ -34,6 +34,7 @@
 #include "photo_map_column.h"
 #include "photo_map_operations.h"
 #include "rdb_predicates.h"
+#include "thumbnail_const.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
@@ -95,8 +96,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
-    predicates.And()->EqualTo(
-        PhotoColumn::PHOTO_SYNC_STATUS, std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     HandleGroupBy(predicates, columns);
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
@@ -165,7 +164,14 @@ int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
         return E_INVALID_FILEID;
     }
 
-    int32_t errCode = CloseAsset(fileAsset);
+    int32_t isSync = 0;
+    int32_t errCode = 0;
+    if (GetInt32FromValuesBucket(cmd.GetValueBucket(), CLOSE_CREATE_THUMB_STATUS, isSync) &&
+        isSync == CREATE_THUMB_SYNC_STATUS) {
+        errCode = CloseAsset(fileAsset, true);
+    } else {
+        errCode = CloseAsset(fileAsset, false);
+    }
     return errCode;
 }
 

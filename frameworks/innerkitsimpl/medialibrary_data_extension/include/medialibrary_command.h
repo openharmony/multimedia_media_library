@@ -70,7 +70,6 @@ enum class OperationType : uint32_t {
     GENERATE,
     AGING,
     DISTRIBUTE_AGING,
-    DISTRIBUTE_CREATE,
     COPY,
     INSERT_PERMISSION,
     ALBUM_ADD_PHOTOS,

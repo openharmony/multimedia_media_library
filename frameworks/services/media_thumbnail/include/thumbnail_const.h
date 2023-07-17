@@ -54,6 +54,11 @@ const std::string THUMBNAIL_HEIGHT = "height";
 const std::string THUMBNAIL_WIDTH = "width";
 const std::string THUMBNAIL_PATH = "path";
 
+// create thumbnail in close operation
+const std::string CLOSE_CREATE_THUMB_STATUS = "create_thumbnail_sync_status";
+const int32_t CREATE_THUMB_SYNC_STATUS = 1;
+const int32_t CREATE_THUMB_ASYNC_STATUS = 0;
+
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {

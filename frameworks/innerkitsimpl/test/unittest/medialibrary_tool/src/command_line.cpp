@@ -35,6 +35,11 @@ const std::string OPT_STR_RECV = "recv";
 const std::string OPT_STR_LIST = "list";
 const std::string OPT_STR_ALL = "all";
 
+const std::string SEND_CREATE_THUMBNAIL_SYNC = "-ts";
+const std::string SEND_CREATE_THUMBNAIL_ASYNC = "-tas";
+const std::string SEND_CREATE_REMOVE_ORIGIN_FILE = "-rf";
+const std::string SEND_CREATE_UNREMOVE_ORIGIN_FILE = "-urf";
+
 void ShowUsage()
 {
     std::string str;
@@ -119,6 +124,25 @@ bool CheckRecv(ExecEnv &env)
     return true;
 }
 
+static void CheckExtraArgsInSend(ExecEnv &env)
+{
+    for (size_t i = 0; i < env.optArgs.extraArgs.size(); i++) {
+        string param = env.optArgs.extraArgs[i];
+        if (param == SEND_CREATE_THUMBNAIL_SYNC) {
+            env.isCreateThumbSyncInSend = true;
+        }
+        if (param == SEND_CREATE_THUMBNAIL_ASYNC) {
+            env.isCreateThumbSyncInSend = false;
+        }
+        if (param == SEND_CREATE_REMOVE_ORIGIN_FILE) {
+            env.isRemoveOriginFileInSend = true;
+        }
+        if (param == SEND_CREATE_UNREMOVE_ORIGIN_FILE) {
+            env.isRemoveOriginFileInSend = false;
+        }
+    }
+}
+
 bool CheckSend(ExecEnv &env)
 {
     if (env.optArgs.path.empty()) {
@@ -138,6 +162,7 @@ bool CheckSend(ExecEnv &env)
         printf("%s path issue. not file and not directory. path:%s.\n", STR_FAIL.c_str(), env.path.c_str());
         return false;
     }
+    CheckExtraArgsInSend(env);
     return true;
 }
 
@@ -167,6 +192,11 @@ int32_t CommandLine::Parser(ExecEnv &env)
     if (cmd == OPT_STR_SEND) {
         env.optArgs.cmdType = OptCmdType::TYPE_SEND;
         env.optArgs.path = optFirst;
+        if (env.args.size() > MEDIATOOL_ARG_SECOND) {
+            for (size_t i = MEDIATOOL_ARG_SECOND; i < env.args.size(); i++) {
+                env.optArgs.extraArgs.push_back(string(env.args[i]));
+            }
+        }
     } else if (cmd == OPT_STR_RECV) {
         env.optArgs.cmdType = OptCmdType::TYPE_RECV;
         env.optArgs.uri = optFirst;

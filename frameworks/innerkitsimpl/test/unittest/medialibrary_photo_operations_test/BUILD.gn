@@ -57,6 +57,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "image_framework:image_native",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
+    "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "user_file_service:file_access_extension_ability_kit",

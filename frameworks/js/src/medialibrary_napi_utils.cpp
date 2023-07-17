@@ -753,7 +753,6 @@ int32_t MediaLibraryNapiUtils::GetUserAlbumPredicates(const int32_t albumId, Dat
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
@@ -765,7 +764,6 @@ static int32_t GetFavoritePredicates(DataSharePredicates &predicates)
     predicates.BeginWrap();
     constexpr int32_t IS_FAVORITE = 1;
     predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(IS_FAVORITE));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
@@ -777,7 +775,6 @@ static int32_t GetVideoPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
@@ -789,7 +786,6 @@ static int32_t GetHiddenPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     constexpr int32_t IS_HIDDEN = 1;
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(IS_HIDDEN));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
@@ -800,7 +796,6 @@ static int32_t GetHiddenPredicates(DataSharePredicates &predicates)
 static int32_t GetTrashPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
@@ -810,7 +805,6 @@ static int32_t GetScreenshotPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
@@ -822,7 +816,6 @@ static int32_t GetCameraPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::CAMERA)));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
@@ -834,7 +827,6 @@ static int32_t GetAllImagesPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
