@@ -492,7 +492,7 @@ int32_t MediaLibraryAssetOperations::SetAssetPath(FileAsset &fileAsset, const st
     // filePath can not be empty
     fileAsset.SetPath(filePath);
     string fileName = MediaFileUtils::GetFileName(filePath);
-    string displayName = fileName.substr(0, fileName.find('_')) + fileName.substr(fileName.rfind('_') + 1);
+    string displayName = fileName.substr(0, fileName.find('_')) + '_' + fileName.substr(fileName.rfind('_') + 1);
     fileAsset.SetDisplayName(displayName);
     return E_OK;
 }
