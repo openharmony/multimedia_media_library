@@ -413,6 +413,14 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     return SolveInsertCmd(cmd);
 }
 
+int32_t MediaLibraryDataManager::InsertExt(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue,
+    string &result)
+{
+    int32_t res = Insert(cmd, dataShareValue);
+    result = cmd.GetResult();
+    return res;
+}
+
 int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &cmd)
 {
     if (thumbnailService_ == nullptr) {

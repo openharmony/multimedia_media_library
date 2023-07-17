@@ -467,6 +467,17 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     return MediaLibraryDataManager::GetInstance()->Insert(cmd, value);
 }
 
+int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBucket &value, string &result)
+{
+    MediaLibraryCommand cmd(uri);
+    int32_t err = CheckPermFromUri(cmd, true);
+    if (err < 0) {
+        return err;
+    }
+
+    return MediaLibraryDataManager::GetInstance()->InsertExt(cmd, value, result);
+}
+
 int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &predicates,
     const DataShareValuesBucket &value)
 {

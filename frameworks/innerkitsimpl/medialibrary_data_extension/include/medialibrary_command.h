@@ -113,6 +113,7 @@ public:
     std::string GetQuerySetParam(const std::string &key);
     void SetDataSharePred(const DataShare::DataSharePredicates &pred);
     const DataShare::DataSharePredicates &GetDataSharePred() const;
+    const std::string &GetResult();
 
     void SetOprnObject(OperationObject object);
     void SetOprnAssetId(const std::string &oprnId);
@@ -120,6 +121,7 @@ public:
     void SetTableName(const std::string &tableName);
     void SetBundleName(const std::string &bundleName);
     void SetDeviceName(const std::string &deviceName);
+    void SetResult(const std::string &result);
 
 private:
     void SetOprnDevice(const std::string &networkId);
@@ -144,6 +146,7 @@ private:
     std::string bundleName_;
     std::string deviceName_;
     std::unordered_map<std::string, std::string> querySetMap_;
+    std::string result_;
     MediaLibraryApi api_;
 };
 } // namespace Media
