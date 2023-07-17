@@ -17,19 +17,53 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
+
+static inline void AppendStr(std::string &str, const std::string paramName, const int param)
+{
+    if (str.empty()) {
+        str.append(paramName + ":[");
+        str.append(to_string(param));
+        str.append("]");
+    } else {
+        str.append(", " + paramName + ":[");
+        str.append(to_string(param));
+        str.append("]");
+    }
+}
+
+static inline void AppendStr(std::string &str, const std::string paramName, const std::string param)
+{
+    if (str.empty()) {
+        str.append(paramName + ":[");
+        str.append(param);
+        str.append("]");
+    } else {
+        str.append(", " + paramName + ":[");
+        str.append(param);
+        str.append("]");
+    }
+}
+
 std::string ExecEnv::ToStr() const
 {
     std::string str;
-    str.append("path:");
-    str.append(path);
-    str.append(", isFile:");
-    str.append(std::to_string(isFile));
-    str.append(", uri:");
-    str.append(uri);
-    str.append(", recvPath:");
-    str.append(recvPath);
-    str.append(", workPath:");
-    str.append(workPath);
+    if (optArgs.cmdType == OptCmdType::TYPE_LIST) {
+        AppendStr(str, "listUri", listParam.listUri);
+        AppendStr(str, "isListAll", listParam.isListAll);
+    }
+    if (optArgs.cmdType == OptCmdType::TYPE_RECV) {
+        AppendStr(str, "recvUri", recvParam.recvUri);
+        AppendStr(str, "recvPath", recvParam.recvPath);
+        AppendStr(str, "isRecvAll", recvParam.isRecvAll);
+        AppendStr(str, "isRecvPathDir", recvParam.isRecvPathDir);
+    }
+    if (optArgs.cmdType == OptCmdType::TYPE_SEND) {
+        AppendStr(str, "sendPath", sendParam.sendPath);
+        AppendStr(str, "isFile", sendParam.isFile);
+        AppendStr(str, "isRemoveOriginFileInSend", sendParam.isRemoveOriginFileInSend);
+        AppendStr(str, "isRemoveOriginFileInSend", sendParam.isRemoveOriginFileInSend);
+    }
+    AppendStr(str, "workPath", workPath);
     return str;
 }
 } // namespace MediaTool

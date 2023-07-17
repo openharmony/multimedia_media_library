@@ -23,16 +23,14 @@ namespace Media {
 namespace MediaTool {
 std::unique_ptr<Command> Command::Create(const ExecEnv &env)
 {
-    if (env.api == MediaLibraryApi::API_10) {
-        if (env.optArgs.cmdType == OptCmdType::TYPE_LIST) {
-            return std::make_unique<ListCommandV10>();
-        }
-        if (env.optArgs.cmdType == OptCmdType::TYPE_RECV) {
-            return std::make_unique<RecvCommandV10>();
-        }
-        if (env.optArgs.cmdType == OptCmdType::TYPE_SEND) {
-            return std::make_unique<SendCommandV10>();
-        }
+    if (env.optArgs.cmdType == OptCmdType::TYPE_LIST) {
+        return std::make_unique<ListCommandV10>();
+    }
+    if (env.optArgs.cmdType == OptCmdType::TYPE_RECV) {
+        return std::make_unique<RecvCommandV10>();
+    }
+    if (env.optArgs.cmdType == OptCmdType::TYPE_SEND) {
+        return std::make_unique<SendCommandV10>();
     }
     return nullptr;
 }

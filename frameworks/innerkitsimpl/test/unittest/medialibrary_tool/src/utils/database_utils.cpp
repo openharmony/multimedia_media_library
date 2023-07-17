@@ -17,8 +17,12 @@
 #include "constant.h"
 #include "datashare_errno.h"
 #include "fetch_result.h"
+#include "media_column.h"
+#include "media_file_uri.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
+#include "utils/constant_utils.h"
 #include "utils/db_const.h"
 
 namespace OHOS {
@@ -38,32 +42,22 @@ bool DatabaseUtils::Dump(const DumpOpt &opt, const std::shared_ptr<DataShare::Da
         return true;
     }
     std::vector<ColumnInfo> columnInfos;
-    int32_t err = GetColumnInfo(resultSet, columnInfos);
+    int32_t err = GetColumnInfo(opt, resultSet, columnInfos);
     if (err != NativeRdb::E_OK) {
         return false;
     }
-    if (opt.title) {
+    if (opt.isPrintFormTitle) {
         printf("%s\n", TitleToStr(opt, columnInfos).c_str());
     }
-    int32_t count = 0;
-    auto ret = resultSet->GetRowCount(count);
-    if (ret != E_OK) {
-        printf("%s get row count failed. ret:%d.\n", STR_FAIL.c_str(), ret);
-        return false;
-    }
-    if (count <= 0) {
+    if (opt.count <= 0) {
         return true;
     }
-    ret = resultSet->GoToFirstRow();
+    int32_t ret = resultSet->GoToFirstRow();
     if (ret != E_OK) {
         printf("%s goto first row failed. ret:%d.\n", STR_FAIL.c_str(), ret);
         return false;
     }
-    for (int32_t i = 0; i < opt.count; i++) {
-        int32_t row = opt.start + i;
-        if (row >= count) {
-            break;
-        }
+    for (int32_t row = 0; row < opt.count; row++) {
         ret = resultSet->GoToRow(row);
         if (ret != E_OK) {
             printf("%s goto row failed. ret:%d, row:%d.\n", STR_FAIL.c_str(), ret, row);
@@ -111,6 +105,46 @@ int DatabaseUtils::RowToStr(const DumpOpt &opt, const std::shared_ptr<DataShare:
     return DataShare::E_OK;
 }
 
+static int32_t GetStrFromResultSet(const std::string &name, ResultSetDataType type,
+    const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, std::string &str)
+{
+    if (name == MEDIA_DATA_DB_URI) {
+        int32_t id = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet,
+            ResultSetDataType::TYPE_INT32));
+        int32_t mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_TYPE, resultSet,
+            ResultSetDataType::TYPE_INT32));
+        MediaFileUri uri(static_cast<MediaType>(mediaType), to_string(id), "",
+            MEDIA_API_VERSION_V10);
+        str = uri.ToString();
+        return DataShare::E_OK;
+    }
+    switch (type) {
+        case ResultSetDataType::TYPE_STRING: {
+            str = get<std::string>(ResultSetUtils::GetValFromColumn(name, resultSet, type));
+            break;
+        }
+        case ResultSetDataType::TYPE_INT32: {
+            int32_t int32Value = get<int32_t>(ResultSetUtils::GetValFromColumn(name, resultSet, type));
+            str = std::to_string(int32Value);
+            break;
+        }
+        case ResultSetDataType::TYPE_INT64: {
+            int64_t int64Value = get<int64_t>(ResultSetUtils::GetValFromColumn(name, resultSet, type));
+            str = std::to_string(int64Value);
+            break;
+        }
+        case ResultSetDataType::TYPE_DOUBLE: {
+            double doubleValue = get<double>(ResultSetUtils::GetValFromColumn(name, resultSet, type));
+            str = std::to_string(doubleValue);
+            break;
+        }
+        default: {
+            return DataShare::E_ERROR;
+        }
+    }
+    return DataShare::E_OK;
+}
+
 int DatabaseUtils::FieldToStr(const DumpOpt &opt, const ColumnInfo &columnInfo,
     const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, std::string &value)
 {
@@ -124,36 +158,8 @@ int DatabaseUtils::FieldToStr(const DumpOpt &opt, const ColumnInfo &columnInfo,
         value = "null";
         return DataShare::E_OK;
     }
-    status = DataShare::E_OK;
     std::string strValue;
-    switch (columnInfo.type) {
-        case ResultSetDataType::TYPE_STRING: {
-            strValue = get<std::string>(ResultSetUtils::GetValFromColumn(columnInfo.name, resultSet, columnInfo.type));
-            break;
-        }
-        case ResultSetDataType::TYPE_INT32: {
-            int32_t int32Value = get<int32_t>(ResultSetUtils::GetValFromColumn(columnInfo.name,
-                resultSet, columnInfo.type));
-            strValue = std::to_string(int32Value);
-            break;
-        }
-        case ResultSetDataType::TYPE_INT64: {
-            int64_t int64Value = get<int64_t>(ResultSetUtils::GetValFromColumn(columnInfo.name,
-                resultSet, columnInfo.type));
-            strValue = std::to_string(int64Value);
-            break;
-        }
-        case ResultSetDataType::TYPE_DOUBLE: {
-            double doubleValue = get<double>(ResultSetUtils::GetValFromColumn(columnInfo.name,
-                resultSet, columnInfo.type));
-            strValue = std::to_string(doubleValue);
-            break;
-        }
-        default: {
-            status = DataShare::E_ERROR;
-            break;
-        }
-    }
+    status = GetStrFromResultSet(columnInfo.name, columnInfo.type, resultSet, strValue);
     if (status != DataShare::E_OK) {
         printf("%s field to string failed. status:%d, type:%d, name:%s.\n", STR_FAIL.c_str(),
             status, columnInfo.type, columnInfo.name.c_str());
@@ -163,29 +169,41 @@ int DatabaseUtils::FieldToStr(const DumpOpt &opt, const ColumnInfo &columnInfo,
     return DataShare::E_OK;
 }
 
-int32_t DatabaseUtils::GetColumnInfo(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet,
-    std::vector<ColumnInfo> &columnInfos)
+int32_t DatabaseUtils::GetColumnInfo(const DumpOpt &opt,
+    const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, std::vector<ColumnInfo> &columnInfos)
 {
     if (resultSet == nullptr) {
         return Media::E_ERR;
     }
     std::vector<std::string> names;
-    int32_t err = resultSet->GetAllColumnNames(names);
-    if (err != NativeRdb::E_OK) {
-        printf("%s get all column names failed. err:%d.\n", STR_FAIL.c_str(), err);
-        return err;
+    if (opt.columns.empty()) {
+        int32_t err = resultSet->GetAllColumnNames(names);
+        if (err != NativeRdb::E_OK) {
+            printf("%s get all column names failed. err:%d.\n", STR_FAIL.c_str(), err);
+            return err;
+        }
+    } else {
+        names = opt.columns;
     }
     for (const auto &name : names) {
         ColumnInfo columnInfo;
         columnInfo.name = name;
-        err = resultSet->GetColumnIndex(name, columnInfo.index);
-        if (err != NativeRdb::E_OK) {
-            printf("%s get column index failed. err:%d, name:%s.\n", STR_FAIL.c_str(), err, name.c_str());
-            return err;
-        }
-        if (RESULT_TYPE_MAP.count(name) <= 0) {
-            printf("%s please add %s into RESULT_TYPE_MAP.\n", STR_WARN.c_str(), name.c_str());
-            continue;
+        if (name != MEDIA_DATA_DB_URI) {
+            int32_t err = resultSet->GetColumnIndex(name, columnInfo.index);
+            if (err != NativeRdb::E_OK) {
+                printf("%s get column index failed. err:%d, name:%s.\n", STR_FAIL.c_str(), err, name.c_str());
+                return err;
+            }
+            if (RESULT_TYPE_MAP.count(name) <= 0) {
+                printf("%s please add %s into RESULT_TYPE_MAP.\n", STR_WARN.c_str(), name.c_str());
+                continue;
+            }
+        } else {
+            int32_t err = resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnInfo.index);
+            if (err != NativeRdb::E_OK) {
+                printf("%s get column index failed. err:%d, name:%s.\n", STR_FAIL.c_str(), err, name.c_str());
+                return err;
+            }
         }
         columnInfo.type = RESULT_TYPE_MAP.at(name);
         columnInfos.push_back(columnInfo);
