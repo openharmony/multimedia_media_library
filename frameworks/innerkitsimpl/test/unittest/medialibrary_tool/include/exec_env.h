@@ -24,19 +24,33 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
+
+struct SendParam {
+    bool isCreateThumbSyncInSend = false;
+    bool isRemoveOriginFileInSend = true;
+    bool isFile = true;
+    std::string sendPath; // real path for sending
+};
+
+struct RecvParam {
+    bool isRecvAll = false;
+    bool isRecvPathDir = false;
+    std::string recvUri;
+    std::string recvPath; // real path for the recvPath in optArgs
+};
+
+struct ListParam {
+    bool isListAll = false;
+    std::string listUri;
+};
+
 struct ExecEnv {
     OptionArgs optArgs;
     std::vector<std::string> args;
-    std::string path; // real path for the path in optArgs
-    bool isFile = true;
-    bool isCreateThumbSyncInSend = false;
-    bool isRemoveOriginFileInSend = true;
-    std::string uri;
-    std::string recvPath; // real path for the recvPath in optArgs
-    DumpOpt dumpOpt;
+    SendParam sendParam;
+    RecvParam recvParam;
+    ListParam listParam;
     std::string workPath; // current work path
-    MediaLibraryApi api {MediaLibraryApi::API_10};
-    std::string networkId;
     [[nodiscard]] std::string ToStr() const;
 };
 } // namespace MediaTool

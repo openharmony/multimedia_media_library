@@ -22,12 +22,12 @@ namespace OHOS {
 namespace Media {
 namespace MediaTool {
 struct DumpOpt {
-    bool title {true};
-    bool name {false};
+    bool isPrintFormTitle {true};
     int32_t start {0};
     int32_t count {INT32_MAX};
     std::string split {","};
     std::string delimiter {"\""};
+    std::vector<std::string> columns;
 };
 
 struct ColumnInfo {
