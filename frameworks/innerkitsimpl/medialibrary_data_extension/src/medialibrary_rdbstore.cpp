@@ -202,7 +202,7 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 }
 
 static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPredicates &predicates,
-    int32_t deletedRows)
+    int32_t &deletedRows)
 {
     int32_t ret = NativeRdb::E_ERROR;
     string tableName = predicates.GetTableName();
