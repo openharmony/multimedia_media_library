@@ -2073,7 +2073,7 @@ string ChangeListenerNapi::GetTrashAlbumUri()
     if (!trashAlbumUri_.empty()) {
         return trashAlbumUri_;
     }
-    string queryUri = URI_QUERY_PHOTO_ALBUM;
+    string queryUri = UFM_QUERY_PHOTO_ALBUM;
     Uri uri(queryUri);
     int errCode = 0;
     DataSharePredicates predicates;
