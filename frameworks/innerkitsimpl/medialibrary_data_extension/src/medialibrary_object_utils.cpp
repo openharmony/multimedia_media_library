@@ -47,6 +47,7 @@
 #include "string_ex.h"
 #include "thumbnail_service.h"
 #include "value_object.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -663,6 +664,9 @@ int32_t MediaLibraryObjectUtils::RenameDirObj(MediaLibraryCommand &cmd,
 
 static int32_t OpenAsset(const string &filePath, const string &mode)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("OpenAsset");
+    
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("Failed to get real path: %{private}s", filePath.c_str());
@@ -684,6 +688,9 @@ static bool CheckIsOwner(const string &bundleName)
 
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryObjectUtils::OpenFile");
+
     string uriString = cmd.GetUri().ToString();
     if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
         return ThumbnailService::GetInstance()->GetThumbnailFd(uriString);
