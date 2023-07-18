@@ -198,6 +198,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "ipc:ipc_core",
     "kv_store:distributeddata_inner",
     "multimedia_image_framework:image_native",
+    "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
