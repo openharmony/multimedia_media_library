@@ -86,6 +86,7 @@ public:
     static const std::string PHOTO_META_DATE_MODIFIED;
     static const std::string PHOTO_SYNC_STATUS;
     static const std::string PHOTO_CLOUD_VERSION;
+    static const std::string CAMERA_SHOT_KEY;
 
     // table name
     static const std::string PHOTOS_TABLE;
@@ -95,6 +96,7 @@ public:
 
     // create indexes for Photo
     static const std::string INDEX_STHP_ADDTIME;
+    static const std::string INDEX_CAMERA_SHOT_KEY;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER;

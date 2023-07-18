@@ -143,6 +143,9 @@ public:
     int32_t GetPhotoSubType() const;
     void SetPhotoSubType(int32_t photoSubType);
 
+    const std::string &GetCameraShotKey() const;
+    void SetCameraShotKey(const std::string &cameraShotKey);
+
     bool IsHidden() const;
     void SetHidden(bool isHidden);
 

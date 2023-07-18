@@ -71,8 +71,11 @@ static map<string, ListenerType> ListenerTypeMaps = {
 };
 
 const std::string SUBTYPE = "subType";
+const std::string CAMERA_SHOT_KEY = "cameraShotKey";
 const std::map<std::string, std::string> PHOTO_CREATE_OPTIONS_PARAM = {
-    { SUBTYPE, PhotoColumn::PHOTO_SUBTYPE }
+    { SUBTYPE, PhotoColumn::PHOTO_SUBTYPE },
+    { CAMERA_SHOT_KEY, PhotoColumn::CAMERA_SHOT_KEY }
+
 };
 
 const std::string TITLE = "title";
@@ -4099,6 +4102,18 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
     return result;
 }
 
+static napi_status CheckCreateOption(MediaLibraryAsyncContext &context)
+{
+    bool isValid = false;
+    string cameraShotKey = context.valuesBucket.Get(PhotoColumn::CAMERA_SHOT_KEY, isValid);
+    int32_t subtype = context.valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
+    if ((cameraShotKey != "") && (PhotoSubType(subtype) != PhotoSubType::CAMERA)) {
+        NAPI_ERR_LOG("cameraShotKey is not null with subtype is not CAMERA");
+        return napi_invalid_arg;
+    }
+    return napi_ok;
+}
+
 static napi_status ParsePhotoAssetCreateOption(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
 {
     for (const auto &iter : PHOTO_CREATE_OPTIONS_PARAM) {
@@ -4139,7 +4154,7 @@ static napi_status ParsePhotoAssetCreateOption(napi_env env, napi_value arg, Med
         }
     }
 
-    return napi_ok;
+    return CheckCreateOption(context);
 }
 
 static napi_status ParseCreateOptions(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
