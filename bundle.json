@@ -71,7 +71,8 @@
             "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary",
             "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js",
             "//foundation/multimedia/media_library/interfaces/kits/js:userfilemanager",
-            "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelper"
+            "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelper",
+            "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelper_js"
           ],
           "service_group": [
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",

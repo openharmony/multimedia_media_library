@@ -219,6 +219,49 @@ ohos_shared_library("userfilemanager") {
   part_name = "media_library"
 }
 
+js_declaration("photoaccesshelper_js") {
+  part_name = "media_library"
+  sources = [ "./@ohos.file.photoAccessHelper.d.ts" ]
+}
+
+# compile .js to .abc.
+action("gen_photoaccesshelperinf_abc") {
+  visibility = [ ":*" ]
+  script = "../../../../../../arkcompiler/ets_frontend/es2panda/scripts/generate_js_bytecode.py"
+
+  args = [
+    "--src-js",
+    rebase_path("${MEDIALIB_JS_PATH}/src/photoaccesshelperinf.js"),
+    "--dst-file",
+    rebase_path(target_out_dir + "/photoaccesshelperinf.abc"),
+    "--frontend-tool-path",
+    rebase_path("${es2abc_build_path}"),
+    "--module",
+  ]
+  deps =
+      [ "../../../../../../arkcompiler/ets_frontend/es2panda:es2panda_build" ]
+
+  inputs = [ "${MEDIALIB_JS_PATH}/src/photoaccesshelperinf.js" ]
+  outputs = [ target_out_dir + "/photoaccesshelperinf.abc" ]
+}
+
+base_output_path = get_label_info(":photoaccesshelperinf_js", "target_out_dir")
+photoaccesshelperinf_obj_path = base_output_path + "/photoaccesshelperinf.o"
+gen_js_obj("photoaccesshelperinf_js") {
+  input = "${MEDIALIB_JS_PATH}/src/photoaccesshelperinf.js"
+  output = photoaccesshelperinf_obj_path
+  dep = ":gen_photoaccesshelperinf_abc"
+}
+
+abc_output_path = get_label_info(":photoaccesshelperinf_abc", "target_out_dir")
+photoaccesshelperinf_abc_obj_path =
+    abc_output_path + "/photoaccesshelperinf_abc.o"
+gen_js_obj("photoaccesshelperinf_abc") {
+  input = "$target_out_dir/photoaccesshelperinf.abc"
+  output = photoaccesshelperinf_abc_obj_path
+  dep = ":gen_photoaccesshelperinf_abc"
+}
+
 ohos_shared_library("photoaccesshelper") {
   configs = [ ":napi_config" ]
 
@@ -239,6 +282,8 @@ ohos_shared_library("photoaccesshelper") {
   ]
 
   deps = [
+    ":photoaccesshelperinf_abc",
+    ":photoaccesshelperinf_js",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_UTILS_PATH}:permission_utils",
   ]
