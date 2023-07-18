@@ -238,7 +238,6 @@ int32_t UriPermissionOperations::InsertBundlePermission(const int32_t &fileId, c
 int32_t UriPermissionOperations::DeleteBundlePermission(const std::string &fileId, const std::string &bundleName,
     const std::string &tableName)
 {
-    string curMode;
     int32_t tableType = GetTableTypeFromTableName(tableName);
 
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();

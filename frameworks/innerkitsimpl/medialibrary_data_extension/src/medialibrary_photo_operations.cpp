@@ -371,7 +371,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", err);
         return E_HAS_DB_ERROR;
     }
-    for (auto &fileId : cmd.GetAbsRdbPredicates()->GetWhereArgs()) {
+    for (const string &fileId : cmd.GetAbsRdbPredicates()->GetWhereArgs()) {
         SendTrashNotify(cmd, stoi(fileId));
     }
 
