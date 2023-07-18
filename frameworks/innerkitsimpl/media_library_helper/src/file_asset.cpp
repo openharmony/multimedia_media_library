@@ -400,6 +400,16 @@ void FileAsset::SetPhotoSubType(int32_t photoSubType)
     member_[PhotoColumn::PHOTO_SUBTYPE] = photoSubType;
 }
 
+const std::string &FileAsset::GetCameraShotKey() const
+{
+    return GetStrMember(PhotoColumn::CAMERA_SHOT_KEY);
+}
+
+void FileAsset::SetCameraShotKey(const std::string &cameraShotKey)
+{
+    member_[PhotoColumn::CAMERA_SHOT_KEY] = cameraShotKey;
+}
+
 bool FileAsset::IsHidden() const
 {
     return GetInt32Member(MediaColumn::MEDIA_HIDDEN);

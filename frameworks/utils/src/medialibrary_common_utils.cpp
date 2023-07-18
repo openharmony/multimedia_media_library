@@ -150,6 +150,7 @@ bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
         COMPAT_HIDDEN,
         COMPAT_PHOTO_SYNC_STATUS,
         COMPAT_FILE_SUBTYPE,
+        COMPAT_CAMERA_SHOT_KEY,
 
         // PhotoAlbum table columns
         COMPAT_ALBUM_SUBTYPE,

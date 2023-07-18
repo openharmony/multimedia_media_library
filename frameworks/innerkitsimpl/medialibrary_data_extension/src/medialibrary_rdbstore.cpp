@@ -937,6 +937,7 @@ static int32_t ExecuteSql(RdbStore &store)
         CREATE_MEDIA_TABLE,
         PhotoColumn::CREATE_PHOTO_TABLE,
         PhotoColumn::INDEX_STHP_ADDTIME,
+        PhotoColumn::INDEX_CAMERA_SHOT_KEY,
         PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -1071,6 +1072,7 @@ void API10TableCreate(RdbStore &store)
     static const vector<string> executeSqlStrs = {
         PhotoColumn::CREATE_PHOTO_TABLE,
         PhotoColumn::INDEX_STHP_ADDTIME,
+        PhotoColumn::INDEX_CAMERA_SHOT_KEY,
         PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -1269,6 +1271,20 @@ void UpdateCloudAlbum(RdbStore &store)
     }
 }
 
+static void AddCameraShotKey(RdbStore &store)
+{
+    static const string ADD_CAMERA_SHOT_KEY_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+        " ADD COLUMN " + PhotoColumn::CAMERA_SHOT_KEY + " TEXT";
+    int32_t result = store.ExecuteSql(ADD_CAMERA_SHOT_KEY_ON_PHOTOS);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to update PHOTOS");
+    }
+    result = store.ExecuteSql(PhotoColumn::INDEX_CAMERA_SHOT_KEY);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to create CAMERA_SHOT_KEY index");
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1314,6 +1330,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_CLOUD_ALBUM) {
         UpdateCloudAlbum(store);
+    }
+
+    if (oldVersion < VERSION_ADD_CAMERA_SHOT_KEY) {
+        AddCameraShotKey(store);
     }
 
     return NativeRdb::E_OK;

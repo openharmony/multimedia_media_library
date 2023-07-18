@@ -64,6 +64,7 @@ const std::unordered_map<std::string, ResultSetDataType> RESULT_TYPE_MAP = {
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, ResultSetDataType::TYPE_INT64 },
     { PhotoColumn::PHOTO_POSITION, ResultSetDataType::TYPE_INT32 },
     { PhotoColumn::PHOTO_SUBTYPE, ResultSetDataType::TYPE_INT32 },
+    { PhotoColumn::CAMERA_SHOT_KEY, ResultSetDataType::TYPE_STRING },
 };
 } // namespace MediaTool
 } // namespace Media
