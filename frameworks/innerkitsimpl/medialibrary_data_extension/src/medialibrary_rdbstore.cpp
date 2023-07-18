@@ -279,7 +279,8 @@ static inline string GetQueryFilter(const string &tableName)
         return PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_DIRTY + " != " +
             to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
     } else if (tableName == PhotoMap::TABLE) {
-        return PhotoMap::TABLE + "." + PhotoMap::DIRTY + " != " + to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
+        return PhotoMap::TABLE + "." + PhotoMap::DIRTY + " != " + to_string(static_cast<int32_t>(
+            DirtyTypes::TYPE_DELETED));
     }
     return "";
 }
