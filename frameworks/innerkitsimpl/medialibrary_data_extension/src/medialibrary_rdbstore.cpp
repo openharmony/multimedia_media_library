@@ -202,7 +202,7 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 }
 
 static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPredicates &predicates,
-    int32_t deletedRows)
+    int32_t &deletedRows)
 {
     int32_t ret = NativeRdb::E_ERROR;
     string tableName = predicates.GetTableName();
@@ -279,7 +279,8 @@ static inline string GetQueryFilter(const string &tableName)
         return PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_DIRTY + " != " +
             to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
     } else if (tableName == PhotoMap::TABLE) {
-        return PhotoMap::TABLE + "." + PhotoMap::DIRTY + " != " + to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
+        return PhotoMap::TABLE + "." + PhotoMap::DIRTY + " != " + to_string(static_cast<int32_t>(
+            DirtyTypes::TYPE_DELETED));
     }
     return "";
 }

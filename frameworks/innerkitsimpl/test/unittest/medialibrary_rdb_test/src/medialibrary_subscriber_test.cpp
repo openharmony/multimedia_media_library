@@ -12,9 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "medialibrary_rdb_test.h"
 #include "medialibrary_device.h"
 #include "medialibrary_object_utils.h"
-#include "medialibrary_rdb_test.h"
 #define private public
 #include "medialibrary_subscriber.h"
 #undef private
