@@ -17,6 +17,7 @@
 
 #include "common_func.h"
 #include "ipc_skeleton.h"
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_type_const.h"
@@ -52,13 +53,11 @@ static bool CheckMode(string& mode)
 
 int32_t UriPermissionOperations::HandleUriPermOperations(MediaLibraryCommand &cmd)
 {
-    string bundleName;
-    bool isSystemApp = false;
-    PermissionUtils::GetClientBundle(IPCSkeleton::GetCallingUid(), bundleName, isSystemApp);
-    if (!isSystemApp) {
+    if (!PermissionUtils::IsSystemApp()) {
         MEDIA_ERR_LOG("the caller is not system app");
         return E_PERMISSION_DENIED;
     }
+    string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
 
     int32_t errCode = E_FAIL;
     switch (cmd.GetOprnType()) {
@@ -263,9 +262,7 @@ int32_t UriPermissionOperations::CheckUriPermission(const std::string &fileUri, 
     if (!CheckMode(mode)) {
         return E_INVALID_MODE;
     }
-    string bundleName;
-    bool isSystemApp = false;
-    PermissionUtils::GetClientBundle(IPCSkeleton::GetCallingUid(), bundleName, isSystemApp);
+    string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(fileUri);
     TableType tableType = TableType::TYPE_FILES;
     static map<string, TableType> tableMap = {

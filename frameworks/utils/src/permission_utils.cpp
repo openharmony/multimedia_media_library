@@ -69,12 +69,11 @@ sptr<AppExecFwk::IBundleMgr> PermissionUtils::GetSysBundleManager()
     return bundleMgr_;
 }
 
-void PermissionUtils::GetClientBundle(const int uid, string &bundleName, bool &isSystemApp)
+void PermissionUtils::GetClientBundle(const int uid, string &bundleName)
 {
     bundleMgr_ = GetSysBundleManager();
     if (bundleMgr_ == nullptr) {
         bundleName = "";
-        isSystemApp = false;
         return;
     }
     auto result = bundleMgr_->GetBundleNameForUid(uid, bundleName);
@@ -82,16 +81,6 @@ void PermissionUtils::GetClientBundle(const int uid, string &bundleName, bool &i
         MEDIA_ERR_LOG("GetBundleNameForUid fail");
         bundleName = "";
     }
-    isSystemApp = bundleMgr_->CheckIsSystemAppByUid(uid);
-}
-
-string PermissionUtils::GetClientBundleName()
-{
-    int uid = IPCSkeleton::GetCallingUid();
-    string clientBundle;
-    bool isSystemApp = false;
-    GetClientBundle(uid, clientBundle, isSystemApp);
-    return clientBundle;
 }
 
 #ifdef OHOS_DEBUG
