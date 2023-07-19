@@ -409,35 +409,13 @@ void MediaLibraryCommand::ParseQuerySetMapFromUri()
 {
     // uri format: datashare:///media/photo_operation/create_asset?op1=xxx&op2=yyy&api_version=10#abc
     // QuerySetMap: {"op1": "xxx", "op2": "yyy", "api_version": "10"}
-    string uriString = uri_.ToString();
-    size_t firstPoint = uriString.find('?');
-    size_t secondPoint = uriString.find('#');
-    if (firstPoint == string::npos) {
-        return;
+    string uriStr = uri_.ToString();
+    size_t cutPoint = uriStr.find('#');
+    if (cutPoint != string::npos) {
+        uriStr = uriStr.substr(0, cutPoint);
     }
-    string querySetStr;
-    if (secondPoint == string::npos) {
-        querySetStr = uriString.substr(firstPoint + 1);
-    } else {
-        querySetStr = uriString.substr(firstPoint + 1, secondPoint - firstPoint - 1);
-    }
-    size_t andPoint = 0;
-    while ((andPoint = querySetStr.find('&')) != string::npos) {
-        string subStr = querySetStr.substr(0, andPoint);
-        size_t equalPoint = subStr.find('=');
-        if (equalPoint == string::npos) {
-            MEDIA_ERR_LOG("parse query set map failed");
-            return;
-        }
-        querySetMap_.insert({ subStr.substr(0, equalPoint), subStr.substr(equalPoint + 1) });
-        querySetStr = querySetStr.substr(andPoint + 1);
-    }
-    size_t equalPoint = querySetStr.find('=');
-    if (equalPoint == string::npos) {
-        MEDIA_ERR_LOG("parse query set map failed");
-        return;
-    }
-    querySetMap_.insert({ querySetStr.substr(0, equalPoint), querySetStr.substr(equalPoint + 1) });
+    MediaFileUri mediaUri(uriStr);
+    querySetMap_ = mediaUri.GetQueryKeys();
 }
 
 void MediaLibraryCommand::SetApiFromQuerySetMap()
