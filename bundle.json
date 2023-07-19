@@ -49,7 +49,7 @@
           "ipc_js",
           "kv_store",
           "memory_utils",
-          "multimedia_image_framework",
+          "image_framework",
           "napi",
           "player_framework",
           "relational_store",
