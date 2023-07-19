@@ -1720,7 +1720,8 @@ static void JSCreateAssetExecute(napi_env env, void *data)
     string uri;
     GetCreateUri(context, uri);
     Uri createFileUri(uri);
-    int index = UserFileClient::Insert(createFileUri, context->valuesBucket);
+    string outUri;
+    int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri);
     if (index < 0) {
         context->SaveError(index);
     } else {
@@ -5138,7 +5139,8 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
     GetCreateUri(context, uri);
     MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->typeMask);
     Uri createFileUri(uri);
-    int index = UserFileClient::Insert(createFileUri, context->valuesBucket);
+    string outUri;
+    int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri);
     if (index < 0) {
         context->SaveError(index);
     } else {

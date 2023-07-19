@@ -54,6 +54,8 @@ public:
     EXPORT int32_t InitialiseKvStore();
 
     EXPORT int32_t Insert(MediaLibraryCommand &cmd, const DataShare::DataShareValuesBucket &value);
+    EXPORT int32_t InsertExt(MediaLibraryCommand &cmd, const DataShare::DataShareValuesBucket &value,
+        std::string &result);
     EXPORT int32_t Delete(MediaLibraryCommand &cmd, const DataShare::DataSharePredicates &predicates);
     EXPORT int32_t BatchInsert(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
