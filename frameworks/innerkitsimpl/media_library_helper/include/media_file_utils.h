@@ -79,6 +79,7 @@ public:
     static bool CreateDirectory(const std::string &dirPath);
     static int32_t CheckStringSize(const std::string &str, const size_t max);
     static int32_t CheckAlbumName(const std::string &albumName);
+    static int32_t CheckDentryName(const std::string &dentryName);
     static int32_t CheckDisplayName(const std::string &displayName);
     static int32_t CheckFileDisplayName(const std::string &displayName);
     static int32_t CheckRelativePath(const std::string &relativePath);
