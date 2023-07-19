@@ -152,6 +152,9 @@ int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryAssetOperations::OpenOperation(MediaLibraryCommand &cmd, const string &mode)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryAssetOperations::OpenOperation");
+
     // Open specify type
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_PHOTO:
@@ -219,6 +222,9 @@ static OperationObject GetOprnObjectByMediaType(int32_t type)
 shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const string &column,
     const string &value, OperationObject oprnObject, const vector<string> &columns, const string &networkId)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryAssetOperations::GetFileAssetFromDb");
+    
     if (!CheckOprnObject(oprnObject) || column.empty() || value.empty()) {
         return nullptr;
     }
@@ -730,6 +736,9 @@ static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const 
 int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode,
     MediaLibraryApi api)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryAssetOperations::OpenAsset");
+
     if (fileAsset == nullptr) {
         return E_INVALID_VALUES;
     }

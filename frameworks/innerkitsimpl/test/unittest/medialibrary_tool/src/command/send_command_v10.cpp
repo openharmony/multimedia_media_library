@@ -21,6 +21,7 @@
 
 #include "constant.h"
 #include "directory_ex.h"
+#include "exec_env.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
@@ -55,7 +56,7 @@ struct FileInfo {
     }
 };
 
-int32_t GetFileInfo(const ExecEnv &env, const std::string &path, std::vector<FileInfo> &fileInfos)
+static inline int32_t GetFileInfo(const ExecEnv &env, const std::string &path, std::vector<FileInfo> &fileInfos)
 {
     FileInfo fileInfo;
     fileInfo.displayName = ExtractFileName(path);
@@ -73,7 +74,7 @@ int32_t GetFileInfo(const ExecEnv &env, const std::string &path, std::vector<Fil
     return Media::E_ERR;
 }
 
-int32_t GetDirInfo(const ExecEnv &env, const std::string &path, std::vector<FileInfo> &fileInfos)
+static inline int32_t GetDirInfo(const ExecEnv &env, const std::string &path, std::vector<FileInfo> &fileInfos)
 {
     std::vector<std::string> files;
     GetDirFiles(path, files);
@@ -87,7 +88,7 @@ int32_t GetDirInfo(const ExecEnv &env, const std::string &path, std::vector<File
     return Media::E_OK;
 }
 
-void RemoveFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
+static void RemoveFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
 {
     for (auto &fileInfo : fileInfos) {
         if (fileInfo.result != Media::E_OK) {
@@ -101,22 +102,23 @@ void RemoveFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
     fileInfos.clear();
 }
 
-int32_t CreateRecord(const ExecEnv &env, FileInfo &fileInfo)
+static int32_t CreateRecord(const ExecEnv &env, FileInfo &fileInfo)
 {
     const MediaType mediaType = fileInfo.mediaType;
+    std::string tableName = UserFileClientEx::GetTableNameByMediaType(mediaType);
     const std::string displayName = fileInfo.displayName;
-    auto fileId = UserFileClientEx::Insert(mediaType, displayName);
+    auto fileId = UserFileClientEx::Insert(tableName, displayName);
     if (fileId <= 0) {
         printf("%s create record failed. fileId:%d, fileInfo:%s\n",
             STR_FAIL.c_str(), fileId, fileInfo.ToStr().c_str());
         return Media::E_ERR;
     }
-    fileInfo.uri = MediaFileUri(mediaType, to_string(fileId), env.networkId, MEDIA_API_VERSION_V10).ToString();
+    fileInfo.uri = MediaFileUri(mediaType, to_string(fileId), "", MEDIA_API_VERSION_V10).ToString();
     fileInfo.id = fileId;
     return Media::E_OK;
 }
 
-int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo)
+static int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo)
 {
     auto rfd = open(fileInfo.path.c_str(), O_RDONLY | O_CLOEXEC);
     if (rfd < 0) {
@@ -133,7 +135,7 @@ int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo)
     if (!ret) {
         printf("%s send data failed. rfd:%d, wfd:%d\n", STR_FAIL.c_str(), rfd, wfd);
     }
-    if (env.isCreateThumbSyncInSend) {
+    if (env.sendParam.isCreateThumbSyncInSend) {
         UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, true);
     } else {
         UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, false);
@@ -143,7 +145,7 @@ int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo)
     return ret ? Media::E_OK : Media::E_ERR;
 }
 
-int32_t SendFile(const ExecEnv &env, FileInfo &fileInfo)
+static int32_t SendFile(const ExecEnv &env, FileInfo &fileInfo)
 {
     if (CreateRecord(env, fileInfo) != Media::E_OK) {
         return Media::E_ERR;
@@ -161,7 +163,7 @@ int32_t SendFile(const ExecEnv &env, FileInfo &fileInfo)
     return Media::E_OK;
 }
 
-int32_t SendFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
+static int32_t SendFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
 {
     for (auto &fileInfo : fileInfos) {
         int32_t ret = SendFile(env, fileInfo);
@@ -177,13 +179,14 @@ int32_t SendFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
 int32_t SendCommandV10::Start(const ExecEnv &env)
 {
     std::vector<FileInfo> fileInfos;
-    auto ret = (env.isFile) ? GetFileInfo(env, env.path, fileInfos) : GetDirInfo(env, env.path, fileInfos);
+    auto ret = (env.sendParam.isFile) ? GetFileInfo(env, env.sendParam.sendPath, fileInfos) : GetDirInfo(env,
+        env.sendParam.sendPath, fileInfos);
     if (ret != Media::E_OK) {
         printf("%s get file information failed. ret:%d\n", STR_FAIL.c_str(), ret);
         return ret;
     }
     ret = SendFiles(env, fileInfos);
-    if (env.isRemoveOriginFileInSend) {
+    if (env.sendParam.isRemoveOriginFileInSend) {
         RemoveFiles(env, fileInfos);
     }
     return ret;

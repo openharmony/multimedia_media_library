@@ -60,7 +60,14 @@ void MediaLibraryUnitTestUtils::InitRootDirs()
 
 void MediaLibraryUnitTestUtils::CleanTestFiles()
 {
-    system("rm -rf /storage/cloud/files/*");
+    system("rm -rf /storage/cloud/files/Audio/*");
+    system("rm -rf /storage/cloud/files/Audios/*");
+    system("rm -rf /storage/cloud/files/Camera/*");
+    system("rm -rf /storage/cloud/files/Documents/*");
+    system("rm -rf /storage/cloud/files/Photo/*");
+    system("rm -rf /storage/cloud/files/Pictures/*");
+    system("rm -rf /storage/cloud/files/Pictures/*");
+    system("rm -rf /storage/cloud/files/Videos/*");
     system("rm -rf /storage/cloud/files/.*");
     auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
     NativeRdb::AbsRdbPredicates predicates(MEDIALIBRARY_TABLE);

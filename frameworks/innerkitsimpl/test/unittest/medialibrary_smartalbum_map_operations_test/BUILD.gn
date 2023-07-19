@@ -23,10 +23,16 @@ ohos_unittest("medialibrary_smartalbum_map_operations_test") {
   module_out_path = "media_library/medialibraryextention"
   include_dirs = [ "./include" ]
 
-  sources = [ "./src/medialibrary_smartalbum_map_operations_test.cpp" ]
+  sources = [
+    "./src/medialibrary_file_opertions_test.cpp",
+    "./src/medialibrary_smartalbum_map_operations_test.cpp",
+    "./src/medialibrary_uripermission_operations_test.cpp",
+    "./src/trash_async_worker_test.cpp",
+  ]
   deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
 
   external_deps = [
+    "ability_base:zuri",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",

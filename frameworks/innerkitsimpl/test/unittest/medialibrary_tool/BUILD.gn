@@ -106,7 +106,8 @@ ohos_executable("mediatool") {
 
   sanitize = {
     cfi = true
-    debug = false
+    cfi_cross_dso = true
+    debug = true
   }
 
   subsystem_name = "multimedia"

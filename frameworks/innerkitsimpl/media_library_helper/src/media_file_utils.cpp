@@ -36,6 +36,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
 #include "mimetype_utils.h"
+#include "medialibrary_tracer.h"
 
 using namespace std;
 
@@ -629,6 +630,9 @@ string MediaFileUtils::GetNetworkIdFromUri(const string &uri)
 
 string MediaFileUtils::UpdatePath(const string &path, const string &uri)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaFileUtils::UpdatePath");
+
     string retStr = path;
     MEDIA_INFO_LOG("MediaFileUtils::UpdatePath path = %{private}s, uri = %{private}s", path.c_str(), uri.c_str());
     if (path.empty() || uri.empty()) {
@@ -771,6 +775,9 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
 
 int32_t MediaFileUtils::CreateAsset(const string &filePath)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaFileUtils::CreateAsset");
+
     int32_t errCode = E_ERR;
 
     if (filePath.empty()) {

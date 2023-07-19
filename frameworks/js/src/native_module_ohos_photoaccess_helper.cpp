@@ -13,6 +13,11 @@
  * limitations under the License.
  */
 #include "native_module_ohos_medialibrary.h"
+#include "napi/native_node_api.h"
+extern const char _binary_photoaccesshelperinf_js_start[];
+extern const char _binary_photoaccesshelperinf_js_end[];
+extern const char _binary_photoaccesshelperinf_abc_start[];
+extern const char _binary_photoaccesshelperinf_abc_end[];
 
 namespace OHOS {
 namespace Media {
@@ -27,6 +32,30 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     AlbumNapi::PhotoAccessHelperInit(env, exports);
     PhotoAlbumNapi::PhotoAccessInit(env, exports);
     return exports;
+}
+
+extern "C" __attribute__((visibility("default"))) void NAPI_file_photoAccessHelper_GetJSCode(const char** buf,
+    int* bufLen)
+{
+    if (buf != nullptr) {
+        *buf = _binary_photoaccesshelperinf_js_start;
+    }
+
+    if (bufLen != nullptr) {
+        *bufLen = _binary_photoaccesshelperinf_js_end - _binary_photoaccesshelperinf_js_start;
+    }
+}
+
+extern "C" __attribute__((visibility("default"))) void NAPI_file_photoAccessHelper_GetABCCode(const char** buf,
+    int* bufLen)
+{
+    if (buf != nullptr) {
+        *buf = _binary_photoaccesshelperinf_abc_start;
+    }
+
+    if (bufLen != nullptr) {
+        *bufLen = _binary_photoaccesshelperinf_abc_end - _binary_photoaccesshelperinf_abc_start;
+    }
 }
 
 /*
@@ -45,7 +74,7 @@ static napi_module g_photoAccessHelperModule = {
 /*
  * module register
  */
-extern "C" __attribute__((constructor)) void RegisterUserFileManager(void)
+extern "C" __attribute__((constructor)) void RegisterPhotoAccessHelper(void)
 {
     napi_module_register(&g_photoAccessHelperModule);
 }

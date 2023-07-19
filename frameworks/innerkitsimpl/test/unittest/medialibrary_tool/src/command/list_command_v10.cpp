@@ -17,6 +17,7 @@
 #include <set>
 
 #include "constant.h"
+#include "media_column.h"
 #include "medialibrary_errno.h"
 #include "userfile_client_ex.h"
 #include "utils/database_utils.h"
@@ -24,54 +25,79 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
-int32_t ListAssets(const ExecEnv &env, const MediaType mediaType, const std::string &uri)
+static int32_t ListAsset(const ExecEnv &env, const std::string &tableName, const std::string &uri)
 {
-    std::string tableName;
-    if (mediaType != MediaType::MEDIA_TYPE_DEFAULT) {
-        tableName = UserFileClientEx::GetTableNameByMediaType(mediaType);
-    }
-    if (tableName.empty() && (!uri.empty())) {
-        tableName = UserFileClientEx::GetTableNameByUri(uri);
-    }
     if (tableName.empty()) {
-        printf("%s table name issue. mediaType:%d, uri:%s\n", STR_FAIL.c_str(), mediaType, uri.c_str());
+        printf("%s table name issue, uri:%s\n", STR_FAIL.c_str(), uri.c_str());
         return Media::E_ERR;
     }
     printf("Table Name: %s\n", tableName.c_str());
     std::shared_ptr<FetchResult<FileAsset>> fetchResult;
-    auto res = UserFileClientEx::Query(mediaType, uri, fetchResult);
+    auto res = UserFileClientEx::Query(tableName, uri, fetchResult);
     if (res != Media::E_OK) {
-        printf("%s query issue failed. mediaType:%d, uri:%s\n", STR_FAIL.c_str(), mediaType, uri.c_str());
+        printf("%s query issue failed. tableName:%s, uri:%s\n", STR_FAIL.c_str(), tableName.c_str(),
+            uri.c_str());
         return Media::E_ERR;
     }
     if (fetchResult == nullptr) {
         return Media::E_OK;
     }
-    DatabaseUtils::Dump(env.dumpOpt, fetchResult);
+    DumpOpt dumpOpt;
+    dumpOpt.count = fetchResult->GetCount();
+    dumpOpt.columns = {
+        MEDIA_DATA_DB_URI,
+        MediaColumn::MEDIA_NAME,
+        MediaColumn::MEDIA_FILE_PATH
+    };
+    DatabaseUtils::Dump(dumpOpt, fetchResult);
+    fetchResult->Close();
+    return Media::E_OK;
+}
+
+static int32_t ListAssets(const ExecEnv &env, const std::string &tableName)
+{
+    if (tableName.empty()) {
+        printf("%s table name is empty.\n", STR_FAIL.c_str());
+        return Media::E_ERR;
+    }
+    printf("Table Name: %s\n", tableName.c_str());
+    std::shared_ptr<FetchResult<FileAsset>> fetchResult;
+    auto res = UserFileClientEx::Query(tableName, "", fetchResult);
+    if (res != Media::E_OK) {
+        printf("%s query issue failed. tableName:%s\n", STR_FAIL.c_str(), tableName.c_str());
+        return Media::E_ERR;
+    }
+    if (fetchResult == nullptr) {
+        return Media::E_OK;
+    }
+    DumpOpt dumpOpt;
+    dumpOpt.count = fetchResult->GetCount();
+    dumpOpt.columns = {
+        MEDIA_DATA_DB_URI,
+        MediaColumn::MEDIA_NAME,
+        MediaColumn::MEDIA_FILE_PATH
+    };
+    DatabaseUtils::Dump(dumpOpt, fetchResult);
     fetchResult->Close();
     return Media::E_OK;
 }
 
 int32_t ListCommandV10::Start(const ExecEnv &env)
 {
-    if (!env.uri.empty()) {
-        return ListAssets(env, MediaType::MEDIA_TYPE_DEFAULT, env.uri);
-    }
-    std::set<std::string> tableNameSet;
-    bool hasError = false;
-    auto mediaTypes = UserFileClientEx::GetSupportTypes();
-    for (auto mediaType : mediaTypes) {
-        std::string tableName = UserFileClientEx::GetTableNameByMediaType(mediaType);
-        auto res = tableNameSet.insert(tableName);
-        if (!res.second) {
-            continue;
+    if (env.listParam.isListAll) {
+        bool hasError = false;
+        auto tables = UserFileClientEx::GetSupportTables();
+        for (auto tableName : tables) {
+            if (ListAssets(env, tableName) != Media::E_OK) {
+                hasError = true;
+            }
+            printf("\n");
         }
-        if (ListAssets(env, mediaType, env.uri) != Media::E_OK) {
-            hasError = true;
-        }
-        printf("\n");
+        return hasError ? Media::E_ERR : Media::E_OK;
+    } else {
+        string tableName = UserFileClientEx::GetTableNameByUri(env.listParam.listUri);
+        return ListAsset(env, tableName, env.listParam.listUri);
     }
-    return hasError ? Media::E_ERR : Media::E_OK;
 }
 } // namespace MediaTool
 } // namespace Media

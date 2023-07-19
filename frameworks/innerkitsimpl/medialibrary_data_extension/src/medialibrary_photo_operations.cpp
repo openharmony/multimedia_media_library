@@ -38,6 +38,7 @@
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
+#include "medialibrary_tracer.h"
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::RdbDataShareAdapter;
@@ -117,6 +118,9 @@ int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::Open");
+
     string uriString = cmd.GetUriStringWithoutSegment();
     string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
     if (uriString.empty()) {

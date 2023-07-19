@@ -198,6 +198,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "init:libbegetutil",
     "ipc:ipc_core",
     "kv_store:distributeddata_inner",
+    "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
@@ -217,7 +218,8 @@ ohos_shared_library("medialibrary_data_extension") {
 
   sanitize = {
     cfi = true
-    debug = false
+    cfi_cross_dso = true
+    debug = true
     blocklist = "./extension_blocklist.txt"
   }
 
