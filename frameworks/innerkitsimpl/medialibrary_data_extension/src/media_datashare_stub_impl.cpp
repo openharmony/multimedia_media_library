@@ -60,8 +60,8 @@ int MediaDataShareStubImpl::OpenRawFile(const Uri &uri, const std::string &mode)
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
     if (extension == nullptr) {
-            MEDIA_ERR_LOG("%{public}s end failed.", __func__);
-            return ret;
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
+        return ret;
     }
     ret = extension->OpenRawFile(uri, mode);
     MEDIA_INFO_LOG("end successfully. ret: %{public}d", ret);
@@ -78,6 +78,19 @@ int MediaDataShareStubImpl::Insert(const Uri &uri, const DataShareValuesBucket &
         return ret;
     }
     ret = extension->Insert(uri, value);
+    return ret;
+}
+
+int MediaDataShareStubImpl::InsertExt(const Uri &uri, const DataShareValuesBucket &value, std::string &result)
+{
+    int ret = 0;
+    auto client = sptr<MediaDataShareStubImpl>(this);
+    auto extension = client->GetOwner();
+    if (extension == nullptr) {
+        MEDIA_ERR_LOG("%{public}s end failed.", __func__);
+        return ret;
+    }
+    ret = extension->InsertExt(uri, value, result);
     return ret;
 }
 

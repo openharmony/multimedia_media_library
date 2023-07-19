@@ -114,6 +114,11 @@ void MediaLibraryCommand::SetDeviceName(const std::string &deviceName)
     deviceName_ = deviceName;
 }
 
+void MediaLibraryCommand::SetResult(const std::string &result)
+{
+    result_ = result;
+}
+
 // get functions
 OperationObject MediaLibraryCommand::GetOprnObject() const
 {
@@ -177,6 +182,11 @@ const string &MediaLibraryCommand::GetBundleName()
 const string &MediaLibraryCommand::GetDeviceName()
 {
     return deviceName_;
+}
+
+const string &MediaLibraryCommand::GetResult()
+{
+    return result_;
 }
 
 string MediaLibraryCommand::GetUriStringWithoutSegment() const
