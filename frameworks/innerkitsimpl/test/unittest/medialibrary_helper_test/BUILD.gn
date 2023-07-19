@@ -55,7 +55,7 @@ ohos_unittest("media_library_helper_test") {
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hilog:libhilog",
-    "multimedia_image_framework:image_native",
+    "image_framework:image_native",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]
