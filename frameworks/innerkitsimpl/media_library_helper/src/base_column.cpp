@@ -35,4 +35,10 @@ const string &BaseColumn::CreateTrigger()
     static const string CREATE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS ";
     return CREATE_TRIGGER;
 }
+
+const string &BaseColumn::DropTrigger()
+{
+    static const string DROP_TRIGGER = "DROP TRIGGER IF EXISTS ";
+    return DROP_TRIGGER;
+}
 } // namespace OHOS::Media
