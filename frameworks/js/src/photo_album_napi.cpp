@@ -68,6 +68,10 @@ napi_value PhotoAlbumNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getPhotoAssets", JSGetPhotoAssets),
             DECLARE_NAPI_FUNCTION("recoverPhotoAssets", JSRecoverPhotos),
             DECLARE_NAPI_FUNCTION("deletePhotoAssets", JSDeletePhotos),
+            // PrivateAlbum.recover
+            DECLARE_NAPI_FUNCTION("recover", PrivateAlbumRecoverPhotos),
+            // PrivateAlbum.delete
+            DECLARE_NAPI_FUNCTION("delete", PrivateAlbumDeletePhotos),
         }
     };
 
@@ -981,6 +985,40 @@ napi_value PhotoAlbumNapi::JSRecoverPhotos(napi_env env, napi_callback_info info
         RecoverPhotosComplete);
 }
 
+static napi_value PrivateAlbumParseArgs(napi_env env, napi_callback_info info,
+    unique_ptr<PhotoAlbumNapiAsyncContext> &context)
+{
+    string uri;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, context, uri),
+        JS_ERR_PARAMETER_INVALID);
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (photoAlbum == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get photo album instance");
+        return nullptr;
+    }
+    if (!PhotoAlbum::IsTrashAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType())) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check trash album type");
+        return nullptr;
+    }
+
+    context->predicates.EqualTo(MediaColumn::MEDIA_ID, MediaFileUtils::GetIdFromUri(uri));
+    context->valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, 0);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value PhotoAlbumNapi::PrivateAlbumRecoverPhotos(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    CHECK_NULLPTR_RET(PrivateAlbumParseArgs(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PrivateAlbumRecoverPhotos",
+        RecoverPhotosExecute, RecoverPhotosComplete);
+}
+
 napi_value PhotoAlbumNapi::PhotoAccessHelperRecoverPhotos(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
@@ -1016,6 +1054,16 @@ napi_value PhotoAlbumNapi::JSDeletePhotos(napi_env env, napi_callback_info info)
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSDeletePhotos", DeletePhotosExecute,
         DeletePhotosComplete);
+}
+
+napi_value PhotoAlbumNapi::PrivateAlbumDeletePhotos(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    CHECK_NULLPTR_RET(PrivateAlbumParseArgs(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PrivateAlbumDeletePhotos",
+        DeletePhotosExecute, DeletePhotosComplete);
 }
 
 napi_value PhotoAlbumNapi::PhotoAccessHelperDeletePhotos(napi_env env, napi_callback_info info)

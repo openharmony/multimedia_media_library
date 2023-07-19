@@ -932,6 +932,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<M
 template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<SmartAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &context, string &param);
 
+template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<PhotoAlbumNapiAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &context, string &param);
+
 template napi_status MediaLibraryNapiUtils::ParseArgsStringArrayCallback<unique_ptr<MediaLibraryAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context, vector<string> &array);
 
