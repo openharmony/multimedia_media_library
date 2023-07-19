@@ -2543,6 +2543,14 @@ bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value, 
     } else if (resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
         if (inputKey == MediaColumn::MEDIA_NAME) {
             fileAssetPtr->SetDisplayName(value);
+            fileAssetPtr->SetTitle(MediaFileUtils::GetTitleFromDisplayName(value));
+        } else if (inputKey == MediaColumn::MEDIA_TITLE) {
+            fileAssetPtr->SetTitle(value);
+            string displayName = fileAssetPtr->GetDisplayName();
+            if (!displayName.empty()) {
+                string extention = MediaFileUtils::SplitByChar(displayName, '.');
+                fileAssetPtr->SetDisplayName(value + "." + extention);
+            }
         } else {
             NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
             return false;
