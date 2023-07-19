@@ -22,6 +22,7 @@
 #include "common_event_support.h"
 #include "want.h"
 
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
@@ -80,6 +81,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED) == 0) {
         string packageName = want.GetElement().GetBundleName();
         RevertPendingByPackage(packageName);
+        MediaLibraryBundleManager::GetInstance()->Clear();
     }
 }
 

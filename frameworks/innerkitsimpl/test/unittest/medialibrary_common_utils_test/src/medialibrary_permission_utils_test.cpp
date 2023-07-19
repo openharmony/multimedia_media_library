@@ -35,15 +35,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckCallerPermission_test_001, TestS
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetClientBundle_test_001, TestSize.Level0)
-{
-    int uid = 0;
-    string bundleName = "GetClientBundle";
-    bool isSystemApp = false;
-    PermissionUtils::GetClientBundle(uid, bundleName, isSystemApp);
-    EXPECT_EQ(isSystemApp, true);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_GetSysBundleManager_test_001, TestSize.Level0)
 {
     auto ret = PermissionUtils::GetSysBundleManager();

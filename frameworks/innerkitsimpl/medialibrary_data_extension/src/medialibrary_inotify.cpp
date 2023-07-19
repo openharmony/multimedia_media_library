@@ -21,6 +21,7 @@
 #include "unistd.h"
 #include "media_log.h"
 #include "media_file_uri.h"
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_data_manager_utils.h"
@@ -163,7 +164,7 @@ int32_t MediaLibraryInotify::AddWatchList(const string &path, const string &uri,
     }
     int32_t wd = inotify_add_watch(inotifyFd_, path.c_str(), IN_CLOSE | IN_MODIFY);
     if (wd > 0) {
-        string bundleName = PermissionUtils::GetClientBundleName();
+        string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
         struct WatchInfo item(path, uri, bundleName, api);
         watchList_.emplace(wd, item);
     }

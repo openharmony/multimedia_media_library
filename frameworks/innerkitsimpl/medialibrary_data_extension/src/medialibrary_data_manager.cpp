@@ -35,6 +35,7 @@
 #include "medialibrary_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_audio_operations.h"
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_device.h"
 #include "medialibrary_device_info.h"
@@ -1010,9 +1011,9 @@ int32_t ScanFileCallback::OnScanFinished(const int32_t status, const string &uri
 
 int32_t MediaLibraryDataManager::SetCmdBundleAndDevice(MediaLibraryCommand &outCmd)
 {
-    string clientBundle = PermissionUtils::GetClientBundleName();
+    string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     if (clientBundle.empty()) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager::GetClientBundleName failed");
+        MEDIA_ERR_LOG("GetClientBundleName failed");
         return E_GET_CLIENTBUNDLE_FAIL;
     }
     outCmd.SetBundleName(clientBundle);
