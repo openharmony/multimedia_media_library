@@ -1275,6 +1275,7 @@ napi_value MediaLibraryNapi::JSGetAlbums(napi_env env, napi_callback_info info)
     return result;
 }
 
+#ifndef MEDIALIBRARY_COMPATIBILITY
 static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAsyncContext *context)
 {
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
@@ -1308,6 +1309,7 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "getFileAssetById: fileAsset is nullptr");
     context->fileAsset = move(fileAsset);
 }
+#endif
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
 static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibraryAsyncContext *context)
@@ -3744,6 +3746,21 @@ static int32_t CloseAsset(MediaLibraryAsyncContext *context, string uri)
     return ret;
 }
 
+static void GetStoreMediaAssetUri(MediaLibraryAsyncContext *context, string &uri)
+{
+    bool isValid = false;
+    string relativePath = context->valuesBucket.Get(MEDIA_DATA_DB_RELATIVE_PATH, isValid);
+    if (relativePath.find(CAMERA_DIR_VALUES) == 0 ||
+        relativePath.find(VIDEO_DIR_VALUES) == 0 ||
+        relativePath.find(PIC_DIR_VALUES) == 0) {
+        uri = URI_CREATE_PHOTO;
+    } else if (relativePath.find(AUDIO_DIR_VALUES) == 0) {
+        uri = URI_CREATE_AUDIO;
+    } else {
+        uri = URI_CREATE_FILE;
+    }
+}
+
 static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
 {
     string realPath;
@@ -3764,14 +3781,17 @@ static void JSGetStoreMediaAssetExecute(MediaLibraryAsyncContext *context)
         NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
         return;
     }
-    Uri createFileUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET);
+    string uriString;
+    GetStoreMediaAssetUri(context, uriString);
+    Uri createFileUri(uriString);
     int index = UserFileClient::Insert(createFileUri, context->valuesBucket);
     if (index < 0) {
         close(srcFd);
         NAPI_ERR_LOG("storeMedia fail, file already exist %{public}d", index);
         return;
     }
-    getFileAssetById(index, "", context);
+    SetFileAssetByIdV9(index, "", context);
+    CHECK_NULL_PTR_RETURN_VOID(context->fileAsset, "JSGetStoreMediaAssetExecute: context->fileAsset is nullptr");
     Uri openFileUri(context->fileAsset->GetUri());
     int32_t destFd = UserFileClient::OpenFile(openFileUri, MEDIA_FILEMODE_READWRITE);
     if (destFd < 0) {
