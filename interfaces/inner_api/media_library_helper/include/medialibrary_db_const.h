@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 13;
+const int32_t MEDIA_RDB_VERSION = 14;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -36,6 +36,12 @@ enum {
     VERSION_ADD_PACKAGE_NAME = 11,
     VERSION_ADD_CLOUD_ALBUM = 12,
     VERSION_ADD_CAMERA_SHOT_KEY = 13,
+    /**
+     * Remove album count triggers for batch operation performance,
+     * update PhotoAlbum.count by a query and an update(in a single transaction of course)
+     * if number of assets in an album changes.
+     */
+    VERSION_REMOVE_ALBUM_COUNT_TRIGGER = 14,
 };
 
 enum {

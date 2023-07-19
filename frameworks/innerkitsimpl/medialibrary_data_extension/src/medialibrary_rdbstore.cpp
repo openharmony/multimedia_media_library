@@ -980,10 +980,7 @@ static int32_t ExecuteSql(RdbStore &store)
         PhotoMap::CREATE_NEW_TRIGGER,
         PhotoMap::CREATE_DELETE_TRIGGER,
         TriggerDeleteAlbumClearMap(),
-        TriggerAddAssets(),
-        TriggerRemoveAssets(),
         TriggerDeletePhotoClearMap(),
-        TriggerUpdateUserAlbumCount(),
     };
 
     for (const string& sqlStr : executeSqlStrs) {
@@ -1294,6 +1291,16 @@ static void AddCameraShotKey(RdbStore &store)
     }
 }
 
+void RemoveAlbumCountTrigger(RdbStore &store)
+{
+    const vector<string> removeAlbumCountTriggers = {
+        BaseColumn::DropTrigger() + "update_user_album_count",
+        BaseColumn::DropTrigger() + "photo_album_insert_asset",
+        BaseColumn::DropTrigger() + "photo_album_delete_asset",
+    };
+    ExecSqls(removeAlbumCountTriggers, store);
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1343,6 +1350,9 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_CAMERA_SHOT_KEY) {
         AddCameraShotKey(store);
+    }
+    if (oldVersion < VERSION_REMOVE_ALBUM_COUNT_TRIGGER) {
+        RemoveAlbumCountTrigger(store);
     }
 
     return NativeRdb::E_OK;
