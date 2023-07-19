@@ -22,7 +22,6 @@
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "hitrace_meter.h"
-#include "ipc_skeleton.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
@@ -38,7 +37,6 @@
 #include "photo_album_napi.h"
 #include "result_set_utils.h"
 #include "smart_album_napi.h"
-#include "tokenid_kit.h"
 #include "string_ex.h"
 #include "string_wrapper.h"
 #include "userfile_client.h"
@@ -365,17 +363,12 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
     return result;
 }
 
-static bool IsSystemApp()
-{
-    return Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
-}
-
 napi_value MediaLibraryNapi::GetUserFileMgr(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("getUserFileManager");
 
-    if (!IsSystemApp()) {
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Only system apps can get userFileManger instance");
         return nullptr;
     }
@@ -2108,7 +2101,7 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
     SetValueArray(env, "uris", msg->changeInfo_.uris_, result);
     if (msg->changeInfo_.uris_.size() == DEFAULT_ALBUM_COUNT) {
         if (msg->changeInfo_.uris_.front().ToString().compare(GetTrashAlbumUri()) == 0) {
-            if (!IsSystemApp()) {
+            if (!MediaLibraryNapiUtils::IsSystemApp()) {
                 napi_get_undefined(env, &result);
                 return nullptr;
             }
