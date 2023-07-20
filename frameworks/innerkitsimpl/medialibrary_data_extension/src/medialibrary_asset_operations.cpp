@@ -224,7 +224,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const stri
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryAssetOperations::GetFileAssetFromDb");
-    
+
     if (!CheckOprnObject(oprnObject) || column.empty() || value.empty()) {
         return nullptr;
     }
@@ -328,7 +328,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         assetInfo.PutString(MediaColumn::MEDIA_PACKAGE_NAME,
             GetAssetPackageName(fileAsset, cmd.GetBundleName()));
     }
-    
+
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
     assetInfo.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(assetInfo);
@@ -766,12 +766,14 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     SolvePendingStatus(fileAsset, mode);
 #endif
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
+    tracer.Start("OpenFile");
     int32_t fd = OpenFile(path, lowerMode);
+    tracer.Finish();
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
         return E_HAS_FS_ERROR;
     }
-
+    tracer.Start("AddWatchList");
     if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
         auto watch = MediaLibraryInotify::GetInstance();
         if (watch != nullptr) {
@@ -779,6 +781,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
             watch->AddWatchList(path, fileAsset->GetUri(), MediaLibraryApi::API_10);
         }
     }
+    tracer.Finish();
     return fd;
 }
 
