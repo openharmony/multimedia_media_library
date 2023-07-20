@@ -31,6 +31,7 @@
 #include "media_column.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_dir_operations.h"
@@ -679,7 +680,7 @@ static int32_t OpenAsset(const string &filePath, const string &mode)
 
 static bool CheckIsOwner(const string &bundleName)
 {
-    string clientBundle = PermissionUtils::GetClientBundleName();
+    string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     if (strcmp(bundleName.c_str(), clientBundle.c_str()) == 0) {
         return true;
     }
