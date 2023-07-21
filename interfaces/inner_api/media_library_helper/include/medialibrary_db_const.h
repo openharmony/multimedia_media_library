@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 12;
+const int32_t MEDIA_RDB_VERSION = 13;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -35,6 +35,7 @@ enum {
     VERSION_ADD_TABLE_TYPE = 10,
     VERSION_ADD_PACKAGE_NAME = 11,
     VERSION_ADD_CLOUD_ALBUM = 12,
+    VERSION_ADD_CAMERA_SHOT_KEY = 13,
 };
 
 enum {
@@ -576,6 +577,7 @@ const std::string COMPAT_ALBUM_SUBTYPE = "album_subtype";
 const std::string COMPAT_HIDDEN = "hidden";
 const std::string COMPAT_PHOTO_SYNC_STATUS = "sync_status";
 const std::string COMPAT_FILE_SUBTYPE = "subtype";
+const std::string COMPAT_CAMERA_SHOT_KEY = "camera_shot_key";
 
 // system relativePath and albumName, use for API9 compatible API10
 const std::string CAMERA_PATH = "Camera/";
