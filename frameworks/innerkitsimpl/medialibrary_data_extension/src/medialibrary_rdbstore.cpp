@@ -260,10 +260,6 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
         MEDIA_ERR_LOG("rdbStore_->Update failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
     }
-
-    vector<string> devices = vector<string>();
-    GetAllNetworkId(devices);
-    SyncPushTable(bundleName_, cmd.GetTableName(), changedRows, devices);
     return ret;
 }
 
