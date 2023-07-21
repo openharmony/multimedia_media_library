@@ -62,6 +62,7 @@ enum class OperationType : uint32_t {
     CLOSE,
     CREATE,
     DELETE,
+    DELETE_TOOL,
     UPDATE,
     QUERY,
     GETCAPACITY,

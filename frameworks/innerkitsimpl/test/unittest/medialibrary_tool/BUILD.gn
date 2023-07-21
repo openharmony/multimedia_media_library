@@ -30,6 +30,7 @@ ohos_static_library("mediatoollib") {
     "${MEDIALIB_ROOT_PATH}/frameworks/js/src/userfile_client.cpp",
     "../get_self_permissions/src/get_self_permissions.cpp",
     "src/command/command.cpp",
+    "src/command/delete_command_v10.cpp",
     "src/command/list_command_v10.cpp",
     "src/command/recv_command_v10.cpp",
     "src/command/send_command_v10.cpp",

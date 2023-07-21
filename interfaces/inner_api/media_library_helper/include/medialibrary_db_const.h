@@ -589,6 +589,9 @@ const std::string SCREEN_RECORD_ALBUM_NAME = "ScreenRecordings";
 // extension
 const std::string ASSET_EXTENTION = "extention";
 
+// delete_tool
+const std::string DELETE_TOOL_ONLY_DATABASE = "only_db";
+
 } // namespace Media
 } // namespace OHOS
 

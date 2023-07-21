@@ -483,7 +483,16 @@ int32_t MediaScannerObj::CleanupDirectory()
         // clean up table
         vector<string> deleteIdList;
         unordered_map<int32_t, MediaType> prevIdMap;
-        prevIdMap = mediaScannerDb_->GetIdsFromFilePath(dir_, table);
+        if (table == PhotoColumn::PHOTOS_TABLE) {
+            prevIdMap = mediaScannerDb_->GetIdsFromFilePath(dir_, PhotoColumn::PHOTOS_TABLE,
+                ROOT_MEDIA_DIR + PHOTO_BUCKET);
+        } else if (table == AudioColumn::AUDIOS_TABLE) {
+            prevIdMap = mediaScannerDb_->GetIdsFromFilePath(dir_, AudioColumn::AUDIOS_TABLE,
+                ROOT_MEDIA_DIR + AUDIO_BUCKET);
+        } else {
+            prevIdMap = mediaScannerDb_->GetIdsFromFilePath(dir_, table);
+        }
+
         for (auto itr : prevIdMap) {
             auto it = scannedIds_.find(make_pair(table, itr.first));
             if (it != scannedIds_.end()) {

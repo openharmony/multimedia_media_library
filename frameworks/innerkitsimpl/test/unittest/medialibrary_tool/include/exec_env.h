@@ -44,12 +44,17 @@ struct ListParam {
     std::string listUri;
 };
 
+struct DeleteParam {
+    bool isOnlyDeleteDb = false;
+};
+
 struct ExecEnv {
     OptionArgs optArgs;
     std::vector<std::string> args;
     SendParam sendParam;
     RecvParam recvParam;
     ListParam listParam;
+    DeleteParam deleteParam;
     std::string workPath; // current work path
     [[nodiscard]] std::string ToStr() const;
 };

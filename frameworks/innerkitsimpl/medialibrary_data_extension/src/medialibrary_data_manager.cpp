@@ -410,6 +410,8 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     // boardcast operation
     if (oprnType == OperationType::SCAN) {
         return MediaScannerManager::GetInstance()->ScanDir(ROOT_MEDIA_DIR, nullptr);
+    } else if (oprnType == OperationType::DELETE_TOOL) {
+        return MediaLibraryAssetOperations::DeleteToolOperation(cmd);
     }
     return SolveInsertCmd(cmd);
 }
