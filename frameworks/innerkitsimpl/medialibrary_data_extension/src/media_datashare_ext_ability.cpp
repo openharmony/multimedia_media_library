@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "userfilemgr_uri.h"
 #define MLOG_TAG "Extension"
 
 #include "media_datashare_ext_ability.h"
@@ -248,6 +249,21 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
     return E_SUCCESS;
 }
 
+static int32_t NativeSACheck(MediaLibraryCommand &cmd)
+{
+    static const set<string> NATIVE_SA_URIS = {
+        URI_DELETE_TOOL
+    };
+    string uri = cmd.GetUriStringWithoutSegment();
+    if (NATIVE_SA_URIS.find(uri) != NATIVE_SA_URIS.end()) {
+        if (!PermissionUtils::IsNativeSAApp()) {
+            MEDIA_ERR_LOG("Native sa check failed!");
+            return E_CHECK_NATIVE_SA_FAIL;
+        }
+    }
+    return E_SUCCESS;
+}
+
 static inline int32_t HandleMediaVolumePerm()
 {
     return PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA) ? E_SUCCESS : E_PERMISSION_DENIED;
@@ -391,6 +407,11 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
         cmd.GetUri().ToString().c_str(), cmd.GetOprnObject(), cmd.GetOprnType(), isWrite);
 
     int err = SystemApiCheck(cmd);
+    if (err != E_SUCCESS) {
+        return err;
+    }
+
+    err = NativeSACheck(cmd);
     if (err != E_SUCCESS) {
         return err;
     }

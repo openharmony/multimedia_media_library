@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "constant.h"
+#include "datashare_result_set.h"
 #include "directory_ex.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
@@ -87,8 +88,10 @@ static int32_t RecvAsset(const ExecEnv &env, const std::string &tableName, const
         return Media::E_ERR;
     }
     printf("Table Name: %s\n", tableName.c_str());
-    std::shared_ptr<FetchResult<FileAsset>> fetchResult;
-    auto res = UserFileClientEx::Query(tableName, uri, fetchResult);
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+    auto res = UserFileClientEx::Query(tableName, uri, resultSet);
+    std::shared_ptr<FetchResult<FileAsset>> fetchResult = std::make_shared<FetchResult<FileAsset>>(resultSet);
+    fetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     if (res != Media::E_OK) {
         printf("%s query issue. tableName:%s, uri:%s\n", STR_FAIL.c_str(), tableName.c_str(), uri.c_str());
         return Media::E_ERR;
@@ -116,8 +119,10 @@ static int32_t RecvAssets(const ExecEnv &env, const std::string &tableName)
         return Media::E_ERR;
     }
     printf("Table Name: %s\n", tableName.c_str());
-    std::shared_ptr<FetchResult<FileAsset>> fetchResult;
-    auto res = UserFileClientEx::Query(tableName, "", fetchResult);
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+    auto res = UserFileClientEx::Query(tableName, "", resultSet);
+    std::shared_ptr<FetchResult<FileAsset>> fetchResult = std::make_shared<FetchResult<FileAsset>>(resultSet);
+    fetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     if (res != Media::E_OK) {
         printf("%s query issue. tableName:%s\n", STR_FAIL.c_str(), tableName.c_str());
         return Media::E_ERR;

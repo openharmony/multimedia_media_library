@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "exec_env.h"
+#include "option_args.h"
 
 namespace OHOS {
 namespace Media {
@@ -62,6 +63,9 @@ std::string ExecEnv::ToStr() const
         AppendStr(str, "isFile", sendParam.isFile);
         AppendStr(str, "isRemoveOriginFileInSend", sendParam.isRemoveOriginFileInSend);
         AppendStr(str, "isRemoveOriginFileInSend", sendParam.isRemoveOriginFileInSend);
+    }
+    if (optArgs.cmdType == OptCmdType::TYPE_DELETE) {
+        AppendStr(str, "isOnlyDeleteDb", deleteParam.isOnlyDeleteDb);
     }
     AppendStr(str, "workPath", workPath);
     return str;

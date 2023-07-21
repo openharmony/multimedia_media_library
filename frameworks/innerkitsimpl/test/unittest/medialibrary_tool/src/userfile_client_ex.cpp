@@ -173,13 +173,13 @@ int32_t UserFileClientEx::Insert(const std::string &tableName, const std::string
 }
 
 int32_t UserFileClientEx::Query(const std::string &tableName, const std::string &uri,
-    std::shared_ptr<FetchResult<FileAsset>> &fetchResult)
+    std::shared_ptr<DataShare::DataShareResultSet> &resultSet)
 {
     if (!CheckTableName(tableName)) {
         MEDIA_ERR_LOG("tableName %{public}s is Invalid", tableName.c_str());
         return Media::E_ERR;
     }
-    fetchResult = nullptr;
+    resultSet = nullptr;
     std::string id;
     if ((!uri.empty()) && (!GetUriInfo(uri, id))) {
         MEDIA_ERR_LOG("query failed, uri:%{public}s", uri.c_str());
@@ -200,7 +200,7 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
     int errCode = 0;
     MEDIA_INFO_LOG("query. queryUri:%{public}s, tableName:%{public}s, uri:%{public}s, "
         "id:%{public}s", queryUri.ToString().c_str(), tableName.c_str(), uri.c_str(), id.c_str());
-    auto resultSet = UserFileClient::Query(queryUri, predicates, columns, errCode);
+    resultSet = UserFileClient::Query(queryUri, predicates, columns, errCode);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("query failed. resultSet:null, errCode:%{public}d.", errCode);
         return ((errCode == Media::E_OK) ? Media::E_OK : Media::E_ERR);
@@ -210,8 +210,6 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
         resultSet->Close();
         return Media::E_ERR;
     }
-    fetchResult = std::make_shared<FetchResult<FileAsset>>(resultSet);
-    fetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     return Media::E_OK;
 }
 
@@ -258,6 +256,23 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
     if (ret == Media::E_FAIL) {
         MEDIA_ERR_LOG("close the file failed. ret:%{public}d, closeUri:%{public}s, uri:%{public}s",
             ret, closeUri.ToString().c_str(), uri.c_str());
+    }
+    return ret;
+}
+
+int32_t UserFileClientEx::Delete(bool isOnlyDeleteDb)
+{
+    if (!UserFileClient::IsValid()) {
+        MEDIA_ERR_LOG("close failed. helper:null.");
+        return Media::E_FAIL;
+    }
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(DELETE_TOOL_ONLY_DATABASE, isOnlyDeleteDb);
+    std::string uri = URI_DELETE_TOOL;
+    Uri deleteUri(uri);
+    auto ret = UserFileClient::Insert(deleteUri, valuesBucket);
+    if (ret != Media::E_OK) {
+        MEDIA_ERR_LOG("Delete all Files in MediaLibrary failed, ret=%{public}d", ret);
     }
     return ret;
 }

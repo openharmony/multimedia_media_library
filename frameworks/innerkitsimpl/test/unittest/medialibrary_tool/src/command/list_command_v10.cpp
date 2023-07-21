@@ -17,7 +17,9 @@
 #include <set>
 
 #include "constant.h"
+#include "datashare_result_set.h"
 #include "media_column.h"
+#include "media_log.h"
 #include "medialibrary_errno.h"
 #include "userfile_client_ex.h"
 #include "utils/database_utils.h"
@@ -32,8 +34,11 @@ static int32_t ListAsset(const ExecEnv &env, const std::string &tableName, const
         return Media::E_ERR;
     }
     printf("Table Name: %s\n", tableName.c_str());
-    std::shared_ptr<FetchResult<FileAsset>> fetchResult;
-    auto res = UserFileClientEx::Query(tableName, uri, fetchResult);
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+    auto res = UserFileClientEx::Query(tableName, uri, resultSet);
+    std::shared_ptr<FetchResult<FileAsset>> fetchResult = std::make_shared<FetchResult<FileAsset>>(resultSet);
+    MEDIA_DEBUG_LOG("fetchResult count:%{public}d", fetchResult->GetCount());
+    fetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     if (res != Media::E_OK) {
         printf("%s query issue failed. tableName:%s, uri:%s\n", STR_FAIL.c_str(), tableName.c_str(),
             uri.c_str());
@@ -61,8 +66,11 @@ static int32_t ListAssets(const ExecEnv &env, const std::string &tableName)
         return Media::E_ERR;
     }
     printf("Table Name: %s\n", tableName.c_str());
-    std::shared_ptr<FetchResult<FileAsset>> fetchResult;
-    auto res = UserFileClientEx::Query(tableName, "", fetchResult);
+    std::shared_ptr<DataShare::DataShareResultSet> resultSet;
+    auto res = UserFileClientEx::Query(tableName, "", resultSet);
+    std::shared_ptr<FetchResult<FileAsset>> fetchResult = std::make_shared<FetchResult<FileAsset>>(resultSet);
+    MEDIA_DEBUG_LOG("fetchResult count:%{public}d", fetchResult->GetCount());
+    fetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     if (res != Media::E_OK) {
         printf("%s query issue failed. tableName:%s\n", STR_FAIL.c_str(), tableName.c_str());
         return Media::E_ERR;
@@ -72,6 +80,7 @@ static int32_t ListAssets(const ExecEnv &env, const std::string &tableName)
     }
     DumpOpt dumpOpt;
     dumpOpt.count = fetchResult->GetCount();
+    MEDIA_DEBUG_LOG("count:%{public}d", dumpOpt.count);
     dumpOpt.columns = {
         MEDIA_DATA_DB_URI,
         MediaColumn::MEDIA_NAME,

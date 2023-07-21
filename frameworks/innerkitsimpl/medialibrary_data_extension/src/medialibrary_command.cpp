@@ -25,6 +25,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "medialibrary_errno.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -273,6 +274,7 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { MEDIA_QUERYOPRN_QUERYVOLUME, OperationType::QUERY },
         { MEDIA_BOARDCASTOPRN, OperationType::SCAN },
         { OPRN_SCAN, OperationType::SCAN },
+        { OPRN_DELETE_BY_TOOL, OperationType::DELETE_TOOL },
         { MEDIA_FILEOPRN_COPYASSET, OperationType::COPY },
         { MEDIA_DIROPRN_DELETEDIR, OperationType::DELETE },
         { MEDIA_DIROPRN_FMS_CREATEDIR, OperationType::CREATE },
