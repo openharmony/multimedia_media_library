@@ -72,7 +72,7 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
         fileId, cmd.GetOprnObject());
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
         fileId.c_str());
-    
+
     int32_t deleteRow = DeletePhoto(fileAsset);
     CHECK_AND_RETURN_RET_LOG(deleteRow >= 0, deleteRow, "delete photo failed, deleteRow=%{public}d", deleteRow);
 
@@ -202,6 +202,16 @@ static inline void SetPhotoSubTypeFromCmd(MediaLibraryCommand &cmd, FileAsset &f
     fileAsset.SetPhotoSubType(subType);
 }
 
+static inline void SetCameraShotKeyFromCmd(MediaLibraryCommand &cmd, FileAsset &fileAsset)
+{
+    string cameraShotKey;
+    ValueObject value;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::CAMERA_SHOT_KEY, value)) {
+        value.GetString(cameraShotKey);
+    }
+    fileAsset.SetCameraShotKey(cameraShotKey);
+}
+
 int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
 {
     FileAsset fileAsset;
@@ -298,6 +308,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         E_HAS_DB_ERROR);
     fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
     SetPhotoSubTypeFromCmd(cmd, fileAsset);
+    SetCameraShotKeyFromCmd(cmd, fileAsset);
     string albumUri;
     GetStringFromValuesBucket(values, MEDIA_DATA_DB_ALARM_URI, albumUri);
     // Check rootdir and extention

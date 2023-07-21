@@ -321,8 +321,8 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         MediaFileUtils::GetTitleFromDisplayName(displayName));
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
+        assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
     }
-
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
     if (!cmd.GetBundleName().empty()) {
         assetInfo.PutString(MediaColumn::MEDIA_PACKAGE_NAME,
@@ -1097,6 +1097,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, { IsInt64 } },
     { AudioColumn::AUDIO_ALBUM, { Forbidden } },
     { AudioColumn::AUDIO_ARTIST, { Forbidden } },
+    { PhotoColumn::CAMERA_SHOT_KEY, { Forbidden } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
