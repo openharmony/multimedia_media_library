@@ -68,6 +68,8 @@ private:
     static napi_value JSGetPhotoAssets(napi_env env, napi_callback_info info);
     static napi_value JSRecoverPhotos(napi_env env, napi_callback_info info);
     static napi_value JSDeletePhotos(napi_env env, napi_callback_info info);
+    static napi_value PrivateAlbumRecoverPhotos(napi_env env, napi_callback_info info);
+    static napi_value PrivateAlbumDeletePhotos(napi_env env, napi_callback_info info);
 
     static napi_value JSPhotoAccessGetAlbumName(napi_env env, napi_callback_info info);
     static napi_value JSPhotoAccessSetAlbumName(napi_env env, napi_callback_info info);
