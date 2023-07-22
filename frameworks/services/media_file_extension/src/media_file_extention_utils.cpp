@@ -424,7 +424,7 @@ int32_t MediaFileExtentionUtils::CheckMkdirValid(MediaFileUriType uriType, const
     } else {
         auto ret = MediaFileExtentionUtils::CheckUriSupport(parentUriStr);
         CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS, ret, "invalid uri");
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckAlbumName(displayName) == E_OK,
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDentryName(displayName) == E_OK,
             E_INVALID_DISPLAY_NAME, "invalid directory displayName %{private}s", displayName.c_str());
     }
     return E_SUCCESS;
@@ -1279,7 +1279,7 @@ int32_t MediaFileExtentionUtils::Rename(const Uri &sourceFileUri, const string &
     result->Close();
 
     if (fileAsset->GetMediaType() == MediaType::MEDIA_TYPE_ALBUM) {
-        if (MediaFileUtils::CheckAlbumName(displayName) < 0) {
+        if (MediaFileUtils::CheckDentryName(displayName) < 0) {
             MEDIA_ERR_LOG("invalid albumName %{private}s", displayName.c_str());
             return E_INVALID_DISPLAY_NAME;
         }
