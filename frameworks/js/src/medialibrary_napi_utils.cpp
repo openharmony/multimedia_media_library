@@ -17,6 +17,7 @@
 #include "medialibrary_napi_utils.h"
 
 #include "datashare_predicates_proxy.h"
+#include "ipc_skeleton.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_library_napi.h"
@@ -27,6 +28,7 @@
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
 #include "smart_album_napi.h"
+#include "tokenid_kit.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -866,6 +868,11 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
     }
 }
 
+bool MediaLibraryNapiUtils::IsSystemApp()
+{
+    return Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
+}
+
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
     unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
     const FetchOptionType &fetchOptType);
@@ -931,6 +938,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<M
 
 template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<SmartAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &context, string &param);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<PhotoAlbumNapiAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &context, string &param);
 
 template napi_status MediaLibraryNapiUtils::ParseArgsStringArrayCallback<unique_ptr<MediaLibraryAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context, vector<string> &array);
