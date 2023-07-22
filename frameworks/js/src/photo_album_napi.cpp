@@ -87,13 +87,14 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("count", JSPhotoAccessGetAlbumCount),
             DECLARE_NAPI_GETTER("albumType", JSGetPhotoAlbumType),
             DECLARE_NAPI_GETTER("albumSubtype", JSGetPhotoAlbumSubType),
-            DECLARE_NAPI_GETTER_SETTER("coverUri", JSGetCoverUri, JSSetCoverUri),
+            DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri),
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", PhotoAccessHelperAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", PhotoAccessHelperRemoveAssets),
             DECLARE_NAPI_FUNCTION("getAssets", JSPhoteAccessGetPhotoAssets),
             DECLARE_NAPI_FUNCTION("recoverAssets", PhotoAccessHelperRecoverPhotos),
             DECLARE_NAPI_FUNCTION("deleteAssets", PhotoAccessHelperDeletePhotos),
+            DECLARE_NAPI_FUNCTION("setCoverUri", PhotoAccessHelperSetCoverUri),
         }
     };
 
@@ -1026,5 +1027,35 @@ napi_value PhotoAlbumNapi::PhotoAccessHelperDeletePhotos(napi_env env, napi_call
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSDeletePhotos", DeletePhotosExecute,
         DeletePhotosComplete);
+}
+
+static napi_value ParseArgsSetCoverUri(napi_env env, napi_callback_info info,
+    unique_ptr<PhotoAlbumNapiAsyncContext> &context)
+{
+    string coverUri;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, context, coverUri),
+        JS_ERR_PARAMETER_INVALID);
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Only system apps can update album cover");
+        return nullptr;
+    }
+
+    context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
+    context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, coverUri);
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value PhotoAlbumNapi::PhotoAccessHelperSetCoverUri(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsSetCoverUri(env, info, asyncContext));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCommitModify", JSCommitModifyExecute,
+        JSCommitModifyCompleteCallback);
 }
 } // namespace OHOS::Media

@@ -60,6 +60,7 @@ private:
 
     static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
     static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperSetCoverUri(napi_env env, napi_callback_info info);
 
     static napi_value JSCommitModify(napi_env env, napi_callback_info info);
     static napi_value JSPhotoAlbumAddAssets(napi_env env, napi_callback_info info);
