@@ -45,6 +45,7 @@ public:
     static int32_t UpdateOperation(MediaLibraryCommand &cmd);
     static int32_t OpenOperation(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t CloseOperation(MediaLibraryCommand &cmd);
+    static int32_t DeleteToolOperation(MediaLibraryCommand &cmd);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
