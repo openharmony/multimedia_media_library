@@ -35,6 +35,7 @@ const std::string OPRN_ALBUM_ADD_PHOTOS = "add_photos";
 const std::string OPRN_ALBUM_REMOVE_PHOTOS = "remove_photos";
 const std::string OPRN_RECOVER_PHOTOS = "recover_photos";
 const std::string OPRN_DELETE_PHOTOS = "delete_photos_permanently";   // Delete photos permanently from system
+const std::string OPRN_DELETE_BY_TOOL = "delete_by_tool";
 
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -114,6 +115,10 @@ const std::string MEDIA_DEVICE_QUERYACTIVEDEVICE = "query_active_device";
 // Scanner tool operation constants
 const std::string SCANNER_OPRN = "scanner";
 const std::string URI_SCANNER = MEDIALIBRARY_DATA_URI + "/" + SCANNER_OPRN + "/" + OPRN_SCAN;
+
+// Mediatool delete operation constants
+const std::string DELETE_TOOL_OPRN = "delete_tool";
+const std::string URI_DELETE_TOOL = MEDIALIBRARY_DATA_URI + "/" + DELETE_TOOL_OPRN + "/" + OPRN_DELETE_BY_TOOL;
 
 // UserFileManager operation constants
 const std::string UFM_PHOTO = "userfilemgr_photo_operation";

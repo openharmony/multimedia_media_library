@@ -58,7 +58,8 @@ public:
     int32_t InsertAlbum(const Metadata &metadata);
     int32_t UpdateAlbum(const Metadata &metadata);
     int32_t ReadAlbums(const std::string &path, std::unordered_map<std::string, Metadata> &albumMap);
-    std::unordered_map<int32_t, MediaType> GetIdsFromFilePath(const std::string &path, const std::string &tableName);
+    std::unordered_map<int32_t, MediaType> GetIdsFromFilePath(const std::string &path, const std::string &tableName,
+        const std::string &whitePath = "");
 
     int32_t GetIdFromPath(const std::string &path);
     int32_t GetFileBasicInfo(const std::string &path, std::unique_ptr<Metadata> &ptr,

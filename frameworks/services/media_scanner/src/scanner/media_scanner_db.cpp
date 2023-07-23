@@ -466,31 +466,54 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
     return FillMetadata(resultSet, ptr);
 }
 
+static void PreparePredicatesAndColumns(const string &path, const string &tableName, const string &whitePath,
+    AbsRdbPredicates &predicates, vector<string> &columns)
+{
+    string querySql;
+    vector<string> args;
+    if (whitePath.empty()) {
+        if (tableName == MEDIALIBRARY_TABLE) {
+            querySql = MEDIA_DATA_DB_FILE_PATH + " LIKE ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
+            args = { path.back() != '/' ? path + "/%" : path + "%", to_string(NOT_TRASHED) };
+            columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_RECYCLE_PATH };
+        } else {
+            querySql = MEDIA_DATA_DB_FILE_PATH + " LIKE ? AND " + MediaColumn::MEDIA_TIME_PENDING + " <> ? ";
+            args= { path.back() != '/' ? path + "/%" : path + "%", to_string(UNCREATE_FILE_TIMEPENDING) };
+            columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE };
+        }
+    } else {
+        if (tableName == MEDIALIBRARY_TABLE) {
+            querySql = MEDIA_DATA_DB_FILE_PATH + " LIKE ? AND " + MEDIA_DATA_DB_FILE_PATH + " NOT LIKE ? AND " +
+                MEDIA_DATA_DB_IS_TRASH + " = ? ";
+            args = { path.back() != '/' ? path + "/%" : path + "%",
+            whitePath.back() != '/' ? whitePath + "/%" : whitePath + "%", to_string(NOT_TRASHED) };
+            columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_RECYCLE_PATH };
+        } else {
+            querySql = MEDIA_DATA_DB_FILE_PATH + " LIKE ? AND " + MEDIA_DATA_DB_FILE_PATH + " NOT LIKE ? AND " +
+                MediaColumn::MEDIA_TIME_PENDING + " <> ? ";
+            args= { path.back() != '/' ? path + "/%" : path + "%",
+                whitePath.back() != '/' ? whitePath + "/%" : whitePath + "%", to_string(UNCREATE_FILE_TIMEPENDING) };
+            columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE };
+        }
+    }
+
+    predicates.SetWhereClause(querySql);
+    predicates.SetWhereArgs(args);
+}
+
 /**
  * @brief Get the list of all IDs corresponding to given path
  *
  * @param path The path from which to obtain the list of child IDs
  * @return unordered_map<int32_t, MediaType> The list of IDS along with mediaType information
  */
-unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const string &path, const string &tableName)
+unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const string &path, const string &tableName,
+    const string &whitePath)
 {
     unordered_map<int32_t, MediaType> idMap = {};
-    string querySql;
-    vector<string> args;
-    vector<string> columns;
-    if (tableName == MEDIALIBRARY_TABLE) {
-        querySql = MEDIA_DATA_DB_FILE_PATH + " like ? AND " + MEDIA_DATA_DB_IS_TRASH + " = ? ";
-        args = { path.back() != '/' ? path + "/%" : path + "%", to_string(NOT_TRASHED) };
-        columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_RECYCLE_PATH };
-    } else {
-        querySql = MEDIA_DATA_DB_FILE_PATH + " like ? AND " + MediaColumn::MEDIA_TIME_PENDING + " <> ? ";
-        args= { path.back() != '/' ? path + "/%" : path + "%", to_string(UNCREATE_FILE_TIMEPENDING) };
-        columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_MEDIA_TYPE };
-    }
-
     AbsRdbPredicates predicates(tableName);
-    predicates.SetWhereClause(querySql);
-    predicates.SetWhereArgs(args);
+    vector<string> columns;
+    PreparePredicatesAndColumns(path, tableName, whitePath, predicates, columns);
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {

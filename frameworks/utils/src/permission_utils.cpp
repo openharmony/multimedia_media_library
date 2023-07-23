@@ -16,6 +16,7 @@
 
 #include <unordered_set>
 
+#include "access_token.h"
 #include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
@@ -165,6 +166,18 @@ bool PermissionUtils::IsSystemApp()
 {
     uint64_t tokenId = IPCSkeleton::GetCallingFullTokenID();
     return TokenIdKit::IsSystemAppByFullTokenID(tokenId);
+}
+
+bool PermissionUtils::IsNativeSAApp()
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    ATokenTypeEnum tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    MEDIA_DEBUG_LOG("check if native sa token, tokenId:%{public}d, tokenType:%{public}d",
+        tokenId, tokenType);
+    if (tokenType == ATokenTypeEnum::TOKEN_NATIVE) {
+        return true;
+    }
+    return false;
 }
 
 string PermissionUtils::GetPackageNameByBundleName(const string &bundleName)

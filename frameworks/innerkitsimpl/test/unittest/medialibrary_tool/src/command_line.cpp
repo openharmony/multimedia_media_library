@@ -16,11 +16,15 @@
 
 #include "constant.h"
 #include "directory_ex.h"
+#include "exec_env.h"
 #include "file_ex.h"
+#include "media_column.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
+#include "option_args.h"
 #include "userfile_client_ex.h"
 #include "utils/file_utils.h"
+#include <cstddef>
 #include <string>
 
 namespace OHOS {
@@ -34,6 +38,7 @@ constexpr int MEDIATOOL_ARG_SECOND = 3;
 const std::string OPT_STR_SEND = "send";
 const std::string OPT_STR_RECV = "recv";
 const std::string OPT_STR_LIST = "list";
+const std::string OPT_STR_DELETE = "delete";
 const std::string OPT_STR_ALL = "all";
 
 const std::string SEND_CREATE_THUMBNAIL_SYNC = "-ts";
@@ -41,13 +46,20 @@ const std::string SEND_CREATE_THUMBNAIL_ASYNC = "-tas";
 const std::string SEND_CREATE_REMOVE_ORIGIN_FILE = "-rf";
 const std::string SEND_CREATE_UNREMOVE_ORIGIN_FILE = "-urf";
 
+const std::string DELETE_ONLY_DATABASE = "-odb";
+
 static inline void ShowUsage()
 {
     std::string str;
     str.append("usage:\n");
-    str.append("  send pathname               |send file\n");
-    str.append("  recv uri|all pathname       |recv uri\n");
-    str.append("  list uri|all                |list uri\n");
+    str.append("  send file from path to medialibrary\n");
+    str.append("    command: send path (file path or dir path)\n");
+    str.append("  receive file from medialibrary to path\n");
+    str.append("    command: recv uri path | recv all path\n");
+    str.append("  list file in medialibrary\n");
+    str.append("    command: list uri | list all\n");
+    str.append("  delete database and files in medialibrary\n");
+    str.append("    command: delete all\n");
     printf("%s", str.c_str());
 }
 
@@ -193,6 +205,21 @@ static bool CheckSend(ExecEnv &env)
     return true;
 }
 
+static bool CheckDelete(ExecEnv &env)
+{
+    if (env.optArgs.extraArgs.size() == 0) {
+        printf("%s delete param wrong.\n", STR_FAIL.c_str());
+        return false;
+    }
+    for (size_t i = 0; i < env.optArgs.extraArgs.size(); i++) {
+        string param = env.optArgs.extraArgs[i];
+        if (param == DELETE_ONLY_DATABASE) {
+            env.deleteParam.isOnlyDeleteDb = true;
+        }
+    }
+    return true;
+}
+
 static bool Check(ExecEnv &env)
 {
     if (env.optArgs.cmdType == OptCmdType::TYPE_SEND) {
@@ -204,7 +231,23 @@ static bool Check(ExecEnv &env)
     if (env.optArgs.cmdType == OptCmdType::TYPE_LIST) {
         return CheckList(env);
     }
+    if (env.optArgs.cmdType == OptCmdType::TYPE_DELETE) {
+        return CheckDelete(env);
+    }
     return false;
+}
+
+static void PutExtraString(ExecEnv &env, size_t start, size_t end = 0)
+{
+    if (end == 0) {
+        for (size_t i = start; i < env.args.size(); i++) {
+            env.optArgs.extraArgs.push_back(env.args[i]);
+        }
+    } else {
+        for (size_t i = start; i <= std::min(env.args.size(), end); i++) {
+            env.optArgs.extraArgs.push_back(env.args[i]);
+        }
+    }
 }
 
 int32_t CommandLine::Parser(ExecEnv &env)
@@ -214,15 +257,13 @@ int32_t CommandLine::Parser(ExecEnv &env)
         return Media::E_ERR;
     }
     std::string cmd = env.args[MEDIATOOL_ARG_CMD];
-    std::string optFirst = env.args[MEDIATOOL_ARG_FIRST];
+    std::string optFirst = (env.args.size() > MEDIATOOL_ARG_FIRST) ? env.args[MEDIATOOL_ARG_FIRST] : "";
     std::string optSecond = (env.args.size() > MEDIATOOL_ARG_SECOND) ? env.args[MEDIATOOL_ARG_SECOND] : "";
     if (cmd == OPT_STR_SEND) {
         env.optArgs.cmdType = OptCmdType::TYPE_SEND;
         env.optArgs.path = optFirst;
         if (env.args.size() > MEDIATOOL_ARG_SECOND) {
-            for (size_t i = MEDIATOOL_ARG_SECOND; i < env.args.size(); i++) {
-                env.optArgs.extraArgs.push_back(string(env.args[i]));
-            }
+            PutExtraString(env, MEDIATOOL_ARG_SECOND);
         }
     } else if (cmd == OPT_STR_RECV) {
         env.optArgs.cmdType = OptCmdType::TYPE_RECV;
@@ -231,6 +272,9 @@ int32_t CommandLine::Parser(ExecEnv &env)
     } else if (cmd == OPT_STR_LIST) {
         env.optArgs.cmdType = OptCmdType::TYPE_LIST;
         env.optArgs.uri = optFirst;
+    } else if (cmd == OPT_STR_DELETE) {
+        env.optArgs.cmdType = OptCmdType::TYPE_DELETE;
+        PutExtraString(env, MEDIATOOL_ARG_FIRST);
     } else {
         ShowUsage();
         return Media::E_ERR;

@@ -1196,6 +1196,15 @@ void UpdateAPI10Table(RdbStore &store)
     PrepareUniqueMemberTable(store);
 }
 
+void MediaLibraryRdbStore::UpdateAPI10Tables()
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+    }
+
+    UpdateAPI10Table(*rdbStore_);
+}
+
 static void AddPackageNameColumnOnTables(RdbStore &store)
 {
     static const string ADD_PACKAGE_NAME_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +

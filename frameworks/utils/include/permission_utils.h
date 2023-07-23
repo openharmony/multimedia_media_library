@@ -64,6 +64,7 @@ public:
     static void GetClientBundle(const int uid, std::string &bundleName);
     static uint32_t GetTokenId();
     static bool IsSystemApp();
+    static bool IsNativeSAApp();
     static std::string GetPackageNameByBundleName(const std::string &bundleName);
 
 private:

@@ -30,6 +30,7 @@
 #include "medialibrary_common_utils.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_notify.h"
@@ -185,6 +186,40 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
             MEDIA_ERR_LOG("error operation object: %{public}d", cmd.GetOprnObject());
             return E_INVALID_VALUES;
     }
+}
+
+int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cmd)
+{
+    auto valuesBucket = cmd.GetValueBucket();
+    int32_t isOnlyDeleteDb = 0;
+    if (!GetInt32FromValuesBucket(valuesBucket, DELETE_TOOL_ONLY_DATABASE, isOnlyDeleteDb)) {
+        MEDIA_ERR_LOG("Can not get delete tool value");
+        return E_INVALID_VALUES;
+    }
+    MediaLibraryRdbStore::UpdateAPI10Tables();
+    const static vector<string> DELETE_DIR_LIST = {
+        ROOT_MEDIA_DIR + PHOTO_BUCKET,
+        ROOT_MEDIA_DIR + AUDIO_BUCKET,
+        ROOT_MEDIA_DIR + CAMERA_DIR_VALUES,
+        ROOT_MEDIA_DIR + VIDEO_DIR_VALUES,
+        ROOT_MEDIA_DIR + PIC_DIR_VALUES,
+        ROOT_MEDIA_DIR + AUDIO_DIR_VALUES,
+        ROOT_MEDIA_DIR + ".thumbs"
+    };
+
+    if (!isOnlyDeleteDb) {
+        for (const string &dir : DELETE_DIR_LIST) {
+            if (!MediaFileUtils::DeleteDir(dir)) {
+                MEDIA_ERR_LOG("Delete dir %{private}s failed", dir.c_str());
+            }
+        }
+        for (auto &dir : PRESET_ROOT_DIRS) {
+            string ditPath = ROOT_MEDIA_DIR + dir;
+            MediaFileUtils::CreateDirectory(ditPath);
+        }
+    }
+
+    return E_OK;
 }
 
 static bool CheckOprnObject(OperationObject object)
