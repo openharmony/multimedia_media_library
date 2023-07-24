@@ -20,6 +20,8 @@
 #include <string>
 
 #include "base_column.h"
+#include "rdb_predicates.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 class PhotoAlbumColumns : BaseColumn {
@@ -58,6 +60,9 @@ public:
     static const std::string DEFAULT_PHOTO_ALBUM_URI;
 
     static bool IsPhotoAlbumColumn(const std::string &columnName);
+
+    static void GetUserAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates);
+    static void GetSystemAlbumPredicates(const PhotoAlbumSubType subType, NativeRdb::RdbPredicates &predicates);
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_ALBUM_COLUMN_H

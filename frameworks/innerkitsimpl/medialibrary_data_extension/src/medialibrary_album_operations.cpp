@@ -25,6 +25,7 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -230,7 +231,7 @@ static void QuerySqlDebug(const string &sql, const vector<string> &selectionArgs
 }
 #endif
 
-shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
+shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -279,6 +280,11 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperatio
     string querySql = "SELECT * FROM " + cmd.GetTableName();
     return uniStore->QuerySql(querySql);
 #endif
+}
+
+static string CountByColumn(const string &column)
+{
+    return "COUNT(" + column + ")";
 }
 
 inline int32_t GetStringObject(const ValuesBucket &values, const string &key, string &value)
@@ -364,7 +370,7 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     return rowId;
 }
 
-int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates)
+int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
 {
     // Only user generic albums can be deleted
     predicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
@@ -382,7 +388,7 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(NativeRdb::RdbPredicates &
     return deleteRow;
 }
 
-shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
+shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
     return MediaLibraryRdbStore::Query(*(cmd.GetAbsRdbPredicates()), columns);
@@ -427,16 +433,307 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
     rdbPredicates.EndWrap();
 
-    int32_t changedRows = 0;
-    err = MediaLibraryRdbStore::Update(changedRows, rdbValues, rdbPredicates);
+    int32_t changedRows = MediaLibraryRdbStore::Update(rdbValues, rdbPredicates);
     auto watch = MediaLibraryNotify::GetInstance();
-    if (err > 0) {
+    if (changedRows > 0) {
         for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - AFTER_AGR_SIZE; i++) {
             watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX +
                 rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_UPDATE);
         }
     }
-    return err;
+    return changedRows;
+}
+
+static inline shared_ptr<ResultSet> QueryGoToFirst(const RdbPredicates &predicates, const vector<string> &columns)
+{
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet == nullptr) {
+        return nullptr;
+    }
+    int32_t count = 0;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != NativeRdb::E_OK) {
+        return nullptr;
+    }
+    if (count > 0) {
+        err = resultSet->GoToFirstRow();
+        if (err != E_OK) {
+            return nullptr;
+        }
+    }
+
+    return resultSet;
+}
+
+static inline shared_ptr<ResultSet> QueryAlbumAssets(RdbPredicates &predicates,
+    const vector<string> &columns)
+{
+    return QueryGoToFirst(predicates, columns);
+}
+
+static int32_t ForEachRow(const shared_ptr<ResultSet> &resultSet,
+    const function<int32_t(const shared_ptr<ResultSet> &albumResult)> &func, const bool ignoreFailure)
+{
+    int32_t count = 0;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    if (count <= 0) {
+        MEDIA_WARN_LOG("No rows to iterate: %{public}d", count);
+        return E_SUCCESS;
+    }
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    do {
+        err = func(resultSet);
+        if (err < 0) {
+            if (ignoreFailure) {
+                MEDIA_WARN_LOG("Ignore failure for resultSet operation: %{public}d", err);
+            } else {
+                return err;
+            }
+        }
+        count--;
+        if (count > 0) {
+            err = resultSet->GoToNextRow();
+            if (err < 0) {
+                return E_HAS_DB_ERROR;
+            }
+        }
+    } while (count > 0);
+    return E_SUCCESS;
+}
+
+static inline int32_t GetInt(const shared_ptr<ResultSet> &resultSet, const string &column)
+{
+    return get<int32_t>(ResultSetUtils::GetValFromColumn(column, resultSet, TYPE_INT32));
+}
+
+static inline string GetString(const shared_ptr<ResultSet> &resultSet, const string &column)
+{
+    return get<string>(ResultSetUtils::GetValFromColumn(column, resultSet, TYPE_STRING));
+}
+
+static inline int32_t GetFileCount(const shared_ptr<ResultSet> &resultSet)
+{
+    return GetInt(resultSet, CountByColumn(PhotoColumn::MEDIA_ID));
+}
+
+static inline int32_t GetAlbumCount(const shared_ptr<ResultSet> &resultSet)
+{
+    return GetInt(resultSet, PhotoAlbumColumns::ALBUM_COUNT);
+}
+
+static inline string GetAlbumCover(const shared_ptr<ResultSet> &resultSet)
+{
+    return GetString(resultSet, PhotoAlbumColumns::ALBUM_COVER_URI);
+}
+
+static inline int32_t GetAlbumId(const shared_ptr<ResultSet> &resultSet)
+{
+    return GetInt(resultSet, PhotoAlbumColumns::ALBUM_ID);
+}
+
+static inline int32_t GetAlbumSubType(const shared_ptr<ResultSet> &resultSet)
+{
+    return GetInt(resultSet, PhotoAlbumColumns::ALBUM_SUBTYPE);
+}
+
+static inline string GetCover(const shared_ptr<ResultSet> &resultSet)
+{
+    string coverUri;
+    int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
+    if (fileId <= 0) {
+        return coverUri;
+    }
+    return PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId);
+}
+
+static void SetCount(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
+    ValuesBucket &values)
+{
+    int32_t oldCount = GetAlbumCount(albumResult);
+    int32_t newCount = GetFileCount(fileResult);
+    if (oldCount != newCount) {
+        MEDIA_INFO_LOG("Update album count. oldCount: %{public}d, newCount: %{public}d", oldCount, newCount);
+        values.PutInt(PhotoAlbumColumns::ALBUM_COUNT, newCount);
+    }
+}
+
+static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
+    ValuesBucket &values)
+{
+    string newCover;
+    int32_t newCount = GetFileCount(fileResult);
+    if (newCount != 0) {
+        newCover = GetCover(fileResult);
+    }
+    string oldCover = GetAlbumCover(albumResult);
+    if (oldCover != newCover) {
+        MEDIA_INFO_LOG("Update album cover. oldCover: %{public}s, newCover: %{public}s",
+            oldCover.c_str(), newCover.c_str());
+        values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, newCover);
+    }
+}
+
+static int32_t SetUpdateValues(const shared_ptr<ResultSet> &albumResult, ValuesBucket &values)
+{
+    const vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        CountByColumn(PhotoColumn::MEDIA_ID),
+    };
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    PhotoAlbumColumns::GetUserAlbumPredicates(GetAlbumId(albumResult), predicates);
+    predicates.OrderByAsc(PhotoColumn::MEDIA_DATE_ADDED);
+    auto fileResult = QueryAlbumAssets(predicates, columns);
+    if (fileResult == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    SetCount(fileResult, albumResult, values);
+    SetCover(fileResult, albumResult, values);
+    return E_SUCCESS;
+}
+
+static int32_t SetSysUpdateValues(PhotoAlbumSubType subtype, const shared_ptr<ResultSet> &albumResult,
+    ValuesBucket &values)
+{
+    const vector<string> columns = {
+        PhotoColumn::MEDIA_ID,
+        CountByColumn(PhotoColumn::MEDIA_ID),
+    };
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    PhotoAlbumColumns::GetSystemAlbumPredicates(subtype, predicates);
+    predicates.OrderByAsc(PhotoColumn::MEDIA_DATE_ADDED);
+    auto fileResult = QueryAlbumAssets(predicates, columns);
+    if (fileResult == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    SetCount(fileResult, albumResult, values);
+    SetCover(fileResult, albumResult, values);
+    return E_SUCCESS;
+}
+
+static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<ResultSet> &albumResult)
+{
+    TransactionOperations transactionOprn;
+    int32_t err = transactionOprn.Start();
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
+        return E_HAS_DB_ERROR;
+    }
+    ValuesBucket values;
+    err = SetUpdateValues(albumResult, values);
+    if (err < 0) {
+        MEDIA_ERR_LOG("Failed to collect update values, err: %{public}d", err);
+        return err;
+    }
+    if (values.IsEmpty()) {
+        MEDIA_DEBUG_LOG("No need to post-update album.");
+        return E_SUCCESS;
+    }
+
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(GetAlbumId(albumResult)));
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
+    if (changedRows < 0) {
+        MEDIA_ERR_LOG("Failed to update album in db, err: %{public}d", changedRows);
+        return changedRows;
+    }
+    transactionOprn.Finish();
+    return E_SUCCESS;
+}
+
+static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<ResultSet> &albumResult)
+{
+    ValuesBucket values;
+    auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
+    TransactionOperations transactionOprn;
+    int32_t err = transactionOprn.Start();
+    if (err != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    err = SetSysUpdateValues(subtype, albumResult, values);
+    if (err < 0) {
+        return err;
+    }
+    if (values.IsEmpty()) {
+        return E_SUCCESS;
+    }
+
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subtype));
+    int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
+    if (changedRows < 0) {
+        return changedRows;
+    }
+    transactionOprn.Finish();
+    return E_SUCCESS;
+}
+
+static inline shared_ptr<ResultSet> GetUserAlbum(const vector<string> &userAlbumIds, const vector<string> &columns)
+{
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    if (userAlbumIds.empty()) {
+        predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    } else {
+        predicates.In(PhotoAlbumColumns::ALBUM_ID, userAlbumIds);
+    }
+    return MediaLibraryRdbStore::Query(predicates, columns);
+}
+
+static inline shared_ptr<ResultSet> GetSystemAlbum(const vector<string> &subtypes, const vector<string> &columns)
+{
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    if (subtypes.empty()) {
+        predicates.In(PhotoAlbumColumns::ALBUM_SUBTYPE, ALL_SYS_PHOTO_ALBUM);
+    } else {
+        predicates.In(PhotoAlbumColumns::ALBUM_SUBTYPE, subtypes);
+    }
+    return MediaLibraryRdbStore::Query(predicates, columns);
+}
+
+void MediaLibraryAlbumOperations::UpdateUserAlbumInternal(const vector<string> &userAlbumIds)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PostUpdateAlbum UpdateUserAlbumInternal");
+
+    vector<string> columns = {
+        PhotoAlbumColumns::ALBUM_ID,
+        PhotoAlbumColumns::ALBUM_COVER_URI,
+        PhotoAlbumColumns::ALBUM_COUNT,
+    };
+    auto albumResult = GetUserAlbum(userAlbumIds, columns);
+    if (albumResult == nullptr) {
+        MEDIA_WARN_LOG("Ignore failure on post updating user album!");
+        return;
+    }
+    ForEachRow(albumResult, UpdateUserAlbumIfNeeded, true);
+}
+
+void MediaLibraryAlbumOperations::UpdateSystemAlbumInternal(const vector<string> &subtypes)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PostUpdateAlbum MediaLibraryAlbumOperations::UpdateUserAlbumInternal");
+
+    vector<string> columns = {
+        PhotoAlbumColumns::ALBUM_ID,
+        PhotoAlbumColumns::ALBUM_SUBTYPE,
+        PhotoAlbumColumns::ALBUM_COVER_URI,
+        PhotoAlbumColumns::ALBUM_COUNT,
+    };
+    auto albumResult = GetSystemAlbum(subtypes, columns);
+    if (albumResult == nullptr) {
+        MEDIA_WARN_LOG("Ignore failure on post updating system album!");
+        return;
+    }
+
+    ForEachRow(albumResult, UpdateSysAlbumIfNeeded, true);
 }
 
 int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
@@ -447,8 +744,10 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);
 
-    int32_t changedRows = 0;
-    int errCode = MediaLibraryRdbStore::Update(changedRows, rdbValues, rdbPredicates);
+    int32_t changedRows = MediaLibraryRdbStore::Update(rdbValues, rdbPredicates);
+    if (changedRows < 0) {
+        return changedRows;
+    }
     auto watch = MediaLibraryNotify::GetInstance();
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
     for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - THAN_AGR_SIZE; i++) {
@@ -460,7 +759,9 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
                 NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
         }
     }
-    return errCode;
+    MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
+    return changedRows;
 }
 
 int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
@@ -485,6 +786,7 @@ int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
             }
         }
     }
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({ to_string(PhotoAlbumSubType::TRASH) });
     return deletedRows;
 }
 
@@ -498,6 +800,7 @@ int32_t AgingPhotoAssets()
     if (err < 0) {
         return err;
     }
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({ to_string(PhotoAlbumSubType::TRASH) });
     return E_OK;
 }
 
