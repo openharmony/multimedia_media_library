@@ -1036,11 +1036,15 @@ napi_value FileAssetNapi::JSGetDateTaken(napi_env env, napi_callback_info info)
     return jsResult;
 }
 
-void BuildCommitModifyValuesBucket(const bool &isApiVersion10, const std::shared_ptr<FileAsset> fileAsset,
-    DataShareValuesBucket &valuesBucket)
+void BuildCommitModifyValuesBucket(FileAssetAsyncContext* context, DataShareValuesBucket &valuesBucket)
 {
+    const auto fileAsset = context->objectPtr;
+    if (context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        valuesBucket.Put(MediaColumn::MEDIA_TITLE, fileAsset->GetTitle());
+    } else if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+        valuesBucket.Put(MediaColumn::MEDIA_NAME, fileAsset->GetDisplayName());
+    } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    if (!isApiVersion10) {
         valuesBucket.Put(MEDIA_DATA_DB_TITLE, fileAsset->GetTitle());
         valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
         if (fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_AUDIO) {
@@ -1055,9 +1059,7 @@ void BuildCommitModifyValuesBucket(const bool &isApiVersion10, const std::shared
                 valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
             }
         }
-    }
 #else
-    if (!isApiVersion10) {
         valuesBucket.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
         valuesBucket.Put(MEDIA_DATA_DB_TITLE, fileAsset->GetTitle());
 
@@ -1066,9 +1068,9 @@ void BuildCommitModifyValuesBucket(const bool &isApiVersion10, const std::shared
         }
         valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
         valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
-    }
 #endif
-    valuesBucket.Put(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
+        valuesBucket.Put(MEDIA_DATA_DB_NAME, fileAsset->GetDisplayName());
+    }
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
@@ -1118,28 +1120,20 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     auto *context = static_cast<FileAssetAsyncContext*>(data);
     MediaLibraryTracer tracer;
     tracer.Start("JSCommitModifyExecute");
-    bool isApiVersion10 = false;
-    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
-        context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
-        isApiVersion10 = true;
-    }
-
     if (!CheckDisplayNameInCommitModify(context)) {
         return;
     }
     string uri;
-    if (!isApiVersion10) {
+    if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
+        context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        BuildCommitModifyUriApi10(context, uri);
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
         BuildCommitModifyUriApi9(context, uri);
 #else
         uri = URI_UPDATE_FILE;
 #endif
-    } else {
-        BuildCommitModifyUriApi10(context, uri);
-    }
-
-    if (isApiVersion10) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     }
 
     Uri updateAssetUri(uri);
@@ -1147,7 +1141,7 @@ static void JSCommitModifyExecute(napi_env env, void *data)
     string notifyUri = MediaFileUtils::GetMediaTypeUri(mediaType);
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
-    BuildCommitModifyValuesBucket(isApiVersion10, context->objectPtr, valuesBucket);
+    BuildCommitModifyValuesBucket(context, valuesBucket);
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
     predicates.SetWhereArgs({std::to_string(context->objectPtr->GetId())});
 
