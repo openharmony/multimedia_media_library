@@ -25,6 +25,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
+#include "medialibrary_album_operations.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
@@ -838,6 +839,13 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     string path = fileAsset->GetPath();
     InvalidateThumbnail(fileId, fileAsset->GetMediaType());
     ScanFile(path, isCreateThumbSync);
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({
+        to_string(PhotoAlbumSubType::IMAGES),
+        to_string(PhotoAlbumSubType::VIDEO),
+        to_string(PhotoAlbumSubType::SCREENSHOT),
+        to_string(PhotoAlbumSubType::CAMERA),
+        to_string(PhotoAlbumSubType::FAVORITE),
+    });
     return E_OK;
 }
 

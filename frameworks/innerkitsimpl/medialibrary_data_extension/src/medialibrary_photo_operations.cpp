@@ -20,6 +20,7 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
@@ -365,6 +366,8 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     transactionOprn.Finish();
     auto watch = MediaLibraryNotify::GetInstance();
     watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(deleteRows), NotifyType::NOTIFY_REMOVE);
+    MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
     return deleteRows;
 }
 
@@ -380,17 +383,18 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(values);
-    int32_t updateRows = 0;
-    int32_t err = rdbStore->Update(updateRows, values, rdbPredicate);
-    if (err < 0) {
-        MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", err);
+    int32_t updatedRows = rdbStore->Update(values, rdbPredicate);
+    if (updatedRows < 0) {
+        MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", updatedRows);
         return E_HAS_DB_ERROR;
     }
     for (const string &fileId : cmd.GetAbsRdbPredicates()->GetWhereArgs()) {
         SendTrashNotify(cmd, stoi(fileId));
     }
 
-    return updateRows;
+    MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
+    return updatedRows;
 }
 
 int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
@@ -430,6 +434,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
     }
     transactionOprn.Finish();
 
+    MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
     errCode = SendTrashNotify(cmd, fileAsset->GetId());
     if (errCode == E_OK) {
         return rowId;
