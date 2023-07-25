@@ -67,6 +67,8 @@ const int64_t FILE_DATE_TAKEN_DEFAULT = 0;
 const double FILE_LONGITUDE_DEFAULT = 0;
 const double FILE_LATITUDE_DEFAULT = 0;
 const int64_t FILE_TIME_PENDING_DEFAULT = 0;
+const std::string FILE_All_EXIF_DEFAULT = "";
+const std::string FILE_USER_COMMENT_DEFAULT = "";
 
 const std::string DEFAULT_AUDIO_MIME_TYPE = "audio/*";
 const std::string DEFAULT_VIDEO_MIME_TYPE = "video/*";

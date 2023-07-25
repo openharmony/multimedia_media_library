@@ -25,6 +25,7 @@
 #include "hitrace_meter.h"
 #include "fetch_result.h"
 #include "hilog/log.h"
+#include "media_exif.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "medialibrary_client_errno.h"
@@ -33,6 +34,8 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
+#include "nlohmann/json.hpp"
+#include "permission_utils.h"
 #include "rdb_errno.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
@@ -166,6 +169,8 @@ napi_value FileAssetNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getReadOnlyFd", JSGetReadOnlyFd),
             DECLARE_NAPI_FUNCTION("setHidden", UserFileMgrSetHidden),
             DECLARE_NAPI_FUNCTION("setPending", UserFileMgrSetPending),
+            DECLARE_NAPI_FUNCTION("getExif", JSGetExif),
+            DECLARE_NAPI_FUNCTION("setUserComment", UserFileMgrSetUserComment),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -193,6 +198,8 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("getReadOnlyFd", JSGetReadOnlyFd),
             DECLARE_NAPI_FUNCTION("setHidden", PhotoAccessHelperSetHidden),
             DECLARE_NAPI_FUNCTION("setPending", PhotoAccessHelperSetPending),
+            DECLARE_NAPI_FUNCTION("getExif", JSGetExif),
+            DECLARE_NAPI_FUNCTION("setUserComment", PhotoAccessHelperSetUserComment),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -341,6 +348,16 @@ bool FileAssetNapi::IsHidden() const
 void FileAssetNapi::SetHidden(bool isHidden)
 {
     fileAssetPtr->SetHidden(isHidden);
+}
+
+std::string FileAssetNapi::GetAllExif() const
+{
+    return fileAssetPtr->GetAllExif();
+}
+
+std::string FileAssetNapi::GetUserComment() const
+{
+    return fileAssetPtr->GetUserComment();
 }
 
 napi_status GetNapiObject(napi_env env, napi_callback_info info, FileAssetNapi **obj)
@@ -3082,6 +3099,103 @@ napi_value FileAssetNapi::UserFileMgrSetPending(napi_env env, napi_callback_info
         UserFileMgrSetPendingExecute, UserFileMgrSetPendingComplete);
 }
 
+napi_value FileAssetNapi::JSGetExif(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ONE),
+        JS_ERR_PARAMETER_INVALID);
+
+    napi_value jsResult = nullptr;
+    napi_get_undefined(env, &jsResult);
+    FileAssetNapi *obj = asyncContext->objectInfo;   
+    string allExif, userComment;
+    allExif = obj->GetAllExif();
+    userComment = obj->GetUserComment();
+    nlohmann::json allExifJson = nlohmann::json::parse(allExif);
+    if (allExifJson.is_discarded()) {
+        NAPI_ERR_LOG("parse json failed");
+        return jsResult;
+    }
+
+    auto err = PermissionUtils::CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
+    if (err == false) {
+        allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LATITUDE);
+        allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LONGITUDE);
+        allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LATITUDE_REF);
+        allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF);
+    }
+    allExifJson[PHOTO_DATA_IMAGE_USER_COMMENT] = userComment;
+    napi_create_string_utf8(env, allExifJson.dump().c_str(), NAPI_AUTO_LENGTH, &jsResult);
+
+    return jsResult;
+}
+
+static void UserFileMgrSetUserCommentComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<FileAssetAsyncContext*>(data);
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        napi_create_int32(env, context->changedRows, &jsContext->data);
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
+            "Failed to edit user comment");
+        napi_get_undefined(env, &jsContext->data);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void UserFileMgrSetUserCommentExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrSetUserCommentExecute");
+
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    string uri = UFM_SET_USER_COMMENT;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri editUserCommentUri(uri);
+    DataSharePredicates predicates;
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, context->userComment);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, context->objectPtr->GetId());
+
+    int32_t changedRows = UserFileClient::Update(editUserCommentUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to modify user comment, err: %{public}d", changedRows);
+    } else {
+        context->objectPtr->SetUserComment(context->userComment);
+        context->changedRows = changedRows;
+    }
+}
+
+napi_value FileAssetNapi::UserFileMgrSetUserComment(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrSetUserComment");
+
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->userComment),
+        JS_ERR_PARAMETER_INVALID);
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    if (asyncContext->objectPtr == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrSetUserComment",
+        UserFileMgrSetUserCommentExecute, UserFileMgrSetUserCommentComplete);
+}
+
 static napi_value ParseArgsPhotoAccessHelperOpen(napi_env env, napi_callback_info info,
     unique_ptr<FileAssetAsyncContext> &context, bool isReadOnly)
 {
@@ -3553,6 +3667,77 @@ napi_value FileAssetNapi::PhotoAccessHelperSetPending(napi_env env, napi_callbac
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperSetPending",
         PhotoAccessHelperSetPendingExecute, PhotoAccessHelperSetPendingComplete);
+}
+
+static void PhotoAccessHelperSetUserCommentComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<FileAssetAsyncContext*>(data);
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        napi_create_int32(env, context->changedRows, &jsContext->data);
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
+            "Failed to edit user comment");
+        napi_get_undefined(env, &jsContext->data);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void PhotoAccessHelperSetUserCommentExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperSetUserCommentExecute");
+
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    if (context->objectPtr->GetMediaType() != MEDIA_TYPE_IMAGE) {
+        context->error = -EINVAL;
+        return;
+    }
+
+    string uri = PAH_EDIT_USER_COMMENT_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri editUserCommentUri(uri);
+    DataSharePredicates predicates;
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, context->userComment);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, context->objectPtr->GetId());
+
+    int32_t changedRows = UserFileClient::Update(editUserCommentUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to modify user comment, err: %{public}d", changedRows);
+    } else {
+        context->objectPtr->SetUserComment(context->userComment);
+        context->changedRows = changedRows;
+    }
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperSetUserComment(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperSetUserComment");
+
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->userComment),
+        JS_ERR_PARAMETER_INVALID);
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    if (asyncContext->objectPtr == nullptr) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperSetUserComment",
+        PhotoAccessHelperSetUserCommentExecute, PhotoAccessHelperSetUserCommentComplete);
 }
 
 } // namespace Media

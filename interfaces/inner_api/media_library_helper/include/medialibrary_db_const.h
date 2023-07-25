@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 14;
+const int32_t MEDIA_RDB_VERSION = 15;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -42,6 +42,7 @@ enum {
      * if number of assets in an album changes.
      */
     VERSION_REMOVE_ALBUM_COUNT_TRIGGER = 14,
+    VERSION_ADD_ALL_EXIF = 15,
 };
 
 enum {

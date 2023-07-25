@@ -1239,6 +1239,21 @@ void RemoveAlbumCountTrigger(RdbStore &store)
     ExecSqls(removeAlbumCountTriggers, store);
 }
 
+void AddExifAndUserComment(RdbStore &store)
+{
+    const string ADD_USER_COMMENT_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+        " ADD COLUMN " + PhotoColumn::PHOTO_USER_COMMENT + " TEXT";
+
+    const string ADD_ALL_EXIF_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+        " ADD COLUMN " + PhotoColumn::PHOTO_ALL_EXIF + " TEXT";
+    
+    const vector<string> addExifColumns = {
+        ADD_USER_COMMENT_ON_PHOTOS,
+        ADD_ALL_EXIF_ON_PHOTOS
+    };
+    ExecSqls(addExifColumns, store);
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1291,6 +1306,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     }
     if (oldVersion < VERSION_REMOVE_ALBUM_COUNT_TRIGGER) {
         RemoveAlbumCountTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_ALL_EXIF) {
+        AddExifAndUserComment(store);
     }
 
     return NativeRdb::E_OK;

@@ -126,6 +126,21 @@ bool PermissionUtils::CheckCallerPermission(const string &permission)
     return true;
 }
 
+bool PermissionUtils::CheckNapiCallerPermission(const std::string &permission)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckNapiCallerPermission");
+
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != PermissionState::PERMISSION_GRANTED) {
+        MEDIA_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        return false;
+    }
+
+    return true;
+}
+
 /* Check whether caller has at least one of @perms */
 bool PermissionUtils::CheckHasPermission(const vector<string> &perms)
 {
