@@ -420,6 +420,36 @@ void FileAsset::SetHidden(bool isHidden)
     member_[MediaColumn::MEDIA_HIDDEN] = isHidden;
 }
 
+const std::string &FileAsset::GetAllExif() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_ALL_EXIF);
+}
+
+void FileAsset::SetAllExif(const string &allExif)
+{
+    member_[PhotoColumn::PHOTO_ALL_EXIF] = allExif;
+}
+
+const std::string &FileAsset::GetUserComment() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_USER_COMMENT);
+}
+
+void FileAsset::SetUserComment(const string &userComment)
+{
+    member_[PhotoColumn::PHOTO_USER_COMMENT] = userComment;
+}
+
+const std::string &FileAsset::GetFilePath() const
+{
+    return GetStrMember(MediaColumn::MEDIA_FILE_PATH);
+}
+
+void FileAsset::SetFilePath(const std::string &filePath)
+{
+    member_[MediaColumn::MEDIA_FILE_PATH] = filePath;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);

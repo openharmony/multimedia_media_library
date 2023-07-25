@@ -18,14 +18,20 @@
 
 #include <fcntl.h>
 #include "hitrace_meter.h"
+#include "media_exif.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
+#include "nlohmann/json.hpp"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
+
+const double DEGREES2MINUTES = 60.0;
+const double DEGREES2SECONDS = 3600.0;
+constexpr int32_t OFFSET_NUM = 2;
 
 template <class Type>
 static Type stringToNum(const string &str)
@@ -36,12 +42,77 @@ static Type stringToNum(const string &str)
     return num;
 }
 
+double GetLongitudeLatitude(string inputStr)
+{
+    auto pos = inputStr.find(',');
+    if (pos == string::npos) {
+        return 0;
+    }
+    double ret = stringToNum<double>(inputStr.substr(0, pos));
+
+    inputStr = inputStr.substr(pos + OFFSET_NUM);
+    pos = inputStr.find(',');
+    if (pos == string::npos) {
+        return 0;
+    }
+    ret += stringToNum<double>(inputStr.substr(0, pos)) / DEGREES2MINUTES;
+
+    inputStr = inputStr.substr(pos + OFFSET_NUM);
+    ret += stringToNum<double>(inputStr) / DEGREES2SECONDS;
+    return ret;
+}
+
 static time_t convertTimeStr2TimeStamp(string &timeStr)
 {
     struct tm timeinfo;
     strptime(timeStr.c_str(), "%Y-%m-%d %H:%M:%S",  &timeinfo);
     time_t timeStamp = mktime(&timeinfo);
     return timeStamp;
+}
+
+int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageSource, std::unique_ptr<Metadata> &data)
+{
+    if (imageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain image source");
+        return E_OK;
+    }
+
+    int32_t intTempMeta = 0;
+    string propertyStr;
+    nlohmann::json exifJson;
+    uint32_t err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
+    if (err != 0) {
+        MEDIA_WARN_LOG("Failed to get orientation info");
+    }
+    exifJson[PHOTO_DATA_IMAGE_ORIENTATION] = (err == 0) ? intTempMeta: 0;
+
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
+    if (err != 0) {
+        MEDIA_WARN_LOG("Failed to get longitude info");
+    }
+    exifJson[PHOTO_DATA_IMAGE_GPS_LONGITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
+
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
+    if (err != 0) {
+        MEDIA_WARN_LOG("Failed to get latitude info");
+    }
+    exifJson[PHOTO_DATA_IMAGE_GPS_LONGITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
+
+    for (auto &exifKey : exifInfoKeys) {
+        err = imageSource->GetImagePropertyString(0, exifKey, propertyStr);
+        if (err != 0) {
+            MEDIA_WARN_LOG("Failed to get %{public}s info", exifKey.c_str());
+        }
+        exifJson[exifKey] = (err == 0) ? propertyStr: "";
+    }
+    data->SetAllExif(exifJson.dump());
+
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, propertyStr);
+    if (err == 0) {
+        data->SetUserComment(propertyStr);
+    }
+
+    return E_OK;
 }
 
 int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
@@ -90,15 +161,17 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
     double dbleTempMeta = -1;
     err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
     if (err == 0) {
-        dbleTempMeta = stringToNum<double>(propertyStr);
+        dbleTempMeta = GetLongitudeLatitude(propertyStr);
         data->SetLongitude(dbleTempMeta);
     }
 
     err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE, propertyStr);
     if (err == 0) {
-        dbleTempMeta = stringToNum<double>(propertyStr);
+        dbleTempMeta = GetLongitudeLatitude(propertyStr);
         data->SetLatitude(dbleTempMeta);
     }
+
+    ExtractImageExif(imageSource, data);
 
     return E_OK;
 }

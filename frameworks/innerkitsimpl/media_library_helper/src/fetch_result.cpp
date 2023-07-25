@@ -66,6 +66,8 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_SUBTYPE, TYPE_INT32 },
         { MEDIA_COLUMN_COUNT, TYPE_INT32 },
         { PhotoColumn::CAMERA_SHOT_KEY, TYPE_STRING },
+        { PhotoColumn::PHOTO_ALL_EXIF, TYPE_STRING },
+        { PhotoColumn::PHOTO_USER_COMMENT, TYPE_STRING },
     };
     return RESULT_TYPE_MAP;
 }

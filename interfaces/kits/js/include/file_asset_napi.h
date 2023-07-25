@@ -65,6 +65,8 @@ public:
     void SetTrash(bool isTrash);
     bool IsHidden() const;
     void SetHidden(bool isHidden);
+    std::string GetAllExif() const;
+    std::string GetUserComment() const;
 
     static std::unique_ptr<PixelMap> NativeGetThumbnail(const std::string &uri,
         const std::shared_ptr<AbilityRuntime::Context> &context);
@@ -121,6 +123,8 @@ private:
     static napi_value JSGetReadOnlyFd(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrSetHidden(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrSetPending(napi_env env, napi_callback_info info);
+    static napi_value JSGetExif(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrSetUserComment(napi_env env, napi_callback_info info);
 
     static napi_value PhotoAccessHelperOpen(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperClose(napi_env env, napi_callback_info info);
@@ -129,6 +133,7 @@ private:
     static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetPending(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperSetUserComment(napi_env env, napi_callback_info info);
 
     bool HandleParamSet(const std::string &inputKey, const std::string &value, ResultNapiType resultNapiType);
     napi_env env_;
@@ -164,6 +169,7 @@ struct FileAssetAsyncContext : public NapiError {
     napi_value argv[NAPI_ARGC_MAX];
     std::string typeMask;
     ResultNapiType resultNapiType;
+    std::string userComment;
 };
 } // namespace Media
 } // namespace OHOS

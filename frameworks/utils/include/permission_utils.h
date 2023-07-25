@@ -59,6 +59,7 @@ const std::unordered_map<std::string, MediaTypeMaskInteger> PERM_MASK_MAP = {
 class PermissionUtils {
 public:
     static bool CheckCallerPermission(const std::string &permission);
+    static bool CheckNapiCallerPermission(const std::string &permission);
     static bool CheckCallerPermission(const std::vector<std::string> &perms);
     static bool CheckHasPermission(const std::vector<std::string> &perms);
     static void GetClientBundle(const int uid, std::string &bundleName);
