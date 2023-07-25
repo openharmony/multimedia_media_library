@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/test.gni")
+import("//foundation/ability/ability_runtime/ability_runtime.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 group("unittest") {
@@ -50,4 +51,8 @@ ohos_unittest("medialibrary_utils_test") {
 
   resource_config_file =
       "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
+
+  if (ability_runtime_graphics) {
+    external_deps += [ "image_framework:image_native" ]
+  }
 }

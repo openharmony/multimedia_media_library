@@ -1,4 +1,4 @@
-# Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+# Copyright (C) 2021-2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,6 +13,7 @@
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
+import("//foundation/ability/ability_runtime/ability_runtime.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 import("../../../../../../arkcompiler/ets_frontend/es2panda/es2abc_config.gni")
 import("../../../../../../foundation/arkui/ace_engine/ace_config.gni")
@@ -146,6 +147,10 @@ ohos_shared_library("medialibrary") {
     ]
   }
 
+  if (ability_runtime_graphics) {
+    external_deps += [ "image_framework:image_native" ]
+  }
+
   relative_install_dir = "module/multimedia"
   subsystem_name = "multimedia"
   part_name = "media_library"
@@ -214,6 +219,10 @@ ohos_shared_library("userfilemanager") {
       "memory_utils:libpurgeablemem",
       "memory_utils:pixelmap_builder",
     ]
+  }
+
+  if (ability_runtime_graphics) {
+    external_deps += [ "image_framework:image_native" ]
   }
 
   relative_install_dir = "module/filemanagement"
@@ -329,6 +338,10 @@ ohos_shared_library("photoaccesshelper") {
       "memory_utils:libpurgeablemem",
       "memory_utils:pixelmap_builder",
     ]
+  }
+
+  if (ability_runtime_graphics) {
+    external_deps += [ "image_framework:image_native" ]
   }
 
   relative_install_dir = "module/file"
