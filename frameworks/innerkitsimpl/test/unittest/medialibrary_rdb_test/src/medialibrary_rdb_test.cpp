@@ -63,7 +63,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Insert_test_001, TestSize.Level0)
     values.PutString(MEDIA_DATA_DB_FILE_PATH, data);
     string title = "insert test";
     values.PutString(MEDIA_DATA_DB_TITLE, title);
-    int32_t fileId = 1;
+    int32_t fileId = 3;
     values.PutInt(MEDIA_DATA_DB_ID, fileId);
     cmd.SetValueBucket(values);
     int64_t rowId = 1;
@@ -153,7 +153,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Delete_test_001, TestSize.Level0)
     string selection = MEDIA_DATA_DB_ID + " = ? OR "+ MEDIA_DATA_DB_PARENT_ID + " = ?";
     cmd.GetAbsRdbPredicates()->SetWhereClause(selection);
     vector<string> selectionArgs;
-    int32_t rowId = 1;
+    int32_t rowId = 3;
     selectionArgs.push_back(to_string(rowId));
     cmd.GetAbsRdbPredicates()->SetWhereArgs(selectionArgs);
     rdbStorePtr->Init();
