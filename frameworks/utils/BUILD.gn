@@ -31,6 +31,12 @@ ohos_static_library("medialibrary_common_utils") {
   ]
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
@@ -57,6 +63,12 @@ ohos_static_library("permission_utils") {
     "ipc:ipc_core",
     "samgr:samgr_proxy",
   ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
 
   subsystem_name = "multimedia"
   part_name = "media_library"

@@ -136,7 +136,7 @@ ohos_shared_library("medialibrary") {
   sanitize = {
     cfi = true
     cfi_cross_dso = true
-    debug = true
+    debug = false
   }
 
   if (purgeable_ashmem_enable) {
@@ -210,7 +210,7 @@ ohos_shared_library("userfilemanager") {
   sanitize = {
     cfi = true
     cfi_cross_dso = true
-    debug = true
+    debug = false
   }
 
   if (purgeable_ashmem_enable) {
@@ -329,7 +329,7 @@ ohos_shared_library("photoaccesshelper") {
   sanitize = {
     cfi = true
     cfi_cross_dso = true
-    debug = true
+    debug = false
   }
 
   if (purgeable_ashmem_enable) {
