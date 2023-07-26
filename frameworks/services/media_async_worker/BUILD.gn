@@ -29,6 +29,12 @@ ohos_static_library("medialibrary_async_worker") {
     "hitrace:hitrace_meter",
   ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
