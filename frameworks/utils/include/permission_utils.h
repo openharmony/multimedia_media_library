@@ -65,6 +65,7 @@ public:
     static uint32_t GetTokenId();
     static bool IsSystemApp();
     static bool IsNativeSAApp();
+    static bool CheckIsSystemAppByUid();
     static std::string GetPackageNameByBundleName(const std::string &bundleName);
 
 private:
