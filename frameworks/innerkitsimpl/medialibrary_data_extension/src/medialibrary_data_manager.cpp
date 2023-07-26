@@ -941,7 +941,6 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryDataManager::OpenFile");
-    
     auto oprnObject = cmd.GetOprnObject();
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
         return MediaLibraryAssetOperations::OpenOperation(cmd, mode);
