@@ -207,19 +207,8 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InvalidateThumbnail_test_001, TestSiz
     }
     string id = "0";
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    shared_ptr<OHOS::AbilityRuntime::Context> context;
     string table = MEDIALIBRARY_TABLE;
-    serverTest->Init(storePtr, kvStorePtr, context);
     serverTest->InvalidateThumbnail(id, table, "Documents/");
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_Init_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
     int32_t ret = serverTest->Init(nullptr, nullptr, nullptr);
     EXPECT_EQ(ret, 0);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
