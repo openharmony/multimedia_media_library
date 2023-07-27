@@ -86,19 +86,6 @@ int32_t MediaLibraryRdbStore::Init()
         MEDIA_ERR_LOG("GetRdbStore is failed ");
         return E_ERR;
     }
-
-    if (rdbDataCallBack.HasDistributedTables()) {
-        int ret = rdbStore_->SetDistributedTables(
-            { MEDIALIBRARY_TABLE, PhotoColumn::PHOTOS_TABLE, AudioColumn::AUDIOS_TABLE,
-            SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE });
-        MEDIA_DEBUG_LOG("ret = %{private}d", ret);
-    }
-
-    if (!SubscribeRdbStoreObserver()) {
-        MEDIA_ERR_LOG("subscribe rdb observer err");
-        return E_ERR;
-    }
-
     MEDIA_INFO_LOG("SUCCESS");
     return E_OK;
 }
@@ -111,46 +98,7 @@ void MediaLibraryRdbStore::Stop()
         return;
     }
 
-    UnSubscribeRdbStoreObserver();
     rdbStore_ = nullptr;
-}
-
-bool MediaLibraryRdbStore::SubscribeRdbStoreObserver()
-{
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("SubscribeRdbStoreObserver rdbStore is null");
-        return false;
-    }
-    rdbStoreObs_ = make_shared<MediaLibraryRdbStoreObserver>(bundleName_);
-    if (rdbStoreObs_ == nullptr) {
-        return false;
-    }
-
-    DistributedRdb::SubscribeOption option{};
-    option.mode = DistributedRdb::SubscribeMode::REMOTE;
-    int ret = rdbStore_->Subscribe(option, rdbStoreObs_.get());
-    MEDIA_DEBUG_LOG("Subscribe ret = %d", ret);
-
-    return ret == E_OK;
-}
-
-bool MediaLibraryRdbStore::UnSubscribeRdbStoreObserver()
-{
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("UnSubscribeRdbStoreObserver rdbStore is null");
-        return false;
-    }
-
-    DistributedRdb::SubscribeOption option{};
-    option.mode = DistributedRdb::SubscribeMode::REMOTE;
-    int ret = rdbStore_->UnSubscribe(option, rdbStoreObs_.get());
-    MEDIA_DEBUG_LOG("UnSubscribe ret = %d", ret);
-    if (ret == E_OK) {
-        rdbStoreObs_ = nullptr;
-        return true;
-    }
-
-    return false;
 }
 
 static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
@@ -189,12 +137,6 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Insert failed, ret = %{public}d", ret);
         return E_HAS_DB_ERROR;
-    }
-
-    if (MediaLibraryDevice::GetInstance()->IsHasActiveDevice()) {
-        vector<string> devices = vector<string>();
-        GetAllNetworkId(devices);
-        SyncPushTable(bundleName_, cmd.GetTableName(), rowId, devices);
     }
 
     MEDIA_DEBUG_LOG("rdbStore_->Insert end, rowId = %d, ret = %{public}d", (int)rowId, ret);
@@ -239,11 +181,6 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
         return E_HAS_DB_ERROR;
     }
     CloudSyncHelper::GetInstance()->StartSync();
-    /* sync remote devices */
-    vector<string> devices = vector<string>();
-    GetAllNetworkId(devices);
-    SyncPushTable(bundleName_, cmd.GetTableName(), deletedRows, devices);
-
     return ret;
 }
 
@@ -539,44 +476,6 @@ int32_t MediaLibraryRdbStore::RollBack()
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
 {
     return rdbStore_;
-}
-
-string MediaLibraryRdbStore::ObtainTableName(MediaLibraryCommand &cmd)
-{
-    const string &networkId = cmd.GetOprnDevice();
-    int errCode = E_ERR;
-    if (!networkId.empty()) {
-        return rdbStore_->ObtainDistributedTableName(networkId, cmd.GetTableName(), errCode);
-    }
-
-    return cmd.GetTableName();
-}
-
-bool MediaLibraryRdbStore::SyncPullTable(const string &bundleName, const string &tableName,
-    int32_t rowId, vector<string> &devices)
-{
-    MediaLibrarySyncOpts syncOpts;
-    SetSyncOpts(syncOpts, bundleName, tableName, rowId);
-    return MediaLibrarySyncOperation::SyncPullTable(syncOpts, devices);
-}
-
-bool MediaLibraryRdbStore::SyncPushTable(const string &bundleName, const string &tableName,
-    int32_t rowId, vector<string> &devices, bool isBlock)
-{
-    MediaLibrarySyncOpts syncOpts;
-    SetSyncOpts(syncOpts, bundleName, tableName, rowId);
-    return MediaLibrarySyncOperation::SyncPushTable(syncOpts, devices, isBlock);
-}
-
-void MediaLibraryRdbStore::SetSyncOpts(MediaLibrarySyncOpts &syncOpts, const string &bundleName,
-    const string &tableName, int32_t rowId)
-{
-    syncOpts.table = tableName;
-    syncOpts.bundleName = bundleName;
-    if (rowId >= 0) {
-        syncOpts.row = to_string(rowId);
-    }
-    syncOpts.rdbStore = rdbStore_;
 }
 
 static inline int32_t DeleteDbByFileId(const string &table, int32_t fileId)
@@ -1001,8 +900,6 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     if (PrepareUniqueMemberTable(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
-
-    isDistributedTables = true;
     return NativeRdb::E_OK;
 }
 
@@ -1313,11 +1210,6 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     }
 
     return NativeRdb::E_OK;
-}
-
-bool MediaLibraryDataCallBack::HasDistributedTables()
-{
-    return isDistributedTables;
 }
 
 MediaLibraryRdbStoreObserver::MediaLibraryRdbStoreObserver(const string &bundleName)

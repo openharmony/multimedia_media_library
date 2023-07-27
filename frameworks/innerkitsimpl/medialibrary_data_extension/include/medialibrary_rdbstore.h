@@ -41,10 +41,6 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns) override;
 
-    bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
-        int32_t rowId, std::vector<std::string> &devices) override;
-    bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
-        int32_t rowId, std::vector<std::string> &devices, bool isBlock = false) override;
     int32_t ExecuteSql(const std::string &sql) override;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) override;
@@ -54,7 +50,6 @@ public:
     int32_t Commit();
 
     std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
-    std::string ObtainTableName(MediaLibraryCommand &cmd) override;
 
     static void BuildValuesSql(const NativeRdb::ValuesBucket &values, std::vector<NativeRdb::ValueObject> &bindArgs,
         std::string &sql);
@@ -70,10 +65,6 @@ public:
     static int32_t DeleteFromDisk(const NativeRdb::AbsRdbPredicates &predicates);
 
 private:
-    bool SubscribeRdbStoreObserver();
-    bool UnSubscribeRdbStoreObserver();
-    void SetSyncOpts(MediaLibrarySyncOpts &syncOpts, const std::string &bundleName,
-        const std::string &tableName, int32_t rowId);
     static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     static constexpr int RDB_TRANSACTION_WAIT_MS = 1000;
@@ -103,7 +94,6 @@ public:
 
     int32_t OnCreate(NativeRdb::RdbStore &rdbStore) override;
     int32_t OnUpgrade(NativeRdb::RdbStore &rdbStore, int32_t oldVersion, int32_t newVersion) override;
-    bool HasDistributedTables();
 
 private:
     int32_t PrepareDir(NativeRdb::RdbStore &store);
@@ -111,7 +101,6 @@ private:
 
     int32_t InsertDirValues(const DirValuesBucket &dirValuesBucket, NativeRdb::RdbStore &store);
     int32_t InsertSmartAlbumValues(const SmartAlbumValuesBucket &smartAlbum, NativeRdb::RdbStore &store);
-    bool isDistributedTables = false;
 };
 
 class MediaLibraryRdbStoreObserver : public NativeRdb::RdbStore::RdbStoreObserver {
