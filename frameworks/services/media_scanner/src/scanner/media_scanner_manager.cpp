@@ -131,5 +131,12 @@ void MediaScannerManager::ScanError()
     std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(MediaScannerObj::ERROR);
     executor_.Commit(move(scanner));
 }
+
+void MediaScannerManager::ErrorRecord(const std::string &path)
+{
+    std::unique_ptr<MediaScannerObj> scanner = std::make_unique<MediaScannerObj>(MediaScannerObj::SET_ERROR);
+    scanner->SetErrorPath(path);
+    executor_.Commit(move(scanner));
+}
 } // namespace Media
 } // namespace OHOS

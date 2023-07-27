@@ -49,6 +49,7 @@ public:
     static void RegisterObserverExt(const Uri &uri,
         std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants);
     static void UnregisterObserverExt(const Uri &uri, std::shared_ptr<DataShare::DataShareObserver> dataObserver);
+    static void Clear();
 private:
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);

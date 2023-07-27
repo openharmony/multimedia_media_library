@@ -26,6 +26,7 @@ namespace MediaTool {
 class UserFileClientEx {
 public:
     static bool Init(const sptr<IRemoteObject> &token);
+    static void Clear();
     static int32_t Insert(const std::string &tableName, const std::string &name);
     static int32_t Query(const std::string &tableName, const std::string &uri,
         std::shared_ptr<DataShare::DataShareResultSet> &resultSet);

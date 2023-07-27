@@ -151,6 +151,11 @@ bool UserFileClientEx::Init(const sptr<IRemoteObject> &token)
     return UserFileClient::IsValid();
 }
 
+void UserFileClientEx::Clear()
+{
+    UserFileClient::Clear();
+}
+
 int32_t UserFileClientEx::Insert(const std::string &tableName, const std::string &name)
 {
     std::string insertUriStr = GetInsertUri(tableName);

@@ -191,5 +191,10 @@ void UserFileClient::UnregisterObserverExt(const Uri &uri, std::shared_ptr<DataS
     }
     sDataShareHelper_->UnregisterObserverExt(uri, std::move(dataObserver));
 }
+
+void UserFileClient::Clear()
+{
+    sDataShareHelper_ = nullptr;
+}
 }
 }

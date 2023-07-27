@@ -34,6 +34,7 @@ public:
     void Start();
     void Stop();
     void ScanError();
+    void ErrorRecord(const std::string &path = ROOT_MEDIA_DIR);
 
     int32_t ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
