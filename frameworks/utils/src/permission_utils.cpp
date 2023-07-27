@@ -168,6 +168,17 @@ bool PermissionUtils::IsSystemApp()
     return TokenIdKit::IsSystemAppByFullTokenID(tokenId);
 }
 
+bool PermissionUtils::CheckIsSystemAppByUid()
+{
+    int uid = IPCSkeleton::GetCallingUid();
+    bundleMgr_ = GetSysBundleManager();
+    if (bundleMgr_ == nullptr) {
+        MEDIA_ERR_LOG("Can not get bundleMgr");
+        return false;
+    }
+    return bundleMgr_->CheckIsSystemAppByUid(uid);
+}
+
 bool PermissionUtils::IsNativeSAApp()
 {
     uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
