@@ -27,6 +27,8 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
+const string TDD_TEST_PATH = "/storage/cloud/files/Photo/";
+
 HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleDirOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
@@ -55,9 +57,11 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleDirOperation_test_002, TestSize
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
+    values.PutString(MEDIA_DATA_DB_NAME, ".nofile");
     values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, "medialib_HandleDirOperation_testCase_002");
-    cmd.SetValueBucket(values);
-    ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
+    MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
+    cmd1.SetValueBucket(values);
+    ret = MediaLibraryDirOperations::HandleDirOperation(cmd1);
     EXPECT_EQ((ret > E_OK || ret == E_FILE_EXIST), true);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
@@ -75,7 +79,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleDirOperation_test_003, TestSize
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, "medialib_handleTestCase_01");
+    valuesBucket.PutString(TDD_TEST_PATH, "medialib_handleTestCase_01");
     valuesBucket.PutInt(MEDIA_DATA_DB_ID, 0);
     cmd.SetValueBucket(valuesBucket);
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
@@ -83,7 +87,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleDirOperation_test_003, TestSize
 
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::TRASH);
     ValuesBucket values;
-    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, "medialib_handleTestCase_02");
+    values.PutString(TDD_TEST_PATH, "medialib_handleTestCase_02");
     values.PutInt(MEDIA_DATA_DB_ID, 10);
     cmd1.SetValueBucket(values);
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd1);
@@ -101,7 +105,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleDirOperation_test_004, TestSize
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
     ValuesBucket values;
-    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, "medialib_HandleDirOperation_test_004");
+    values.PutString(TDD_TEST_PATH, "medialib_HandleDirOperation_test_004");
     values.PutInt(MEDIA_DATA_DB_ID, 11);
     cmd.SetValueBucket(values);
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
@@ -113,20 +117,23 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateDirOperation_test_001, TestSize
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
-    MediaLibraryCommand cmd(uri, OperationType::QUERY);
+    MediaLibraryCommand cmd(uri, OperationType::CREATE);
     int32_t ret = MediaLibraryDirOperations::CreateDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
     ValuesBucket values;
-    cmd.SetValueBucket(values);
-    ret = MediaLibraryDirOperations::CreateDirOperation(cmd);
+    MediaLibraryCommand cmd1(uri, OperationType::CREATE);
+    cmd1.SetValueBucket(values);
+    ret = MediaLibraryDirOperations::CreateDirOperation(cmd1);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
+    values.PutString(MEDIA_DATA_DB_NAME, ".nofile");
     values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, "medialib_CreateDirOperation_test_001");
-    cmd.SetValueBucket(values);
-    ret = MediaLibraryDirOperations::CreateDirOperation(cmd);
+    MediaLibraryCommand cmd2(uri, OperationType::CREATE);
+    cmd2.SetValueBucket(values);
+    ret = MediaLibraryDirOperations::CreateDirOperation(cmd2);
     EXPECT_EQ((ret > E_OK || ret == E_FILE_EXIST), true);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
@@ -146,7 +153,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_TrashDirOperation_test_001, TestSize.
     ret = MediaLibraryDirOperations::TrashDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
-    values.PutString(MEDIA_DATA_DB_RELATIVE_PATH, "medialib_TrashTestCase_01");
+    values.PutString(TDD_TEST_PATH, "medialib_TrashTestCase_01");
     values.PutInt(MEDIA_DATA_DB_ID, 0);
     cmd.SetValueBucket(values);
     ret = MediaLibraryDirOperations::TrashDirOperation(cmd);
@@ -154,7 +161,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_TrashDirOperation_test_001, TestSize.
 
     MediaLibraryCommand cmd1(uri, OperationType::QUERY);
     ValuesBucket valuesBucket;
-    valuesBucket.PutString(MEDIA_DATA_DB_RELATIVE_PATH, "medialib_TrashTestCase_02");
+    valuesBucket.PutString(TDD_TEST_PATH, "medialib_TrashTestCase_02");
     valuesBucket.PutInt(MEDIA_DATA_DB_ID, 12);
     cmd1.SetValueBucket(valuesBucket);
     ret = MediaLibraryDirOperations::TrashDirOperation(cmd1);
