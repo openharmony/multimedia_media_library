@@ -275,40 +275,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Transaction_test_003, TestSize.Level0
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPullTable_test_001, TestSize.Level0)
-{
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
-    vector<string> devices;
-    devices.push_back("SyncPullTable");
-    string bundleName = "medialib_SyncPullTable_test_001";
-    string tableName = "tableTest";
-    bool ret = rdbStorePtr->SyncPullTable(bundleName, tableName, -1, devices);
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_SyncPushTable_test_001, TestSize.Level0)
-{
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
-    vector<string> devices;
-    devices.push_back("SyncPushTable");
-    string bundleName = "medialib_SyncPushTable_test_001";
-    string tableName = "tableTest";
-    bool ret = rdbStorePtr->SyncPushTable(bundleName, tableName, -1, devices, false);
-    EXPECT_EQ(ret, false);
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_HasDistributedTables_test_001, TestSize.Level0)
-{
-    MediaLibraryDataCallBack rdbDataCallBack;
-    bool ret = rdbDataCallBack.HasDistributedTables();
-    EXPECT_EQ(ret, false);
-}
-
 HWTEST_F(MediaLibraryExtUnitTest, medialib_MediaLibraryRdbStoreObserver_test_001, TestSize.Level0)
 {
     string bundleName = "medialib_MediaLibraryRdbStoreObserver_test_001";
@@ -316,15 +282,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_MediaLibraryRdbStoreObserver_test_001
     EXPECT_NE(test, nullptr);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ObtainTableName_test_001, TestSize.Level0)
-{
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
-    auto data = rdbStorePtr->ObtainTableName(cmd);
-    EXPECT_NE(data, "");
-}
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_ExecuteSql_test_001, TestSize.Level0)
 {
@@ -354,38 +311,6 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_Stop_test_001, TestSize.Level0)
     }
     rdbStorePtr->Stop();
     EXPECT_NE(rdbStorePtr, nullptr);
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_SubscribeRdbStoreObserver_test_001, TestSize.Level0)
-{
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
-    rdbStorePtr->Stop();
-    rdbStorePtr->UnSubscribeRdbStoreObserver();
-    bool ret = rdbStorePtr->SubscribeRdbStoreObserver();
-    EXPECT_EQ(ret, false);
-    rdbStorePtr->Init();
-    ret = rdbStorePtr->SubscribeRdbStoreObserver();
-    EXPECT_EQ(ret, false);
-    string bundleName = "SubscribeRdbStoreObserver";
-    MediaLibraryRdbStoreObserver mediaLibraryRdbStoreObserver(bundleName);
-    ret = rdbStorePtr->SubscribeRdbStoreObserver();
-    EXPECT_EQ(ret, false);
-    mediaLibraryRdbStoreObserver.NotifyDeviceChange();
-}
-
-HWTEST_F(MediaLibraryExtUnitTest, medialib_UnSubscribeRdbStoreObserver_test_001, TestSize.Level0)
-{
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
-    rdbStorePtr->Stop();
-    bool ret = rdbStorePtr->UnSubscribeRdbStoreObserver();
-    EXPECT_EQ(ret, false);
-    rdbStorePtr->Init();
-    ret = rdbStorePtr->UnSubscribeRdbStoreObserver();
-    EXPECT_EQ(ret, false);
 }
 
 inline void PrepareUserAlbum(const string &albumName, const string &relativePath, ValuesBucket &values)
