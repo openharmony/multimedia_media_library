@@ -52,6 +52,11 @@ void MediaScannerObj::SetStopFlag(std::shared_ptr<bool> &flag)
     stopFlag_ = flag;
 }
 
+void MediaScannerObj::SetErrorPath(const std::string &path)
+{
+    errorPath_ = path;
+}
+
 int32_t MediaScannerObj::ScanFile()
 {
     MEDIA_DEBUG_LOG("scan file %{private}s", path_.c_str());
@@ -94,6 +99,9 @@ void MediaScannerObj::Scan()
             break;
         case ERROR:
             ScanError();
+            break;
+        case SET_ERROR:
+            SetError();
             break;
         default:
             break;
@@ -650,8 +658,8 @@ int32_t MediaScannerObj::Start()
 
 int32_t MediaScannerObj::ScanError(bool isBoot)
 {
-    auto errList = mediaScannerDb_->ReadError();
-    for (auto &err : errList) {
+    auto errSet = mediaScannerDb_->ReadError();
+    for (auto &err : errSet) {
         string realPath;
         if (!PathToRealPath(err, realPath)) {
             MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", err.c_str(), errno);
@@ -683,6 +691,17 @@ int32_t MediaScannerObj::ScanError(bool isBoot)
             path_ = move(realPath);
             (void)ScanFile();
         }
+    }
+
+    return E_OK;
+}
+
+int32_t MediaScannerObj::SetError()
+{
+    int32_t ret = mediaScannerDb_->RecordError(errorPath_);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("record err fail %{public}d", ret);
+        return ret;
     }
 
     return E_OK;

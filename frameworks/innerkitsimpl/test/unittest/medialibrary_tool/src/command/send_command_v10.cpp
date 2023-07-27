@@ -168,10 +168,12 @@ static int32_t SendFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
     for (auto &fileInfo : fileInfos) {
         int32_t ret = SendFile(env, fileInfo);
         if (ret != Media::E_OK) {
+            printf("%s send uri [%s] failed.\n", STR_FAIL.c_str(), fileInfo.uri.c_str());
             return ret;
+        } else {
+            fileInfo.toBeRemove = true;
+            printf("%s\n", fileInfo.uri.c_str());
         }
-        fileInfo.toBeRemove = true;
-        printf("%s\n", fileInfo.uri.c_str());
     }
     return Media::E_OK;
 }
