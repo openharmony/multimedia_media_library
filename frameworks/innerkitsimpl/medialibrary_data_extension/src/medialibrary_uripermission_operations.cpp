@@ -53,7 +53,7 @@ static bool CheckMode(string& mode)
 
 int32_t UriPermissionOperations::HandleUriPermOperations(MediaLibraryCommand &cmd)
 {
-    if (!PermissionUtils::IsSystemApp()) {
+    if (!PermissionUtils::CheckIsSystemAppByUid()) {
         MEDIA_ERR_LOG("the caller is not system app");
         return E_PERMISSION_DENIED;
     }
