@@ -434,8 +434,6 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
     }
     transactionOprn.Finish();
 
-    MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
-    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
     errCode = SendTrashNotify(cmd, fileAsset->GetId());
     if (errCode == E_OK) {
         return rowId;

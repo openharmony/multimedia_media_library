@@ -894,6 +894,9 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
     if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_DATE_TRASHED, value)) {
         return E_DO_NOT_NEDD_SEND_NOTIFY;
     }
+    MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
+
     value.GetLong(trashDate);
     auto watch = MediaLibraryNotify::GetInstance();
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
@@ -932,6 +935,7 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, i
         return;
     }
     value.GetInt(isFavorite);
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({ to_string(PhotoAlbumSubType::FAVORITE) });
     auto watch = MediaLibraryNotify::GetInstance();
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
