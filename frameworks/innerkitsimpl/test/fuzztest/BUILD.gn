@@ -23,6 +23,8 @@ group("media_library_fuzztest") {
     "medialibrary_fuzzer:MediaLibraryFuzzTest",
     "notifyChange_fuzzer:NotifyChangeFuzzTest",
     "openFile_fuzzer:openFileFuzzTest",
+    "registerObserver_fuzzer:RegisterObserverFuzzTest",
+    "unRegisterObserver_fuzzer:UnregisterObserverFuzzTest",
     "update_fuzzer:UpDateFuzzTest",
   ]
 }
