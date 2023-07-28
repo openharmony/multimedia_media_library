@@ -953,6 +953,45 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, i
     }
 }
 
+int32_t MediaLibraryAssetOperations::SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId)
+{
+    ValueObject value;
+    int32_t hiddenState = 0;
+    if (!cmd.GetValueBucket().GetObject(MediaColumn::MEDIA_HIDDEN, value)) {
+        return E_DO_NOT_NEDD_SEND_NOTIFY;
+    }
+    value.GetInt(hiddenState);
+    MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
+
+    string prefix;
+    if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
+        prefix = PhotoColumn::PHOTO_URI_PREFIX;
+    } else if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_AUDIO) {
+        prefix = AudioColumn::AUDIO_URI_PREFIX;
+    } else {
+        return E_OK;
+    }
+
+    string notifyUri = prefix + to_string(rowId);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (hiddenState > 0) {
+        watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+    } else {
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+    }
+
+    int hiddenAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::HIDDEN);
+    if (hiddenAlbumId <= 0) {
+        return E_OK;
+    }
+    NotifyType type = (hiddenState > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+    watch->Notify(notifyUri, type, hiddenAlbumId);
+    return E_OK;
+}
+
 bool MediaLibraryAssetOperations::GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values,
     const std::string &column, int32_t &value)
 {
