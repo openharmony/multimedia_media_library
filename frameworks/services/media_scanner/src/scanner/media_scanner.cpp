@@ -317,7 +317,9 @@ int32_t MediaScannerObj::GetFileMetadata()
 
     // file path
     data_->SetFilePath(path_);
-    data_->SetFileName(ScannerUtils::GetFileNameFromUri(path_));
+    if (data_->GetFileId() == FILE_ID_DEFAULT) {
+        data_->SetFileName(ScannerUtils::GetFileNameFromUri(path_));
+    }
     data_->SetFileTitle(ScannerUtils::GetFileTitle(data_->GetFileName()));
 
     // statinfo

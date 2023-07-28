@@ -23,6 +23,7 @@
 #include "file_asset.h"
 #include "media_column.h"
 #include "media_file_utils.h"
+#include "media_file_uri.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_album_operations.h"
@@ -887,7 +888,7 @@ void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThum
     }
 }
 
-int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId)
+int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
 {
     ValueObject value;
     int64_t trashDate = 0;
@@ -898,36 +899,36 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
     MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
 
     value.GetLong(trashDate);
-    auto watch = MediaLibraryNotify::GetInstance();
+
+    string prefix;
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
-        int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-        if (trashDate > 0) {
-            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_REMOVE);
-            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
-            if (trashAlbumId > 0) {
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-                    NotifyType::NOTIFY_ALBUM_ADD_ASSERT, trashAlbumId);
-            }
-        } else {
-            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ADD);
-            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
-            if (trashAlbumId > 0) {
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-                    NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
-            }
-        }
+        prefix = PhotoColumn::PHOTO_URI_PREFIX;
     } else if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_AUDIO) {
-        if (trashDate > 0) {
-            watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_REMOVE);
-        } else {
-            watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(rowId), NotifyType::NOTIFY_ADD);
-        }
+        prefix = AudioColumn::AUDIO_URI_PREFIX;
+    } else {
+        return E_OK;
     }
 
+    string notifyUri = MediaFileUtils::GetUriByExtrConditions(prefix, to_string(rowId), extraUri);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (trashDate > 0) {
+        watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+    } else {
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+    }
+
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    if (trashAlbumId <= 0) {
+        return E_OK;
+    }
+    NotifyType type = (trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+    watch->Notify(notifyUri, type, trashAlbumId);
     return E_OK;
 }
 
-void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId)
+void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
 {
     ValueObject value;
     int32_t isFavorite = 0;
@@ -937,23 +938,20 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, i
     value.GetInt(isFavorite);
     MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({ to_string(PhotoAlbumSubType::FAVORITE) });
     auto watch = MediaLibraryNotify::GetInstance();
-    if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
-        int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
-        if (isFavorite != 0) {
-            if (favAlbumId > 0) {
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-                    NotifyType::NOTIFY_ALBUM_ADD_ASSERT, favAlbumId);
-            }
-        } else {
-            if (favAlbumId > 0) {
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(rowId),
-                    NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, favAlbumId);
-            }
-        }
+    if (cmd.GetOprnObject() != OperationObject::FILESYSTEM_PHOTO) {
+        return;
     }
+    int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
+    if (favAlbumId <= 0) {
+        return;
+    }
+
+    NotifyType type = (isFavorite) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(rowId), extraUri),
+        type, favAlbumId);
 }
 
-int32_t MediaLibraryAssetOperations::SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId)
+int32_t MediaLibraryAssetOperations::SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
 {
     ValueObject value;
     int32_t hiddenState = 0;
@@ -973,7 +971,7 @@ int32_t MediaLibraryAssetOperations::SendHideNotify(MediaLibraryCommand &cmd, in
         return E_OK;
     }
 
-    string notifyUri = prefix + to_string(rowId);
+    string notifyUri = MediaFileUtils::GetUriByExtrConditions(prefix, to_string(rowId), extraUri);
     auto watch = MediaLibraryNotify::GetInstance();
     if (hiddenState > 0) {
         watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
@@ -1002,6 +1000,22 @@ bool MediaLibraryAssetOperations::GetInt32FromValuesBucket(const NativeRdb::Valu
         return false;
     }
     return true;
+}
+
+std::string MediaLibraryAssetOperations::CreateExtUriForV10Asset(FileAsset &fileAsset)
+{
+    const std::string &filePath = fileAsset.GetPath();
+    const std::string &displayName = fileAsset.GetDisplayName();
+    auto mediaType = fileAsset.GetMediaType();
+    if (filePath.empty() || displayName.empty() || mediaType < 0) {
+        MEDIA_ERR_LOG("param invalid, filePath %{public}s or displayName %{public}s invalid failed.",
+            filePath.c_str(), displayName.c_str());
+        return "";
+    }
+
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    return MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(mediaType,
+        MEDIA_API_VERSION_V10) + "/", to_string(fileAsset.GetId()), extrUri);
 }
 
 bool MediaLibraryAssetOperations::GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values,

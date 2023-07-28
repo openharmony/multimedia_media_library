@@ -74,7 +74,7 @@ static std::string SolveMediaType(MediaType mediaType)
     }
 }
 
-static std::string GetMediaTypeUri(MediaType mediaType, const int32_t &apiVersion)
+std::string MediaFileUri::GetMediaTypeUri(MediaType mediaType, const int32_t &apiVersion)
 {
     switch (apiVersion) {
         case MEDIA_API_VERSION_V9:
@@ -87,8 +87,8 @@ static std::string GetMediaTypeUri(MediaType mediaType, const int32_t &apiVersio
     }
 }
 
-std::string MediaFileUri::MediaFileUriConstruct(MediaType mediaType,
-    const std::string &fileId, const std::string &networkId, const int32_t &apiVersion)
+std::string MediaFileUri::MediaFileUriConstruct(MediaType mediaType, const std::string &fileId,
+    const std::string &networkId, const int32_t &apiVersion, const std::string &extrUri)
 {
     std::string uri = ML_FILE_URI_PREFIX;
     uri += GetMediaTypeUri(mediaType, apiVersion);
@@ -98,6 +98,11 @@ std::string MediaFileUri::MediaFileUriConstruct(MediaType mediaType,
 
     if (!networkId.empty()) {
         uri += ML_URI_NETWORKID_EQUAL + networkId;
+    }
+
+    if (apiVersion == MEDIA_API_VERSION_V10) {
+        uri += extrUri;
+        uri = MediaFileUtils::Encode(uri);
     }
     return uri;
 }
@@ -147,9 +152,44 @@ std::string MediaFileUri::GetNetworkId()
     return this->networkId_;
 }
 
+static void ParsePathWithExtrPara(std::string &path)
+{
+    auto index = path.rfind('/');
+    if (index == std::string::npos) {
+        MEDIA_ERR_LOG("find split for last string failed, %{private}s", path.c_str());
+        return;
+    }
+    auto lastStr = path.substr(index + 1);
+    auto uriTempNext = path.substr(0, index);
+    index = uriTempNext.rfind('/');
+    if (index == std::string::npos) {
+        MEDIA_ERR_LOG("find split for next string failed %{private}s", uriTempNext.c_str());
+        return;
+    }
+    auto preStr = uriTempNext.substr(index + 1);
+    if (lastStr.find('.') != std::string::npos) {
+        if (!all_of(preStr.begin(), preStr.end(), ::isdigit)) {
+            path = uriTempNext.substr(0, index);
+            return;
+        }
+        preStr = uriTempNext.substr(0, index);
+        index = preStr.rfind('/');
+        if (index == std::string::npos ||
+            !all_of(preStr.substr(index + 1).begin(), preStr.substr(index + 1).end(), ::isdigit)) {
+            path = uriTempNext;
+            return;
+        }
+        path = preStr;
+    }
+}
+
 static std::string CalFileId(MediaFileUri* uri)
 {
     std::string path = uri->GetPath();
+    if (uri->IsApi10()) {
+        ParsePathWithExtrPara(path);
+    }
+    
     if (path.length() < LEAST_PATH_LENGTH) {
         MEDIA_ERR_LOG("path is too short, path is %{private}s", path.c_str());
         return MEDIA_FILE_ID_DEFAULT;
@@ -393,6 +433,15 @@ std::string MediaFileUri::GetPathSecondDentry(Uri &uri)
     }
     // Example: file:://media/photo_operation/query, return the "query" part
     return path.substr(firstDentry.size() + 1);
+}
+
+std::string MediaFileUri::GetPhotoId(const std::string &uri)
+{
+    if (!MediaFileUtils::StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
+        return "";
+    }
+    std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
+    return tmp.substr(0, tmp.find_first_of('/'));
 }
 } // namespace Media
 } // namespace OHOS

@@ -365,7 +365,8 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     int rowId = CreatePhotoAlbum(albumName);
     auto watch = MediaLibraryNotify::GetInstance();
     if (rowId > 0) {
-        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX  + to_string(rowId), NotifyType::NOTIFY_ADD);
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(rowId)),
+            NotifyType::NOTIFY_ADD);
     }
     return rowId;
 }
@@ -381,8 +382,8 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
     auto watch = MediaLibraryNotify::GetInstance();
     for (size_t i = 0; i < predicates.GetWhereArgs().size() - AFTER_AGR_SIZE; i++) {
         if (deleteRow > 0) {
-            watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX +
-                predicates.GetWhereArgs()[i], NotifyType::NOTIFY_REMOVE);
+            watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
+                predicates.GetWhereArgs()[i]), NotifyType::NOTIFY_REMOVE);
         }
     }
     return deleteRow;
@@ -437,8 +438,8 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     auto watch = MediaLibraryNotify::GetInstance();
     if (changedRows > 0) {
         for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - AFTER_AGR_SIZE; i++) {
-            watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX +
-                rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_UPDATE);
+            watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
+                rdbPredicates.GetWhereArgs()[i]), NotifyType::NOTIFY_UPDATE);
         }
     }
     return changedRows;
@@ -545,11 +546,14 @@ static inline int32_t GetAlbumSubType(const shared_ptr<ResultSet> &resultSet)
 static inline string GetCover(const shared_ptr<ResultSet> &resultSet)
 {
     string coverUri;
-    int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
+    int32_t fileId = GetInt(resultSet, PhotoColumn::MEDIA_ID);
     if (fileId <= 0) {
         return coverUri;
     }
-    return PhotoColumn::PHOTO_URI_PREFIX + to_string(fileId);
+
+    string extrUri = MediaFileUtils::GetExtraUri(GetString(resultSet, PhotoColumn::MEDIA_NAME),
+        GetString(resultSet, PhotoColumn::MEDIA_FILE_PATH));
+    return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId), extrUri);
 }
 
 static void SetCount(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
@@ -579,34 +583,22 @@ static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<R
     }
 }
 
-static int32_t SetUpdateValues(const shared_ptr<ResultSet> &albumResult, ValuesBucket &values)
+static int32_t SetUpdateValues(const shared_ptr<ResultSet> &albumResult, ValuesBucket &values,
+    PhotoAlbumSubType subtype)
 {
     const vector<string> columns = {
         PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_NAME,
         CountByColumn(PhotoColumn::MEDIA_ID),
     };
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    PhotoAlbumColumns::GetUserAlbumPredicates(GetAlbumId(albumResult), predicates);
-    predicates.OrderByAsc(PhotoColumn::MEDIA_DATE_ADDED);
-    auto fileResult = QueryAlbumAssets(predicates, columns);
-    if (fileResult == nullptr) {
-        return E_HAS_DB_ERROR;
+    if (subtype) {
+        PhotoAlbumColumns::GetSystemAlbumPredicates(subtype, predicates);
+    } else {
+        PhotoAlbumColumns::GetUserAlbumPredicates(GetAlbumId(albumResult), predicates);
     }
-    SetCount(fileResult, albumResult, values);
-    SetCover(fileResult, albumResult, values);
-    return E_SUCCESS;
-}
-
-static int32_t SetSysUpdateValues(PhotoAlbumSubType subtype, const shared_ptr<ResultSet> &albumResult,
-    ValuesBucket &values)
-{
-    const vector<string> columns = {
-        PhotoColumn::MEDIA_ID,
-        CountByColumn(PhotoColumn::MEDIA_ID),
-    };
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    PhotoAlbumColumns::GetSystemAlbumPredicates(subtype, predicates);
     predicates.OrderByAsc(PhotoColumn::MEDIA_DATE_ADDED);
     auto fileResult = QueryAlbumAssets(predicates, columns);
     if (fileResult == nullptr) {
@@ -627,7 +619,7 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<ResultSet> &albumResult)
         return E_HAS_DB_ERROR;
     }
     ValuesBucket values;
-    err = SetUpdateValues(albumResult, values);
+    err = SetUpdateValues(albumResult, values, static_cast<PhotoAlbumSubType>(0));
     if (err < 0) {
         MEDIA_ERR_LOG("Failed to collect update values, err: %{public}d", err);
         return err;
@@ -658,7 +650,7 @@ static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<ResultSet> &albumResult)
     if (err != NativeRdb::E_OK) {
         return E_HAS_DB_ERROR;
     }
-    err = SetSysUpdateValues(subtype, albumResult, values);
+    err = SetUpdateValues(albumResult, values, subtype);
     if (err < 0) {
         return err;
     }
@@ -740,6 +732,8 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    vector<string> whereArgs = rdbPredicates.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicates);
 
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);
@@ -748,19 +742,22 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     if (changedRows < 0) {
         return changedRows;
     }
-    auto watch = MediaLibraryNotify::GetInstance();
-    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-    for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - THAN_AGR_SIZE; i++) {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i], NotifyType::NOTIFY_ADD);
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i],
-            NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
-        if (trashAlbumId > 0) {
-            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i],
-                NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
-        }
-    }
     MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
     MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    size_t count = whereArgs.size() - THAN_AGR_SIZE;
+    for (size_t i = 0; i < count; i++) {
+        string notifyUri = MediaFileUtils::Encode(whereArgs[i]);
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+    }
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    if (trashAlbumId > 0) {
+        for (size_t i = 0; i < count; i++) {
+            watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
+        }
+    }
     return changedRows;
 }
 
@@ -768,25 +765,22 @@ int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    vector<string> whereArgs = rdbPredicates.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicates);
+
     int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(rdbPredicates);
+    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({ to_string(PhotoAlbumSubType::TRASH) });
+
     auto watch = MediaLibraryNotify::GetInstance();
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-    if (!isAging) {
-        for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - THAN_AGR_SIZE; i++) {
-            if (trashAlbumId > 0) {
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i],
-                    NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
-            }
-        }
-    } else {
-        for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - AGING_AGR_SIZE; i++) {
-            if (trashAlbumId > 0) {
-                watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + rdbPredicates.GetWhereArgs()[i],
-                    NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
-            }
-        }
+    if (trashAlbumId <= 0) {
+        return deletedRows;
     }
-    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({ to_string(PhotoAlbumSubType::TRASH) });
+
+    size_t count = whereArgs.size() - (isAging ? AGING_AGR_SIZE : THAN_AGR_SIZE);
+    for (size_t i = 0; i < count; i++) {
+        watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
+    }
     return deletedRows;
 }
 
