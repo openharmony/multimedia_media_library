@@ -78,6 +78,7 @@ protected:
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId);
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId);
+    static int32_t SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId);
 
     static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         int32_t &value);
