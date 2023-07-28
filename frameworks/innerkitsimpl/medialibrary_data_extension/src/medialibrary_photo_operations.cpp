@@ -439,6 +439,7 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
         return rowId;
     }
     SendFavoriteNotify(cmd, fileAsset->GetId());
+    SendHideNotify(cmd, fileAsset->GetId());
     auto watch = MediaLibraryNotify::GetInstance();
     watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(fileAsset->GetId()), NotifyType::NOTIFY_UPDATE);
     return rowId;
