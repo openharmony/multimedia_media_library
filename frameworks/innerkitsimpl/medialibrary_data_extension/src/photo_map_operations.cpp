@@ -17,12 +17,15 @@
 #include "photo_map_operations.h"
 
 #include "media_column.h"
+#include "media_file_uri.h"
+#include "media_file_utils.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_asset_operations.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "value_object.h"
@@ -32,7 +35,7 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 
-int32_t AddSingleAsset(const DataShareValuesBucket &value)
+int32_t PhotoMapOperations::AddSingleAsset(const DataShareValuesBucket &value)
 {
     /**
      * Build insert sql:
@@ -58,11 +61,15 @@ int32_t AddSingleAsset(const DataShareValuesBucket &value)
     if (!isValid) {
         return -EINVAL;
     }
-    string assetId = value.Get(PhotoMap::ASSET_ID, isValid);
+    string assetUri = value.Get(PhotoMap::ASSET_ID, isValid);
     if (!isValid) {
         return -EINVAL;
     }
 
+    string assetId = MediaFileUri::GetPhotoId(assetUri);
+    if (assetId.empty()) {
+        return -EINVAL;
+    }
     vector<ValueObject> bindArgs;
     bindArgs.emplace_back(albumId);
     bindArgs.emplace_back(assetId);
@@ -75,8 +82,7 @@ int32_t AddSingleAsset(const DataShareValuesBucket &value)
     int errCode =  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
     auto watch = MediaLibraryNotify::GetInstance();
     if (errCode > 0) {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + assetId,
-            NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
+        watch->Notify(MediaFileUtils::Encode(assetUri), NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
     }
     return errCode;
 }
@@ -116,18 +122,23 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
 
 int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
 {
+    vector<string> whereArgs = predicates.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     int deleteRow = MediaLibraryRdbStore::Delete(predicates);
+    if (deleteRow <= 0) {
+        return deleteRow;
+    }
+
     string strAlbumId = predicates.GetWhereArgs()[0];
     if (strAlbumId.empty()) {
         MEDIA_ERR_LOG("Failed to get albumId");
         return deleteRow;
     }
+    int32_t albumId = atoi(strAlbumId.c_str());
+
     auto watch = MediaLibraryNotify::GetInstance();
-    for (size_t i = 1; i < predicates.GetWhereArgs().size(); i++) {
-        if (deleteRow > 0) {
-            watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + predicates.GetWhereArgs()[i],
-                NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, atoi(strAlbumId.c_str()));
-        }
+    for (size_t i = 1; i < whereArgs.size(); i++) {
+        watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, albumId);
     }
     MediaLibraryAlbumOperations::UpdateUserAlbumInternal({ strAlbumId });
     return deleteRow;

@@ -39,7 +39,7 @@ public:
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
     static int32_t CreateV10(MediaLibraryCommand &cmd);
-    static int32_t DeletePhoto(const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t DeletePhoto(const std::shared_ptr<FileAsset> &fileAsset, MediaLibraryApi api);
     static int32_t UpdateV9(MediaLibraryCommand &cmd);
     static int32_t UpdateV10(MediaLibraryCommand &cmd);
     static int32_t TrashPhotos(MediaLibraryCommand &cmd);

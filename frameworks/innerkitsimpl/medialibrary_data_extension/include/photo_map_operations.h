@@ -18,6 +18,9 @@
 
 #include "datashare_values_bucket.h"
 #include "rdb_predicates.h"
+#include "file_asset.h"
+#include "userfile_manager_types.h"
+#include "medialibrary_command.h"
 #include "result_set.h"
 
 namespace OHOS::Media {
@@ -27,6 +30,8 @@ public:
     static int32_t RemovePhotoAssets(NativeRdb::RdbPredicates &predicates);
     static std::shared_ptr<NativeRdb::ResultSet> QueryPhotoAssets(const NativeRdb::RdbPredicates &rdbPredicate,
         const std::vector<std::string> &columns);
+private:
+    static int32_t AddSingleAsset(const DataShare::DataShareValuesBucket &value);
 };
 } // namespace OHOS::Media
 #endif // OHOS_PHOTO_MAP_OPERATIONS_H

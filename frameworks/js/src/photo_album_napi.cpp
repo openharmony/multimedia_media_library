@@ -502,6 +502,14 @@ napi_value PhotoAlbumNapi::PhotoAccessHelperCommitModify(napi_env env, napi_call
         JSCommitModifyCompleteCallback);
 }
 
+static std::string GetAssetsUriArray(const FileAssetNapi *obj)
+{
+    string displayName = obj->GetFileDisplayName();
+    string filePath = obj->GetFilePath();
+    return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(obj->GetFileId()),
+        MediaFileUtils::GetExtraUri(displayName, filePath));
+}
+
 static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> &assetsArray)
 {
     bool isArray = false;
@@ -542,7 +550,7 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> 
             NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", obj->GetMediaType());
             continue;
         }
-        assetsArray.push_back(to_string(obj->GetFileId()));
+        assetsArray.push_back(GetAssetsUriArray(obj));
     }
 
     napi_value result = nullptr;

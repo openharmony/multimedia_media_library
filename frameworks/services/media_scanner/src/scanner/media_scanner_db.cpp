@@ -239,9 +239,10 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, string &tableNam
         return "";
     }
     if (api == MediaLibraryApi::API_10) {
-        return mediaTypeUri + "/" + to_string(rowNum) + "?api_version=10";
+        return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(rowNum),
+            MediaFileUtils::GetExtraUri(metadata.GetFileName(), metadata.GetFilePath())) + "?api_version=10";
     }
-    return mediaTypeUri + "/" + to_string(rowNum);
+    return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(rowNum));
 }
 
 vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
@@ -317,9 +318,10 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableNam
         return "";
     }
     if (api == MediaLibraryApi::API_10) {
-        return mediaTypeUri + "/" + to_string(metadata.GetFileId()) + "?api_version=10";
+        return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(metadata.GetFileId()),
+            MediaFileUtils::GetExtraUri(metadata.GetFileName(), metadata.GetFilePath())) + "?api_version=10";
     }
-    return mediaTypeUri + "/" + to_string(metadata.GetFileId());
+    return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(metadata.GetFileId()));
 }
 
 /**
