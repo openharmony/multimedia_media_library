@@ -1538,7 +1538,7 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     return result;
 }
 
-static int OpenThumbnail(const string &uriStr, const string &path, const Size &size)
+static int OpenThumbnail(string &uriStr, const string &path, const Size &size)
 {
     if (!path.empty()) {
         string sandboxPath = GetSandboxPath(path, IsThumbnail(size.width, size.height));
@@ -1549,6 +1549,9 @@ static int OpenThumbnail(const string &uriStr, const string &path, const Size &s
         if (fd > 0) {
             return fd;
         }
+        if (IsAsciiString(path)) {
+            uriStr += "&" + THUMBNAIL_PATH + "=" + path;
+        }
     }
     Uri openUri(uriStr);
     return UserFileClient::OpenFile(openUri, "R");
@@ -1558,7 +1561,7 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
     const bool isApiVersion10, const string &path)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("QueryThumbnail");
+    tracer.Start("QueryThumbnail uri:" + uri);
 
     string openUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
         "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
