@@ -17,6 +17,7 @@
 #define MEDIA_SCANNER_DB_H
 
 #include <list>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -66,7 +67,7 @@ public:
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
 
     int32_t RecordError(const std::string &err);
-    std::vector<std::string> ReadError();
+    std::set<std::string> ReadError();
     int32_t DeleteError(const std::string &err);
 
 private:

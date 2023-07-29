@@ -736,7 +736,7 @@ int32_t MediaScannerDb::RecordError(const std::string &err)
     return E_OK;
 }
 
-std::vector<std::string> MediaScannerDb::ReadError()
+std::set<std::string> MediaScannerDb::ReadError()
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
@@ -768,14 +768,13 @@ std::vector<std::string> MediaScannerDb::ReadError()
     }
 
     string str;
-    vector<string> errList;
-    errList.reserve(rowCount);
+    set<string> errSet;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         resultSet->GetString(0, str);
-        errList.emplace_back(move(str));
+        errSet.insert(move(str));
     }
 
-    return errList;
+    return errSet;
 }
 
 int32_t MediaScannerDb::DeleteError(const std::string &err)

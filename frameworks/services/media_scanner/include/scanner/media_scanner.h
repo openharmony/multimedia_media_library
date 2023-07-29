@@ -67,7 +67,8 @@ public:
         FILE,
         DIRECTORY,
         START,
-        ERROR
+        ERROR,
+        SET_ERROR
     };
 
     MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
@@ -79,6 +80,9 @@ public:
 
     /* stop */
     void SetStopFlag(std::shared_ptr<bool> &stopFlag);
+
+    /* Record Error */
+    void SetErrorPath(const std::string &path);
 
 private:
     /* file */
@@ -103,6 +107,9 @@ private:
     int32_t Start();
     int32_t ScanError(bool isBoot = false);
 
+    /* set error */
+    int32_t SetError();
+
     /* db ops */
     int32_t Commit();
     int32_t AddToTransaction();
@@ -115,6 +122,7 @@ private:
     std::string path_;
     std::string dir_;
     std::string uri_;
+    std::string errorPath_;
     std::unique_ptr<MediaScannerDb> mediaScannerDb_;
     std::shared_ptr<IMediaScannerCallback> callback_;
     std::shared_ptr<bool> stopFlag_;
@@ -128,7 +136,7 @@ private:
 
 class ScanErrCallback : public IMediaScannerCallback {
 public:
-    ScanErrCallback(std::string &err) : err_(err) {};
+    ScanErrCallback(const std::string &err) : err_(err) {};
     ~ScanErrCallback() = default;
 
     int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override
