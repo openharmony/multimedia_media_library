@@ -1428,8 +1428,11 @@ int32_t TransactionOperations::Start()
     if (isStart || isFinish) {
         return E_OK;
     }
-    isStart = true;
-    return BeginTransaction();
+    int32_t errCode = BeginTransaction();
+    if (errCode == NativeRdb::E_OK) {
+        isStart = true;
+    }
+    return errCode;
 }
 
 void TransactionOperations::Finish()
