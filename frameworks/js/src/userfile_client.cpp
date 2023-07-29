@@ -157,7 +157,7 @@ void UserFileClient::UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataA
 int UserFileClient::OpenFile(Uri &uri, const std::string &mode)
 {
     if (!IsValid()) {
-        NAPI_ERR_LOG("unregister observer fail, helper null");
+        NAPI_ERR_LOG("Open file fail, helper null");
         return E_FAIL;
     }
     return sDataShareHelper_->OpenFile(uri, mode);
