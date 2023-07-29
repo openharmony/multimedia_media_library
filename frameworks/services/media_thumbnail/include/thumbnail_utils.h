@@ -121,8 +121,9 @@ public:
     static bool QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
-
+    static Size ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail);
 private:
+    static constexpr float EPSILON = 1e-6;
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     static int64_t UTCTimeMilliSeconds();
     static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
@@ -132,7 +133,6 @@ private:
 
     static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
-    static Size ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail);
     static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
@@ -150,6 +150,20 @@ private:
     static bool InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool CleanDistributeLcdInfo(ThumbRdbOpt &opts);
 };
+
+inline Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail)
+{
+    float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
+    float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
+    float scale = 1.0f;
+    scale = ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) ?
+        (float)desiredSize.height / sourceSize.height : (float)desiredSize.width / sourceSize.width;
+    scale = scale < 1.0f ? scale : 1.0f;
+    Size decodeSize = {
+        static_cast<int32_t> (scale * sourceSize.width), static_cast<int32_t> (scale * sourceSize.height),
+    };
+    return decodeSize;
+}
 } // namespace Media
 } // namespace OHOS
 
