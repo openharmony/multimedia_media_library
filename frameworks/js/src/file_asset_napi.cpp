@@ -33,6 +33,7 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
+#include "post_proc.h"
 #include "rdb_errno.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
@@ -1557,12 +1558,53 @@ static int OpenThumbnail(string &uriStr, const string &path, const Size &size)
     return UserFileClient::OpenFile(openUri, "R");
 }
 
+static bool IfSizeEquals(Size& imageSize, Size& targetSize)
+{
+    return imageSize.width == targetSize.width
+        && imageSize.height == targetSize.height;
+}
+
+static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd& uniqueFd, Size& size)
+{
+    SourceOptions opts;
+    uint32_t err = 0;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
+    if (imageSource  == nullptr) {
+        NAPI_ERR_LOG("CreateImageSource err %{public}d", err);
+        return nullptr;
+    }
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("GetImageInfo err %{public}d", err);
+        return nullptr;
+    }
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = IfSizeEquals(imageInfo.size, size)?
+        size : ThumbnailUtils::ConvertDecodeSize(imageInfo.size, size, true);
+    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    uint32_t errorCode = 0;
+    unique_ptr<ImageSource> backupImgSrc = ImageSource::CreateImageSource(uniqueFd.Get(), opts, errorCode);
+    if (errorCode == Media::SUCCESS) {
+        PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, backupImgSrc, decodeOpts);
+    } else {
+        NAPI_ERR_LOG("Failed to backup image source when to be purgeable: %{public}d", errorCode);
+    }
+#endif
+    PostProc postProc;
+    if (!IfSizeEquals(imageInfo.size, size) && !postProc.CenterScale(decodeOpts.desiredSize, *pixelMap)) {
+        return nullptr;
+    }
+    return pixelMap;
+}
+
 static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
     const bool isApiVersion10, const string &path)
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnail uri:" + uri);
-
     string openUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
         "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
     if (isApiVersion10) {
@@ -1576,31 +1618,7 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
     }
     tracer.Finish();
     tracer.Start("ImageSource::CreateImageSource");
-    SourceOptions opts;
-    uint32_t err = 0;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
-    if (imageSource  == nullptr) {
-        NAPI_ERR_LOG("CreateImageSource err %{public}d", err);
-        return nullptr;
-    }
-
-    DecodeOptions decodeOpts;
-    decodeOpts.desiredSize = size;
-    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-#ifndef IMAGE_PURGEABLE_PIXELMAP
-    return imageSource->CreatePixelMap(decodeOpts, err);
-#else
-    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    uint32_t errorCode = 0;
-    unique_ptr<ImageSource> backupImgSrc = ImageSource::CreateImageSource(uniqueFd.Get(), opts, errorCode);
-    if (errorCode == Media::SUCCESS) {
-        PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, backupImgSrc, decodeOpts);
-    } else {
-        NAPI_ERR_LOG("Failed to backup image source when to be purgeable: %{public}d", errorCode);
-    }
-
-    return pixelMap;
-#endif
+    return DecodeThumbnail(uniqueFd, size);
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
