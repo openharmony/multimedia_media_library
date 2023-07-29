@@ -25,6 +25,8 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_tracer.h"
+#include "media_scanner.h"
+#include "media_scanner_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -1101,6 +1103,9 @@ void UpdateAPI10Table(RdbStore &store)
     API10TableCreate(store);
     PrepareSystemAlbums(store);
     PrepareUniqueMemberTable(store);
+
+    // set scan error
+    MediaScannerManager::GetInstance()->ErrorRecord();
 }
 
 void MediaLibraryRdbStore::UpdateAPI10Tables()

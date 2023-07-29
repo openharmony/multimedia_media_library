@@ -108,7 +108,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadAlbums_test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadError_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
-    vector<string> ret = mediaScannerDb.ReadError();
+    set<string> ret = mediaScannerDb.ReadError();
     EXPECT_EQ(ret.size(), 0);
 }
 
@@ -238,7 +238,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadAlbums_test_002, TestSize.Level0)
 HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadError_test_002, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
-    vector<string> ret = mediaScannerDb.ReadError();
+    set<string> ret = mediaScannerDb.ReadError();
     EXPECT_NE(ret.size(), 0);
     MediaLibraryUnitTestUtils::Init();
     ret = mediaScannerDb.ReadError();

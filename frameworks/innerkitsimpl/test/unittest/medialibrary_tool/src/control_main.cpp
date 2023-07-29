@@ -74,6 +74,11 @@ static int32_t InitDataShareHelper()
     return Media::E_OK;
 }
 
+static void Finish()
+{
+    UserFileClientEx::Clear();
+}
+
 static int32_t Init(ExecEnv &env, const std::vector<std::string> &args)
 {
     env.args.assign(args.begin(), args.end());
@@ -95,22 +100,26 @@ int32_t ControlMain::Main(const std::vector<std::string> &args)
     if (res != Media::E_OK) {
         return res;
     }
-    res = InitDataShareHelper();
-    if (res != Media::E_OK) {
-        return res;
-    }
-    MimeTypeUtils::InitMimeTypeMap();
-    std::unique_ptr<Command> cmd = Command::Create(env);
-    if (cmd == nullptr) {
-        return Media::E_ERR;
-    }
-    MEDIA_INFO_LOG("Main, env:{%{public}s}", env.ToStr().c_str());
-    res = cmd->Start(env);
-    if (res != Media::E_OK) {
-        MEDIA_ERR_LOG("Main, start, res:%{public}d", res);
-        return res;
-    }
-    return Media::E_OK;
+    do {
+        res = InitDataShareHelper();
+        if (res != Media::E_OK) {
+            break;
+        }
+        MimeTypeUtils::InitMimeTypeMap();
+        std::unique_ptr<Command> cmd = Command::Create(env);
+        if (cmd == nullptr) {
+            res = Media::E_ERR;
+            break;
+        }
+        MEDIA_INFO_LOG("Main, env:{%{public}s}", env.ToStr().c_str());
+        res = cmd->Start(env);
+        if (res != Media::E_OK) {
+            MEDIA_ERR_LOG("Main, start, res:%{public}d", res);
+            break;
+        }
+    } while (0);
+    Finish();
+    return res;
 }
 } // namespace MediaTool
 } // namespace Media
