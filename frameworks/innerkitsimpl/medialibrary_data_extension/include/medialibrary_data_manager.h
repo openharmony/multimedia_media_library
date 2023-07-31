@@ -35,6 +35,7 @@
 #include "uri.h"
 #include "values_bucket.h"
 #include "thumbnail_service.h"
+#include "bundle_mgr_interface.h"
 
 #define EXPORT __attribute__ ((visibility ("default")))
 
