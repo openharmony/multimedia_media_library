@@ -4119,12 +4119,21 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
 static napi_status CheckCreateOption(MediaLibraryAsyncContext &context)
 {
     bool isValid = false;
+    int32_t subtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
+    subtype = context.valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
     string cameraShotKey = context.valuesBucket.Get(PhotoColumn::CAMERA_SHOT_KEY, isValid);
-    int32_t subtype = context.valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
-    if ((cameraShotKey != "") && (PhotoSubType(subtype) != PhotoSubType::CAMERA)) {
-        NAPI_ERR_LOG("cameraShotKey is not null with subtype is not CAMERA");
-        return napi_invalid_arg;
+    if (isValid == true) {
+        if (cameraShotKey.size() != CAMERA_SHOT_KEY_SIZE) {
+            NAPI_ERR_LOG("cameraShotKey is not null with but is default size");
+            return napi_invalid_arg;
+        } else if (PhotoSubType(subtype) == PhotoSubType::SCREENSHOT) {
+            NAPI_ERR_LOG("cameraShotKey is not null with subtype is SCREENSHOT");
+            return napi_invalid_arg;
+        } else {
+            context.valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::CAMERA));
+        }
     }
+
     return napi_ok;
 }
 
