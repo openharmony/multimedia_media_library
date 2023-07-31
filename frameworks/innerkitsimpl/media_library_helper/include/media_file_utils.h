@@ -44,6 +44,7 @@ const int VIRTUAL_ID_DIVIDER = 5;
 const int PHOTO_VIRTUAL_IDENTIFIER = 4;
 const int AUDIO_VIRTUAL_IDENTIFIER = 3;
 const int FILE_VIRTUAL_IDENTIFIER = 2;
+const int CAMERA_SHOT_KEY_SIZE = 30;
 
 enum TrashType {
     NOT_TRASHED = 0,
