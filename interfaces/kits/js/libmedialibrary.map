@@ -1,8 +1,6 @@
 {
   global:
     extern "C++" {
-            "OHOS_MEDIA_NativeGetThumbnail";
-
             "OHOS::Media::MediaLibraryNapi::UserFileMgrInit(napi_env__*, napi_value__*)";
             "OHOS::Media::MediaLibraryNapi::JSGetActivePeers(napi_env__ *,napi_callback_info__ *)";
             "OHOS::Media::MediaLibraryNapi::UserFileMgrGetPrivateAlbum(napi_env__ *,napi_callback_info__ *)";

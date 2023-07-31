@@ -68,26 +68,27 @@ string PathSplicing(string subpath, int32_t type, string extrPath = "")
     return Uri;
 }
 
-void PreHandleExtrUriForThumbnailTest(string &fileUri)
+/**
+ * Get the file uri prefix with id
+ * eg. Input: file://media/Photo/10/IMG_xxx/01.jpg
+ *     Output: file://media/Photo/10
+ */
+static void GetUriIdPrefix(std::string &fileUri)
 {
     MediaFileUri mediaUri(fileUri);
     if (!mediaUri.IsApi10()) {
         return;
     }
-    // handle uri with extrUri
-    auto indexV10 = fileUri.rfind('/');
-    if (indexV10 == string::npos) {
+    auto slashIdx = fileUri.rfind('/');
+    if (slashIdx == std::string::npos) {
         return;
     }
-    auto uriTempNext = fileUri.substr(0, indexV10);
-    indexV10 = uriTempNext.rfind('/');
-    if (indexV10 == string::npos) {
+    auto tmpUri = fileUri.substr(0, slashIdx);
+    slashIdx = tmpUri.rfind('/');
+    if (slashIdx == std::string::npos) {
         return;
     }
-    auto nextStr = uriTempNext.substr(indexV10 + 1);
-    if (!all_of(nextStr.begin(), nextStr.end(), ::isdigit)) {
-        fileUri = uriTempNext.substr(0, indexV10);
-    }
+    fileUri = tmpUri.substr(0, slashIdx);
 }
 
 bool GetParamsFromUriTest(const string &uri, string &fileUri, const bool isOldVer, Size &size, string &path)
@@ -102,7 +103,7 @@ bool GetParamsFromUriTest(const string &uri, string &fileUri, const bool isOldVe
             return false;
         }
         fileUri = uri.substr(0, index - 1);
-        PreHandleExtrUriForThumbnailTest(fileUri);
+        GetUriIdPrefix(fileUri);
         index += strlen("thumbnail");
         index = uri.find('/', index);
         if (index == string::npos) {
@@ -125,7 +126,7 @@ bool GetParamsFromUriTest(const string &uri, string &fileUri, const bool isOldVe
             return false;
         }
         fileUri = uri.substr(0, qIdx);
-        PreHandleExtrUriForThumbnailTest(fileUri);
+        GetUriIdPrefix(fileUri);
         auto &queryKey = mediaUri.GetQueryKeys();
         if (queryKey.count(THUMBNAIL_PATH) != 0) {
             path = queryKey[THUMBNAIL_PATH];

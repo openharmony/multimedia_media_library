@@ -15,6 +15,8 @@
 
 #include "media_space_statistics_test.h"
 #include "datashare_helper.h"
+#include "fetch_result.h"
+#include "file_asset.h"
 #include "get_self_permissions.h"
 #include "hilog/log.h"
 #include "iservice_registry.h"
