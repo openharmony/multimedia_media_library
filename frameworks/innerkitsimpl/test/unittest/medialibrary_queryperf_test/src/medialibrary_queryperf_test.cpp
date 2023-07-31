@@ -18,7 +18,8 @@
 #include "datashare_helper.h"
 #include "get_self_permissions.h"
 #include "iservice_registry.h"
-#include "medialibrary_data_manager.h"
+
+#include "medialibrary_db_const.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unittest_utils.h"
 #include "media_file_utils.h"
@@ -27,6 +28,8 @@
 #include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "scanner_utils.h"
+#include "medialibrary_data_manager.h"
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS;
@@ -67,7 +70,24 @@ void MakeTestData()
     for (int i = 0; i < DATA_COUNT; i++) {
         int64_t rowId = -1;
         MediaLibraryDataManager::GetInstance()->rdbStore_->Insert(rowId, MEDIALIBRARY_TABLE, values);
-        sDataShareHelper_->Insert(uri, datashareValues);
+    }
+}
+
+void UriAppendKeyValue(string &uri, const string &key, std::string value)
+{
+    string uriKey = key + '=';
+    if (uri.find(uriKey) != string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
+    string append = queryMark + key + '=' + value;
+
+    size_t pos = uri.find('#');
+    if (pos == string::npos) {
+        uri += append;
+    } else {
+        uri.insert(pos, append);
     }
 }
 
@@ -78,6 +98,11 @@ void MediaLibraryQueryPerfUnitTest::SetUpTestCase(void)
     vector<string> perms;
     perms.push_back("ohos.permission.READ_MEDIA");
     perms.push_back("ohos.permission.WRITE_MEDIA");
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    perms.push_back("ohos.permission.MEDIA_LOCATION");
+    perms.push_back("ohos.permission.READ_AUDIO");
+    perms.push_back("ohos.permission.WRITE_AUDIO");
     uint64_t tokenId = 0;
     PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryQueryPerfUnitTest", perms, tokenId);
     ASSERT_TRUE(tokenId != 0);
@@ -465,22 +490,24 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_010, TestSi
 
 HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_011, TestSize.Level0)
 {
-    Uri uri(MEDIALIBRARY_DATA_URI);
+    string queryUri = PAH_QUERY_PHOTO;
+    UriAppendKeyValue(queryUri, "api_version", to_string(MEDIA_API_VERSION_V10));
+    Uri uri(queryUri);
     DataSharePredicates predicates;
-    vector<string> columns { MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_PARENT_ID, MEDIA_DATA_DB_RELATIVE_PATH,
-        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_BUCKET_ID,
-        MEDIA_DATA_DB_BUCKET_NAME, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_MODIFIED };
+    vector<string> columns { MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_IS_FAV, MEDIA_DATA_DB_RELATIVE_PATH,
+        MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_PARENT_ID,
+        MEDIA_DATA_DB_DATE_TAKEN, MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_MODIFIED };
 
     int32_t mediaType;
-    int32_t parentId;
-    int32_t bucketId;
+    int32_t is_favorite;
+    int32_t parent;
     int64_t dateAdded;
     int64_t dateModified;
     string relativePath;
     string mimeType;
     string displayName;
     string title;
-    string bucketName;
+    int64_t date_taken;
 
     int64_t start = UTCTimeSeconds();
     MediaLibraryTracer tracer;
@@ -494,13 +521,13 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_011, TestSi
         result->GoToFirstRow();
         do {
             mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
-            parentId = GetInt32Val(MEDIA_DATA_DB_PARENT_ID, result);
+            is_favorite = GetInt32Val(MEDIA_DATA_DB_IS_FAV, result);
             relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
             mimeType = GetStringVal(MEDIA_DATA_DB_MIME_TYPE, result);
             displayName = GetStringVal(MEDIA_DATA_DB_NAME, result);
             title = GetStringVal(MEDIA_DATA_DB_TITLE, result);
-            bucketId = GetInt32Val(MEDIA_DATA_DB_BUCKET_ID, result);
-            bucketName = GetStringVal(MEDIA_DATA_DB_BUCKET_NAME, result);
+            parent = GetInt32Val(MEDIA_DATA_DB_PARENT_ID, result);
+            date_taken = GetInt64Val(MEDIA_DATA_DB_DATE_TAKEN, result);
             dateAdded = GetInt64Val(MEDIA_DATA_DB_DATE_ADDED, result);
             dateModified = GetInt64Val(MEDIA_DATA_DB_DATE_MODIFIED, result);
         } while (!result->GoToNextRow());
