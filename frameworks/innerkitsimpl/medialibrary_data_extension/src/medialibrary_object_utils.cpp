@@ -289,7 +289,7 @@ int32_t MediaLibraryObjectUtils::DeleteRows(const vector<int64_t> &rowIds)
 int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t parentId)
 {
     string title = MediaFileUtils::GetFileName(path);
-    if (MediaFileUtils::CheckAlbumName(title) < 0) {
+    if (MediaFileUtils::CheckDentryName(title) < 0) {
         MEDIA_ERR_LOG("Check display name failed!");
         return E_INVALID_DISPLAY_NAME;
     }

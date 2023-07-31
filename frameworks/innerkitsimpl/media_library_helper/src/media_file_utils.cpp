@@ -485,7 +485,7 @@ int32_t MediaFileUtils::CheckRelativePath(const std::string &relativePath)
             return -EINVAL;
         }
         string checkedDirName = relativePath.substr(firstPoint, len);
-        if (CheckAlbumName(checkedDirName) != E_OK) {
+        if (CheckDentryName(checkedDirName) != E_OK) {
             MEDIA_ERR_LOG("Dir Name %{public}s is invalid in path %{public}s",
                 checkedDirName.c_str(), relativePath.c_str());
             return -EINVAL;
@@ -546,9 +546,24 @@ int32_t MediaFileUtils::CheckAlbumName(const string &albumName)
         return err;
     }
 
-    static const string TITLE_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
-    if (RegexCheck(albumName, TITLE_REGEX_CHECK)) {
-        MEDIA_ERR_LOG("Failed to check title regex: %{private}s", albumName.c_str());
+    static const string ALBUM_NAME_REGEX = R"([\.\\/:*?"'`<>|{}\[\]])";
+    if (RegexCheck(albumName, ALBUM_NAME_REGEX)) {
+        MEDIA_ERR_LOG("Failed to check album name regex: %{private}s", albumName.c_str());
+        return -EINVAL;
+    }
+    return E_OK;
+}
+
+int32_t MediaFileUtils::CheckDentryName(const string &dentryName)
+{
+    int err = CheckStringSize(dentryName, DISPLAYNAME_MAX);
+    if (err < 0) {
+        return err;
+    }
+
+    static const string DENTRY_REGEX_CHECK = R"([\\/:*?"'`<>|{}\[\]])";
+    if (RegexCheck(dentryName, DENTRY_REGEX_CHECK)) {
+        MEDIA_ERR_LOG("Failed to check dentry regex: %{private}s", dentryName.c_str());
         return -EINVAL;
     }
     return E_OK;
