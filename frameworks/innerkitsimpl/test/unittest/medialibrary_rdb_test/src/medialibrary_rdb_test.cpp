@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 #define MLOG_TAG "FileExtUnitTest"
+
+#include <chrono>
+#include <thread>
 #include "medialibrary_device.h"
 #include "medialibrary_rdb_test.h"
 #include "context.h"
@@ -355,20 +358,74 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_BuildValuesSql_test_001, TestSize.Lev
 
 HWTEST_F(MediaLibraryExtUnitTest, medialib_TransactionOperations_test_001, TestSize.Level0)
 {
-    TransactionOperations transactionOperations;
-    transactionOperations.Finish();
-    int32_t ret = transactionOperations.Start();
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    transactionOperations.Finish();
-    ret = transactionOperations.BeginTransaction();
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    ret = transactionOperations.TransactionCommit();
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    ret = transactionOperations.TransactionRollback();
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    ret = transactionOperations.Start();
+    MEDIA_INFO_LOG("medialib_TransactionOperations_test_001 begin");
+    TransactionOperations trans1;
+    rdbStorePtr->Init();
+    trans1.rdbStore_ = rdbStorePtr;
+    trans1.Finish();
+    int32_t ret = trans1.Start();
     EXPECT_EQ(ret, E_OK);
+    TransactionOperations trans2;
+    trans2.rdbStore_ = rdbStorePtr;
+    ret = trans2.Start();
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    trans1.Finish();
+    trans2.Finish();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    rdbStorePtr->Stop();
+    MEDIA_INFO_LOG("medialib_TransactionOperations_test_001 end");
+}
+
+void TransactionTestFunc(shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
+    int* startSignal, int* endSignal, int32_t sleepTimeMs)
+{
+    TransactionOperations transactionOperations;
+    transactionOperations.rdbStore_ = rdbStorePtr;
+    int32_t ret = transactionOperations.Start();
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Start failed, ret=%{public}d", ret);
+        return;
+    }
+    (*startSignal)++;
+    std::this_thread::sleep_for(std::chrono::milliseconds(sleepTimeMs));
     transactionOperations.Finish();
+    (*endSignal)++;
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_TransactionOperations_test_002, TestSize.Level0)
+{
+    // test Transcation success
+    MEDIA_INFO_LOG("medialib_TransactionOperations_test_002 begin");
+    rdbStorePtr->Init();
+    int startSignal = 0;
+    int endSignal = 0;
+    thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 0).detach();
+    thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 10).detach();
+    thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 50).detach();
+    thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 100).detach();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    EXPECT_EQ(startSignal, 4);
+    EXPECT_EQ(endSignal, 4);
+    rdbStorePtr->Stop();
+    MEDIA_INFO_LOG("medialib_TransactionOperations_test_002 finish");
+}
+
+HWTEST_F(MediaLibraryExtUnitTest, medialib_TransactionOperations_test_003, TestSize.Level0)
+{
+    // test Transcation failed
+    MEDIA_INFO_LOG("medialib_TransactionOperations_test_003 begin");
+    int startSignal = 0;
+    int endSignal = 0;
+    rdbStorePtr->Init();
+    thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 3000).detach();
+    thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 3000).detach();
+    thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 3000).detach();
+    thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 3000).detach();
+    std::this_thread::sleep_for(std::chrono::milliseconds(4000));
+    EXPECT_EQ(startSignal, 1);
+    EXPECT_EQ(endSignal, 1);
+    rdbStorePtr->Stop();
+    MEDIA_INFO_LOG("medialib_TransactionOperations_test_003 finish");
 }
 
 } // namespace Media
