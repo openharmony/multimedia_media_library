@@ -950,7 +950,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     ArkJsRuntime runtime;
     Uri parentUri(g_download->GetUri());
     shared_ptr<MediaFileExtAbility> mediaFileExtAbility = make_shared<MediaFileExtAbility>(runtime);
-    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_Test_001.jpg", fileAsset), E_SUCCESS);
+    ASSERT_EQ(mediaFileExtAbility->CreateFile(parentUri, "OpenFile_Test_002.jpg", fileAsset), E_SUCCESS);
     unordered_map<string, int32_t> expect {
         { MEDIA_FILEMODE_READONLY, E_PERMISSION_DENIED },
         { MEDIA_FILEMODE_WRITEONLY, E_PERMISSION_DENIED },

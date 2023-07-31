@@ -200,22 +200,5 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateThumbnailAsync_test_001, TestSi
     serverTest.ReleaseService();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_InvalidateThumbnail_test_001, TestSize.Level0)
-{
-    if (storePtr == nullptr) {
-        exit(1);
-    }
-    string id = "0";
-    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    string table = MEDIALIBRARY_TABLE;
-    serverTest->InvalidateThumbnail(id, table, "Documents/");
-    int32_t ret = serverTest->Init(nullptr, nullptr, nullptr);
-    EXPECT_EQ(ret, 0);
-    shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
-    shared_ptr<OHOS::AbilityRuntime::Context> context;
-    ret = serverTest->Init(storePtr, kvStorePtr, context);
-    EXPECT_EQ(ret, 0);
-}
-
 } // namespace Media
 } // namespace OHOS

@@ -341,6 +341,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_BuildValuesSql_test_001, TestSize.Lev
     MediaLibraryRdbStore::BuildQuerySql(predicates, columns, bindArgs, sql);
     int32_t ret = MediaLibraryRdbStore::ExecuteForLastInsertedRowId(sql, bindArgs);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    rdbStorePtr->Init();
     ret = MediaLibraryRdbStore::DeleteFromDisk(predicates);
     EXPECT_EQ(ret, E_SUCCESS);
     string retTest = MediaLibraryRdbStore::CloudSyncTriggerFunc(columns);
