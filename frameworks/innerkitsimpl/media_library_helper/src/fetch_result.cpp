@@ -347,8 +347,9 @@ void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
         string typeMask;
         MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
         fileAsset->SetTypeMask(typeMask);
+        string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
         MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
-             networkId_, MEDIA_API_VERSION_V10);
+             networkId_, MEDIA_API_VERSION_V10, extrUri);
         uri = fileUri.ToString();
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY

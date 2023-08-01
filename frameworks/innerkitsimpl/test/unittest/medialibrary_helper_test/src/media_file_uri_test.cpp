@@ -25,24 +25,26 @@ namespace OHOS {
 namespace Media {
 
 static const string networkId_ = "1d3cb099659d53b3ee15faaab3c00a8ff983382ebc8b01aabde039ed084e167b";
+static const string DEFAULT_EXTR_PATH = "/IMG_1690336600_001/test.jpg";
 static const int32_t fd_ = 12;
 
 const int32_t TYPE_URI = 1;
 const int32_t TYPE_URI_FD = 2;
 const int32_t TYPE_URI_PREFIX = 3;
 
-string PathSplicing(string subpath, int32_t type)
+string PathSplicing(string subpath, int32_t type, string extrPath = "")
 {
     string Uri = "";
     switch (type) {
         case TYPE_URI:
-            Uri = (ML_FILE_URI_PREFIX + subpath + "/" + to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_);
+            Uri = (ML_FILE_URI_PREFIX + subpath + "/" + to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_ +
+                extrPath);
             break;
         case TYPE_URI_FD:
-            Uri = (ML_FILE_URI_PREFIX + subpath + "/" + to_string(fd_));
+            Uri = (ML_FILE_URI_PREFIX + subpath + "/" + to_string(fd_) + extrPath);
             break;
         case TYPE_URI_PREFIX:
-            Uri = (subpath + to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_);
+            Uri = (subpath + to_string(fd_) + ML_URI_NETWORKID_EQUAL + networkId_ + extrPath);
             break;
         default:
             MEDIA_ERR_LOG("ERROR: No such type");
@@ -149,12 +151,12 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_011, TestSize.Level0)
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_012, TestSize.Level0)
 {
-    string uri = PathSplicing(PhotoColumn::PHOTO_TYPE_URI, TYPE_URI);
-    MediaFileUri fileUri(MEDIA_TYPE_IMAGE, to_string(fd_), networkId_, MEDIA_API_VERSION_V10);
+    string uri = PathSplicing(PhotoColumn::PHOTO_TYPE_URI, TYPE_URI, DEFAULT_EXTR_PATH);
+    MediaFileUri fileUri(MEDIA_TYPE_IMAGE, to_string(fd_), networkId_, MEDIA_API_VERSION_V10, DEFAULT_EXTR_PATH);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
 
-    MediaFileUri fileUri_(MEDIA_TYPE_VIDEO, to_string(fd_), networkId_, MEDIA_API_VERSION_V10);
+    MediaFileUri fileUri_(MEDIA_TYPE_VIDEO, to_string(fd_), networkId_, MEDIA_API_VERSION_V10, DEFAULT_EXTR_PATH);
     targetUri = fileUri_.ToString();
     EXPECT_EQ(targetUri, uri);
 }
@@ -162,20 +164,20 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_012, TestSize.Level0)
     
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_013, TestSize.Level0)
 {
-    string uri = PathSplicing(AudioColumn::AUDIO_URI_PREFIX, TYPE_URI_PREFIX);
-    MediaFileUri fileUri(MEDIA_TYPE_AUDIO, to_string(fd_), networkId_, MEDIA_API_VERSION_V10);
+    string uri = PathSplicing(AudioColumn::AUDIO_URI_PREFIX, TYPE_URI_PREFIX, DEFAULT_EXTR_PATH);
+    MediaFileUri fileUri(MEDIA_TYPE_AUDIO, to_string(fd_), networkId_, MEDIA_API_VERSION_V10, DEFAULT_EXTR_PATH);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_014, TestSize.Level0)
 {
-    string uri = PathSplicing(MEDIALIBRARY_TYPE_FILE_URI, TYPE_URI);
-    MediaFileUri fileUri(MEDIA_TYPE_FILE, to_string(fd_), networkId_, MEDIA_API_VERSION_V10);
+    string uri = PathSplicing(MEDIALIBRARY_TYPE_FILE_URI, TYPE_URI, DEFAULT_EXTR_PATH);
+    MediaFileUri fileUri(MEDIA_TYPE_FILE, to_string(fd_), networkId_, MEDIA_API_VERSION_V10, DEFAULT_EXTR_PATH);
     string targetUri = fileUri.ToString();
     EXPECT_EQ(targetUri, uri);
 
-    MediaFileUri fileUri_(MEDIA_TYPE_ALBUM, to_string(fd_), networkId_, MEDIA_API_VERSION_V10);
+    MediaFileUri fileUri_(MEDIA_TYPE_ALBUM, to_string(fd_), networkId_, MEDIA_API_VERSION_V10, DEFAULT_EXTR_PATH);
     targetUri = fileUri_.ToString();
     EXPECT_EQ(targetUri, uri);
 }

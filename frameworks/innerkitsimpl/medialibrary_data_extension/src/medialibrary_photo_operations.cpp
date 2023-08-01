@@ -73,8 +73,7 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
         fileId, cmd.GetOprnObject());
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
         fileId.c_str());
-
-    int32_t deleteRow = DeletePhoto(fileAsset);
+    int32_t deleteRow = DeletePhoto(fileAsset, cmd.GetApi());
     CHECK_AND_RETURN_RET_LOG(deleteRow >= 0, deleteRow, "delete photo failed, deleteRow=%{public}d", deleteRow);
 
     return deleteRow;
@@ -263,7 +262,7 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
     return outRow;
 }
 
-void PhotoMapAddAsset(const int &albumId, const string &assetId)
+void PhotoMapAddAsset(const int &albumId, const string &assetId, const string &extrUri)
 {
     static const string INSERT_MAP_SQL = "INSERT INTO " + PhotoMap::TABLE +
         " (" + PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ") " +
@@ -276,11 +275,12 @@ void PhotoMapAddAsset(const int &albumId, const string &assetId)
             " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = ? AND " + PhotoAlbumColumns::ALBUM_TYPE + " = ? AND " +
             PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?));";
 
-    vector<ValueObject> bindArgs = { albumId, assetId, albumId, assetId, assetId, albumId, PhotoAlbumType::USER, PhotoAlbumSubType::USER_GENERIC };
+    vector<ValueObject> bindArgs = { albumId, assetId, albumId, assetId, assetId, albumId, PhotoAlbumType::USER,
+        PhotoAlbumSubType::USER_GENERIC };
     int errCode =  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
     auto watch = MediaLibraryNotify::GetInstance();
     if (errCode > 0) {
-        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + assetId,
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, assetId, extrUri),
             NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
     }
 }
@@ -305,8 +305,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         }
     }
     int32_t mediaType = 0;
-    CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_TYPE, mediaType),
-        E_HAS_DB_ERROR);
+    CHECK_AND_RETURN_RET(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_TYPE, mediaType), E_HAS_DB_ERROR);
     fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
     SetPhotoSubTypeFromCmd(cmd, fileAsset);
     SetCameraShotKeyFromCmd(cmd, fileAsset);
@@ -323,9 +322,11 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         "Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
     CHECK_AND_RETURN_RET_LOG(outRow > 0, errCode, "insert file in db failed, error = %{public}d", outRow);
+    fileAsset.SetId(outRow);
     if (!albumUri.empty()) {
         string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(albumUri);
-        PhotoMapAddAsset(stoi(albumId), to_string(outRow));
+        PhotoMapAddAsset(stoi(albumId), to_string(outRow),
+            MediaFileUtils::GetExtraUri(displayName, fileAsset.GetPath()));
     }
     string bdName = cmd.GetBundleName();
     if (!bdName.empty()) {
@@ -333,11 +334,12 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
             PhotoColumn::PHOTOS_TABLE);
         CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "InsertBundlePermission failed, err=%{public}d", errCode);
     }
+    cmd.SetResult(CreateExtUriForV10Asset(fileAsset));
     transactionOprn.Finish();
     return outRow;
 }
 
-int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fileAsset)
+int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fileAsset, MediaLibraryApi api)
 {
     string filePath = fileAsset->GetPath();
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
@@ -354,6 +356,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
         return errCode;
     }
 
+    string displayName = fileAsset->GetDisplayName();
     // delete file in db
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::DELETE);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -365,10 +368,57 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
 
     transactionOprn.Finish();
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(deleteRows), NotifyType::NOTIFY_REMOVE);
-    MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
-    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
+
+    string notifyDeleteUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
+        (api == MediaLibraryApi::API_10 ? MediaFileUtils::GetExtraUri(displayName, filePath) : ""));
+    watch->Notify(notifyDeleteUri, NotifyType::NOTIFY_REMOVE);
     return deleteRows;
+}
+
+static void TrashPhotoNotifyOne(shared_ptr<MediaLibraryNotify> &watch, shared_ptr<NativeRdb::ResultSet> &resultSet,
+    int32_t trashAlbumId)
+{
+    int32_t fileId = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::MEDIA_ID);
+    string path = MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::MEDIA_FILE_PATH);
+    string displayName = MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::MEDIA_NAME);
+    string notifyUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
+        MediaFileUtils::GetExtraUri(displayName, path));
+    
+    watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
+    watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+    watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT, trashAlbumId);
+}
+
+static void TrashPhotosSendNofiy(shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    if (trashAlbumId <= 0) {
+        return;
+    }
+
+    int32_t count = 0;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK || count <= 0) {
+        MEDIA_WARN_LOG("Failed to send notify for trash, get row count err: %{public}d", err);
+        return;
+    }
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_WARN_LOG("Failed to send notify for trash, go to first row err: %{public}d", err);
+        return;
+    }
+    do {
+        TrashPhotoNotifyOne(watch, resultSet, trashAlbumId);
+        count--;
+        if (count > 0) {
+            err = resultSet->GoToNextRow();
+            if (err < 0) {
+                MEDIA_WARN_LOG("Failed to send notify for trash, go to next row err: %{public}d", err);
+                return;
+            }
+        }
+    } while (count > 0);
 }
 
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
@@ -380,6 +430,14 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(cmd.GetDataSharePred(),
         PhotoColumn::PHOTOS_TABLE);
+    auto resultSet = rdbStore->Query(rdbPredicate, {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_NAME
+    });
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(values);
@@ -388,9 +446,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", updatedRows);
         return E_HAS_DB_ERROR;
     }
-    for (const string &fileId : cmd.GetAbsRdbPredicates()->GetWhereArgs()) {
-        SendTrashNotify(cmd, stoi(fileId));
-    }
+    TrashPhotosSendNofiy(resultSet);
 
     MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
     MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
@@ -434,14 +490,16 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
     }
     transactionOprn.Finish();
 
-    errCode = SendTrashNotify(cmd, fileAsset->GetId());
+    string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
+    errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri);
     if (errCode == E_OK) {
         return rowId;
     }
-    SendFavoriteNotify(cmd, fileAsset->GetId());
-    SendHideNotify(cmd, fileAsset->GetId());
+    SendFavoriteNotify(cmd, fileAsset->GetId(), extraUri);
+    SendHideNotify(cmd, fileAsset->GetId(), extraUri);
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(fileAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()),
+        extraUri), NotifyType::NOTIFY_UPDATE);
     return rowId;
 }
 
@@ -491,7 +549,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV9(MediaLibraryCommand &cmd)
     }
     SendFavoriteNotify(cmd, fileAsset->GetId());
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX + to_string(fileAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId())),
+        NotifyType::NOTIFY_UPDATE);
     return rowId;
 }
 } // namespace Media

@@ -30,15 +30,16 @@ class MediaFileUri : public OHOS::Uri {
     std::string networkId_ { MEDIA_FILE_URI_EMPTY };
     std::string fileId_ { MEDIA_FILE_URI_EMPTY };
     std::unordered_map<std::string, std::string> queryMap_;
-    std::string MediaFileUriConstruct(MediaType mediaType, const std::string &networkId,
-                                      const std::string &fileId, const int32_t &apiVersion);
+    std::string MediaFileUriConstruct(MediaType mediaType, const std::string &networkId, const std::string &fileId,
+                                      const int32_t &apiVersion, const std::string &extrUri);
 public:
     explicit MediaFileUri(const std::string &uriStr) : Uri(uriStr) {}
     explicit MediaFileUri(MediaType mediaType,
                           const std::string &fileId,
                           const std::string &networkId = "",
-                          const int32_t &apiVersion = MEDIA_API_VERSION_V9) : Uri(
-                          MediaFileUriConstruct(mediaType, fileId, networkId, apiVersion)) {}
+                          const int32_t &apiVersion = MEDIA_API_VERSION_V9,
+                          const std::string &extrUri = "") : Uri(
+                          MediaFileUriConstruct(mediaType, fileId, networkId, apiVersion, extrUri)) {}
     ~MediaFileUri() = default;
 
     std::string GetNetworkId();
@@ -52,6 +53,8 @@ public:
     static std::string GetPathFirstDentry(Uri &uri);
     static std::string GetPathSecondDentry(Uri &uri);
     static void RemoveAllFragment(std::string &uri);
+    static std::string GetMediaTypeUri(MediaType mediaType, const int32_t &apiVersion);
+    static std::string GetPhotoId(const std::string &uri);
 };
 } // namespace Media
 } // namespace OHOS

@@ -68,7 +68,7 @@ int32_t MediaLibraryAudioOperations::Delete(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
         fileId.c_str());
     
-    int32_t deleteRow = DeleteAudio(fileAsset);
+    int32_t deleteRow = DeleteAudio(fileAsset, cmd.GetApi());
     CHECK_AND_RETURN_RET_LOG(deleteRow >= 0, deleteRow, "delete audio failed, deleteRow=%{public}d", deleteRow);
 
     return deleteRow;
@@ -252,11 +252,12 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
             AudioColumn::AUDIOS_TABLE);
         CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "InsertBundlePermission failed, err=%{public}d", errCode);
     }
+    cmd.SetResult(CreateExtUriForV10Asset(fileAsset));
     transactionOprn.Finish();
     return outRow;
 }
 
-int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fileAsset)
+int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fileAsset, MediaLibraryApi api)
 {
     string filePath = fileAsset->GetPath();
     CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_INVALID_PATH, "get file path failed");
@@ -272,7 +273,7 @@ int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fi
     if (errCode != E_OK) {
         return errCode;
     }
-
+    string displayName = fileAsset->GetDisplayName();
     // delete file in db
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_AUDIO, OperationType::DELETE);
     cmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
@@ -284,7 +285,10 @@ int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fi
     transactionOprn.Finish();
 
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(fileId), NotifyType::NOTIFY_REMOVE);
+    string notifyUri = MediaFileUtils::GetUriByExtrConditions(AudioColumn::AUDIO_URI_PREFIX, to_string(fileId),
+        (api == MediaLibraryApi::API_10 ? MediaFileUtils::GetExtraUri(displayName, filePath) : ""));
+
+    watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
     return deleteRows;
 }
 
@@ -321,14 +325,16 @@ int32_t MediaLibraryAudioOperations::UpdateV10(MediaLibraryCommand &cmd)
     }
     transactionOprn.Finish();
 
-    errCode = SendTrashNotify(cmd, fileAsset->GetId());
+    string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
+    errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri);
     if (errCode == E_OK) {
         return rowId;
     }
 
     // Audio has no favorite album, do not send favorite notify
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(fileAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(AudioColumn::AUDIO_URI_PREFIX, to_string(fileAsset->GetId()),
+        extraUri), NotifyType::NOTIFY_UPDATE);
     return rowId;
 }
 
@@ -379,7 +385,8 @@ int32_t MediaLibraryAudioOperations::UpdateV9(MediaLibraryCommand &cmd)
 
     // Audio has no favorite album, do not send favorite notify
     auto watch = MediaLibraryNotify::GetInstance();
-    watch->Notify(AudioColumn::AUDIO_URI_PREFIX + to_string(fileAsset->GetId()), NotifyType::NOTIFY_UPDATE);
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(AudioColumn::AUDIO_URI_PREFIX, to_string(fileAsset->GetId())),
+        NotifyType::NOTIFY_UPDATE);
     return rowId;
 }
 

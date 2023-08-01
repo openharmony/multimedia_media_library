@@ -113,10 +113,14 @@ public:
     static size_t FindIgnoreCase(const std::string &str, const std::string &key);
     static int64_t GetVirtualIdByType(int32_t id, MediaType type);
     static double GetRealIdByTable(int32_t virtualId, const std::string &tableName);
-    static std::string GetVirtualUriFromRealUri(const std::string &uri);
+    static std::string GetVirtualUriFromRealUri(const std::string &uri, const std::string &extrUri = "");
     static std::string GetRealUriFromVirtualUri(const std::string &uri);
     static bool StartsWith(const std::string &str, const std::string &prefix);
     static void UriAppendKeyValue(std::string &uri, const std::string &key, std::string value = "10");
+    static std::string GetExtraUri(const std::string &displayName, const std::string &path);
+    static std::string GetUriByExtrConditions(const std::string &prefix, const std::string &fileId,
+        const std::string &suffix = "");
+    static std::string Encode(const std::string &uri);
 #ifdef MEDIALIBRARY_COMPATIBILITY
     static std::string GetTableFromVirtualUri(const std::string &uri);
 #endif

@@ -45,6 +45,7 @@ static const mode_t CHOWN_RWX_USR_GRP = 02771;
 static const mode_t CHOWN_RW_USR_GRP = 0660;
 constexpr size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;
+const std::string PATH_PARA = "path=";
 constexpr size_t EMPTY_DIR_ENTRY_COUNT = 2;  // Empty dir has 2 entry: . and ..
 
 static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIME_TYPE_MAP = {
@@ -1040,7 +1041,7 @@ double MediaFileUtils::GetRealIdByTable(int32_t virtualId, const string &tableNa
     }
 }
 
-string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri)
+string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri, const string &extrUri)
 {
     if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
        (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos)) {
@@ -1082,12 +1083,23 @@ string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri)
         virtualId = GetVirtualIdByType(id, MediaType::MEDIA_TYPE_FILE);
     }
     MediaFileUri virtualUri(type, to_string(virtualId), fileUri.GetNetworkId(),
-        (fileUri.IsApi10() ? MEDIA_API_VERSION_V10 : MEDIA_API_VERSION_V9));
+        (fileUri.IsApi10() ? MEDIA_API_VERSION_V10 : MEDIA_API_VERSION_V9),
+        (fileUri.IsApi10() ? extrUri : ""));
 
     if (suffixUri.empty()) {
         return virtualUri.ToString();
     } else {
         return virtualUri.ToString() + suffixUri;
+    }
+}
+
+void GetExtrParamFromUri(const std::string &uri, std::string &displayName)
+{
+    if (uri.find(PATH_PARA) != string::npos) {
+        size_t lastSlashPosition = uri.rfind('/');
+        if (lastSlashPosition != string::npos) {
+            displayName = uri.substr(lastSlashPosition + 1);
+        }
     }
 }
 
@@ -1131,14 +1143,20 @@ string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
         type = MediaType::MEDIA_TYPE_FILE;
         realId = static_cast<int32_t>(GetRealIdByTable(id, MEDIALIBRARY_TABLE));
     }
+    string extrUri;
+    if (fileUri.IsApi10()) {
+        string displayName;
+        GetExtrParamFromUri(pureUri, displayName);
+        extrUri = GetExtraUri(displayName, fileUri.GetFilePath());
+    }
+    
     MediaFileUri realUri(type, to_string(realId), fileUri.GetNetworkId(),
-        (fileUri.IsApi10() ? MEDIA_API_VERSION_V10 : MEDIA_API_VERSION_V9));
+        (fileUri.IsApi10() ? MEDIA_API_VERSION_V10 : MEDIA_API_VERSION_V9), (fileUri.IsApi10() ? extrUri : ""));
 
     if (suffixUri.empty()) {
         return realUri.ToString();
-    } else {
-        return realUri.ToString() + suffixUri;
     }
+    return realUri.ToString() + suffixUri;
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
@@ -1239,6 +1257,42 @@ void MediaFileUtils::UriAppendKeyValue(string &uri, const string &key, std::stri
     } else {
         uri.insert(pos, append);
     }
+}
+
+string MediaFileUtils::GetExtraUri(const string &displayName, const string &path)
+{
+    string extraUri = "/" + GetTitleFromDisplayName(GetFileName(path)) + "/" + displayName;
+    return MediaFileUtils::Encode(extraUri);
+}
+
+string MediaFileUtils::GetUriByExtrConditions(const string &prefix, const string &fileId, const string &suffix)
+{
+    return prefix + fileId + suffix;
+}
+
+string MediaFileUtils::Encode(const string &uri)
+{
+    const unordered_set<char> uriCompentsSet = {
+        ';', ',', '/', '?', ':', '@', '&',
+        '=', '+', '$', '-', '_', '.', '!',
+        '~', '*', '(', ')', '#', '\''
+    };
+    const int32_t encodeLen = 2;
+    ostringstream outPutStream;
+    outPutStream.fill('0');
+    outPutStream << std::hex;
+
+    for (unsigned char tmpChar : uri) {
+        if (std::isalnum(tmpChar) || uriCompentsSet.find(tmpChar) != uriCompentsSet.end()) {
+            outPutStream << tmpChar;
+        } else {
+            outPutStream << std::uppercase;
+            outPutStream << '%' << std::setw(encodeLen) << static_cast<unsigned int>(tmpChar);
+            outPutStream << std::nouppercase;
+        }
+    }
+
+    return outPutStream.str();
 }
 
 } // namespace OHOS::Media
