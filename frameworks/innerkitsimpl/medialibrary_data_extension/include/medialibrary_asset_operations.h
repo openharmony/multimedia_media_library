@@ -76,12 +76,13 @@ protected:
         MediaLibraryApi api);
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
-    static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId);
-    static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId);
-    static int32_t SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId);
+    static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
+    static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
+    static int32_t SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
 
     static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         int32_t &value);
+    static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
     static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
 

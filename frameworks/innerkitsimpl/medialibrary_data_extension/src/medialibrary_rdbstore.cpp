@@ -19,6 +19,7 @@
 #include <mutex>
 
 #include "cloud_sync_helper.h"
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_device.h"
@@ -551,6 +552,32 @@ int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates)
         deletedRows += deletedRow;
     }
     return deletedRows;
+}
+
+void MediaLibraryRdbStore::ReplacePredicatesUriToId(AbsRdbPredicates &predicates)
+{
+    const vector<string> &whereUriArgs = predicates.GetWhereArgs();
+    vector<string> whereIdArgs;
+    whereIdArgs.reserve(whereUriArgs.size());
+    for (const auto &arg : whereUriArgs) {
+        if (!MediaFileUtils::StartsWith(arg, PhotoColumn::PHOTO_URI_PREFIX)) {
+            whereIdArgs.push_back(arg);
+            continue;
+        }
+        whereIdArgs.push_back(MediaFileUri::GetPhotoId(arg));
+    }
+
+    predicates.SetWhereArgs(whereIdArgs);
+}
+
+int32_t MediaLibraryRdbStore::GetInt(const shared_ptr<ResultSet> &resultSet, const string &column)
+{
+    return get<int32_t>(ResultSetUtils::GetValFromColumn(column, resultSet, TYPE_INT32));
+}
+
+string MediaLibraryRdbStore::GetString(const shared_ptr<ResultSet> &resultSet, const string &column)
+{
+    return get<string>(ResultSetUtils::GetValFromColumn(column, resultSet, TYPE_STRING));
 }
 
 inline void BuildInsertSystemAlbumSql(const ValuesBucket &values, const AbsRdbPredicates &predicates,

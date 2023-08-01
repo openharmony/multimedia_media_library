@@ -62,7 +62,11 @@ public:
     static int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates);
     static int32_t Update(const NativeRdb::ValuesBucket &values, const NativeRdb::AbsRdbPredicates &predicates);
     static int32_t DeleteFromDisk(const NativeRdb::AbsRdbPredicates &predicates);
+    static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
     static void UpdateAPI10Tables();
+
+    static int32_t GetInt(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &column);
+    static std::string GetString(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &column);
 
 private:
     static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

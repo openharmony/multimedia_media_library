@@ -1344,7 +1344,8 @@ static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibrary
 }
 #endif
 
-static void SetFileAssetByIdV10(int32_t id, const string &networkId, MediaLibraryAsyncContext *context)
+static void SetFileAssetByIdV10(int32_t id, const string &networkId, const string &uri,
+                                MediaLibraryAsyncContext *context)
 {
     bool isValid = false;
     string displayName = context->valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
@@ -1355,7 +1356,7 @@ static void SetFileAssetByIdV10(int32_t id, const string &networkId, MediaLibrar
     unique_ptr<FileAsset> fileAsset = make_unique<FileAsset>();
     fileAsset->SetId(id);
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    fileAsset->SetUri(MediaFileUri(mediaType, to_string(id), networkId, MEDIA_API_VERSION_V10).ToString());
+    fileAsset->SetUri(uri);
     fileAsset->SetMediaType(mediaType);
     fileAsset->SetDisplayName(displayName);
     fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
@@ -1366,7 +1367,8 @@ static void SetFileAssetByIdV10(int32_t id, const string &networkId, MediaLibrar
     context->fileAsset = move(fileAsset);
 }
 
-static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, MediaLibraryAsyncContext *context)
+static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, const string &uri,
+                                           MediaLibraryAsyncContext *context)
 {
     bool isValid = false;
     string displayName = context->valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
@@ -1377,7 +1379,7 @@ static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, 
     auto fileAsset = make_unique<FileAsset>();
     fileAsset->SetId(id);
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    fileAsset->SetUri(MediaFileUri(mediaType, to_string(id), networkId, MEDIA_API_VERSION_V10).ToString());
+    fileAsset->SetUri(uri);
     fileAsset->SetMediaType(mediaType);
     fileAsset->SetDisplayName(displayName);
     fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
@@ -1386,19 +1388,6 @@ static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, 
     MediaLibraryNapiUtils::GenTypeMaskFromArray({ mediaType }, typeMask);
     fileAsset->SetTypeMask(typeMask);
     context->fileAsset = move(fileAsset);
-}
-
-static void SetAssetUriById(int32_t id, const string &networkId, MediaLibraryAsyncContext *context)
-{
-    bool isValid = false;
-    int32_t mediaType = context->valuesBucket.Get(MEDIA_DATA_DB_MEDIA_TYPE, isValid);
-    if (!isValid) {
-        NAPI_ERR_LOG("can not get mediaType from valuesBucket");
-        context->uri = "";
-        return;
-    }
-    context->uri = MediaFileUri(static_cast<MediaType>(mediaType), to_string(id),
-        networkId, MEDIA_API_VERSION_V10).ToString();
 }
 
 static void JSCreateUriInCallback(napi_env env, MediaLibraryAsyncContext *context,
@@ -1724,10 +1713,11 @@ static void JSCreateAssetExecute(napi_env env, void *data)
         context->SaveError(index);
     } else {
         if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
+            outUri = MediaFileUtils::Encode(outUri);
             if (context->isCreateByComponent) {
-                SetAssetUriById(index, "", context);
+                context->uri = outUri;
             } else {
-                SetFileAssetByIdV10(index, "", context);
+                SetFileAssetByIdV10(index, "", outUri, context);
             }
         } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
@@ -5182,10 +5172,11 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
         context->SaveError(index);
     } else {
         if (context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+            outUri = MediaFileUtils::Encode(outUri);
             if (context->isCreateByComponent) {
-                SetAssetUriById(index, "", context);
+                context->uri = outUri;
             } else {
-                PhotoAccessSetFileAssetByIdV10(index, "", context);
+                PhotoAccessSetFileAssetByIdV10(index, "", outUri, context);
             }
         } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
