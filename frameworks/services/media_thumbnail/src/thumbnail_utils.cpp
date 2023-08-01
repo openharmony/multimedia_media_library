@@ -48,6 +48,7 @@ namespace OHOS {
 namespace Media {
 constexpr int32_t KEY_INDEX = 0;
 constexpr int32_t VALUE_INDEX = 1;
+constexpr float EPSILON = 1e-6;
 bool ThumbnailUtils::UpdateRemotePath(string &path, const string &networkId)
 {
     MEDIA_DEBUG_LOG("ThumbnailUtils::UpdateRemotePath IN path = %{private}s, networkId = %{private}s",
@@ -944,6 +945,24 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
         return false;
     }
     return true;
+}
+
+Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail)
+{
+    float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
+    float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
+    float scale = 1.0f;
+    if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
+        scale = (float)desiredSize.height / sourceSize.height;
+    } else {
+        scale = (float)desiredSize.width / sourceSize.width;
+    }
+    scale = scale < 1.0f ? scale : 1.0f;
+    Size decodeSize = {
+        static_cast<int32_t> (scale * sourceSize.width),
+        static_cast<int32_t> (scale * sourceSize.height),
+    };
+    return decodeSize;
 }
 
 bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail)
