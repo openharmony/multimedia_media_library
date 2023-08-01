@@ -58,9 +58,7 @@ bool UnregisterObserverFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
 
-    int32_t systemAbilityId = *(reinterpret_cast<const int32_t *>(data));
     Uri unRegisterObserverFileUri(std::string(reinterpret_cast<const char*>(data), size));
-    std::string dataUri(std::string(reinterpret_cast<const char*>(data), size));
     std::string selections = std::string(reinterpret_cast<const char*>(data), size);
     sptr<TestObserver> settingDataObserver = std::make_unique<TestObserver>().release();
     sptr<AAFwk::IDataAbilityObserver> dataObserver(settingDataObserver);
@@ -68,11 +66,11 @@ bool UnregisterObserverFuzzTest(const uint8_t *data, size_t size)
     if (saManager == nullptr) {
         return false;
     }
-    auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
+    auto remoteObj = saManager->GetSystemAbility(5003);
     if (remoteObj == nullptr) {
         return false;
     }
-    auto helper = DataShare::DataShareHelper::Creator(remoteObj, dataUri);
+    auto helper = DataShare::DataShareHelper::Creator(remoteObj, MEDIALIBRARY_DATA_URI);
     if (helper == nullptr) {
         return false;
     }
