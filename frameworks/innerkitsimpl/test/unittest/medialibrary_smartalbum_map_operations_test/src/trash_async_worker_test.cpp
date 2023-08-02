@@ -49,7 +49,10 @@ HWTEST_F(MediaLibraryExtUnitTest, TrashAsyncWorker_TrashAsyncTaskWorker_test_001
     EXPECT_EQ((asyncWorker->asyncWorkerInstance_ != nullptr), true);
     asyncWorker->StartWorker();
     EXPECT_EQ((asyncWorker->asyncWorkerInstance_ != nullptr), true);
+}
 
+HWTEST_F(MediaLibraryExtUnitTest, TrashAsyncWorker_TrashAsyncTaskWorker_test_002, TestSize.Level0)
+{
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
     TrashAsyncTaskWorker *asyncWorker1 = new TrashAsyncTaskWorker();

@@ -330,5 +330,45 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetQueryKeys_Test_001, TestS
     queryKey = MediaFileUri(uri).GetQueryKeys();
     EXPECT_GE(queryKey.count("operation"), 0);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetTableName_Test_001, TestSize.Level0)
+{
+    string uri = "";
+    EXPECT_EQ(MediaFileUri(uri).GetTableName(), "");
+
+    uri = "file://data/test/testCase";
+    EXPECT_EQ(MediaFileUri(uri).GetTableName(), "");
+
+    uri = "datashare://media/test/";
+    EXPECT_EQ(MediaFileUri(uri).GetTableName(), "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaTypeFromUri_Test_001, TestSize.Level0)
+{
+    string uri = "file://data/test";
+    EXPECT_EQ(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+
+    uri = "file://data/test/testCase";
+    EXPECT_EQ(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+
+    uri = "datashare://media/test/";
+    EXPECT_EQ(MediaFileUri::GetMediaTypeFromUri(uri), MEDIA_TYPE_DEFAULT);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RemoveAllFragment_Test_001, TestSize.Level0)
+{
+    string uri = "file://data/test/testCase/123";
+    MediaFileUri::RemoveAllFragment(uri);
+    EXPECT_EQ(uri, "file://data/test/testCase/123");
+
+    uri = "file://data/test/testCase";
+    MediaFileUri::RemoveAllFragment(uri);
+    EXPECT_EQ(uri, "file://data/test/testCase");
+
+    uri = "datashare://media/test/";
+    MediaFileUri::RemoveAllFragment(uri);
+    EXPECT_EQ(uri, "datashare://media/test/");
+}
+
 } // namespace Media
 } // namespace OHOS
