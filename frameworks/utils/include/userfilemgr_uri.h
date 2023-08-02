@@ -30,6 +30,7 @@ const std::string OPRN_DELETE = "delete";
 const std::string OPRN_QUERY = "query";
 const std::string OPRN_UPDATE = "update";
 const std::string OPRN_TRASH = "trash";
+const std::string OPRN_PENDING = "update_pending";
 const std::string OPRN_SCAN = "scan";
 const std::string OPRN_ALBUM_ADD_PHOTOS = "add_photos";
 const std::string OPRN_ALBUM_REMOVE_PHOTOS = "remove_photos";

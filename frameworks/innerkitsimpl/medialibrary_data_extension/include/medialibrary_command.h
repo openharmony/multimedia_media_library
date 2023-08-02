@@ -78,6 +78,7 @@ enum class OperationType : uint32_t {
     ALBUM_RECOVER_ASSETS,
     ALBUM_DELETE_ASSETS,                // Delete assets permanently from system
     TRASH_PHOTO,
+    UPDATE_PENDING,
 };
 
 class MediaLibraryCommand {
