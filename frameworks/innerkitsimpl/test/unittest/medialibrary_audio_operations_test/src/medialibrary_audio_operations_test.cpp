@@ -740,6 +740,31 @@ void TestAudioCloseParamsApi10(int32_t fileId, ExceptIntFunction func)
     func(ret);
 }
 
+int64_t GetAudioPendingStatus(int32_t fileId)
+{
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    queryCmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
+    vector<string> columns = { AudioColumn::MEDIA_TIME_PENDING };
+    auto resultSet = g_rdbStore->Query(queryCmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get AssetUniqueNumberTable count");
+        return E_HAS_DB_ERROR;
+    }
+    return GetInt64Val(AudioColumn::MEDIA_TIME_PENDING, resultSet);
+}
+
+int32_t SetAudioPendingStatus(int32_t pendingStatus, int32_t fileId)
+{
+    MediaLibraryCommand setPendingCloseCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::UPDATE_PENDING,
+        MediaLibraryApi::API_10);
+    setPendingCloseCmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
+    ValuesBucket setPendingCloseValues;
+    setPendingCloseValues.Put(AudioColumn::MEDIA_TIME_PENDING, pendingStatus);
+    setPendingCloseCmd.SetValueBucket(setPendingCloseValues);
+    return MediaLibraryAudioOperations::Update(setPendingCloseCmd);
+}
+
 void MediaLibraryAudioOperationsTest::SetUpTestCase()
 {
     SetTables();
@@ -890,15 +915,15 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_005, Test
     ValuesBucket values;
     values.PutString(ASSET_EXTENTION, extention);
     values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_AUDIO);
-    values.PutInt(PERMISSION_TABLE_TYPE, static_cast<int32_t>(TableType::TYPE_PHOTOS));
+    values.PutInt(PERMISSION_TABLE_TYPE, static_cast<int32_t>(TableType::TYPE_AUDIOS));
     cmd.SetValueBucket(values);
     int32_t ret = MediaLibraryAudioOperations::Create(cmd);
     EXPECT_GE(ret, 0);
     unordered_map<string, string> verifyMap = {
-        { PhotoColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_AUDIO) },
-        { PhotoColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING) },
+        { AudioColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_AUDIO) },
+        { AudioColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING) },
     };
-    bool res = QueryAndVerifyAudioAsset(PhotoColumn::MEDIA_ID, to_string(ret), verifyMap);
+    bool res = QueryAndVerifyAudioAsset(AudioColumn::MEDIA_ID, to_string(ret), verifyMap);
     EXPECT_EQ(res, true);
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_005");
 }
@@ -1502,36 +1527,173 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_close_api10_test_001, TestS
 
 HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_001, TestSize.Level0)
 {
+    // common api10 create -> open -> write -> close
     MEDIA_INFO_LOG("start tdd audio_oprn_pending_api10_test_001");
     MediaLibraryCommand createCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
         MediaLibraryApi::API_10);
     string name = "audio.mp3";
-    ValuesBucket values;
-    values.PutString(MediaColumn::MEDIA_NAME, name);
-    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_AUDIO);
-    createCmd.SetValueBucket(values);
+    ValuesBucket createValues;
+    createValues.PutString(MediaColumn::MEDIA_NAME, name);
+    createValues.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_AUDIO);
+    createCmd.SetValueBucket(createValues);
     int32_t fileId = MediaLibraryAudioOperations::Create(createCmd);
     EXPECT_GE(fileId, 0);
+    int64_t pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, UNCREATE_FILE_TIMEPENDING);
 
-    string uriString = MediaFileUtils::GetFileMediaTypeUriV10(MediaType::MEDIA_TYPE_AUDIO, "");
-    uriString += "/" + to_string(fileId) + "?api_version=10";
-    Uri uri(uriString);
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_AUDIO, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    Uri uri(fileUri.ToString());
     MediaLibraryCommand openCmd(uri);
     int32_t fd = MediaLibraryAudioOperations::Open(openCmd, "rw");
     EXPECT_GE(fd, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, UNCLOSE_FILE_TIMEPENDING);
 
-    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::QUERY, MediaLibraryApi::API_10);
-    queryCmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
-    vector<string> columns = { AudioColumn::MEDIA_TIME_PENDING };
-    auto resultSet = g_rdbStore->Query(queryCmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not get AssetUniqueNumberTable count");
-        return;
-    }
-    int64_t timePending = GetInt64Val(AudioColumn::MEDIA_TIME_PENDING, resultSet);
-    EXPECT_GT(timePending, 0);
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CLOSE);
+    ValuesBucket closeValues;
+    closeValues.PutInt(AudioColumn::MEDIA_ID, fileId);
+    closeCmd.SetValueBucket(closeValues);
+    int32_t ret = MediaLibraryAudioOperations::Close(closeCmd);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
 
     MEDIA_INFO_LOG("end tdd audio_oprn_pending_api10_test_001");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_002, TestSize.Level0)
+{
+    // common api10 create -> setPending(true) -> open -> write -> close -> setPending(false)
+    MEDIA_INFO_LOG("start tdd audio_oprn_pending_api10_test_002");
+    MediaLibraryCommand createCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    string name = "audio.mp3";
+    ValuesBucket createValues;
+    createValues.PutString(MediaColumn::MEDIA_NAME, name);
+    createValues.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_AUDIO);
+    createCmd.SetValueBucket(createValues);
+    int32_t fileId = MediaLibraryAudioOperations::Create(createCmd);
+    EXPECT_GE(fileId, 0);
+    int64_t pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, UNCREATE_FILE_TIMEPENDING);
+
+    int32_t ret = SetAudioPendingStatus(1, fileId);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_GT(pendingStatus, 0);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_AUDIO, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    Uri uri(fileUri.ToString());
+    MediaLibraryCommand openCmd(uri);
+    int32_t fd = MediaLibraryAudioOperations::Open(openCmd, "rw");
+    EXPECT_GE(fd, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_GT(pendingStatus, 0);
+
+    char data = 'A';
+    write(fd, &data, 1);
+
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CLOSE,
+        MediaLibraryApi::API_10);
+    ValuesBucket closeValues;
+    closeValues.PutInt(AudioColumn::MEDIA_ID, fileId);
+    closeCmd.SetValueBucket(closeValues);
+    ret = MediaLibraryAudioOperations::Close(closeCmd);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_GT(pendingStatus, 0);
+
+    ret = SetAudioPendingStatus(0, fileId);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+    MEDIA_INFO_LOG("end tdd audio_oprn_pending_api10_test_002");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_003, TestSize.Level0)
+{
+    // common api10 create -> open -> setPending(true) -> write -> setPending(false) -> close
+    MEDIA_INFO_LOG("start tdd audio_oprn_pending_api10_test_003");
+    MediaLibraryCommand createCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    string name = "audio.mp3";
+    ValuesBucket createValues;
+    createValues.PutString(MediaColumn::MEDIA_NAME, name);
+    createValues.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_AUDIO);
+    createCmd.SetValueBucket(createValues);
+    int32_t fileId = MediaLibraryAudioOperations::Create(createCmd);
+    EXPECT_GE(fileId, 0);
+    int64_t pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, UNCREATE_FILE_TIMEPENDING);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_AUDIO, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    Uri uri(fileUri.ToString());
+    MediaLibraryCommand openCmd(uri);
+    int32_t fd = MediaLibraryAudioOperations::Open(openCmd, "rw");
+    EXPECT_GE(fd, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, UNCLOSE_FILE_TIMEPENDING);
+
+    int32_t ret = SetAudioPendingStatus(1, fileId);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_GT(pendingStatus, 0);
+
+    char data = 'A';
+    write(fd, &data, 1);
+
+    ret = SetAudioPendingStatus(0, fileId);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CLOSE);
+    ValuesBucket closeValues;
+    closeValues.PutInt(AudioColumn::MEDIA_ID, fileId);
+    closeCmd.SetValueBucket(closeValues);
+    ret = MediaLibraryAudioOperations::Close(closeCmd);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+
+    MEDIA_INFO_LOG("end tdd audio_oprn_pending_api10_test_003");
+}
+
+HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api9_test_001, TestSize.Level0)
+{
+    // common api9 create -> open -> write -> close
+    MEDIA_INFO_LOG("start tdd audio_oprn_pending_api9_test_001");
+    MediaLibraryCommand createCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CREATE,
+        MediaLibraryApi::API_OLD);
+    string name = "audio.mp3";
+    ValuesBucket createValues;
+    createValues.PutString(MediaColumn::MEDIA_NAME, name);
+    createValues.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_AUDIO);
+    createValues.PutString(MediaColumn::MEDIA_RELATIVE_PATH, "Audios/1/");
+    createCmd.SetValueBucket(createValues);
+    int32_t fileId = MediaLibraryAudioOperations::Create(createCmd);
+    EXPECT_GE(fileId, 0);
+    int64_t pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_AUDIO, to_string(fileId), "", MEDIA_API_VERSION_V9);
+    Uri uri(fileUri.ToString());
+    MediaLibraryCommand openCmd(uri);
+    int32_t fd = MediaLibraryAudioOperations::Open(openCmd, "rw");
+    EXPECT_GE(fd, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CLOSE);
+    ValuesBucket closeValues;
+    closeValues.PutInt(AudioColumn::MEDIA_ID, fileId);
+    closeCmd.SetValueBucket(closeValues);
+    int32_t ret = MediaLibraryAudioOperations::Close(closeCmd);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetAudioPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+
+    MEDIA_INFO_LOG("end tdd audio_oprn_pending_api9_test_001");
 }
 } // namespace Media
 } // namespace OHOS

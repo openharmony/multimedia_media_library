@@ -165,6 +165,7 @@ napi_value FileAssetNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getThumbnail", UserFileMgrGetThumbnail),
             DECLARE_NAPI_FUNCTION("getReadOnlyFd", JSGetReadOnlyFd),
             DECLARE_NAPI_FUNCTION("setHidden", UserFileMgrSetHidden),
+            DECLARE_NAPI_FUNCTION("setPending", UserFileMgrSetPending),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -191,6 +192,7 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("getThumbnail", PhotoAccessHelperGetThumbnail),
             DECLARE_NAPI_FUNCTION("getReadOnlyFd", JSGetReadOnlyFd),
             DECLARE_NAPI_FUNCTION("setHidden", PhotoAccessHelperSetHidden),
+            DECLARE_NAPI_FUNCTION("setPending", PhotoAccessHelperSetPending),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -3005,6 +3007,81 @@ napi_value FileAssetNapi::UserFileMgrSetHidden(napi_env env, napi_callback_info 
         UserFileMgrSetHiddenExecute, UserFileMgrSetHiddenComplete);
 }
 
+static void UserFileMgrSetPendingExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrSetPendingExecute");
+    auto *context = static_cast<FileAssetAsyncContext*>(data);
+
+    string uri = MEDIALIBRARY_DATA_URI + "/";
+    if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
+        context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
+        uri += UFM_PHOTO + "/" + OPRN_PENDING;
+    } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
+        uri += UFM_AUDIO + "/" + OPRN_PENDING;
+    } else {
+        context->error = -EINVAL;
+        return;
+    }
+
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri updateAssetUri(uri);
+    DataSharePredicates predicates;
+    DataShareValuesBucket valuesBucket;
+    int32_t changedRows;
+    valuesBucket.Put(MediaColumn::MEDIA_TIME_PENDING, context->isPending ? 1 : 0);
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
+
+    changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to modify pending state, err: %{public}d", changedRows);
+    } else {
+        context->changedRows = changedRows;
+    }
+}
+
+static void UserFileMgrSetPendingComplete(napi_env env, napi_status status, void *data)
+{
+    FileAssetAsyncContext *context = static_cast<FileAssetAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        napi_create_int32(env, context->changedRows, &jsContext->data);
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->changedRows,
+            "Failed to modify pending state");
+        napi_get_undefined(env, &jsContext->data);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::UserFileMgrSetPending(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UserFileMgrSetPending");
+
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isPending),
+        JS_ERR_PARAMETER_INVALID);
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULLPTR_RET(asyncContext->objectPtr);
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrSetPending",
+        UserFileMgrSetPendingExecute, UserFileMgrSetPendingComplete);
+}
+
 static napi_value ParseArgsPhotoAccessHelperOpen(napi_env env, napi_callback_info info,
     unique_ptr<FileAssetAsyncContext> &context, bool isReadOnly)
 {
@@ -3401,5 +3478,82 @@ napi_value FileAssetNapi::PhotoAccessHelperSetHidden(napi_env env, napi_callback
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperSetHidden",
         PhotoAccessHelperSetHiddenExecute, PhotoAccessHelperSetHiddenComplete);
 }
+
+static void PhotoAccessHelperSetPendingExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperSetPendingExecute");
+
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    string uri = MEDIALIBRARY_DATA_URI + "/";
+    if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
+        context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
+        uri += PAH_PHOTO + "/" + OPRN_PENDING;
+    } else {
+        context->error = -EINVAL;
+        return;
+    }
+
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri updateAssetUri(uri);
+    DataSharePredicates predicates;
+    DataShareValuesBucket valuesBucket;
+    int32_t changedRows = 0;
+    valuesBucket.Put(MediaColumn::MEDIA_TIME_PENDING, context->isPending ? 1 : 0);
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
+
+    changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to modify pending state, err: %{public}d", changedRows);
+    } else {
+        context->changedRows = changedRows;
+    }
+}
+
+static void PhotoAccessHelperSetPendingComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<FileAssetAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        napi_create_int32(env, context->changedRows, &jsContext->data);
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->changedRows,
+            "Failed to modify pending state");
+        napi_get_undefined(env, &jsContext->data);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperSetPending(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperSetPending");
+
+    napi_value ret = nullptr;
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    NAPI_ASSERT(
+        env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isPending) == napi_ok,
+        "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperSetPending",
+        PhotoAccessHelperSetPendingExecute, PhotoAccessHelperSetPendingComplete);
+}
+
 } // namespace Media
 } // namespace OHOS
