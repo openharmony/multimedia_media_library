@@ -216,11 +216,15 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     string extention;
     string title;
     bool isContains = false;
+    bool isNeedGrant = false;
     if (GetStringFromValuesBucket(values, AudioColumn::MEDIA_NAME, displayName)) {
         fileAsset.SetDisplayName(displayName);
+        fileAsset.SetTimePending(UNCREATE_FILE_TIMEPENDING);
         isContains = true;
     } else {
         CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, ASSET_EXTENTION, extention), E_HAS_DB_ERROR);
+        isNeedGrant = true;
+        fileAsset.SetTimePending(UNOPEN_FILE_COMPONENT_TIMEPENDING);
         if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_TITLE, title)) {
             displayName = title + "." + extention;
             fileAsset.SetDisplayName(displayName);
@@ -246,14 +250,13 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
 
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
     CHECK_AND_RETURN_RET_LOG(outRow > 0, errCode, "insert file in db failed, error = %{public}d", outRow);
-    string bdName = cmd.GetBundleName();
-    if (!bdName.empty()) {
-        errCode = UriPermissionOperations::InsertBundlePermission(outRow, bdName, MEDIA_FILEMODE_READWRITE,
-            AudioColumn::AUDIOS_TABLE);
-        CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "InsertBundlePermission failed, err=%{public}d", errCode);
-    }
-    cmd.SetResult(CreateExtUriForV10Asset(fileAsset));
     transactionOprn.Finish();
+    string fileUri = CreateExtUriForV10Asset(fileAsset);
+    if (isNeedGrant) {
+        int32_t ret = GrantUriPermission(fileUri, cmd.GetBundleName(), fileAsset.GetPath());
+        CHECK_AND_RETURN_RET(ret == E_OK, ret);
+    }
+    cmd.SetResult(fileUri);
     return outRow;
 }
 
