@@ -69,10 +69,12 @@ static map<string, ListenerType> ListenerTypeMaps = {
 };
 
 const std::string SUBTYPE = "subType";
+const std::string PAH_SUBTYPE = "subtype";
 const std::string CAMERA_SHOT_KEY = "cameraShotKey";
 const std::map<std::string, std::string> PHOTO_CREATE_OPTIONS_PARAM = {
     { SUBTYPE, PhotoColumn::PHOTO_SUBTYPE },
-    { CAMERA_SHOT_KEY, PhotoColumn::CAMERA_SHOT_KEY }
+    { CAMERA_SHOT_KEY, PhotoColumn::CAMERA_SHOT_KEY },
+    { PAH_SUBTYPE, PhotoColumn::PHOTO_SUBTYPE }
 
 };
 
@@ -4109,14 +4111,14 @@ napi_value MediaLibraryNapi::JSStartImagePreview(napi_env env, napi_callback_inf
 static napi_status CheckCreateOption(MediaLibraryAsyncContext &context)
 {
     bool isValid = false;
-    int32_t subtype = static_cast<int32_t>(PhotoSubType::DEFAULT);
-    subtype = context.valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
+    int32_t subtype = context.valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
     string cameraShotKey = context.valuesBucket.Get(PhotoColumn::CAMERA_SHOT_KEY, isValid);
     if (isValid == true) {
-        if (cameraShotKey.size() != CAMERA_SHOT_KEY_SIZE) {
-            NAPI_ERR_LOG("cameraShotKey is not null with but is default size");
+        if (cameraShotKey.size() < CAMERA_SHOT_KEY_SIZE) {
+            NAPI_ERR_LOG("cameraShotKey is not null with but is less than CAMERA_SHOT_KEY_SIZE");
             return napi_invalid_arg;
-        } else if (PhotoSubType(subtype) == PhotoSubType::SCREENSHOT) {
+        }
+        if (subtype == static_cast<int32_t>(PhotoSubType::SCREENSHOT)) {
             NAPI_ERR_LOG("cameraShotKey is not null with subtype is SCREENSHOT");
             return napi_invalid_arg;
         } else {
