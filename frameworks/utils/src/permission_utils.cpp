@@ -84,7 +84,6 @@ void PermissionUtils::GetClientBundle(const int uid, string &bundleName)
     }
 }
 
-#ifdef OHOS_DEBUG
 bool inline ShouldAddPermissionRecord(const AccessTokenID &token)
 {
     return (AccessTokenKit::GetTokenTypeFlag(token) == TOKEN_HAP);
@@ -103,7 +102,6 @@ void AddPermissionRecord(const AccessTokenID &token, const string &perm, const b
             perm.c_str(), permGranted, res);
     }
 }
-#endif
 
 bool PermissionUtils::CheckCallerPermission(const string &permission)
 {
@@ -114,14 +112,10 @@ bool PermissionUtils::CheckCallerPermission(const string &permission)
     int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
     if (res != PermissionState::PERMISSION_GRANTED) {
         MEDIA_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
-#ifdef OHOS_DEBUG
         AddPermissionRecord(tokenCaller, permission, false);
-#endif
         return false;
     }
-#ifdef OHOS_DEBUG
     AddPermissionRecord(tokenCaller, permission, true);
-#endif
 
     return true;
 }
