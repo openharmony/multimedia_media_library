@@ -80,6 +80,7 @@ enum class OperationType : uint32_t {
     TRASH_PHOTO,
     UPDATE_PENDING,
     SET_USER_COMMENT,
+    INDEX,
 };
 
 class MediaLibraryCommand {

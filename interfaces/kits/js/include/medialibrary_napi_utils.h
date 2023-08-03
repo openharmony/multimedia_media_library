@@ -122,7 +122,7 @@
 #define CHECK_ARGS_BASE(env, cond, err, retVal)                     \
     do {                                                            \
         if ((cond) != napi_ok) {                                    \
-            NapiError::ThrowError(env, err);                        \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__); \
             return retVal;                                          \
         }                                                           \
     } while (0)
@@ -134,7 +134,7 @@
 #define CHECK_COND(env, cond, err)                                  \
     do {                                                            \
         if (!(cond)) {                                              \
-            NapiError::ThrowError(env, err);                        \
+            NapiError::ThrowError(env, err, __FUNCTION__, __LINE__); \
             return nullptr;                                         \
         }                                                           \
     } while (0)
