@@ -254,7 +254,6 @@ bool FetchResult<T>::IsAtLastRow()
 
 variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetDataType dataType)
 {
-    MEDIA_ERR_LOG("%{public}s", errMsg.c_str());
     if (dataType == TYPE_STRING) {
         return "";
     } else if (dataType == TYPE_INT64) {
