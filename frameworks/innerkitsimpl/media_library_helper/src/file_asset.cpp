@@ -507,6 +507,11 @@ int64_t FileAsset::GetInt64Member(const string &name) const
     return (member_.count(name) > 0) ? get<int64_t>(member_.at(name)) : DEFAULT_INT64;
 }
 
+int32_t FileAsset::GetPhotoIndex() const
+{
+    return GetInt32Member(PHOTO_INDEX);
+}
+
 void FileAsset::CommitModify()
 {
     if (!MediaFileUtils::CheckDisplayName(GetStrMember(MEDIA_DATA_DB_NAME))) {

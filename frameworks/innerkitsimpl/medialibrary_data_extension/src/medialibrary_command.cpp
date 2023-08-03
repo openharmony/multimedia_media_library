@@ -300,11 +300,14 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { OPRN_TRASH, OperationType::TRASH_PHOTO },
         { OPRN_PENDING, OperationType::UPDATE_PENDING },
         { OPRN_SET_USER_COMMENT, OperationType::SET_USER_COMMENT },
+        { OPRN_INDEX, OperationType::INDEX },
     };
 
     const string opType = MediaFileUri::GetPathSecondDentry(uri_);
     if (OPRN_TYPE_MAP.find(opType) != OPRN_TYPE_MAP.end()) {
         oprnType_ = OPRN_TYPE_MAP.at(opType);
+    } else {
+        oprnType_ = OperationType::QUERY;
     }
     MEDIA_DEBUG_LOG("Command operation type is %{public}d", oprnType_);
 }

@@ -32,6 +32,7 @@ const std::string OPRN_UPDATE = "update";
 const std::string OPRN_TRASH = "trash";
 const std::string OPRN_PENDING = "update_pending";
 const std::string OPRN_SCAN = "scan";
+const std::string OPRN_INDEX = "index";
 const std::string OPRN_ALBUM_ADD_PHOTOS = "add_photos";
 const std::string OPRN_ALBUM_REMOVE_PHOTOS = "remove_photos";
 const std::string OPRN_RECOVER_PHOTOS = "recover_photos";
@@ -135,6 +136,7 @@ const std::string UFM_CLOSE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + UFM_PHOTO + "/
 const std::string UFM_UPDATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + UFM_PHOTO + "/" + OPRN_UPDATE;
 const std::string UFM_QUERY_PHOTO = MEDIALIBRARY_DATA_URI + "/" + UFM_PHOTO + "/" + OPRN_QUERY;
 const std::string UFM_SET_USER_COMMENT = MEDIALIBRARY_DATA_URI + "/" + UFM_PHOTO + "/" + OPRN_SET_USER_COMMENT;
+const std::string UFM_GET_INDEX = MEDIALIBRARY_DATA_URI + "/" + UFM_PHOTO + "/" + OPRN_INDEX;
 
 // UserFileManager audio operation constants
 const std::string UFM_CREATE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + UFM_AUDIO + "/" + OPRN_CREATE;

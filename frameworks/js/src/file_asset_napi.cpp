@@ -1822,7 +1822,6 @@ static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOl
         if (index == string::npos) {
             return false;
         }
-
         fileUri = uri.substr(0, index - 1);
         PreHandleExtrUriForThumbnail(fileUri);
         index += strlen("thumbnail");

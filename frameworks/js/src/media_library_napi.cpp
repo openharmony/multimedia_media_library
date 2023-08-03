@@ -189,6 +189,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("createAlbum", CreatePhotoAlbum),
             DECLARE_NAPI_FUNCTION("deleteAlbums", DeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", GetPhotoAlbums),
+            DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -228,6 +229,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("createAlbum", PhotoAccessCreatePhotoAlbum),
             DECLARE_NAPI_FUNCTION("deleteAlbums", PhotoAccessDeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", PhotoAccessGetPhotoAlbums),
+            DECLARE_NAPI_FUNCTION("getPhotoIndex", PhotoAccessGetPhotoIndex),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -4428,6 +4430,50 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     return result;
 }
 
+static napi_status ParseArgsIndexUri(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context, string &uri,
+    string &albumUri)
+{
+    CHECK_STATUS_RET(MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], uri),
+        "Failed to get first string argument");
+    CHECK_STATUS_RET(MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], albumUri),
+        "Failed to get second string argument");
+    return napi_ok;
+}
+
+static napi_value ParseArgsIndexof(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_THREE;
+    constexpr size_t maxArgs = ARGS_FOUR;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+
+    string uri;
+    string album;
+    CHECK_ARGS(env, ParseArgsIndexUri(env, context, uri, album), JS_INNER_FAIL);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env, context->argv[PARAM2], ASSET_FETCH_OPT, context),
+        JS_INNER_FAIL);
+    auto &predicates = context->predicates;
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+
+    context->fetchColumn.clear();
+    MediaFileUri photoUri(uri);
+    CHECK_COND(env, photoUri.GetUriType() == API10_PHOTO_URI, JS_ERR_PARAMETER_INVALID);
+    context->fetchColumn.emplace_back(photoUri.GetFileId());
+    if (!album.empty()) {
+        MediaFileUri albumUri(album);
+        CHECK_COND(env, albumUri.GetUriType() == API10_PHOTOALBUM_URI, JS_ERR_PARAMETER_INVALID);
+        context->fetchColumn.emplace_back(albumUri.GetFileId());
+    } else {
+        context->fetchColumn.emplace_back(album);
+    }
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 static void JSGetAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -4462,6 +4508,81 @@ static void JSGetAssetsExecute(napi_env env, void *data)
     }
     context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
     context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
+}
+
+static void GetPhotoIndexAsyncCallbackComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetPhotoIndexAsyncCallbackComplete");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_ERR_PARAMETER_INVALID);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        auto fileAsset = context->fetchFileResult->GetFirstObject();
+        int32_t count = -1;
+        if (fileAsset != nullptr) {
+            count = fileAsset->GetPhotoIndex();
+        }
+        jsContext->status = true;
+        napi_create_int32(env, count, &jsContext->data);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void GetPhotoIndexExec(napi_env env, void *data, ResultNapiType type)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JsGetPhotoIndexExec");
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    string queryUri = UFM_GET_INDEX;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(queryUri);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        context->SaveError(errCode);
+        return;
+    }
+    context->fetchFileResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    context->fetchFileResult->SetResultNapiType(type);
+}
+
+static void PhotoAccessGetPhotoIndexExec(napi_env env, void *data)
+{
+    GetPhotoIndexExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+
+static void JsGetPhotoIndexExec(napi_env env, void *data)
+{
+    GetPhotoIndexExec(env, data, ResultNapiType::TYPE_USERFILE_MGR);
+}
+
+napi_value MediaLibraryNapi::JSGetPhotoIndex(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsIndexof(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoIndex",
+        JsGetPhotoIndexExec, GetPhotoIndexAsyncCallbackComplete);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetPhotoIndex(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsIndexof(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoIndex",
+        PhotoAccessGetPhotoIndexExec, GetPhotoIndexAsyncCallbackComplete);
 }
 
 napi_value MediaLibraryNapi::JSGetPhotoAssets(napi_env env, napi_callback_info info)
@@ -4647,7 +4768,6 @@ napi_value MediaLibraryNapi::UserFileMgrTrashAsset(napi_env env, napi_callback_i
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_NULLPTR_RET(ParseArgsTrashAsset(env, info, asyncContext));
-
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrTrashAsset", JSTrashAssetExecute,
         JSTrashAssetCompleteCallback);
 }
