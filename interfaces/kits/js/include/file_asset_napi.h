@@ -120,6 +120,7 @@ private:
     static napi_value UserFileMgrGetThumbnail(napi_env env, napi_callback_info info);
     static napi_value JSGetReadOnlyFd(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrSetHidden(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrSetPending(napi_env env, napi_callback_info info);
 
     static napi_value PhotoAccessHelperOpen(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperClose(napi_env env, napi_callback_info info);
@@ -127,6 +128,7 @@ private:
     static napi_value PhotoAccessHelperFavorite(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperSetPending(napi_env env, napi_callback_info info);
 
     bool HandleParamSet(const std::string &inputKey, const std::string &value, ResultNapiType resultNapiType);
     napi_env env_;
@@ -154,6 +156,7 @@ struct FileAssetAsyncContext : public NapiError {
     bool isFavorite = false;
     bool isTrash = false;
     bool isHidden = false;
+    bool isPending = false;
     std::string networkId;
     std::shared_ptr<PixelMap> pixelmap;
 

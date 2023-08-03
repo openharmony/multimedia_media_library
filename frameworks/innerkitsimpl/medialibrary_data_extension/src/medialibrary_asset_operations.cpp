@@ -720,24 +720,19 @@ static int32_t OpenFile(const string &filePath, const string &mode)
     return MediaPrivacyManager(absFilePath, mode).Open();
 }
 
-static int32_t CreateFileAndSetPending(const shared_ptr<FileAsset> &fileAsset)
+static int32_t SetPendingTime(const shared_ptr<FileAsset> &fileAsset, int64_t pendingTime)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
     }
-    int32_t errCode = MediaFileUtils::CreateAsset(fileAsset->GetPath());
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Create asset failed, path=%{private}s", fileAsset->GetPath().c_str());
-        return errCode;
-    }
-    int64_t time = MediaFileUtils::UTCTimeSeconds();
+
     MediaLibraryCommand updatePendingCmd(GetOprnObjectByMediaType(fileAsset->GetMediaType()),
         OperationType::UPDATE);
     updatePendingCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID,
         to_string(fileAsset->GetId()));
     ValuesBucket values;
-    values.PutLong(MediaColumn::MEDIA_TIME_PENDING, time);
+    values.PutLong(MediaColumn::MEDIA_TIME_PENDING, pendingTime);
     updatePendingCmd.SetValueBucket(values);
     int32_t rowId = 0;
     int32_t result = rdbStore->Update(updatePendingCmd, rowId);
@@ -746,6 +741,17 @@ static int32_t CreateFileAndSetPending(const shared_ptr<FileAsset> &fileAsset)
         return E_HAS_DB_ERROR;
     }
     return E_OK;
+}
+
+static int32_t CreateFileAndSetPending(const shared_ptr<FileAsset> &fileAsset, int64_t pendingTime)
+{
+    int32_t errCode = MediaFileUtils::CreateAsset(fileAsset->GetPath());
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Create asset failed, path=%{private}s", fileAsset->GetPath().c_str());
+        return errCode;
+    }
+
+    return SetPendingTime(fileAsset, pendingTime);
 }
 
 static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const string &mode)
@@ -763,7 +769,7 @@ static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const 
             return E_IS_PENDING_ERROR;
         }
         if (pendingTime == UNCREATE_FILE_TIMEPENDING) {
-            int32_t errCode = CreateFileAndSetPending(fileAsset);
+            int32_t errCode = CreateFileAndSetPending(fileAsset, UNCLOSE_FILE_TIMEPENDING);
             return errCode;
         }
     }
@@ -786,9 +792,12 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         return E_INVALID_MODE;
     }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
     if (api == MediaLibraryApi::API_10) {
-        SolvePendingStatus(fileAsset, mode);
+        int32_t errCode = SolvePendingStatus(fileAsset, mode);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("Solve pending status failed, errCode=%{public}d", errCode);
+            return errCode;
+        }
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
         if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
@@ -799,9 +808,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
             }
         }
     }
-#else
-    SolvePendingStatus(fileAsset, mode);
-#endif
+
     string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     tracer.Start("OpenFile");
     int32_t fd = OpenFile(path, lowerMode);
@@ -838,16 +845,31 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
 
     string fileId = to_string(fileAsset->GetId());
     string path = fileAsset->GetPath();
-    InvalidateThumbnail(fileId, fileAsset->GetMediaType());
-    ScanFile(path, isCreateThumbSync);
-    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({
-        to_string(PhotoAlbumSubType::IMAGES),
-        to_string(PhotoAlbumSubType::VIDEO),
-        to_string(PhotoAlbumSubType::SCREENSHOT),
-        to_string(PhotoAlbumSubType::CAMERA),
-        to_string(PhotoAlbumSubType::FAVORITE),
-    });
-    return E_OK;
+    // if pending == 0, scan
+    // if pending == -1, not occur under normal conditions
+    // if pending == -2, set pending = 0 and scan
+    // if pending is timestamp, do nothing
+    if (fileAsset->GetTimePending() == 0 || fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
+        InvalidateThumbnail(fileId, fileAsset->GetMediaType());
+        ScanFile(path, isCreateThumbSync);
+        MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({
+            to_string(PhotoAlbumSubType::IMAGES),
+            to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::SCREENSHOT),
+            to_string(PhotoAlbumSubType::CAMERA),
+            to_string(PhotoAlbumSubType::FAVORITE),
+        });
+        return E_OK;
+    } else if (fileAsset->GetTimePending() == UNCREATE_FILE_TIMEPENDING) {
+        MEDIA_ERR_LOG("This asset [%{private}d] pending status cannot close", fileAsset->GetId());
+        return E_IS_PENDING_ERROR;
+    } else if (fileAsset->GetTimePending() > 0) {
+        MEDIA_WARN_LOG("This asset [%{private}d] is in pending", fileAsset->GetId());
+        return E_OK;
+    } else {
+        MEDIA_ERR_LOG("This asset [%{private}d] pending status is invalid", fileAsset->GetId());
+        return E_INVALID_VALUES;
+    }
 }
 
 void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int32_t type)
@@ -988,6 +1010,93 @@ int32_t MediaLibraryAssetOperations::SendHideNotify(MediaLibraryCommand &cmd, in
     NotifyType type = (hiddenState > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     watch->Notify(notifyUri, type, hiddenAlbumId);
     return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::SetPendingTrue(const shared_ptr<FileAsset> &fileAsset)
+{
+    // time_pending = 0, means file is created, not allowed
+    // time_pending = -1, means file is not created yet, create an empty one
+    // time_pending = -2, means file is not close yet, set pending time
+    // time_pending is timestamp, update it
+    int64_t timestamp = MediaFileUtils::UTCTimeSeconds();
+    if (timestamp <= 0) {
+        MEDIA_ERR_LOG("Get timestamp failed, timestamp:%{public}ld", (long) timestamp);
+        return E_INVALID_TIMESTAMP;
+    }
+    if (fileAsset->GetTimePending() == 0) {
+        MEDIA_ERR_LOG("fileAsset time_pending is 0, not allowed");
+        return E_INVALID_VALUES;
+    } else if (fileAsset->GetTimePending() == UNCREATE_FILE_TIMEPENDING) {
+        int32_t errCode = CreateFileAndSetPending(fileAsset, timestamp);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("Create asset failed, id=%{public}d", fileAsset->GetId());
+            return errCode;
+        }
+    } else if (fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING ||
+        fileAsset->GetTimePending() > 0) {
+        int32_t errCode = SetPendingTime(fileAsset, timestamp);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("Set pending time failed, id=%{public}d", fileAsset->GetId());
+            return errCode;
+        }
+    } else {
+        MEDIA_ERR_LOG("fileAsset time_pending is invalid, time_pending:%{public}ld, id=%{public}d",
+            (long) fileAsset->GetTimePending(), fileAsset->GetId());
+        return E_INVALID_VALUES;
+    }
+
+    return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::SetPendingFalse(const shared_ptr<FileAsset> &fileAsset)
+{
+    // time_pending = 0, only return
+    // time_pending = -1, means file is not created yet, not allowed
+    // time_pending = -2, means file is not close yet, not allowed
+    // time_pending is timestamp, scan and set pending time = 0
+    if (fileAsset->GetTimePending() == 0) {
+        return E_OK;
+    } else if (fileAsset->GetTimePending() == UNCREATE_FILE_TIMEPENDING) {
+        MEDIA_ERR_LOG("file is not created yet, not allowed, id=%{public}d", fileAsset->GetId());
+        return E_INVALID_VALUES;
+    } else if (fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
+        MEDIA_ERR_LOG("file is not close yet, not allowed, id=%{public}d", fileAsset->GetId());
+        return E_INVALID_VALUES;
+    } else if (fileAsset->GetTimePending() > 0) {
+        ScanFile(fileAsset->GetPath());
+    } else {
+        MEDIA_ERR_LOG("fileAsset time_pending is invalid, time_pending:%{public}ld, id=%{public}d",
+            (long) fileAsset->GetTimePending(), fileAsset->GetId());
+        return E_INVALID_VALUES;
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryAssetOperations::SetPendingStatus(MediaLibraryCommand &cmd)
+{
+    int32_t pendingStatus = 0;
+    if (!GetInt32FromValuesBucket(cmd.GetValueBucket(), MediaColumn::MEDIA_TIME_PENDING, pendingStatus)) {
+        return E_INVALID_VALUES;
+    }
+
+    vector<string> columns = {
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_TYPE,
+        MediaColumn::MEDIA_TIME_PENDING
+    };
+    auto fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()), cmd.GetOprnObject(), columns);
+    if (fileAsset == nullptr) {
+        return E_INVALID_VALUES;
+    }
+    if (pendingStatus == 1) {
+        return SetPendingTrue(fileAsset);
+    } else if (pendingStatus == 0) {
+        return SetPendingFalse(fileAsset);
+    } else {
+        MEDIA_ERR_LOG("pendingStatus is invalid, pendingStatus:%{public}d", pendingStatus);
+        return E_INVALID_VALUES;
+    }
 }
 
 bool MediaLibraryAssetOperations::GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values,

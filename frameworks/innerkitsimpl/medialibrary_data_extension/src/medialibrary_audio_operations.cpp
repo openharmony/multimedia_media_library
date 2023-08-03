@@ -294,6 +294,9 @@ int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fi
 
 int32_t MediaLibraryAudioOperations::UpdateV10(MediaLibraryCommand &cmd)
 {
+    if (cmd.GetOprnType() == OperationType::UPDATE_PENDING) {
+        return SetPendingStatus(cmd);
+    }
     vector<string> columns = {
         AudioColumn::MEDIA_ID,
         AudioColumn::MEDIA_FILE_PATH,

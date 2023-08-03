@@ -18,6 +18,7 @@
 #include "medialibrary_photo_operations_test.h"
 
 #include <chrono>
+#include <fcntl.h>
 #include <fstream>
 #include <thread>
 #include <unistd.h>
@@ -736,6 +737,31 @@ void TestPhotoCloseParamsApi10(int32_t fileId, ExceptIntFunction func)
     cmd.SetValueBucket(values);
     int32_t ret = MediaLibraryPhotoOperations::Close(cmd);
     func(ret);
+}
+
+int64_t GetPhotoPendingStatus(int32_t fileId)
+{
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    queryCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    vector<string> columns = { PhotoColumn::MEDIA_TIME_PENDING };
+    auto resultSet = g_rdbStore->Query(queryCmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get AssetUniqueNumberTable count");
+        return E_HAS_DB_ERROR;
+    }
+    return GetInt64Val(PhotoColumn::MEDIA_TIME_PENDING, resultSet);
+}
+
+int32_t SetPhotoPendingStatus(int32_t pendingStatus, int32_t fileId)
+{
+    MediaLibraryCommand setPendingCloseCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE_PENDING,
+        MediaLibraryApi::API_10);
+    setPendingCloseCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    ValuesBucket setPendingCloseValues;
+    setPendingCloseValues.Put(PhotoColumn::MEDIA_TIME_PENDING, pendingStatus);
+    setPendingCloseCmd.SetValueBucket(setPendingCloseValues);
+    return MediaLibraryPhotoOperations::Update(setPendingCloseCmd);
 }
 
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
@@ -1593,36 +1619,173 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestS
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_001, TestSize.Level0)
 {
+    // common api10 create -> open -> write -> close
     MEDIA_INFO_LOG("start tdd photo_oprn_pending_api10_test_001");
     MediaLibraryCommand createCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
         MediaLibraryApi::API_10);
     string name = "photo.jpg";
-    ValuesBucket values;
-    values.PutString(MediaColumn::MEDIA_NAME, name);
-    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
-    createCmd.SetValueBucket(values);
+    ValuesBucket createValues;
+    createValues.PutString(MediaColumn::MEDIA_NAME, name);
+    createValues.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    createCmd.SetValueBucket(createValues);
     int32_t fileId = MediaLibraryPhotoOperations::Create(createCmd);
     EXPECT_GE(fileId, 0);
+    int64_t pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, UNCREATE_FILE_TIMEPENDING);
 
-    string uriString = MediaFileUtils::GetFileMediaTypeUriV10(MediaType::MEDIA_TYPE_IMAGE, "");
-    uriString += "/" + to_string(fileId) + "?api_version=10";
-    Uri uri(uriString);
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    Uri uri(fileUri.ToString());
     MediaLibraryCommand openCmd(uri);
     int32_t fd = MediaLibraryPhotoOperations::Open(openCmd, "rw");
     EXPECT_GE(fd, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, UNCLOSE_FILE_TIMEPENDING);
 
-    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
-    queryCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    vector<string> columns = { PhotoColumn::MEDIA_TIME_PENDING };
-    auto resultSet = g_rdbStore->Query(queryCmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not get AssetUniqueNumberTable count");
-        return;
-    }
-    int64_t timePending = GetInt64Val(PhotoColumn::MEDIA_TIME_PENDING, resultSet);
-    EXPECT_GT(timePending, 0);
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    ValuesBucket closeValues;
+    closeValues.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    closeCmd.SetValueBucket(closeValues);
+    int32_t ret = MediaLibraryPhotoOperations::Close(closeCmd);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_pending_api10_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_002, TestSize.Level0)
+{
+    // common api10 create -> setPending(true) -> open -> write -> close -> setPending(false)
+    MEDIA_INFO_LOG("start tdd photo_oprn_pending_api10_test_002");
+    MediaLibraryCommand createCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    string name = "photo.jpg";
+    ValuesBucket createValues;
+    createValues.PutString(MediaColumn::MEDIA_NAME, name);
+    createValues.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    createCmd.SetValueBucket(createValues);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(createCmd);
+    EXPECT_GE(fileId, 0);
+    int64_t pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, UNCREATE_FILE_TIMEPENDING);
+
+    int32_t ret = SetPhotoPendingStatus(1, fileId);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_GT(pendingStatus, 0);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    Uri uri(fileUri.ToString());
+    MediaLibraryCommand openCmd(uri);
+    int32_t fd = MediaLibraryPhotoOperations::Open(openCmd, "rw");
+    EXPECT_GE(fd, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_GT(pendingStatus, 0);
+
+    char data = 'A';
+    write(fd, &data, 1);
+
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE,
+        MediaLibraryApi::API_10);
+    ValuesBucket closeValues;
+    closeValues.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    closeCmd.SetValueBucket(closeValues);
+    ret = MediaLibraryPhotoOperations::Close(closeCmd);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_GT(pendingStatus, 0);
+
+    ret = SetPhotoPendingStatus(0, fileId);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+    MEDIA_INFO_LOG("end tdd photo_oprn_pending_api10_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_003, TestSize.Level0)
+{
+    // common api10 create -> open -> setPending(true) -> write -> setPending(false) -> close
+    MEDIA_INFO_LOG("start tdd photo_oprn_pending_api10_test_003");
+    MediaLibraryCommand createCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_10);
+    string name = "photo.jpg";
+    ValuesBucket createValues;
+    createValues.PutString(MediaColumn::MEDIA_NAME, name);
+    createValues.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    createCmd.SetValueBucket(createValues);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(createCmd);
+    EXPECT_GE(fileId, 0);
+    int64_t pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, UNCREATE_FILE_TIMEPENDING);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    Uri uri(fileUri.ToString());
+    MediaLibraryCommand openCmd(uri);
+    int32_t fd = MediaLibraryPhotoOperations::Open(openCmd, "rw");
+    EXPECT_GE(fd, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, UNCLOSE_FILE_TIMEPENDING);
+
+    int32_t ret = SetPhotoPendingStatus(1, fileId);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_GT(pendingStatus, 0);
+
+    char data = 'A';
+    write(fd, &data, 1);
+
+    ret = SetPhotoPendingStatus(0, fileId);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    ValuesBucket closeValues;
+    closeValues.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    closeCmd.SetValueBucket(closeValues);
+    ret = MediaLibraryPhotoOperations::Close(closeCmd);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_pending_api10_test_003");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api9_test_001, TestSize.Level0)
+{
+    // common api9 create -> open -> write -> close
+    MEDIA_INFO_LOG("start tdd photo_oprn_pending_api9_test_001");
+    MediaLibraryCommand createCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE,
+        MediaLibraryApi::API_OLD);
+    string name = "photo.jpg";
+    ValuesBucket createValues;
+    createValues.PutString(MediaColumn::MEDIA_NAME, name);
+    createValues.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    createValues.PutString(PhotoColumn::MEDIA_RELATIVE_PATH, "Pictures/1/");
+    createCmd.SetValueBucket(createValues);
+    int32_t fileId = MediaLibraryPhotoOperations::Create(createCmd);
+    EXPECT_GE(fileId, 0);
+    int64_t pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V9);
+    Uri uri(fileUri.ToString());
+    MediaLibraryCommand openCmd(uri);
+    int32_t fd = MediaLibraryPhotoOperations::Open(openCmd, "rw");
+    EXPECT_GE(fd, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    ValuesBucket closeValues;
+    closeValues.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    closeCmd.SetValueBucket(closeValues);
+    int32_t ret = MediaLibraryPhotoOperations::Close(closeCmd);
+    EXPECT_EQ(ret, 0);
+    pendingStatus = GetPhotoPendingStatus(fileId);
+    EXPECT_EQ(pendingStatus, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_pending_api9_test_001");
 }
 } // namespace Media
 } // namespace OHOS

@@ -34,6 +34,7 @@
 namespace OHOS {
 namespace Media {
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
+static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
 
 class MediaLibraryAssetOperations {
 public:
@@ -79,6 +80,7 @@ protected:
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static int32_t SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
+    static int32_t SetPendingStatus(MediaLibraryCommand &cmd);
 
     static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         int32_t &value);
@@ -94,6 +96,8 @@ private:
     static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &filePath);
     static void ScanFile(const std::string &path, bool isCreateThumbSync = false);
+    static int32_t SetPendingTrue(const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t SetPendingFalse(const std::shared_ptr<FileAsset> &fileAsset);
     
     static constexpr int ASSET_IN_BUCKET_NUM_MAX = 1000;
     static constexpr int ASSET_DIR_START_NUM = 16;
