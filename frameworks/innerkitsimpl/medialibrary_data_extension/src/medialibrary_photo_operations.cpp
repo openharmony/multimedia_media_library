@@ -457,6 +457,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
 {
     if (cmd.GetOprnType() == OperationType::TRASH_PHOTO) {
         return TrashPhotos(cmd);
+    } else if (cmd.GetOprnType() == OperationType::UPDATE_PENDING) {
+        return SetPendingStatus(cmd);
     }
 
     vector<string> columns = {

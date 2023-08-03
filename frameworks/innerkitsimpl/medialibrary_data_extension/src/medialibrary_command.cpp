@@ -298,6 +298,7 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { OPRN_DELETE_PHOTOS, OperationType::ALBUM_DELETE_ASSETS },
         { OPRN_CLOSE, OperationType::CLOSE },
         { OPRN_TRASH, OperationType::TRASH_PHOTO },
+        { OPRN_PENDING, OperationType::UPDATE_PENDING },
     };
 
     const string opType = MediaFileUri::GetPathSecondDentry(uri_);
