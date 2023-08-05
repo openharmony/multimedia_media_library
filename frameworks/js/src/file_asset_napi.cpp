@@ -71,7 +71,6 @@ constexpr int32_t IS_HIDDEN = 1;
 constexpr int32_t NOT_HIDDEN = 0;
 
 using CompleteCallback = napi_async_complete_callback;
-std::size_t defaultIndexLength = 0;
 
 thread_local napi_ref FileAssetNapi::userFileMgrConstructor_ = nullptr;
 thread_local napi_ref FileAssetNapi::photoAccessHelperConstructor_ = nullptr;
@@ -1778,8 +1777,12 @@ extern "C" __attribute__((visibility("default"))) void *OHOS_MEDIA_NativeGetThum
     return ret.release();
 }
 
-static void PreHandleExtrUriForThumbnail(const string &uri, string &fileUri, std::size_t &index = defaultIndexLength)
+static void PreHandleExtrUriForThumbnail(string &fileUri)
 {
+    MediaFileUri mediaUri(fileUri);
+    if (!mediaUri.IsApi10()) {
+        return;
+    }
     // handle uri with extrUri
     auto indexV10 = fileUri.rfind('/');
     if (indexV10 == string::npos) {
@@ -1793,10 +1796,6 @@ static void PreHandleExtrUriForThumbnail(const string &uri, string &fileUri, std
     auto nextStr = uriTempNext.substr(indexV10 + 1);
     if (!all_of(nextStr.begin(), nextStr.end(), ::isdigit)) {
         fileUri = uriTempNext.substr(0, indexV10);
-        indexV10 = uri.find("thumbnail");
-        if (indexV10 != string::npos) {
-            index = indexV10;
-        }
     }
 }
 
@@ -1811,16 +1810,16 @@ static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOl
         if (index == string::npos) {
             return false;
         }
-        fileUri = uri.substr(0, index - 1);
 
-        PreHandleExtrUriForThumbnail(uri, fileUri, index);
+        fileUri = uri.substr(0, index - 1);
+        PreHandleExtrUriForThumbnail(fileUri);
         index += strlen("thumbnail");
-        index = uri.find("/", index);
+        index = uri.find('/', index);
         if (index == string::npos) {
             return false;
         }
         index += 1;
-        auto tmpIdx = uri.find("/", index);
+        auto tmpIdx = uri.find('/', index);
         if (tmpIdx == string::npos) {
             return false;
         }
@@ -1831,12 +1830,13 @@ static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOl
         StrToInt(uri.substr(tmpIdx + 1), height);
         size = { .width = width, .height = height };
     } else {
-        auto qIdx = uri.find("?");
+        auto qIdx = uri.find('?');
         if (qIdx == string::npos) {
             return false;
         }
+
         fileUri = uri.substr(0, qIdx);
-        PreHandleExtrUriForThumbnail(uri, fileUri);
+        PreHandleExtrUriForThumbnail(fileUri);
         auto &queryKey = mediaUri.GetQueryKeys();
         if (queryKey.count(THUMBNAIL_PATH) != 0) {
             path = queryKey[THUMBNAIL_PATH];

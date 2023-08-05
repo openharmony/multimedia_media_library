@@ -324,8 +324,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(outRow > 0, errCode, "insert file in db failed, error = %{public}d", outRow);
     fileAsset.SetId(outRow);
     if (!albumUri.empty()) {
-        string albumId = MediaLibraryDataManagerUtils::GetIdFromUri(albumUri);
-        PhotoMapAddAsset(stoi(albumId), to_string(outRow),
+        PhotoMapAddAsset(stoi(MediaLibraryDataManagerUtils::GetIdFromUri(albumUri)), to_string(outRow),
             MediaFileUtils::GetExtraUri(displayName, fileAsset.GetPath()));
     }
     string bdName = cmd.GetBundleName();
@@ -369,7 +368,8 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     transactionOprn.Finish();
     auto watch = MediaLibraryNotify::GetInstance();
 
-    string notifyDeleteUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
+    string notifyDeleteUri =
+        MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
         (api == MediaLibraryApi::API_10 ? MediaFileUtils::GetExtraUri(displayName, filePath) : ""));
     watch->Notify(notifyDeleteUri, NotifyType::NOTIFY_REMOVE);
     return deleteRows;
