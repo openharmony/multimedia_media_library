@@ -67,10 +67,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, PhotoAlbum_SetGet_Test_001, TestSize.Level0
     photoAlbum.SetRelativePath(TEST_RELATIVE_PATH);
     EXPECT_EQ(photoAlbum.GetRelativePath(), TEST_RELATIVE_PATH);
 
-    const string TEST_TYPE_MASK = "000";
-    photoAlbum.SetTypeMask(TEST_TYPE_MASK);
-    EXPECT_EQ(photoAlbum.GetTypeMask(), TEST_TYPE_MASK);
-
     photoAlbum.SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     EXPECT_EQ(photoAlbum.GetResultNapiType(), ResultNapiType::TYPE_USERFILE_MGR);
 }

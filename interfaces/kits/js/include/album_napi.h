@@ -55,7 +55,6 @@ public:
     std::string GetAlbumPath() const;
     std::string GetAlbumUri() const;
     std::string GetNetworkId() const;
-    std::string GetTypeMask() const;
     AlbumNapi();
     ~AlbumNapi();
 
@@ -118,7 +117,6 @@ struct AlbumNapiAsyncContext : public NapiError {
     napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;
     std::vector<uint32_t> mediaTypes;
-    std::string typeMask;
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
 };

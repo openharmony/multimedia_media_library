@@ -322,12 +322,9 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetObject_Test_003, TestSize.Le
     auto ret = fetchResult->GetObject(resultSet);
     EXPECT_NE(ret, nullptr);
     fetchResult->SetFetchResType(FetchResType::TYPE_ALBUM);
-    string typeMask = "GetObject";
-    fetchResult->SetTypeMask(typeMask);
     fetchResult->GetNetworkId();
     fetchResult->GetDataShareResultSet();
     fetchResult->GetFetchResType();
-    fetchResult->GetTypeMask();
 }
 
 /*

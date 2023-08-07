@@ -46,7 +46,6 @@ public:
     void SetResultNapiType(const ResultNapiType type);
     void SetDescription(const std::string &description);
     void SetExpiredTime(const int32_t expiredTime);
-    void SetTypeMask(const std::string &typeMask);
 
     int32_t GetAlbumId() const;
     std::string GetAlbumName() const;
@@ -57,7 +56,6 @@ public:
     int32_t GetCategoryId() const;
     std::string GetCategoryName() const;
     std::string GetCoverUri() const;
-    std::string GetTypeMask() const;
     PrivateAlbumType GetAlbumPrivateType() const;
     ResultNapiType GetResultNapiType() const;
     std::string GetDescription() const;
@@ -73,7 +71,6 @@ private:
     int32_t categoryId_;
     int64_t albumDateModified_;
     ResultNapiType resultNapiType_;
-    std::string typeMask_;
     std::string categoryName_;
     std::string coverUri_;
     std::string description_;
