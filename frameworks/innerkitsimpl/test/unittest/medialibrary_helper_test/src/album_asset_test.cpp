@@ -74,10 +74,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_SetGet_Test_001, TestSize.Level0
     albumAsset.SetAlbumVirtual(albumVirtual);
     EXPECT_EQ(albumAsset.GetAlbumVirtual(), albumVirtual);
 
-    const string TEST_TYPE_MASK = "000";
-    albumAsset.SetAlbumTypeMask(TEST_TYPE_MASK);
-    EXPECT_EQ(albumAsset.GetAlbumTypeMask(), TEST_TYPE_MASK);
-
     ResultNapiType resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
     albumAsset.SetResultNapiType(resultNapiType);
     EXPECT_EQ(albumAsset.GetResultNapiType(), resultNapiType);

@@ -319,7 +319,6 @@ struct MediaLibraryAsyncContext : public NapiError {
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;
-    std::string typeMask;
     std::string tableName;
     std::vector<uint32_t> mediaTypes;
     OHOS::DataShare::DataSharePredicates predicates;

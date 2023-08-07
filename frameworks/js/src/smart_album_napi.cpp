@@ -152,7 +152,8 @@ napi_value SmartAlbumNapi::CreateSmartAlbumNapi(napi_env env, unique_ptr<SmartAl
     }
 
     napi_value constructor;
-    napi_ref constructorRef = (albumData->GetTypeMask().empty()) ? (sConstructor_) : (userFileMgrConstructor_);
+    napi_ref constructorRef = (albumData->GetResultNapiType() == ResultNapiType::TYPE_MEDIALIBRARY) ?
+        (sConstructor_) : (userFileMgrConstructor_);
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
     napi_value result = nullptr;
@@ -204,11 +205,6 @@ void SmartAlbumNapi::SetAlbumCapacity(int32_t albumCapacity)
 std::string SmartAlbumNapi::GetNetworkId() const
 {
     return MediaFileUtils::GetNetworkIdFromUri(GetSmartAlbumUri());
-}
-
-std::string SmartAlbumNapi::GetTypeMask() const
-{
-    return smartAlbumAssetPtr->GetTypeMask();
 }
 
 void SmartAlbumNapi::SetCoverUri(string &coverUri)
@@ -1178,7 +1174,6 @@ static void GetFileAssetsNative(napi_env env, void *data)
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         (MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri())) +
         MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + ASSETMAP_VIEW_NAME;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
@@ -1280,7 +1275,6 @@ napi_value SmartAlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext),
         JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
 
     asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "SmartAlbumAsset is nullptr");
@@ -1299,7 +1293,6 @@ static void JSRecoverAssetExecute(napi_env env, void *data)
 
     string recoverUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
         MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(recoverUri, context->typeMask);
     Uri recoverAssetUri(recoverUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, context->objectPtr->GetAlbumId());
@@ -1346,7 +1339,6 @@ napi_value SmartAlbumNapi::UserFileMgrRecoverAsset(napi_env env, napi_callback_i
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
         JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
     asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "SmartAlbumAsset is nullptr");
 
@@ -1363,7 +1355,6 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, context->typeMask);
     Uri deleteAssetUri(deleteUri);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_ID, MediaLibraryNapiUtils::GetFileIdFromUri(context->uri));
@@ -1409,7 +1400,6 @@ napi_value SmartAlbumNapi::UserFileMgrDeleteAsset(napi_env env, napi_callback_in
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, asyncContext->uri),
         JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAssets", JSDeleteAssetExecute,
         JSDeleteAssetCompleteCallback);

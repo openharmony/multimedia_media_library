@@ -56,7 +56,6 @@ public:
     int32_t GetExpiredTime() const;
     void SetAlbumCapacity(int32_t albumCapacity);
     std::string GetNetworkId() const;
-    std::string GetTypeMask() const;
     void SetExpiredTime(int32_t expiredTime);
     void SetDescription(std::string &description);
     void SetCoverUri(std::string &coverUri);
@@ -122,7 +121,6 @@ struct SmartAlbumNapiAsyncContext : public NapiError {
     napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;
     std::vector<uint32_t> mediaTypes;
-    std::string typeMask;
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
 };

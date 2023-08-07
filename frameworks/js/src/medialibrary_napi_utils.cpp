@@ -172,16 +172,6 @@ napi_status MediaLibraryNapiUtils::GetArrayProperty(napi_env env, napi_value arg
     return napi_ok;
 }
 
-void MediaLibraryNapiUtils::GenTypeMaskFromArray(const vector<uint32_t> types, string &typeMask)
-{
-    typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
-    for (auto &type : types) {
-        if ((type >= MEDIA_TYPE_FILE) && (type <= MEDIA_TYPE_AUDIO)) {
-            typeMask[get<POS_TYPE_MASK_STRING_INDEX>(MEDIA_TYPE_TUPLE_VEC[type])] = TYPE_MASK_BIT_SET;
-        }
-    }
-}
-
 napi_status MediaLibraryNapiUtils::HasCallback(napi_env env, const size_t argc, const napi_value argv[],
     bool &isCallback)
 {
@@ -207,13 +197,6 @@ napi_status MediaLibraryNapiUtils::hasFetchOpt(napi_env env, const napi_value ar
     CHECK_STATUS_RET(napi_has_named_property(env, arg, "selections", &hasFetchOpt),
         "Failed to get property selections");
     return napi_ok;
-}
-
-void MediaLibraryNapiUtils::UriAddFragmentTypeMask(string &uri, const string &typeMask)
-{
-    if (!typeMask.empty()) {
-        uri += "#" + URI_PARAM_KEY_TYPE + ":" + typeMask;
-    }
 }
 
 void MediaLibraryNapiUtils::UriAddTableName(string &uri, const string tableName)

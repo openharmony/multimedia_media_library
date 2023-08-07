@@ -48,14 +48,6 @@ const std::vector<std::string> WRITE_PERMS_V10 = {
     PERM_WRITE_DOCUMENT
 };
 
-const std::unordered_map<std::string, MediaTypeMaskInteger> PERM_MASK_MAP = {
-    { PERM_READ_IMAGEVIDEO,          MediaTypeMaskInteger::BIT_IMAGEVIDEO },
-    { PERM_READ_AUDIO,               MediaTypeMaskInteger::BIT_AUDIO },
-    { PERM_READ_DOCUMENT,            MediaTypeMaskInteger::BIT_DOCUMENT },
-    { PERM_WRITE_IMAGEVIDEO,         MediaTypeMaskInteger::BIT_IMAGEVIDEO },
-    { PERM_WRITE_AUDIO,              MediaTypeMaskInteger::BIT_AUDIO },
-    { PERM_WRITE_DOCUMENT,           MediaTypeMaskInteger::BIT_DOCUMENT },
-};
 class PermissionUtils {
 public:
     static bool CheckCallerPermission(const std::string &permission);

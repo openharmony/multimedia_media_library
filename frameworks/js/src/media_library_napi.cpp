@@ -1009,7 +1009,6 @@ static void GetAlbumResult(MediaLibraryAsyncContext *context, shared_ptr<DataSha
         context->fetchAlbumResult = make_unique<FetchResult<AlbumAsset>>(move(resultSet));
         context->fetchAlbumResult->SetNetworkId(context->networkId);
         context->fetchAlbumResult->SetResultNapiType(context->resultNapiType);
-        context->fetchAlbumResult->SetTypeMask(context->typeMask);
         return;
     }
 
@@ -1023,7 +1022,6 @@ static void GetAlbumResult(MediaLibraryAsyncContext *context, shared_ptr<DataSha
 #else
             SetAlbumCoverUri(context, albumData);
 #endif
-            albumData->SetAlbumTypeMask(context->typeMask);
             context->albumNativeArray.push_back(move(albumData));
         } else {
             context->SaveError(E_NO_MEMORY);
@@ -1159,7 +1157,6 @@ static void GetResultDataExecute(napi_env env, void *data)
             MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
         NAPI_DEBUG_LOG("queryAlbumUri is = %{public}s", queryUri.c_str());
     }
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
     int errCode = 0;
     shared_ptr<DataShareResultSet> resultSet = UserFileClient::Query(uri, context->predicates, columns, errCode);
@@ -1287,7 +1284,6 @@ static void getFileAssetById(int32_t id, const string &networkId, MediaLibraryAs
     predicates.SetWhereArgs({ to_string(id) });
 
     string queryUri = MEDIALIBRARY_DATA_URI;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     Uri uri(queryUri);
     int errCode = 0;
 
@@ -1367,9 +1363,6 @@ static void SetFileAssetByIdV10(int32_t id, const string &networkId, const strin
     fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
     fileAsset->SetTimePending(UNCREATE_FILE_TIMEPENDING);
-    string typeMask;
-    MediaLibraryNapiUtils::GenTypeMaskFromArray({ mediaType }, typeMask);
-    fileAsset->SetTypeMask(typeMask);
     context->fileAsset = move(fileAsset);
 }
 
@@ -1391,9 +1384,6 @@ static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, 
     fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     fileAsset->SetTimePending(UNCREATE_FILE_TIMEPENDING);
-    string typeMask;
-    MediaLibraryNapiUtils::GenTypeMaskFromArray({ mediaType }, typeMask);
-    fileAsset->SetTypeMask(typeMask);
     context->fileAsset = move(fileAsset);
 }
 
@@ -1832,7 +1822,6 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
 #endif
     notifyUri = MEDIALIBRARY_DATA_URI + "/" + mediaType;
     string deleteUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_DELETEASSET;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(deleteUri, context->typeMask);
     Uri deleteAssetUri(deleteUri);
     DataSharePredicates predicates;
     predicates.EqualTo(MEDIA_DATA_DB_ID, deleteId);
@@ -2755,13 +2744,13 @@ static void SetSmartAlbumData(SmartAlbumAsset* smartAlbumData, shared_ptr<DataSh
     MediaFileUri fileUri(MEDIA_TYPE_SMARTALBUM, to_string(smartAlbumData->GetAlbumId()), context->networkId,
         MEDIA_API_VERSION_DEFAULT);
     smartAlbumData->SetAlbumUri(fileUri.ToString());
-    smartAlbumData->SetTypeMask(context->typeMask);
     smartAlbumData->SetDescription(get<string>(ResultSetUtils::GetValFromColumn(SMARTALBUM_DB_DESCRIPTION, resultSet,
         TYPE_STRING)));
     smartAlbumData->SetExpiredTime(get<int32_t>(ResultSetUtils::GetValFromColumn(SMARTALBUM_DB_EXPIRED_TIME, resultSet,
         TYPE_INT32)));
     smartAlbumData->SetCoverUri(get<string>(ResultSetUtils::GetValFromColumn(SMARTALBUM_DB_COVER_URI, resultSet,
         TYPE_STRING)));
+    smartAlbumData->SetResultNapiType(context->resultNapiType);
 }
 
 #ifndef MEDIALIBRARY_COMPATIBILITY
@@ -2788,7 +2777,6 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
         uriStr = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER +
             "/" + MEDIA_ALBUMOPRN_QUERYALBUM + "/" + SMARTALBUM_TABLE;
     }
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriStr, context->typeMask);
     Uri uri(uriStr);
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, columns, errCode);
@@ -2803,7 +2791,6 @@ static void GetAllSmartAlbumResultDataExecute(MediaLibraryAsyncContext *context)
         context->fetchSmartAlbumResult = make_unique<FetchResult<SmartAlbumAsset>>(move(resultSet));
         context->fetchSmartAlbumResult->SetNetworkId(context->networkId);
         context->fetchSmartAlbumResult->SetResultNapiType(context->resultNapiType);
-        context->fetchSmartAlbumResult->SetTypeMask(context->typeMask);
         return;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -3035,6 +3022,7 @@ napi_value MediaLibraryNapi::JSGetSmartAlbums(napi_env env, napi_callback_info i
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "Async context is null");
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
@@ -3194,6 +3182,7 @@ napi_value MediaLibraryNapi::JSGetPrivateAlbum(napi_env env, napi_callback_info 
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         for (size_t i = PARAM0; i < argc; i++) {
@@ -3325,6 +3314,7 @@ napi_value MediaLibraryNapi::JSCreateSmartAlbum(napi_env env, napi_callback_info
     NAPI_ASSERT(env, (argc == ARGS_TWO || argc == ARGS_THREE), "requires 3 parameters maximum");
     napi_get_undefined(env, &result);
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_MEDIALIBRARY;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
     if (status == napi_ok && asyncContext->objectInfo != nullptr) {
         result = GetJSArgsForCreateSmartAlbum(env, argc, argv, *asyncContext);
@@ -4733,8 +4723,6 @@ napi_value MediaLibraryNapi::UserFileMgrCreateAudioAsset(napi_env env, napi_call
     napi_value ret = nullptr;
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
-    asyncContext->mediaTypes.push_back(MEDIA_TYPE_AUDIO);
-    MediaLibraryNapiUtils::GenTypeMaskFromArray(asyncContext->mediaTypes, asyncContext->typeMask);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     asyncContext->assetType = TYPE_AUDIO;
     NAPI_ASSERT(env, ParseArgsCreateAudioAsset(env, info, asyncContext), "Failed to parse js args");
@@ -5289,7 +5277,6 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
 
     string uri;
     GetCreateUri(context, uri);
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uri, context->typeMask);
     Uri createFileUri(uri);
     string outUri;
     int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri);

@@ -122,16 +122,6 @@ const string& PhotoAlbum::GetRelativePath() const
     return relativePath_;
 }
 
-void PhotoAlbum::SetTypeMask(const string &typeMask)
-{
-    typeMask_ = typeMask;
-}
-
-const string& PhotoAlbum::GetTypeMask() const
-{
-    return typeMask_;
-}
-
 void PhotoAlbum::SetResultNapiType(const ResultNapiType resultNapiType)
 {
     resultNapiType_ = resultNapiType;

@@ -52,9 +52,6 @@ public:
     void SetRelativePath(const std::string &logicalRelativePath);
     const std::string& GetRelativePath() const;
 
-    void SetTypeMask(const std::string &typeMask);
-    const std::string& GetTypeMask() const;
-
     void SetResultNapiType(const ResultNapiType resultNapiType);
     ResultNapiType GetResultNapiType() const;
 
@@ -74,7 +71,6 @@ private:
     int32_t count_;
     std::string relativePath_;
 
-    std::string typeMask_;
     ResultNapiType resultNapiType_;
 };
 } // namespace Media
