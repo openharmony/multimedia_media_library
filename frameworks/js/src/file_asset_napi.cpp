@@ -2943,7 +2943,7 @@ static void UserFileMgrSetHiddenExecute(napi_env env, void *data)
     auto *context = static_cast<FileAssetAsyncContext *>(data);
     if (context->objectPtr->GetMediaType() != MEDIA_TYPE_IMAGE &&
         context->objectPtr->GetMediaType() != MEDIA_TYPE_VIDEO) {
-        context->error = -EINVAL;
+        context->SaveError(-EINVAL);
         return;
     }
 
@@ -3020,7 +3020,7 @@ static void UserFileMgrSetPendingExecute(napi_env env, void *data)
     } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
         uri += UFM_AUDIO + "/" + OPRN_PENDING;
     } else {
-        context->error = -EINVAL;
+        context->SaveError(-EINVAL);
         return;
     }
 
@@ -3412,7 +3412,7 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectPtr->GetMediaType() != MEDIA_TYPE_IMAGE &&
         context->objectPtr->GetMediaType() != MEDIA_TYPE_VIDEO) {
-        context->error = -EINVAL;
+        context->SaveError(-EINVAL);
         return;
     }
 
@@ -3490,7 +3490,7 @@ static void PhotoAccessHelperSetPendingExecute(napi_env env, void *data)
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
         uri += PAH_PHOTO + "/" + OPRN_PENDING;
     } else {
-        context->error = -EINVAL;
+        context->SaveError(-EINVAL);
         return;
     }
 

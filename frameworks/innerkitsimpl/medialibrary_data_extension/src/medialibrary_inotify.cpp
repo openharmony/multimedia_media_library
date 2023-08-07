@@ -53,6 +53,18 @@ shared_ptr<MediaLibraryInotify> MediaLibraryInotify::GetInstance()
     return instance_;
 }
 
+static string ConvertMediaPath(const std::string &path)
+{
+    // if input path is /storage/media/local/xxx, convert to /storage/cloud/xxx
+    string mediaPath = path;
+    string localPath = "/storage/media/local/";
+    string cloudPath = "/storage/cloud/";
+    if (mediaPath.find(localPath) != string::npos) {
+        mediaPath.replace(mediaPath.find(localPath), localPath.length(), cloudPath);
+    }
+    return mediaPath;
+}
+
 void MediaLibraryInotify::WatchCallBack()
 {
     const int32_t READ_LEN = 255;
@@ -78,7 +90,7 @@ void MediaLibraryInotify::WatchCallBack()
                 MEDIA_DEBUG_LOG("path:%s, meetEvent:%x file_id:%s", item.path_.c_str(),
                     meetEvent, item.uri_.c_str());
                 string id = MediaLibraryDataManagerUtils::GetIdFromUri(item.uri_);
-                string itemPath = item.path_;
+                string itemPath = ConvertMediaPath(item.path_);
                 string bundleName = item.bundleName_;
                 MediaFileUri itemUri(item.uri_);
                 MediaLibraryApi itemApi = item.api_;

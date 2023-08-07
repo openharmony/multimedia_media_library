@@ -43,6 +43,7 @@ private:
     static int32_t UpdateV9(MediaLibraryCommand &cmd);
     static int32_t UpdateV10(MediaLibraryCommand &cmd);
     static int32_t TrashPhotos(MediaLibraryCommand &cmd);
+    static void SolvePhotoAlbumInCreate(MediaLibraryCommand &cmd, FileAsset &fileAsset);
 };
 } // namespace Media
 } // namespace OHOS

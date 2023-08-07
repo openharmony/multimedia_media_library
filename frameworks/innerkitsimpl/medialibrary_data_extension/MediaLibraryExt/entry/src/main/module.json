@@ -64,6 +64,9 @@
       },
       {
         "name": "ohos.permission.CLOUDFILE_SYNC"
+      },
+      {
+        "name": "ohos.permission.PROXY_AUTHORIZATION_URI"
       }
     ]
   }

@@ -35,6 +35,7 @@ namespace OHOS {
 namespace Media {
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
+static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
 
 class MediaLibraryAssetOperations {
 public:
@@ -81,6 +82,8 @@ protected:
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static int32_t SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static int32_t SetPendingStatus(MediaLibraryCommand &cmd);
+    static int32_t GrantUriPermission(const std::string &uri, const std::string &bundleName,
+        const std::string &path);
 
     static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         int32_t &value);

@@ -933,7 +933,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, Test
     EXPECT_GE(ret, 0);
     unordered_map<string, string> verifyMap = {
         { PhotoColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_IMAGE) },
-        { PhotoColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING) },
+        { PhotoColumn::MEDIA_TIME_PENDING, to_string(UNOPEN_FILE_COMPONENT_TIMEPENDING) },
     };
     bool res = QueryAndVerifyPhotoAsset(PhotoColumn::MEDIA_ID, to_string(ret), verifyMap);
     EXPECT_EQ(res, true);
