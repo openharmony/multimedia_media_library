@@ -50,6 +50,13 @@ function checkParams(uriList, asyncCallback) {
   if (uriList.length < MIN_DELETE_NUMBER || uriList.length > MAX_DELETE_NUMBER) {
     return false;
   }
+  let tag = 'file://media/Photo/';
+  for (let uri of uriList) {
+    if (!uri.includes(tag)) {
+      console.info(`photoAccessHelper invalid uri: ${uri}`);
+      return false;
+    }
+  }
   return true;
 }
 function errorResult(rej, asyncCallback) {
@@ -61,6 +68,37 @@ function errorResult(rej, asyncCallback) {
   });
 }
 
+function getAbilityResource(bundleInfo) {
+  let labelId = bundleInfo.abilitiesInfo[0].labelId;
+  for (let abilityInfo of bundleInfo.abilitiesInfo) {
+    if (abilityInfo.name === bundleInfo.mainElementName) {
+      labelId = abilityInfo.labelId;
+    }
+  }
+
+  return labelId;
+}
+
+async function getAppName() {
+  let appName = '';
+  try {
+    const flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_ABILITY | bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_HAP_MODULE;
+    const bundleInfo = await bundleManager.getBundleInfoForSelf(flags);
+    console.info(`photoAccessHelper bundleInfo: ${JSON.stringify(bundleInfo)}`)
+    if (bundleInfo === undefined || bundleInfo.hapModulesInfo === undefined || bundleInfo.hapModulesInfo.length === 0) {
+      return appName;
+    }
+    const labelId = getAbilityResource(bundleInfo.hapModulesInfo[0]);
+    const resourceMgr = gContext.resourceManager;
+    appName = await resourceMgr.getStringValue(labelId);
+    console.info(`photoAccessHelper appName: ${appName}`)
+  } catch (error) {
+    console.info(`photoAccessHelper error: ${JSON.stringify(error)}`)
+  }
+
+  return appName;
+}
+
 async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
   let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_REQUESTED_PERMISSION;
   let { reqPermissionDetails } = await bundleManager.getBundleInfoForSelf(flags);
@@ -68,14 +106,21 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
   if (!isPermission) {
     return errorResult(new BusinessError(ERROR_MSG_WRITE_PERMISSION), asyncCallback);
   }
+  const appName = await getAppName();
+  if (appName.length === 0) {
+    console.info(`photoAccessHelper appName not found`)
+  }
   const startParameter = {
     action: 'ohos.want.action.deleteDialog',
+    type: 'image/*',
     parameters: {
       uris: uriList,
+      appName: appName
     },
   };
   try {
     const result = await gContext.requestDialogService(startParameter);
+    console.info(`photoAccessHelper result: ${JSON.stringify(result)}`);
     if (result === null || result === undefined) {
       console.log('photoAccessHelper createDeleteRequest return null');
       return errorResult(Error('requestDialog return undefined'), asyncCallback);
