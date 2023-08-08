@@ -23,6 +23,7 @@
 #include "file_asset.h"
 #include "medialibrary_async_worker.h"
 #include "parcel.h"
+#include "rdb_predicates.h"
 #include "timer.h"
 #include "uri.h"
 #include "userfile_manager_types.h"
@@ -47,6 +48,8 @@ public:
     int32_t Notify(const std::string &uri, const NotifyType notifyType, const int albumId = 0);
     int32_t Notify(const std::shared_ptr<FileAsset> &closeAsset);
     int32_t GetAlbumIdBySubType(const PhotoAlbumSubType subType);
+    static void GetNotifyUris(const NativeRdb::RdbPredicates &predicates, std::vector<std::string> &notifyUris);
+
     static Utils::Timer timer_;
     static uint32_t timerId_;
     static std::mutex mutex_;

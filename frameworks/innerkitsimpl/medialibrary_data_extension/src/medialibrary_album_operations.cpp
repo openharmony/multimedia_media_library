@@ -40,7 +40,6 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS::Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
-constexpr int32_t AGING_AGR_SIZE = 3;
 constexpr int32_t AFTER_AGR_SIZE = 2;
 constexpr int32_t THAN_AGR_SIZE = 1;
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
@@ -766,7 +765,12 @@ int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
     rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     vector<string> whereArgs = rdbPredicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicates);
+    vector<string> agingNotifyUris;
 
+    // Query asset uris for notify before delete.
+    if (isAging) {
+        MediaLibraryNotify::GetNotifyUris(rdbPredicates, agingNotifyUris);
+    }
     int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(rdbPredicates);
     MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({ to_string(PhotoAlbumSubType::TRASH) });
 
@@ -776,7 +780,15 @@ int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
         return deletedRows;
     }
 
-    size_t count = whereArgs.size() - (isAging ? AGING_AGR_SIZE : THAN_AGR_SIZE);
+    // Send notify of trash album in aging case.
+    if (isAging) {
+        for (const auto &notifyUri : agingNotifyUris) {
+            watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
+        }
+        return deletedRows;
+    }
+
+    size_t count = whereArgs.size() - THAN_AGR_SIZE;
     for (size_t i = 0; i < count; i++) {
         watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
     }
@@ -793,7 +805,6 @@ int32_t AgingPhotoAssets()
     if (err < 0) {
         return err;
     }
-    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({ to_string(PhotoAlbumSubType::TRASH) });
     return E_OK;
 }
 

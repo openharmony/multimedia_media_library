@@ -1007,18 +1007,9 @@ int32_t MediaLibraryDataManager::SetCmdBundleAndDevice(MediaLibraryCommand &outC
 
 int32_t MediaLibraryDataManager::DoTrashAging()
 {
-    auto ret = MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
-    if (ret != E_SUCCESS) {
-        return ret;
-    }
-    ret = MediaLibraryAlbumOperations::HandlePhotoAlbum(OperationType::AGING, {}, {});
-    if (ret != E_SUCCESS) {
-        return ret;
-    }
-    ret = MediaLibraryAudioOperations::TrashAging();
-    if (ret != E_SUCCESS) {
-        return ret;
-    }
+    MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
+    MediaLibraryAlbumOperations::HandlePhotoAlbum(OperationType::AGING, {}, {});
+    MediaLibraryAudioOperations::TrashAging();
     return E_SUCCESS;
 }
 
