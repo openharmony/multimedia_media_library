@@ -26,6 +26,7 @@
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
 #include "file_asset.h"
+#include "imedia_scanner_callback.h"
 #include "media_column.h"
 #include "medialibrary_command.h"
 #include "value_object.h"
@@ -36,6 +37,41 @@ namespace Media {
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
 static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
+
+const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
+    { MediaColumn::MEDIA_ID, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_FILE_PATH, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_SIZE, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_TITLE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_NAME, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_TYPE, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_MIME_TYPE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_OWNER_PACKAGE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_PACKAGE_NAME, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_DEVICE_NAME, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_DATE_ADDED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DATE_MODIFIED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DATE_TAKEN, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DATE_DELETED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_TIME_VISIT, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_DURATION, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_TIME_PENDING, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_IS_FAV, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_DATE_TRASHED, MEMBER_TYPE_INT64 },
+    { MediaColumn::MEDIA_HIDDEN, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_PARENT_ID, MEMBER_TYPE_INT32 },
+    { MediaColumn::MEDIA_RELATIVE_PATH, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_VIRTURL_PATH, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_ORIENTATION, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_LATITUDE, MEMBER_TYPE_DOUBLE },
+    { PhotoColumn::PHOTO_LONGITUDE, MEMBER_TYPE_DOUBLE },
+    { PhotoColumn::PHOTO_HEIGHT, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_WIDTH, MEMBER_TYPE_INT32 },
+    { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
+    { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
+    { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING }
+};
 
 class MediaLibraryAssetOperations {
 public:
@@ -48,6 +84,8 @@ public:
     static int32_t OpenOperation(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t CloseOperation(MediaLibraryCommand &cmd);
     static int32_t DeleteToolOperation(MediaLibraryCommand &cmd);
+
+    static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
@@ -93,7 +131,6 @@ protected:
 
 private:
     static int32_t CreateAssetUniqueId(int32_t type);
-    static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &name);
     static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
@@ -101,10 +138,25 @@ private:
     static void ScanFile(const std::string &path, bool isCreateThumbSync = false);
     static int32_t SetPendingTrue(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t SetPendingFalse(const std::shared_ptr<FileAsset> &fileAsset);
+    static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        const std::vector<std::string> &columns);
     
     static constexpr int ASSET_IN_BUCKET_NUM_MAX = 1000;
     static constexpr int ASSET_DIR_START_NUM = 16;
     static constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
+
+    class ScanAssetCallback : public IMediaScannerCallback {
+    public:
+        ScanAssetCallback() = default;
+        ~ScanAssetCallback() = default;
+        int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
+        void SetSync(bool isSync)
+        {
+            isCreateThumbSync = isSync;
+        }
+    private:
+        bool isCreateThumbSync = false;
+    };
 };
 
 using VerifyFunction = bool (*) (NativeRdb::ValueObject&, MediaLibraryCommand&);

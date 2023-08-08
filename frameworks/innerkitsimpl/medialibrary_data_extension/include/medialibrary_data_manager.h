@@ -92,7 +92,6 @@ public:
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
     void ClearMediaLibraryMgr();
     int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
-    void CreateThumbnailSync(const std::string &uri, const std::string &path);
     void CreateThumbnailAsync(const std::string &uri, const std::string &path);
     static std::unordered_map<std::string, DirAsset> GetDirQuerySetMap();
     std::shared_ptr<MediaDataShareExtAbility> GetOwner();
@@ -133,12 +132,6 @@ public:
     ScanFileCallback() = default;
     ~ScanFileCallback() = default;
     int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) override;
-    void SetSync(bool isSync)
-    {
-        isCreateThumbSync = isSync;
-    }
-private:
-    bool isCreateThumbSync = false;
 };
 } // namespace Media
 } // namespace OHOS
