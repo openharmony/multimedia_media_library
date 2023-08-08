@@ -1593,14 +1593,7 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
     return imageSource->CreatePixelMap(decodeOpts, err);
 #else
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    uint32_t errorCode = 0;
-    unique_ptr<ImageSource> backupImgSrc = ImageSource::CreateImageSource(uniqueFd.Get(), opts, errorCode);
-    if (errorCode == Media::SUCCESS) {
-        PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, backupImgSrc, decodeOpts);
-    } else {
-        NAPI_ERR_LOG("Failed to backup image source when to be purgeable: %{public}d", errorCode);
-    }
-
+    PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
     return pixelMap;
 #endif
 }
