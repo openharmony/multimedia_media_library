@@ -45,12 +45,14 @@ public:
     static int32_t ClearRemoteLcdFromFileTable(ThumbRdbOpt &opts);
 #endif
     static int32_t ClearLcdFromFileTable(ThumbRdbOpt &opts);
+    static int32_t GetAgingDataCount(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &count);
 private:
     static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
     static int32_t GetAgingLcdData(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &outDatas);
     static int32_t GetDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
     static int32_t GetAgingDistributeLcdData(ThumbRdbOpt &opts,
         int LcdLimit, std::vector<ThumbnailData> &outDatas);
+    static int32_t GetLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount);
 };
 } // namespace Media
 } // namespace OHOS

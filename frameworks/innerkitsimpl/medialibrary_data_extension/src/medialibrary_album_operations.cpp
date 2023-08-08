@@ -526,21 +526,24 @@ static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates, b
     return DoDeletePhotoAssets(rdbPredicates, isAging, false);
 }
 
-int32_t AgingPhotoAssets()
+int32_t AgingPhotoAssets(shared_ptr<int> countPtr)
 {
     auto time = MediaFileUtils::UTCTimeSeconds();
     DataSharePredicates predicates;
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));
-    int32_t err = DeletePhotoAssets(predicates, true);
-    if (err < 0) {
-        return err;
+    int32_t ret = DeletePhotoAssets(predicates, true);
+    if (ret < 0) {
+        return ret;
+    }
+    if (countPtr != nullptr) {
+        *countPtr = ret;
     }
     return E_OK;
 }
 
 int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opType, const ValuesBucket &values,
-    const DataSharePredicates &predicates)
+    const DataSharePredicates &predicates, shared_ptr<int> countPtr)
 {
     switch (opType) {
         case OperationType::UPDATE:
@@ -552,7 +555,7 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
         case OperationType::COMPAT_ALBUM_DELETE_ASSETS:
             return CompatDeletePhotoAssets(predicates, false);
         case OperationType::AGING:
-            return AgingPhotoAssets();
+            return AgingPhotoAssets(countPtr);
         default:
             MEDIA_ERR_LOG("Unknown operation type: %{public}d", opType);
             return E_ERR;
