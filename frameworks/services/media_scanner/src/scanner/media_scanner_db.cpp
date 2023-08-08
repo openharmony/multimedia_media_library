@@ -17,6 +17,7 @@
 #include "media_scanner_db.h"
 
 #include "abs_rdb_predicates.h"
+#include "ipc_skeleton.h"
 #include "medialibrary_asset_operations.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -36,6 +37,7 @@
 #include "userfile_manager_types.h"
 #include "userfilemgr_uri.h"
 #include "values_bucket.h"
+#include "post_event_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -198,6 +200,45 @@ static void GetTableNameByPath(int32_t mediaType, string &tableName, const strin
     }
 }
 
+bool MediaScannerDb::InsertData(const ValuesBucket values, const string &tableName, int64_t &rowNum)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("MediaDataAbility Insert functionality rdbStore is null");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("MediaDataAbility Insert functionality rdbStorePtr is null");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+
+    int32_t result = rdbStorePtr->Insert(rowNum, tableName, values);
+    if (rowNum <= 0) {
+        MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, rowNum %{public}ld", (long)rowNum);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
+            {KEY_ERR_CODE, static_cast<int32_t>(rowNum)}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, return %{public}d", result);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, result},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+
+    return true;
+}
+
 string MediaScannerDb::InsertMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api)
 {
     MediaType mediaType = metadata.GetFileMediaType();
@@ -228,15 +269,8 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, string &tableNam
         SetValuesFromMetaDataApi9(metadata, values, true, tableName);
     }
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    CHECK_AND_RETURN_RET(rdbStore != nullptr, "");
-    auto rdbStorePtr = rdbStore->GetRaw();
-    CHECK_AND_RETURN_RET(rdbStorePtr != nullptr, "");
-
     int64_t rowNum = 0;
-    int32_t result = rdbStorePtr->Insert(rowNum, tableName, values);
-    if (rowNum <= 0 || result != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("MediaDataAbility Insert functionality is failed, return %{public}ld", (long)rowNum);
+    if (!InsertData(values, tableName, rowNum)) {
         return "";
     }
 
@@ -317,6 +351,16 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableNam
     int32_t result = rdbStorePtr->Update(updateCount, tableName, values, whereClause, whereArgs);
     if (result != NativeRdb::E_OK || updateCount <= 0) {
         MEDIA_ERR_LOG("Update operation failed. Result %{public}d. Updated %{public}d", result, updateCount);
+        if (result != NativeRdb::E_OK) {
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, result},
+                {KEY_OPT_TYPE, OptType::SCAN}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        }
+        if (updateCount <= 0) {
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, updateCount},
+                {KEY_OPT_TYPE, OptType::SCAN}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        }
         return "";
     }
     if (mediaTypeUri.empty()) {
@@ -344,6 +388,9 @@ bool MediaScannerDb::DeleteMetadata(const vector<string> &idList, const string &
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return E_ERR;
     }
@@ -418,6 +465,50 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
     }
 }
 
+int32_t MediaScannerDb::GetFileSet(MediaLibraryCommand &cmd, const vector<string> &columns,
+    shared_ptr<NativeRdb::ResultSet> &resultSet)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_RDB},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return E_RDB;
+    }
+    resultSet = rdbStore->Query(cmd, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("return nullptr when query rdb");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_RDB},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return E_RDB;
+    }
+
+    int32_t rowCount = 0;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("failed to get row count");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return E_RDB;
+    }
+
+    if (rowCount == 0) {
+        return E_OK;
+    }
+
+    ret = resultSet->GoToFirstRow();
+    if (ret != NativeRdb::E_OK) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        MEDIA_ERR_LOG("failed to go to first row");
+        return E_RDB;
+    }
+    return E_OK;
+}
+
 /**
  * @brief Get date modified, id, size and name info for a file
  *
@@ -442,31 +533,13 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
     cmd.GetAbsRdbPredicates()->SetWhereClause(whereClause);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(args);
 
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return E_RDB;
-    }
-    auto resultSet = rdbStore->Query(cmd, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("return nullptr when query rdb");
-        return E_RDB;
-    }
-
-    int32_t rowCount = 0;
-    int32_t ret = resultSet->GetRowCount(rowCount);
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("failed to get row count");
-        return E_RDB;
-    }
-
-    if (rowCount == 0) {
-        return E_OK;
-    }
-
-    ret = resultSet->GoToFirstRow();
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("failed to go to first row");
-        return E_RDB;
+    shared_ptr<NativeRdb::ResultSet> resultSet;
+    int32_t ret = GetFileSet(cmd, columns, resultSet);
+    if (ret != E_OK) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return ret;
     }
     ptr->SetTableName(cmd.GetTableName());
 
@@ -524,14 +597,23 @@ unordered_map<int32_t, MediaType> MediaScannerDb::GetIdsFromFilePath(const strin
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return idMap;
     }
     auto rdbStorePtr = rdbStore->GetRaw();
     if (rdbStorePtr == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return idMap;
     }
     auto resultSet = rdbStorePtr->Query(predicates, columns);
     if (resultSet == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return idMap;
     }
 
@@ -565,9 +647,19 @@ string MediaScannerDb::GetFileDBUriFromPath(const string &path)
     MediaLibraryCommand cmd(queryUri, OperationType::QUERY);
     int errCode = 0;
     auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, uri, "No entries found for this path");
-    if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
+    if (resultSet == nullptr) {
         MEDIA_ERR_LOG("No result found for this path");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return uri;
+    }
+    auto ret = resultSet->GoToFirstRow();
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Get data error for this path");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return uri;
     }
 
@@ -594,8 +686,19 @@ int32_t MediaScannerDb::GetIdFromPath(const string &path)
     vector<string> columns = {MEDIA_DATA_DB_ID};
     int errCode = 0;
     auto resultSet = MediaLibraryDataManager::GetInstance()->QueryRdb(cmd, columns, predicates, errCode);
-    if ((resultSet == nullptr) || (resultSet->GoToFirstRow() != NativeRdb::E_OK)) {
+    if (resultSet == nullptr) {
         MEDIA_ERR_LOG("No data found for the given path %{private}s", path.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return id;
+    }
+    auto ret = resultSet->GoToFirstRow();
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Get data for the given path %{private}s error", path.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return id;
     }
 
@@ -608,6 +711,9 @@ int32_t MediaScannerDb::GetIdFromPath(const string &path)
 int32_t MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Metadata> &albumMap)
 {
     if ((path + "/").find(ROOT_MEDIA_DIR) != 0) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_INVALID_ARGUMENTS},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_INVALID_ARGUMENTS;
     }
 
@@ -622,14 +728,23 @@ int32_t MediaScannerDb::ReadAlbums(const string &path, unordered_map<string, Met
 
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_HAS_DB_ERROR;
     }
     auto rdbStorePtr = rdbStore->GetRaw();
     if (rdbStorePtr == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_HAS_DB_ERROR;
     }
     auto resultSet = rdbStorePtr->Query(predicates, columns);
     if (resultSet == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_HAS_DB_ERROR;
     }
 
@@ -708,6 +823,9 @@ int32_t MediaScannerDb::FillMetadata(const shared_ptr<NativeRdb::ResultSet> &res
     int32_t err = resultSet->GetAllColumnNames(columnNames);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("failed to get all column names");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_RDB;
     }
 
@@ -722,6 +840,9 @@ int32_t MediaScannerDb::RecordError(const std::string &err)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return E_ERR;
     }
@@ -731,12 +852,18 @@ int32_t MediaScannerDb::RecordError(const std::string &err)
     int64_t outRowId = -1;
     auto rdbStorePtr = rdbStore->GetRaw();
     if (rdbStorePtr == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         MEDIA_ERR_LOG("rdbStorePtr is nullptr");
         return E_ERR;
     }
     int32_t ret = rdbStorePtr->Insert(outRowId, MEDIALIBRARY_ERROR_TABLE, valuesBucket);
     if (ret) {
         MEDIA_ERR_LOG("rdb insert err %{public}d", ret);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_ERR;
     }
 
@@ -748,6 +875,9 @@ std::set<std::string> MediaScannerDb::ReadError()
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return {};
     }
 
@@ -756,17 +886,27 @@ std::set<std::string> MediaScannerDb::ReadError()
     auto rdbStorePtr = rdbStore->GetRaw();
     if (rdbStorePtr == nullptr) {
         MEDIA_ERR_LOG("rdbStorePtr is nullptr");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return {};
     }
     auto resultSet = rdbStorePtr->Query(predicates, columns);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("rdb query return nullptr");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return {};
     }
 
     int32_t rowCount = 0;
-    if (resultSet->GetRowCount(rowCount) != NativeRdb::E_OK) {
+    auto ret = resultSet->GetRowCount(rowCount);
+    if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("failed to get row count");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return {};
     }
 
@@ -789,6 +929,9 @@ int32_t MediaScannerDb::DeleteError(const std::string &err)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_ERR;
     }
 
@@ -798,11 +941,17 @@ int32_t MediaScannerDb::DeleteError(const std::string &err)
     auto rdbStorePtr = rdbStore->GetRaw();
     if (rdbStorePtr == nullptr) {
         MEDIA_ERR_LOG("rdbStorePtr is nullptr");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_ERR;
     }
     int32_t ret = rdbStorePtr->Delete(outRowId, MEDIALIBRARY_ERROR_TABLE, whereClause, whereArgs);
     if (ret) {
         MEDIA_ERR_LOG("rdb delete err %{public}d", ret);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_ERR;
     }
 
