@@ -19,6 +19,7 @@
 #include <mutex>
 
 #include "cloud_sync_helper.h"
+#include "ipc_skeleton.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -37,6 +38,7 @@
 #include "photo_map_column.h"
 #include "rdb_sql_utils.h"
 #include "result_set_utils.h"
+#include "post_event_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -117,6 +119,14 @@ void MediaLibraryRdbStore::Stop()
     rdbStore_ = nullptr;
 }
 
+bool g_upgradeErr = false;
+void UpdateFail(const string &errFile, const int &errLine)
+{
+    g_upgradeErr = true;
+    VariantMap map = {{KEY_ERR_FILE, errFile}, {KEY_ERR_LINE, errLine}};
+    PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_UPGRADE_ERR, map);
+}
+
 static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
 {
     int32_t err = NativeRdb::E_OK;
@@ -125,6 +135,7 @@ static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
         if (err != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to exec: %{private}s", sql.c_str());
             /* try update as much as possible */
+            UpdateFail(__FILE__, __LINE__);
             continue;
         }
     }
@@ -252,6 +263,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return nullptr;
     }
 
@@ -275,7 +289,13 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
      * Reuse predicates-based query so that no need to modify both func
      * if later logic changes take place
      */
-    return Query(*cmd.GetAbsRdbPredicates(), columns);
+    auto resultSet = Query(*cmd.GetAbsRdbPredicates(), columns);
+    if (resultSet == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+    }
+    return resultSet;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredicates &predicates,
@@ -283,6 +303,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredica
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return nullptr;
     }
 
@@ -291,7 +314,13 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredica
 
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QueryByPredicates");
-    return rdbStore_->Query(predicates, columns);
+    auto resultSet = rdbStore_->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+    }
+    return resultSet;
 }
 
 int32_t MediaLibraryRdbStore::ExecuteSql(const string &sql)
@@ -407,12 +436,22 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const string &sq
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return nullptr;
     }
 
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QuerySql");
-    return rdbStore_->QuerySql(sql, selectionArgs);
+    auto resultSet = rdbStore_->QuerySql(sql, selectionArgs);
+    if (resultSet == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+    }
+
+    return resultSet;
 }
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
@@ -644,6 +683,7 @@ static int32_t PrepareUniqueMemberTable(RdbStore &store)
     auto resultSet = store.QuerySql(queryRowSql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Can not get AssetUniqueNumberTable count");
+        UpdateFail(__FILE__, __LINE__);
         return NativeRdb::E_ERROR;
     }
     if (GetInt32Val("count", resultSet) != 0) {
@@ -662,6 +702,7 @@ static int32_t PrepareUniqueMemberTable(RdbStore &store)
     for (const auto& uniqueNumberValueBucket : uniqueNumberValueBuckets) {
         if (InsertUniqueMemberTableValues(uniqueNumberValueBucket, store) != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Prepare smartAlbum failed");
+            UpdateFail(__FILE__, __LINE__);
             return NativeRdb::E_ERROR;
         }
     }
@@ -881,24 +922,28 @@ void VersionAddCloud(RdbStore &store)
         " ADD COLUMN " + MEDIA_DATA_DB_CLOUD_ID +" TEXT";
     int32_t result = store.ExecuteSql(alterCloudId);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb cloud_id error %{private}d", result);
     }
     const std::string alterDirty = "ALTER TABLE " + MEDIALIBRARY_TABLE +
         " ADD COLUMN " + MEDIA_DATA_DB_DIRTY +" INT DEFAULT 0";
     result = store.ExecuteSql(alterDirty);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb dirty error %{private}d", result);
     }
     const std::string alterSyncStatus = "ALTER TABLE " + MEDIALIBRARY_TABLE +
         " ADD COLUMN " + MEDIA_DATA_DB_SYNC_STATUS +" INT DEFAULT 0";
     result = store.ExecuteSql(alterSyncStatus);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb syncStatus error %{private}d", result);
     }
     const std::string alterPosition = "ALTER TABLE " + MEDIALIBRARY_TABLE +
         " ADD COLUMN " + MEDIA_DATA_DB_POSITION +" INT DEFAULT 1";
     result = store.ExecuteSql(alterPosition);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb position error %{private}d", result);
     }
 }
@@ -910,12 +955,14 @@ void AddMetaModifiedColumn(RdbStore &store)
         MEDIA_DATA_DB_META_DATE_MODIFIED + " BIGINT DEFAULT 0";
     int32_t result = store.ExecuteSql(alterMetaModified);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb meta_date_modified error %{private}d", result);
     }
     const std::string alterSyncStatus = "ALTER TABLE " + MEDIALIBRARY_TABLE +
         " ADD COLUMN " + MEDIA_DATA_DB_SYNC_STATUS + " INT DEFAULT 0";
     result = store.ExecuteSql(alterSyncStatus);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb syncStatus error %{private}d", result);
     }
 }
@@ -927,6 +974,7 @@ void AddTableType(RdbStore &store)
         PERMISSION_TABLE_TYPE + " INT";
     int32_t result = store.ExecuteSql(alterTableName);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb table_name error %{private}d", result);
     }
 }
@@ -959,6 +1007,7 @@ void API10TableCreate(RdbStore &store)
 
     for (size_t i = 0; i < executeSqlStrs.size(); i++) {
         if (store.ExecuteSql(executeSqlStrs[i]) != NativeRdb::E_OK) {
+            UpdateFail(__FILE__, __LINE__);
             MEDIA_ERR_LOG("upgrade fail idx:%{public}zu", i);
         }
     }
@@ -969,6 +1018,7 @@ void ModifySyncStatus(RdbStore &store)
     const std::string dropSyncStatus = "ALTER TABLE " + MEDIALIBRARY_TABLE + " DROP column syncing";
     auto result = store.ExecuteSql(dropSyncStatus);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb syncing error %{private}d", result);
     }
 
@@ -976,6 +1026,7 @@ void ModifySyncStatus(RdbStore &store)
         MEDIA_DATA_DB_SYNC_STATUS +" INT DEFAULT 0";
     result = store.ExecuteSql(addSyncStatus);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb syncStatus error %{private}d", result);
     }
 }
@@ -985,11 +1036,13 @@ void ModifyDeleteTrigger(RdbStore &store)
     /* drop old delete trigger */
     const std::string dropDeleteTrigger = "DROP TRIGGER IF EXISTS photos_delete_trigger";
     if (store.ExecuteSql(dropDeleteTrigger) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("upgrade fail: drop old delete trigger");
     }
 
     /* create new delete trigger */
     if (store.ExecuteSql(PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("upgrade fail: create new delete trigger");
     }
 }
@@ -1000,6 +1053,7 @@ void AddCloudVersion(RdbStore &store)
         PhotoColumn::PHOTO_CLOUD_VERSION +" BIGINT DEFAULT 0";
     auto result = store.ExecuteSql(addSyncStatus);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb cloudVersion error %{private}d", result);
     }
 }
@@ -1029,7 +1083,11 @@ static int32_t UpdateCloudPath(RdbStore &store)
         UpdateCloudPathSql(MEDIALIBRARY_ERROR_TABLE, MEDIA_DATA_ERROR),
         UpdateCloudPathSql(PhotoColumn::PHOTOS_TABLE, MediaColumn::MEDIA_FILE_PATH),
     };
-    return ExecSqls(updateCloudPath, store);
+    auto result = ExecSqls(updateCloudPath, store);
+    if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+    }
+    return result;
 }
 
 void UpdateAPI10Table(RdbStore &store)
@@ -1060,8 +1118,13 @@ void UpdateAPI10Table(RdbStore &store)
     store.ExecuteSql("DROP TABLE IF EXISTS PhotoMap");
 
     API10TableCreate(store);
-    PrepareSystemAlbums(store);
-    PrepareUniqueMemberTable(store);
+    if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+    }
+
+    if (PrepareUniqueMemberTable(store) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+    }
 
     // set scan error
     MediaScannerManager::GetInstance()->ErrorRecord();
@@ -1088,14 +1151,17 @@ static void AddPackageNameColumnOnTables(RdbStore &store)
 
     int32_t result = store.ExecuteSql(ADD_PACKAGE_NAME_ON_PHOTOS);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Failed to update PHOTOS");
     }
     result = store.ExecuteSql(ADD_PACKAGE_NAME_ON_AUDIOS);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Failed to update AUDIOS");
     }
     result = store.ExecuteSql(ADD_PACKAGE_NAME_ON_FILES);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Failed to update FILES");
     }
 }
@@ -1109,25 +1175,30 @@ void UpdateCloudAlbum(RdbStore &store)
     int32_t ret = store.ExecuteSql(addAlbumDirty);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("upgrade fail %{public}d: add ablum dirty", ret);
+        UpdateFail(__FILE__, __LINE__);
     }
     const std::string addAlbumCloudId = "ALTER TABLE " + PhotoAlbumColumns::TABLE +
         " ADD COLUMN " + PhotoAlbumColumns::ALBUM_CLOUD_ID + " TEXT;";
     ret = store.ExecuteSql(addAlbumCloudId);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("upgrade fail %{public}d: add ablum cloud id", ret);
+        UpdateFail(__FILE__, __LINE__);
     }
     /* album - add triggers */
     ret = store.ExecuteSql(PhotoAlbumColumns::CREATE_ALBUM_INSERT_TRIGGER);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("upgrade fail %{public}d: create album insert trigger", ret);
+        UpdateFail(__FILE__, __LINE__);
     }
     ret = store.ExecuteSql(PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("upgrade fail %{public}d: create album modify trigger", ret);
+        UpdateFail(__FILE__, __LINE__);
     }
     ret = store.ExecuteSql(PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("upgrade fail %{public}d: create album delete trigger", ret);
+        UpdateFail(__FILE__, __LINE__);
     }
     /* album map - add columns */
     const std::string addAlbumMapColumns = "ALTER TABLE " + PhotoMap::TABLE +
@@ -1136,15 +1207,18 @@ void UpdateCloudAlbum(RdbStore &store)
     ret = store.ExecuteSql(addAlbumMapColumns);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("upgrade fail %{public}d: add ablum columns", ret);
+        UpdateFail(__FILE__, __LINE__);
     }
     /* album map - add triggers */
     ret = store.ExecuteSql(PhotoMap::CREATE_NEW_TRIGGER);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("upgrade fail %{public}d: create album map insert trigger", ret);
+        UpdateFail(__FILE__, __LINE__);
     }
     ret = store.ExecuteSql(PhotoMap::CREATE_DELETE_TRIGGER);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("upgrade fail %{public}d: create album map delete trigger", ret);
+        UpdateFail(__FILE__, __LINE__);
     }
 }
 
@@ -1154,10 +1228,12 @@ static void AddCameraShotKey(RdbStore &store)
         " ADD COLUMN " + PhotoColumn::CAMERA_SHOT_KEY + " TEXT";
     int32_t result = store.ExecuteSql(ADD_CAMERA_SHOT_KEY_ON_PHOTOS);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Failed to update PHOTOS");
     }
     result = store.ExecuteSql(PhotoColumn::INDEX_CAMERA_SHOT_KEY);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Failed to create CAMERA_SHOT_KEY index");
     }
 }
@@ -1198,6 +1274,7 @@ void SetYearMonthDayData(AsyncTaskData *data)
     auto resultSet = taskData->store_->QuerySql(queryRowSql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Can not get dataAdded");
+        UpdateFail(__FILE__, __LINE__);
         return;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -1224,6 +1301,7 @@ void AddYearMonthDayColumn(RdbStore &store)
         PhotoColumn::PHOTO_DATE_YEAR + " TEXT";
     int32_t result = store.ExecuteSql(alterYear);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb year error %{private}d", result);
     }
     const std::string alterMonth =
@@ -1231,6 +1309,7 @@ void AddYearMonthDayColumn(RdbStore &store)
         PhotoColumn::PHOTO_DATE_MONTH + " TEXT";
     result = store.ExecuteSql(alterMonth);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb month error %{private}d", result);
     }
     const std::string alterDay =
@@ -1238,10 +1317,12 @@ void AddYearMonthDayColumn(RdbStore &store)
         PhotoColumn::PHOTO_DATE_DAY + " TEXT";
     result = store.ExecuteSql(alterDay);
     if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb day error %{private}d", result);
     }
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("asyncWorker is nullptr");
         return;
     }
@@ -1249,6 +1330,7 @@ void AddYearMonthDayColumn(RdbStore &store)
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     auto *taskData = new (nothrow) AddYearTaskData(rdbStore);
     if (taskData == nullptr) {
+        UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("taskData is nullptr");
         return;
     }
@@ -1259,9 +1341,41 @@ void AddYearMonthDayColumn(RdbStore &store)
     }
 }
 
+void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
+        AddPackageNameColumnOnTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_CLOUD_ALBUM) {
+        UpdateCloudAlbum(store);
+    }
+
+    if (oldVersion < VERSION_ADD_CAMERA_SHOT_KEY) {
+        AddCameraShotKey(store);
+    }
+
+    if (oldVersion < VERSION_REMOVE_ALBUM_COUNT_TRIGGER) {
+        RemoveAlbumCountTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_ALL_EXIF) {
+        AddExifAndUserComment(store);
+    }
+
+    if (oldVersion < VERSION_ADD_UPDATE_CLOUD_SYNC_TRIGGER) {
+        AddUpdateCloudSyncTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_YEAR_MONTH_DAY) {
+        AddYearMonthDayColumn(store);
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
+    g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {
         VersionAddCloud(store);
     }
@@ -1298,34 +1412,12 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
         AddTableType(store);
     }
 
-    if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
-        AddPackageNameColumnOnTables(store);
-    }
+    UpgradeOtherTable(store, oldVersion);
 
-    if (oldVersion < VERSION_ADD_CLOUD_ALBUM) {
-        UpdateCloudAlbum(store);
+    if (!g_upgradeErr) {
+        VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
+        PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);
     }
-
-    if (oldVersion < VERSION_ADD_CAMERA_SHOT_KEY) {
-        AddCameraShotKey(store);
-    }
-
-    if (oldVersion < VERSION_REMOVE_ALBUM_COUNT_TRIGGER) {
-        RemoveAlbumCountTrigger(store);
-    }
-
-    if (oldVersion < VERSION_ADD_ALL_EXIF) {
-        AddExifAndUserComment(store);
-    }
-
-    if (oldVersion < VERSION_ADD_UPDATE_CLOUD_SYNC_TRIGGER) {
-        AddUpdateCloudSyncTrigger(store);
-    }
-
-    if (oldVersion < VERSION_ADD_YEAR_MONTH_DAY) {
-        AddYearMonthDayColumn(store);
-    }
-
     return NativeRdb::E_OK;
 }
 

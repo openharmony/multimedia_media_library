@@ -36,7 +36,7 @@ public:
     static int32_t Delete(MediaLibraryCommand &cmd);
     static int32_t Open(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t Close(MediaLibraryCommand &cmd);
-    static int32_t TrashAging();
+    static int32_t TrashAging(std::shared_ptr<int> countPtr = nullptr);
 
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);

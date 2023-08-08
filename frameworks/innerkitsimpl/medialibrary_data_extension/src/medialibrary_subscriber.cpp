@@ -16,11 +16,13 @@
 
 #include "medialibrary_subscriber.h"
 
+#include <memory>
 #include "appexecfwk_errors.h"
 #include "bundle_info.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
 #include "want.h"
+#include "post_event_utils.h"
 
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
@@ -85,13 +87,35 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     }
 }
 
+int64_t MedialibrarySubscriber::GetNowTime()
+{
+    struct timespec t;
+    constexpr int64_t SEC_TO_MSEC = 1e3;
+    constexpr int64_t MSEC_TO_NSEC = 1e6;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return t.tv_sec * SEC_TO_MSEC + t.tv_nsec / MSEC_TO_NSEC;
+}
+
+void MedialibrarySubscriber::Init()
+{
+    lockTime_ = GetNowTime();
+    agingCount_ = 0;
+    scanCount_ = 0;
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     if (isScreenOff_ && isPowerConnected_) {
+        Init();
         std::shared_ptr<MediaLibraryDataManager> dataManager = MediaLibraryDataManager::GetInstance();
         if (dataManager == nullptr) {
             return;
         }
+        auto err = dataManager->GetAgingDataSize(lockTime_, agingCount_);
+        if (err < 0) {
+            MEDIA_ERR_LOG("GetAgingDataSize faild, err:%{public}d", err);
+        }
+
         auto result = dataManager->GenerateThumbnails();
         if (result != E_OK) {
             MEDIA_ERR_LOG("GenerateThumbnails faild");
@@ -102,10 +126,15 @@ void MedialibrarySubscriber::DoBackgroundOperation()
             MEDIA_ERR_LOG("DoAging faild");
         }
 
-        result = dataManager->DoTrashAging();
+        shared_ptr<int> trashCountPtr = make_shared<int>();
+        result = dataManager->DoTrashAging(trashCountPtr);
         if (result != E_OK) {
             MEDIA_ERR_LOG("DoTrashAging faild");
         }
+
+        VariantMap map = {{KEY_COUNT, *trashCountPtr}};
+        PostEventUtils::GetInstance().PostStatProcess(StatType::AGING_STAT, map);
+
         auto watch = MediaLibraryInotify::GetInstance();
         if (watch != nullptr) {
             watch->DoAging();
@@ -121,9 +150,34 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     }
 }
 
+void MedialibrarySubscriber::WriteThumbnailStat()
+{
+    std::shared_ptr<MediaLibraryDataManager> dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        return;
+    }
+    int agingCount = 0;
+    int32_t err = dataManager->GetAgingDataSize(lockTime_, agingCount);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to get aging data size,err:%{public}d", err);
+        return;
+    }
+    int agingSize = agingCount_ - agingCount;
+    int generateSize = 0;
+    err = dataManager->QueryNewThumbnailCount(lockTime_, generateSize);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to query thumbnail count,err:%{public}d", err);
+    }
+
+    VariantMap map = {{KEY_GNUMS, generateSize}, {KEY_ANUMS, agingSize}};
+    PostEventUtils::GetInstance().PostStatProcess(StatType::THUMBNAIL_STAT, map);
+}
+
+
 void MedialibrarySubscriber::StopBackgroundOperation()
 {
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
+    WriteThumbnailStat();
 }
 
 void MedialibrarySubscriber::DoStartMtpService()

@@ -113,5 +113,15 @@ int32_t ThumbnailGenerateHelper::GetNoThumbnailData(ThumbRdbOpt &opts, vector<Th
     }
     return E_OK;
 }
+
+int32_t ThumbnailGenerateHelper::GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count)
+{
+    int32_t err = E_ERR;
+    if (!ThumbnailUtils::QueryNewThumbnailCount(opts, time, count, err)) {
+        MEDIA_ERR_LOG("Failed to QueryNoThumbnailInfos %{private}d", err);
+        return err;
+    }
+    return E_OK;
+}
 } // namespace Media
 } // namespace OHOS

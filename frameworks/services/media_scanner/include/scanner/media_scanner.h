@@ -88,6 +88,8 @@ private:
     /* file */
     int32_t ScanFile();
     int32_t ScanFileInternal();
+    int32_t BuildFileInfo(const std::string &parent, int32_t parentId);
+    int32_t BuildData(const struct stat &statInfo);
     int32_t GetFileMetadata();
     int32_t GetParentDirInfo(const std::string &parent, int32_t parentId);
     int32_t GetMediaInfo();
