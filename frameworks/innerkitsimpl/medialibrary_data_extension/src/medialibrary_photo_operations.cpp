@@ -18,6 +18,7 @@
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
 #include "media_column.h"
+#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_album_operations.h"
@@ -40,6 +41,7 @@
 #include "value_object.h"
 #include "values_bucket.h"
 #include "medialibrary_tracer.h"
+#include <memory>
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::RdbDataShareAdapter;
@@ -116,6 +118,46 @@ int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
     return E_OK;
 }
 
+// temp function, delete after MediaFileUri::Getpath is finish
+static string GetPathFromUri(const std::string &uri)
+{
+    string realTitle = uri;
+    size_t index = uri.rfind('/');
+    if (index == string::npos) {
+        return "";
+    }
+    realTitle = uri.substr(0, index);
+    index = realTitle.rfind('/');
+    if (index == string::npos) {
+        return "";
+    }
+    realTitle = realTitle.substr(index + 1);
+    index = realTitle.rfind('_');
+    if (index == string::npos) {
+        return "";
+    }
+    int32_t fileUniqueId = stoi(realTitle.substr(index + 1));
+    int32_t bucketNum = 0;
+    MediaLibraryAssetOperations::CreateAssetBucket(fileUniqueId, bucketNum);
+    string ext = MediaFileUtils::GetExtensionFromPath(uri);
+    if (ext.empty()) {
+        return "";
+    }
+
+    string path = ROOT_MEDIA_DIR + PHOTO_BUCKET + "/" + to_string(bucketNum) + "/" + realTitle + "." + ext;
+    if (!MediaFileUtils::IsFileExists(path)) {
+        MEDIA_ERR_LOG("file not exist, path=%{private}s", path.c_str());
+        return "";
+    }
+    return path;
+}
+
+const static vector<string> PHOTO_COLUMN_VECTOR = {
+    PhotoColumn::MEDIA_FILE_PATH,
+    PhotoColumn::MEDIA_TYPE,
+    PhotoColumn::MEDIA_TIME_PENDING
+};
+
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -123,22 +165,38 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
 
     string uriString = cmd.GetUriStringWithoutSegment();
     string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
-    if (uriString.empty()) {
+    if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
         return E_INVALID_URI;
     }
 
-    vector<string> columns = {
-        PhotoColumn::MEDIA_ID,
-        PhotoColumn::MEDIA_FILE_PATH,
-        PhotoColumn::MEDIA_TYPE,
-        PhotoColumn::MEDIA_TIME_PENDING
-    };
-    auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
-        OperationObject::FILESYSTEM_PHOTO, columns);
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
-        return E_INVALID_URI;
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
+    string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
+    MediaFileUri fileUri(uriString);
+    if (pendingStatus.empty() || !fileUri.IsApi10()) {
+        fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_PHOTO,
+            PHOTO_COLUMN_VECTOR);
+        if (fileAsset == nullptr) {
+            MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+            return E_INVALID_URI;
+        }
+    } else {
+        string path = GetPathFromUri(uriString);
+        if (path.empty()) {
+            fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_PHOTO,
+                PHOTO_COLUMN_VECTOR);
+            if (fileAsset == nullptr) {
+                MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+                return E_INVALID_URI;
+            }
+        } else {
+            fileAsset->SetPath(path);
+            fileAsset->SetMediaType(MediaFileUtils::GetMediaType(path));
+            int32_t timePending = stoi(pendingStatus);
+            fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
+        }
     }
+
+    fileAsset->SetId(stoi(id));
     fileAsset->SetUri(uriString);
 
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
@@ -149,24 +207,45 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
 
 int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
 {
-    string strFileId = cmd.GetOprnFileId();
-    if (strFileId.empty()) {
-        return E_INVALID_FILEID;
+    const ValuesBucket &values = cmd.GetValueBucket();
+    string uriString;
+    if (!GetStringFromValuesBucket(values, MEDIA_DATA_DB_URI, uriString)) {
+        return E_INVALID_VALUES;
+    }
+    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(fileId))) {
+        return E_INVALID_URI;
     }
 
-    vector<string> columns = {
-        PhotoColumn::MEDIA_ID,
-        PhotoColumn::MEDIA_FILE_PATH,
-        PhotoColumn::MEDIA_TIME_PENDING,
-        PhotoColumn::MEDIA_TYPE,
-        MediaColumn::MEDIA_DATE_MODIFIED,
-        MediaColumn::MEDIA_DATE_ADDED
-    };
-    auto fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, strFileId, cmd.GetOprnObject(), columns);
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("Get FileAsset id %{public}s from database failed!", strFileId.c_str());
-        return E_INVALID_FILEID;
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
+    string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
+    MediaFileUri fileUri(uriString);
+    if (pendingStatus.empty() || !fileUri.IsApi10()) {
+        fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_PHOTO,
+            PHOTO_COLUMN_VECTOR);
+        if (fileAsset == nullptr) {
+            MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+            return E_INVALID_URI;
+        }
+    } else {
+        string path = GetPathFromUri(uriString);
+        if (path.empty()) {
+            fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_PHOTO,
+                PHOTO_COLUMN_VECTOR);
+            if (fileAsset == nullptr) {
+                MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+                return E_INVALID_URI;
+            }
+        } else {
+            fileAsset->SetPath(path);
+            fileAsset->SetMediaType(MediaFileUtils::GetMediaType(path));
+            int32_t timePending = stoi(pendingStatus);
+            fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
+        }
     }
+
+    fileAsset->SetId(stoi(fileId));
+    fileAsset->SetUri(uriString);
 
     int32_t isSync = 0;
     int32_t errCode = 0;
