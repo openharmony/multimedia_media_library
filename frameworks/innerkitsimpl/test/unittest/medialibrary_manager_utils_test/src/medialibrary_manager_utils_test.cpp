@@ -26,16 +26,16 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-void MediaLibraryExtUnitTest::SetUpTestCase(void) {}
+void MediaLibraryManagerUtilsTest::SetUpTestCase(void) {}
 
-void MediaLibraryExtUnitTest::TearDownTestCase(void) {}
+void MediaLibraryManagerUtilsTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
-void MediaLibraryExtUnitTest::SetUp() {}
+void MediaLibraryManagerUtilsTest::SetUp() {}
 
-void MediaLibraryExtUnitTest::TearDown(void) {}
+void MediaLibraryManagerUtilsTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_IsNumber_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerUtilsTest, medialib_IsNumber_test_001, TestSize.Level0)
 {
     string srt = "";
     bool ret = MediaLibraryDataManagerUtils::IsNumber(srt);
@@ -48,7 +48,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsNumber_test_001, TestSize.Level0)
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetOperationType_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetOperationType_test_001, TestSize.Level0)
 {
     string uri = "medialib_GetOperationType_test_001/test";
     string ret = MediaLibraryDataManagerUtils::GetOperationType(uri);
@@ -58,7 +58,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetOperationType_test_001, TestSize.L
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetIdFromUri_test_001, TestSize.Level0)
 {
     string uri = "medialib_GetIdFromUri_test_001/Test";
     string ret = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
@@ -68,7 +68,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromUri_test_001, TestSize.Level
     EXPECT_EQ(ret, "-1");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetNetworkIdFromUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetNetworkIdFromUri_test_001, TestSize.Level0)
 {
     string uri = "";
     string ret = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
@@ -87,7 +87,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetNetworkIdFromUri_test_001, TestSiz
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetDisPlayNameFromPath_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetDisPlayNameFromPath_test_001, TestSize.Level0)
 {
     string path = "medialib_GetDisPlayNameFromPath_test_001/test";
     string ret = MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(path);
@@ -97,7 +97,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetDisPlayNameFromPath_test_001, Test
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ObtionCondition_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryManagerUtilsTest, medialib_ObtionCondition_test_001, TestSize.Level0)
 {
     std::vector<string> whereArgs;
     whereArgs.push_back("medialib_ObtionCondition_test_001");

@@ -26,16 +26,16 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-void MediaLibraryExtUnitTest::SetUpTestCase(void) {}
+void MediaLibrarySmartalbumOperationTest::SetUpTestCase(void) {}
 
-void MediaLibraryExtUnitTest::TearDownTestCase(void) {}
+void MediaLibrarySmartalbumOperationTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
-void MediaLibraryExtUnitTest::SetUp() {}
+void MediaLibrarySmartalbumOperationTest::SetUp() {}
 
-void MediaLibraryExtUnitTest::TearDown(void) {}
+void MediaLibrarySmartalbumOperationTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleSmartAlbumOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_HandleSmartAlbumOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     int32_t ret = MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperation(cmd);
@@ -48,7 +48,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleSmartAlbumOperation_test_001, T
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleSmartAlbumOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_HandleSmartAlbumOperation_test_002, TestSize.Level0)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
@@ -69,7 +69,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_HandleSmartAlbumOperation_test_002, T
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateSmartAlbumOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_CreateSmartAlbumOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibrarySmartAlbumOperations::CreateSmartAlbumOperation(cmd);
@@ -92,7 +92,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateSmartAlbumOperation_test_001, T
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateSmartAlbumOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_CreateSmartAlbumOperation_test_002, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     cmd.SetTableName(MEDIALIBRARY_TABLE);
@@ -108,7 +108,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateSmartAlbumOperation_test_002, T
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteSmartAlbumOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_DeleteSmartAlbumOperation_test_001, TestSize.Level0)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
@@ -124,7 +124,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteSmartAlbumOperation_test_001, T
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteSmartAlbumOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_DeleteSmartAlbumOperation_test_002, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
