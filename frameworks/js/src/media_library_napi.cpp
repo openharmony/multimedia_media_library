@@ -25,6 +25,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -1363,6 +1364,7 @@ static void SetFileAssetByIdV10(int32_t id, const string &networkId, const strin
     fileAsset->SetDisplayName(displayName);
     fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
+    fileAsset->SetTimePending(UNCREATE_FILE_TIMEPENDING);
     string typeMask;
     MediaLibraryNapiUtils::GenTypeMaskFromArray({ mediaType }, typeMask);
     fileAsset->SetTypeMask(typeMask);
@@ -1386,6 +1388,7 @@ static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, 
     fileAsset->SetDisplayName(displayName);
     fileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     fileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    fileAsset->SetTimePending(UNCREATE_FILE_TIMEPENDING);
     string typeMask;
     MediaLibraryNapiUtils::GenTypeMaskFromArray({ mediaType }, typeMask);
     fileAsset->SetTypeMask(typeMask);

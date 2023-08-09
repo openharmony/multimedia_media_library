@@ -69,41 +69,6 @@ using ExceptLongFunction = void (*) (int64_t);
 using ExceptBoolFunction = void (*) (bool);
 using ExceptStringFunction = void (*) (const string&);
 
-const unordered_map<string, int> FILEASSET_MEMBER_MAP = {
-    { MediaColumn::MEDIA_ID, MEMBER_TYPE_INT32 },
-    { MediaColumn::MEDIA_FILE_PATH, MEMBER_TYPE_STRING },
-    { MediaColumn::MEDIA_SIZE, MEMBER_TYPE_INT64 },
-    { MediaColumn::MEDIA_TITLE, MEMBER_TYPE_STRING },
-    { MediaColumn::MEDIA_NAME, MEMBER_TYPE_STRING },
-    { MediaColumn::MEDIA_TYPE, MEMBER_TYPE_INT32 },
-    { MediaColumn::MEDIA_MIME_TYPE, MEMBER_TYPE_STRING },
-    { MediaColumn::MEDIA_OWNER_PACKAGE, MEMBER_TYPE_STRING },
-    { MediaColumn::MEDIA_PACKAGE_NAME, MEMBER_TYPE_STRING },
-    { MediaColumn::MEDIA_DEVICE_NAME, MEMBER_TYPE_STRING },
-    { MediaColumn::MEDIA_DATE_ADDED, MEMBER_TYPE_INT64 },
-    { MediaColumn::MEDIA_DATE_MODIFIED, MEMBER_TYPE_INT64 },
-    { MediaColumn::MEDIA_DATE_TAKEN, MEMBER_TYPE_INT64 },
-    { MediaColumn::MEDIA_DATE_DELETED, MEMBER_TYPE_INT64 },
-    { MediaColumn::MEDIA_TIME_VISIT, MEMBER_TYPE_INT64 },
-    { MediaColumn::MEDIA_DURATION, MEMBER_TYPE_INT32 },
-    { MediaColumn::MEDIA_TIME_PENDING, MEMBER_TYPE_INT64 },
-    { MediaColumn::MEDIA_IS_FAV, MEMBER_TYPE_INT32 },
-    { MediaColumn::MEDIA_DATE_TRASHED, MEMBER_TYPE_INT64 },
-    { MediaColumn::MEDIA_HIDDEN, MEMBER_TYPE_INT32 },
-    { MediaColumn::MEDIA_PARENT_ID, MEMBER_TYPE_INT32 },
-    { MediaColumn::MEDIA_RELATIVE_PATH, MEMBER_TYPE_STRING },
-    { MediaColumn::MEDIA_VIRTURL_PATH, MEMBER_TYPE_STRING },
-    { PhotoColumn::PHOTO_ORIENTATION, MEMBER_TYPE_INT32 },
-    { PhotoColumn::PHOTO_LATITUDE, MEMBER_TYPE_DOUBLE },
-    { PhotoColumn::PHOTO_LONGITUDE, MEMBER_TYPE_DOUBLE },
-    { PhotoColumn::PHOTO_HEIGHT, MEMBER_TYPE_INT32 },
-    { PhotoColumn::PHOTO_WIDTH, MEMBER_TYPE_INT32 },
-    { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
-    { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
-    { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
-    { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING }
-};
-
 namespace {
 void CleanTestTables()
 {
@@ -933,7 +898,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_005, Test
     EXPECT_GE(ret, 0);
     unordered_map<string, string> verifyMap = {
         { PhotoColumn::MEDIA_TYPE, to_string(MediaType::MEDIA_TYPE_IMAGE) },
-        { PhotoColumn::MEDIA_TIME_PENDING, to_string(UNCREATE_FILE_TIMEPENDING) },
+        { PhotoColumn::MEDIA_TIME_PENDING, to_string(UNOPEN_FILE_COMPONENT_TIMEPENDING) },
     };
     bool res = QueryAndVerifyPhotoAsset(PhotoColumn::MEDIA_ID, to_string(ret), verifyMap);
     EXPECT_EQ(res, true);

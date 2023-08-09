@@ -26,6 +26,8 @@
 #include "fetch_result.h"
 #include "hilog/log.h"
 #include "media_exif.h"
+#include "medialibrary_asset_operations.h"
+#include "media_column.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "medialibrary_client_errno.h"
@@ -74,7 +76,6 @@ constexpr int32_t IS_HIDDEN = 1;
 constexpr int32_t NOT_HIDDEN = 0;
 
 using CompleteCallback = napi_async_complete_callback;
-std::size_t defaultIndexLength = 0;
 
 thread_local napi_ref FileAssetNapi::userFileMgrConstructor_ = nullptr;
 thread_local napi_ref FileAssetNapi::photoAccessHelperConstructor_ = nullptr;
@@ -1611,14 +1612,7 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
     return imageSource->CreatePixelMap(decodeOpts, err);
 #else
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    uint32_t errorCode = 0;
-    unique_ptr<ImageSource> backupImgSrc = ImageSource::CreateImageSource(uniqueFd.Get(), opts, errorCode);
-    if (errorCode == Media::SUCCESS) {
-        PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, backupImgSrc, decodeOpts);
-    } else {
-        NAPI_ERR_LOG("Failed to backup image source when to be purgeable: %{public}d", errorCode);
-    }
-
+    PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
     return pixelMap;
 #endif
 }
@@ -1795,8 +1789,12 @@ extern "C" __attribute__((visibility("default"))) void *OHOS_MEDIA_NativeGetThum
     return ret.release();
 }
 
-static void PreHandleExtrUriForThumbnail(const string &uri, string &fileUri, std::size_t &index = defaultIndexLength)
+static void PreHandleExtrUriForThumbnail(string &fileUri)
 {
+    MediaFileUri mediaUri(fileUri);
+    if (!mediaUri.IsApi10()) {
+        return;
+    }
     // handle uri with extrUri
     auto indexV10 = fileUri.rfind('/');
     if (indexV10 == string::npos) {
@@ -1810,10 +1808,6 @@ static void PreHandleExtrUriForThumbnail(const string &uri, string &fileUri, std
     auto nextStr = uriTempNext.substr(indexV10 + 1);
     if (!all_of(nextStr.begin(), nextStr.end(), ::isdigit)) {
         fileUri = uriTempNext.substr(0, indexV10);
-        indexV10 = uri.find("thumbnail");
-        if (indexV10 != string::npos) {
-            index = indexV10;
-        }
     }
 }
 
@@ -1828,16 +1822,16 @@ static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOl
         if (index == string::npos) {
             return false;
         }
-        fileUri = uri.substr(0, index - 1);
 
-        PreHandleExtrUriForThumbnail(uri, fileUri, index);
+        fileUri = uri.substr(0, index - 1);
+        PreHandleExtrUriForThumbnail(fileUri);
         index += strlen("thumbnail");
-        index = uri.find("/", index);
+        index = uri.find('/', index);
         if (index == string::npos) {
             return false;
         }
         index += 1;
-        auto tmpIdx = uri.find("/", index);
+        auto tmpIdx = uri.find('/', index);
         if (tmpIdx == string::npos) {
             return false;
         }
@@ -1848,12 +1842,13 @@ static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOl
         StrToInt(uri.substr(tmpIdx + 1), height);
         size = { .width = width, .height = height };
     } else {
-        auto qIdx = uri.find("?");
+        auto qIdx = uri.find('?');
         if (qIdx == string::npos) {
             return false;
         }
+
         fileUri = uri.substr(0, qIdx);
-        PreHandleExtrUriForThumbnail(uri, fileUri);
+        PreHandleExtrUriForThumbnail(fileUri);
         auto &queryKey = mediaUri.GetQueryKeys();
         if (queryKey.count(THUMBNAIL_PATH) != 0) {
             path = queryKey[THUMBNAIL_PATH];
@@ -2789,6 +2784,8 @@ static void UserFileMgrOpenExecute(napi_env env, void *data)
         return ;
     }
 
+    MediaFileUtils::UriAppendKeyValue(fileUri, MediaColumn::MEDIA_TIME_PENDING,
+        to_string(context->objectPtr->GetTimePending()));
     Uri openFileUri(fileUri);
     int32_t retVal = UserFileClient::OpenFile(openFileUri, mode);
     if (retVal <= 0) {
@@ -2800,6 +2797,9 @@ static void UserFileMgrOpenExecute(napi_env env, void *data)
             context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_WRITE);
         } else {
             context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_READONLY);
+        }
+        if (context->objectPtr->GetTimePending() == UNCREATE_FILE_TIMEPENDING) {
+            context->objectPtr->SetTimePending(UNCLOSE_FILE_TIMEPENDING);
         }
     }
 }
@@ -2903,10 +2903,16 @@ static void UserFileMgrCloseExecute(napi_env env, void *data)
         return;
     }
     MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, MediaColumn::MEDIA_TIME_PENDING,
+        to_string(context->objectPtr->GetTimePending()));
     Uri closeAssetUri(closeUri);
     int32_t ret = UserFileClient::Insert(closeAssetUri, context->valuesBucket);
     if (ret != E_SUCCESS) {
         context->SaveError(ret);
+    } else {
+        if (context->objectPtr->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
+            context->objectPtr->SetTimePending(0);
+        }
     }
 }
 
@@ -2960,7 +2966,7 @@ static void UserFileMgrSetHiddenExecute(napi_env env, void *data)
     auto *context = static_cast<FileAssetAsyncContext *>(data);
     if (context->objectPtr->GetMediaType() != MEDIA_TYPE_IMAGE &&
         context->objectPtr->GetMediaType() != MEDIA_TYPE_VIDEO) {
-        context->error = -EINVAL;
+        context->SaveError(-EINVAL);
         return;
     }
 
@@ -3037,7 +3043,7 @@ static void UserFileMgrSetPendingExecute(napi_env env, void *data)
     } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
         uri += UFM_AUDIO + "/" + OPRN_PENDING;
     } else {
-        context->error = -EINVAL;
+        context->SaveError(-EINVAL);
         return;
     }
 
@@ -3056,6 +3062,7 @@ static void UserFileMgrSetPendingExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Failed to modify pending state, err: %{public}d", changedRows);
     } else {
         context->changedRows = changedRows;
+        context->objectPtr->SetTimePending((context->isPending) ? 1 : 0);
     }
 }
 
@@ -3248,6 +3255,10 @@ static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
         return ;
     }
 
+    if (context->objectPtr->GetTimePending() == UNCREATE_FILE_TIMEPENDING) {
+        MediaFileUtils::UriAppendKeyValue(fileUri, MediaColumn::MEDIA_TIME_PENDING,
+            to_string(context->objectPtr->GetTimePending()));
+    }
     Uri openFileUri(fileUri);
     int32_t retVal = UserFileClient::OpenFile(openFileUri, mode);
     if (retVal <= 0) {
@@ -3259,6 +3270,9 @@ static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
             context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_WRITE);
         } else {
             context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_READONLY);
+        }
+        if (context->objectPtr->GetTimePending() == UNCREATE_FILE_TIMEPENDING) {
+            context->objectPtr->SetTimePending(UNCLOSE_FILE_TIMEPENDING);
         }
     }
 }
@@ -3346,10 +3360,16 @@ static void PhotoAccessHelperCloseExecute(napi_env env, void *data)
         return;
     }
     MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, MediaColumn::MEDIA_TIME_PENDING,
+        to_string(context->objectPtr->GetTimePending()));
     Uri closeAssetUri(closeUri);
     int32_t ret = UserFileClient::Insert(closeAssetUri, context->valuesBucket);
     if (ret != E_SUCCESS) {
         context->SaveError(ret);
+    } else {
+        if (context->objectPtr->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
+            context->objectPtr->SetTimePending(0);
+        }
     }
 }
 
@@ -3526,7 +3546,7 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     if (context->objectPtr->GetMediaType() != MEDIA_TYPE_IMAGE &&
         context->objectPtr->GetMediaType() != MEDIA_TYPE_VIDEO) {
-        context->error = -EINVAL;
+        context->SaveError(-EINVAL);
         return;
     }
 
@@ -3604,7 +3624,7 @@ static void PhotoAccessHelperSetPendingExecute(napi_env env, void *data)
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
         uri += PAH_PHOTO + "/" + OPRN_PENDING;
     } else {
-        context->error = -EINVAL;
+        context->SaveError(-EINVAL);
         return;
     }
 
@@ -3623,6 +3643,7 @@ static void PhotoAccessHelperSetPendingExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Failed to modify pending state, err: %{public}d", changedRows);
     } else {
         context->changedRows = changedRows;
+        context->objectPtr->SetTimePending((context->isPending) ? 1 : 0);
     }
 }
 

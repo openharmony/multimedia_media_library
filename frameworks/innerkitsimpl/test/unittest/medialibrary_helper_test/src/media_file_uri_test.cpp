@@ -13,9 +13,12 @@
  * limitations under the License.
  */
 
+#include "image_type.h"
 #include "medialibrary_helper_test.h"
 #include "media_file_uri.h"
 #include "media_log.h"
+#include "string_ex.h"
+#include "thumbnail_const.h"
 #include "userfile_manager_types.h"
 
 using namespace std;
@@ -26,6 +29,18 @@ namespace Media {
 
 static const string networkId_ = "1d3cb099659d53b3ee15faaab3c00a8ff983382ebc8b01aabde039ed084e167b";
 static const string DEFAULT_EXTR_PATH = "/IMG_1690336600_001/test.jpg";
+
+static const string OLD_URI_PRE = "file://media/video/1";
+static const string NEW_URI_PRE = "file://media/Photo/2";
+static const string OLD_URI = "file://media/video/1/thumbnail/1080/1920";
+static const string NEW_URI = "file://media/Photo/2/VID_169_001/VID_2023.mp4/thumbnail/1080/1920";
+static const string OLD_URI_NEW_VER = "file://media/video/1?operation=thumbnail&width=1080&height=1920&"
+    "path=/storage/cloud/files/video/16/VID_1690336600_001.mp4";
+static const string NEW_URI_NEW_VER = "file://media/Photo/2/VID_169_001/VID_2023.mp4?operation=thumbnail&width=1080&"
+    "height=1920&path=/storage/cloud/files/Photo/16/VID_1690336600_001.mp4";
+static const string OLD_URI_PATH = "/storage/cloud/files/video/16/VID_1690336600_001.mp4";
+static const string NEW_URI_PATH = "/storage/cloud/files/Photo/16/VID_1690336600_001.mp4";
+static const Size THUMB_NAIL_SIZE = Size{1080, 1920};
 static const int32_t fd_ = 12;
 
 const int32_t TYPE_URI = 1;
@@ -51,6 +66,124 @@ string PathSplicing(string subpath, int32_t type, string extrPath = "")
             break;
     }
     return Uri;
+}
+
+void PreHandleExtrUriForThumbnailTest(string &fileUri)
+{
+    MediaFileUri mediaUri(fileUri);
+    if (!mediaUri.IsApi10()) {
+        return;
+    }
+    // handle uri with extrUri
+    auto indexV10 = fileUri.rfind('/');
+    if (indexV10 == string::npos) {
+        return;
+    }
+    auto uriTempNext = fileUri.substr(0, indexV10);
+    indexV10 = uriTempNext.rfind('/');
+    if (indexV10 == string::npos) {
+        return;
+    }
+    auto nextStr = uriTempNext.substr(indexV10 + 1);
+    if (!all_of(nextStr.begin(), nextStr.end(), ::isdigit)) {
+        fileUri = uriTempNext.substr(0, indexV10);
+    }
+}
+
+bool GetParamsFromUriTest(const string &uri, string &fileUri, const bool isOldVer, Size &size, string &path)
+{
+    MediaFileUri mediaUri(uri);
+    if (!mediaUri.IsValid()) {
+        return false;
+    }
+    if (isOldVer) {
+        auto index = uri.find("thumbnail");
+        if (index == string::npos) {
+            return false;
+        }
+        fileUri = uri.substr(0, index - 1);
+        PreHandleExtrUriForThumbnailTest(fileUri);
+        index += strlen("thumbnail");
+        index = uri.find('/', index);
+        if (index == string::npos) {
+            return false;
+        }
+        index += 1;
+        auto tmpIdx = uri.find('/', index);
+        if (tmpIdx == string::npos) {
+            return false;
+        }
+
+        int32_t width = 0;
+        StrToInt(uri.substr(index, tmpIdx - index), width);
+        int32_t height = 0;
+        StrToInt(uri.substr(tmpIdx + 1), height);
+        size = { .width = width, .height = height };
+    } else {
+        auto qIdx = uri.find('?');
+        if (qIdx == string::npos) {
+            return false;
+        }
+        fileUri = uri.substr(0, qIdx);
+        PreHandleExtrUriForThumbnailTest(fileUri);
+        auto &queryKey = mediaUri.GetQueryKeys();
+        if (queryKey.count(THUMBNAIL_PATH) != 0) {
+            path = queryKey[THUMBNAIL_PATH];
+        }
+        if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
+            size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        }
+        if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
+            size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        }
+    }
+    return true;
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, GetParamsFromUri_Test_001, TestSize.Level0)
+{
+    string path;
+    string fileUri;
+    Size size;
+    GetParamsFromUriTest(OLD_URI, fileUri, true, size, path);
+    EXPECT_EQ(OLD_URI_PRE, fileUri);
+    EXPECT_EQ("", path);
+    EXPECT_EQ(THUMB_NAIL_SIZE.height, size.height);
+    EXPECT_EQ(THUMB_NAIL_SIZE.width, size.width);
+}
+HWTEST_F(MediaLibraryHelperUnitTest, GetParamsFromUri_Test_002, TestSize.Level0)
+{
+    string path;
+    string fileUri;
+    Size size;
+    GetParamsFromUriTest(NEW_URI, fileUri, true, size, path);
+    EXPECT_EQ(NEW_URI_PRE, fileUri);
+    EXPECT_EQ("", path);
+    EXPECT_EQ(THUMB_NAIL_SIZE.height, size.height);
+    EXPECT_EQ(THUMB_NAIL_SIZE.width, size.width);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, GetParamsFromUri_Test_003, TestSize.Level0)
+{
+    string path;
+    string fileUri;
+    Size size;
+    GetParamsFromUriTest(OLD_URI_NEW_VER, fileUri, false, size, path);
+    EXPECT_EQ(OLD_URI_PRE, fileUri);
+    EXPECT_EQ(OLD_URI_PATH, path);
+    EXPECT_EQ(THUMB_NAIL_SIZE.height, size.height);
+    EXPECT_EQ(THUMB_NAIL_SIZE.width, size.width);
+}
+HWTEST_F(MediaLibraryHelperUnitTest, GetParamsFromUri_Test_004, TestSize.Level0)
+{
+    string path;
+    string fileUri;
+    Size size;
+    GetParamsFromUriTest(NEW_URI_NEW_VER, fileUri, false, size, path);
+    EXPECT_EQ(NEW_URI_PRE, fileUri);
+    EXPECT_EQ(NEW_URI_PATH, path);
+    EXPECT_EQ(THUMB_NAIL_SIZE.height, size.height);
+    EXPECT_EQ(THUMB_NAIL_SIZE.width, size.width);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUri_Test_001, TestSize.Level0)
@@ -369,6 +502,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RemoveAllFragment_Test_001, 
     MediaFileUri::RemoveAllFragment(uri);
     EXPECT_EQ(uri, "datashare://media/test/");
 }
+
 
 } // namespace Media
 } // namespace OHOS
