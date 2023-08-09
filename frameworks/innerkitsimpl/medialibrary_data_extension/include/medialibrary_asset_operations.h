@@ -108,6 +108,7 @@ protected:
     static int32_t ModifyAssetInDb(MediaLibraryCommand &cmd);
     static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
+    static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateRelativePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
     static void UpdateVirtualPath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
@@ -119,6 +120,8 @@ protected:
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static int32_t SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
+    static int32_t SendModifyUserCommentNotify(MediaLibraryCommand &cmd, int32_t rowId,
+        const std::string &extraUri = "");
     static int32_t SetPendingStatus(MediaLibraryCommand &cmd);
     static int32_t GrantUriPermission(const std::string &uri, const std::string &bundleName,
         const std::string &path);

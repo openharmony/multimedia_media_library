@@ -23,6 +23,7 @@
 #include "directory_ex.h"
 #include "file_asset.h"
 #include "media_column.h"
+#include "media_exif.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "media_log.h"
@@ -673,6 +674,44 @@ int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     return E_OK;
 }
 
+int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
+    const shared_ptr<FileAsset> &fileAsset)
+{
+    ValuesBucket &values = cmd.GetValueBucket();
+    ValueObject valueObject;
+    string newUserComment;
+
+    if (values.GetObject(PhotoColumn::PHOTO_USER_COMMENT, valueObject)) {
+        valueObject.GetString(newUserComment);
+    } else {
+        return E_OK;
+    }
+
+    uint32_t err = 0;
+    SourceOptions opts;
+    string filePath = fileAsset->GetFilePath();
+    string extension = MediaFileUtils::GetExtensionFromPath(filePath);
+    opts.formatHint = "image/" + extension;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
+    if (err != 0 || imageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to obtain image source, err = %{public}d", err);
+        return E_OK;
+    }
+
+    string userComment;
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, userComment);
+    if (err != 0) {
+        MEDIA_ERR_LOG("Image does not exit exif, no need to modify");
+        return E_OK;
+    }
+    err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_USER_COMMENT, newUserComment, filePath);
+    if (err != 0) {
+        MEDIA_ERR_LOG("Modify image property user comment failed");
+    }
+
+    return E_OK;
+}
+
 int32_t MediaLibraryAssetOperations::UpdateRelativePath(MediaLibraryCommand &cmd,
     const shared_ptr<FileAsset> &fileAsset, bool &isNameChanged)
 {
@@ -1060,6 +1099,19 @@ int32_t MediaLibraryAssetOperations::SendHideNotify(MediaLibraryCommand &cmd, in
     return E_OK;
 }
 
+int32_t MediaLibraryAssetOperations::SendModifyUserCommentNotify(MediaLibraryCommand &cmd, int32_t rowId,
+    const string &extraUri)
+{
+    if (cmd.GetOprnType() != OperationType::SET_USER_COMMENT) {
+        return E_DO_NOT_NEDD_SEND_NOTIFY;
+    }
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(rowId), extraUri),
+        NotifyType::NOTIFY_UPDATE);
+    return E_OK;
+}
+
 int32_t MediaLibraryAssetOperations::SetPendingTrue(const shared_ptr<FileAsset> &fileAsset)
 {
     // time_pending = 0, means file is created, not allowed
@@ -1410,6 +1462,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { AudioColumn::AUDIO_ALBUM, { Forbidden } },
     { AudioColumn::AUDIO_ARTIST, { Forbidden } },
     { PhotoColumn::CAMERA_SHOT_KEY, { Forbidden } },
+    { PhotoColumn::PHOTO_USER_COMMENT, { IsString } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)

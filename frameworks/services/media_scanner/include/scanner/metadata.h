@@ -108,6 +108,12 @@ public:
     void SetTimePending(const VariantData &timePending);
     int64_t GetTimePending() const;
 
+    void SetUserComment(const VariantData &userComment);
+    const std::string &GetUserComment() const;
+
+    void SetAllExif(const VariantData &allExif);
+    const std::string &GetAllExif() const;
+
 #ifdef MEDIALIBRARY_COMPATIBILITY
     void SetPhotoSubType(const VariantData &photoSubType);
     int32_t GetPhotoSubType() const;
@@ -156,6 +162,8 @@ private:
     // image
     double longitude_;
     double latitude_;
+    std::string userComment_;
+    std::string allExif_;
 
     // album
     int32_t albumId_;

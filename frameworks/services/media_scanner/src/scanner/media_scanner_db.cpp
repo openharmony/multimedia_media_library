@@ -155,6 +155,8 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata.GetOrientation());
         values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, metadata.GetLongitude());
         values.PutDouble(PhotoColumn::PHOTO_LATITUDE, metadata.GetLatitude());
+        values.PutString(PhotoColumn::PHOTO_USER_COMMENT, metadata.GetUserComment());
+        values.PutString(PhotoColumn::PHOTO_ALL_EXIF, metadata.GetAllExif());
 #ifdef MEDIALIBRARY_COMPATIBILITY
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
