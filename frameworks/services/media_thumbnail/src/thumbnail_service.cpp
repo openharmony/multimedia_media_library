@@ -170,7 +170,7 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
         .row = fileId,
         .screenSize = screenSize_
     };
-    Size size = { DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE };
+    Size size = { DEFAULT_THUMB_SIZE, DEFAULT_THUMB_SIZE };
     shared_ptr<IThumbnailHelper> thumbnailHelper = ThumbnailHelperFactory::GetThumbnailHelper(size);
     if (thumbnailHelper == nullptr) {
         MEDIA_ERR_LOG("thumbnailHelper nullptr");
