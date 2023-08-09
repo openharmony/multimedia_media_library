@@ -282,11 +282,6 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
 #endif
 }
 
-static string CountByColumn(const string &column)
-{
-    return "COUNT(" + column + ")";
-}
-
 inline int32_t GetStringObject(const ValuesBucket &values, const string &key, string &value)
 {
     value = "";
@@ -520,7 +515,12 @@ static inline string GetString(const shared_ptr<ResultSet> &resultSet, const str
 
 static inline int32_t GetFileCount(const shared_ptr<ResultSet> &resultSet)
 {
-    return GetInt(resultSet, CountByColumn(PhotoColumn::MEDIA_ID));
+    int32_t count = 0;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK) {
+        return 0;
+    }
+    return count;
 }
 
 static inline int32_t GetAlbumCount(const shared_ptr<ResultSet> &resultSet)
@@ -589,8 +589,7 @@ static int32_t SetUpdateValues(const shared_ptr<ResultSet> &albumResult, ValuesB
     const vector<string> columns = {
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
-        PhotoColumn::MEDIA_NAME,
-        CountByColumn(PhotoColumn::MEDIA_ID),
+        PhotoColumn::MEDIA_NAME
     };
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
@@ -599,7 +598,7 @@ static int32_t SetUpdateValues(const shared_ptr<ResultSet> &albumResult, ValuesB
     } else {
         PhotoAlbumColumns::GetUserAlbumPredicates(GetAlbumId(albumResult), predicates);
     }
-    predicates.OrderByAsc(PhotoColumn::MEDIA_DATE_ADDED);
+    predicates.OrderByDesc(PhotoColumn::MEDIA_DATE_ADDED);
     auto fileResult = QueryAlbumAssets(predicates, columns);
     if (fileResult == nullptr) {
         return E_HAS_DB_ERROR;
