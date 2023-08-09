@@ -1694,8 +1694,8 @@ static void GetSizeInfo(napi_env env, napi_value configObj, std::string type, in
 napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value argv[],
                                     unique_ptr<FileAssetAsyncContext> &asyncContext)
 {
-    asyncContext->thumbWidth = DEFAULT_THUMBNAIL_SIZE;
-    asyncContext->thumbHeight = DEFAULT_THUMBNAIL_SIZE;
+    asyncContext->thumbWidth = DEFAULT_THUMB_SIZE;
+    asyncContext->thumbHeight = DEFAULT_THUMB_SIZE;
 
     if (argc == ARGS_ONE) {
         napi_valuetype valueType = napi_undefined;
