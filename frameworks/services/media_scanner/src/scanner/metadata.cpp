@@ -44,6 +44,8 @@ Metadata::Metadata()
     dateTaken_(FILE_DATE_TAKEN_DEFAULT),
     longitude_(FILE_LONGITUDE_DEFAULT),
     latitude_(FILE_LATITUDE_DEFAULT),
+    userComment_(FILE_USER_COMMENT_DEFAULT),
+    allExif_(FILE_All_EXIF_DEFAULT),
     albumId_(FILE_ALBUM_ID_DEFAULT),
     albumName_(FILE_ALBUM_NAME_DEFAULT),
     recyclePath_(FILE_RECYCLE_PATH_DEFAULT),
@@ -79,6 +81,9 @@ void Metadata::Init()
     memberFuncMap_[MEDIA_DATA_DB_DATE_MODIFIED] = make_pair(ResultSetDataType::TYPE_INT64,
         &Metadata::SetFileDateModified);
     memberFuncMap_[MEDIA_DATA_DB_TIME_PENDING] = make_pair(ResultSetDataType::TYPE_INT64, &Metadata::SetTimePending);
+    memberFuncMap_[PhotoColumn::PHOTO_USER_COMMENT] = make_pair(ResultSetDataType::TYPE_STRING,
+        &Metadata::SetUserComment);
+    memberFuncMap_[PhotoColumn::PHOTO_ALL_EXIF] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetAllExif);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -339,6 +344,26 @@ void Metadata::SetTimePending(const VariantData &timePending)
 int64_t Metadata::GetTimePending() const
 {
     return timePending_;
+}
+
+void Metadata::SetUserComment(const VariantData &userComment)
+{
+    userComment_ = get<string>(userComment);
+}
+
+const string &Metadata::GetUserComment() const
+{
+    return userComment_;
+}
+
+void Metadata::SetAllExif(const VariantData &allExif)
+{
+    allExif_ = get<string>(allExif);
+}
+
+const string &Metadata::GetAllExif() const
+{
+    return allExif_;
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY

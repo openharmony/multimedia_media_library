@@ -159,6 +159,15 @@ public:
     void CommitModify();
     bool IsDirectory();
 
+    const std::string &GetAllExif() const;
+    void SetAllExif(const std::string &allExif);
+
+    const std::string &GetUserComment() const;
+    void SetUserComment(const std::string &userComment);
+
+    const std::string &GetFilePath() const;
+    void SetFilePath(const std::string &filePath);
+
 private:
     const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;

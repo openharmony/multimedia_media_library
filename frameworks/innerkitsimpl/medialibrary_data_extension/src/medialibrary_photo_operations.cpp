@@ -561,9 +561,15 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
         return E_INVALID_VALUES;
     }
 
+    int32_t errCode;
+    if (cmd.GetOprnType() == OperationType::SET_USER_COMMENT) {
+        errCode = SetUserComment(cmd, fileAsset);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Edit user comment errCode = %{private}d", errCode);
+    }
+
     // Update if FileAsset.title or FileAsset.displayName is modified
     bool isNameChanged = false;
-    int32_t errCode = UpdateFileName(cmd, fileAsset, isNameChanged);
+    errCode = UpdateFileName(cmd, fileAsset, isNameChanged);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Photo Name failed, fileName=%{private}s",
         fileAsset->GetDisplayName().c_str());
 
@@ -587,6 +593,7 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
     }
     SendFavoriteNotify(cmd, fileAsset->GetId(), extraUri);
     SendHideNotify(cmd, fileAsset->GetId(), extraUri);
+    SendModifyUserCommentNotify(cmd, fileAsset->GetId(), extraUri);
     auto watch = MediaLibraryNotify::GetInstance();
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()),
         extraUri), NotifyType::NOTIFY_UPDATE);

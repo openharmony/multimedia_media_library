@@ -87,6 +87,8 @@ public:
     static const std::string PHOTO_SYNC_STATUS;
     static const std::string PHOTO_CLOUD_VERSION;
     static const std::string CAMERA_SHOT_KEY;
+    static const std::string PHOTO_USER_COMMENT;
+    static const std::string PHOTO_ALL_EXIF;
 
     // table name
     static const std::string PHOTOS_TABLE;
