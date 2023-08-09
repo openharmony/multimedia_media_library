@@ -181,6 +181,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "ability_runtime:dataobs_manager",
     "ability_runtime:extensionkit_native",
     "ability_runtime:runtime",
+    "ability_runtime:uri_permission_mgr",
     "access_token:libaccesstoken_sdk",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",

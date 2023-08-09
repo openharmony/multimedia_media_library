@@ -96,27 +96,81 @@ int32_t MediaLibraryAudioOperations::Update(MediaLibraryCommand &cmd)
     return E_OK;
 }
 
+// temp function, delete after MediaFileUri::Getpath is finish
+static string GetPathFromUri(const std::string &uri)
+{
+    string realTitle = uri;
+    size_t index = uri.rfind('/');
+    if (index == string::npos) {
+        return "";
+    }
+    realTitle = uri.substr(0, index);
+    index = realTitle.rfind('/');
+    if (index == string::npos) {
+        return "";
+    }
+    realTitle = realTitle.substr(index + 1);
+    index = realTitle.rfind('_');
+    if (index == string::npos) {
+        return "";
+    }
+    int32_t fileUniqueId = stoi(realTitle.substr(index + 1));
+    int32_t bucketNum = 0;
+    MediaLibraryAssetOperations::CreateAssetBucket(fileUniqueId, bucketNum);
+    string ext = MediaFileUtils::GetExtensionFromPath(uri);
+    if (ext.empty()) {
+        return "";
+    }
+    string path = ROOT_MEDIA_DIR + AUDIO_BUCKET + "/" + to_string(bucketNum) + "/" + realTitle + "." + ext;
+    if (!MediaFileUtils::IsFileExists(path)) {
+        MEDIA_ERR_LOG("file not exist, path=%{private}s", path.c_str());
+        return "";
+    }
+    return path;
+}
+
+const static vector<string> AUDIO_COLUMN_VECTOR = {
+    AudioColumn::MEDIA_FILE_PATH,
+    AudioColumn::MEDIA_TIME_PENDING
+};
+
 int32_t MediaLibraryAudioOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     string uriString = cmd.GetUriStringWithoutSegment();
     string id = MediaFileUri(uriString).GetFileId();
-    if (uriString.empty()) {
+    if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
         return E_INVALID_URI;
     }
 
-    vector<string> columns = {
-        AudioColumn::MEDIA_ID,
-        AudioColumn::MEDIA_FILE_PATH,
-        AudioColumn::MEDIA_TYPE,
-        AudioColumn::MEDIA_TIME_PENDING
-    };
-    auto fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, id,
-        OperationObject::FILESYSTEM_AUDIO, columns);
-    fileAsset->SetUri(uriString);
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
-        return E_INVALID_URI;
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
+    string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
+    MediaFileUri fileUri(uriString);
+    if (pendingStatus.empty() || !fileUri.IsApi10()) {
+        fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_AUDIO,
+            AUDIO_COLUMN_VECTOR);
+        if (fileAsset == nullptr) {
+            MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+            return E_INVALID_URI;
+        }
+    } else {
+        string path = GetPathFromUri(uriString);
+        if (path.empty()) {
+            fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_AUDIO,
+                AUDIO_COLUMN_VECTOR);
+            if (fileAsset == nullptr) {
+                MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+                return E_INVALID_URI;
+            }
+        } else {
+            fileAsset->SetPath(path);
+            int32_t timePending = stoi(pendingStatus);
+            fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
+        }
     }
+
+    fileAsset->SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
+    fileAsset->SetId(stoi(id));
+    fileAsset->SetUri(uriString);
 
     if (uriString.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
         return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10);
@@ -126,24 +180,45 @@ int32_t MediaLibraryAudioOperations::Open(MediaLibraryCommand &cmd, const string
 
 int32_t MediaLibraryAudioOperations::Close(MediaLibraryCommand &cmd)
 {
-    string strFileId = cmd.GetOprnFileId();
-    if (strFileId.empty()) {
-        return E_INVALID_FILEID;
+    const ValuesBucket &values = cmd.GetValueBucket();
+    string uriString;
+    if (!GetStringFromValuesBucket(values, MEDIA_DATA_DB_URI, uriString)) {
+        return E_INVALID_VALUES;
+    }
+    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(fileId))) {
+        return E_INVALID_URI;
     }
 
-    vector<string> columns = {
-        AudioColumn::MEDIA_ID,
-        AudioColumn::MEDIA_FILE_PATH,
-        AudioColumn::MEDIA_TIME_PENDING,
-        AudioColumn::MEDIA_TYPE,
-        MediaColumn::MEDIA_DATE_MODIFIED,
-        MediaColumn::MEDIA_DATE_ADDED
-    };
-    auto fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, strFileId, cmd.GetOprnObject(), columns);
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("Get FileAsset id %{public}s from database failed!", strFileId.c_str());
-        return E_INVALID_FILEID;
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
+    string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
+    MediaFileUri fileUri(uriString);
+    if (pendingStatus.empty() || !fileUri.IsApi10()) {
+        fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_AUDIO,
+            AUDIO_COLUMN_VECTOR);
+        if (fileAsset == nullptr) {
+            MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+            return E_INVALID_URI;
+        }
+    } else {
+        string path = GetPathFromUri(uriString);
+        if (path.empty()) {
+            fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_AUDIO,
+                AUDIO_COLUMN_VECTOR);
+            if (fileAsset == nullptr) {
+                MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
+                return E_INVALID_URI;
+            }
+        } else {
+            fileAsset->SetPath(path);
+            int32_t timePending = stoi(pendingStatus);
+            fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
+        }
     }
+
+    fileAsset->SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
+    fileAsset->SetId(stoi(fileId));
+    fileAsset->SetUri(uriString);
 
     int32_t isSync = 0;
     int32_t errCode = 0;
@@ -216,12 +291,16 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     string extention;
     string title;
     bool isContains = false;
+    bool isNeedGrant = false;
     if (GetStringFromValuesBucket(values, AudioColumn::MEDIA_NAME, displayName)) {
         fileAsset.SetDisplayName(displayName);
+        fileAsset.SetTimePending(UNCREATE_FILE_TIMEPENDING);
         isContains = true;
     } else {
         CHECK_AND_RETURN_RET(GetStringFromValuesBucket(values, ASSET_EXTENTION, extention), E_HAS_DB_ERROR);
-        if (GetStringFromValuesBucket(values, PhotoColumn::MEDIA_TITLE, title)) {
+        isNeedGrant = true;
+        fileAsset.SetTimePending(UNOPEN_FILE_COMPONENT_TIMEPENDING);
+        if (GetStringFromValuesBucket(values, AudioColumn::MEDIA_TITLE, title)) {
             displayName = title + "." + extention;
             fileAsset.SetDisplayName(displayName);
             isContains = true;
@@ -246,14 +325,13 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
 
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
     CHECK_AND_RETURN_RET_LOG(outRow > 0, errCode, "insert file in db failed, error = %{public}d", outRow);
-    string bdName = cmd.GetBundleName();
-    if (!bdName.empty()) {
-        errCode = UriPermissionOperations::InsertBundlePermission(outRow, bdName, MEDIA_FILEMODE_READWRITE,
-            AudioColumn::AUDIOS_TABLE);
-        CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "InsertBundlePermission failed, err=%{public}d", errCode);
-    }
-    cmd.SetResult(CreateExtUriForV10Asset(fileAsset));
     transactionOprn.Finish();
+    string fileUri = CreateExtUriForV10Asset(fileAsset);
+    if (isNeedGrant) {
+        int32_t ret = GrantUriPermission(fileUri, cmd.GetBundleName(), fileAsset.GetPath());
+        CHECK_AND_RETURN_RET(ret == E_OK, ret);
+    }
+    cmd.SetResult(fileUri);
     return outRow;
 }
 

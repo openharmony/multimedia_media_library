@@ -995,16 +995,6 @@ void GetActivePeer(shared_ptr<NativeRdb::ResultSet> &result)
 
 int32_t MediaFileExtentionUtils::GetRoots(vector<RootInfo> &rootList)
 {
-    RootInfo rootInfo;
-    // add local root
-    rootInfo.uri = ML_FILE_URI_PREFIX + MEDIALIBRARY_ROOT;
-    rootInfo.displayName = MEDIALIBRARY_LOCAL_DEVICE_NAME;
-    rootInfo.deviceFlags = DEVICE_FLAG_SUPPORTS_READ | DEVICE_FLAG_SUPPORTS_WRITE;
-    rootInfo.deviceType = DEVICE_LOCAL_DISK;
-    rootList.push_back(rootInfo);
-    shared_ptr<NativeRdb::ResultSet> result;
-    GetActivePeer(result);
-    GetRootInfoFromResult(result, rootList);
     return E_SUCCESS;
 }
 

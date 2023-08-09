@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <dirent.h>
+#include <memory>
 #include <mutex>
 
 #include "directory_ex.h"
@@ -49,6 +50,7 @@
 #include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
+#include "uri_permission_manager_client.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
@@ -257,6 +259,53 @@ static OperationObject GetOprnObjectByMediaType(int32_t type)
     }
 }
 
+shared_ptr<FileAsset> MediaLibraryAssetOperations::GetAssetFromResultSet(
+    const shared_ptr<NativeRdb::ResultSet> &resultSet, const vector<string> &columns)
+{
+    auto fileAsset = make_shared<FileAsset>();
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "resultSet is nullptr");
+    int32_t count = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet->GetRowCount(count) == NativeRdb::E_OK, nullptr,
+        "can not get resultset row count");
+    CHECK_AND_RETURN_RET_LOG(count == 1, nullptr, "ResultSet count is %{public}d, not 1", count);
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, nullptr, "can not go to first row");
+    for (const auto &column : columns) {
+        int32_t columnIndex = 0;
+        CHECK_AND_RETURN_RET_LOG(resultSet->GetColumnIndex(column, columnIndex) == NativeRdb::E_OK,
+            nullptr, "Can not get column %{public}s index", column.c_str());
+        CHECK_AND_RETURN_RET_LOG(FILEASSET_MEMBER_MAP.find(column) != FILEASSET_MEMBER_MAP.end(), nullptr,
+            "Can not find column %{public}s from member map", column.c_str());
+        int32_t memberType = FILEASSET_MEMBER_MAP.at(column);
+        switch (memberType) {
+            case MEMBER_TYPE_INT32: {
+                int32_t value = 0;
+                CHECK_AND_RETURN_RET_LOG(resultSet->GetInt(columnIndex, value) == NativeRdb::E_OK, nullptr,
+                    "Can not get int value from column %{public}s", column.c_str());
+                auto &map = fileAsset->GetMemberMap();
+                map[column] = value;
+                break;
+            }
+            case MEMBER_TYPE_INT64: {
+                int64_t value = 0;
+                CHECK_AND_RETURN_RET_LOG(resultSet->GetLong(columnIndex, value) == NativeRdb::E_OK, nullptr,
+                    "Can not get long value from column %{public}s", column.c_str());
+                auto &map = fileAsset->GetMemberMap();
+                map[column] = value;
+                break;
+            }
+            case MEMBER_TYPE_STRING: {
+                string value;
+                CHECK_AND_RETURN_RET_LOG(resultSet->GetString(columnIndex, value) == NativeRdb::E_OK, nullptr,
+                    "Can not get string value from column %{public}s", column.c_str());
+                auto &map = fileAsset->GetMemberMap();
+                map[column] = value;
+                break;
+            }
+        }
+    }
+    return fileAsset;
+}
+
 shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const string &column,
     const string &value, OperationObject oprnObject, const vector<string> &columns, const string &networkId)
 {
@@ -275,15 +324,11 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const stri
     MediaLibraryCommand cmd(oprnObject, OperationType::QUERY, networkId);
     cmd.GetAbsRdbPredicates()->EqualTo(column, value);
 
-    auto absResultSet = rdbStore->Query(cmd, columns);
-    if (absResultSet == nullptr) {
+    auto resultSet = rdbStore->Query(cmd, columns);
+    if (resultSet == nullptr) {
         return nullptr;
     }
-
-    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(absResultSet);
-    auto resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
-    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
-    return shared_ptr<FileAsset>(fetchResult->GetFirstObject().release());
+    return GetAssetFromResultSet(resultSet, columns);
 }
 
 shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredicates &predicates,
@@ -303,15 +348,11 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredica
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(predicates.GetOrder());
 
-    auto absResultSet = rdbStore->Query(cmd, columns);
-    if (absResultSet == nullptr) {
+    auto resultSet = rdbStore->Query(cmd, columns);
+    if (resultSet == nullptr) {
         return nullptr;
     }
-
-    auto resultSetBridge = RdbDataShareAdapter::RdbUtils::ToResultSetBridge(absResultSet);
-    auto resultSet = make_shared<DataShare::DataShareResultSet>(resultSetBridge);
-    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
-    return shared_ptr<FileAsset>(fetchResult->GetFirstObject().release());
+    return GetAssetFromResultSet(resultSet, columns);
 }
 
 static inline string GetVirtualPath(const string &relativePath, const string &displayName)
@@ -352,7 +393,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         assetInfo.PutString(MediaColumn::MEDIA_VIRTURL_PATH,
             GetVirtualPath(fileAsset.GetRelativePath(), fileAsset.GetDisplayName()));
     } else {
-        assetInfo.PutLong(MediaColumn::MEDIA_TIME_PENDING, UNCREATE_FILE_TIMEPENDING);
+        assetInfo.PutLong(MediaColumn::MEDIA_TIME_PENDING, fileAsset.GetTimePending());
     }
     assetInfo.PutString(MediaColumn::MEDIA_NAME, displayName);
     assetInfo.PutString(MediaColumn::MEDIA_TITLE,
@@ -515,8 +556,6 @@ int32_t MediaLibraryAssetOperations::SetAssetPathInCreate(FileAsset &fileAsset)
         MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
         return errCode;
     }
-
-    // todo: delete DeleteInvalidRowInDb method and Create here
 
     // filePath can not be empty
     fileAsset.SetPath(filePath);
@@ -811,6 +850,10 @@ static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const 
             int32_t errCode = CreateFileAndSetPending(fileAsset, UNCLOSE_FILE_TIMEPENDING);
             return errCode;
         }
+        if (pendingTime == UNOPEN_FILE_COMPONENT_TIMEPENDING) {
+            int32_t errCode = SetPendingTime(fileAsset, UNCLOSE_FILE_TIMEPENDING);
+            return errCode;
+        }
     }
     return E_OK;
 }
@@ -831,12 +874,14 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         return E_INVALID_MODE;
     }
 
+    string path;
     if (api == MediaLibraryApi::API_10) {
         int32_t errCode = SolvePendingStatus(fileAsset, mode);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("Solve pending status failed, errCode=%{public}d", errCode);
             return errCode;
         }
+        path = fileAsset->GetPath();
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
         if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
@@ -846,9 +891,9 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
                 return errCode;
             }
         }
+        path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     }
 
-    string path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     tracer.Start("OpenFile");
     int32_t fd = OpenFile(path, lowerMode);
     tracer.Finish();
@@ -885,21 +930,24 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     string fileId = to_string(fileAsset->GetId());
     string path = fileAsset->GetPath();
     // if pending == 0, scan
-    // if pending == -1, not occur under normal conditions
-    // if pending == -2, set pending = 0 and scan
+    // if pending == UNCREATE_FILE_TIMEPENDING, not occur under normal conditions
+    // if pending == UNCLOSE_FILE_TIMEPENDING, set pending = 0 and scan
+    // if pending == UNOPEN_FILE_COMPONENT_TIMEPENDING, not allowed to close
     // if pending is timestamp, do nothing
     if (fileAsset->GetTimePending() == 0 || fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
-        InvalidateThumbnail(fileId, fileAsset->GetMediaType());
         ScanFile(path, isCreateThumbSync);
-        MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({
-            to_string(PhotoAlbumSubType::IMAGES),
-            to_string(PhotoAlbumSubType::VIDEO),
-            to_string(PhotoAlbumSubType::SCREENSHOT),
-            to_string(PhotoAlbumSubType::CAMERA),
-            to_string(PhotoAlbumSubType::FAVORITE),
-        });
+        if (fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
+            MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({
+                to_string(PhotoAlbumSubType::IMAGES),
+                to_string(PhotoAlbumSubType::VIDEO),
+                to_string(PhotoAlbumSubType::SCREENSHOT),
+                to_string(PhotoAlbumSubType::CAMERA),
+                to_string(PhotoAlbumSubType::FAVORITE),
+            });
+        }
         return E_OK;
-    } else if (fileAsset->GetTimePending() == UNCREATE_FILE_TIMEPENDING) {
+    } else if (fileAsset->GetTimePending() == UNCREATE_FILE_TIMEPENDING ||
+        fileAsset->GetTimePending() == UNOPEN_FILE_COMPONENT_TIMEPENDING) {
         MEDIA_ERR_LOG("This asset [%{private}d] pending status cannot close", fileAsset->GetId());
         return E_IS_PENDING_ERROR;
     } else if (fileAsset->GetTimePending() > 0) {
@@ -934,16 +982,16 @@ void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int3
 
 void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync)
 {
-    shared_ptr<ScanFileCallback> scanFileCb = make_shared<ScanFileCallback>();
-    if (scanFileCb == nullptr) {
+    shared_ptr<ScanAssetCallback> scanAssetCallback = make_shared<ScanAssetCallback>();
+    if (scanAssetCallback == nullptr) {
         MEDIA_ERR_LOG("Failed to create scan file callback object");
         return;
     }
     if (isCreateThumbSync) {
-        scanFileCb->SetSync(true);
+        scanAssetCallback->SetSync(true);
     }
 
-    int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanFileCb, MediaLibraryApi::API_10);
+    int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanAssetCallback, MediaLibraryApi::API_10);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
@@ -1067,8 +1115,9 @@ int32_t MediaLibraryAssetOperations::SendModifyUserCommentNotify(MediaLibraryCom
 int32_t MediaLibraryAssetOperations::SetPendingTrue(const shared_ptr<FileAsset> &fileAsset)
 {
     // time_pending = 0, means file is created, not allowed
-    // time_pending = -1, means file is not created yet, create an empty one
-    // time_pending = -2, means file is not close yet, set pending time
+    // time_pending = UNCREATE_FILE_TIMEPENDING, means file is not created yet, create an empty one
+    // time_pending = UNCLOSE_FILE_TIMEPENDING, means file is not close yet, set pending time
+    // time_pending = UNOPEN_FILE_COMPONENT_TIMEPENDING, means file is created but not open, set pending time
     // time_pending is timestamp, update it
     int64_t timestamp = MediaFileUtils::UTCTimeSeconds();
     if (timestamp <= 0) {
@@ -1085,6 +1134,7 @@ int32_t MediaLibraryAssetOperations::SetPendingTrue(const shared_ptr<FileAsset> 
             return errCode;
         }
     } else if (fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING ||
+        fileAsset->GetTimePending() == UNOPEN_FILE_COMPONENT_TIMEPENDING ||
         fileAsset->GetTimePending() > 0) {
         int32_t errCode = SetPendingTime(fileAsset, timestamp);
         if (errCode != E_OK) {
@@ -1103,8 +1153,9 @@ int32_t MediaLibraryAssetOperations::SetPendingTrue(const shared_ptr<FileAsset> 
 int32_t MediaLibraryAssetOperations::SetPendingFalse(const shared_ptr<FileAsset> &fileAsset)
 {
     // time_pending = 0, only return
-    // time_pending = -1, means file is not created yet, not allowed
-    // time_pending = -2, means file is not close yet, not allowed
+    // time_pending = UNCREATE_FILE_TIMEPENDING, means file is not created yet, not allowed
+    // time_pending = UNCLOSE_FILE_TIMEPENDING, means file is not close yet, not allowed
+    // time_pending = UNOPEN_FILE_COMPONENT_TIMEPENDING, means file is created but not open, not allowed
     // time_pending is timestamp, scan and set pending time = 0
     if (fileAsset->GetTimePending() == 0) {
         return E_OK;
@@ -1113,6 +1164,9 @@ int32_t MediaLibraryAssetOperations::SetPendingFalse(const shared_ptr<FileAsset>
         return E_INVALID_VALUES;
     } else if (fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
         MEDIA_ERR_LOG("file is not close yet, not allowed, id=%{public}d", fileAsset->GetId());
+        return E_INVALID_VALUES;
+    } else if (fileAsset->GetTimePending() == UNOPEN_FILE_COMPONENT_TIMEPENDING) {
+        MEDIA_ERR_LOG("file is created but not open, not allowed, id=%{public}d", fileAsset->GetId());
         return E_INVALID_VALUES;
     } else if (fileAsset->GetTimePending() > 0) {
         ScanFile(fileAsset->GetPath());
@@ -1149,6 +1203,55 @@ int32_t MediaLibraryAssetOperations::SetPendingStatus(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("pendingStatus is invalid, pendingStatus:%{public}d", pendingStatus);
         return E_INVALID_VALUES;
     }
+}
+
+static string ConvertMediaPathFromCloudPath(const string &path)
+{
+    // if input path is /storage/cloud/xxx, return /storage/media/local/xxx
+    string mediaPath = "/storage/media/local/";
+    string cloudPath = "/storage/cloud/";
+    string newPath = path;
+    if (newPath.find(cloudPath) != string::npos) {
+        newPath.replace(newPath.find(cloudPath), cloudPath.length(), mediaPath);
+    }
+    return newPath;
+}
+
+int32_t MediaLibraryAssetOperations::GrantUriPermission(const string &uri, const string &bundleName,
+    const string &path)
+{
+    if (uri.empty() || path.empty()) {
+        MEDIA_ERR_LOG("uri or path is empty, uri:%{private}s, path:%{private}s", uri.c_str(), path.c_str());
+        return E_INVALID_VALUES;
+    }
+    if (bundleName.empty()) {
+        MEDIA_WARN_LOG("bundleName is empty, bundleName:%{private}s", bundleName.c_str());
+        return E_OK;
+    }
+    auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
+    auto flag = AAFwk::Want::FLAG_AUTH_WRITE_URI_PERMISSION;
+    if (!MediaFileUtils::CreateFile(path)) {
+        MEDIA_ERR_LOG("Can not create file, path: %{private}s, errno: %{public}d", path.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    int32_t ret = uriPermissionClient.GrantUriPermission(Uri(uri), flag, bundleName, 1);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Can not grant uri permission, uri: %{private}s, bundleName: %{private}s, ret: %{public}d",
+            uri.c_str(), bundleName.c_str(), ret);
+        return E_GRANT_URI_PERM_FAIL;
+    }
+
+    MediaLibraryTracer tracer;
+    tracer.Start("AddWatchList");
+    auto watch = MediaLibraryInotify::GetInstance();
+    if (watch != nullptr) {
+        MEDIA_DEBUG_LOG("enter inotify, path = %{private}s", path.c_str());
+        watch->AddWatchList(ConvertMediaPathFromCloudPath(path), uri, MediaLibraryApi::API_10);
+    }
+    tracer.Finish();
+
+    return E_OK;
 }
 
 bool MediaLibraryAssetOperations::GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values,
@@ -1464,6 +1567,37 @@ bool AssetInputParamVerification::IsUniqueValue(ValueObject &value, MediaLibrary
         return false;
     }
     return true;
+}
+
+static void CreateThumbnail(const string &uri, const string &path, bool isSync)
+{
+    if (ThumbnailService::GetInstance() == nullptr) {
+        return;
+    }
+    if (!uri.empty()) {
+        int32_t err = ThumbnailService::GetInstance()->CreateThumbnail(uri, path, true);
+        if (err != E_SUCCESS) {
+            MEDIA_ERR_LOG("ThumbnailService CreateThumbnail failed : %{public}d", err);
+        }
+    }
+}
+
+int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int32_t status,
+    const string &uri, const string &path)
+{
+    if (status == E_SCANNED) {
+        MEDIA_DEBUG_LOG("Asset is scannned");
+        return E_OK;
+    } else if (status != E_OK) {
+        MEDIA_ERR_LOG("Scan is failed, status = %{public}d, skip create thumbnail", status);
+        return status;
+    }
+
+    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
+    int32_t type = MediaFileUtils::GetMediaType(path);
+    InvalidateThumbnail(fileId, type);
+    CreateThumbnail(uri, path, this->isCreateThumbSync);
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS
