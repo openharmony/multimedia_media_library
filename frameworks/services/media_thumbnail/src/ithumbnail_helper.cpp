@@ -176,6 +176,28 @@ void ThumbnailWait::Notify()
     }
 }
 
+bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const Size &size, const string &suffix)
+{
+    if (!ThumbnailUtils::LoadSourceImage(data, size, suffix == THUMBNAIL_THUMB_SUFFIX)) {
+        if (opts.path.empty()) {
+            MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
+            return false;
+        } else {
+            opts.path = "";
+            GetThumbnailInfo(opts, data);
+            string fileName = GetThumbnailPath(data.path, suffix);
+            if (access(fileName.c_str(), F_OK) == 0) {
+                return true;
+            }
+            if (!ThumbnailUtils::LoadSourceImage(data, size, suffix == THUMBNAIL_THUMB_SUFFIX)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+
 bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
@@ -184,21 +206,8 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         return true;
     }
 
-    if (!ThumbnailUtils::LoadSourceImage(data, opts.screenSize, false)) {
-        if (opts.path.empty()) {
-            MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
-            return false;
-        } else {
-            opts.path = "";
-            GetThumbnailInfo(opts, data);
-            string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
-            if (access(fileName.c_str(), F_OK) == 0) {
-                return true;
-            }
-            if (!ThumbnailUtils::LoadSourceImage(data, opts.screenSize, false)) {
-                return false;
-            }
-        }
+    if (!TryLoadSource(opts, data, opts.screenSize, THUMBNAIL_LCD_SUFFIX)) {
+        return false;
     }
 
     if (!ThumbnailUtils::CompressImage(data.source, data.lcd)) {
@@ -206,7 +215,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    int err = ThumbnailUtils::SaveFile(data, ThumbnailType::LCD);
+    int err = ThumbnailUtils::TrySaveFile(data, ThumbnailType::LCD);
     if (err < 0) {
         MEDIA_ERR_LOG("SaveLcd faild %{public}d", err);
         return false;
@@ -223,42 +232,30 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
+    bool isThumb = false;
+    if (type == ThumbnailType::THUMB) {
+        isThumb = true;
+    }
     Size size;
-    switch (type) {
-        case ThumbnailType::MICRO:
-            size = { DEFAULT_MICRO_SIZE, DEFAULT_MICRO_SIZE };
-            break;
-        case ThumbnailType::THUMB:
-            size = { DEFAULT_THUMBNAIL_SIZE, DEFAULT_THUMBNAIL_SIZE };
-            break;
-        default:
-            MEDIA_ERR_LOG("invalid thumbnail type: %{public}d", type);
+    if (isThumb) {
+        size = { DEFAULT_THUMB_SIZE, DEFAULT_THUMB_SIZE };
+        if (!TryLoadSource(opts, data, size, THUMBNAIL_THUMB_SUFFIX)) {
             return false;
-    }
-
-    if (!ThumbnailUtils::LoadSourceImage(data, size)) {
-        if (opts.path.empty()) {
-            MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
-            return false;
-        } else {
-            opts.path = "";
-            GetThumbnailInfo(opts, data);
-            string suffix = (type == ThumbnailType::MICRO) ? THUMBNAIL_MICRO_SUFFIX : THUMBNAIL_THUMB_SUFFIX;
-            string fileName = GetThumbnailPath(data.path, suffix);
-            if (access(fileName.c_str(), F_OK) == 0) {
-                return true;
-            }
-            if (!ThumbnailUtils::LoadSourceImage(data, size)) {
-                return false;
-            }
         }
-    }
-    if ((type != ThumbnailType::MICRO) && !ThumbnailUtils::CompressImage(data.source, data.thumbnail)) {
-        MEDIA_ERR_LOG("CompressImage faild");
-        return false;
+        if (!ThumbnailUtils::CompressImage(data.source, data.thumbnail)) {
+            MEDIA_ERR_LOG("CompressImage faild id %{private}s", opts.row.c_str());
+            return false;
+        }
+    } else {
+        if (type == ThumbnailType::MTH) {
+            size = {DEFAULT_MTH_SIZE, DEFAULT_MTH_SIZE };
+        } else {
+            size = { DEFAULT_YEAR_SIZE, DEFAULT_YEAR_SIZE };
+        }
+        ThumbnailUtils::GenTargetPixelmap(data, size);
     }
 
-    int err = ThumbnailUtils::SaveFile(data, type);
+    int err = ThumbnailUtils::TrySaveFile(data, type);
     if (err < 0) {
         MEDIA_ERR_LOG("SaveThumbnailData faild %{public}d", err);
         return false;
@@ -276,6 +273,12 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     }
 
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
+        return false;
+    }
+    if (!GenThumbnail(opts, data, ThumbnailType::MTH)) {
+        return false;
+    }
+    if (!GenThumbnail(opts, data, ThumbnailType::YEAR)) {
         return false;
     }
     return true;

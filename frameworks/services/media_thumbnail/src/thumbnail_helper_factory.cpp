@@ -17,7 +17,6 @@
 
 #include "default_thumbnail_helper.h"
 #include "lcd_thumbnail_helper.h"
-#include "micro_helper.h"
 #include "thumbnail_const.h"
 
 using namespace std;

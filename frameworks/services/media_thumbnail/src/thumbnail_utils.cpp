@@ -110,8 +110,11 @@ static string GetThumbnailSuffix(ThumbnailType type)
 {
     string suffix;
     switch (type) {
-        case ThumbnailType::MICRO:
-            suffix = THUMBNAIL_MICRO_SUFFIX;
+        case ThumbnailType::YEAR:
+            suffix = THUMBNAIL_YEAR_SUFFIX;
+            break;
+        case ThumbnailType::MTH:
+            suffix = THUMBNAIL_MTH_SUFFIX;
             break;
         case ThumbnailType::THUMB:
             suffix = THUMBNAIL_THUMB_SUFFIX;
@@ -204,6 +207,20 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
         std::istringstream iss(videoOrientation);
         iss >> data.degrees;
     }
+    return true;
+}
+
+// gen pixelmap from data.souce, should ensure source is not null
+bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GenTargetPixelmap");
+    if (data.source == nullptr) {
+        return false;
+    }
+    float widthScale = (1.0f * desiredSize.width) / data.source->GetWidth();
+    float heightScale = (1.0f * desiredSize.height) / data.source->GetHeight();
+    data.source->scale(widthScale, heightScale);
     return true;
 }
 
@@ -1005,16 +1022,38 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSiz
     return true;
 }
 
-int ThumbnailUtils::SaveFile(ThumbnailData &data, ThumbnailType type)
+static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
 {
     const mode_t fileMode = 0664;
+    mode_t mask = umask(0);
+    UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
+    umask(mask);
+    if (fd.Get() < 0) {
+        if (errno == EEXIST) {
+            UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
+        }
+        if (fd.Get() < 0) {
+            MEDIA_ERR_LOG("save failed! filePath %{private}s status %{public}d", fileName.c_str(), errno);
+            return -errno;
+        }
+    }
+    int ret = write(fd.Get(), output, writeSize);
+    if (ret < 0) {
+        return -errno;
+    } else {
+        return ret;
+    }
+}
 
+int ThumbnailUtils::TrySaveFile(ThumbnailData &data, ThumbnailType type)
+{
     string suffix;
     uint8_t *output;
     int writeSize;
     switch (type) {
-        case ThumbnailType::MICRO:
-            suffix = THUMBNAIL_MICRO_SUFFIX;
+        case ThumbnailType::MTH:
+        case ThumbnailType::YEAR:
+            suffix = (type == ThumbnailType::MTH) ? THUMBNAIL_MTH_SUFFIX : THUMBNAIL_YEAR_SUFFIX;
             output = const_cast<uint8_t *>(data.source->GetPixels());
             writeSize = data.source->GetByteCount();
             break;
@@ -1029,29 +1068,23 @@ int ThumbnailUtils::SaveFile(ThumbnailData &data, ThumbnailType type)
             writeSize = data.lcd.size();
             break;
         default:
-            MEDIA_ERR_LOG("Invalid thumbnail type: %{public}d", type);
             return E_INVALID_ARGUMENTS;
+    }
+    if (writeSize <= 0) {
+        return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
     string fileName = GetThumbnailPath(data.path, suffix);
     string dir = MediaFileUtils::GetParentPath(fileName);
     if (!MediaFileUtils::CreateDirectory(dir)) {
         return -errno;
     }
-    mode_t mask = umask(0);
-    UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
-    umask(mask);
-    if (fd.Get() < 0) {
-        if (errno == EEXIST) {
-            UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
-        }
-        if (fd.Get() < 0) {
-            MEDIA_ERR_LOG("SaveFile failed! filePath %{private}s status %{public}d", fileName.c_str(), errno);
-            return -errno;
-        }
-    }
 
-    int size = write(fd.Get(), output, writeSize);
-    if (size != writeSize) {
+    int ret = SaveFile(fileName, output, writeSize);
+    if (ret < 0) {
+        DeleteThumbFile(data, type);
+        return ret;
+    } else if (ret != writeSize) {
+        DeleteThumbFile(data, type);
         return E_NO_SPACE;
     }
     return E_OK;
@@ -1237,6 +1270,12 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
             MEDIA_ERR_LOG("QueryThumbnailInfo Faild [ %{public}d ]", err);
             return isDelete;
         }
+    }
+    if (DeleteThumbFile(tmpData, ThumbnailType::YEAR)) {
+        isDelete = true;
+    }
+    if (DeleteThumbFile(tmpData, ThumbnailType::MTH)) {
+        isDelete = true;
     }
     if (DeleteThumbFile(tmpData, ThumbnailType::THUMB)) {
         isDelete = true;
