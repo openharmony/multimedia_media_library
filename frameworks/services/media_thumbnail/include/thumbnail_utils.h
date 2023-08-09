@@ -99,12 +99,13 @@ public:
     static std::string GetThumbPath(const std::string &path, const std::string &key);
     // Steps
     static bool LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail = true);
+    static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
     static DistributedKv::Status SaveThumbnailData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
 
     static DistributedKv::Status SaveLcdData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
-    static int SaveFile(ThumbnailData &Data, ThumbnailType type);
+    static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
     static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);

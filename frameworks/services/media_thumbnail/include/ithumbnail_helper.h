@@ -79,6 +79,7 @@ protected:
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
+    static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const Size &size, const std::string &suffix);
 };
 
 // copy from foundation/distributeddatamgr/data_share/frameworks/native/common/include/idatashare.h

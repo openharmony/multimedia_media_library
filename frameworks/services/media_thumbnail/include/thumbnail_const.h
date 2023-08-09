@@ -20,14 +20,16 @@
 
 namespace OHOS {
 namespace Media {
-constexpr int32_t DEFAULT_MICRO_SIZE = 64;
-constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
+constexpr int32_t DEFAULT_YEAR_SIZE = 64;
+constexpr int32_t DEFAULT_MTH_SIZE = 128;
+constexpr int32_t DEFAULT_THUMB_SIZE = 256;
 constexpr int32_t DEFAULT_LCD_SIZE = 1080;
 
 enum class ThumbnailType : int32_t {
-    MICRO,
+    LCD,
     THUMB,
-    LCD
+    MTH,
+    YEAR,
 };
 
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
@@ -37,13 +39,16 @@ constexpr int32_t THUMBNAIL_LCD_AGING_THRESHOLD = 10000;
 constexpr int32_t WAIT_FOR_MS = 1000;
 constexpr int32_t WAIT_FOR_SECOND = 3;
 
-const std::string THUMBNAIL_MICRO_SUFFIX = "MCR";
-const std::string THUMBNAIL_THUMB_SUFFIX = "THM";
-const std::string THUMBNAIL_LCD_SUFFIX = "LCD";
+const std::string THUMBNAIL_LCD_SUFFIX = "LCD";     // The size fit to screen
+const std::string THUMBNAIL_THUMB_SUFFIX = "THM";   // The size which height is 256 and width is 256
+const std::string THUMBNAIL_MTH_SUFFIX = "MTH";     // The size which height is 128 and width is 128
+const std::string THUMBNAIL_YEAR_SUFFIX = "YEAR";   // The size which height is 64 and width is 64
+
 const std::string FILE_URI_PREX = "file://";
 
 const std::string THUMBNAIL_FORMAT = "image/jpeg";
 constexpr uint8_t THUMBNAIL_QUALITY = 80;
+
 constexpr uint32_t THUMBNAIL_QUERY_MAX = 2000;
 constexpr int64_t AV_FRAME_TIME = 0;
 
@@ -78,7 +83,7 @@ static inline std::string GetSandboxPath(const std::string &path, bool isThumb)
 
 static inline bool IsThumbnail(const int32_t width, const int32_t height)
 {
-    return (width <= DEFAULT_THUMBNAIL_SIZE) && (height <= DEFAULT_THUMBNAIL_SIZE);
+    return (width <= DEFAULT_THUMB_SIZE) && (height <= DEFAULT_THUMB_SIZE);
 }
 
 } // namespace Media
