@@ -25,6 +25,8 @@
 #include "hitrace_meter.h"
 #include "fetch_result.h"
 #include "hilog/log.h"
+#include "medialibrary_asset_operations.h"
+#include "media_column.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "medialibrary_client_errno.h"
@@ -2765,6 +2767,8 @@ static void UserFileMgrOpenExecute(napi_env env, void *data)
         return ;
     }
 
+    MediaFileUtils::UriAppendKeyValue(fileUri, MediaColumn::MEDIA_TIME_PENDING,
+        to_string(context->objectPtr->GetTimePending()));
     Uri openFileUri(fileUri);
     int32_t retVal = UserFileClient::OpenFile(openFileUri, mode);
     if (retVal <= 0) {
@@ -2776,6 +2780,9 @@ static void UserFileMgrOpenExecute(napi_env env, void *data)
             context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_WRITE);
         } else {
             context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_READONLY);
+        }
+        if (context->objectPtr->GetTimePending() == UNCREATE_FILE_TIMEPENDING) {
+            context->objectPtr->SetTimePending(UNCLOSE_FILE_TIMEPENDING);
         }
     }
 }
@@ -2879,10 +2886,16 @@ static void UserFileMgrCloseExecute(napi_env env, void *data)
         return;
     }
     MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, MediaColumn::MEDIA_TIME_PENDING,
+        to_string(context->objectPtr->GetTimePending()));
     Uri closeAssetUri(closeUri);
     int32_t ret = UserFileClient::Insert(closeAssetUri, context->valuesBucket);
     if (ret != E_SUCCESS) {
         context->SaveError(ret);
+    } else {
+        if (context->objectPtr->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
+            context->objectPtr->SetTimePending(0);
+        }
     }
 }
 
@@ -3032,6 +3045,7 @@ static void UserFileMgrSetPendingExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Failed to modify pending state, err: %{public}d", changedRows);
     } else {
         context->changedRows = changedRows;
+        context->objectPtr->SetTimePending((context->isPending) ? 1 : 0);
     }
 }
 
@@ -3127,6 +3141,10 @@ static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
         return ;
     }
 
+    if (context->objectPtr->GetTimePending() == UNCREATE_FILE_TIMEPENDING) {
+        MediaFileUtils::UriAppendKeyValue(fileUri, MediaColumn::MEDIA_TIME_PENDING,
+            to_string(context->objectPtr->GetTimePending()));
+    }
     Uri openFileUri(fileUri);
     int32_t retVal = UserFileClient::OpenFile(openFileUri, mode);
     if (retVal <= 0) {
@@ -3138,6 +3156,9 @@ static void PhotoAccessHelperOpenExecute(napi_env env, void *data)
             context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_WRITE);
         } else {
             context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_READONLY);
+        }
+        if (context->objectPtr->GetTimePending() == UNCREATE_FILE_TIMEPENDING) {
+            context->objectPtr->SetTimePending(UNCLOSE_FILE_TIMEPENDING);
         }
     }
 }
@@ -3225,10 +3246,16 @@ static void PhotoAccessHelperCloseExecute(napi_env env, void *data)
         return;
     }
     MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(closeUri, MediaColumn::MEDIA_TIME_PENDING,
+        to_string(context->objectPtr->GetTimePending()));
     Uri closeAssetUri(closeUri);
     int32_t ret = UserFileClient::Insert(closeAssetUri, context->valuesBucket);
     if (ret != E_SUCCESS) {
         context->SaveError(ret);
+    } else {
+        if (context->objectPtr->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
+            context->objectPtr->SetTimePending(0);
+        }
     }
 }
 
@@ -3502,6 +3529,7 @@ static void PhotoAccessHelperSetPendingExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Failed to modify pending state, err: %{public}d", changedRows);
     } else {
         context->changedRows = changedRows;
+        context->objectPtr->SetTimePending((context->isPending) ? 1 : 0);
     }
 }
 

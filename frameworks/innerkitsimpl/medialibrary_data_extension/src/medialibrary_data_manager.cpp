@@ -704,29 +704,6 @@ int MediaLibraryDataManager::GetThumbnail(const string &uri)
     return thumbnailService_->GetThumbnailFd(uri);
 }
 
-void MediaLibraryDataManager::CreateThumbnailSync(const string &uri, const string &path)
-{
-    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
-    if (refCnt_.load() <= 0) {
-        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
-        return;
-    }
-
-    if (thumbnailService_ == nullptr) {
-        return;
-    }
-    if (!uri.empty()) {
-        if (MediaLibraryObjectUtils::CheckUriPending(uri)) {
-            MEDIA_ERR_LOG("failed to get thumbnail, the file:%{public}s is pending", uri.c_str());
-            return;
-        }
-        int32_t err = thumbnailService_->CreateThumbnail(uri, path, true);
-        if (err != E_SUCCESS) {
-            MEDIA_ERR_LOG("ThumbnailService CreateThumbnail failed : %{public}d", err);
-        }
-    }
-}
-
 void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri, const string &path)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
@@ -1004,11 +981,7 @@ int32_t ScanFileCallback::OnScanFinished(const int32_t status, const string &uri
 {
     auto instance = MediaLibraryDataManager::GetInstance();
     if (instance != nullptr) {
-        if (isCreateThumbSync) {
-            instance->CreateThumbnailSync(uri, path);
-        } else {
-            instance->CreateThumbnailAsync(uri, path);
-        }
+        instance->CreateThumbnailAsync(uri, path);
     }
     return E_OK;
 }
