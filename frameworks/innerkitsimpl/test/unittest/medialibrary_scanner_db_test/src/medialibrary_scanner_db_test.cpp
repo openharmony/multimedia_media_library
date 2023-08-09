@@ -49,7 +49,7 @@ int ConfigTestOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersio
 }
 
 shared_ptr<NativeRdb::RdbStore> storePtr = nullptr;
-void MediaLibraryExtUnitTest::SetUpTestCase(void)
+void MediaLibraryScannerDbTest::SetUpTestCase(void)
 {
     const string dbPath = "/data/test/medialibrary_scanner_db_test.db";
     NativeRdb::RdbStoreConfig config(dbPath);
@@ -61,18 +61,18 @@ void MediaLibraryExtUnitTest::SetUpTestCase(void)
     MediaLibraryUnitTestUtils::Init();
 }
 
-void MediaLibraryExtUnitTest::TearDownTestCase(void) {}
+void MediaLibraryScannerDbTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
-void MediaLibraryExtUnitTest::SetUp()
+void MediaLibraryScannerDbTest::SetUp()
 {
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
 }
 
-void MediaLibraryExtUnitTest::TearDown(void) {}
+void MediaLibraryScannerDbTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteMetadata_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_DeleteMetadata_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     string tableName = MEDIALIBRARY_TABLE;
@@ -84,7 +84,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteMetadata_test_001, TestSize.Lev
     EXPECT_NE(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_NotifyDatabaseChange_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_NotifyDatabaseChange_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     MediaType mediaType = MEDIA_TYPE_AUDIO;
@@ -93,7 +93,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_NotifyDatabaseChange_test_001, TestSi
     EXPECT_NE(scannerTest, nullptr);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadAlbums_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ReadAlbums_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     unordered_map<string, Metadata> albumMap_;
@@ -105,14 +105,14 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadAlbums_test_001, TestSize.Level0)
     EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadError_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ReadError_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     set<string> ret = mediaScannerDb.ReadError();
     EXPECT_EQ(ret.size(), 0);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_InsertMetadata_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     mediaScannerDb.SetRdbHelper();
@@ -140,7 +140,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_001, TestSize.Lev
     EXPECT_NE(ret, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateAlbum_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_UpdateAlbum_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     Metadata metadata;
@@ -166,7 +166,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateAlbum_test_001, TestSize.Level0
     EXPECT_NE(ret, 0);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteError_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_DeleteError_test_001, TestSize.Level0)
 {
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
@@ -179,7 +179,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteError_test_001, TestSize.Level0
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_RecordError_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_RecordError_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     string err = "";
@@ -189,7 +189,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_RecordError_test_001, TestSize.Level0
     EXPECT_EQ(ret, E_ERR);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_InsertMetadata_test_002, TestSize.Level0)
 {
     MediaLibraryUnitTestUtils::Init();
     MediaScannerDb mediaScannerDb;
@@ -223,7 +223,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertMetadata_test_002, TestSize.Lev
     EXPECT_GT(prevIdMap.size(), 0);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadAlbums_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ReadAlbums_test_002, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     unordered_map<string, Metadata> albumMap_;
@@ -235,7 +235,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadAlbums_test_002, TestSize.Level0)
     EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadError_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ReadError_test_002, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     set<string> ret = mediaScannerDb.ReadError();
@@ -245,7 +245,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ReadError_test_002, TestSize.Level0)
     EXPECT_NE(ret.size(), 0);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteError_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_DeleteError_test_002, TestSize.Level0)
 {
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
@@ -258,7 +258,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteError_test_002, TestSize.Level0
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileDBUriFromPath_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_GetFileDBUriFromPath_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     string path = "";
@@ -269,7 +269,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileDBUriFromPath_test_001, TestSi
     EXPECT_EQ(uri, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertAlbum_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_InsertAlbum_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     Metadata metadata;
@@ -295,7 +295,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InsertAlbum_test_001, TestSize.Level0
     EXPECT_NE(ret, 0);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateMetadata_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_UpdateMetadata_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     Metadata metadata;
@@ -322,7 +322,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateMetadata_test_001, TestSize.Lev
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromPath_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_GetIdFromPath_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     unordered_map<string, Metadata> albumMap_;
@@ -334,7 +334,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromPath_test_001, TestSize.Leve
     EXPECT_EQ(id, -1);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_BatchInsert_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerDbTest, medialib_BatchInsert_test_001, TestSize.Level0)
 {
     MediaScannerDb mediaScannerDb;
     vector<Metadata> metadataList;

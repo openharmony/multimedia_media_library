@@ -25,13 +25,13 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-HWTEST_F(MediaLibraryExtUnitTest, medialib_Subscribe_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_Subscribe_test_001, TestSize.Level0)
 {
     bool ret = MedialibrarySubscriber::Subscribe();
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_OnReceiveEvent_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_001, TestSize.Level0)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -43,7 +43,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_OnReceiveEvent_test_001, TestSize.Lev
     EXPECT_EQ(want.GetAction(), EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_OnReceiveEvent_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_002, TestSize.Level0)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -55,7 +55,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_OnReceiveEvent_test_002, TestSize.Lev
     EXPECT_EQ(want.GetAction(), EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_OnReceiveEvent_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_003, TestSize.Level0)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -67,7 +67,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_OnReceiveEvent_test_003, TestSize.Lev
     EXPECT_EQ(want.GetAction(), EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_OnReceiveEvent_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_004, TestSize.Level0)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;
@@ -79,7 +79,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_OnReceiveEvent_test_004, TestSize.Lev
     EXPECT_EQ(want.GetAction(), EventFwk::CommonEventSupport::COMMON_EVENT_TIME_CHANGED);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_OnReceiveEvent_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level0)
 {
     MedialibrarySubscriber medialibrarySubscriber;
     EventFwk::CommonEventData eventData;

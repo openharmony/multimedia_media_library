@@ -27,16 +27,16 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-void MediaLibraryExtUnitTest::SetUpTestCase(void) {}
+void MediaLibraryUriTest::SetUpTestCase(void) {}
 
-void MediaLibraryExtUnitTest::TearDownTestCase(void) {}
+void MediaLibraryUriTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
-void MediaLibraryExtUnitTest::SetUp() {}
+void MediaLibraryUriTest::SetUp() {}
 
-void MediaLibraryExtUnitTest::TearDown(void) {}
+void MediaLibraryUriTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseFileUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriTest, medialib_ParseFileUri_test_001, TestSize.Level0)
 {
     string uriString = "";
     string outFileId = "";
@@ -46,7 +46,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseFileUri_test_001, TestSize.Level
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseThumbnailInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriTest, medialib_ParseThumbnailInfo_test_001, TestSize.Level0)
 {
     string uriString;
     string outFileId;
@@ -77,7 +77,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ParseThumbnailInfo_test_001, TestSize
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetNetworkIdFromUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriTest, medialib_GetNetworkIdFromUri_test_001, TestSize.Level0)
 {
     string deviceId = ThumbnailUriUtils::GetNetworkIdFromUri("");
     EXPECT_EQ(deviceId, "");
@@ -91,7 +91,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetNetworkIdFromUri_test_001, TestSiz
     EXPECT_EQ(deviceId, "Uri");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetIdFromUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryUriTest, medialib_GetIdFromUri_test_001, TestSize.Level0)
 {
     string rowNum = ThumbnailUriUtils::GetIdFromUri("");
     EXPECT_EQ(rowNum, "-1");
