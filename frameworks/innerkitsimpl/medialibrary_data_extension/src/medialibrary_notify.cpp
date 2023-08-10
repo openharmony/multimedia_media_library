@@ -318,4 +318,53 @@ int32_t MediaLibraryNotify::GetAlbumIdBySubType(const PhotoAlbumSubType subType)
     }
     return defaultAlbums_.find(subType)->second;
 }
+
+static void GetNotifyUri(shared_ptr<NativeRdb::ResultSet> &resultSet, vector<string> &notifyUris)
+{
+    int32_t fileId = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::MEDIA_ID);
+    string path = MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::MEDIA_FILE_PATH);
+    string displayName = MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::MEDIA_NAME);
+    string notifyUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
+        MediaFileUtils::GetExtraUri(displayName, path));
+    notifyUris.push_back(notifyUri);
+}
+
+void MediaLibraryNotify::GetNotifyUris(const RdbPredicates &predicates, vector<string> &notifyUris)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return;
+    }
+    auto resultSet = rdbStore->Query(predicates, {
+        PhotoColumn::MEDIA_ID,
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_NAME
+    });
+    if (resultSet == nullptr) {
+        return;
+    }
+
+    int32_t count = 0;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK || count <= 0) {
+        MEDIA_WARN_LOG("Failed to get row count: %{public}d", err);
+        return;
+    }
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_WARN_LOG("Failed to go to first row: %{public}d", err);
+        return;
+    }
+    do {
+        GetNotifyUri(resultSet, notifyUris);
+        count--;
+        if (count > 0) {
+            err = resultSet->GoToNextRow();
+            if (err < 0) {
+                MEDIA_WARN_LOG("Failed to go to next row err: %{public}d", err);
+                return;
+            }
+        }
+    } while (count > 0);
+}
 } // namespace OHOS::Media

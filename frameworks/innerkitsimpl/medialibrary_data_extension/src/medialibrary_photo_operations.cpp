@@ -569,21 +569,7 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
     return deleteRows;
 }
 
-static void TrashPhotoNotifyOne(shared_ptr<MediaLibraryNotify> &watch, shared_ptr<NativeRdb::ResultSet> &resultSet,
-    int32_t trashAlbumId)
-{
-    int32_t fileId = MediaLibraryRdbStore::GetInt(resultSet, PhotoColumn::MEDIA_ID);
-    string path = MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::MEDIA_FILE_PATH);
-    string displayName = MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::MEDIA_NAME);
-    string notifyUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
-        MediaFileUtils::GetExtraUri(displayName, path));
-
-    watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
-    watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
-    watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT, trashAlbumId);
-}
-
-static void TrashPhotosSendNofiy(shared_ptr<NativeRdb::ResultSet> &resultSet)
+static void TrashPhotosSendNotify(vector<string> &notifyUris)
 {
     auto watch = MediaLibraryNotify::GetInstance();
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
@@ -591,28 +577,11 @@ static void TrashPhotosSendNofiy(shared_ptr<NativeRdb::ResultSet> &resultSet)
         return;
     }
 
-    int32_t count = 0;
-    int32_t err = resultSet->GetRowCount(count);
-    if (err != E_OK || count <= 0) {
-        MEDIA_WARN_LOG("Failed to send notify for trash, get row count err: %{public}d", err);
-        return;
+    for (const auto &notifyUri : notifyUris) {
+        watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT, trashAlbumId);
     }
-    err = resultSet->GoToFirstRow();
-    if (err != E_OK) {
-        MEDIA_WARN_LOG("Failed to send notify for trash, go to first row err: %{public}d", err);
-        return;
-    }
-    do {
-        TrashPhotoNotifyOne(watch, resultSet, trashAlbumId);
-        count--;
-        if (count > 0) {
-            err = resultSet->GoToNextRow();
-            if (err < 0) {
-                MEDIA_WARN_LOG("Failed to send notify for trash, go to next row err: %{public}d", err);
-                return;
-            }
-        }
-    } while (count > 0);
 }
 
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
@@ -624,14 +593,8 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(cmd.GetDataSharePred(),
         PhotoColumn::PHOTOS_TABLE);
-    auto resultSet = rdbStore->Query(rdbPredicate, {
-        PhotoColumn::MEDIA_ID,
-        PhotoColumn::MEDIA_FILE_PATH,
-        PhotoColumn::MEDIA_NAME
-    });
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
+    vector<string> notifyUris;
+    MediaLibraryNotify::GetNotifyUris(rdbPredicate, notifyUris);
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(values);
@@ -640,10 +603,14 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", updatedRows);
         return E_HAS_DB_ERROR;
     }
-    TrashPhotosSendNofiy(resultSet);
 
     MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
     MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
+    if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
+        MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
+            notifyUris.size(), updatedRows);
+    }
+    TrashPhotosSendNotify(notifyUris);
     return updatedRows;
 }
 
