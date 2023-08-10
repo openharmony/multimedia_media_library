@@ -61,14 +61,78 @@ shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(napi_e
     return dataShareHelper;
 }
 
+napi_status UserFileClient::CheckIsStage(napi_env env, napi_callback_info info, bool &result)
+{
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+    napi_status status = napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Failed to get cb info, status=%{public}d", (int) status);
+        return status;
+    }
+
+    result = false;
+    status = OHOS::AbilityRuntime::IsStageContext(env, argv[0], result);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Failed to get stage mode, status=%{public}d", (int) status);
+        return status;
+    }
+    return napi_ok;
+}
+
+sptr<IRemoteObject> UserFileClient::ParseTokenInStageMode(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+    if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+        NAPI_ERR_LOG("Failed to get cb info");
+        return nullptr;
+    }
+
+    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, argv[0]);
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Failed to get native stage context instance");
+        return nullptr;
+    }
+    return context->GetToken();
+}
+
+sptr<IRemoteObject> UserFileClient::ParseTokenInAbility(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_ONE;
+    napi_value argv[ARGS_ONE] = {0};
+    napi_value thisVar = nullptr;
+    if (napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr) != napi_ok) {
+        NAPI_ERR_LOG("Failed to get cb info");
+        return nullptr;
+    }
+
+    auto ability = OHOS::AbilityRuntime::GetCurrentAbility(env);
+    if (ability == nullptr) {
+        NAPI_ERR_LOG("Failed to get native ability instance");
+        return nullptr;
+    }
+    auto context = ability->GetContext();
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Failed to get native context instance");
+        return nullptr;
+    }
+    return context->GetToken();
+}
+
 bool UserFileClient::IsValid()
 {
     return sDataShareHelper_ != nullptr;
 }
 
-void UserFileClient::Init(const sptr<IRemoteObject> &token)
+void UserFileClient::Init(const sptr<IRemoteObject> &token, bool isSetHelper)
 {
     sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    if (isSetHelper) {
+        MediaLibraryHelperContainer::GetInstance()->SetDataShareHelper(sDataShareHelper_);
+    }
 }
 
 void UserFileClient::Init(napi_env env, napi_callback_info info)

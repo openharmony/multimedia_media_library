@@ -952,6 +952,9 @@ template napi_status MediaLibraryNapiUtils::GetParamCallback<unique_ptr<PhotoAlb
 template napi_status MediaLibraryNapiUtils::GetParamCallback<unique_ptr<SmartAlbumNapiAsyncContext>>(napi_env env,
     unique_ptr<SmartAlbumNapiAsyncContext> &context);
 
+template napi_status MediaLibraryNapiUtils::GetParamCallback<unique_ptr<MediaLibraryInitContext>>(napi_env env,
+    unique_ptr<MediaLibraryInitContext> &context);
+
 template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context, bool &param);
 
@@ -984,6 +987,10 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<PhotoAlbumNapiAsy
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<SmartAlbumNapiAsyncContext>(napi_env env,
     unique_ptr<SmartAlbumNapiAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaLibraryInitContext>(napi_env env,
+    unique_ptr<MediaLibraryInitContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
