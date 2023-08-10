@@ -109,7 +109,7 @@ thread_local napi_ref MediaLibraryNapi::sDefaultChangeUriRef_ = nullptr;
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
 MediaLibraryNapi::MediaLibraryNapi()
-    : resultNapiType_(ResultNapiType::TYPE_NAPI_MAX), env_(nullptr) {}
+    : env_(nullptr) {}
 
 MediaLibraryNapi::~MediaLibraryNapi() = default;
 
@@ -144,6 +144,7 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
     };
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("getMediaLibrary", GetMediaLibraryNewInstance),
+        DECLARE_NAPI_STATIC_FUNCTION("getMediaLibraryAsync", GetMediaLibraryNewInstanceAsync),
         DECLARE_NAPI_PROPERTY("MediaType", CreateMediaTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("FileKey", CreateFileKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("DirectoryType", CreateDirectoryTypeEnum(env)),
@@ -195,6 +196,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
 
     const vector<napi_property_descriptor> staticProps = {
         DECLARE_NAPI_STATIC_FUNCTION("getUserFileMgr", GetUserFileMgr),
+        DECLARE_NAPI_STATIC_FUNCTION("getUserFileMgrAsync", GetUserFileMgrAsync),
         DECLARE_NAPI_PROPERTY("FileType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("FileKey", UserFileMgrCreateFileKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AudioKey", CreateAudioKeyEnum(env)),
@@ -234,6 +236,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
 
     const vector<napi_property_descriptor> staticProps = {
         DECLARE_NAPI_STATIC_FUNCTION("getPhotoAccessHelper", GetPhotoAccessHelper),
+        DECLARE_NAPI_STATIC_FUNCTION("getPhotoAccessHelperAsync", GetPhotoAccessHelperAsync),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumKeys", CreateAlbumKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
@@ -246,6 +249,37 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
+}
+
+static napi_status CheckWhetherAsync(napi_env env, napi_callback_info info, bool &isAsync)
+{
+    isAsync = false;
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = {0};
+    napi_status status = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Error while obtaining js environment information");
+        return status;
+    }
+
+    if (argc == ARGS_ONE) {
+        return napi_ok;
+    } else if (argc == ARGS_TWO) {
+        napi_valuetype valueType = napi_undefined;
+        status = napi_typeof(env, argv[ARGS_ONE], &valueType);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Error while obtaining js environment information");
+            return status;
+        }
+        if (valueType == napi_boolean) {
+            isAsync = true;
+        }
+        status = napi_get_value_bool(env, argv[ARGS_ONE], &isAsync);
+        return status;
+    } else {
+        NAPI_ERR_LOG("argc %{public}d, is invalid", static_cast<int>(argc));
+        return napi_invalid_arg;
+    }
 }
 
 // Constructor callback
@@ -275,15 +309,19 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
         g_listObj = make_unique<ChangeListenerNapi>(env);
     }
 
-    unique_lock<mutex> helperLock(sUserFileClientMutex_);
-    if (!UserFileClient::IsValid()) {
-        UserFileClient::Init(env, info);
+    bool isAsync = false;
+    NAPI_CALL(env, CheckWhetherAsync(env, info, isAsync));
+    if (!isAsync) {
+        unique_lock<mutex> helperLock(sUserFileClientMutex_);
         if (!UserFileClient::IsValid()) {
-            NAPI_ERR_LOG("UserFileClient creation failed");
-            return result;
+            UserFileClient::Init(env, info);
+            if (!UserFileClient::IsValid()) {
+                NAPI_ERR_LOG("UserFileClient creation failed");
+                return result;
+            }
         }
+        helperLock.unlock();
     }
-    helperLock.unlock();
 
     status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
                        MediaLibraryNapi::MediaLibraryNapiDestructor, nullptr, nullptr);
@@ -297,7 +335,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
     return result;
 }
 
-static bool CheckWhetherInitSuccess(napi_env env, napi_value value)
+static bool CheckWhetherInitSuccess(napi_env env, napi_value value, bool checkIsValid)
 {
     napi_value propertyNames;
     uint32_t propertyLength;
@@ -309,26 +347,37 @@ static bool CheckWhetherInitSuccess(napi_env env, napi_value value)
 
     NAPI_CALL_BASE(env, napi_get_property_names(env, value, &propertyNames), false);
     NAPI_CALL_BASE(env, napi_get_array_length(env, propertyNames, &propertyLength), false);
-    if (propertyLength == 0 || !UserFileClient::IsValid()) {
+    if (propertyLength == 0) {
+        return false;
+    }
+    if (checkIsValid && (!UserFileClient::IsValid())) {
+        NAPI_ERR_LOG("UserFileClient is not valid");
         return false;
     }
     return true;
 }
 
-static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_ref ref)
+static napi_value CreateNewInstance(napi_env env, napi_callback_info info, napi_ref ref,
+    bool isAsync = false)
 {
     constexpr size_t ARG_CONTEXT = 1;
     size_t argc = ARG_CONTEXT;
-    napi_value argv[ARG_CONTEXT] = {0};
+    napi_value argv[ARGS_TWO] = {0};
 
     napi_value thisVar = nullptr;
     napi_value ctor = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     NAPI_CALL(env, napi_get_reference_value(env, ref, &ctor));
 
+    if (isAsync) {
+        argc = ARGS_TWO;
+        NAPI_CALL(env, napi_get_boolean(env, true, &argv[ARGS_ONE]));
+        argv[ARGS_ONE] = argv[ARG_CONTEXT];
+    }
+
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, ctor, argc, argv, &result));
-    if (!CheckWhetherInitSuccess(env, result)) {
+    if (!CheckWhetherInitSuccess(env, result, !isAsync)) {
         NAPI_ERR_LOG("Init MediaLibrary Instance is failed");
         NAPI_CALL(env, napi_get_undefined(env, &result));
     }
@@ -350,7 +399,7 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
     if (status == napi_ok) {
         status = napi_new_instance(env, ctor, argc, argv, &result);
         if (status == napi_ok) {
-            if (CheckWhetherInitSuccess(env, result)) {
+            if (CheckWhetherInitSuccess(env, result, true)) {
                 return result;
             } else {
                 NAPI_ERR_LOG("Init MediaLibrary Instance is failed");
@@ -366,6 +415,104 @@ napi_value MediaLibraryNapi::GetMediaLibraryNewInstance(napi_env env, napi_callb
     return result;
 }
 
+static void GetMediaLibraryAsyncExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetMediaLibraryAsyncExecute");
+
+    MediaLibraryInitContext *asyncContext = static_cast<MediaLibraryInitContext *>(data);
+    if (asyncContext == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        asyncContext->error = ERR_INVALID_OUTPUT;
+        return;
+    }
+
+    asyncContext->error = ERR_DEFAULT;
+    unique_lock<mutex> helperLock(MediaLibraryNapi::sUserFileClientMutex_);
+    if (!UserFileClient::IsValid()) {
+        UserFileClient::Init(asyncContext->token_, true);
+        if (!UserFileClient::IsValid()) {
+            NAPI_ERR_LOG("UserFileClient creation failed");
+            asyncContext->error = ERR_INVALID_OUTPUT;
+            return;
+        }
+    }
+    helperLock.unlock();
+}
+
+static void GetMediaLibraryAsyncComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryInitContext *context = static_cast<MediaLibraryInitContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    napi_value result = nullptr;
+    if (napi_get_reference_value(env, context->resultRef_, &result) != napi_ok) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Get result from context ref failed");
+    }
+    napi_valuetype valueType;
+    if (napi_typeof(env, result, &valueType) != napi_ok || valueType != napi_object) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Get result type failed " + to_string((int) valueType));
+    }
+
+    if (context->error == ERR_DEFAULT) {
+        jsContext->data = result;
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->error,
+            "Failed to get MediaLibrary");
+        napi_get_undefined(env, &jsContext->data);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    napi_delete_reference(env, context->resultRef_);
+    delete context;
+}
+
+napi_value MediaLibraryNapi::GetMediaLibraryNewInstanceAsync(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("getMediaLibraryAsync");
+
+    unique_ptr<MediaLibraryInitContext> asyncContext = make_unique<MediaLibraryInitContext>();
+    if (asyncContext == nullptr) {
+        NapiError::ThrowError(env, E_FAIL, "Failed to allocate memory for asyncContext");
+        return nullptr;
+    }
+    asyncContext->argc = ARGS_TWO;
+    napi_value thisVar = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]),
+        &thisVar, nullptr));
+
+    napi_value result = CreateNewInstance(env, info, sConstructor_, true);
+    napi_valuetype valueType;
+    NAPI_CALL(env, napi_typeof(env, result, &valueType));
+    if (valueType == napi_undefined) {
+        NapiError::ThrowError(env, E_FAIL, "Failed to get userFileMgr instance");
+        return nullptr;
+    }
+    NAPI_CALL(env, MediaLibraryNapiUtils::GetParamCallback(env, asyncContext));
+    NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &asyncContext->resultRef_));
+
+    bool isStage = false;
+    NAPI_CALL(env, UserFileClient::CheckIsStage(env, info, isStage));
+    if (isStage) {
+        asyncContext->token_ = UserFileClient::ParseTokenInStageMode(env, info);
+    } else {
+        asyncContext->token_ = UserFileClient::ParseTokenInAbility(env, info);
+    }
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetUserFileMgrAsync",
+        GetMediaLibraryAsyncExecute, GetMediaLibraryAsyncComplete);
+}
+
 napi_value MediaLibraryNapi::GetUserFileMgr(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -379,12 +526,91 @@ napi_value MediaLibraryNapi::GetUserFileMgr(napi_env env, napi_callback_info inf
     return CreateNewInstance(env, info, userFileMgrConstructor_);
 }
 
+napi_value MediaLibraryNapi::GetUserFileMgrAsync(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("getUserFileManagerAsync");
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "Only system apps can get userFileManger instance");
+        return nullptr;
+    }
+
+    unique_ptr<MediaLibraryInitContext> asyncContext = make_unique<MediaLibraryInitContext>();
+    if (asyncContext == nullptr) {
+        NapiError::ThrowError(env, E_FAIL, "Failed to allocate memory for asyncContext");
+        return nullptr;
+    }
+    asyncContext->argc = ARGS_TWO;
+    napi_value thisVar = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]),
+        &thisVar, nullptr));
+
+    napi_value result = CreateNewInstance(env, info, userFileMgrConstructor_, true);
+    napi_valuetype valueType;
+    NAPI_CALL(env, napi_typeof(env, result, &valueType));
+    if (valueType == napi_undefined) {
+        NapiError::ThrowError(env, E_FAIL, "Failed to get userFileMgr instance");
+        return nullptr;
+    }
+    NAPI_CALL(env, MediaLibraryNapiUtils::GetParamCallback(env, asyncContext));
+    NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &asyncContext->resultRef_));
+
+    bool isStage = false;
+    NAPI_CALL(env, UserFileClient::CheckIsStage(env, info, isStage));
+    if (isStage) {
+        asyncContext->token_ = UserFileClient::ParseTokenInStageMode(env, info);
+    } else {
+        asyncContext->token_ = UserFileClient::ParseTokenInAbility(env, info);
+    }
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetUserFileMgrAsync",
+        GetMediaLibraryAsyncExecute, GetMediaLibraryAsyncComplete);
+}
+
 napi_value MediaLibraryNapi::GetPhotoAccessHelper(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GetPhotoAccessHelper");
 
     return CreateNewInstance(env, info, photoAccessHelperConstructor_);
+}
+
+napi_value MediaLibraryNapi::GetPhotoAccessHelperAsync(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("GetPhotoAccessHelperAsync");
+
+    unique_ptr<MediaLibraryInitContext> asyncContext = make_unique<MediaLibraryInitContext>();
+    if (asyncContext == nullptr) {
+        NapiError::ThrowError(env, E_FAIL, "Failed to allocate memory for asyncContext");
+        return nullptr;
+    }
+    asyncContext->argc = ARGS_TWO;
+    napi_value thisVar = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]),
+        &thisVar, nullptr));
+
+    napi_value result = CreateNewInstance(env, info, photoAccessHelperConstructor_, true);
+    napi_valuetype valueType;
+    NAPI_CALL(env, napi_typeof(env, result, &valueType));
+    if (valueType == napi_undefined) {
+        NapiError::ThrowError(env, E_FAIL, "Failed to get userFileMgr instance");
+        return nullptr;
+    }
+    NAPI_CALL(env, MediaLibraryNapiUtils::GetParamCallback(env, asyncContext));
+    NAPI_CALL(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &asyncContext->resultRef_));
+
+    bool isStage = false;
+    NAPI_CALL(env, UserFileClient::CheckIsStage(env, info, isStage));
+    if (isStage) {
+        asyncContext->token_ = UserFileClient::ParseTokenInStageMode(env, info);
+    } else {
+        asyncContext->token_ = UserFileClient::ParseTokenInAbility(env, info);
+    }
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPhotoAccessHelperAsync",
+        GetMediaLibraryAsyncExecute, GetMediaLibraryAsyncComplete);
 }
 
 static napi_status AddIntegerNamedProperty(napi_env env, napi_value object,

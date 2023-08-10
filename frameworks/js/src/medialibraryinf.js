@@ -15,6 +15,7 @@
 
 const medialibrary = requireInternal('multimedia.mediaLibrary');
 const featureAbility = requireNapi('ability.featureAbility');
+const ARGS_ONE = 1;
 const ARGS_TWO = 2;
 
 async function startMediaSelect (option, asyncCallback) {
@@ -87,6 +88,43 @@ function getMediaLibrary (context) {
   return media;
 }
 
+function getMediaLibraryAsync(context, asyncCallback) {
+  console.log('MediaLibrary getMediaLibraryAsync js caller ');
+  if (context === undefined) {
+    console.log('MediaLibrary getMediaLibraryAsync context invalid');
+    throw Error('invalid context');
+  }
+  if (arguments.length === ARGS_ONE) {
+    return medialibrary.getMediaLibraryAsync(context)
+      .then((media) => {
+        console.log('MediaLibrary getMediaLibraryAsync js caller add startMediaSelect');
+        media.startMediaSelect = startMediaSelect;
+        return media;
+      })
+      .catch((err) => {
+        console.log('MediaLibrary getMediaLibraryAsync js caller err ' + err);
+        throw Error(err);
+      });
+  } else if (arguments.length === ARGS_TWO && typeof asyncCallback === 'function') {
+    medialibrary.getMediaLibraryAsync(context, (err, media) => {
+      console.log('MediaLibrary getMediaLibraryAsync js caller callback ' + err);
+      if (err) {
+        asyncCallback(err);
+      } else {
+        if (media !== undefined) {
+          console.log('MediaLibrary getMediaLibraryAsync js caller add startMediaSelect');
+          media.startMediaSelect = startMediaSelect;
+        }
+        asyncCallback(err, media);
+      }
+    });
+  } else {
+    console.log('MediaLibrary getMediaLibraryAsync js caller param invalid');
+    throw Error('invalid param');
+  }
+  return undefined;
+}
+
 function getScannerInstance (context) {
   console.log('MediaLibrary getScannerInstance js caller ');
   const instance = medialibrary.getScannerInstance(context);
@@ -95,6 +133,7 @@ function getScannerInstance (context) {
 
 export default {
   getMediaLibrary,
+  getMediaLibraryAsync,
   getScannerInstance,
   MediaType: medialibrary.MediaType,
   FileKey: medialibrary.FileKey,
