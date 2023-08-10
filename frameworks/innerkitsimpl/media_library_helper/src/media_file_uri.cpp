@@ -22,6 +22,7 @@
 #include "medialibrary_type_const.h"
 #include "photo_album_column.h"
 
+using namespace std;
 namespace OHOS {
 namespace Media {
 const size_t LEAST_PATH_LENGTH = 2;
@@ -74,6 +75,19 @@ static std::string SolveMediaType(MediaType mediaType)
     }
 }
 
+void MediaFileUri::ParseUri(const string &uri)
+{
+    if (MediaFileUtils::StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
+        uriType_ = API10_PHOTO_URI;
+    } else if (MediaFileUtils::StartsWith(uri, PhotoAlbumColumns::ALBUM_URI_PREFIX)) {
+        uriType_ = API10_PHOTOALBUM_URI;
+    } else if (MediaFileUtils::StartsWith(uri, AudioColumn::AUDIO_URI_PREFIX)) {
+        uriType_ = API10_AUDIO_URI;
+    } else  {
+        uriType_ = API9_URI;
+    }
+}
+
 std::string MediaFileUri::GetMediaTypeUri(MediaType mediaType, const int32_t &apiVersion)
 {
     switch (apiVersion) {
@@ -104,6 +118,7 @@ std::string MediaFileUri::MediaFileUriConstruct(MediaType mediaType, const std::
         uri += extrUri;
         uri = MediaFileUtils::Encode(uri);
     }
+    ParseUri(uri);
     return uri;
 }
 
@@ -189,7 +204,7 @@ static std::string CalFileId(MediaFileUri* uri)
     if (uri->IsApi10()) {
         ParsePathWithExtrPara(path);
     }
-    
+
     if (path.length() < LEAST_PATH_LENGTH) {
         MEDIA_ERR_LOG("path is too short, path is %{private}s", path.c_str());
         return MEDIA_FILE_ID_DEFAULT;
@@ -336,6 +351,11 @@ bool MediaFileUri::IsApi10()
         return true;
     }
     return false;
+}
+
+int MediaFileUri::GetUriType()
+{
+    return uriType_;
 }
 
 MediaType MediaFileUri::GetMediaTypeFromUri(const std::string &uri)

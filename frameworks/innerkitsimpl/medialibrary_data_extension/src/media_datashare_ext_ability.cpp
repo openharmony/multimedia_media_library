@@ -448,7 +448,7 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     string realUriStr = MediaFileUtils::GetRealUriFromVirtualUri(uri.ToString());
     Uri realUri(realUriStr);
     MediaLibraryCommand command(realUri, Media::OperationType::OPEN);
-    
+
 #else
     MediaLibraryCommand command(uri, Media::OperationType::OPEN);
 #endif
@@ -525,7 +525,7 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, vector<string> &columns, DatashareBusinessError &businessError)
 {
-    MediaLibraryCommand cmd(uri, Media::OperationType::QUERY);
+    MediaLibraryCommand cmd(uri);
     int32_t err = CheckPermFromUri(cmd, false);
     if (err < 0) {
         businessError.SetCode(err);

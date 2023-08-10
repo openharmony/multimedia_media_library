@@ -68,6 +68,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::CAMERA_SHOT_KEY, TYPE_STRING },
         { PhotoColumn::PHOTO_ALL_EXIF, TYPE_STRING },
         { PhotoColumn::PHOTO_USER_COMMENT, TYPE_STRING },
+        { PHOTO_INDEX, TYPE_INT32 },
     };
     return RESULT_TYPE_MAP;
 }
@@ -525,8 +526,6 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, resultSet))));
     photoAlbumData->SetAlbumUri(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(albumId));
     photoAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_NAME, TYPE_STRING,
-        resultSet)));
-    photoAlbumData->SetRelativePath(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, TYPE_STRING,
         resultSet)));
     photoAlbumData->SetCount(get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, TYPE_INT32, resultSet)));
     photoAlbumData->SetCoverUri(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_COVER_URI, TYPE_STRING,
