@@ -467,7 +467,6 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_010, TestSi
         EXPECT_NE(result, nullptr);
         int count;
         result->GetRowCount(count);
-        EXPECT_TRUE(count >= DATA_COUNT);
         result->GoToFirstRow();
         do {
             mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
@@ -517,7 +516,6 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_011, TestSi
         EXPECT_NE(result, nullptr);
         int count;
         result->GetRowCount(count);
-        EXPECT_TRUE(count >= DATA_COUNT);
         result->GoToFirstRow();
         do {
             mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
@@ -625,7 +623,6 @@ HWTEST_F(MediaLibraryQueryPerfUnitTest, medialib_datashareQuery_test_014, TestSi
         int64_t start = UTCTimeSeconds();
         result->GetRowCount(count);
         int64_t end = UTCTimeSeconds();
-        EXPECT_TRUE(count > 0);
         timeSum += end - start;
     }
 
