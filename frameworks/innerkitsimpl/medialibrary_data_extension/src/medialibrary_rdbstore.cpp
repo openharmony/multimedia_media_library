@@ -225,6 +225,26 @@ static inline string GetQueryFilter(const string &tableName)
     return "";
 }
 
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUri(const AbsRdbPredicates &predicates,
+    const vector<string> &columns, const string &id)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return nullptr;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("GetIndexOfUri");
+    string sql;
+    sql.append("SELECT ").append(PHOTO_INDEX).append(" From (");
+    sql.append(RdbSqlUtils::BuildQueryString(predicates, columns));
+    sql.append(") where "+ MediaColumn::MEDIA_ID + " = ").append(id);
+    MEDIA_DEBUG_LOG("sql = %{public}s", sql.c_str());
+    for (auto &arg : predicates.GetWhereArgs()) {
+        MEDIA_DEBUG_LOG("arg = %{public}s", arg.c_str());
+    }
+    return rdbStore_->QuerySql(sql, predicates.GetWhereArgs());
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
@@ -1246,7 +1266,7 @@ void AddExifAndUserComment(RdbStore &store)
 
     const string ADD_ALL_EXIF_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::PHOTO_ALL_EXIF + " TEXT";
-    
+
     const vector<string> addExifColumns = {
         ADD_USER_COMMENT_ON_PHOTOS,
         ADD_ALL_EXIF_ON_PHOTOS

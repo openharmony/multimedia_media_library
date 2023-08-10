@@ -143,6 +143,8 @@ public:
     int32_t GetPhotoSubType() const;
     void SetPhotoSubType(int32_t photoSubType);
 
+    int32_t GetPhotoIndex() const;
+
     const std::string &GetCameraShotKey() const;
     void SetCameraShotKey(const std::string &cameraShotKey);
 

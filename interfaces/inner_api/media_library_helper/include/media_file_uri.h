@@ -25,6 +25,13 @@
 
 namespace OHOS {
 namespace Media {
+enum {
+    API10_PHOTO_URI,
+    API10_PHOTOALBUM_URI,
+    API10_AUDIO_URI,
+    API9_URI,
+};
+
 const std::string MEDIA_FILE_URI_EMPTY = "empty";
 class MediaFileUri : public OHOS::Uri {
     std::string networkId_ { MEDIA_FILE_URI_EMPTY };
@@ -32,8 +39,10 @@ class MediaFileUri : public OHOS::Uri {
     std::unordered_map<std::string, std::string> queryMap_;
     std::string MediaFileUriConstruct(MediaType mediaType, const std::string &networkId, const std::string &fileId,
                                       const int32_t &apiVersion, const std::string &extrUri);
+    int uriType_;
+    void ParseUri(const std::string& uri);
 public:
-    explicit MediaFileUri(const std::string &uriStr) : Uri(uriStr) {}
+    explicit MediaFileUri(const std::string &uriStr) : Uri(uriStr) {ParseUri(uriStr);}
     explicit MediaFileUri(MediaType mediaType,
                           const std::string &fileId,
                           const std::string &networkId = "",
@@ -49,6 +58,7 @@ public:
     std::string GetTableName();
     bool IsValid();
     bool IsApi10();
+    int GetUriType();
     static MediaType GetMediaTypeFromUri(const std::string &uri);
     static std::string GetPathFirstDentry(Uri &uri);
     static std::string GetPathSecondDentry(Uri &uri);

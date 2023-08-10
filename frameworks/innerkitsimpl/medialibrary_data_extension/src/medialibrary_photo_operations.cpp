@@ -15,6 +15,8 @@
 
 #include "medialibrary_photo_operations.h"
 
+#include <memory>
+
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
 #include "media_column.h"
@@ -30,18 +32,20 @@
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_uripermission_operations.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "photo_map_operations.h"
 #include "rdb_predicates.h"
+#include "result_set_utils.h"
 #include "thumbnail_const.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
-#include "medialibrary_tracer.h"
-#include <memory>
+
+using namespace OHOS::DataShare;
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::RdbDataShareAdapter;
@@ -95,12 +99,114 @@ static void HandleGroupBy(AbsPredicates &predicates, const vector<string> &colum
         " GROUP BY (DATE(date_added, 'unixepoch', 'localtime')) ORDER BY date_added DESC ");
 }
 
+static int32_t GetAlbumTypeSubTypeById(const string &albumId, PhotoAlbumType &type, PhotoAlbumSubType &subType)
+{
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE };
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("album id %{private}s is not exist", albumId.c_str());
+        return E_INVALID_ARGUMENTS;
+    }
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, E_INVALID_ARGUMENTS,
+        "album id is not exist");
+    type = static_cast<PhotoAlbumType>(GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet));
+    subType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
+    return E_SUCCESS;
+}
+
+static int32_t GetPredicatesByAlbumId(const string &albumId, RdbPredicates &predicates)
+{
+    PhotoAlbumType type;
+    PhotoAlbumSubType subType;
+    CHECK_AND_RETURN_RET_LOG(GetAlbumTypeSubTypeById(albumId, type, subType) == E_SUCCESS, E_INVALID_ARGUMENTS,
+        "invalid album uri");
+
+    if ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType))) {
+        MEDIA_ERR_LOG("album id %{private}s type:%d subtype:%d", albumId.c_str(), type, subType);
+        return E_INVALID_ARGUMENTS;
+    }
+
+    if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
+        PhotoAlbumColumns::GetUserAlbumPredicates(stoi(albumId), predicates);
+        return E_SUCCESS;
+    }
+
+    if ((type != PhotoAlbumType::SYSTEM) || (subType == PhotoAlbumSubType::USER_GENERIC) ||
+        (subType == PhotoAlbumSubType::ANY)) {
+        MEDIA_ERR_LOG("album id %{private}s type:%d subtype:%d", albumId.c_str(), type, subType);
+        return E_INVALID_ARGUMENTS;
+    }
+    PhotoAlbumColumns::GetSystemAlbumPredicates(subType, predicates);
+    return E_SUCCESS;
+}
+
+static bool GetValidOrderClause(const DataSharePredicates &predicate, string &clause)
+{
+    constexpr int32_t FIELD_IDX = 0;
+    vector<OperationItem> operations;
+    const auto &items = predicate.GetOperationList();
+    int32_t count = 0;
+    clause = "ROW_NUMBER() OVER (ORDER BY ";
+    for (const auto &item : items) {
+        if (item.operation == ORDER_BY_ASC) {
+            count++;
+            clause += static_cast<string>(item.GetSingle(FIELD_IDX)) + " ASC) as " + PHOTO_INDEX;
+        } else if (item.operation == ORDER_BY_DESC) {
+            count++;
+            clause += static_cast<string>(item.GetSingle(FIELD_IDX)) + " DESC) as " + PHOTO_INDEX;
+        }
+    }
+
+    // only support orderby with one item
+    return (count == 1);
+}
+
+static shared_ptr<NativeRdb::ResultSet> HandleAlbumIndexOfUri(const vector<string> &columns, const string &photoId,
+    const string &albumId)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    CHECK_AND_RETURN_RET_LOG(GetPredicatesByAlbumId(albumId, predicates) == E_SUCCESS, nullptr, "invalid album uri");
+    return MediaLibraryRdbStore::GetIndexOfUri(predicates, columns, photoId);
+}
+
+static shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cmd, RdbPredicates &predicates,
+    const string &photoId, const string &albumId)
+{
+    string orderClause;
+    CHECK_AND_RETURN_RET_LOG(GetValidOrderClause(cmd.GetDataSharePred(), orderClause), nullptr, "invalid orderby");
+    vector<string> columns;
+    columns.push_back(orderClause);
+    columns.push_back(MediaColumn::MEDIA_ID);
+    if (!albumId.empty()) {
+        return HandleAlbumIndexOfUri(columns, photoId, albumId);
+    } else {
+        predicates.And()->EqualTo(
+            PhotoColumn::PHOTO_SYNC_STATUS, std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+        return MediaLibraryRdbStore::GetIndexOfUri(predicates, columns, photoId);
+    }
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
-    HandleGroupBy(predicates, columns);
-    return MediaLibraryRdbStore::Query(predicates, columns);
+    if (cmd.GetOprnType() == OperationType::INDEX) {
+        constexpr int32_t COLUMN_SIZE = 2;
+        CHECK_AND_RETURN_RET_LOG(columns.size() >= COLUMN_SIZE, nullptr, "invalid id param");
+        constexpr int32_t PHOTO_ID_INDEX = 0;
+        constexpr int32_t ALBUM_ID_INDEX = 1;
+        string photoId = columns[PHOTO_ID_INDEX];
+        string albumId;
+        if (!columns[ALBUM_ID_INDEX].empty()) {
+            albumId = columns[ALBUM_ID_INDEX];
+        }
+        return HandleIndexOfUri(cmd, predicates, photoId, albumId);
+    } else {
+        HandleGroupBy(predicates, columns);
+        return MediaLibraryRdbStore::Query(predicates, columns);
+    }
 }
 
 int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
@@ -471,7 +577,7 @@ static void TrashPhotoNotifyOne(shared_ptr<MediaLibraryNotify> &watch, shared_pt
     string displayName = MediaLibraryRdbStore::GetString(resultSet, PhotoColumn::MEDIA_NAME);
     string notifyUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId),
         MediaFileUtils::GetExtraUri(displayName, path));
-    
+
     watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
     watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
     watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT, trashAlbumId);
