@@ -63,7 +63,7 @@ static int32_t InitDataShareHelper()
         return Media::E_ERR;
     }
     auto remoteObj = saManager->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    while (remoteObj == nullptr) {
+    if (remoteObj == nullptr) {
         printf("%s GetSystemAbility Service failed.\n", STR_FAIL.c_str());
         return Media::E_ERR;
     }
