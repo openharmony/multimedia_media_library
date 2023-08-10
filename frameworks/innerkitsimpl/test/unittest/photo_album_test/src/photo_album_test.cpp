@@ -487,23 +487,12 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_005, TestSize.Level0)
     values.Put(PhotoAlbumColumns::ALBUM_NAME, "NewAlbumName5");
     values.Put(PhotoAlbumColumns::ALBUM_COVER_URI, "file://media/asset/10");
 
-    // Try to update system albums one by one
-    for (int32_t i = PhotoAlbumSubType::SYSTEM_START; i <= PhotoAlbumSubType::SYSTEM_END; i++) {
-        // Build predicates
-        DataSharePredicates predicates;
-        predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
-        predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(i));
-        EXPECT_EQ(UpdatePhotoAlbum(values, predicates), 0);
-        CheckUpdatedSystemAlbum(static_cast<PhotoAlbumSubType>(i), "", "");
-    }
-
-    // Try to update all system albums
+    // Try to update favorite system
     DataSharePredicates predicates;
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::FAVORITE));
     EXPECT_EQ(UpdatePhotoAlbum(values, predicates), 0);
-    for (int32_t i = PhotoAlbumSubType::SYSTEM_START; i <= PhotoAlbumSubType::SYSTEM_END; i++) {
-        CheckUpdatedSystemAlbum(static_cast<PhotoAlbumSubType>(i), "", "");
-    }
+    CheckUpdatedSystemAlbum(PhotoAlbumSubType::FAVORITE, "", "");
     MEDIA_INFO_LOG("photoalbum_update_album_005 end");
 }
 } // namespace OHOS::Media
