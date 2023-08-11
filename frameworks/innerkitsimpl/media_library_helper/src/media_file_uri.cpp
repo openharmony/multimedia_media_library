@@ -189,8 +189,7 @@ static void ParsePathWithExtrPara(std::string &path)
         }
         preStr = uriTempNext.substr(0, index);
         index = preStr.rfind('/');
-        if (index == std::string::npos ||
-            !all_of(preStr.substr(index + 1).begin(), preStr.substr(index + 1).end(), ::isdigit)) {
+        if (index == std::string::npos) {
             path = uriTempNext;
             return;
         }
