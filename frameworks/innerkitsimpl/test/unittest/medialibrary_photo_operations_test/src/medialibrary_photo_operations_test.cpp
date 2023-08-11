@@ -24,13 +24,19 @@
 #include <unistd.h>
 #include <unordered_map>
 
+#define private public
+#define protected public
+#include "medialibrary_asset_operations.h"
+#include "medialibrary_photo_operations.h"
+#undef private
+#undef protected
+
 #include "abs_rdb_predicates.h"
 #include "fetch_result.h"
 #include "file_asset.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_data_manager.h"
@@ -38,7 +44,6 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
-#include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
@@ -256,8 +261,7 @@ string GetFileAssetValueToStr(FileAsset &fileAsset, const string &column)
     return "0";
 }
 
-bool QueryAndVerifyPhotoAsset(const string &columnName, const string &value,
-    const unordered_map<string, string> &verifyColumnAndValuesMap)
+unique_ptr<FileAsset> QueryPhotoAsset(const string &columnName, const string &value)
 {
     string querySql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
         columnName + "='" + value + "';";
@@ -266,25 +270,32 @@ bool QueryAndVerifyPhotoAsset(const string &columnName, const string &value,
     auto resultSet = g_rdbStore->QuerySql(querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Get resultSet failed");
-        return false;
+        return nullptr;
     }
 
     int32_t resultSetCount = 0;
     int32_t ret = resultSet->GetRowCount(resultSetCount);
     if (ret != NativeRdb::E_OK || resultSetCount <= 0) {
         MEDIA_ERR_LOG("resultSet row count is 0");
-        return false;
+        return nullptr;
     }
 
     shared_ptr<FetchResult<FileAsset>> fetchFileResult = make_shared<FetchResult<FileAsset>>();
     if (fetchFileResult == nullptr) {
         MEDIA_ERR_LOG("Get fetchFileResult failed");
-        return false;
+        return nullptr;
     }
     auto fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, 0);
     if (fileAsset == nullptr || fileAsset->GetId() < 0) {
-        return false;
+        return nullptr;
     }
+    return fileAsset;
+}
+
+bool QueryAndVerifyPhotoAsset(const string &columnName, const string &value,
+    const unordered_map<string, string> &verifyColumnAndValuesMap)
+{
+    auto fileAsset = QueryPhotoAsset(columnName, value);
     if (fileAsset != nullptr) {
         for (const auto &iter : verifyColumnAndValuesMap) {
             string resStr = GetFileAssetValueToStr(*fileAsset, iter.first);
@@ -298,6 +309,9 @@ bool QueryAndVerifyPhotoAsset(const string &columnName, const string &value,
                 return false;
             }
         }
+    } else {
+        MEDIA_ERR_LOG("Query failed! Can not find this file");
+        return false;
     }
     return true;
 }
@@ -345,9 +359,7 @@ string GetFilePath(int fileId)
     vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH };
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
         MediaLibraryApi::API_10);
-    DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    cmd.SetDataSharePred(predicates);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("can not get rdbstore");
         return "";
@@ -387,9 +399,7 @@ int32_t MakePhotoUnpending(int fileId)
     ValuesBucket values;
     values.PutLong(PhotoColumn::MEDIA_TIME_PENDING, 0);
     cmd.SetValueBucket(values);
-    DataSharePredicates predicates;
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    cmd.SetDataSharePred(predicates);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t changedRows = -1;
     errCode = g_rdbStore->Update(cmd, changedRows);
     if (errCode != E_OK || changedRows <= 0) {
@@ -432,9 +442,7 @@ int32_t SetDefaultPhotoApi10(int mediaType, const string &displayName)
 int32_t GetPhotoAssetCountIndb(const string &key, const string &value)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    DataSharePredicates predicates;
-    predicates.EqualTo(key, value);
-    cmd.SetDataSharePred(predicates);
+    cmd.GetAbsRdbPredicates()->EqualTo(key, value);
     vector<string> columns;
     auto resultSet = g_rdbStore->Query(cmd, columns);
     int count = -1;
@@ -530,9 +538,7 @@ int32_t TestQueryAsset(const string &queryKey, const string &queryValue, const s
     }
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, api);
-    DataSharePredicates predicates;
-    predicates.EqualTo(queryKey, queryValue);
-    cmd.SetDataSharePred(predicates);
+    cmd.GetAbsRdbPredicates()->EqualTo(queryKey, queryValue);
     vector<string> columns;
     columns.push_back(columnKey);
     auto queryResultSet = rdbStore->Query(cmd, columns);
@@ -626,9 +632,7 @@ void TestPhotoUpdateParamsApi9(const string &predicateColumn, const string &pred
         SetValuesBucketInUpdate(iter.first, iter.second, values);
     }
     cmd.SetValueBucket(values);
-    DataSharePredicates predicates;
-    predicates.EqualTo(predicateColumn, predicateValue);
-    cmd.SetDataSharePred(predicates);
+    cmd.GetAbsRdbPredicates()->EqualTo(predicateColumn, predicateValue);
     int32_t ret = MediaLibraryPhotoOperations::Update(cmd);
     func(ret);
 }
@@ -643,14 +647,12 @@ void TestPhotoUpdateParamsApi10(const string &predicateColumn, const string &pre
         SetValuesBucketInUpdate(iter.first, iter.second, values);
     }
     cmd.SetValueBucket(values);
-    DataSharePredicates predicates;
-    predicates.EqualTo(predicateColumn, predicateValue);
-    cmd.SetDataSharePred(predicates);
+    cmd.GetAbsRdbPredicates()->EqualTo(predicateColumn, predicateValue);
     int32_t ret = MediaLibraryPhotoOperations::Update(cmd);
     func(ret);
 }
 
-void TestAudioUpdateByQuery(const string &predicateColumn, const string &predicateValue,
+void TestPhotoUpdateByQuery(const string &predicateColumn, const string &predicateValue,
     const unordered_map<string, string> &checkColumns, int32_t result)
 {
     for (auto &iter : checkColumns) {
@@ -670,9 +672,7 @@ void TestPhotoUpdateParamsVerifyFunctionFailed(const string &predicateColumn, co
         SetValuesBucketInUpdate(iter.first, iter.second, values);
     }
     cmd.SetValueBucket(values);
-    DataSharePredicates predicates;
-    predicates.EqualTo(predicateColumn, predicateValue);
-    cmd.SetDataSharePred(predicates);
+    cmd.GetAbsRdbPredicates()->EqualTo(predicateColumn, predicateValue);
     int32_t ret = MediaLibraryAssetOperations::UpdateOperation(cmd);
     MEDIA_INFO_LOG("column:%{public}s, predicates:%{public}s, ret:%{public}d",
         predicateColumn.c_str(), predicateValue.c_str(), ret);
@@ -694,11 +694,11 @@ void TestPhotoOpenParamsApi10(int32_t fileId, const string &mode, ExceptIntFunct
     }
 }
 
-void TestPhotoCloseParamsApi10(int32_t fileId, ExceptIntFunction func)
+void TestPhotoCloseParamsApi10(string uri, ExceptIntFunction func)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
     ValuesBucket values;
-    values.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    values.PutString(MEDIA_DATA_DB_URI, uri);
     cmd.SetValueBucket(values);
     int32_t ret = MediaLibraryPhotoOperations::Close(cmd);
     func(ret);
@@ -1210,7 +1210,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, Test
     TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_NAME, "pic.jpg" } },
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
-    TestAudioUpdateByQuery(PhotoColumn::MEDIA_ID, to_string(fileId),
+    TestPhotoUpdateByQuery(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::MEDIA_NAME, "pic.jpg" } }, E_OK);
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_001");
 }
@@ -1303,13 +1303,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_004, Test
     TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId1),
         { { PhotoColumn::MEDIA_TITLE, "photo1" } },
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
-    TestAudioUpdateByQuery(PhotoColumn::MEDIA_ID, to_string(fileId1),
+    TestPhotoUpdateByQuery(PhotoColumn::MEDIA_ID, to_string(fileId1),
         { { PhotoColumn::MEDIA_NAME, "photo1.jpg" } }, E_OK);
 
     TestPhotoUpdateParamsApi10(PhotoColumn::MEDIA_ID, to_string(fileId2),
         { { PhotoColumn::MEDIA_NAME, "photo2.jpg" } },
         [] (int32_t result) { EXPECT_GE(result, E_OK); });
-    TestAudioUpdateByQuery(PhotoColumn::MEDIA_ID, to_string(fileId2),
+    TestPhotoUpdateByQuery(PhotoColumn::MEDIA_ID, to_string(fileId2),
         { { PhotoColumn::MEDIA_TITLE, "photo2" } }, E_OK);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_004");
@@ -1405,7 +1405,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_001, TestS
         { PhotoColumn::MEDIA_RELATIVE_PATH, "Pictures/2/"},
         { PhotoColumn::MEDIA_VIRTURL_PATH, "Pictures/2/photo1.jpg"}
     };
-    TestAudioUpdateByQuery(PhotoColumn::MEDIA_ID, to_string(fileId), queryMap, E_OK);
+    TestPhotoUpdateByQuery(PhotoColumn::MEDIA_ID, to_string(fileId), queryMap, E_OK);
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api9_test_001");
 }
 
@@ -1575,9 +1575,15 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestS
         return;
     }
 
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
     static constexpr int LARGE_NUM = 1000;
-    TestPhotoCloseParamsApi10(fileId + LARGE_NUM,
-        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_FILEID); });
+    fileAssetPtr->SetId(fileId + LARGE_NUM);
+    string uri = MediaLibraryAssetOperations::CreateExtUriForV10Asset(*fileAssetPtr);
+    TestPhotoCloseParamsApi10(uri, [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+
+    fileAssetPtr->SetId(fileId);
+    uri = MediaLibraryAssetOperations::CreateExtUriForV10Asset(*fileAssetPtr);
+    TestPhotoCloseParamsApi10(uri, [] (int32_t result) { EXPECT_GE(result, E_OK); });
 
     MEDIA_INFO_LOG("end tdd photo_oprn_close_api10_test_001");
 }
@@ -1607,8 +1613,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_001, Tes
     EXPECT_EQ(pendingStatus, UNCLOSE_FILE_TIMEPENDING);
 
     MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    string uriString = MediaLibraryAssetOperations::CreateExtUriForV10Asset(*fileAssetPtr);
     ValuesBucket closeValues;
-    closeValues.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    closeValues.PutString(MEDIA_DATA_DB_URI, uriString);
     closeCmd.SetValueBucket(closeValues);
     int32_t ret = MediaLibraryPhotoOperations::Close(closeCmd);
     EXPECT_EQ(ret, 0);
@@ -1652,8 +1660,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_002, Tes
 
     MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE,
         MediaLibraryApi::API_10);
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    string uriString = MediaLibraryAssetOperations::CreateExtUriForV10Asset(*fileAssetPtr);
     ValuesBucket closeValues;
-    closeValues.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    closeValues.PutString(MEDIA_DATA_DB_URI, uriString);
     closeCmd.SetValueBucket(closeValues);
     ret = MediaLibraryPhotoOperations::Close(closeCmd);
     EXPECT_EQ(ret, 0);
@@ -1705,8 +1715,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api10_test_003, Tes
     EXPECT_EQ(pendingStatus, 0);
 
     MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    string uriString = MediaLibraryAssetOperations::CreateExtUriForV10Asset(*fileAssetPtr);
     ValuesBucket closeValues;
-    closeValues.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    closeValues.PutString(MEDIA_DATA_DB_URI, uriString);
     closeCmd.SetValueBucket(closeValues);
     ret = MediaLibraryPhotoOperations::Close(closeCmd);
     EXPECT_EQ(ret, 0);
@@ -1742,8 +1754,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api9_test_001, Test
     EXPECT_EQ(pendingStatus, 0);
 
     MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    auto fileAssetPtr = QueryPhotoAsset(PhotoColumn::MEDIA_ID, to_string(fileId));
+    string uriString = MediaLibraryAssetOperations::CreateExtUriForV10Asset(*fileAssetPtr);
     ValuesBucket closeValues;
-    closeValues.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    closeValues.PutString(MEDIA_DATA_DB_URI, uriString);
     closeCmd.SetValueBucket(closeValues);
     int32_t ret = MediaLibraryPhotoOperations::Close(closeCmd);
     EXPECT_EQ(ret, 0);
