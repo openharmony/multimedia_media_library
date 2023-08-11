@@ -47,7 +47,7 @@ static std::shared_ptr<DataShare::DataShareHelper> CreateDataShareHelper(int32_t
         return nullptr;
     }
     auto remoteObj = saManager->GetSystemAbility(systemAbilityId);
-    while (remoteObj == nullptr) {
+    if (remoteObj == nullptr) {
         MEDIA_INFO_LOG("CreateDataShareHelper GetSystemAbility Service Failed.");
         return nullptr;
     }
