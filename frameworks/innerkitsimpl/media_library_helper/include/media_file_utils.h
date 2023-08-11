@@ -88,7 +88,6 @@ public:
     static void GetRootDirFromRelativePath(const std::string &relativePath, std::string &rootDir);
     static int64_t GetAlbumDateModified(const std::string &albumPath);
     static int64_t UTCTimeSeconds();
-    static int64_t UTCTimeMilliSeconds();
     static std::string GetIdFromUri(const std::string &uri);
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string UpdatePath(const std::string &path, const std::string &uri);
