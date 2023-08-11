@@ -1274,15 +1274,6 @@ void AddExifAndUserComment(RdbStore &store)
     ExecSqls(addExifColumns, store);
 }
 
-void UpdateDateAdded(RdbStore &store)
-{
-    int32_t err = store.ExecuteSql("UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
-        MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + " * 1000");
-    if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to update date added");
-    }
-}
-
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1339,10 +1330,6 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_ALL_EXIF) {
         AddExifAndUserComment(store);
-    }
-
-    if (oldVersion < VERSION_UPDATE_DATE_ADDED) {
-        UpdateDateAdded(store);
     }
 
     return NativeRdb::E_OK;
