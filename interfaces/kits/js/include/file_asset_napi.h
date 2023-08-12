@@ -57,8 +57,6 @@ public:
     int32_t GetOrientation() const;
     MediaType GetMediaType() const;
     std::string GetNetworkId() const;
-    std::string GetTypeMask() const;
-    void SetTypeMask(const std::string &typeMask);
     bool IsFavorite() const;
     void SetFavorite(bool isFavorite);
     bool IsTrash() const;
@@ -167,7 +165,6 @@ struct FileAssetAsyncContext : public NapiError {
 
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
-    std::string typeMask;
     ResultNapiType resultNapiType;
     std::string userComment;
 };

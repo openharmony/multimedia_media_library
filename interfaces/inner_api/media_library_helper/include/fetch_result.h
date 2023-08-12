@@ -58,12 +58,10 @@ public:
     void SetNetworkId(const string &networkId);
     void SetResultNapiType(const ResultNapiType napiType);
     void SetFetchResType(const FetchResType resType);
-    void SetTypeMask(const string &mask);
     std::string GetNetworkId();
     ResultNapiType GetResultNapiType();
     std::shared_ptr<DataShare::DataShareResultSet> &GetDataShareResultSet();
     FetchResType GetFetchResType();
-    std::string GetTypeMask();
     std::unique_ptr<T> GetObjectAtPosition(int32_t index);
     std::unique_ptr<T> GetFirstObject();
     std::unique_ptr<T> GetObjectFromRdb(std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx);
@@ -94,7 +92,6 @@ private:
     ResultNapiType resultNapiType_;
     std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
     FetchResType fetchResType_;
-    std::string typeMask_;
 };
 } // namespace Media
 } // namespace OHOS

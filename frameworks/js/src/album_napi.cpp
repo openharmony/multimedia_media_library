@@ -214,11 +214,6 @@ std::string AlbumNapi::GetNetworkId() const
     return MediaFileUtils::GetNetworkIdFromUri(GetAlbumUri());
 }
 
-std::string AlbumNapi::GetTypeMask() const
-{
-    return albumAssetPtr->GetAlbumTypeMask();
-}
-
 #ifdef MEDIALIBRARY_COMPATIBILITY
 PhotoAlbumType AlbumNapi::GetAlbumType() const
 {
@@ -772,7 +767,6 @@ static void GetFileAssetsNative(napi_env env, void *data)
 
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         (MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri())) + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(queryUri, context->typeMask);
     NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
     Uri uri(queryUri);
     int errCode = 0;
@@ -856,7 +850,6 @@ static void CommitModifyNative(napi_env env, void *data)
 
     string updateUri = MEDIALIBRARY_DATA_URI + "/" +
         MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_MODIFYALBUM + "/" + std::to_string(objectPtr->GetAlbumId());
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(updateUri, context->typeMask);
     Uri uri(updateUri);
     int changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
     if (changedRows > 0) {
@@ -867,7 +860,6 @@ static void CommitModifyNative(napi_env env, void *data)
         filePredicates.SetWhereArgs({ std::to_string(objectPtr->GetAlbumId()) });
 
         string fileUriStr = MEDIALIBRARY_DATA_URI;
-        MediaLibraryNapiUtils::UriAddFragmentTypeMask(fileUriStr, context->typeMask);
         Uri fileUri(fileUriStr);
         changedRows = UserFileClient::Update(fileUri, filePredicates, fileValuesBucket);
     }
@@ -978,7 +970,6 @@ napi_value AlbumNapi::UserFileMgrGetAssets(napi_env env, napi_callback_info info
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext),
         JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
     asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "AlbumAsset is nullptr");
 
@@ -996,7 +987,6 @@ napi_value AlbumNapi::UserFileMgrCommitModify(napi_env env, napi_callback_info i
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext), JS_ERR_PARAMETER_INVALID);
-    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
     asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "AlbumAsset is nullptr");
 
@@ -1015,7 +1005,6 @@ napi_value AlbumNapi::PhotoAccessHelperGetAssets(napi_env env, napi_callback_inf
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseAssetFetchOptCallback(env, info, asyncContext),
         JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
-    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
     asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "AlbumAsset is nullptr");
 
@@ -1033,7 +1022,6 @@ napi_value AlbumNapi::PhotoAccessHelperCommitModify(napi_env env, napi_callback_
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext), JS_ERR_PARAMETER_INVALID);
-    asyncContext->typeMask = asyncContext->objectInfo->GetTypeMask();
     asyncContext->objectPtr = asyncContext->objectInfo->albumAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "AlbumAsset is nullptr");
 

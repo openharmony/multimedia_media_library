@@ -953,31 +953,6 @@ std::string MediaFileUtils::GetMediaTypeUriV10(MediaType mediaType)
     }
 }
 
-void MediaFileUtils::GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask)
-{
-    typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
-    for (auto &type : types) {
-        if ((type >= MEDIA_TYPE_FILE) && (type <= MEDIA_TYPE_AUDIO)) {
-            typeMask[get<POS_TYPE_MASK_STRING_INDEX>(MEDIA_TYPE_TUPLE_VEC[type])] = TYPE_MASK_BIT_SET;
-        }
-    }
-}
-
-void MediaFileUtils::GenTypeMaskFromUri(const std::string &uri, std::string &typeMask)
-{
-    typeMask = "";
-    if (StartsWith(uri, PhotoColumn::PHOTO_URI_PREFIX)) {
-        typeMask = PHOTO_TYPE_MASK;
-    }
-}
-
-void MediaFileUtils::UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask)
-{
-    if (!typeMask.empty()) {
-        uri += "#" + URI_PARAM_KEY_TYPE + ":" + typeMask;
-    }
-}
-
 void MediaFileUtils::AppendFetchOptionSelection(std::string &selection, const std::string &newCondition)
 {
     if (!newCondition.empty()) {

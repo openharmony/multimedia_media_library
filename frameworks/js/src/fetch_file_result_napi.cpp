@@ -92,14 +92,12 @@ void FetchFileResultNapi::GetFetchResult(unique_ptr<FetchFileResultNapi> &obj)
             auto fileResult = make_shared<FetchResult<FileAsset>>(move(sFetchFileResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchFileResult_ = fileResult;
             obj->propertyPtr->fetchFileResult_->SetInfo(sFetchFileResult_);
-            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchFileResult_->GetTypeMask();
             break;
         }
         case FetchResType::TYPE_ALBUM: {
             auto albumResult = make_shared<FetchResult<AlbumAsset>>(move(sFetchAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchAlbumResult_ = albumResult;
             obj->propertyPtr->fetchAlbumResult_->SetInfo(sFetchAlbumResult_);
-            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchAlbumResult_->GetTypeMask();
             break;
         }
         case FetchResType::TYPE_PHOTOALBUM: {
@@ -107,7 +105,6 @@ void FetchFileResultNapi::GetFetchResult(unique_ptr<FetchFileResultNapi> &obj)
                 make_shared<FetchResult<PhotoAlbum>>(move(sFetchPhotoAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchPhotoAlbumResult_ = photoAlbumResult;
             obj->propertyPtr->fetchPhotoAlbumResult_->SetInfo(sFetchPhotoAlbumResult_);
-            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchPhotoAlbumResult_->GetTypeMask();
             break;
         }
         case FetchResType::TYPE_SMARTALBUM: {
@@ -115,7 +112,6 @@ void FetchFileResultNapi::GetFetchResult(unique_ptr<FetchFileResultNapi> &obj)
                 make_shared<FetchResult<SmartAlbumAsset>>(move(sFetchSmartAlbumResult_->GetDataShareResultSet()));
             obj->propertyPtr->fetchSmartAlbumResult_ = smartResult;
             obj->propertyPtr->fetchSmartAlbumResult_->SetInfo(sFetchSmartAlbumResult_);
-            obj->propertyPtr->typeMask_ = obj->propertyPtr->fetchSmartAlbumResult_->GetTypeMask();
             break;
         }
         default:
