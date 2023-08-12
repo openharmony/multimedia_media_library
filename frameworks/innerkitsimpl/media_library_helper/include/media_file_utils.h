@@ -105,9 +105,6 @@ public:
     static int32_t CloseAsset(int32_t fd);
     static std::string GetMediaTypeUri(MediaType mediaType);
     static std::string GetMediaTypeUriV10(MediaType mediaType);
-    static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
-    static void GenTypeMaskFromUri(const std::string &uri, std::string &typeMask);
-    static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
     static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
     static bool CheckMode(const std::string &mode);
     static size_t FindIgnoreCase(const std::string &str, const std::string &key);

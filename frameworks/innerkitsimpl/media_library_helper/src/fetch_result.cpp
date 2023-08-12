@@ -130,7 +130,6 @@ void FetchResult<T>::SetInfo(unique_ptr<FetchResult<T>> &fetch)
 {
     networkId_ = fetch->networkId_;
     resultNapiType_ = fetch->resultNapiType_;
-    typeMask_ = fetch->typeMask_;
 }
 
 template <class T>
@@ -149,12 +148,6 @@ template<class T>
 void FetchResult<T>::SetFetchResType(const FetchResType resType)
 {
     fetchResType_ = resType;
-}
-
-template<class T>
-void FetchResult<T>::SetTypeMask(const string &mask)
-{
-    typeMask_ = mask;
 }
 
 template<class T>
@@ -179,12 +172,6 @@ template<class T>
 FetchResType FetchResult<T>::GetFetchResType()
 {
     return fetchResType_;
-}
-
-template<class T>
-string FetchResult<T>::GetTypeMask()
-{
-    return typeMask_;
 }
 
 template <class T>
@@ -332,23 +319,12 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetValByIndex(int32_t index, R
     return cellValue;
 }
 
-static void MediaTypeToMask(MediaType mediaType, string &typeMask)
-{
-    typeMask.resize(TYPE_MASK_STRING_SIZE, TYPE_MASK_BIT_DEFAULT);
-    if ((mediaType >= MEDIA_TYPE_FILE) && (mediaType <= MEDIA_TYPE_AUDIO)) {
-        typeMask[std::get<POS_TYPE_MASK_STRING_INDEX>(MEDIA_TYPE_TUPLE_VEC[mediaType])] = TYPE_MASK_BIT_SET;
-    }
-}
-
 template<class T>
 void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
 {
     string uri;
     if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR ||
         resultNapiType_ == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
-        string typeMask;
-        MediaTypeToMask(fileAsset->GetMediaType(), typeMask);
-        fileAsset->SetTypeMask(typeMask);
         string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
         MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
              networkId_, MEDIA_API_VERSION_V10, extrUri);
@@ -512,7 +488,6 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
         TYPE_INT64, resultSet)));
 
     albumData->SetResultNapiType(resultNapiType_);
-    albumData->SetAlbumTypeMask(typeMask_);
 }
 
 template<class T>
@@ -533,7 +508,6 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
     photoAlbumData->SetDateModified(get<int64_t>(GetRowValFromColumn(
         PhotoAlbumColumns::ALBUM_DATE_MODIFIED, TYPE_INT64, resultSet)));
     photoAlbumData->SetResultNapiType(resultNapiType_);
-    photoAlbumData->SetTypeMask(typeMask_);
 }
 
 template<class T>
@@ -543,7 +517,6 @@ void FetchResult<T>::SetSmartAlbumAsset(SmartAlbumAsset* smartAlbumData, shared_
     smartAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(SMARTALBUM_DB_NAME, TYPE_STRING, resultSet)));
     smartAlbumData->SetAlbumCapacity(get<int32_t>(GetRowValFromColumn(SMARTALBUM_DB_CAPACITY, TYPE_INT32, resultSet)));
     smartAlbumData->SetResultNapiType(resultNapiType_);
-    smartAlbumData->SetTypeMask(typeMask_);
 }
 
 template class FetchResult<FileAsset>;

@@ -39,7 +39,6 @@ public:
     std::shared_ptr<FetchResult<PhotoAlbum>> fetchPhotoAlbumResult_ = nullptr;
     std::shared_ptr<FetchResult<SmartAlbumAsset>> fetchSmartAlbumResult_ = nullptr;
     FetchResType fetchResType_;
-    std::string typeMask_;
 };
 
 class FetchFileResultNapi {

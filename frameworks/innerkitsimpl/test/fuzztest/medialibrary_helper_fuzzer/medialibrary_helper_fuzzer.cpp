@@ -37,7 +37,6 @@ bool MediaLibraryHelperSetFuzzTest(const uint8_t *data, size_t size)
     const std::string coverUri(reinterpret_cast<const char *>(data), size);
     const std::string albumPath(reinterpret_cast<const char *>(data), size);
     const bool albumVirtual = *(reinterpret_cast<const bool *>(data));
-    const std::string typeMask(reinterpret_cast<const char *>(data), size);
     ResultNapiType type = *(reinterpret_cast<const ResultNapiType*>(data));
 
     albumAsset.SetAlbumId(albumId);
@@ -46,7 +45,6 @@ bool MediaLibraryHelperSetFuzzTest(const uint8_t *data, size_t size)
     albumAsset.SetAlbumRelativePath(albumRelativePath);
     albumAsset.SetAlbumPath(albumPath);
     albumAsset.SetAlbumVirtual(albumVirtual);
-    albumAsset.SetAlbumTypeMask(typeMask);
     albumAsset.SetResultNapiType(type);
     return true;
 }
@@ -66,7 +64,6 @@ bool MediaLibraryHelperGetFuzzTest(const uint8_t *data, size_t size)
     albumAsset.GetCoverUri();
     albumAsset.GetAlbumPath();
     albumAsset.GetAlbumVirtual();
-    albumAsset.GetAlbumTypeMask();
     albumAsset.CreateAlbumAsset();
     albumAsset.GetResultNapiType();
     return true;

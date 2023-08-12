@@ -310,16 +310,6 @@ std::string FileAssetNapi::GetNetworkId() const
     return MediaFileUtils::GetNetworkIdFromUri(GetFileUri());
 }
 
-std::string FileAssetNapi::GetTypeMask() const
-{
-    return fileAssetPtr->GetTypeMask();
-}
-
-void FileAssetNapi::SetTypeMask(const std::string &typeMask)
-{
-    fileAssetPtr->SetTypeMask(typeMask);
-}
-
 bool FileAssetNapi::IsFavorite() const
 {
     return fileAssetPtr->IsFavorite();
@@ -1279,7 +1269,6 @@ static void JSOpenExecute(napi_env env, void *data)
     transform(mode.begin(), mode.end(), mode.begin(), ::tolower);
 
     string fileUri = context->objectPtr->GetUri();
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(fileUri, context->objectPtr->GetTypeMask());
     Uri openFileUri(fileUri);
     int32_t retVal = UserFileClient::OpenFile(openFileUri, mode);
     if (retVal <= 0) {
@@ -2139,7 +2128,6 @@ static void FavoriteByInsert(FileAssetAsyncContext *context)
     uriString += context->isFavorite ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
     valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectPtr->GetId());
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
     Uri uri(uriString);
     context->changedRows = UserFileClient::Insert(uri, valuesBucket);
 }
@@ -2302,7 +2290,6 @@ static void TrashByInsert(FileAssetAsyncContext *context)
     uriString += context->isTrash ? MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM : MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM;
     valuesBucket.Put(SMARTALBUMMAP_DB_ALBUM_ID, TRASH_ALBUM_ID_VALUES);
     valuesBucket.Put(SMARTALBUMMAP_DB_CHILD_ASSET_ID, context->objectPtr->GetId());
-    MediaLibraryNapiUtils::UriAddFragmentTypeMask(uriString, context->objectPtr->GetTypeMask());
     Uri uri(uriString);
     context->changedRows = UserFileClient::Insert(uri, valuesBucket);
 }

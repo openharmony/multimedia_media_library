@@ -71,10 +71,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, SmartAlbumAsset_SetGet_Test_001, TestSize.L
     smartAlbumAsset.SetCoverUri(TEST_COVERURI);
     EXPECT_EQ(smartAlbumAsset.GetCoverUri(), TEST_COVERURI);
 
-    const string TEST_TYPE_MASK = "000";
-    smartAlbumAsset.SetTypeMask(TEST_TYPE_MASK);
-    EXPECT_EQ(smartAlbumAsset.GetTypeMask(), TEST_TYPE_MASK);
-
     smartAlbumAsset.SetAlbumPrivateType(TYPE_TRASH);
     EXPECT_EQ(smartAlbumAsset.GetAlbumPrivateType(), TYPE_TRASH);
 

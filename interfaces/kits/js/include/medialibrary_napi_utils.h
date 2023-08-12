@@ -376,8 +376,6 @@ public:
     static napi_status GetArrayProperty(napi_env env, napi_value arg, const std::string &propName,
         std::vector<std::string> &array);
     static napi_status GetStringArray(napi_env env, napi_value arg, std::vector<std::string> &array);
-    static void GenTypeMaskFromArray(const std::vector<uint32_t> types, std::string &typeMask);
-    static void UriAddFragmentTypeMask(std::string &uri, const std::string &typeMask);
     static void UriAddTableName(std::string &uri, const std::string tableName);
     static std::string GetFileIdFromUri(const std::string &uri);
     static MediaType GetMediaTypeFromUri(const std::string &uri);

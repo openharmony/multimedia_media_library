@@ -83,24 +83,8 @@ enum class PhotoSubType : int32_t {
     CAMERA
 };
 
-enum class MediaTypeMaskInteger: std::uint32_t {
-    BIT_IMAGEVIDEO = 0x01,
-    BIT_AUDIO = 0x02,
-    BIT_DOCUMENT = 0x04,
-};
-
-/* Constant definitions about media type mask */
-constexpr size_t TYPE_MASK_STRING_SIZE = 3;
-const std::string DEFAULT_TYPE_MASK;
-const std::string URI_PARAM_KEY_TYPE = "type";
-const std::string PHOTO_TYPE_MASK = "001";
-const std::string AUDIO_TYPE_MASK = "010";
-const std::string DOCUMENT_TYPE_MASK = "100";
 const std::string URI_PARAM_API_VERSION = "api_version";
-enum {
-    TYPE_MASK_BIT_DEFAULT = '0',
-    TYPE_MASK_BIT_SET = '1'
-};
+
 enum class MediaLibraryApi : uint32_t {
     API_START = 8,
     API_OLD = 9,
@@ -108,31 +92,6 @@ enum class MediaLibraryApi : uint32_t {
     API_END
 };
 
-/*
- * The position in tuple is explained as below:
- * @POS_MEDIA_TYPE: The same as enum MediaType
- * @POS_TYPE_DESCRIPTION: Description of a MediaType in string, the same with interface "MediaType" in d.ts
- * @POS_TYPE_MASK_INTEGER：Media type bit mask in integer
- * @POS_TYPE_MASK_STRING_INDEX: Bit index of media type bit mask string
- *
- * A media type mask string is consist of three chars, as "000", each char stands one of MediaType.
- * The char with TYPE_MASK_STRING_INDEX of 0 stands MEDIA_TYPE_FILE,
- *                                         1 stands MEDIA_TYPE_AUDIO,
- *                                         2 stands MEDIA_TYPE_IMAGE or MEDIA_TYPE_VIDEO.
- * eg. If user specified a query condition with "MEDIA_TYPE_AUDIO", the type mask string would be "010",
- */
-enum MEDIA_TYPE_TUPLE_INDEX {
-    POS_MEDIA_TYPE = 0,
-    POS_TYPE_DESCRIPTION,
-    POS_TYPE_MASK_INTEGER,
-    POS_TYPE_MASK_STRING_INDEX,
-};
-const std::vector<std::tuple<MediaType, std::string, MediaTypeMaskInteger, size_t>> MEDIA_TYPE_TUPLE_VEC = {
-    std::make_tuple(MEDIA_TYPE_FILE,    "FILE",     MediaTypeMaskInteger::BIT_DOCUMENT,   0),
-    std::make_tuple(MEDIA_TYPE_IMAGE,   "IMAGE",    MediaTypeMaskInteger::BIT_IMAGEVIDEO, 2),
-    std::make_tuple(MEDIA_TYPE_VIDEO,   "VIDEO",    MediaTypeMaskInteger::BIT_IMAGEVIDEO, 2),
-    std::make_tuple(MEDIA_TYPE_AUDIO,   "AUDIO",    MediaTypeMaskInteger::BIT_AUDIO,      1)
-};
 enum NotifyType {
     NOTIFY_ADD,
     NOTIFY_UPDATE,
