@@ -25,7 +25,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckCallerPermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_CheckCallerPermission_test_001, TestSize.Level0)
 {
     string permission = "";
     bool ret = PermissionUtils::CheckCallerPermission(permission);
@@ -35,7 +35,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckCallerPermission_test_001, TestS
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetSysBundleManager_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSysBundleManager_test_001, TestSize.Level0)
 {
     auto ret = PermissionUtils::GetSysBundleManager();
     EXPECT_NE(ret, nullptr);

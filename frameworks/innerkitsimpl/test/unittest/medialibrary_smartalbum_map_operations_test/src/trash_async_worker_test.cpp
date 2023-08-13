@@ -27,7 +27,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-HWTEST_F(MediaLibraryExtUnitTest, TrashAsyncWorker_GetInstance_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, TrashAsyncWorker_GetInstance_test_001, TestSize.Level0)
 {
     shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
     EXPECT_EQ((asyncWorker != nullptr), true);
@@ -39,7 +39,7 @@ HWTEST_F(MediaLibraryExtUnitTest, TrashAsyncWorker_GetInstance_test_001, TestSiz
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, TrashAsyncWorker_TrashAsyncTaskWorker_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, TrashAsyncWorker_TrashAsyncTaskWorker_test_001, TestSize.Level0)
 {
     TrashAsyncTaskWorker *asyncWorker = new TrashAsyncTaskWorker();
     EXPECT_EQ((asyncWorker->asyncWorkerInstance_ != nullptr), true);
@@ -51,7 +51,7 @@ HWTEST_F(MediaLibraryExtUnitTest, TrashAsyncWorker_TrashAsyncTaskWorker_test_001
     EXPECT_EQ((asyncWorker->asyncWorkerInstance_ != nullptr), true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, TrashAsyncWorker_TrashAsyncTaskWorker_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, TrashAsyncWorker_TrashAsyncTaskWorker_test_002, TestSize.Level0)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);

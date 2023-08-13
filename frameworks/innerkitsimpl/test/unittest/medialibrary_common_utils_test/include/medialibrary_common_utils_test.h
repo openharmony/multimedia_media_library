@@ -20,7 +20,7 @@
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryExtUnitTest : public testing::Test {
+class MediaLibraryCommonUtilsTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);

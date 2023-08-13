@@ -30,25 +30,25 @@ namespace OHOS {
 namespace Media {
 
 shared_ptr<FileAsset> g_pictures = nullptr;
-void MediaLibraryExtUnitTest::SetUpTestCase(void)
+void MediaLibraryScannerTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
 }
 
-void MediaLibraryExtUnitTest::TearDownTestCase(void) {}
+void MediaLibraryScannerTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
-void MediaLibraryExtUnitTest::SetUp()
+void MediaLibraryScannerTest::SetUp()
 {
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::InitRootDirs();
     g_pictures = MediaLibraryUnitTestUtils::GetRootAsset(TEST_PICTURES);
 }
 
-void MediaLibraryExtUnitTest::TearDown(void) {}
+void MediaLibraryScannerTest::TearDown(void) {}
 
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_IsExists_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_IsExists_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
@@ -68,7 +68,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsExists_test_001, TestSize.Level0)
 }
 
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileNameFromUri_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_GetFileNameFromUri_test_001, TestSize.Level0)
 {
     string path = "";
     string ret = ScannerUtils::GetFileNameFromUri(path);
@@ -81,7 +81,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileNameFromUri_test_001, TestSize
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileExtension_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_GetFileExtension_test_001, TestSize.Level0)
 {
     string path = "";
     string ret = ScannerUtils::GetFileExtension(path);
@@ -91,7 +91,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileExtension_test_001, TestSize.L
     EXPECT_EQ(ret, "test");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMediatypeFromMimetype_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_GetMediatypeFromMimetype_test_001, TestSize.Level0)
 {
     string path = "text/html";
     MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(path);
@@ -107,7 +107,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMediatypeFromMimetype_test_001, Te
     EXPECT_EQ(mediaType, MEDIA_TYPE_IMAGE);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMimeTypeFromExtension_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_GetMimeTypeFromExtension_test_001, TestSize.Level0)
 {
     string extension = "html";
     string mediaType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
@@ -120,7 +120,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMimeTypeFromExtension_test_001, Te
     EXPECT_EQ(mediaType, "audio/wav");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_IsDirectory_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_IsDirectory_test_001, TestSize.Level0)
 {
     std::string path = "";
     bool ret = ScannerUtils::IsDirectory(path);
@@ -133,7 +133,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsDirectory_test_001, TestSize.Level0
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_IsRegularFile_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_IsRegularFile_test_001, TestSize.Level0)
 {
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
@@ -152,7 +152,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsRegularFile_test_001, TestSize.Leve
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_IsFileHidden_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_IsFileHidden_test_001, TestSize.Level0)
 {
     std::string path = "";
     bool ret = ScannerUtils::IsFileHidden(path);
@@ -162,7 +162,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsFileHidden_test_001, TestSize.Level
     EXPECT_EQ(ret, true);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetParentPath_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_GetParentPath_test_001, TestSize.Level0)
 {
     string path = "";
     string ret = ScannerUtils::GetParentPath(path);
@@ -172,21 +172,21 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetParentPath_test_001, TestSize.Leve
     EXPECT_EQ(ret, "medialib_GetParentPath_test_001");
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetRootMediaDir_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_GetRootMediaDir_test_001, TestSize.Level0)
 {
     std::string path = "";
     ScannerUtils::GetRootMediaDir(path);
     EXPECT_EQ(path, ROOT_MEDIA_DIR);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetFileTitle_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_GetFileTitle_test_001, TestSize.Level0)
 {
     std::string path = "medialib_GetFileTitle_test_001";
     string ret = ScannerUtils::GetFileTitle(path);
     EXPECT_EQ(path, ret);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_IsDirHidden_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_IsDirHidden_test_001, TestSize.Level0)
 {
     string path = "medialib_IsDirHidden_test_001/.test";
     bool ret = ScannerUtils::IsDirHidden(path);
@@ -196,7 +196,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsDirHidden_test_001, TestSize.Level0
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_IsDirHiddenRecursive_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_IsDirHiddenRecursive_test_001, TestSize.Level0)
 {
     std::string path = "medialib_IsDirHiddenRecursive_test_001/.test";
     bool ret = ScannerUtils::IsDirHiddenRecursive(path);
@@ -206,7 +206,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsDirHiddenRecursive_test_001, TestSi
     EXPECT_EQ(ret, false);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_CheckSkipScanList_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryScannerTest, medialib_CheckSkipScanList_test_001, TestSize.Level0)
 {
     std::string path = "medialib_CheckSkipScanList_test_001";
     bool ret = ScannerUtils::CheckSkipScanList(path);
