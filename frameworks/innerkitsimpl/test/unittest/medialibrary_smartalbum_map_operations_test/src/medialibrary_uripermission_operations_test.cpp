@@ -26,7 +26,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_HandleUriPermOperations_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleUriPermOperations_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::INSERT_PERMISSION);
     int32_t ret = UriPermissionOperations::HandleUriPermOperations(cmd);
@@ -37,7 +37,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_HandleUriPermOperations_test_001,
     EXPECT_EQ(ret, E_FAIL);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_HandleUriPermOperations_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleUriPermOperations_test_002, TestSize.Level0)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
@@ -54,7 +54,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_HandleUriPermOperations_test_002,
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_HandleUriPermInsert_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleUriPermInsert_test_001, TestSize.Level0)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
@@ -74,7 +74,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_HandleUriPermInsert_test_001, Tes
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_InsertBundlePermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_InsertBundlePermission_test_001, TestSize.Level0)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
@@ -89,7 +89,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_InsertBundlePermission_test_001, 
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_GetUriPermissionMode_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_GetUriPermissionMode_test_001, TestSize.Level0)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
@@ -102,7 +102,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_GetUriPermissionMode_test_001, Te
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_CheckUriPermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CheckUriPermission_test_001, TestSize.Level0)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
@@ -113,7 +113,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_CheckUriPermission_test_001, Test
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_DeleteBundlePermission_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_DeleteBundlePermission_test_001, TestSize.Level0)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);

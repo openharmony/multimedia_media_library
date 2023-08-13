@@ -43,7 +43,7 @@ int ConfigTestOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersio
 }
 
 shared_ptr<NativeRdb::RdbStore> storePtr = nullptr;
-void MediaLibraryExtUnitTest::SetUpTestCase(void)
+void MediaLibraryDeviceTest::SetUpTestCase(void)
 {
     const string dbPath = "/data/test/medialibrary_device_test.db";
     NativeRdb::RdbStoreConfig config(dbPath);
@@ -53,14 +53,14 @@ void MediaLibraryExtUnitTest::SetUpTestCase(void)
     storePtr = store;
 }
 
-void MediaLibraryExtUnitTest::TearDownTestCase(void) {}
+void MediaLibraryDeviceTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
-void MediaLibraryExtUnitTest::SetUp() {}
+void MediaLibraryDeviceTest::SetUp() {}
 
-void MediaLibraryExtUnitTest::TearDown(void) {}
+void MediaLibraryDeviceTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_InitDeviceRdbStore_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_InitDeviceRdbStore_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -87,7 +87,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InitDeviceRdbStore_test_001, TestSize
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateDeviceSyncStatus_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_UpdateDeviceSyncStatus_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -106,7 +106,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UpdateDeviceSyncStatus_test_001, Test
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetNetworkIdBySelfId_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_GetNetworkIdBySelfId_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -124,7 +124,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetNetworkIdBySelfId_test_001, TestSi
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetUdidByNetworkId_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_GetUdidByNetworkId_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     string networkId = "";
@@ -137,7 +137,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetUdidByNetworkId_test_001, TestSize
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetDeviceInfoMap_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_GetDeviceInfoMap_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     deviceTest->Start();
@@ -146,7 +146,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetDeviceInfoMap_test_001, TestSize.L
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryAgingDeviceInfos_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_QueryAgingDeviceInfos_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     deviceTest->Start();
@@ -156,7 +156,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryAgingDeviceInfos_test_001, TestS
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryAllDeviceUdid_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_QueryAllDeviceUdid_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     deviceTest->Start();
@@ -166,7 +166,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryAllDeviceUdid_test_001, TestSize
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteDeviceInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_DeleteDeviceInfo_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     deviceTest->Start();
@@ -178,7 +178,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DeleteDeviceInfo_test_001, TestSize.L
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMediaLibraryDeviceInfo_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_GetMediaLibraryDeviceInfo_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     deviceTest->Start();
@@ -191,7 +191,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetMediaLibraryDeviceInfo_test_001, T
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryDeviceTable_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_QueryDeviceTable_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -203,7 +203,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_QueryDeviceTable_test_001, TestSize.L
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_ClearAllDevices_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_ClearAllDevices_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     deviceTest->Start();
@@ -211,7 +211,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_ClearAllDevices_test_001, TestSize.Le
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_IsHasDevice_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_IsHasDevice_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     deviceTest->Start();
@@ -224,7 +224,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_IsHasDevice_test_001, TestSize.Level0
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_RegisterToDM_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_RegisterToDM_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     deviceTest->Start();
@@ -232,7 +232,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_RegisterToDM_test_001, TestSize.Level
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_UnRegisterFromDM_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_UnRegisterFromDM_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     deviceTest->Start();
@@ -240,7 +240,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_UnRegisterFromDM_test_001, TestSize.L
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_DevOnlineProcess_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_DevOnlineProcess_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     deviceTest->Start();
@@ -249,7 +249,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_DevOnlineProcess_test_001, TestSize.L
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_TryToGetTargetDevMLInfos_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_TryToGetTargetDevMLInfos_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     string udid = "TryToGetTargetDevMLInfos";
@@ -260,7 +260,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_TryToGetTargetDevMLInfos_test_001, Te
     deviceTest->Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_IsHasActiveDevice_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDeviceTest, medialib_IsHasActiveDevice_test_001, TestSize.Level0)
 {
     shared_ptr<MediaLibraryDevice> deviceTest = MediaLibraryDevice::GetInstance();
     bool ret = deviceTest->IsHasActiveDevice();

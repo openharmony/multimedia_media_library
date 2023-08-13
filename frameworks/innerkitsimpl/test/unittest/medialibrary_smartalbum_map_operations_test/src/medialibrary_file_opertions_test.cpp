@@ -28,7 +28,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_HandleFileOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleFileOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibraryFileOperations::HandleFileOperation(cmd);
@@ -47,7 +47,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_HandleFileOperation_test_001, Tes
     EXPECT_EQ(ret, E_INVALID_URI);
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_CreateFileOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CreateFileOperation_test_001, TestSize.Level0)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
     MediaLibraryUnistoreManager::GetInstance().Init(context);
@@ -71,7 +71,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_CreateFileOperation_test_001, Tes
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_CloseFileOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CloseFileOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CLOSE);
     int32_t ret = MediaLibraryFileOperations::CloseFileOperation(cmd);
@@ -89,7 +89,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_CloseFileOperation_test_001, Test
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_ModifyFileOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_ModifyFileOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::GETCAPACITY);
     int32_t ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
@@ -108,7 +108,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_ModifyFileOperation_test_001, Tes
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_GetAlbumCapacityOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_GetAlbumCapacityOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::GETCAPACITY);
     int32_t ret = MediaLibraryFileOperations::GetAlbumCapacityOperation(cmd);
@@ -123,7 +123,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_GetAlbumCapacityOperation_test_00
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_CopyFileOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CopyFileOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::COPY);
     int32_t ret = MediaLibraryFileOperations::CopyFileOperation(cmd);
@@ -138,7 +138,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_CopyFileOperation_test_001, TestS
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_QueryFileOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryFileOperation_test_001, TestSize.Level0)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
@@ -161,7 +161,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_QueryFileOperation_test_001, Test
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_QueryFavFiles_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryFavFiles_test_001, TestSize.Level0)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
@@ -182,7 +182,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialibrary_QueryFavFiles_test_001, TestSize.
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialibrary_QueryTrashFiles_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryTrashFiles_test_001, TestSize.Level0)
 {
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);

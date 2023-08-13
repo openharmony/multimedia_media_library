@@ -48,7 +48,7 @@ int ConfigTestOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersio
     return 0;
 }
 shared_ptr<NativeRdb::RdbStore> storePtr = nullptr;
-void MediaLibraryExtUnitTest::SetUpTestCase(void)
+void MediaLibraryThumbnailServiceTest::SetUpTestCase(void)
 {
     const string dbPath = "/data/test/medialibrary_thumbnail_service_test.db";
     NativeRdb::RdbStoreConfig config(dbPath);
@@ -57,14 +57,14 @@ void MediaLibraryExtUnitTest::SetUpTestCase(void)
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     storePtr = store;
 }
-void MediaLibraryExtUnitTest::TearDownTestCase(void) {}
+void MediaLibraryThumbnailServiceTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
-void MediaLibraryExtUnitTest::SetUp() {}
+void MediaLibraryThumbnailServiceTest::SetUp() {}
 
-void MediaLibraryExtUnitTest::TearDown(void) {}
+void MediaLibraryThumbnailServiceTest::TearDown(void) {}
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GetThumbnail_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetThumbnail_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -85,7 +85,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GetThumbnail_test_001, TestSize.Level
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_LcdAging_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdAging_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -101,7 +101,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_LcdAging_test_001, TestSize.Level0)
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_LcdDistributeAging_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdDistributeAging_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -121,7 +121,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_LcdDistributeAging_test_001, TestSize
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_GenerateThumbnails_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnails_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -140,7 +140,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_GenerateThumbnails_test_001, TestSize
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_InterruptBgworker_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InterruptBgworker_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -154,7 +154,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InterruptBgworker_test_001, TestSize.
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_StopAllWorker_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_StopAllWorker_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -168,7 +168,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_StopAllWorker_test_001, TestSize.Leve
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_InvalidateDistributeThumbnail_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InvalidateDistributeThumbnail_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
@@ -188,7 +188,7 @@ HWTEST_F(MediaLibraryExtUnitTest, medialib_InvalidateDistributeThumbnail_test_00
     serverTest->ReleaseService();
 }
 
-HWTEST_F(MediaLibraryExtUnitTest, medialib_CreateThumbnailAsync_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
