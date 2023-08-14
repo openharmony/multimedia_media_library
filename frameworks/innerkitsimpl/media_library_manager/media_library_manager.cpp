@@ -15,16 +15,26 @@
 #define MLOG_TAG "MediaLibraryManager"
 
 #include "media_library_manager.h"
+
+#include <fcntl.h>
 #include <unistd.h>
-#include "datashare_predicates.h"
+
+#include "album_asset.h"
+#include "fetch_result.h"
+#include "file_asset.h"
 #include "datashare_abs_result_set.h"
+#include "datashare_predicates.h"
+#include "image_source.h"
+#include "media_file_uri.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
-#include "result_set_utils.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
+#include "result_set_utils.h"
+#include "string_ex.h"
+#include "unique_fd.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -32,6 +42,10 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sDataShareHelper_ = nullptr;
+const string THUMBNAIL_PATH = "path";
+const string THUMBNAIL_HEIGHT = "height";
+const string THUMBNAIL_WIDTH = "width";
+constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 
 MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 {
@@ -244,6 +258,172 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     fileUri = MediaFileUri(MediaType::MEDIA_TYPE_FILE, to_string(fileId), "", MEDIA_API_VERSION_V9);
 #endif
     return E_SUCCESS;
+}
+
+static inline bool IsThumbnail(const int32_t width, const int32_t height)
+{
+    return (width <= DEFAULT_THUMBNAIL_SIZE) && (height <= DEFAULT_THUMBNAIL_SIZE);
+}
+
+static inline std::string GetSandboxPath(const std::string &path, bool isThumb)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + (isThumb ? "/THM.jpg" : "/LCD.jpg");
+    return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
+}
+
+int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size)
+{
+    if (!path.empty()) {
+        string sandboxPath = GetSandboxPath(path, IsThumbnail(size.width, size.height));
+        int fd = -1;
+        if (!sandboxPath.empty()) {
+            fd = open(sandboxPath.c_str(), O_RDONLY);
+        }
+        if (fd > 0) {
+            return fd;
+        }
+        if (IsAsciiString(path)) {
+            uriStr += "&" + THUMBNAIL_PATH + "=" + path;
+        }
+    }
+    Uri openUri(uriStr);
+    return sDataShareHelper_->OpenFile(openUri, "R");
+}
+
+/**
+ * Get the file uri prefix with id
+ * eg. Input: file://media/Photo/10/IMG_xxx/01.jpg
+ *     Output: file://media/Photo/10
+ */
+static void GetUriIdPrefix(std::string &fileUri)
+{
+    MediaFileUri mediaUri(fileUri);
+    if (!mediaUri.IsApi10()) {
+        return;
+    }
+    auto slashIdx = fileUri.rfind('/');
+    if (slashIdx == std::string::npos) {
+        return;
+    }
+    auto tmpUri = fileUri.substr(0, slashIdx);
+    slashIdx = tmpUri.rfind('/');
+    if (slashIdx == std::string::npos) {
+        return;
+    }
+    fileUri = tmpUri.substr(0, slashIdx);
+}
+
+static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOldVer, Size &size, string &path)
+{
+    MediaFileUri mediaUri(uri);
+    if (!mediaUri.IsValid()) {
+        return false;
+    }
+    if (isOldVer) {
+        auto index = uri.find("thumbnail");
+        if (index == string::npos) {
+            return false;
+        }
+        fileUri = uri.substr(0, index - 1);
+        GetUriIdPrefix(fileUri);
+        index += strlen("thumbnail");
+        index = uri.find('/', index);
+        if (index == string::npos) {
+            return false;
+        }
+        index += 1;
+        auto tmpIdx = uri.find('/', index);
+        if (tmpIdx == string::npos) {
+            return false;
+        }
+
+        int32_t width = 0;
+        StrToInt(uri.substr(index, tmpIdx - index), width);
+        int32_t height = 0;
+        StrToInt(uri.substr(tmpIdx + 1), height);
+        size = { .width = width, .height = height };
+    } else {
+        auto qIdx = uri.find('?');
+        if (qIdx == string::npos) {
+            return false;
+        }
+        fileUri = uri.substr(0, qIdx);
+        GetUriIdPrefix(fileUri);
+        auto &queryKey = mediaUri.GetQueryKeys();
+        if (queryKey.count(THUMBNAIL_PATH) != 0) {
+            path = queryKey[THUMBNAIL_PATH];
+        }
+        if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
+            size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+        }
+        if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
+            size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        }
+    }
+    return true;
+}
+
+static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("QueryThumbnail uri:" + uri);
+
+    string openUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
+        "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
+    tracer.Start("DataShare::OpenThumbnail");
+    UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, path, size));
+    if (uniqueFd.Get() < 0) {
+        MEDIA_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
+        return nullptr;
+    }
+    tracer.Finish();
+    tracer.Start("ImageSource::CreateImageSource");
+    SourceOptions opts;
+    uint32_t err = 0;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
+    if (imageSource  == nullptr) {
+        MEDIA_ERR_LOG("CreateImageSource err %{public}d", err);
+        return nullptr;
+    }
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = size;
+    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+#ifndef IMAGE_PURGEABLE_PIXELMAP
+    return imageSource->CreatePixelMap(decodeOpts, err);
+#else
+    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    uint32_t errorCode = 0;
+    unique_ptr<ImageSource> backupImgSrc = ImageSource::CreateImageSource(uniqueFd.Get(), opts, errorCode);
+    if (errorCode == Media::SUCCESS) {
+        PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, backupImgSrc, decodeOpts);
+    } else {
+        MEDIA_ERR_LOG("Failed to backup image source when to be purgeable: %{public}d", errorCode);
+    }
+
+    return pixelMap;
+#endif
+}
+
+std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
+{
+    // uri is dataability:///media/image/<id>/thumbnail/<width>/<height>
+    string uriStr = uri.ToString();
+    auto thumbLatIdx = uriStr.find("thumbnail") + strlen("thumbnail");
+    if (thumbLatIdx == string::npos || thumbLatIdx > uriStr.length()) {
+        return nullptr;
+    }
+    bool isOldVersion = uriStr[thumbLatIdx] == '/';
+    string path;
+    string fileUri;
+    Size size;
+    if (!GetParamsFromUri(uriStr, fileUri, isOldVersion, size, path)) {
+        return nullptr;
+    }
+    return QueryThumbnail(fileUri, size, path);
 }
 } // namespace Media
 } // namespace OHOS

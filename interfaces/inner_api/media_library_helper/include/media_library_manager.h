@@ -17,11 +17,9 @@
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_LIBRARY_MANAGER_H_
 #define USERID "100"
 
-#include "album_asset.h"
-#include "file_asset.h"
-#include "fetch_result.h"
-#include "media_volume.h"
 #include "datashare_helper.h"
+#include "media_volume.h"
+#include "pixel_map.h"
 
 namespace OHOS {
 namespace Media {
@@ -137,6 +135,9 @@ public:
      * @version 1.0
      */
     int32_t GetUriFromFilePath(const std::string &filePath, Uri &fileUri, string &userId);
+
+    std::unique_ptr<PixelMap> GetThumbnail(const Uri &uri);
+    static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size);
 
 private:
     static shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
