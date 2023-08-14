@@ -39,6 +39,7 @@ ohos_shared_library("media_library_manager") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "image_framework:image_native",
   ]
 
   sanitize = {
