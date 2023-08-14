@@ -114,6 +114,8 @@ public:
     // all columns
     static const std::set<std::string> PHOTO_COLUMNS;
 
+    static const std::string QUERY_MEDIA_VOLUME;
+
     static bool IsPhotoColumn(const std::string &columnName);
 };
 
@@ -136,6 +138,8 @@ public:
 
     // all columns
     static const std::set<std::string> AUDIO_COLUMNS;
+
+    static const std::string QUERY_MEDIA_VOLUME;
 
     static bool IsAudioColumn(const std::string &columnName);
 };
