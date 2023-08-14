@@ -3105,35 +3105,58 @@ napi_value FileAssetNapi::UserFileMgrSetPending(napi_env env, napi_callback_info
         UserFileMgrSetPendingExecute, UserFileMgrSetPendingComplete);
 }
 
+static void UserFileMgrGetExifExecute(napi_env env, void *data) {}
+
+static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<FileAssetAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    auto *obj = context->objectInfo;
+    nlohmann::json allExifJson;
+    if (!obj->GetAllExif().empty()) {
+        allExifJson = nlohmann::json::parse(obj->GetAllExif());
+    }
+    if (allExifJson.is_discarded() || obj->GetAllExif().empty()) {
+        NAPI_ERR_LOG("parse json failed");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL,
+            "parse json failed");
+        napi_get_undefined(env, &jsContext->data);
+    } else {
+        auto err = PermissionUtils::CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
+        if (err == false) {
+            allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LATITUDE);
+            allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LONGITUDE);
+            allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LATITUDE_REF);
+            allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF);
+        }
+        allExifJson[PHOTO_DATA_IMAGE_USER_COMMENT] = obj->GetUserComment();
+        napi_create_string_utf8(env, allExifJson.dump().c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
 napi_value FileAssetNapi::JSGetExif(napi_env env, napi_callback_info info)
 {
-    auto asyncContext = make_unique<FileAssetAsyncContext>();
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetExif");
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ONE),
         JS_ERR_PARAMETER_INVALID);
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULLPTR_RET(asyncContext->objectPtr);
 
-    napi_value jsResult = nullptr;
-    napi_get_undefined(env, &jsResult);
-    FileAssetNapi *obj = asyncContext->objectInfo;   
-    string allExif, userComment;
-    allExif = obj->GetAllExif();
-    userComment = obj->GetUserComment();
-    nlohmann::json allExifJson = nlohmann::json::parse(allExif);
-    if (allExifJson.is_discarded()) {
-        NAPI_ERR_LOG("parse json failed");
-        return jsResult;
-    }
-
-    auto err = PermissionUtils::CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
-    if (err == false) {
-        allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LATITUDE);
-        allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LONGITUDE);
-        allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LATITUDE_REF);
-        allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF);
-    }
-    allExifJson[PHOTO_DATA_IMAGE_USER_COMMENT] = userComment;
-    napi_create_string_utf8(env, allExifJson.dump().c_str(), NAPI_AUTO_LENGTH, &jsResult);
-
-    return jsResult;
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetExif", UserFileMgrGetExifExecute,
+        UserFileMgrGetExifComplete);
 }
 
 static void UserFileMgrSetUserCommentComplete(napi_env env, napi_status status, void *data)
@@ -3171,8 +3194,8 @@ static void UserFileMgrSetUserCommentExecute(napi_env env, void *data)
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, context->userComment);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, context->objectPtr->GetId());
-
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereArgs({std::to_string(context->objectPtr->GetId())});
     int32_t changedRows = UserFileClient::Update(editUserCommentUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
@@ -3729,8 +3752,8 @@ static void PhotoAccessHelperSetUserCommentExecute(napi_env env, void *data)
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_USER_COMMENT, context->userComment);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, context->objectPtr->GetId());
-
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereArgs({std::to_string(context->objectPtr->GetId())});
     int32_t changedRows = UserFileClient::Update(editUserCommentUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
