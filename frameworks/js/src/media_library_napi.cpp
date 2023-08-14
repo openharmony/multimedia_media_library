@@ -1710,7 +1710,6 @@ static void JSCreateAssetExecute(napi_env env, void *data)
         context->SaveError(index);
     } else {
         if (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
-            outUri = MediaFileUtils::Encode(outUri);
             if (context->isCreateByComponent) {
                 context->uri = outUri;
             } else {
@@ -5284,7 +5283,6 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
         context->SaveError(index);
     } else {
         if (context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
-            outUri = MediaFileUtils::Encode(outUri);
             if (context->isCreateByComponent) {
                 context->uri = outUri;
             } else {
