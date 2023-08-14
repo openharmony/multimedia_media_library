@@ -1261,16 +1261,13 @@ void RemoveAlbumCountTrigger(RdbStore &store)
 
 void AddExifAndUserComment(RdbStore &store)
 {
-    const string ADD_USER_COMMENT_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+    const string addUserCommentOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::PHOTO_USER_COMMENT + " TEXT";
 
-    const string ADD_ALL_EXIF_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+    const string addAllExifOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::PHOTO_ALL_EXIF + " TEXT";
 
-    const vector<string> addExifColumns = {
-        ADD_USER_COMMENT_ON_PHOTOS,
-        ADD_ALL_EXIF_ON_PHOTOS
-    };
+    const vector<string> addExifColumns = { addUserCommentOnPhotos, addAllExifOnPhotos };
     ExecSqls(addExifColumns, store);
 }
 
