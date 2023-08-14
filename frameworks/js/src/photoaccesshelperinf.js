@@ -165,8 +165,48 @@ function getPhotoAccessHelper(context) {
   return helper;
 }
 
+function getPhotoAccessHelperAsync(context, asyncCallback) {
+  if (context === undefined) {
+    console.log('photoAccessHelper gContext undefined');
+    throw Error('photoAccessHelper gContext undefined');
+  }
+  gContext = context;
+  if (arguments.length === 1) {
+    return photoAccessHelper.getPhotoAccessHelperAsync(gContext)
+      .then((helper) => {
+        if (helper !== undefined) {
+          console.log('photoAccessHelper getPhotoAccessHelperAsync inner add createDeleteRequest');
+          helper.createDeleteRequest = createDeleteRequest;
+        }
+        return helper;
+      })
+      .catch((err) => {
+        console.log('photoAccessHelper getPhotoAccessHelperAsync err ' + err);
+        throw Error(err);
+      });
+  } else if (arguments.length === ARGS_TWO && typeof asyncCallback === 'function') {
+    photoAccessHelper.getPhotoAccessHelperAsync(gContext, (err, helper) => {
+      console.log('photoAccessHelper getPhotoAccessHelperAsync callback ' + err);
+      if (err) {
+        asyncCallback(err);
+      } else {
+        if (helper !== undefined) {
+          console.log('photoAccessHelper getPhotoAccessHelperAsync callback add createDeleteRequest');
+          helper.createDeleteRequest = createDeleteRequest;
+        }
+        asyncCallback(err, helper);
+      }
+    });
+  } else {
+    console.log('photoAccessHelper getPhotoAccessHelperAsync param invalid');
+    throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_PARAMERTER_INVALID);
+  }
+  return undefined;
+}
+
 export default {
   getPhotoAccessHelper,
+  getPhotoAccessHelperAsync,
   PhotoType: photoAccessHelper.PhotoType,
   PhotoKeys: photoAccessHelper.PhotoKeys,
   AlbumKeys: photoAccessHelper.AlbumKeys,

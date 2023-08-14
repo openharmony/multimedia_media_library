@@ -166,13 +166,14 @@ public:
     MediaLibraryNapi();
     ~MediaLibraryNapi();
 
-    ResultNapiType resultNapiType_;
+    static std::mutex sUserFileClientMutex_;
 
 private:
     static void MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
     static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
 
     static napi_value GetMediaLibraryNewInstance(napi_env env, napi_callback_info info);
+    static napi_value GetMediaLibraryNewInstanceAsync(napi_env env, napi_callback_info info);
 
     static napi_value JSGetPublicDirectory(napi_env env, napi_callback_info info);
     static napi_value JSGetFileAssets(napi_env env, napi_callback_info info);
@@ -207,6 +208,7 @@ private:
     static napi_value JSGetMediaRemoteStub(napi_env env, napi_callback_info info);
 
     static napi_value GetUserFileMgr(napi_env env, napi_callback_info info);
+    static napi_value GetUserFileMgrAsync(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCreatePhotoAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrCreateAudioAsset(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
@@ -225,6 +227,7 @@ private:
     static napi_value CreatePhotoSubTypeEnum(napi_env env);
 
     static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
+    static napi_value GetPhotoAccessHelperAsync(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperTrashAsset(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperOnCallback(napi_env env, napi_callback_info info);
@@ -275,7 +278,6 @@ private:
     static thread_local napi_ref sNotifyType_;
     static thread_local napi_ref sDefaultChangeUriRef_;
 
-    static std::mutex sUserFileClientMutex_;
     static std::mutex sOnOffMutex_;
 };
 
@@ -324,6 +326,16 @@ struct MediaLibraryAsyncContext : public NapiError {
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
+};
+
+struct MediaLibraryInitContext : public NapiError  {
+    napi_async_work work;
+    napi_deferred deferred;
+    napi_ref callbackRef;
+    size_t argc;
+    napi_value argv[NAPI_ARGC_MAX];
+    napi_ref resultRef_;
+    sptr<IRemoteObject> token_;
 };
 } // namespace Media
 } // namespace OHOS
