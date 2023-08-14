@@ -18,6 +18,7 @@
 #include <string>
 
 #include "base_column.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -119,6 +120,14 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_USER_COMMENT + " TEXT, " +
     PHOTO_ALL_EXIF  + " TEXT)";
 
+const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn::MEDIA_SIZE + ") AS " +
+    MediaColumn::MEDIA_SIZE + "," +
+    MediaColumn::MEDIA_TYPE + " FROM " +
+    PhotoColumn::PHOTOS_TABLE + " WHERE " +
+    MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " +
+    MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " GROUP BY " +
+    MediaColumn::MEDIA_TYPE;
+
 // Create indexes
 const std::string PhotoColumn::INDEX_STHP_ADDTIME =
     BaseColumn::CreateIndex() + "idx_sthp_dateadded" + " ON " + PHOTOS_TABLE +
@@ -218,6 +227,13 @@ const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_RELATIVE_PATH + " TEXT, " +
     MEDIA_VIRTURL_PATH + " TEXT UNIQUE, " +
     AUDIO_ALBUM + " TEXT)";
+
+const std::string AudioColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn::MEDIA_SIZE + ") AS " +
+    MediaColumn::MEDIA_SIZE + "," +
+    MediaColumn::MEDIA_TYPE + " FROM " +
+    AudioColumn::AUDIOS_TABLE + " WHERE " +
+    MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_AUDIO) + " GROUP BY " +
+    MediaColumn::MEDIA_TYPE;
 
 const std::set<std::string> AudioColumn::AUDIO_COLUMNS = {
     AudioColumn::AUDIO_ALBUM, AudioColumn::AUDIO_ARTIST

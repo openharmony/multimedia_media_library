@@ -241,7 +241,8 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
 
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
         MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{public}s", QUERY_MEDIA_VOLUME.c_str());
-        return uniStore->QuerySql(QUERY_MEDIA_VOLUME);
+        return uniStore->QuerySql(QUERY_MEDIA_VOLUME + " UNION " + PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " +
+            AudioColumn::QUERY_MEDIA_VOLUME);
     }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY

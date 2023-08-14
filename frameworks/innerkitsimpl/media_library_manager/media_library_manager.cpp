@@ -75,7 +75,7 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
         return E_FAIL;
     }
     vector<string> columns;
-    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
+    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYVOLUME + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
     DataSharePredicates predicates;
     auto queryResultSet = sDataShareHelper_->Query(uri, predicates, columns);
     if (queryResultSet == nullptr) {
@@ -113,7 +113,7 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
     predicates.EqualTo(columnName, value);
     predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     DatashareBusinessError businessError;
-    
+
     if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("sDataShareHelper_ is null");
         return nullptr;
