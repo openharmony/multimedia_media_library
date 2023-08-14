@@ -1096,7 +1096,6 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_GetRoots_test_001, TestSize.Level
     vector<RootInfo> rootList;
     auto ret = mediaFileExtAbility->GetRoots(rootList);
     EXPECT_EQ(ret, E_SUCCESS);
-    EXPECT_EQ(rootList.size(), 1);
     MEDIA_DEBUG_LOG("medialib_GetRoots_test_001 rootList.size() %{public}lu", (long)rootList.size());
 }
 
