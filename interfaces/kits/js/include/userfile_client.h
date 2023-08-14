@@ -32,7 +32,11 @@ public:
     UserFileClient() {}
     virtual ~UserFileClient() {}
     static bool IsValid();
-    static void Init(const sptr<IRemoteObject> &token);
+    static napi_status CheckIsStage(napi_env env, napi_callback_info info, bool &result);
+    static sptr<IRemoteObject> ParseTokenInStageMode(napi_env env, napi_callback_info info);
+    static sptr<IRemoteObject> ParseTokenInAbility(napi_env env, napi_callback_info info);
+
+    static void Init(const sptr<IRemoteObject> &token, bool isSetHelper = false);
     static void Init(napi_env env, napi_callback_info info);
     static std::shared_ptr<DataShare::DataShareResultSet> Query(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode);
