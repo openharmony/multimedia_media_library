@@ -45,7 +45,9 @@ struct ListParam {
 };
 
 struct DeleteParam {
+    bool isDeleteAll = false;
     bool isOnlyDeleteDb = false;
+    std::string deleteUri;
 };
 
 struct ExecEnv {

@@ -238,6 +238,8 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { PAH_PHOTO, OperationObject::PAH_PHOTO },
         { PAH_ALBUM, OperationObject::PAH_ALBUM },
         { PAH_MAP, OperationObject::PAH_MAP },
+        { TOOL_PHOTO, OperationObject::TOOL_PHOTO },
+        { TOOL_AUDIO, OperationObject::TOOL_AUDIO },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -360,6 +362,8 @@ void MediaLibraryCommand::ParseTableName()
         { OperationObject::PAH_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::PAH_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
         { OperationObject::PAH_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
+        { OperationObject::TOOL_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
+        { OperationObject::TOOL_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
     };
 
     if (TABLE_NAME_MAP.find(oprnObject_) != TABLE_NAME_MAP.end()) {

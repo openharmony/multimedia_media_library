@@ -46,7 +46,7 @@ const std::string SEND_CREATE_THUMBNAIL_ASYNC = "-tas";
 const std::string SEND_CREATE_REMOVE_ORIGIN_FILE = "-rf";
 const std::string SEND_CREATE_UNREMOVE_ORIGIN_FILE = "-urf";
 
-const std::string DELETE_ONLY_DATABASE = "-odb";
+const std::string DELETE_ONLY_DATABASE = "-db";
 
 static inline void ShowUsage()
 {
@@ -207,16 +207,28 @@ static bool CheckSend(ExecEnv &env)
 
 static bool CheckDelete(ExecEnv &env)
 {
-    if (env.optArgs.extraArgs.size() == 0) {
-        printf("%s delete param wrong.\n", STR_FAIL.c_str());
+    if (env.optArgs.uri == OPT_STR_ALL) {
+        env.deleteParam.deleteUri.clear();
+        env.deleteParam.isDeleteAll = true;
+        for (size_t i = 0; i < env.optArgs.extraArgs.size(); i++) {
+            string param = env.optArgs.extraArgs[i];
+            if (param == DELETE_ONLY_DATABASE) {
+                env.deleteParam.isOnlyDeleteDb = true;
+            }
+        }
+    } else if (!env.optArgs.uri.empty()) {
+        std::string tableName = UserFileClientEx::GetTableNameByUri(env.optArgs.uri);
+        if (tableName.empty()) {
+            printf("%s uri invalid. uri:%s\n", STR_FAIL.c_str(), env.optArgs.uri.c_str());
+            return false;
+        }
+        env.deleteParam.isDeleteAll = false;
+        env.deleteParam.deleteUri = env.optArgs.uri;
+    } else {
+        printf("%s input uri incorrect.\n", STR_FAIL.c_str());
         return false;
     }
-    for (size_t i = 0; i < env.optArgs.extraArgs.size(); i++) {
-        string param = env.optArgs.extraArgs[i];
-        if (param == DELETE_ONLY_DATABASE) {
-            env.deleteParam.isOnlyDeleteDb = true;
-        }
-    }
+
     return true;
 }
 
@@ -273,8 +285,9 @@ int32_t CommandLine::Parser(ExecEnv &env)
         env.optArgs.cmdType = OptCmdType::TYPE_LIST;
         env.optArgs.uri = optFirst;
     } else if (cmd == OPT_STR_DELETE) {
+        env.optArgs.uri = optFirst;
         env.optArgs.cmdType = OptCmdType::TYPE_DELETE;
-        PutExtraString(env, MEDIATOOL_ARG_FIRST);
+        PutExtraString(env, MEDIATOOL_ARG_SECOND);
     } else {
         ShowUsage();
         return Media::E_ERR;

@@ -75,8 +75,8 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
         PhotoColumn::MEDIA_RELATIVE_PATH,
         PhotoColumn::MEDIA_TYPE
     };
-    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID,
-        fileId, cmd.GetOprnObject(), columns);
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
+        cmd.GetOprnObject(), columns);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
         fileId.c_str());
     int32_t deleteRow = DeletePhoto(fileAsset, cmd.GetApi());
