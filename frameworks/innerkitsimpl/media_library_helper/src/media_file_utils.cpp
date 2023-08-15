@@ -184,7 +184,7 @@ bool MediaFileUtils::CreateDirectory(const string &dirPath)
             if (mkdir(subStr.c_str(), CHOWN_RWX_USR_GRP) == -1) {
                 MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
                 umask(mask);
-                return false;
+                return (errno == EEXIST) ? true : false;
             }
             umask(mask);
         }
@@ -1124,7 +1124,7 @@ string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
         GetExtrParamFromUri(pureUri, displayName);
         extrUri = GetExtraUri(displayName, fileUri.GetFilePath());
     }
-    
+
     MediaFileUri realUri(type, to_string(realId), fileUri.GetNetworkId(),
         (fileUri.IsApi10() ? MEDIA_API_VERSION_V10 : MEDIA_API_VERSION_V9), (fileUri.IsApi10() ? extrUri : ""));
 
