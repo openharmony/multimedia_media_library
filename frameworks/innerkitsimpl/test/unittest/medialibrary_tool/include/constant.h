@@ -19,6 +19,7 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
+const std::string STR_SUCCESS = "[SUCCESS]";
 const std::string STR_FAIL = "[FAIL]";
 const std::string STR_WARN = "[WARN]";
 } // namespace MediaTool

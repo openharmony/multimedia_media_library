@@ -45,6 +45,47 @@ const std::string URI_ARG_FIRST_DELIMITER = "?";
 const std::string URI_API_VERSION_STR = std::to_string(static_cast<uint32_t>(MediaLibraryApi::API_10));
 const std::string URI_API_VERSION = URI_PARAM_API_VERSION + "=" + URI_API_VERSION_STR;
 
+enum MediaToolOperation {
+    INSERT,
+    QUERY,
+    CLOSE,
+    DELETE,
+    UPDATE
+};
+
+const std::map<MediaToolOperation, std::string> PHOTOOPRN_URI_MAP = {
+    { MediaToolOperation::INSERT, TOOL_CREATE_PHOTO },
+    { MediaToolOperation::QUERY, TOOL_QUERY_PHOTO },
+    { MediaToolOperation::CLOSE, TOOL_CLOSE_PHOTO },
+    { MediaToolOperation::DELETE, TOOL_DELETE_PHOTO },
+    { MediaToolOperation::UPDATE, TOOL_UPDATE_PHOTO }
+};
+
+const std::map<MediaToolOperation, std::string> AUDIOOPRN_URI_MAP = {
+    { MediaToolOperation::INSERT, TOOL_CREATE_AUDIO },
+    { MediaToolOperation::QUERY, TOOL_QUERY_AUDIO },
+    { MediaToolOperation::CLOSE, TOOL_CLOSE_AUDIO },
+    { MediaToolOperation::DELETE, TOOL_DELETE_AUDIO },
+    { MediaToolOperation::UPDATE, TOOL_UPDATE_AUDIO }
+};
+
+static std::string GetOperation(const std::string &tableName, MediaToolOperation oprn)
+{
+    if (tableName == PhotoColumn::PHOTOS_TABLE) {
+        auto item = PHOTOOPRN_URI_MAP.find(oprn);
+        if (item != PHOTOOPRN_URI_MAP.end()) {
+            return item->second;
+        }
+    } else if (tableName == AudioColumn::AUDIOS_TABLE) {
+        auto item = AUDIOOPRN_URI_MAP.find(oprn);
+        if (item != AUDIOOPRN_URI_MAP.end()) {
+            return item->second;
+        }
+    }
+    MEDIA_ERR_LOG("get operation failed. tableName:%{public}s", tableName.c_str());
+    return "";
+}
+
 static bool CheckTableName(const std::string &tableName)
 {
     static const std::set<std::string> VALID_TABLENAME_WHITELIST = {
@@ -60,22 +101,6 @@ static bool CheckTableName(const std::string &tableName)
     return true;
 }
 
-static std::string GetOperation(const std::string &tableName)
-{
-    static const std::map<std::string, std::string> TYPE_OPERATION_MAP = {
-        { AudioColumn::AUDIOS_TABLE, MEDIA_AUDIOOPRN },
-        { PhotoColumn::PHOTOS_TABLE, MEDIA_PHOTOOPRN }
-    };
-    std::string operation;
-    auto item = TYPE_OPERATION_MAP.find(tableName);
-    if (item != TYPE_OPERATION_MAP.end()) {
-        operation = item->second;
-    } else {
-        MEDIA_ERR_LOG("get operation failed. tableName:%{public}s", tableName.c_str());
-    }
-    return operation;
-}
-
 static inline bool GetUriInfo(const std::string &uri, std::string &uriId)
 {
     MediaFileUri fileUri(uri);
@@ -89,60 +114,57 @@ static inline bool GetUriInfo(const std::string &uri, std::string &uriId)
 
 static inline std::string GetInsertUri(const std::string &tableName)
 {
-    std::string uri;
-    std::string operation = GetOperation(tableName);
-    if (operation.empty()) {
+    std::string uri = GetOperation(tableName, MediaToolOperation::INSERT);
+    if (uri.empty()) {
         MEDIA_ERR_LOG("get insert uri failed. tableName:%{public}s", tableName.c_str());
         return uri;
     }
-    uri = MEDIALIBRARY_DATA_URI;
-    uri.append(URI_DELIMITER + operation);
-    uri.append(URI_DELIMITER + MEDIA_FILEOPRN_CREATEASSET);
     uri.append(URI_ARG_FIRST_DELIMITER + URI_API_VERSION);
     return uri;
 }
 
 static inline std::string GetQueryUri(const std::string &tableName)
 {
-    std::string uri;
-    std::string operation = GetOperation(tableName);
-    if (tableName.empty() || operation.empty()) {
+    std::string uri = GetOperation(tableName, MediaToolOperation::QUERY);
+    if (uri.empty()) {
         MEDIA_ERR_LOG("get query uri failed. tableName:%{public}s", tableName.c_str());
         return uri;
     }
-    uri = MEDIALIBRARY_DATA_URI;
-    uri.append(URI_DELIMITER + operation);
-    uri.append(URI_DELIMITER + tableName);
     uri.append(URI_ARG_FIRST_DELIMITER + URI_API_VERSION);
     return uri;
 }
 
-static inline std::string GetOpenUri(const std::string &uri)
+static inline std::string GetCloseUri(const std::string &tableName)
 {
-    std::string strUri;
-    std::string operation = GetOperation(UserFileClientEx::GetTableNameByUri(uri));
-    if (operation.empty()) {
-        MEDIA_ERR_LOG("get open uri failed. uri:%{public}s", uri.c_str());
-        return strUri;
+    std::string uri = GetOperation(tableName, MediaToolOperation::CLOSE);
+    if (uri.empty()) {
+        MEDIA_ERR_LOG("get close uri failed. tableName:%{public}s", tableName.c_str());
+        return uri;
     }
-    strUri = uri;
-    strUri.append(URI_ARG_FIRST_DELIMITER + URI_API_VERSION);
-    return strUri;
+    uri.append(URI_ARG_FIRST_DELIMITER + URI_API_VERSION);
+    return uri;
 }
 
-static inline std::string GetCloseUri(const std::string &uri)
+static inline std::string GetUpdateUri(const std::string &tableName)
 {
-    std::string strUri;
-    std::string operation = GetOperation(uri);
-    if (operation.empty()) {
-        MEDIA_ERR_LOG("get close uri failed. uri:%{public}s", uri.c_str());
-        return strUri;
+    std::string uri = GetOperation(tableName, MediaToolOperation::UPDATE);
+    if (uri.empty()) {
+        MEDIA_ERR_LOG("get update uri failed. tableName:%{public}s", tableName.c_str());
+        return uri;
     }
-    strUri = MEDIALIBRARY_DATA_URI;
-    strUri.append(URI_DELIMITER + operation);
-    strUri.append(URI_DELIMITER + MEDIA_FILEOPRN_CLOSEASSET);
-    strUri.append(URI_ARG_FIRST_DELIMITER + URI_API_VERSION);
-    return strUri;
+    uri.append(URI_ARG_FIRST_DELIMITER + URI_API_VERSION);
+    return uri;
+}
+
+static inline std::string GetDeleteUri(const std::string &tableName)
+{
+    std::string uri = GetOperation(tableName, MediaToolOperation::DELETE);
+    if (uri.empty()) {
+        MEDIA_ERR_LOG("get delete uri failed. tableName:%{public}s", tableName.c_str());
+        return uri;
+    }
+    uri.append(URI_ARG_FIRST_DELIMITER + URI_API_VERSION);
+    return uri;
 }
 
 bool UserFileClientEx::Init(const sptr<IRemoteObject> &token)
@@ -156,7 +178,8 @@ void UserFileClientEx::Clear()
     UserFileClient::Clear();
 }
 
-int32_t UserFileClientEx::Insert(const std::string &tableName, const std::string &name)
+int32_t UserFileClientEx::InsertExt(const std::string &tableName, const std::string &name,
+    std::string &outString)
 {
     std::string insertUriStr = GetInsertUri(tableName);
     if (insertUriStr.empty()) {
@@ -169,10 +192,10 @@ int32_t UserFileClientEx::Insert(const std::string &tableName, const std::string
     values.Put(MediaColumn::MEDIA_NAME, name);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(name));
     values.Put(MediaColumn::MEDIA_TYPE, MimeTypeUtils::GetMediaTypeFromMimeType(mimeType));
-    MEDIA_INFO_LOG("insert. insertUri:%{public}s, name:%{private}s", insertUri.ToString().c_str(), name.c_str());
-    auto ret = UserFileClient::Insert(insertUri, values);
+    MEDIA_INFO_LOG("insertext. insertUri:%{public}s, name:%{private}s", insertUri.ToString().c_str(), name.c_str());
+    auto ret = UserFileClient::InsertExt(insertUri, values, outString);
     if (ret <= 0) {
-        MEDIA_ERR_LOG("insert failed. ret:%{public}d", ret);
+        MEDIA_ERR_LOG("insertext failed. ret:%{public}d", ret);
     }
     return ret;
 }
@@ -220,12 +243,11 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
 
 int UserFileClientEx::Open(const std::string &uri, const std::string &mode)
 {
-    std::string openUriStr = GetOpenUri(uri);
-    if (openUriStr.empty()) {
+    if (uri.empty()) {
         return Media::E_FAIL;
     }
-    Uri openUri(openUriStr);
-    MEDIA_INFO_LOG("open. openUri:%{public}s, mode:%{public}s", openUri.ToString().c_str(), mode.c_str());
+    Uri openUri(uri);
+    MEDIA_INFO_LOG("open. uri:%{public}s, mode:%{public}s", uri.c_str(), mode.c_str());
     return UserFileClient::OpenFile(openUri, mode);
 }
 
@@ -250,7 +272,7 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
     if (isCreateThumbSync) {
         valuesBucket.Put(CLOSE_CREATE_THUMB_STATUS, CREATE_THUMB_SYNC_STATUS);
     }
-    std::string closeUriStr = GetCloseUri(uri);
+    std::string closeUriStr = GetCloseUri(GetTableNameByUri(uri));
     if (closeUriStr.empty()) {
         MEDIA_ERR_LOG("get close uri failed. uri:%{public}s", uri.c_str());
         return Media::E_FAIL;
@@ -261,6 +283,69 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
     if (ret == Media::E_FAIL) {
         MEDIA_ERR_LOG("close the file failed. ret:%{public}d, closeUri:%{public}s, uri:%{public}s",
             ret, closeUri.ToString().c_str(), uri.c_str());
+    }
+    return ret;
+}
+
+int32_t UserFileClientEx::Trash(const std::string &uri)
+{
+    if (!UserFileClient::IsValid()) {
+        MEDIA_ERR_LOG("close failed. helper:null.");
+        return Media::E_FAIL;
+    }
+    MediaFileUri fileUri(uri);
+    if (!fileUri.IsValid()) {
+        MEDIA_ERR_LOG("FileUri %{public}s is not Valid", uri.c_str());
+        return Media::E_FAIL;
+    }
+    string tableName = GetTableNameByUri(uri);
+    std::string trashUriStr = GetUpdateUri(tableName);
+    if (trashUriStr.empty()) {
+        MEDIA_ERR_LOG("get trash uri failed. uri:%{public}s", uri.c_str());
+        return Media::E_FAIL;
+    }
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
+    DataShare::DataSharePredicates predicates;
+    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
+    predicates.SetWhereArgs({ fileUri.GetFileId() });
+    Uri trashUri(trashUriStr);
+    MEDIA_INFO_LOG("trash. trashUri:%{public}s, uri:%{public}s", trashUri.ToString().c_str(), uri.c_str());
+    auto ret = UserFileClient::Update(trashUri, predicates, valuesBucket);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("trash the file failed. ret:%{public}d, trashUri:%{public}s, uri:%{public}s",
+            ret, trashUri.ToString().c_str(), uri.c_str());
+    }
+    return ret;
+}
+
+int32_t UserFileClientEx::Delete(const std::string &uri)
+{
+    if (!UserFileClient::IsValid()) {
+        MEDIA_ERR_LOG("close failed. helper:null.");
+        return Media::E_FAIL;
+    }
+    MediaFileUri fileUri(uri);
+    if (!fileUri.IsValid()) {
+        MEDIA_ERR_LOG("FileUri %{public}s is not Valid", uri.c_str());
+        return Media::E_FAIL;
+    }
+    string tableName = GetTableNameByUri(uri);
+    std::string deleteUriStr = GetDeleteUri(tableName);
+    if (deleteUriStr.empty()) {
+        MEDIA_ERR_LOG("get delete uri failed. uri:%{public}s", uri.c_str());
+        return Media::E_FAIL;
+    }
+
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileUri.GetFileId());
+    Uri deleteUri(deleteUriStr);
+    MEDIA_INFO_LOG("delete. deleteUri:%{public}s, uri:%{public}s", deleteUri.ToString().c_str(), uri.c_str());
+    auto ret = UserFileClient::Delete(deleteUri, predicates);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("delete the file failed. ret:%{public}d, deleteUri:%{public}s, uri:%{public}s",
+            ret, deleteUri.ToString().c_str(), uri.c_str());
     }
     return ret;
 }

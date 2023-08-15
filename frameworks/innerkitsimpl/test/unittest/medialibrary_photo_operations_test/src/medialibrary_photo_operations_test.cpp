@@ -615,9 +615,7 @@ void TestPhotoCreateWithExtApi10(const string &extention, int32_t type, int32_t 
 void TestPhotoDeleteParamsApi10(OperationObject oprnObject, int32_t fileId, ExceptIntFunction func)
 {
     MediaLibraryCommand cmd(oprnObject, OperationType::DELETE, MediaLibraryApi::API_10);
-    ValuesBucket values;
-    values.PutInt(PhotoColumn::MEDIA_ID, fileId);
-    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = MediaLibraryPhotoOperations::Delete(cmd);
     func(ret);
 }
