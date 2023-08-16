@@ -196,6 +196,11 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
         return E_HAS_DB_ERROR;
     }
 
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
+            MediaFileUtils::UTCTimeMilliSeconds());
+    }
+
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->UpdateByCmd");
     int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
@@ -403,12 +408,16 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
 /**
  * Return changed rows on success, or negative values on error cases.
  */
-int32_t MediaLibraryRdbStore::Update(const ValuesBucket &values,
+int32_t MediaLibraryRdbStore::Update(ValuesBucket &values,
     const AbsRdbPredicates &predicates)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
+    }
+
+    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     }
 
     MediaLibraryTracer tracer;
@@ -419,6 +428,7 @@ int32_t MediaLibraryRdbStore::Update(const ValuesBucket &values,
         MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", err);
         return E_HAS_DB_ERROR;
     }
+
     return changedRows;
 }
 
