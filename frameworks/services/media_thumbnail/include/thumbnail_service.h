@@ -47,11 +47,12 @@ public:
         bool isSync = false);
     THUMBNAIL_API_EXPORT void InvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "");
-    THUMBNAIL_API_EXPORT int32_t Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    THUMBNAIL_API_EXPORT void Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
 private:
     ThumbnailService();
+    bool CheckSizeValid();
 
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;
@@ -59,6 +60,7 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> rdbStorePtr_;
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
     Size screenSize_;
+    bool isScreenSizeInit_ = false;
 };
 } // namespace Media
 } // namespace OHOS

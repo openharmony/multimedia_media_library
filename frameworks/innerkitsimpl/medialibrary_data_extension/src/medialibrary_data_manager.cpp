@@ -969,11 +969,7 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService(
     if (thumbnailService_ == nullptr) {
         return E_THUMBNAIL_SERVICE_NULLPTR;
     }
-    int ret = thumbnailService_->Init(rdbStore_, kvStorePtr_, extensionContext);
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to init ThumbnailService, err %{public}d", ret);
-        return E_ERR;
-    }
+    thumbnailService_->Init(rdbStore_, kvStorePtr_, extensionContext);
     return E_OK;
 }
 
