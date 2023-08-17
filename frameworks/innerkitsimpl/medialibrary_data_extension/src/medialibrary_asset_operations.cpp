@@ -936,15 +936,13 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     // if pending is timestamp, do nothing
     if (fileAsset->GetTimePending() == 0 || fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
         ScanFile(path, isCreateThumbSync);
-        if (fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
-            MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({
-                to_string(PhotoAlbumSubType::IMAGES),
-                to_string(PhotoAlbumSubType::VIDEO),
-                to_string(PhotoAlbumSubType::SCREENSHOT),
-                to_string(PhotoAlbumSubType::CAMERA),
-                to_string(PhotoAlbumSubType::FAVORITE),
-            });
-        }
+        MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({
+            to_string(PhotoAlbumSubType::IMAGES),
+            to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::SCREENSHOT),
+            to_string(PhotoAlbumSubType::CAMERA),
+            to_string(PhotoAlbumSubType::FAVORITE),
+        });
         return E_OK;
     } else if (fileAsset->GetTimePending() == UNCREATE_FILE_TIMEPENDING ||
         fileAsset->GetTimePending() == UNOPEN_FILE_COMPONENT_TIMEPENDING) {
