@@ -13,4 +13,9 @@
  * limitations under the License.
  */
 
-FUZZ
+#ifndef NOTIFYCHANGE_FUZZER_H
+#define NOTIFYCHANGE_FUZZER_H
+
+#define FUZZ_PROJECT_NAME "medialibraryextension_fuzzer"
+
+#endif

@@ -14,17 +14,5 @@ import("//foundation/multimedia/media_library/media_library.gni")
 
 group("media_library_fuzztest") {
   testonly = true
-  deps = [
-    # deps file
-    "batchInsert_fuzzer:BatchInsertFuzzTest",
-    "delete_fuzzer:deleteFuzzTest",
-    "getFileTypes_fuzzer:GetFileTypesFuzzTest",
-    "insert_fuzzer:InsertFuzzTest",
-    "medialibrary_fuzzer:MediaLibraryFuzzTest",
-    "notifyChange_fuzzer:NotifyChangeFuzzTest",
-    "openFile_fuzzer:openFileFuzzTest",
-    "registerObserver_fuzzer:RegisterObserverFuzzTest",
-    "unRegisterObserver_fuzzer:UnregisterObserverFuzzTest",
-    "update_fuzzer:UpDateFuzzTest",
-  ]
+  deps = [ "medialibraryextension_fuzzer:MediaLibraryExtensionFuzzTest" ]
 }
