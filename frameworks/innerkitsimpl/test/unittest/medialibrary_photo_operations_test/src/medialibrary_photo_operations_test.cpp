@@ -124,6 +124,7 @@ public:
     };
 };
 
+#ifdef FILEEXT
 void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
 {
     for (auto t : fileList) {
@@ -131,6 +132,7 @@ void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
             t.uri.c_str(), t.fileName.c_str(), t.mode, t.mimeType.c_str());
     }
 }
+#endif
 
 struct UniqueMemberValuesBucket {
     string assetMediaType;
@@ -831,6 +833,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_003, Test
     EXPECT_GE(ret, 0);
     MediaLibraryPhotoOperations::Create(cmd);
     MediaLibraryPhotoOperations::Create(cmd);
+#ifdef FILEEXT
     shared_ptr<MediaFileExtAbility> mediaFileExtAbility;
     MediaLibraryUnitTestUtils::Init();
     ArkJsRuntime runtime;
@@ -846,6 +849,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_003, Test
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(rootFileList.size(), 3);
     DisplayFileList(rootFileList);
+#endif
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_003");
 }
 
@@ -863,6 +867,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, Test
     EXPECT_GE(ret, 0);
     MediaLibraryPhotoOperations::Create(cmd);
     MediaLibraryPhotoOperations::Create(cmd);
+#ifdef FILEEXT
     shared_ptr<MediaFileExtAbility> mediaFileExtAbility;
     MediaLibraryUnitTestUtils::Init();
     ArkJsRuntime runtime;
@@ -878,6 +883,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_api10_test_004, Test
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(rootFileList.size(), 3);
     DisplayFileList(rootFileList);
+#endif
     MEDIA_INFO_LOG("end tdd photo_oprn_create_api10_test_004");
 }
 
