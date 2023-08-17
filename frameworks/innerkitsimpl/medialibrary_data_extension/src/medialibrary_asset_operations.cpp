@@ -39,6 +39,8 @@
 #include "medialibrary_inotify.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_photo_operations.h"
+#include "medialibrary_rdb_transaction.h"
+#include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
@@ -609,15 +611,15 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryAssetOperations::ModifyAssetInDb(MediaLibraryCommand &cmd)
 {
-    TransactionOperations transactionOprn;
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        return errCode;
-    }
-
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         return E_HAS_DB_ERROR;
+    }
+
+    TransactionOperations transactionOprn(rdbStore->GetRaw());
+    int32_t errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        return errCode;
     }
 
     int32_t rowId = 0;
@@ -935,7 +937,8 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     // if pending is timestamp, do nothing
     if (fileAsset->GetTimePending() == 0 || fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
         ScanFile(path, isCreateThumbSync);
-        MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
             to_string(PhotoAlbumSubType::IMAGES),
             to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::SCREENSHOT),
@@ -1001,8 +1004,9 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
     if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_DATE_TRASHED, value)) {
         return E_DO_NOT_NEDD_SEND_NOTIFY;
     }
-    MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
-    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
 
     value.GetLong(trashDate);
 
@@ -1042,7 +1046,9 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, i
         return;
     }
     value.GetInt(isFavorite);
-    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal({ to_string(PhotoAlbumSubType::FAVORITE) });
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        { to_string(PhotoAlbumSubType::FAVORITE) });
     auto watch = MediaLibraryNotify::GetInstance();
     if (cmd.GetOprnObject() != OperationObject::FILESYSTEM_PHOTO) {
         return;
@@ -1065,8 +1071,9 @@ int32_t MediaLibraryAssetOperations::SendHideNotify(MediaLibraryCommand &cmd, in
         return E_DO_NOT_NEDD_SEND_NOTIFY;
     }
     value.GetInt(hiddenState);
-    MediaLibraryAlbumOperations::UpdateUserAlbumInternal();
-    MediaLibraryAlbumOperations::UpdateSystemAlbumInternal();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
 
     string prefix;
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
