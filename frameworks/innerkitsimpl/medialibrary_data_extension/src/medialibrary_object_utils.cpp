@@ -22,7 +22,9 @@
 #include <sys/sendfile.h>
 #include "album_asset.h"
 #include "datashare_predicates.h"
+#ifdef DISTRIBUTED
 #include "device_manager.h"
+#endif
 #include "directory_ex.h"
 #include "fetch_result.h"
 #include "file_asset.h"
@@ -162,7 +164,7 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
         assetInfo.PutString(MEDIA_DATA_DB_PACKAGE_NAME,
             PermissionUtils::GetPackageNameByBundleName(cmd.GetBundleName()));
     }
-    
+
     assetInfo.PutString(MEDIA_DATA_DB_DEVICE_NAME, cmd.GetDeviceName());
     assetInfo.PutLong(MEDIA_DATA_DB_TIME_PENDING, fileAsset.GetTimePending());
     cmd.SetValueBucket(assetInfo);
@@ -667,7 +669,7 @@ static int32_t OpenAsset(const string &filePath, const string &mode)
 {
     MediaLibraryTracer tracer;
     tracer.Start("OpenAsset");
-    
+
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("Failed to get real path: %{private}s", filePath.c_str());
