@@ -20,12 +20,14 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
+#include "medialibrary_rdb_transaction.h"
+#include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
-#include "medialibrary_asset_operations.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "value_object.h"
@@ -94,19 +96,22 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         return E_HAS_DB_ERROR;
     }
 
+    TransactionOperations op(rdbStore->GetRaw());
     int32_t changedRows = 0;
-    rdbStore->BeginTransaction();
+    int32_t err = op.Start();
+    if (err != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
     for (const auto &value : values) {
         auto ret = AddSingleAsset(value);
         if (ret == E_HAS_DB_ERROR) {
-            rdbStore->RollBack();
             return ret;
         }
         if (ret > 0) {
             changedRows++;
         }
     }
-    rdbStore->Commit();
+    op.Finish();
     if (!values.empty()) {
         bool isValid = false;
         int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
@@ -114,7 +119,7 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
             MEDIA_WARN_LOG("Ignore failure on get album id, album updation possibly would be lost");
             return changedRows;
         }
-        MediaLibraryAlbumOperations::UpdateUserAlbumInternal({ to_string(albumId) });
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });
     }
 
     return changedRows;
@@ -140,7 +145,8 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     for (size_t i = 1; i < whereArgs.size(); i++) {
         watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, albumId);
     }
-    MediaLibraryAlbumOperations::UpdateUserAlbumInternal({ strAlbumId });
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { strAlbumId });
     return deleteRow;
 }
 

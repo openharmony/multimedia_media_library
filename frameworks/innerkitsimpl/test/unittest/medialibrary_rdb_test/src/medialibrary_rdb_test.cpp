@@ -23,6 +23,7 @@
 #include "js_runtime.h"
 #include "photo_album_column.h"
 #include "media_file_utils.h"
+#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_sync_operation.h"
 #define private public
 #include "medialibrary_object_utils.h"
@@ -241,9 +242,11 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level0)
         exit(1);
     }
     rdbStorePtr->Init();
-    int32_t ret = rdbStorePtr->BeginTransaction();
+    TransactionOperations op1(rdbStorePtr->GetRaw());
+    int32_t ret = op1.Start();
     EXPECT_EQ(ret, E_OK);
-    ret = rdbStorePtr->BeginTransaction();
+    TransactionOperations op2(rdbStorePtr->GetRaw());
+    ret = op2.Start();
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::UPDATE);
     ValuesBucket valuesBucket;
@@ -252,7 +255,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_001, TestSize.Level0)
     cmd.SetValueBucket(valuesBucket);
     int32_t updatedRows = E_HAS_DB_ERROR;
     ret = rdbStorePtr->Update(cmd, updatedRows);
-    ret = rdbStorePtr->Commit();
+    op1.Finish();
     EXPECT_EQ(ret, E_OK);
 }
 
@@ -262,19 +265,8 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_002, TestSize.Level0)
         exit(1);
     }
     rdbStorePtr->Stop();
-    int32_t ret = rdbStorePtr->BeginTransaction();
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-}
-
-HWTEST_F(MediaLibraryRdbTest, medialib_Transaction_test_003, TestSize.Level0)
-{
-    if (rdbStorePtr == nullptr) {
-        exit(1);
-    }
-    rdbStorePtr->Init();
-    int32_t ret = rdbStorePtr->Commit();
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    ret = rdbStorePtr->RollBack();
+    TransactionOperations op(rdbStorePtr->GetRaw());
+    int32_t ret = op.Start();
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
@@ -361,14 +353,12 @@ HWTEST_F(MediaLibraryRdbTest, medialib_BuildValuesSql_test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_001 begin");
-    TransactionOperations trans1;
     rdbStorePtr->Init();
-    trans1.rdbStore_ = rdbStorePtr;
+    TransactionOperations trans1(rdbStorePtr->GetRaw());
     trans1.Finish();
     int32_t ret = trans1.Start();
     EXPECT_EQ(ret, E_OK);
-    TransactionOperations trans2;
-    trans2.rdbStore_ = rdbStorePtr;
+    TransactionOperations trans2(rdbStorePtr->GetRaw());
     ret = trans2.Start();
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     trans1.Finish();
@@ -381,8 +371,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_001, TestSize.
 void TransactionTestFunc(shared_ptr<MediaLibraryRdbStore> rdbStorePtr,
     int* startSignal, int* endSignal, int32_t sleepTimeMs)
 {
-    TransactionOperations transactionOperations;
-    transactionOperations.rdbStore_ = rdbStorePtr;
+    TransactionOperations transactionOperations(rdbStorePtr->GetRaw());
     int32_t ret = transactionOperations.Start();
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Start failed, ret=%{public}d", ret);

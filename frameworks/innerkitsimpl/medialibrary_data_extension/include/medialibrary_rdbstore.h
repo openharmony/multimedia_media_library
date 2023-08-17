@@ -48,10 +48,6 @@ public:
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) override;
 
-    int32_t BeginTransaction();
-    int32_t RollBack();
-    int32_t Commit();
-
     std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
 
     static void BuildValuesSql(const NativeRdb::ValuesBucket &values, std::vector<NativeRdb::ValueObject> &bindArgs,
@@ -75,10 +71,6 @@ public:
 private:
     static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
-    static constexpr int RDB_TRANSACTION_WAIT_MS = 1000;
-    std::mutex transactionMutex_;
-    std::condition_variable transactionCV_;
-    std::atomic<bool> isInTransaction_;
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
@@ -129,36 +121,6 @@ private:
     bool isNotifyDeviceChange_;
 };
 #endif
-
-/**
- * This class is used for database transaction creation, commit, and rollback
- * The usage of class is as follows:
- *   1. initialize TransactionOperations object
- *          (for example: TranscationOperations opt)
- *   2. After init opt, you need call Start() function to start transaction
- *          int32_t err = opt.Start();
- *          if err != E_OK, transaction init failed
- *   3. If you need to commit transaction, then use
- *          int32_t err = opt.Finish();
- *          if err != E_OK, transation commit failed and auto rollback
- *   4. If TransactionOperations is destructed without successfully finish, it will be auto rollback
- */
-class TransactionOperations {
-public:
-    TransactionOperations();
-    ~TransactionOperations();
-    int32_t Start();
-    void Finish();
-private:
-    int32_t BeginTransaction();
-    int32_t TransactionCommit();
-    int32_t TransactionRollback();
-
-    std::shared_ptr<MediaLibraryRdbStore> rdbStore_;
-    bool isStart = false;
-    bool isFinish = false;
-    std::mutex mutex_;
-};
 } // namespace Media
 } // namespace OHOS
 
