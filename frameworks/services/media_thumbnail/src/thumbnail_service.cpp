@@ -298,6 +298,7 @@ int32_t ThumbnailService::LcdAging()
     return E_OK;
 }
 
+#ifdef DISTRIBUTED
 int32_t ThumbnailService::LcdDistributeAging(const string &udid)
 {
     ThumbRdbOpt opts = {
@@ -326,6 +327,7 @@ int32_t ThumbnailService::InvalidateDistributeThumbnail(const string &udid)
     }
     return err;
 }
+#endif
 
 void ThumbnailService::InvalidateThumbnail(const std::string &id, const std::string &tableName, const std::string &path)
 {
