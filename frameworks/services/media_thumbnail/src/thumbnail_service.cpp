@@ -57,21 +57,41 @@ shared_ptr<ThumbnailService> ThumbnailService::GetInstance()
     return thumbnailServiceInstance_;
 }
 
-static int32_t GetDefaultWindowSize(Size &size)
+static bool GetDefaultWindowSize(Size &size)
 {
     auto &displayMgr = OHOS::Rosen::DisplayManager::GetInstance();
     auto display = displayMgr.GetDefaultDisplay();
     if (display == nullptr) {
-        return E_ERR;
+        MEDIA_ERR_LOG("Get display window size failed");
+        return false;
     }
     size.width = display->GetWidth();
     size.height = display->GetHeight();
+    if (size.width <= 0) {
+        MEDIA_WARN_LOG("Get Default display width is invalid %{public}d", size.width);
+        size.width = DEFAULT_LCD_SIZE;
+    }
+    if (size.height <= 0) {
+        MEDIA_WARN_LOG("Get Default display height is invalid %{public}d", size.height);
+        size.height = DEFAULT_LCD_SIZE;
+    }
     MEDIA_INFO_LOG("display window size::w %{public}d, h %{public}d", size.width, size.height);
 
-    return E_OK;
+    return true;
 }
 
-int32_t ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
+bool ThumbnailService::CheckSizeValid()
+{
+    if (!isScreenSizeInit_) {
+        if (!GetDefaultWindowSize(screenSize_)) {
+            return false;
+        }
+        isScreenSizeInit_ = true;
+    }
+    return true;
+}
+
+void ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
     const shared_ptr<SingleKvStore> &kvStore,
     const shared_ptr<Context> &context)
 {
@@ -79,7 +99,11 @@ int32_t ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
     kvStorePtr_ = kvStore;
     context_ = context;
 
-    return GetDefaultWindowSize(screenSize_);
+    if (!GetDefaultWindowSize(screenSize_)) {
+        MEDIA_ERR_LOG("GetDefaultWindowSize failed");
+    } else {
+        isScreenSizeInit_ = true;
+    }
 }
 
 void ThumbnailService::ReleaseService()
@@ -118,6 +142,9 @@ static int32_t GetPathFromDb(const shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
 
 int ThumbnailService::GetThumbnailFd(const string &uri)
 {
+    if (!CheckSizeValid()) {
+        return E_THUMBNAIL_INVALID_SIZE;
+    }
     string id, path, table;
     Size size;
     if (!ThumbnailUriUtils::ParseThumbnailInfo(uri, id, size, path, table)) {
@@ -155,6 +182,9 @@ int ThumbnailService::GetThumbnailFd(const string &uri)
 
 int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &path, bool isSync)
 {
+    if (!CheckSizeValid()) {
+        return E_THUMBNAIL_INVALID_SIZE;
+    }
     string fileId;
     string networkId;
     string tableName;
@@ -214,6 +244,9 @@ void ThumbnailService::StopAllWorker()
 
 int32_t ThumbnailService::GenerateThumbnails()
 {
+    if (!CheckSizeValid()) {
+        return E_THUMBNAIL_INVALID_SIZE;
+    }
     int32_t err = 0;
     vector<string> tableList;
     tableList.emplace_back(PhotoColumn::PHOTOS_TABLE);
