@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "userfilemgr_uri.h"
 #define MLOG_TAG "Extension"
 
 #include "media_datashare_ext_ability.h"
@@ -25,6 +24,7 @@
 #include "datashare_ext_ability_context.h"
 #include "hilog_wrapper.h"
 #include "ipc_skeleton.h"
+#include "medialibrary_command.h"
 #include "media_datashare_stub_impl.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -43,6 +43,7 @@
 #ifdef MEDIALIBRARY_SECURITY_OPEN
 #include "sec_comp_kit.h"
 #endif
+#include "userfilemgr_uri.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -249,17 +250,26 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
     return E_SUCCESS;
 }
 
-static int32_t NativeSACheck(MediaLibraryCommand &cmd)
+static int32_t MediaToolNativeSACheck(MediaLibraryCommand &cmd)
 {
-    static const set<string> NATIVE_SA_URIS = {
-        URI_DELETE_TOOL
+    static const set<OperationObject> MEDIATOOL_OBJECT = {
+        OperationObject::TOOL_PHOTO,
+        OperationObject::TOOL_AUDIO
     };
-    string uri = cmd.GetUriStringWithoutSegment();
-    if (NATIVE_SA_URIS.find(uri) != NATIVE_SA_URIS.end()) {
+    static const set<Media::OperationType> MEDIATOOL_TYPES = {
+        Media::OperationType::DELETE_TOOL
+    };
+
+    OperationObject oprnObject = cmd.GetOprnObject();
+    Media::OperationType oprnType = cmd.GetOprnType();
+    if (MEDIATOOL_OBJECT.find(oprnObject) != MEDIATOOL_OBJECT.end() ||
+        MEDIATOOL_TYPES.find(oprnType) != MEDIATOOL_TYPES.end()) {
         if (!PermissionUtils::IsNativeSAApp()) {
             MEDIA_ERR_LOG("Native sa check failed!");
             return E_CHECK_NATIVE_SA_FAIL;
         }
+    } else {
+        return E_NEED_FURTHER_CHECK;
     }
     return E_SUCCESS;
 }
@@ -393,6 +403,8 @@ static void UnifyOprnObject(MediaLibraryCommand &cmd)
         { OperationObject::PAH_PHOTO, OperationObject::FILESYSTEM_PHOTO },
         { OperationObject::PAH_ALBUM, OperationObject::PHOTO_ALBUM },
         { OperationObject::PAH_MAP, OperationObject::PHOTO_MAP },
+        { OperationObject::TOOL_PHOTO, OperationObject::FILESYSTEM_PHOTO },
+        { OperationObject::TOOL_AUDIO, OperationObject::FILESYSTEM_AUDIO },
     };
 
     OperationObject obj = cmd.GetOprnObject();
@@ -411,23 +423,23 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
         return err;
     }
 
-    err = NativeSACheck(cmd);
-    if (err != E_SUCCESS) {
+    err = MediaToolNativeSACheck(cmd);
+    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+        UnifyOprnObject(cmd);
         return err;
     }
-
     err = PhotoAccessHelperPermCheck(cmd, isWrite);
-    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);
         return err;
     }
     err = UserFileMgrPermissionCheck(cmd, isWrite);
-    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);
         return err;
     }
     err = HandleSpecialObjectPermission(cmd, isWrite);
-    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);
         return err;
     }

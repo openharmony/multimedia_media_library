@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-
 #include "command/delete_command_v10.h"
 #include "constant.h"
 #include "medialibrary_errno.h"
@@ -22,9 +21,35 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
+int32_t DeleteCommandV10::DeleteOne(const std::string &uri)
+{
+    int32_t ret = UserFileClientEx::Trash(uri);
+    if (ret < 0) {
+        printf("%s trash failed. err:%d\n", STR_FAIL.c_str(), ret);
+        return Media::E_ERR;
+    }
+    ret = UserFileClientEx::Delete(uri);
+    if (ret < 0) {
+        printf("%s delete failed. err:%d\n", STR_FAIL.c_str(), ret);
+        return Media::E_ERR;
+    }
+    printf("%s delete success.", STR_SUCCESS.c_str());
+    return Media::E_OK;
+}
+
+int32_t DeleteCommandV10::DeleteAll(bool isDeleteAll)
+{
+    return UserFileClientEx::Delete(isDeleteAll);
+}
+
 int32_t DeleteCommandV10::Start(const ExecEnv &env)
 {
-    int32_t ret = UserFileClientEx::Delete(env.deleteParam.isOnlyDeleteDb);
+    int32_t ret = 0;
+    if (env.deleteParam.isDeleteAll) {
+        ret = DeleteAll(env.deleteParam.isDeleteAll);
+    } else {
+        ret = DeleteOne(env.deleteParam.deleteUri);
+    }
     if (ret != Media::E_OK) {
         printf("%s delete failed. err:%d", STR_FAIL.c_str(), ret);
         return Media::E_ERR;

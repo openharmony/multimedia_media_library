@@ -54,6 +54,8 @@ enum class OperationObject : uint32_t {
     PAH_PHOTO,
     PAH_ALBUM,
     PAH_MAP,
+    TOOL_PHOTO,
+    TOOL_AUDIO,
 };
 
 enum class OperationType : uint32_t {

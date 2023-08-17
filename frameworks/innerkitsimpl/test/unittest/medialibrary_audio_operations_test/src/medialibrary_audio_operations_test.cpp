@@ -615,9 +615,7 @@ void TestAudioCreateWithExtApi10(const string &extention, int32_t type, int32_t 
 void TestAudioDeleteParamsApi10(OperationObject oprnObject, int32_t fileId, ExceptIntFunction func)
 {
     MediaLibraryCommand cmd(oprnObject, OperationType::DELETE, MediaLibraryApi::API_10);
-    ValuesBucket values;
-    values.PutInt(AudioColumn::MEDIA_ID, fileId);
-    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(AudioColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = MediaLibraryAudioOperations::Delete(cmd);
     func(ret);
 }

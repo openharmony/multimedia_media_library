@@ -107,13 +107,20 @@ static int32_t CreateRecord(const ExecEnv &env, FileInfo &fileInfo)
     const MediaType mediaType = fileInfo.mediaType;
     std::string tableName = UserFileClientEx::GetTableNameByMediaType(mediaType);
     const std::string displayName = fileInfo.displayName;
-    auto fileId = UserFileClientEx::Insert(tableName, displayName);
+    string uri;
+    auto fileId = UserFileClientEx::InsertExt(tableName, displayName, uri);
     if (fileId <= 0) {
         printf("%s create record failed. fileId:%d, fileInfo:%s\n",
             STR_FAIL.c_str(), fileId, fileInfo.ToStr().c_str());
         return Media::E_ERR;
     }
-    fileInfo.uri = MediaFileUri(mediaType, to_string(fileId), "", MEDIA_API_VERSION_V10).ToString();
+    if (!uri.empty()) {
+        fileInfo.uri = uri;
+    } else {
+        printf("%s create record failed. uri is empty. fileInfo:%s\n",
+            STR_FAIL.c_str(), fileInfo.ToStr().c_str());
+        return Media::E_FAIL;
+    }
     fileInfo.id = fileId;
     return Media::E_OK;
 }
