@@ -19,6 +19,7 @@
 #include "fetch_result.h"
 #include "media_column.h"
 #include "media_file_uri.h"
+#include "media_file_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
@@ -105,6 +106,20 @@ int DatabaseUtils::RowToStr(const DumpOpt &opt, const std::shared_ptr<DataShare:
     return DataShare::E_OK;
 }
 
+static std::string GetApi10Uri(const std::string &path, const std::string &displayName,
+    int32_t mediaType, int32_t fileId)
+{
+    if (path.empty() || displayName.empty() || mediaType < 0) {
+        printf("param invalid, filePath %s or displayName %s invalid failed.\n",
+            path.c_str(), displayName.c_str());
+        return "";
+    }
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, path);
+    return MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX +
+        MediaFileUri::GetMediaTypeUri(static_cast<MediaType>(mediaType), MEDIA_API_VERSION_V10) + "/",
+        to_string(fileId), extrUri);
+}
+
 static int32_t GetStrFromResultSet(const std::string &name, ResultSetDataType type,
     const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, std::string &str)
 {
@@ -113,9 +128,11 @@ static int32_t GetStrFromResultSet(const std::string &name, ResultSetDataType ty
             ResultSetDataType::TYPE_INT32));
         int32_t mediaType = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_TYPE, resultSet,
             ResultSetDataType::TYPE_INT32));
-        MediaFileUri uri(static_cast<MediaType>(mediaType), to_string(id), "",
-            MEDIA_API_VERSION_V10);
-        str = uri.ToString();
+        std::string path = get<std::string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH,
+            resultSet, ResultSetDataType::TYPE_STRING));
+        std::string displayName = get<std::string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_NAME,
+            resultSet, ResultSetDataType::TYPE_STRING));
+        str = GetApi10Uri(path, displayName, mediaType, id);
         return DataShare::E_OK;
     }
     switch (type) {

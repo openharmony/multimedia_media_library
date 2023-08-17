@@ -27,12 +27,15 @@ class UserFileClientEx {
 public:
     static bool Init(const sptr<IRemoteObject> &token);
     static void Clear();
-    static int32_t Insert(const std::string &tableName, const std::string &name);
+    static int32_t InsertExt(const std::string &tableName, const std::string &name,
+        std::string &outString);
     static int32_t Query(const std::string &tableName, const std::string &uri,
         std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     static int Open(const std::string &uri, const std::string &mode);
     static int Close(const std::string &uri, const int fileFd, const std::string &mode,
         bool isCreateThumbSync = false);
+    static int Trash(const std::string &uri);
+    static int Delete(const std::string &uri);
     static int Delete(bool isOnlyDeleteDb);
     static int32_t CreateThumbnail(const std::string &uri);
     static std::string GetTableNameByMediaType(const MediaType mediaType);

@@ -16,6 +16,7 @@
 #define FRAMEWORKS_MEDIATOOLS_COMMAND_DELETE_COMMAND_V10_H_
 
 #include "command/command.h"
+#include "exec_env.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,6 +30,9 @@ public:
     DeleteCommandV10 &operator=(const DeleteCommandV10 &listCommand) = delete;
     DeleteCommandV10 &operator=(DeleteCommandV10 &&listCommand) = delete;
     int32_t Start(const ExecEnv &env) override;
+private:
+    int32_t DeleteAll(bool isDeleteAll);
+    int32_t DeleteOne(const std::string &uri);
 };
 } // MediaTool
 } // Media
