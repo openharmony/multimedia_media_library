@@ -18,10 +18,14 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
+
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
+
 bool FileUtils::IsFile(const std::string &path)
 {
     if (path.empty()) {
@@ -38,12 +42,32 @@ bool FileUtils::IsFile(const std::string &path)
 
 bool FileUtils::SendData(const int rfd, const int wfd)
 {
+    static const off_t sendSize1G = 1LL * 1024 * 1024 * 1024;
+    static const off_t maxSendSize2G = 2LL * 1024 * 1024 * 1024;
     struct stat fst = {0};
     if (fstat(rfd, &fst) != 0) {
+        MEDIA_INFO_LOG("send failed, errno=%{public}d", errno);
         return false;
     }
-    if (sendfile(wfd, rfd, nullptr, fst.st_size) != fst.st_size) {
-        return false;
+    off_t fileSize = fst.st_size;
+
+    if (fileSize >= maxSendSize2G) {
+        off_t offset = 0;
+        while (offset < fileSize) {
+            off_t sendSize = fileSize - offset;
+            if (sendSize > sendSize1G) {
+                sendSize = sendSize1G;
+            }
+            if (sendfile(wfd, rfd, &offset, sendSize) != sendSize) {
+                MEDIA_INFO_LOG("send failed, errno=%{public}d", errno);
+                return false;
+            }
+        }
+    } else {
+        if (sendfile(wfd, rfd, nullptr, fst.st_size) != fileSize) {
+            MEDIA_INFO_LOG("send failed, errno=%{public}d", errno);
+            return false;
+        }
     }
     return true;
 }

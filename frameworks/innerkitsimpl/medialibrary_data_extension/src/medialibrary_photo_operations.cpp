@@ -519,7 +519,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
         "Failed to Solve FileAsset Path and Name, displayName=%{private}s", displayName.c_str());
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
-    CHECK_AND_RETURN_RET_LOG(outRow > 0, errCode, "insert file in db failed, error = %{public}d", outRow);
+    CHECK_AND_RETURN_RET_LOG(outRow > 0, E_HAS_DB_ERROR, "insert file in db failed, error = %{public}d", outRow);
     fileAsset.SetId(outRow);
     SolvePhotoAlbumInCreate(cmd, fileAsset);
     transactionOprn.Finish();

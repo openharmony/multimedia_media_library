@@ -927,7 +927,6 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
         MEDIA_DEBUG_LOG("watch RemoveByFileUri, uri:%{private}s", uri.c_str());
     }
 
-    string fileId = to_string(fileAsset->GetId());
     string path = fileAsset->GetPath();
     // if pending == 0, scan
     // if pending == UNCREATE_FILE_TIMEPENDING, not occur under normal conditions
