@@ -259,12 +259,12 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
             uri.c_str(), fileFd, mode.c_str());
         return Media::E_FAIL;
     }
-    if (close(fileFd) != E_SUCCESS) {
-        MEDIA_ERR_LOG("close failed. uri:%{public}s, fileFd:%{public}d, mode:%{public}s",
-            uri.c_str(), fileFd, mode.c_str());
-        return Media::E_FAIL;
-    }
     if (mode == Media::MEDIA_FILEMODE_READONLY) {
+        if (close(fileFd) != E_SUCCESS) {
+            MEDIA_ERR_LOG("close failed. uri:%{public}s, fileFd:%{public}d, mode:%{public}s",
+                uri.c_str(), fileFd, mode.c_str());
+            return Media::E_FAIL;
+        }
         return Media::E_OK;
     }
     DataShare::DataShareValuesBucket valuesBucket;
@@ -283,6 +283,11 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
     if (ret == Media::E_FAIL) {
         MEDIA_ERR_LOG("close the file failed. ret:%{public}d, closeUri:%{public}s, uri:%{public}s",
             ret, closeUri.ToString().c_str(), uri.c_str());
+    }
+    if (close(fileFd) != E_SUCCESS) {
+        MEDIA_ERR_LOG("close failed. uri:%{public}s, fileFd:%{public}d, mode:%{public}s",
+            uri.c_str(), fileFd, mode.c_str());
+        return Media::E_FAIL;
     }
     return ret;
 }

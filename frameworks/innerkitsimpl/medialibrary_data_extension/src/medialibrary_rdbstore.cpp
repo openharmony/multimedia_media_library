@@ -1169,6 +1169,7 @@ void MediaLibraryRdbStore::UpdateAPI10Tables()
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return;
     }
 
     UpdateAPI10Table(*rdbStore_);
