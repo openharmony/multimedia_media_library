@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <sys/sendfile.h>
+#include <unistd.h>
 #include "album_asset.h"
 #include "datashare_predicates.h"
 #ifdef DISTRIBUTED
@@ -47,6 +48,7 @@
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
+#include "sandbox_helper.h"
 #include "string_ex.h"
 #include "thumbnail_service.h"
 #include "value_object.h"
@@ -689,6 +691,28 @@ static bool CheckIsOwner(const string &bundleName)
     return false;
 }
 
+static int32_t OpenDocument(const string &uri, const string &mode)
+{
+    static constexpr uint32_t BASE_USER_RANGE = 200000;
+    string uriString = AppFileService::SandboxHelper::Decode(uri);
+    uid_t uid = getuid() / BASE_USER_RANGE;
+    string realPath;
+    int32_t ret = AppFileService::SandboxHelper::GetPhysicalPath(uriString,
+        to_string(uid), realPath);
+    if (ret != E_OK || !AppFileService::SandboxHelper::CheckValidPath(realPath)) {
+        MEDIA_ERR_LOG("file not exist, uri=%{private}s, realPath=%{private}s",
+                      uriString.c_str(), realPath.c_str());
+        return E_INVALID_URI;
+    }
+    return MediaFileUtils::OpenFile(realPath, mode);
+}
+
+static bool IsDocumentUri(const std::string &uriString)
+{
+    Uri uri(uriString);
+    return uri.GetAuthority() == DOCUMENT_URI_AUTHORITY;
+}
+
 int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -697,6 +721,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     string uriString = cmd.GetUri().ToString();
     if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
         return ThumbnailService::GetInstance()->GetThumbnailFd(uriString);
+    } else if (IsDocumentUri(uriString)) {
+        return OpenDocument(uriString, mode);
     }
 
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromUri(uriString);
