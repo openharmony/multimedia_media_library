@@ -24,8 +24,7 @@ using namespace std;
 using namespace OHOS;
 using namespace testing::ext;
 
-namespace OHOS {
-namespace Media {
+namespace OHOS::Media {
 
 HWTEST_F(MediaLibraryRdbTest, medialibrary_GetOwner_test_001, TestSize.Level0)
 {
@@ -50,5 +49,4 @@ HWTEST_F(MediaLibraryRdbTest, medialibrary_GetOwner_test_002, TestSize.Level0)
     EXPECT_EQ((extension != nullptr), true);
 }
 
-}
-}
+} // namespace OHOS::Media
