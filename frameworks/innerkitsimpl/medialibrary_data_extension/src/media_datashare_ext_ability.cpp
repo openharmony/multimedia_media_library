@@ -40,6 +40,8 @@
 #include "runtime.h"
 #include "singleton.h"
 #include "system_ability_definition.h"
+#include "uri_permission_manager_client.h"
+#include "want.h"
 #ifdef MEDIALIBRARY_SECURITY_OPEN
 #include "sec_comp_kit.h"
 #endif
@@ -454,6 +456,14 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     return E_SUCCESS;
 }
 
+static uint32_t GetFlagFromMode(const string &mode)
+{
+    if (mode.find("w") != string::npos) {
+        return AAFwk::Want::FLAG_AUTH_WRITE_URI_PERMISSION;
+    }
+    return AAFwk::Want::FLAG_AUTH_READ_URI_PERMISSION;
+}
+
 int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
 {
 #ifdef MEDIALIBRARY_COMPATIBILITY
@@ -472,8 +482,12 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     if (err == E_PERMISSION_DENIED) {
         err = UriPermissionOperations::CheckUriPermission(command.GetUriStringWithoutSegment(), unifyMode);
         if (err != E_OK) {
-            MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
-            return err;
+            auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
+            if (!uriPermissionClient.VerifyUriPermission(Uri(uri), GetFlagFromMode(unifyMode),
+                IPCSkeleton::GetCallingTokenID())) {
+                MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
+                return err;
+            }
         }
     } else if (err < 0) {
         return err;
