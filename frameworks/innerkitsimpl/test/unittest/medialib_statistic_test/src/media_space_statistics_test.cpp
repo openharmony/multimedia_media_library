@@ -35,6 +35,11 @@ using namespace testing::ext;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::AppExecFwk;
 
+void exit(int code)
+{
+    _exit(code);
+}
+
 /**
  * @FileName MediaSpaceStatisticsTest
  * @Desc Media space statistics function test
