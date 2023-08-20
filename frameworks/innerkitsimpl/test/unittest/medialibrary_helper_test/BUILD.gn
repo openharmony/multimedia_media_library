@@ -38,6 +38,7 @@ ohos_unittest("media_library_helper_test") {
     "./src/file_asset_test.cpp",
     "./src/media_file_uri_test.cpp",
     "./src/media_file_utils_test.cpp",
+    "./src/media_volume_test.cpp",
     "./src/native_album_asset_test.cpp",
     "./src/photo_album_asset_test.cpp",
     "./src/smart_album_asset_test.cpp",
