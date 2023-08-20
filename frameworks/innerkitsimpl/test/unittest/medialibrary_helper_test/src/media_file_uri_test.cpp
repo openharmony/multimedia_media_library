@@ -20,6 +20,7 @@
 #include "string_ex.h"
 #include "thumbnail_const.h"
 #include "userfile_manager_types.h"
+#include "medialibrary_errno.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -504,6 +505,22 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RemoveAllFragment_Test_001, 
     EXPECT_EQ(uri, "datashare://media/test/");
 }
 
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriType_Test_001, TestSize.Level0)
+{
+    string uri = "file://data/test/testCase/";
+    MediaFileUri mediaFileUri(uri);
+    auto ret = mediaFileUri.GetUriType();
+    EXPECT_EQ(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetPhotoId_Test_001, TestSize.Level0)
+{
+    string uri = "file://data/test/testCase/";
+    EXPECT_EQ(MediaFileUri::GetPhotoId(uri), "");
+
+    uri = "file://media/Photo/test";
+    EXPECT_EQ(MediaFileUri::GetPhotoId(uri), "");
+}
 
 } // namespace Media
 } // namespace OHOS
