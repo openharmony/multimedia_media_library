@@ -95,7 +95,7 @@ void AddPermissionRecord(const AccessTokenID &token, const string &perm, const b
         return;
     }
 
-    int res = PrivacyKit::AddPermissionUsedRecord(token, perm, !!permGranted, !permGranted);
+    int res = PrivacyKit::AddPermissionUsedRecord(token, perm, !!permGranted, !permGranted, true);
     if (res != 0) {
         /* Failed to add permission used record, not fatal */
         MEDIA_WARN_LOG("Failed to add permission used record: %{public}s, permGranted: %{public}d, err: %{public}d",
