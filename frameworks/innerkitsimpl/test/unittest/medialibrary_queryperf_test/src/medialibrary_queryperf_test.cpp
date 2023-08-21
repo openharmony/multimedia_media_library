@@ -120,7 +120,14 @@ void MediaLibraryQueryPerfUnitTest::SetUpTestCase(void)
     MakeTestData();
 }
 
-void MediaLibraryQueryPerfUnitTest::TearDownTestCase(void) {}
+void MediaLibraryQueryPerfUnitTest::TearDownTestCase(void)
+{
+    MEDIA_ERR_LOG("TearDownTestCase start");
+    if (sDataShareHelper_ != nullptr) {
+        sDataShareHelper_->Release();
+    }
+    MEDIA_INFO_LOG("TearDownTestCase end");
+}
 
 void MediaLibraryQueryPerfUnitTest::SetUp(void) {}
 

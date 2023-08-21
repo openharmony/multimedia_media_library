@@ -510,7 +510,11 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriType_Test_001, TestSiz
     string uri = "file://data/test/testCase/";
     MediaFileUri mediaFileUri(uri);
     auto ret = mediaFileUri.GetUriType();
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, MEDIA_TYPE_AUDIO);
+
+    uri = "file://media/Photo/test";
+    ret = mediaFileUri.GetUriType();
+    EXPECT_EQ(ret, MEDIA_TYPE_AUDIO);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetPhotoId_Test_001, TestSize.Level0)
@@ -519,7 +523,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetPhotoId_Test_001, TestSiz
     EXPECT_EQ(MediaFileUri::GetPhotoId(uri), "");
 
     uri = "file://media/Photo/test";
-    EXPECT_EQ(MediaFileUri::GetPhotoId(uri), "");
+    EXPECT_EQ(MediaFileUri::GetPhotoId(uri), "test");
 }
 
 } // namespace Media
