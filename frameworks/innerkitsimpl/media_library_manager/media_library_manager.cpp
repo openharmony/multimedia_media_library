@@ -20,10 +20,10 @@
 #include <unistd.h>
 
 #include "album_asset.h"
-#include "fetch_result.h"
-#include "file_asset.h"
 #include "datashare_abs_result_set.h"
 #include "datashare_predicates.h"
+#include "fetch_result.h"
+#include "file_asset.h"
 #include "image_source.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -35,6 +35,10 @@
 #include "result_set_utils.h"
 #include "string_ex.h"
 #include "unique_fd.h"
+
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "purgeable_pixelmap_builder.h"
+#endif
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -396,14 +400,7 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, c
     return imageSource->CreatePixelMap(decodeOpts, err);
 #else
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    uint32_t errorCode = 0;
-    unique_ptr<ImageSource> backupImgSrc = ImageSource::CreateImageSource(uniqueFd.Get(), opts, errorCode);
-    if (errorCode == Media::SUCCESS) {
-        PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, backupImgSrc, decodeOpts);
-    } else {
-        MEDIA_ERR_LOG("Failed to backup image source when to be purgeable: %{public}d", errorCode);
-    }
-
+    PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
     return pixelMap;
 #endif
 }
