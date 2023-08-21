@@ -52,7 +52,7 @@ export default class OpenHarmonyTestRunner implements TestRunner {
         console.info('executeShellCommand : err : ' + JSON.stringify(err));
         console.info('executeShellCommand : data : ' + d.stdResult);
         console.info('executeShellCommand : data : ' + d.exitCode);
-      })
+      });
     console.info('OpenHarmonyTestRunner onRun end');
   }
 };
