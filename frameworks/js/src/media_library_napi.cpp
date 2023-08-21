@@ -4261,7 +4261,7 @@ static void JSStartImagePreviewExecute(MediaLibraryAsyncContext *context)
     Want want;
     want.SetType("image/jpeg");
     want.SetAction("ohos.want.action.viewData");
-    want.SetParam("uri", context->uri);
+    want.SetUri(context->uri);
     want.SetParam("viewIndex", context->imagePreviewIndex + 1);
     context->error = context->ability_->StartAbility(want);
 }
