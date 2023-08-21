@@ -32,6 +32,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
+#include "post_proc.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
 #include "unique_fd.h"
@@ -370,6 +371,15 @@ static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOl
     return true;
 }
 
+static bool IfSizeEqualsRatio(Size& imageSize, Size& targetSize)
+{
+    if (imageSize.height == 0 || targetSize.height == 0) {
+        return false;
+    }
+
+    return imageSize.width / imageSize.height == targetSize.width / targetSize.height;
+}
+
 static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path)
 {
     MediaLibraryTracer tracer;
@@ -393,16 +403,26 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, c
         return nullptr;
     }
 
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("GetImageInfo err %{public}d", err);
+        return nullptr;
+    }
+
+    bool isEqualsRatio = IfSizeEqualsRatio(imageInfo.size, size);
     DecodeOptions decodeOpts;
-    decodeOpts.desiredSize = size;
+    decodeOpts.desiredSize = isEqualsRatio ? size : imageInfo.size;
     decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-#ifndef IMAGE_PURGEABLE_PIXELMAP
-    return imageSource->CreatePixelMap(decodeOpts, err);
-#else
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+#ifdef IMAGE_PURGEABLE_PIXELMAP
     PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
-    return pixelMap;
 #endif
+    PostProc postProc;
+    if (!isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
+        return nullptr;
+    }
+    return pixelMap;
 }
 
 std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
