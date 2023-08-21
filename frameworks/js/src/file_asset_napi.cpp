@@ -38,6 +38,7 @@
 #include "medialibrary_tracer.h"
 #include "nlohmann/json.hpp"
 #include "permission_utils.h"
+#include "post_proc.h"
 #include "rdb_errno.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
@@ -1569,6 +1570,15 @@ static int OpenThumbnail(string &uriStr, const string &path, const Size &size)
     return UserFileClient::OpenFile(openUri, "R");
 }
 
+static bool IfSizeEqualsRatio(Size& imageSize, Size& targetSize)
+{
+    if (imageSize.height == 0 || targetSize.height == 0) {
+        return false;
+    }
+
+    return imageSize.width / imageSize.height == targetSize.width / targetSize.height;
+}
+
 static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
     const bool isApiVersion10, const string &path)
 {
@@ -1596,16 +1606,26 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
         return nullptr;
     }
 
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("GetImageInfo err %{public}d", err);
+        return nullptr;
+    }
+
+    bool isEqualsRatio = IfSizeEqualsRatio(imageInfo.size, size);
     DecodeOptions decodeOpts;
-    decodeOpts.desiredSize = size;
+    decodeOpts.desiredSize = isEqualsRatio ? size : imageInfo.size;
     decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-#ifndef IMAGE_PURGEABLE_PIXELMAP
-    return imageSource->CreatePixelMap(decodeOpts, err);
-#else
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+#ifdef IMAGE_PURGEABLE_PIXELMAP
     PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
-    return pixelMap;
 #endif
+    PostProc postProc;
+    if (!isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
+        return nullptr;
+    }
+    return pixelMap;
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
