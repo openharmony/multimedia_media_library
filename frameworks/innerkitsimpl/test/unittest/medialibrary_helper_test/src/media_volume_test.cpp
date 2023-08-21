@@ -26,6 +26,8 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+const int FILE_DATA_SIZE = 4;
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_GetAudiosSize_Test_001, TestSize.Level0)
 {
     MediaVolume mediaVolume;
@@ -60,7 +62,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaVolum_SetSize_Test_001, TestSize.Level
     int mediaType = MEDIA_TYPE_AUDIO;
     int size = 0;
     mediaVolume.SetSize(mediaType, size);
-    EXPECT_EQ(mediaVolume.mediaVolumeMap_.size(), E_OK);
+    EXPECT_EQ(mediaVolume.mediaVolumeMap_.size(), FILE_DATA_SIZE);
 }
 }
 }

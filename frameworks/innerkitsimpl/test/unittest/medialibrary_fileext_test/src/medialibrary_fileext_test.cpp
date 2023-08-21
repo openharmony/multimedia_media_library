@@ -103,7 +103,14 @@ void MediaLibraryFileExtUnitTest::SetUpTestCase(void)
     ASSERT_TRUE(tokenId != 0);
 }
 
-void MediaLibraryFileExtUnitTest::TearDownTestCase(void) {}
+void MediaLibraryFileExtUnitTest::TearDownTestCase(void)
+{
+    MEDIA_ERR_LOG("TearDownTestCase start");
+    if (mediaFileExtAbility != nullptr) {
+        mediaFileExtAbility = nullptr;
+    }
+    MEDIA_INFO_LOG("TearDownTestCase end");
+}
 
 void MediaLibraryFileExtUnitTest::SetUp()
 {

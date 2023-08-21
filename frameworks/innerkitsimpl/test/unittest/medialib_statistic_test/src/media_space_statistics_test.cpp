@@ -185,7 +185,14 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: Finish");
 }
 
-void MediaSpaceStatisticsTest::TearDownTestCase(void) {}
+void MediaSpaceStatisticsTest::TearDownTestCase(void)
+{
+    MEDIA_ERR_LOG("TearDownTestCase start");
+    if (sDataShareHelper_ != nullptr) {
+        sDataShareHelper_->Release();
+    }
+    MEDIA_INFO_LOG("TearDownTestCase end");
+}
 // SetUp:Execute before each test case
 void MediaSpaceStatisticsTest::SetUp(void) {}
 
@@ -876,6 +883,17 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_018, TestSize.Level
     MEDIA_INFO_LOG("GetFilePathFromUri::End");
 
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_018::End");
+}
+
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_019, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_019::Start");
+    string columnName;
+    string value;
+    vector<string> columns;
+    auto ret = mediaLibraryManager->GetResultSetFromDb(columnName, value, columns);
+    EXPECT_EQ((ret != nullptr), true);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_019::End");
 }
 
 } // namespace Media
