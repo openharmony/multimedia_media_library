@@ -40,7 +40,7 @@ public:
     int albumId_;
 };
 constexpr size_t MAX_NOTIFY_LIST_SIZE = 32;
-constexpr size_t MNOTIFY_TIME_INTERVAL = 500;
+constexpr size_t MNOTIFY_TIME_INTERVAL = 100;
 class MediaLibraryNotify {
 public:
     static std::shared_ptr<MediaLibraryNotify> GetInstance();
