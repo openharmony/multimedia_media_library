@@ -115,6 +115,11 @@ ohos_shared_library("medialibrary_data_extension") {
   media_cloud_sync_source =
       [ "${MEDIALIB_CLOUD_SYNC_PATH}/src/cloud_sync_helper.cpp" ]
 
+  media_rdb_utils_source = [
+    "src/medialibrary_rdb_utils.cpp",
+    "src/medialibrary_rdb_transaction.cpp",
+  ]
+
   sources = [
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "src/media_datashare_ext_ability.cpp",
@@ -143,6 +148,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_scan_source
   sources += media_thumbnail_source
   sources += media_cloud_sync_source
+  sources += media_rdb_utils_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 

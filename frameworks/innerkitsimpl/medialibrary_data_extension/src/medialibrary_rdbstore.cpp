@@ -30,6 +30,7 @@
 #include "medialibrary_tracer.h"
 #include "media_scanner.h"
 #include "media_scanner_manager.h"
+#include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -74,7 +75,6 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     config_.SetSecurityLevel(SecurityLevel::S3);
     config_.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
     config_.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
-    isInTransaction_.store(false);
 }
 
 int32_t MediaLibraryRdbStore::Init()
@@ -216,24 +216,6 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     return ret;
 }
 
-static inline string GetQueryFilter(const string &tableName)
-{
-    if (tableName == MEDIALIBRARY_TABLE) {
-        return MEDIALIBRARY_TABLE + "." + MEDIA_DATA_DB_SYNC_STATUS + " = " +
-            to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
-    } else if (tableName == PhotoColumn::PHOTOS_TABLE) {
-        return PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS + " = " +
-            to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
-    } else if (tableName == PhotoAlbumColumns::TABLE) {
-        return PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_DIRTY + " != " +
-            to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
-    } else if (tableName == PhotoMap::TABLE) {
-        return PhotoMap::TABLE + "." + PhotoMap::DIRTY + " != " + to_string(static_cast<int32_t>(
-            DirtyTypes::TYPE_DELETED));
-    }
-    return "";
-}
-
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUri(const AbsRdbPredicates &predicates,
     const vector<string> &columns, const string &id)
 {
@@ -285,32 +267,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
     return Query(*cmd.GetAbsRdbPredicates(), columns);
 }
 
-static void AddQueryFilter(AbsRdbPredicates &predicates)
-{
-    /* build all-table vector */
-    string tableName = predicates.GetTableName();
-    vector<string> joinTables = predicates.GetJoinTableNames();
-    joinTables.push_back(tableName);
-    /* add filters */
-    string filters;
-    for (auto &t : joinTables) {
-        string filter = GetQueryFilter(t);
-        if (filters.empty()) {
-            filters += filter;
-        } else {
-            filters += " AND " + filter;
-        }
-    }
-    if (filters.empty()) {
-        return;
-    }
-
-    /* rebuild */
-    string queryCondition = predicates.GetWhereClause();
-    queryCondition = queryCondition.empty() ? filters : filters + " AND " + queryCondition;
-    predicates.SetWhereClause(queryCondition);
-}
-
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredicates &predicates,
     const vector<string> &columns)
 {
@@ -320,7 +276,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredica
     }
 
     /* add filter */
-    AddQueryFilter(const_cast<AbsRdbPredicates &>(predicates));
+    MediaLibraryRdbUtils::AddQueryFilter(const_cast<AbsRdbPredicates &>(predicates));
 
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QueryByPredicates");
@@ -446,81 +402,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const string &sq
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QuerySql");
     return rdbStore_->QuerySql(sql, selectionArgs);
-}
-
-int32_t MediaLibraryRdbStore::BeginTransaction()
-{
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return E_HAS_DB_ERROR;
-    }
-
-    unique_lock<mutex> cvLock(transactionMutex_);
-    if (isInTransaction_.load()) {
-        transactionCV_.wait_for(cvLock, chrono::milliseconds(RDB_TRANSACTION_WAIT_MS),
-            [this] () { return !(isInTransaction_.load()); });
-    }
-
-    if (rdbStore_->IsInTransaction()) {
-        MEDIA_ERR_LOG("RdbStore is still in transaction");
-        return E_HAS_DB_ERROR;
-    }
-
-    isInTransaction_.store(true);
-    int32_t errCode = rdbStore_->BeginTransaction();
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Start Transaction failed, errCode=%{public}d", errCode);
-        isInTransaction_.store(false);
-        transactionCV_.notify_one();
-        return E_HAS_DB_ERROR;
-    }
-
-    return E_OK;
-}
-
-int32_t MediaLibraryRdbStore::Commit()
-{
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return E_HAS_DB_ERROR;
-    }
-
-    if (!(isInTransaction_.load()) || !(rdbStore_->IsInTransaction())) {
-        MEDIA_ERR_LOG("no transaction now");
-        return E_HAS_DB_ERROR;
-    }
-
-    int32_t errCode = rdbStore_->Commit();
-    isInTransaction_.store(false);
-    transactionCV_.notify_all();
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("commit failed, errCode=%{public}d", errCode);
-        return E_HAS_DB_ERROR;
-    }
-
-    return E_OK;
-}
-
-int32_t MediaLibraryRdbStore::RollBack()
-{
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return E_HAS_DB_ERROR;
-    }
-    if (!(isInTransaction_.load()) || !(rdbStore_->IsInTransaction())) {
-        MEDIA_ERR_LOG("no transaction now");
-        return E_HAS_DB_ERROR;
-    }
-
-    int32_t errCode = rdbStore_->RollBack();
-    isInTransaction_.store(false);
-    transactionCV_.notify_all();
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("rollback failed, errCode=%{public}d", errCode);
-        return E_HAS_DB_ERROR;
-    }
-
-    return E_OK;
 }
 
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
@@ -1387,67 +1268,4 @@ void MediaLibraryRdbStoreObserver::NotifyDeviceChange()
     }
 }
 #endif
-
-TransactionOperations::TransactionOperations()
-{
-    rdbStore_ = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-}
-
-TransactionOperations::~TransactionOperations()
-{
-    if (isStart && !isFinish) {
-        TransactionRollback();
-    }
-}
-
-int32_t TransactionOperations::Start()
-{
-    if (isStart || isFinish) {
-        return E_OK;
-    }
-    int32_t errCode = BeginTransaction();
-    if (errCode == NativeRdb::E_OK) {
-        isStart = true;
-    }
-    return errCode;
-}
-
-void TransactionOperations::Finish()
-{
-    if (!isStart) {
-        return;
-    }
-    if (!isFinish) {
-        int32_t ret = TransactionCommit();
-        if (ret == E_OK) {
-            isFinish = true;
-        } else {
-            MEDIA_ERR_LOG("Failed to commit transaction, errCode=%{public}d", ret);
-        }
-    }
-}
-
-int32_t TransactionOperations::BeginTransaction()
-{
-    if (rdbStore_ == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-    return rdbStore_->BeginTransaction();
-}
-
-int32_t TransactionOperations::TransactionCommit()
-{
-    if (rdbStore_ == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-    return rdbStore_->Commit();
-}
-
-int32_t TransactionOperations::TransactionRollback()
-{
-    if (rdbStore_ == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-    return rdbStore_->RollBack();
-}
 } // namespace OHOS::Media
