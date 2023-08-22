@@ -105,6 +105,7 @@ public:
     static const std::string CREATE_PHOTOS_FDIRTY_TRIGGER;
     static const std::string CREATE_PHOTOS_MDIRTY_TRIGGER;
     static const std::string CREATE_PHOTOS_INSERT_CLOUD_SYNC;
+    static const std::string CREATE_PHOTOS_UPDATE_CLOUD_SYNC;
 
     // photo uri
     static const std::string PHOTO_URI_PREFIX;
