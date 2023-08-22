@@ -151,7 +151,7 @@ ohos_shared_library("mtpservice") {
     "drivers_interface_usb:usbfn_mtp_idl_headers",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "ipc_js:rpc",
+    "ipc:ipc_js",
     "napi:ace_napi",
   ]
 
