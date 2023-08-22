@@ -123,6 +123,7 @@ public:
     };
 };
 
+#ifdef FILEEXT
 void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
 {
     for (auto t : fileList) {
@@ -130,6 +131,7 @@ void DisplayFileList(const vector<FileAccessFwk::FileInfo> &fileList)
             t.uri.c_str(), t.fileName.c_str(), t.mode, t.mimeType.c_str());
     }
 }
+#endif
 
 struct UniqueMemberValuesBucket {
     string assetMediaType;
@@ -836,6 +838,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, Test
     };
     bool res = QueryAndVerifyAudioAsset(AudioColumn::MEDIA_NAME, name, verifyMap);
     EXPECT_EQ(res, true);
+#ifdef FILEEXT
     shared_ptr<MediaFileExtAbility> mediaFileExtAbility;
     MediaLibraryUnitTestUtils::Init();
     ArkJsRuntime runtime;
@@ -852,7 +855,7 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_create_api10_test_003, Test
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(rootFileList.size(), 1);
     DisplayFileList(rootFileList);
-
+#endif
     MEDIA_INFO_LOG("end tdd audio_oprn_create_api10_test_003");
 }
 

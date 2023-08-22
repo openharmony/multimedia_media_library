@@ -329,6 +329,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateAlbumAsset_Test_001,
     MEDIA_INFO_LOG("DataManager_UpdateAlbumAsset_Test_001::retVal = %{public}d. End", retVal);
 }
 
+#ifdef FILEEXT
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_OpenFile_Test_001::Start");
@@ -380,6 +381,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_OpenFile_Test_002, TestSiz
     }
     MEDIA_INFO_LOG("DataManager_OpenFile_Test_002 mode: %{public}s, fd: %{public}d.", mode.c_str(), fd);
 }
+#endif
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Level0)
 {
@@ -602,9 +604,11 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_File_Test_00
 
     MediaLibraryUnitTestUtils::TrashFile(file1);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), false);
+#ifdef FILEEXT
     Uri parent(trashRecovery_File_005->GetUri());
     Uri newUri("");
     ASSERT_EQ(MediaFileExtentionUtils::Rename(parent, "trashRecovery_File_005_renamed.jpg", newUri), E_SUCCESS);
+#endif
     MediaLibraryUnitTestUtils::RecoveryFile(file1);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(file1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_File_Test_005::End");
@@ -754,9 +758,11 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_TrashRecovery_Dir_Test_005
 
     MediaLibraryUnitTestUtils::TrashFile(dir1);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), false);
+#ifdef FILEEXT
     Uri parent(trashRecovery_Dir_005->GetUri());
     Uri newUri("");
     ASSERT_EQ(MediaFileExtentionUtils::Rename(parent, "trashRecovery_Dir_005_renamed.png", newUri), E_SUCCESS);
+#endif
     MediaLibraryUnitTestUtils::RecoveryFile(dir1);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(dir1->GetPath()), true);
     MEDIA_INFO_LOG("DataManager_TrashRecovery_Dir_Test_005::End");
@@ -920,6 +926,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UriPermission_Test_005, Te
     EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
 }
 
+#ifdef FILEEXT
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_001::Start");
@@ -965,6 +972,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
         EXPECT_EQ(ret, expect[inputMode]);
     }
 }
+#endif
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_003, TestSize.Level0)
 {
