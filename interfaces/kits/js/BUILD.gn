@@ -189,10 +189,13 @@ ohos_shared_library("medialibrary") {
 
   if (purgeable_ashmem_enable) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    external_deps += [
-      "memory_utils:libpurgeablemem",
-      "memory_utils:pixelmap_builder",
-    ]
+    external_deps += [ "memory_utils:libpurgeablemem" ]
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.resource_memmgr_plugin)) {
+      external_deps += [ "memmgr_plugin:purgeable_pixelmap_builder" ]
+    } else {
+      external_deps += [ "memmgr:purgeable_pixelmap_builder" ]
+    }
   }
 
   if (ability_runtime_graphics) {
