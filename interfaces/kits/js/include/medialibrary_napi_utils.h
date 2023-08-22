@@ -27,6 +27,20 @@
 #include "napi/native_node_api.h"
 #include "photo_album_column.h"
 
+#ifdef NAPI_ASSERT
+#undef NAPI_ASSERT
+#endif
+
+#define CHECK_ARGS_WITH_MESSAGE(env, cond, msg)                 \
+    do {                                                            \
+        if (!(cond)) {                                    \
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, __FUNCTION__, __LINE__, msg); \
+            return nullptr;                                          \
+        }                                                           \
+    } while (0)
+
+#define NAPI_ASSERT(env, cond, msg) CHECK_ARGS_WITH_MESSAGE(env, cond, msg)
+
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
     do {                                                                    \
         void *data;                                                         \

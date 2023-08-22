@@ -20,6 +20,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "userfile_client.h"
+#include "medialibrary_client_errno.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
