@@ -176,6 +176,12 @@ const std::string  PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC =
                         " CREATE TRIGGER photo_insert_cloud_sync_trigger AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
                         " BEGIN SELECT cloud_sync_func(); END;";
 
+const std::string PhotoColumn::CREATE_PHOTOS_UPDATE_CLOUD_SYNC =
+                        " CREATE TRIGGER photo_update_cloud_sync_trigger AFTER UPDATE ON " + PhotoColumn::PHOTOS_TABLE +
+                        " FOR EACH ROW WHEN OLD.dirty IN (1,2,3,5) AND new.dirty != " +
+                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
+                        " BEGIN SELECT cloud_sync_func(); END;";
+
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,
     PhotoColumn::PHOTO_HEIGHT, PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_LCD_VISIT_TIME, PhotoColumn::PHOTO_POSITION,
