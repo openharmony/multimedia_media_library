@@ -44,9 +44,6 @@ public:
     static int32_t HandlePhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates);
 
-    static void UpdateUserAlbumInternal(const std::vector<std::string> &userAlbumIds = {});
-    static void UpdateSystemAlbumInternal(const std::vector<std::string> &subtypes = {});
-
 private:
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
 };

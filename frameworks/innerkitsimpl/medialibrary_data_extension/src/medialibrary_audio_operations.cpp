@@ -28,6 +28,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_uripermission_operations.h"
@@ -262,7 +263,7 @@ int32_t MediaLibraryAudioOperations::CreateV9(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to Check Dir and Extention, "
         "displayName=%{private}s, mediaType=%{public}d", displayName.c_str(), mediaType);
 
-    TransactionOperations transactionOprn;
+    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     errCode = transactionOprn.Start();
     if (errCode != E_OK) {
         return errCode;
@@ -316,7 +317,7 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     // Check rootdir and extention
     int32_t errCode = CheckWithType(isContains, displayName, extention, MediaType::MEDIA_TYPE_AUDIO);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
-    TransactionOperations transactionOprn;
+    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     errCode = transactionOprn.Start();
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     errCode = isContains ? SetAssetPathInCreate(fileAsset) : SetAssetPath(fileAsset, extention);
@@ -347,7 +348,7 @@ int32_t MediaLibraryAudioOperations::DeleteAudio(const shared_ptr<FileAsset> &fi
     int32_t fileId = fileAsset->GetId();
     InvalidateThumbnail(to_string(fileId), fileAsset->GetMediaType());
 
-    TransactionOperations transactionOprn;
+    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     int32_t errCode = transactionOprn.Start();
     if (errCode != E_OK) {
         return errCode;
@@ -394,7 +395,7 @@ int32_t MediaLibraryAudioOperations::UpdateV10(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Update Audio Name failed, fileName=%{private}s",
         fileAsset->GetDisplayName().c_str());
 
-    TransactionOperations transactionOprn;
+    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     errCode = transactionOprn.Start();
     if (errCode != E_OK) {
         return errCode;
@@ -447,7 +448,7 @@ int32_t MediaLibraryAudioOperations::UpdateV9(MediaLibraryCommand &cmd)
         UpdateVirtualPath(cmd, fileAsset);
     }
 
-    TransactionOperations transactionOprn;
+    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     errCode = transactionOprn.Start();
     if (errCode != E_OK) {
         return errCode;
