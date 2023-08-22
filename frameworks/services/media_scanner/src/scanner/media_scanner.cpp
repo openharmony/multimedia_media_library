@@ -17,12 +17,11 @@
 
 #include "media_scanner.h"
 
-#include "hitrace_meter.h"
 #include "directory_ex.h"
-
+#include "hitrace_meter.h"
 #include "media_log.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "mimetype_utils.h"
 
@@ -143,6 +142,7 @@ int32_t MediaScannerObj::CommitTransaction()
 
     dataBuffer_.clear();
 
+    mediaScannerDb_->UpdateAlbumInfo();
     for (const MediaType &mediaType : mediaTypeSet) {
         mediaScannerDb_->NotifyDatabaseChange(mediaType);
     }
@@ -176,6 +176,7 @@ int32_t MediaScannerObj::Commit()
     auto watch = MediaLibraryNotify::GetInstance();
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
         uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_);
+        mediaScannerDb_->UpdateAlbumInfo();
         if (watch != nullptr) {
             if (data_->GetForAdd()) {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
@@ -185,6 +186,7 @@ int32_t MediaScannerObj::Commit()
         }
     } else {
         uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_);
+        mediaScannerDb_->UpdateAlbumInfo();
         if (watch != nullptr) {
             watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
         }
