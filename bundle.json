@@ -47,7 +47,6 @@
           "huks",
           "init",
           "ipc",
-          "ipc_js",
           "kv_store",
           "memory_utils",
           "memmgr",
