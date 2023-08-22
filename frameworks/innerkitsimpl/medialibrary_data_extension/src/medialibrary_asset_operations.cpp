@@ -936,7 +936,6 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     // if pending == UNOPEN_FILE_COMPONENT_TIMEPENDING, not allowed to close
     // if pending is timestamp, do nothing
     if (fileAsset->GetTimePending() == 0 || fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
-        ScanFile(path, isCreateThumbSync);
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
             MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
             to_string(PhotoAlbumSubType::IMAGES),
@@ -945,6 +944,7 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
             to_string(PhotoAlbumSubType::CAMERA),
             to_string(PhotoAlbumSubType::FAVORITE),
         });
+        ScanFile(path, isCreateThumbSync);
         return E_OK;
     } else if (fileAsset->GetTimePending() == UNCREATE_FILE_TIMEPENDING ||
         fileAsset->GetTimePending() == UNOPEN_FILE_COMPONENT_TIMEPENDING) {
