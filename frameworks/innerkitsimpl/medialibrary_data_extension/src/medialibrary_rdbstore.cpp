@@ -1167,6 +1167,12 @@ void AddExifAndUserComment(RdbStore &store)
     ExecSqls(addExifColumns, store);
 }
 
+void AddUpdateCloudSyncTrigger(RdbStore &store)
+{
+    const vector<string> addUpdateCloudSyncTrigger = { PhotoColumn::CREATE_PHOTOS_UPDATE_CLOUD_SYNC };
+    ExecSqls(addUpdateCloudSyncTrigger, store);
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1223,6 +1229,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_ALL_EXIF) {
         AddExifAndUserComment(store);
+    }
+
+    if (oldVersion < VERSION_ADD_UPDATE_CLOUD_SYNC_TRIGGER) {
+        AddUpdateCloudSyncTrigger(store);
     }
 
     return NativeRdb::E_OK;
