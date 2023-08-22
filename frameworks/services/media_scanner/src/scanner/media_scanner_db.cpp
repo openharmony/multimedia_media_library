@@ -25,6 +25,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_rdb_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
@@ -804,6 +805,15 @@ int32_t MediaScannerDb::DeleteError(const std::string &err)
     }
 
     return E_OK;
+}
+
+void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
+    const std::vector<std::string> &userAlbumIds)
+{
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), subtypes);
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), userAlbumIds);
 }
 } // namespace Media
 } // namespace OHOS
