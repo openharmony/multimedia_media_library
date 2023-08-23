@@ -12,9 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "medialibraryextension_fuzzer.h"
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
 #include "data_ability_observer_interface.h"
@@ -23,6 +25,7 @@
 #include "datashare_predicates.h"
 #include "datashare_values_bucket.h"
 #include "media_datashare_ext_ability.h"
+#include "media_file_ext_ability.h"
 #include "media_datashare_stub_impl.h"
 #include "media_log.h"
 #include "runtime.h"
@@ -31,6 +34,8 @@ namespace OHOS {
 using namespace std;
 using namespace AbilityRuntime;
 using namespace DataShare;
+
+using namespace FileAccessFwk;
 static inline int32_t FuzzInt32(const uint8_t *data, size_t size)
 {
     return static_cast<int32_t>(*data);
@@ -187,11 +192,54 @@ static inline void BatchInsertFuzzer(MediaDataShareExtAbility &extension, const 
     extension.BatchInsert(FuzzUri(data, size), FuzzVectorDataShareValuesBucket(data, size));
 }
 
+class ArkJsRuntime : public AbilityRuntime::JsRuntime {
+public:
+    ArkJsRuntime() {};
+
+    ~ArkJsRuntime() {};
+
+    void StartDebugMode(bool needBreakPoint)  {};
+    void FinishPreload() {};
+    bool LoadRepairPatch(const string& patchFile, const string& baseFile)
+    {
+        return true;
+    };
+    bool NotifyHotReloadPage()
+    {
+        return true;
+    };
+    bool UnLoadRepairPatch(const string& patchFile)
+    {
+        return true;
+    };
+    bool RunScript(const string& path, const string& hapPath, bool useCommonChunk = false)
+    {
+        return true;
+    };
+    NativeValue* LoadJsModule(const string& path, const string& hapPath)
+    {
+        return nullptr;
+    };
+};
+#ifdef FILEEXT
+static inline void CreateFileFuzzer(MediaFileExtAbility &extension, const uint8_t* data, size_t size)
+{
+    Uri fuzzUri = FuzzUri(data, size);
+    extension.CreateFile(FuzzUri(data, size), FuzzString(data, size), fuzzUri);
+}
+
+static inline MediaFileExtAbility FileExtInit()
+{
+    const std::unique_ptr<ArkJsRuntime> runtime;
+    return {(*runtime)};
+}
+#endif
 static inline MediaDataShareExtAbility Init()
 {
     const std::unique_ptr<AbilityRuntime::Runtime> runtime;
     return {(*runtime)};
 }
+
 } // namespace OHOS
 
 /* Fuzzer entry point */
@@ -211,5 +259,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::OpenFileFuzzer(extension, data, size);
     OHOS::GetFileTypesFuzzer(extension, data, size);
     OHOS::BatchInsertFuzzer(extension, data, size);
+#ifdef FILEEXT
+    auto fileExtension = OHOS::FileExtInit();
+    OHOS::CreateFileFuzzer(fileExtension, data, size);
+#endif
     return 0;
 }
