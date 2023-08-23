@@ -171,10 +171,17 @@ static inline shared_ptr<ResultSet> QueryAlbumAssets(const shared_ptr<NativeRdb:
 static int32_t ForEachRow(const shared_ptr<RdbStore> &rdbStore, const shared_ptr<ResultSet> &resultSet,
     const function<int32_t(const shared_ptr<RdbStore> &rdbStore, const shared_ptr<ResultSet> &albumResult)> &func)
 {
+    TransactionOperations transactionOprn(rdbStore);
+    int32_t err = transactionOprn.Start();
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
+        return E_HAS_DB_ERROR;
+    }
     while (resultSet->GoToNextRow() == E_OK) {
         // Ignore failure here, try to iterate rows as much as possible.
         func(rdbStore, resultSet);
     }
+    transactionOprn.Finish();
     return E_SUCCESS;
 }
 
@@ -338,13 +345,8 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, con
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateUserAlbumIfNeeded");
-    TransactionOperations transactionOprn(rdbStore);
-    int32_t err = transactionOprn.Start();
-    if (err != NativeRdb::E_OK) {
-        return E_HAS_DB_ERROR;
-    }
     ValuesBucket values;
-    err = SetUpdateValues(rdbStore, albumResult, values, static_cast<PhotoAlbumSubType>(0));
+    int err = SetUpdateValues(rdbStore, albumResult, values, static_cast<PhotoAlbumSubType>(0));
     if (err < 0) {
         return err;
     }
@@ -360,7 +362,6 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, con
     if (changedRows < 0) {
         return changedRows;
     }
-    transactionOprn.Finish();
     return E_SUCCESS;
 }
 
