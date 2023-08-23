@@ -595,8 +595,8 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 
     NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(cmd.GetDataSharePred(),
         PhotoColumn::PHOTOS_TABLE);
-    vector<string> notifyUris;
-    MediaLibraryNotify::GetNotifyUris(rdbPredicate, notifyUris);
+    vector<string> notifyUris = rdbPredicate.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(values);
