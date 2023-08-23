@@ -794,6 +794,7 @@ static int32_t ExecuteSql(RdbStore &store)
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC,
+        PhotoColumn::CREATE_PHOTOS_UPDATE_CLOUD_SYNC,
         AudioColumn::CREATE_AUDIO_TABLE,
         CREATE_SMARTALBUM_TABLE,
         CREATE_SMARTALBUMMAP_TABLE,
