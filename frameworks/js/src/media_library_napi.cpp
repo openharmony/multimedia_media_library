@@ -2299,8 +2299,11 @@ string ChangeListenerNapi::GetTrashAlbumUri()
     if (albumSet->GetCount() != 1) {
         return trashAlbumUri_;
     }
-    trashAlbumUri_ = albumSet->GetFirstObject()->GetAlbumUri();
-    return trashAlbumUri_;
+    unique_ptr<PhotoAlbum> albumAssetPtr = albumSet->GetFirstObject();
+    if (albumAssetPtr == nullptr) {
+        return trashAlbumUri_;
+    }
+    return albumSet->GetFirstObject()->GetAlbumUri();
 }
 
 napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
