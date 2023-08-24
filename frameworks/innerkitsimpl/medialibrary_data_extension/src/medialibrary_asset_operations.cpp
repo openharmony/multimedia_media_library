@@ -944,7 +944,11 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
             to_string(PhotoAlbumSubType::CAMERA),
             to_string(PhotoAlbumSubType::FAVORITE),
         });
-        ScanFile(path, isCreateThumbSync);
+        if (fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
+            ScanFile(path, isCreateThumbSync, false);
+        } else {
+            ScanFile(path, isCreateThumbSync, true);
+        }
         return E_OK;
     } else if (fileAsset->GetTimePending() == UNCREATE_FILE_TIMEPENDING ||
         fileAsset->GetTimePending() == UNOPEN_FILE_COMPONENT_TIMEPENDING) {
@@ -980,7 +984,7 @@ void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int3
     ThumbnailService::GetInstance()->InvalidateThumbnail(fileId, tableName);
 }
 
-void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync)
+void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync, bool isInvalidateThumb)
 {
     shared_ptr<ScanAssetCallback> scanAssetCallback = make_shared<ScanAssetCallback>();
     if (scanAssetCallback == nullptr) {
@@ -989,6 +993,9 @@ void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThum
     }
     if (isCreateThumbSync) {
         scanAssetCallback->SetSync(true);
+    }
+    if (!isInvalidateThumb) {
+        scanAssetCallback->SetIsInvalidateThumb(false);
     }
 
     int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanAssetCallback, MediaLibraryApi::API_10);
@@ -1173,7 +1180,7 @@ int32_t MediaLibraryAssetOperations::SetPendingFalse(const shared_ptr<FileAsset>
         MEDIA_ERR_LOG("file is created but not open, not allowed, id=%{public}d", fileAsset->GetId());
         return E_INVALID_VALUES;
     } else if (fileAsset->GetTimePending() > 0) {
-        ScanFile(fileAsset->GetPath());
+        ScanFile(fileAsset->GetPath(), false, true);
     } else {
         MEDIA_ERR_LOG("fileAsset time_pending is invalid, time_pending:%{public}ld, id=%{public}d",
             (long) fileAsset->GetTimePending(), fileAsset->GetId());
@@ -1599,7 +1606,9 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
 
     string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
     int32_t type = MediaFileUtils::GetMediaType(path);
-    InvalidateThumbnail(fileId, type);
+    if (this->isInvalidateThumb) {
+        InvalidateThumbnail(fileId, type);
+    }
     CreateThumbnail(uri, path, this->isCreateThumbSync);
     return E_OK;
 }

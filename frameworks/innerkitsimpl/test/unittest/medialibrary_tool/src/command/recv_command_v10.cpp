@@ -38,14 +38,14 @@ static bool GetWriteFilePath(const ExecEnv &env, const FileAsset &fileAsset, std
     wFilePath = env.recvParam.recvPath;
     if (!MediaFileUtils::IsDirectory(wFilePath)) {
         if (env.recvParam.isRecvAll) {
-            printf("RecvFilePath:%s is not a directory", wFilePath.c_str());
+            printf("RecvFilePath:%s is not a directory.\n", wFilePath.c_str());
             return false;
         }
     } else {
         wFilePath = IncludeTrailingPathDelimiter(wFilePath);
         string displayName = fileAsset.GetDisplayName();
         if (displayName.empty()) {
-            printf("RecvFile displayName is null");
+            printf("RecvFile displayName is null.\n");
             return false;
         }
         wFilePath += displayName;
