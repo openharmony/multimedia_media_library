@@ -280,7 +280,7 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
     Uri closeUri(closeUriStr);
     MEDIA_INFO_LOG("close. closeUri:%{public}s, uri:%{public}s", closeUri.ToString().c_str(), uri.c_str());
     auto ret = UserFileClient::Insert(closeUri, valuesBucket);
-    if (ret == Media::E_FAIL) {
+    if (ret != Media::E_OK) {
         MEDIA_ERR_LOG("close the file failed. ret:%{public}d, closeUri:%{public}s, uri:%{public}s",
             ret, closeUri.ToString().c_str(), uri.c_str());
     }

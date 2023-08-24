@@ -138,12 +138,12 @@ private:
         std::string &name);
     static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &filePath);
-    static void ScanFile(const std::string &path, bool isCreateThumbSync = false);
+    static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb);
     static int32_t SetPendingTrue(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t SetPendingFalse(const std::shared_ptr<FileAsset> &fileAsset);
     static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::vector<std::string> &columns);
-    
+
     static constexpr int ASSET_IN_BUCKET_NUM_MAX = 1000;
     static constexpr int ASSET_DIR_START_NUM = 16;
     static constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
@@ -157,8 +157,13 @@ private:
         {
             isCreateThumbSync = isSync;
         }
+        void SetIsInvalidateThumb(bool isInvalidate)
+        {
+            isInvalidateThumb = isInvalidate;
+        }
     private:
         bool isCreateThumbSync = false;
+        bool isInvalidateThumb = true;
     };
 };
 
@@ -166,7 +171,7 @@ using VerifyFunction = bool (*) (NativeRdb::ValueObject&, MediaLibraryCommand&);
 class AssetInputParamVerification {
 public:
     static bool CheckParamForUpdate(MediaLibraryCommand &cmd);
-    
+
 private:
     static bool Forbidden(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);
     static bool IsInt32(NativeRdb::ValueObject &value, MediaLibraryCommand &cmd);

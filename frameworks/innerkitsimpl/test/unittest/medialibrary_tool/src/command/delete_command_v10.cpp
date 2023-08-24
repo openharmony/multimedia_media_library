@@ -33,7 +33,7 @@ int32_t DeleteCommandV10::DeleteOne(const std::string &uri)
         printf("%s delete failed. err:%d\n", STR_FAIL.c_str(), ret);
         return Media::E_ERR;
     }
-    printf("%s delete success.", STR_SUCCESS.c_str());
+    printf("%s delete success.\n", STR_SUCCESS.c_str());
     return Media::E_OK;
 }
 
@@ -51,7 +51,7 @@ int32_t DeleteCommandV10::Start(const ExecEnv &env)
         ret = DeleteOne(env.deleteParam.deleteUri);
     }
     if (ret != Media::E_OK) {
-        printf("%s delete failed. err:%d", STR_FAIL.c_str(), ret);
+        printf("%s delete failed. err:%d\n", STR_FAIL.c_str(), ret);
         return Media::E_ERR;
     }
     return Media::E_OK;

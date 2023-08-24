@@ -25,6 +25,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_napi_utils.h"
 #include "userfile_client_ex.h"
 #include "utils/file_utils.h"
 
@@ -127,29 +128,35 @@ static int32_t CreateRecord(const ExecEnv &env, FileInfo &fileInfo)
 
 static int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo)
 {
-    auto rfd = open(fileInfo.path.c_str(), O_RDONLY | O_CLOEXEC);
+    int32_t rfd = open(fileInfo.path.c_str(), O_RDONLY | O_CLOEXEC);
     if (rfd < 0) {
         printf("%s open file failed. rfd:%d, path:%s\n", STR_FAIL.c_str(), rfd, fileInfo.path.c_str());
         return Media::E_ERR;
     }
-    auto wfd = UserFileClientEx::Open(fileInfo.uri, Media::MEDIA_FILEMODE_WRITETRUNCATE);
+    int32_t wfd = UserFileClientEx::Open(fileInfo.uri, Media::MEDIA_FILEMODE_WRITETRUNCATE);
     if (wfd <= 0) {
         printf("%s open failed. wfd:%d, uri:%s\n", STR_FAIL.c_str(), wfd, fileInfo.uri.c_str());
         close(rfd);
         return Media::E_ERR;
     }
-    auto ret = FileUtils::SendData(rfd, wfd);
+    int32_t ret = FileUtils::SendData(rfd, wfd);
     if (!ret) {
         printf("%s send data failed. rfd:%d, wfd:%d\n", STR_FAIL.c_str(), rfd, wfd);
+        close(rfd);
+        close(wfd);
+        return Media::E_ERR;
     }
     if (env.sendParam.isCreateThumbSyncInSend) {
-        UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, true);
+        ret = UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, true);
     } else {
-        UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, false);
+        ret = UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, false);
     }
-    
+    if (ret != E_OK) {
+        printf("close file has err [%d]\n", ret);
+    }
+
     close(rfd);
-    return ret ? Media::E_OK : Media::E_ERR;
+    return ret;
 }
 
 static int32_t SendFile(const ExecEnv &env, FileInfo &fileInfo)
@@ -172,17 +179,35 @@ static int32_t SendFile(const ExecEnv &env, FileInfo &fileInfo)
 
 static int32_t SendFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
 {
+    int count = 0;
+    int correctCount = 0;
     for (auto &fileInfo : fileInfos) {
+        ++count;
         int32_t ret = SendFile(env, fileInfo);
         if (ret != Media::E_OK) {
             printf("%s send uri [%s] failed.\n", STR_FAIL.c_str(), fileInfo.uri.c_str());
-            return ret;
         } else {
             fileInfo.toBeRemove = true;
             printf("%s\n", fileInfo.uri.c_str());
+            ++correctCount;
         }
     }
-    return Media::E_OK;
+
+    if (count > ARGS_ONE) {
+        if (count == correctCount) {
+            printf("%s send %d and %d is successful.\n", STR_SUCCESS.c_str(), count, correctCount);
+            return Media::E_OK;
+        } else {
+            printf("%s send %d and %d is successful.\n", STR_FAIL.c_str(), count, correctCount);
+            return Media::E_FAIL;
+        }
+    } else {
+        if (correctCount == count) {
+            return Media::E_OK;
+        } else {
+            return Media::E_FAIL;
+        }
+    }
 }
 
 int32_t SendCommandV10::Start(const ExecEnv &env)
