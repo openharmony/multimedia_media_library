@@ -191,6 +191,7 @@ void MediaSpaceStatisticsTest::TearDownTestCase(void)
     if (sDataShareHelper_ != nullptr) {
         sDataShareHelper_->Release();
     }
+    ClearAllFile();
     MEDIA_INFO_LOG("TearDownTestCase end");
 }
 // SetUp:Execute before each test case
@@ -246,14 +247,15 @@ std::unique_ptr<FileAsset> GetFile(int mediaTypeId)
 void ClearAllFile()
 {
     system("rm -rf /storage/media/100/local/files/.thumbs/*");
-    system("rm -rf /storage/cloud/files/Audio/*");
-    system("rm -rf /storage/cloud/files/Audios/*");
-    system("rm -rf /storage/cloud/files/Camera/*");
-    system("rm -rf /storage/cloud/files/Documents/*");
-    system("rm -rf /storage/cloud/files/Photo/*");
-    system("rm -rf /storage/cloud/files/Pictures/*");
-    system("rm -rf /storage/cloud/files/Videos/*");
-    system("rm -rf /storage/cloud/files/.*");
+    system("rm -rf /storage/cloud/100/files/Audio/*");
+    system("rm -rf /storage/cloud/100/files/Audios/*");
+    system("rm -rf /storage/cloud/100/files/Camera/*");
+    system("rm -rf /storage/cloud/100/files/Documents/*");
+    system("rm -rf /storage/cloud/100/files/Photo/*");
+    system("rm -rf /storage/cloud/100/files/Pictures/*");
+    system("rm -rf /storage/cloud/100/files/Download/*");
+    system("rm -rf /storage/cloud/100/files/Videos/*");
+    system("rm -rf /storage/cloud/100/files/.*");
     system("rm -rf /data/app/el2/100/database/com.ohos.medialibrary.medialibrarydata/*");
     system("kill -9 `pidof com.ohos.medialibrary.medialibrarydata`");
     system("scanner");
@@ -896,5 +898,29 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_019, TestSize.Level
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_019::End");
 }
 
+/**
+ * @tc.number    : MediaSpaceStatistics_test_020
+ * @tc.name      : Get thumbnail by medialibraryManager
+ * @tc.desc      : Get thumbnail by medialibraryManager
+ */
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_020, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_020::Start");
+    Uri uri("file://media/Photo/10");
+    auto ret = mediaLibraryManager->GetThumbnail(uri);
+    EXPECT_EQ((ret != nullptr), false);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_020::End");
+}
+
+HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_021, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_021::Start");
+    string uriStr;
+    string path;
+    Size size;
+    int ret = mediaLibraryManager->OpenThumbnail(uriStr, path, size);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaSpaceStatistics_test_021::End");
+}
 } // namespace Media
 } // namespace OHOS
