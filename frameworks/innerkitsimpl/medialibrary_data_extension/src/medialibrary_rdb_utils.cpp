@@ -357,8 +357,8 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, con
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
     int32_t changedRows = 0;
     err = rdbStore->Update(changedRows, values, predicates);
-    if (changedRows < 0) {
-        return changedRows;
+    if (err < 0) {
+        MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
     }
     transactionOprn.Finish();
     return E_SUCCESS;
@@ -383,8 +383,8 @@ static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subtype));
     int32_t changedRows = 0;
     err = rdbStore->Update(changedRows, values, predicates);
-    if (changedRows < 0) {
-        return changedRows;
+    if (err < 0) {
+        MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
     }
     return E_SUCCESS;
 }
