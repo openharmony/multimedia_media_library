@@ -35,7 +35,7 @@ export default class OpenHarmonyTestRunner implements TestRunner {
   }
 
   async onRun(): Promise<void> {
-    console.log('OpenHarmonyTestRunner onRun run')
+    console.log('OpenHarmonyTestRunner onRun run');
     abilityDelegatorArguments = AbilityDelegatorRegistry.getArguments();
     abilityDelegator = AbilityDelegatorRegistry.getAbilityDelegator();
     let testAbilityName = abilityDelegatorArguments.bundleName + '.TestAbility';
@@ -52,7 +52,7 @@ export default class OpenHarmonyTestRunner implements TestRunner {
         console.info('executeShellCommand : err : ' + JSON.stringify(err));
         console.info('executeShellCommand : data : ' + d.stdResult);
         console.info('executeShellCommand : data : ' + d.exitCode);
-      })
+      });
     console.info('OpenHarmonyTestRunner onRun end');
   }
 };
