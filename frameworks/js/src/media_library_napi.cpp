@@ -22,7 +22,6 @@
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "hitrace_meter.h"
-#include "js_native_api.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
@@ -348,8 +347,7 @@ static bool CheckWhetherInitSuccess(napi_env env, napi_value value, bool checkIs
         return false;
     }
 
-    NAPI_CALL_BASE(env, napi_get_all_property_names(env, value, napi_key_own_only,
-        napi_key_all_properties, napi_key_numbers_to_strings, &propertyNames), false);
+    NAPI_CALL_BASE(env, napi_get_property_names(env, value, &propertyNames), false);
     NAPI_CALL_BASE(env, napi_get_array_length(env, propertyNames, &propertyLength), false);
     if (propertyLength == 0) {
         return false;
