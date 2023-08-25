@@ -115,7 +115,11 @@ static string GetPathFromUri(const std::string &uri)
     if (index == string::npos) {
         return "";
     }
-    int32_t fileUniqueId = stoi(realTitle.substr(index + 1));
+    string fileId = realTitle.substr(index + 1);
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+        return "";
+    }
+    int32_t fileUniqueId = stoi(fileId);
     int32_t bucketNum = 0;
     MediaLibraryAssetOperations::CreateAssetBucket(fileUniqueId, bucketNum);
     string ext = MediaFileUtils::GetExtensionFromPath(uri);
