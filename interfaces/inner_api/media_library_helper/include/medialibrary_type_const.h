@@ -105,6 +105,14 @@ enum class TableType : int32_t {
     TYPE_AUDIOS,
 };
 
+enum ResultSetDataType {
+    TYPE_NULL = 0,
+    TYPE_STRING,
+    TYPE_INT32,
+    TYPE_INT64,
+    TYPE_DOUBLE
+};
+
 const int32_t SUCCESS = 0;
 
 constexpr int32_t DEFAULT_INT32 = 0;

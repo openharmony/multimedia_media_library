@@ -47,6 +47,7 @@ constexpr size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
 constexpr size_t EMPTY_DIR_ENTRY_COUNT = 2;  // Empty dir has 2 entry: . and ..
+constexpr size_t DEFAULT_TIME_SIZE = 32;
 
 static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIME_TYPE_MAP = {
     { "application/epub+zip", { "epub" } },
@@ -641,6 +642,14 @@ int64_t MediaFileUtils::UTCTimeMilliSeconds()
     constexpr int64_t MSEC_TO_NSEC = 1e6;
     clock_gettime(CLOCK_REALTIME, &t);
     return t.tv_sec * SEC_TO_MSEC + t.tv_nsec / MSEC_TO_NSEC;
+}
+
+string MediaFileUtils::StrCreateTime(const string &format, int64_t time)
+{
+    char strTime[DEFAULT_TIME_SIZE] = "";
+    auto tm = localtime(&time);
+    (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
+    return strTime;
 }
 
 string MediaFileUtils::GetIdFromUri(const string &uri)

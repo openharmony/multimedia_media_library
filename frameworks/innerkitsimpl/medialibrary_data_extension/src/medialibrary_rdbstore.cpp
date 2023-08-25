@@ -22,6 +22,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_async_worker.h"
 #ifdef DISTRIBUTED
 #include "medialibrary_device.h"
 #endif
@@ -39,7 +40,17 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
-
+namespace {
+class AddYearTaskData : public OHOS::Media::AsyncTaskData {
+public:
+    explicit AddYearTaskData(const shared_ptr<OHOS::Media::MediaLibraryRdbStore> store)
+        : store_(store)
+    {
+    }
+    virtual ~AddYearTaskData() = default;
+    shared_ptr<OHOS::Media::MediaLibraryRdbStore> store_;
+};
+}
 namespace OHOS::Media {
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 struct UniqueMemberValuesBucket {
@@ -790,6 +801,9 @@ static int32_t ExecuteSql(RdbStore &store)
         PhotoColumn::CREATE_PHOTO_TABLE,
         PhotoColumn::INDEX_STHP_ADDTIME,
         PhotoColumn::INDEX_CAMERA_SHOT_KEY,
+        PhotoColumn::CREATE_YEAR_INDEX,
+        PhotoColumn::CREATE_MONTH_INDEX,
+        PhotoColumn::CREATE_DAY_INDEX,
         PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -1174,6 +1188,75 @@ void AddUpdateCloudSyncTrigger(RdbStore &store)
     ExecSqls(addUpdateCloudSyncTrigger, store);
 }
 
+void SetYearMonthDayData(AsyncTaskData *data)
+{
+    auto* taskData = static_cast<AddYearTaskData*>(data);
+    string queryRowSql = "SELECT " + MEDIA_DATA_DB_DATE_ADDED  +"," +
+        PhotoColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE;
+    auto resultSet = taskData->store_->QuerySql(queryRowSql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get dataAdded");
+        return;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int64_t dateAdd = GetInt64Val(MEDIA_DATA_DB_DATE_ADDED, resultSet);
+        int32_t id = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
+        ValuesBucket valuesBucket;
+        valuesBucket.PutString(PhotoColumn::PHOTO_DATE_YEAR,
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdd));
+        valuesBucket.PutString(PhotoColumn::PHOTO_DATE_MONTH,
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdd));
+        valuesBucket.PutString(PhotoColumn::PHOTO_DATE_DAY,
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdd));
+        AbsRdbPredicates yearAbsPred(PhotoColumn::PHOTOS_TABLE);
+        yearAbsPred.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
+        yearAbsPred.SetWhereArgs({to_string(id)});
+        taskData->store_->Update(valuesBucket, yearAbsPred);
+    }
+}
+
+void AddYearMonthDayColumn(RdbStore &store)
+{
+    const std::string alterYear =
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_DATE_YEAR + " TEXT";
+    int32_t result = store.ExecuteSql(alterYear);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb year error %{private}d", result);
+    }
+    const std::string alterMonth =
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_DATE_MONTH + " TEXT";
+    result = store.ExecuteSql(alterMonth);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb month error %{private}d", result);
+    }
+    const std::string alterDay =
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_DATE_DAY + " TEXT";
+    result = store.ExecuteSql(alterDay);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb day error %{private}d", result);
+    }
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("asyncWorker is nullptr");
+        return;
+    }
+    shared_ptr<OHOS::Media::MediaLibraryRdbStore> rdbStore =
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    auto *taskData = new (nothrow) AddYearTaskData(rdbStore);
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("taskData is nullptr");
+        return;
+    }
+    shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask =
+        make_shared<MediaLibraryAsyncTask>(SetYearMonthDayData, taskData);
+    if (notifyAsyncTask != nullptr) {
+        asyncWorker->AddTask(notifyAsyncTask, false);
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1224,6 +1307,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     if (oldVersion < VERSION_ADD_CAMERA_SHOT_KEY) {
         AddCameraShotKey(store);
     }
+
     if (oldVersion < VERSION_REMOVE_ALBUM_COUNT_TRIGGER) {
         RemoveAlbumCountTrigger(store);
     }
@@ -1234,6 +1318,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_UPDATE_CLOUD_SYNC_TRIGGER) {
         AddUpdateCloudSyncTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_YEAR_MONTH_DAY) {
+        AddYearMonthDayColumn(store);
     }
 
     return NativeRdb::E_OK;

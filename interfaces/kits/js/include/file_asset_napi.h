@@ -130,6 +130,7 @@ private:
     static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetPending(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetUserComment(napi_env env, napi_callback_info info);
+    static napi_value UserFileMgrGetJson(napi_env env, napi_callback_info info);
 
     bool HandleParamSet(const std::string &inputKey, const std::string &value, ResultNapiType resultNapiType);
     napi_env env_;
@@ -165,6 +166,7 @@ struct FileAssetAsyncContext : public NapiError {
     napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;
     std::string userComment;
+    std::string jsonStr;
 };
 } // namespace Media
 } // namespace OHOS
