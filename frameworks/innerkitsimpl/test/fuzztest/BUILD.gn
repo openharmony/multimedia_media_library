@@ -14,5 +14,17 @@ import("//foundation/multimedia/media_library/media_library.gni")
 
 group("media_library_fuzztest") {
   testonly = true
-  deps = [ "medialibraryextension_fuzzer:MediaLibraryExtensionFuzzTest" ]
+  deps = [
+    "medialibrary_extension_batch_insert_fuzzer:MediaLibraryExtensionBatchInsertFuzzer",
+    "medialibrary_extension_delete_fuzzer:MediaLibraryExtensionDeleteFuzzer",
+    "medialibrary_extension_get_file_types_fuzzer:MediaLibraryExtensionGetFileTypesFuzzer",
+    "medialibrary_extension_insert_fuzzer:MediaLibraryExtensionInsertFuzzer",
+    "medialibrary_extension_notify_change_fuzzer:MediaLibraryExtensionNotifyChangeFuzzer",
+    "medialibrary_extension_open_file_fuzzer:MediaLibraryExtensionOpenFileFuzzer",
+    "medialibrary_extension_query_fuzzer:MediaLibraryExtensionQueryFuzzer",
+    "medialibrary_extension_register_observer_fuzzer:MediaLibraryExtensionRegisterObserverFuzzer",
+    "medialibrary_extension_unregister_observer_fuzzer:MediaLibraryExtensionUnregisterObserverFuzzer",
+    "medialibrary_extension_update_fuzzer:MediaLibraryExtensionUpdateFuzzer",
+    "medialibraryextension_fuzzer:MediaLibraryExtensionFuzzTest",
+  ]
 }
