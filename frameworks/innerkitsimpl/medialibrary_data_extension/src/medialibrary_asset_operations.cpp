@@ -403,9 +403,13 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
-        assetInfo.PutString(PhotoColumn::PHOTO_YEAR, MediaFileUtils::StrNowTime(PhotoColumn::PHOTO_YEAR_FORMAT));
-        assetInfo.PutString(PhotoColumn::PHOTO_MONTH, MediaFileUtils::StrNowTime(PhotoColumn::PHOTO_MONTH_FORMAT));
-        assetInfo.PutString(PhotoColumn::PHOTO_DAY, MediaFileUtils::StrNowTime(PhotoColumn::PHOTO_DAY_FORMAT));
+        int64_t nowTime = MediaFileUtils::UTCTimeSeconds();
+        assetInfo.PutString(PhotoColumn::PHOTO_DATE_YEAR,
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, nowTime));
+        assetInfo.PutString(PhotoColumn::PHOTO_DATE_MONTH,
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, nowTime));
+        assetInfo.PutString(PhotoColumn::PHOTO_DATE_DAY,
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, nowTime));
     }
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
     if (!cmd.GetBundleName().empty()) {

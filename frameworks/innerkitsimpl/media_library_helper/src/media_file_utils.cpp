@@ -644,19 +644,6 @@ int64_t MediaFileUtils::UTCTimeMilliSeconds()
     return t.tv_sec * SEC_TO_MSEC + t.tv_nsec / MSEC_TO_NSEC;
 }
 
-string MediaFileUtils::StrNowTime(const string &format)
-{
-    struct timespec t{};
-    t.tv_sec = 0;
-    t.tv_nsec = 0;
-    clock_gettime(CLOCK_REALTIME, &t);
-    time_t timeTemp = t.tv_sec;
-    auto tm = localtime(&timeTemp);
-    char strTime[DEFAULT_TIME_SIZE] = "";
-    (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
-    return strTime;
-}
-
 string MediaFileUtils::StrCreateTime(const string &format, int64_t time)
 {
     char strTime[DEFAULT_TIME_SIZE] = "";

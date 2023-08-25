@@ -1202,12 +1202,12 @@ void SetYearMonthDayData(AsyncTaskData *data)
         int64_t dateAdd = GetInt64Val(MEDIA_DATA_DB_DATE_ADDED, resultSet);
         int32_t id = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
         ValuesBucket valuesBucket;
-        valuesBucket.PutString(PhotoColumn::PHOTO_YEAR,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_YEAR_FORMAT, dateAdd));
-        valuesBucket.PutString(PhotoColumn::PHOTO_MONTH,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_MONTH_FORMAT, dateAdd));
-        valuesBucket.PutString(PhotoColumn::PHOTO_DAY,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DAY_FORMAT, dateAdd));
+        valuesBucket.PutString(PhotoColumn::PHOTO_DATE_YEAR,
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdd));
+        valuesBucket.PutString(PhotoColumn::PHOTO_DATE_MONTH,
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdd));
+        valuesBucket.PutString(PhotoColumn::PHOTO_DATE_DAY,
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdd));
         AbsRdbPredicates yearAbsPred(PhotoColumn::PHOTOS_TABLE);
         yearAbsPred.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
         yearAbsPred.SetWhereArgs({to_string(id)});
@@ -1219,21 +1219,21 @@ void AddYearMonthDayColumn(RdbStore &store)
 {
     const std::string alterYear =
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-        PhotoColumn::PHOTO_YEAR + " TEXT";
+        PhotoColumn::PHOTO_DATE_YEAR + " TEXT";
     int32_t result = store.ExecuteSql(alterYear);
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb year error %{private}d", result);
     }
     const std::string alterMonth =
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-        PhotoColumn::PHOTO_MONTH + " TEXT";
+        PhotoColumn::PHOTO_DATE_MONTH + " TEXT";
     result = store.ExecuteSql(alterMonth);
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb month error %{private}d", result);
     }
     const std::string alterDay =
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-        PhotoColumn::PHOTO_DAY + " TEXT";
+        PhotoColumn::PHOTO_DATE_DAY + " TEXT";
     result = store.ExecuteSql(alterDay);
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb day error %{private}d", result);

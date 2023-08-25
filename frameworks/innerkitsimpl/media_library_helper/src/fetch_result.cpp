@@ -70,9 +70,9 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_USER_COMMENT, TYPE_STRING },
         { PHOTO_INDEX, TYPE_INT32 },
         { MEDIA_DATA_DB_COUNT, TYPE_INT32},
-        { PhotoColumn::PHOTO_YEAR, TYPE_STRING},
-        { PhotoColumn::PHOTO_MONTH, TYPE_STRING},
-        { PhotoColumn::PHOTO_DAY, TYPE_STRING},
+        { PhotoColumn::PHOTO_DATE_YEAR, TYPE_STRING},
+        { PhotoColumn::PHOTO_DATE_MONTH, TYPE_STRING},
+        { PhotoColumn::PHOTO_DATE_DAY, TYPE_STRING},
     };
     return RESULT_TYPE_MAP;
 }
