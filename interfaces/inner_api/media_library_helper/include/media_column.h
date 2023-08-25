@@ -90,11 +90,26 @@ public:
     static const std::string PHOTO_USER_COMMENT;
     static const std::string PHOTO_ALL_EXIF;
 
+    static const std::string PHOTO_SYNCING;
+    static const std::string PHOTO_DATE_YEAR;
+    static const std::string PHOTO_DATE_MONTH;
+    static const std::string PHOTO_DATE_DAY;
+    // index in PhotoTable
+    static const std::string PHOTO_DATE_YEAR_INDEX;
+    static const std::string PHOTO_DATE_MONTH_INDEX;
+    static const std::string PHOTO_DATE_DAY_INDEX;
+    // format in PhotoTable year month day
+    static const std::string PHOTO_DATE_YEAR_FORMAT;
+    static const std::string PHOTO_DATE_MONTH_FORMAT;
+    static const std::string PHOTO_DATE_DAY_FORMAT;
     // table name
     static const std::string PHOTOS_TABLE;
 
     // create PhotoTable sql
     static const std::string CREATE_PHOTO_TABLE;
+    static const std::string CREATE_YEAR_INDEX;
+    static const std::string CREATE_MONTH_INDEX;
+    static const std::string CREATE_DAY_INDEX;
 
     // create indexes for Photo
     static const std::string INDEX_STHP_ADDTIME;

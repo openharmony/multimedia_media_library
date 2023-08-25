@@ -69,6 +69,10 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_ALL_EXIF, TYPE_STRING },
         { PhotoColumn::PHOTO_USER_COMMENT, TYPE_STRING },
         { PHOTO_INDEX, TYPE_INT32 },
+        { MEDIA_DATA_DB_COUNT, TYPE_INT32},
+        { PhotoColumn::PHOTO_DATE_YEAR, TYPE_STRING},
+        { PhotoColumn::PHOTO_DATE_MONTH, TYPE_STRING},
+        { PhotoColumn::PHOTO_DATE_DAY, TYPE_STRING},
     };
     return RESULT_TYPE_MAP;
 }
@@ -374,6 +378,7 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
             continue;
         }
         auto memberType = GetResultTypeMap().at(name);
+        fileAsset->SetResultTypeMap(name, memberType);
         map.emplace(move(name), move(GetValByIndex(index, memberType, resultSet)));
     }
     fileAsset->SetResultNapiType(resultNapiType_);
