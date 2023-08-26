@@ -380,7 +380,7 @@ static bool IfSizeEqualsRatio(Size& imageSize, Size& targetSize)
     return imageSize.width / imageSize.height == targetSize.width / targetSize.height;
 }
 
-static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path)
+unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(const std::string &uri, Size &size, const string &path)
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnail uri:" + uri);
