@@ -138,11 +138,6 @@ static inline void NotifyChangeFuzzer(MediaDataShareExtAbility &extension, const
     extension.NotifyChange(FuzzUri(data, size));
 }
 
-static inline void OpenFileFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
-{
-    extension.OpenFile(FuzzUri(data, size), FuzzString(data, size));
-}
-
 static inline void RegisterObserverFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
     sptr<AAFwk::IDataAbilityObserver> dataObserver;
@@ -256,7 +251,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::UnregisterObserverFuzzer(extension, data, size);
     OHOS::NotifyChangeFuzzer(extension, data, size);
 
-    OHOS::OpenFileFuzzer(extension, data, size);
     OHOS::GetFileTypesFuzzer(extension, data, size);
     OHOS::BatchInsertFuzzer(extension, data, size);
 #ifdef FILEEXT

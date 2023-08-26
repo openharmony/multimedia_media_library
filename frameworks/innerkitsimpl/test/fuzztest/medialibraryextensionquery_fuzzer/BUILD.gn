@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-ohos_fuzztest("MediaLibraryExtensionQueryFuzzer") {
+ohos_fuzztest("MediaLibraryExtensionQueryFuzzTest") {
   module_out_path = "media_library/medialibrary_extension_fuzzer"
   fuzz_config_file = "."
 
