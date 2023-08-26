@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-ohos_fuzztest("MediaLibraryExtensionRegisterObserverFuzzer") {
+ohos_fuzztest("MediaLibraryExtensionOpenFileFuzzTest") {
   module_out_path = "media_library/medialibrary_extension_fuzzer"
   fuzz_config_file = "."
 
@@ -24,7 +24,7 @@ ohos_fuzztest("MediaLibraryExtensionRegisterObserverFuzzer") {
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
   ]
 
-  sources = [ "src/medialibrary_extension_register_observer_fuzzer.cpp" ]
+  sources = [ "src/medialibrary_extension_open_file_fuzzer.cpp" ]
 
   deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
 
