@@ -67,6 +67,13 @@ ohos_hap("medialibrary_ext_hap") {
   part_name = "prebuilt_hap"
   subsystem_name = "applications"
   module_install_dir = "app/com.ohos.medialibrary.MediaLibraryData"
+  if (defined(sign_hap_py_path)) {
+    certificate_profile =
+        "${MEDIALIB_INNERKITS_PATH}/signature/medialib_new.p7b"
+    key_alias = "medialibrarydata"
+    private_key_path = "medialibrarydata"
+    compatible_version = "9"
+  }
 }
 
 ohos_js_assets("MediaLibStage_js_assets") {
