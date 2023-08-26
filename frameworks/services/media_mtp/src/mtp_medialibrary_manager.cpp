@@ -38,7 +38,7 @@ constexpr int32_t NORMAL_HEIGHT = 256;
 constexpr int32_t COMPRE_SIZE_LEVEL_1 = 256;
 constexpr int32_t COMPRE_SIZE_LEVEL_2 = 204800;
 const string THUMBNAIL_FORMAT = "image/jpeg";
-static constexpr uint8_t THUMBNAIL_QUALITY = 80;
+static constexpr uint8_t THUMBNAIL_QUALITY = 90;
 std::shared_ptr<MtpMedialibraryManager> MtpMedialibraryManager::instance_ = nullptr;
 std::mutex MtpMedialibraryManager::mutex_;
 shared_ptr<DataShare::DataShareHelper> MtpMedialibraryManager::dataShareHelper_ = nullptr;
