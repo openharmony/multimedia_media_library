@@ -47,7 +47,7 @@ const std::string THUMBNAIL_YEAR_SUFFIX = "YEAR";   // The size which height is 
 const std::string FILE_URI_PREX = "file://";
 
 const std::string THUMBNAIL_FORMAT = "image/jpeg";
-constexpr uint8_t THUMBNAIL_QUALITY = 80;
+constexpr uint8_t THUMBNAIL_QUALITY = 90;
 
 constexpr uint32_t THUMBNAIL_QUERY_MAX = 2000;
 constexpr int64_t AV_FRAME_TIME = 0;
