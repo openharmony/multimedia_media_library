@@ -137,9 +137,11 @@ public:
     int32_t GetUriFromFilePath(const std::string &filePath, Uri &fileUri, string &userId);
 
     std::unique_ptr<PixelMap> GetThumbnail(const Uri &uri);
-    static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size);
 
 private:
+    static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size);
+    static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path);
+
     static shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
 };
 } // namespace Media
