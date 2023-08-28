@@ -74,10 +74,12 @@ ohos_shared_library("media_library") {
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
   }
 
   innerapi_tags = [ "platformsdk" ]
