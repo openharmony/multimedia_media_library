@@ -383,6 +383,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // Fill basic file information into DB
     const string& displayName = fileAsset.GetDisplayName();
+    int64_t nowTime = MediaFileUtils::UTCTimeSeconds();
     ValuesBucket assetInfo;
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, fileAsset.GetMediaType());
     string extension = ScannerUtils::GetFileExtension(displayName);
@@ -403,7 +404,6 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
-        int64_t nowTime = MediaFileUtils::UTCTimeSeconds();
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_YEAR,
             MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, nowTime));
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_MONTH,
@@ -418,7 +418,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     }
 
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
-    assetInfo.PutLong(MediaColumn::MEDIA_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
+    assetInfo.PutLong(MediaColumn::MEDIA_DATE_ADDED, nowTime);
     cmd.SetValueBucket(assetInfo);
 }
 
