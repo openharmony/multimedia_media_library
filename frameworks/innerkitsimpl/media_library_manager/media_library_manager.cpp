@@ -281,6 +281,10 @@ static inline std::string GetSandboxPath(const std::string &path, bool isThumb)
 
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size)
 {
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("Failed to open thumbnail, datashareHelper is nullptr");
+        return E_ERR;
+    }
     if (!path.empty()) {
         string sandboxPath = GetSandboxPath(path, IsThumbnail(size.width, size.height));
         int fd = -1;
