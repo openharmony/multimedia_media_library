@@ -30,13 +30,13 @@ ohos_static_library("medialibrary_common_utils") {
     "hitrace:hitrace_meter",
   ]
   defines = [ "OPENSSL_SUPPRESS_DEPRECATED" ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
   }
-
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
@@ -63,13 +63,13 @@ ohos_static_library("permission_utils") {
     "ipc:ipc_core",
     "samgr:samgr_proxy",
   ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
   }
-
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
