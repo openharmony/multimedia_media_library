@@ -82,6 +82,9 @@ static inline shared_ptr<ResultSet> GetUserAlbum(const shared_ptr<NativeRdb::Rdb
     } else {
         predicates.In(PhotoAlbumColumns::ALBUM_ID, userAlbumIds);
     }
+    if (rdbStore == nullptr) {
+        return nullptr;
+    }
     return rdbStore->Query(predicates, columns);
 }
 
