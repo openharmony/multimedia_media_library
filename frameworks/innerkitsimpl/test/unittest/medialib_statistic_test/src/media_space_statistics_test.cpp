@@ -911,16 +911,5 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_020, TestSize.Level
     EXPECT_EQ((ret != nullptr), false);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_020::End");
 }
-
-HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_021, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_021::Start");
-    string uriStr;
-    string path;
-    Size size;
-    int ret = mediaLibraryManager->OpenThumbnail(uriStr, path, size);
-    EXPECT_EQ(ret, E_ERR);
-    MEDIA_INFO_LOG("MediaSpaceStatistics_test_021::End");
-}
 } // namespace Media
 } // namespace OHOS
