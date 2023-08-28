@@ -67,11 +67,12 @@ ohos_static_library("mediatoollib") {
     "napi:ace_napi",
     "samgr:samgr_proxy",
   ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
   }
 
   subsystem_name = "multimedia"
@@ -110,11 +111,12 @@ ohos_executable("mediatool") {
     "hitrace:hitrace_meter",
     "samgr:samgr_proxy",
   ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
   }
 
   subsystem_name = "multimedia"

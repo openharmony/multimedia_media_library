@@ -42,11 +42,12 @@ ohos_shared_library("media_library_manager") {
     "hitrace:hitrace_meter",
     "image_framework:image_native",
   ]
-
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
   }
 
   defines = []
