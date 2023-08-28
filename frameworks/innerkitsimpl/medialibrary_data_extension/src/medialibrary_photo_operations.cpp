@@ -101,6 +101,21 @@ static void HandleGroupBy(AbsPredicates &predicates, const vector<string> &colum
         " GROUP BY (DATE(date_added, 'unixepoch', 'localtime')) ORDER BY date_added DESC ");
 }
 
+static void HandleGroupBy(AbsPredicates &predicates, vector<string> &columns, const string &targetColumn)
+{
+    auto it = find(columns.begin(), columns.end(), targetColumn);
+    if (it == columns.end()) {
+        return;
+    }
+    if (!predicates.GetGroup().empty()) {
+        return;
+    }
+    string whereClause = predicates.GetWhereClause();
+    predicates.SetWhereClause(whereClause +
+        " GROUP BY " + targetColumn + " ORDER BY " + targetColumn + " DESC ");
+    columns.push_back(MEDIA_COLUMN_COUNT);
+}
+
 static int32_t GetAlbumTypeSubTypeById(const string &albumId, PhotoAlbumType &type, PhotoAlbumSubType &subType)
 {
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
@@ -207,6 +222,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         return HandleIndexOfUri(cmd, predicates, photoId, albumId);
     } else {
         HandleGroupBy(predicates, columns);
+        HandleGroupBy(predicates, const_cast<vector<string> &>(columns), PhotoColumn::PHOTO_DATE_YEAR);
+        HandleGroupBy(predicates, const_cast<vector<string> &>(columns), PhotoColumn::PHOTO_DATE_MONTH);
+        HandleGroupBy(predicates, const_cast<vector<string> &>(columns), PhotoColumn::PHOTO_DATE_DAY);
         return MediaLibraryRdbStore::Query(predicates, columns);
     }
 }
