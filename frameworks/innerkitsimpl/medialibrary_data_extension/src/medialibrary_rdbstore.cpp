@@ -420,15 +420,17 @@ shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
     return rdbStore_;
 }
 
-static inline int32_t DeleteDbByFileId(const string &table, int32_t fileId)
+static inline int32_t DeleteDbByFileId(const string &table, int32_t fileId, const bool compatible)
 {
     AbsRdbPredicates predicates(table);
     predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
-    predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    if (!compatible) {
+        predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    }
     return MediaLibraryRdbStore::Delete(predicates);
 }
 
-int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates)
+int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates, const bool compatible)
 {
     vector<string> columns = {
         MediaColumn::MEDIA_ID,
@@ -455,7 +457,7 @@ int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates)
         if (fileId <= 0) {
             return E_HAS_DB_ERROR;
         }
-        int32_t deletedRow = DeleteDbByFileId(predicates.GetTableName(), fileId);
+        int32_t deletedRow = DeleteDbByFileId(predicates.GetTableName(), fileId, compatible);
         if (deletedRow < 0) {
             return E_HAS_DB_ERROR;
         }

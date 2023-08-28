@@ -37,6 +37,8 @@ const std::string OPRN_ALBUM_ADD_PHOTOS = "add_photos";
 const std::string OPRN_ALBUM_REMOVE_PHOTOS = "remove_photos";
 const std::string OPRN_RECOVER_PHOTOS = "recover_photos";
 const std::string OPRN_DELETE_PHOTOS = "delete_photos_permanently";   // Delete photos permanently from system
+// Delete non-trashed photos directly from system for api9 MediaLibrary.delete compatibility
+const std::string OPRN_COMPAT_DELETE_PHOTOS = "compat_delete_photos_permanently";
 const std::string OPRN_DELETE_BY_TOOL = "delete_by_tool";
 const std::string OPRN_SET_USER_COMMENT = "set_user_comment";
 
@@ -82,6 +84,8 @@ const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
 const std::string PHOTO_ALBUM_OPRN = "photo_album_v10_operation";
 const std::string URI_QUERY_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_QUERY;
 const std::string URI_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_DELETE_PHOTOS;
+const std::string URI_COMPAT_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" +
+        OPRN_COMPAT_DELETE_PHOTOS;
 
 // Photo map operations constants
 const std::string PHOTO_MAP_OPRN = "photo_map_v10_operation";

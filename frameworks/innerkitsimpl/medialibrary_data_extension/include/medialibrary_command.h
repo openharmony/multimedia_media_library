@@ -83,6 +83,7 @@ enum class OperationType : uint32_t {
     UPDATE_PENDING,
     SET_USER_COMMENT,
     INDEX,
+    COMPAT_ALBUM_DELETE_ASSETS,
 };
 
 class MediaLibraryCommand {
