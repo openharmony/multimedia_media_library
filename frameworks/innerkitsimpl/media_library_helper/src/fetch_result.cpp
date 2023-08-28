@@ -329,7 +329,7 @@ void FetchResult<T>::SetAssetUri(FileAsset *fileAsset)
     string uri;
     if (resultNapiType_ == ResultNapiType::TYPE_USERFILE_MGR ||
         resultNapiType_ == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
-        string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
+        string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);
         MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()),
              networkId_, MEDIA_API_VERSION_V10, extrUri);
         uri = fileUri.ToString();
