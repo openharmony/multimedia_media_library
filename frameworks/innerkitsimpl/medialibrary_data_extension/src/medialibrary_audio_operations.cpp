@@ -483,7 +483,7 @@ int32_t MediaLibraryAudioOperations::TrashAging()
     RdbPredicates predicates(AudioColumn::AUDIOS_TABLE);
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));
-    int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(predicates);
+    int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(predicates, false);
     if (deletedRows < 0) {
         return deletedRows;
     }

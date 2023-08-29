@@ -298,6 +298,7 @@ void MediaLibraryCommand::ParseOprnTypeFromUri()
         { OPRN_ALBUM_REMOVE_PHOTOS, OperationType::ALBUM_REMOVE_PHOTOS },
         { OPRN_RECOVER_PHOTOS, OperationType::ALBUM_RECOVER_ASSETS },
         { OPRN_DELETE_PHOTOS, OperationType::ALBUM_DELETE_ASSETS },
+        { OPRN_COMPAT_DELETE_PHOTOS, OperationType::COMPAT_ALBUM_DELETE_ASSETS },
         { OPRN_CLOSE, OperationType::CLOSE },
         { OPRN_TRASH, OperationType::TRASH_PHOTO },
         { OPRN_PENDING, OperationType::UPDATE_PENDING },
