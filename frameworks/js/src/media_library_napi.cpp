@@ -5665,20 +5665,11 @@ static void PhotoAccessHelperTrashExecute(napi_env env, void *data)
     tracer.Start("PhotoAccessHelperTrashExecute");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
-    const vector<string> &uris = context->uris;
-    string tmpUri;
-    vector<string> trashIds;
-    for (const auto &uri : uris) {
-        tmpUri = uri;
-        MediaFileUri::RemoveAllFragment(tmpUri);
-        string trashId = MediaFileUtils::GetIdFromUri(tmpUri);
-        trashIds.push_back(trashId);
-    }
     string trashUri = PAH_TRASH_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(trashUri);
     DataSharePredicates predicates;
-    predicates.In(MediaColumn::MEDIA_ID, trashIds);
+    predicates.In(MediaColumn::MEDIA_ID, context->uris);
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
