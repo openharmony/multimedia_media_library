@@ -477,10 +477,8 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     return changedRows;
 }
 
-int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
+int32_t DoDeletePhotoAssets(RdbPredicates &rdbPredicates, bool isAging, const bool compatible)
 {
-    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
-    rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     vector<string> whereArgs = rdbPredicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicates);
     vector<string> agingNotifyUris;
@@ -489,7 +487,7 @@ int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
     if (isAging) {
         MediaLibraryNotify::GetNotifyUris(rdbPredicates, agingNotifyUris);
     }
-    int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(rdbPredicates);
+    int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(rdbPredicates, compatible);
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
         { to_string(PhotoAlbumSubType::TRASH) });
@@ -515,6 +513,19 @@ int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
     return deletedRows;
 }
 
+static inline int32_t CompatDeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
+{
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+    return DoDeletePhotoAssets(rdbPredicates, isAging, true);
+}
+
+static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
+{
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+    rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    return DoDeletePhotoAssets(rdbPredicates, isAging, false);
+}
+
 int32_t AgingPhotoAssets()
 {
     auto time = MediaFileUtils::UTCTimeSeconds();
@@ -538,6 +549,8 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
             return RecoverPhotoAssets(predicates);
         case OperationType::ALBUM_DELETE_ASSETS:
             return DeletePhotoAssets(predicates, false);
+        case OperationType::COMPAT_ALBUM_DELETE_ASSETS:
+            return CompatDeletePhotoAssets(predicates, false);
         case OperationType::AGING:
             return AgingPhotoAssets();
         default:
