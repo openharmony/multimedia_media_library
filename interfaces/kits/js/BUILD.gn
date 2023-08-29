@@ -308,14 +308,17 @@ gen_js_obj("photoaccesshelperinf_abc") {
 ohos_shared_library("photoaccesshelper") {
   configs = [ ":napi_config" ]
 
-  sources =
-      [ "${MEDIALIB_JS_PATH}/src/native_module_ohos_photoaccess_helper.cpp" ]
+  sources = [
+        "${MEDIALIB_JS_PATH}/src/native_module_ohos_photoaccess_helper.cpp",
+        "${MEDIALIB_JS_PATH}/src/thumbnail_manager.cpp"
+  ]
 
   deps = [
     ":medialibrary_nutils",
     ":photoaccesshelperinf_abc",
     ":photoaccesshelperinf_js",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "//third_party/e2fsprogs:libext2_uuid",
   ]
 
   external_deps = [

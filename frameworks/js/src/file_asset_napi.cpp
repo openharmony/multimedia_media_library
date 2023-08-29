@@ -66,6 +66,7 @@ static const std::string MEDIA_FILEMODE = "mode";
 
 thread_local napi_ref FileAssetNapi::sConstructor_ = nullptr;
 thread_local FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
+shared_ptr<ThumbnailManager> thumbnailManager_ = nullptr;
 
 constexpr int32_t IS_TRASH = 1;
 constexpr int32_t NOT_TRASH = 0;
@@ -206,6 +207,8 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("setPending", PhotoAccessHelperSetPending),
             DECLARE_NAPI_FUNCTION("getExif", JSGetExif),
             DECLARE_NAPI_FUNCTION("setUserComment", PhotoAccessHelperSetUserComment),
+            DECLARE_NAPI_FUNCTION("requestPhoto", PhotoAccessHelperRequestPhoto), // FileAsset.requestPhoto(size, callback) -> requestId
+            DECLARE_NAPI_FUNCTION("cancelRequestPhoto", PhotoAccessHelpercancelRequestPhoto), // FileAsset.cancelRequestPhoto(requestId)
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -1644,9 +1647,6 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
     MediaLibraryTracer tracer;
     tracer.Start("JSGetThumbnailExecute");
 
-    Size size = { .width = context->thumbWidth, .height = context->thumbHeight };
-    bool isApiVersion10 = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR ||
-        context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     string path = context->objectPtr->GetPath();
 #ifndef MEDIALIBRARY_COMPATIBILITY
     if (path.empty()
@@ -1654,7 +1654,7 @@ static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
         path = ROOT_MEDIA_DIR + context->objectPtr->GetRelativePath() + context->objectPtr->GetDisplayName();
     }
 #endif
-    context->pixelmap = QueryThumbnail(context->objectPtr->GetUri(), size, isApiVersion10, path);
+    context->pixelmap = ThumbnailManager::QueryThumbnail(context->objectPtr->GetUri(), context->size, path);
 }
 
 static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
@@ -1716,8 +1716,8 @@ static void GetSizeInfo(napi_env env, napi_value configObj, std::string type, in
 napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value argv[],
                                     unique_ptr<FileAssetAsyncContext> &asyncContext)
 {
-    asyncContext->thumbWidth = DEFAULT_THUMB_SIZE;
-    asyncContext->thumbHeight = DEFAULT_THUMB_SIZE;
+    asyncContext->size.width = DEFAULT_THUMB_SIZE;
+    asyncContext->size.height = DEFAULT_THUMB_SIZE;
 
     if (argc == ARGS_ONE) {
         napi_valuetype valueType = napi_undefined;
@@ -1732,8 +1732,8 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
         napi_typeof(env, argv[i], &valueType);
 
         if (i == PARAM0 && valueType == napi_object) {
-            GetSizeInfo(env, argv[PARAM0], "width", asyncContext->thumbWidth);
-            GetSizeInfo(env, argv[PARAM0], "height", asyncContext->thumbHeight);
+            GetSizeInfo(env, argv[PARAM0], "width", asyncContext->size.width );
+            GetSizeInfo(env, argv[PARAM0], "height", asyncContext->size.height);
         } else if (i == PARAM0 && valueType == napi_function) {
             napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
             break;
@@ -3513,6 +3513,58 @@ napi_value FileAssetNapi::PhotoAccessHelperGetThumbnail(napi_env env, napi_callb
         reinterpret_cast<CompleteCallback>(JSGetThumbnailCompleteCallback));
 
     return result;
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperRequestPhoto(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperRequestPhoto");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
+
+    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) ==
+        napi_ok, result, "Failed to get object info");
+    // use current parse args function temporary
+    result = GetJSArgsForGetThumbnail(env, asyncContext->argc, asyncContext->argv, asyncContext);
+    ASSERT_NULLPTR_CHECK(env, result);
+    auto obj = asyncContext->objectInfo;
+
+    static std::once_flag onceFlag;
+    std::call_once(onceFlag, []() mutable {
+        thumbnailManager_ = ThumbnailManager::GetInstance();
+        if (thumbnailManager_ != nullptr) {
+            thumbnailManager_->Init();
+        }
+    });
+    string requestId;
+    if (thumbnailManager_ != nullptr) {
+        requestId = thumbnailManager_->AddPhotoRequest(obj->GetFileUri(), asyncContext->size, env, asyncContext->callbackRef);
+    }
+    napi_create_string_utf8(env, requestId.c_str(), NAPI_AUTO_LENGTH, &result);
+    return result;
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperCancelRequestPhoto(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperCancelRequestPhoto");
+
+    napi_value ret = nullptr;
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
+
+    string requestKey;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, requestKey),
+        JS_ERR_PARAMETER_INVALID);
+    napi_value jsResult = nullptr;
+    napi_get_undefined(env, &jsResult);
+    if (thumbnailManager_ != nullptr) {
+        thumbnailManager_->RemovePhotoRequest(requestKey);
+    }
+    return jsResult;
 }
 
 static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
