@@ -1140,7 +1140,7 @@ string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
     if (fileUri.IsApi10()) {
         string displayName;
         GetExtrParamFromUri(pureUri, displayName);
-        extrUri = GetExtraUri(displayName, fileUri.GetFilePath());
+        extrUri = GetExtraUri(displayName, fileUri.GetFilePath(), false);
     }
 
     MediaFileUri realUri(type, to_string(realId), fileUri.GetNetworkId(),
@@ -1252,9 +1252,12 @@ void MediaFileUtils::UriAppendKeyValue(string &uri, const string &key, std::stri
     }
 }
 
-string MediaFileUtils::GetExtraUri(const string &displayName, const string &path)
+string MediaFileUtils::GetExtraUri(const string &displayName, const string &path, const bool isNeedEncode)
 {
     string extraUri = "/" + GetTitleFromDisplayName(GetFileName(path)) + "/" + displayName;
+    if (!isNeedEncode) {
+        return extraUri;
+    }
     return MediaFileUtils::Encode(extraUri);
 }
 

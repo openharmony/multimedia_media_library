@@ -115,7 +115,8 @@ public:
     static std::string GetRealUriFromVirtualUri(const std::string &uri);
     static bool StartsWith(const std::string &str, const std::string &prefix);
     static void UriAppendKeyValue(std::string &uri, const std::string &key, std::string value = "10");
-    static std::string GetExtraUri(const std::string &displayName, const std::string &path);
+    static std::string GetExtraUri(const std::string &displayName, const std::string &path,
+        const bool isNeedEncode = true);
     static std::string GetUriByExtrConditions(const std::string &prefix, const std::string &fileId,
         const std::string &suffix = "");
     static std::string Encode(const std::string &uri);
