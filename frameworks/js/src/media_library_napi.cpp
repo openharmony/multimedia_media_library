@@ -5291,8 +5291,9 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
         deleteIds.push_back(to_string(obj->GetAlbumId()));
     }
     if (deleteIds.empty()) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return nullptr;
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
     }
     context->predicates.In(PhotoAlbumColumns::ALBUM_ID, deleteIds);
 
@@ -5307,6 +5308,10 @@ static void JSDeletePhotoAlbumsExecute(napi_env env, void *data)
     tracer.Start("JSDeletePhotoAlbumsExecute");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+
+    if (context->predicates.GetOperationList().empty()) {
+        return;
+    }
     string deleteAlbumUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
         UFM_DELETE_PHOTO_ALBUM : PAH_DELETE_PHOTO_ALBUM;
     Uri uri(deleteAlbumUri);
