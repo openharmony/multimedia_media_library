@@ -15,6 +15,15 @@ import("//build/ohos.gni")
 import("//foundation/ability/ability_runtime/ability_runtime.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
+group("mtp") {
+  if (defined(global_parts_info.hdf_drivers_interface_usb)) {
+    deps = [
+      ":media_mtp",
+      ":mtpservice",
+    ]
+  }
+}
+
 ohos_shared_library("media_mtp") {
   install_enable = true
 
@@ -151,7 +160,7 @@ ohos_shared_library("mtpservice") {
     "drivers_interface_usb:usbfn_mtp_idl_headers",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "ipc_js:rpc",
+    "ipc:ipc_js",
     "napi:ace_napi",
   ]
 
