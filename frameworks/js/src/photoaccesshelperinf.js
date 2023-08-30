@@ -26,7 +26,7 @@ const ERROR_MSG_WRITE_PERMISSION = 'not have ohos.permission.WRITE_IMAGEVIDEO';
 const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
 
-const MAX_DELETE_NUMBER = 3600;
+const MAX_DELETE_NUMBER = 300;
 const MIN_DELETE_NUMBER = 1;
 
 let gContext = undefined;
