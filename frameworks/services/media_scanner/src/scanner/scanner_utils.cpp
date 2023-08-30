@@ -216,27 +216,30 @@ void ScannerUtils::InitSkipList()
 // Check if path is part of Skip scan list
 bool ScannerUtils::CheckSkipScanList(const string &path)
 {
-    hash<string> hashStr;
-    size_t hashPath;
-
-    vector<string> list = {
-        { ROOT_MEDIA_DIR + AUDIO_BUCKET },
-        { ROOT_MEDIA_DIR + PHOTO_BUCKET },
+    if (path.length() <= ROOT_MEDIA_DIR.length()) {
+        return false;
+    }
+    static const string AUDIO = "Audios";
+    static const string CAMERA = "Camera";
+    static const string Pictures = "Pictures";
+    static const string Videos = "Videos";
+    static const string Doc = "Documents";
+    static const string Download = "Download";
+    // white list
+    static vector<string> list = {
+        { ROOT_MEDIA_DIR + AUDIO },
+        { ROOT_MEDIA_DIR + CAMERA },
+        { ROOT_MEDIA_DIR + Pictures },
+        { ROOT_MEDIA_DIR + Videos },
+        { ROOT_MEDIA_DIR + Doc },
+        { ROOT_MEDIA_DIR + Download },
     };
-    // only skip path as "/storage/cloud/files/Photo" when scanDir
-    // doesn't work in scanFile as path likes "/storage/cloud/files/Photo/*"
-    if (find(list.begin(), list.end(), path) != list.end()) {
-        return true;
+    for (const auto &pathPrefix : list) {
+        if (path.find(pathPrefix) != string::npos) {
+            return false;
+        }
     }
-    if (skipList_.empty()) {
-        InitSkipList();
-    }
-
-    hashPath = hashStr(path);
-    if (find(skipList_.begin(), skipList_.end(), hashPath) != skipList_.end()) {
-        return true;
-    }
-    return false;
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

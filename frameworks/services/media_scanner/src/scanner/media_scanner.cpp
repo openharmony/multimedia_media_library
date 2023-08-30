@@ -353,12 +353,6 @@ int32_t MediaScannerObj::ScanFileInternal()
         return E_FILE_HIDDEN;
     }
 
-    string parent = ScannerUtils::GetParentPath(path_);
-    if ((!parent.empty() && ScannerUtils::CheckSkipScanList(parent))) {
-        MEDIA_ERR_LOG("the dir is hidden");
-        return E_DIR_HIDDEN;
-    }
-
     int32_t err = GetFileMetadata();
     if (err != E_OK) {
         if (err != E_SCANNED) {
@@ -366,7 +360,7 @@ int32_t MediaScannerObj::ScanFileInternal()
         }
         return err;
     }
-
+    string parent = ScannerUtils::GetParentPath(path_);
     err = GetParentDirInfo(parent, UNKNOWN_ID);
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get dir info");
