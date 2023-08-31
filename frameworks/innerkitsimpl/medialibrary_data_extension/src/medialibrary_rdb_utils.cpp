@@ -139,6 +139,9 @@ static shared_ptr<AbsSharedResultSet> Query(const shared_ptr<NativeRdb::RdbStore
     const AbsRdbPredicates &predicates, const vector<string> &columns)
 {
     MediaLibraryRdbUtils::AddQueryFilter(const_cast<AbsRdbPredicates &>(predicates));
+    if (rdbStore == nullptr) {
+        return nullptr;
+    }
     return rdbStore->Query(predicates, columns);
 }
 
