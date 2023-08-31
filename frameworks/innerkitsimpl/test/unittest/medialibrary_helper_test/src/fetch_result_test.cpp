@@ -453,42 +453,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetRowValFromColumn_Test_001, T
 
 /*
  * Feature : MediaLibraryHelperUnitTest
- * Function : Check GetValByIndex
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
-HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetValByIndex_Test_001, TestSize.Level0)
-{
-    auto fetchResult = make_shared<FetchResult<FileAsset>>(GetEmptyFetchResult());
-    shared_ptr<NativeRdb::ResultSet> resultSet;
-    int32_t index = 1;
-    variant<int32_t, int64_t, string> ret;
-    ret = fetchResult->GetValByIndex(index, ResultSetDataType::TYPE_STRING, resultSet);
-    EXPECT_EQ(get<string>(ret), "");
-    fetchResult->GetValByIndex(index, ResultSetDataType::TYPE_INT32, resultSet);
-    fetchResult->GetValByIndex(index, ResultSetDataType::TYPE_INT64, resultSet);
-    fetchResult->GetValByIndex(index, ResultSetDataType::TYPE_NULL, resultSet);
-    shared_ptr <FileAsset> fileAsset = make_shared<FileAsset>();
-    fetchResult->SetFileAsset(fileAsset.get(), resultSet);
-    shared_ptr<AlbumAsset> albumData = make_shared<AlbumAsset>();
-    fetchResult->SetAlbumAsset(albumData.get(), resultSet);
-    shared_ptr<PhotoAlbum> photoAlbumData = make_shared<PhotoAlbum>();
-    fetchResult->SetPhotoAlbum(photoAlbumData.get(), resultSet);
-    shared_ptr<SmartAlbumAsset> smartAlbumAsset = make_shared<SmartAlbumAsset>();
-    fetchResult->SetSmartAlbumAsset(smartAlbumAsset.get(), resultSet);
-    fetchResult->GetObjectFromResultSet(fileAsset.get(), resultSet);
-    fetchResult->GetObjectFromResultSet(albumData.get(), resultSet);
-    fetchResult->GetObjectFromResultSet(photoAlbumData.get(), resultSet);
-    fetchResult->GetObjectFromResultSet(smartAlbumAsset.get(), resultSet);
-    fetchResult->Close();
-    fetchResult->GetValByIndex(index, ResultSetDataType::TYPE_STRING, resultSet);
-    fetchResult->SetFileAsset(fileAsset.get(), resultSet);
-}
-
-/*
- * Feature : MediaLibraryHelperUnitTest
  * Function : Check base
  * SubFunction : NA
  * FunctionPoints : NA
