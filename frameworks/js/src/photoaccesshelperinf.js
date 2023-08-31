@@ -101,9 +101,14 @@ async function getAppName() {
 
 async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
   let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_REQUESTED_PERMISSION;
-  let { reqPermissionDetails } = await bundleManager.getBundleInfoForSelf(flags);
-  let isPermission = reqPermissionDetails.findIndex(({ name }) => name === WRITE_PERMISSION) !== -1;
-  if (!isPermission) {
+  let { reqPermissionDetails, permissionGrantStates } = await bundleManager.getBundleInfoForSelf(flags);
+  let permissionIndex = -1;
+  for (let i = 0; i < reqPermissionDetails.length; i++) {
+    if (reqPermissionDetails[i].name === WRITE_PERMISSION) {
+      permissionIndex = i;
+    }
+  }
+  if (permissionIndex < 0 || permissionGrantStates[permissionIndex] === -1) {
     return errorResult(new BusinessError(ERROR_MSG_WRITE_PERMISSION), asyncCallback);
   }
   const appName = await getAppName();
