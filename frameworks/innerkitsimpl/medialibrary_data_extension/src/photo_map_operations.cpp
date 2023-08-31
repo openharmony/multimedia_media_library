@@ -37,7 +37,7 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 
-int32_t PhotoMapOperations::AddSingleAsset(const DataShareValuesBucket &value)
+static int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<string> &notifyUris)
 {
     /**
      * Build insert sql:
@@ -82,9 +82,8 @@ int32_t PhotoMapOperations::AddSingleAsset(const DataShareValuesBucket &value)
     bindArgs.emplace_back(PhotoAlbumType::USER);
     bindArgs.emplace_back(PhotoAlbumSubType::USER_GENERIC);
     int errCode =  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
-    auto watch = MediaLibraryNotify::GetInstance();
     if (errCode > 0) {
-        watch->Notify(MediaFileUtils::Encode(assetUri), NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
+        notifyUris.push_back(assetUri);
     }
     return errCode;
 }
@@ -96,6 +95,7 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         return E_HAS_DB_ERROR;
     }
 
+    vector<string> notifyUris;
     TransactionOperations op(rdbStore->GetRaw());
     int32_t changedRows = 0;
     int32_t err = op.Start();
@@ -103,7 +103,7 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         return E_HAS_DB_ERROR;
     }
     for (const auto &value : values) {
-        auto ret = AddSingleAsset(value);
+        auto ret = AddSingleAsset(value, notifyUris);
         if (ret == E_HAS_DB_ERROR) {
             return ret;
         }
@@ -112,14 +112,21 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         }
     }
     op.Finish();
-    if (!values.empty()) {
-        bool isValid = false;
-        int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
-        if (!isValid) {
-            MEDIA_WARN_LOG("Ignore failure on get album id, album updation possibly would be lost");
-            return changedRows;
-        }
-        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });
+    if (values.empty()) {
+        return changedRows;
+    }
+
+    bool isValid = false;
+    int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
+    if (!isValid || albumId <= 0) {
+        MEDIA_WARN_LOG("Ignore failure on get album id when add assets, album updating would be lost");
+        return changedRows;
+    }
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    for (const auto &uri : notifyUris) {
+        watch->Notify(MediaFileUtils::Encode(uri), NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
     }
 
     return changedRows;
@@ -140,13 +147,17 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
         return deleteRow;
     }
     int32_t albumId = atoi(strAlbumId.c_str());
+    if (albumId <= 0) {
+        MEDIA_WARN_LOG("Ignore failure on get album id when remove assets, album updating would be lost");
+        return deleteRow;
+    }
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { strAlbumId });
 
     auto watch = MediaLibraryNotify::GetInstance();
     for (size_t i = 1; i < whereArgs.size(); i++) {
         watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, albumId);
     }
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { strAlbumId });
     return deleteRow;
 }
 
