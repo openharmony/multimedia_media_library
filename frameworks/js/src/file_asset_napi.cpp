@@ -2437,6 +2437,23 @@ void FileAssetNapi::UpdateFileAssetInfo()
     fileAssetPtr = std::shared_ptr<FileAsset>(sFileAsset_);
 }
 
+static int32_t CheckSystemApiKeys(napi_env env, const string &key)
+{
+    static const set<string> SYSTEM_API_KEYS = {
+        PhotoColumn::PHOTO_POSITION,
+        MediaColumn::MEDIA_DATE_TRASHED,
+        MediaColumn::MEDIA_HIDDEN,
+        PhotoColumn::PHOTO_USER_COMMENT,
+        PhotoColumn::CAMERA_SHOT_KEY,
+    };
+
+    if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This key can only be used by system apps");
+        return E_CHECK_SYSTEMAPP_FAIL;
+    }
+    return E_SUCCESS;
+}
+
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -2449,6 +2466,11 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     string inputKey;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, inputKey),
         JS_ERR_PARAMETER_INVALID);
+
+    if (CheckSystemApiKeys(env, inputKey) < 0) {
+        return nullptr;
+    }
+
     napi_value jsResult = nullptr;
     auto obj = asyncContext->objectInfo;
     napi_get_undefined(env, &jsResult);
@@ -2638,6 +2660,11 @@ napi_value FileAssetNapi::UserFileMgrGetThumbnail(napi_env env, napi_callback_in
 static napi_value ParseArgsUserFileMgrOpen(napi_env env, napi_callback_info info,
     unique_ptr<FileAssetAsyncContext> &context, bool isReadOnly)
 {
+    if (!isReadOnly && !MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     size_t minArgs = ARGS_ZERO;
     size_t maxArgs = ARGS_ONE;
     if (!isReadOnly) {
@@ -3053,6 +3080,12 @@ napi_value FileAssetNapi::JSGetExif(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSGetExif");
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ONE),
         JS_ERR_PARAMETER_INVALID);
@@ -3427,6 +3460,11 @@ napi_value FileAssetNapi::PhotoAccessHelperFavorite(napi_env env, napi_callback_
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperFavorite");
 
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
@@ -3530,6 +3568,11 @@ napi_value FileAssetNapi::PhotoAccessHelperSetHidden(napi_env env, napi_callback
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperSetHidden");
 
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
@@ -3606,6 +3649,11 @@ napi_value FileAssetNapi::PhotoAccessHelperSetPending(napi_env env, napi_callbac
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperSetPending");
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
 
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
@@ -3703,6 +3751,11 @@ napi_value FileAssetNapi::PhotoAccessHelperSetUserComment(napi_env env, napi_cal
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperSetUserComment");
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
 
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;

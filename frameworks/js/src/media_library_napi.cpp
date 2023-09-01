@@ -4522,6 +4522,10 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
     NAPI_ASSERT(env, napi_typeof(env, context->argv[ARGS_ZERO], &valueType) == napi_ok, "Failed to get napi type");
     if (valueType == napi_string) {
         context->isCreateByComponent = false;
+        if (!MediaLibraryNapiUtils::IsSystemApp()) {
+            NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+            return nullptr;
+        }
         return ParseArgsCreatePhotoAssetSystem(env, info, context);
     } else if (valueType == napi_number) {
         context->isCreateByComponent = true;
@@ -4660,6 +4664,11 @@ static napi_status ParseArgsIndexUri(napi_env env, unique_ptr<MediaLibraryAsyncC
 static napi_value ParseArgsIndexof(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     constexpr size_t minArgs = ARGS_THREE;
     constexpr size_t maxArgs = ARGS_FOUR;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
@@ -5094,6 +5103,11 @@ napi_value MediaLibraryNapi::CreateNotifyTypeEnum(napi_env env)
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
@@ -5261,6 +5275,11 @@ napi_value MediaLibraryNapi::PhotoAccessCreatePhotoAlbum(napi_env env, napi_call
 static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
@@ -5268,7 +5287,6 @@ static napi_value ParseArgsDeletePhotoAlbums(napi_env env, napi_callback_info in
 
     /* Parse the first argument into delete album id array */
     vector<string> deleteIds;
-
     uint32_t len = 0;
     CHECK_ARGS(env, napi_get_array_length(env, context->argv[PARAM0], &len), JS_INNER_FAIL);
     for (uint32_t i = 0; i < len; i++) {
@@ -5413,6 +5431,14 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     }
     if (albumSubType != ANY) {
         context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
+    }
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        context->predicates.And()->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
+            to_string(PhotoAlbumSubType::USER_GENERIC),
+            to_string(PhotoAlbumSubType::FAVORITE),
+            to_string(PhotoAlbumSubType::VIDEO),
+        }));
     }
 
     napi_value result = nullptr;
@@ -5644,6 +5670,11 @@ napi_value MediaLibraryNapi::PhotoAccessHelperOffCallback(napi_env env, napi_cal
 napi_value ParseArgsPHAccessHelperTrash(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     vector<string> uris;
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringArrayCallback(env, info, context, uris),
         JS_ERR_PARAMETER_INVALID);
