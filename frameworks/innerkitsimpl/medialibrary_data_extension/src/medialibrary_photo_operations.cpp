@@ -245,10 +245,11 @@ static string GetPathFromUri(const std::string &uri)
         return "";
     }
     string fileId = realTitle.substr(index + 1);
-    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+    int32_t fileUniqueId;
+    if (!StrToInt(fileId, fileUniqueId)) {
+        MEDIA_ERR_LOG("invalid fileuri %{public}s", uri.c_str());
         return "";
     }
-    int32_t fileUniqueId = stoi(fileId);
     int32_t bucketNum = 0;
     MediaLibraryAssetOperations::CreateAssetBucket(fileUniqueId, bucketNum);
     string ext = MediaFileUtils::GetExtensionFromPath(uri);
