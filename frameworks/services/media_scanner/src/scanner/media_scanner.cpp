@@ -335,6 +335,7 @@ int32_t MediaScannerObj::GetFileMetadata()
     // statinfo
     data_->SetFileSize(statInfo.st_size);
     data_->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
+    data_->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
 
     // extension and type
     string extension = ScannerUtils::GetFileExtension(path_);

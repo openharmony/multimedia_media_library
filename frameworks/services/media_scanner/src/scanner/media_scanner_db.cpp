@@ -132,7 +132,7 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
     SetValuesFromMetaDataAndType(metadata, values, mediaType, table);
 
     if (isInsert) {
-        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
+        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
     }
 }
 
@@ -169,7 +169,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
     }
 
     if (isInsert) {
-        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
+        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
     }
 }
 
