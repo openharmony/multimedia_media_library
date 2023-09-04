@@ -208,9 +208,13 @@ HWTEST_F(MediaLibraryScannerTest, medialib_IsDirHiddenRecursive_test_001, TestSi
 
 HWTEST_F(MediaLibraryScannerTest, medialib_CheckSkipScanList_test_001, TestSize.Level0)
 {
-    std::string path = "medialib_CheckSkipScanList_test_001";
+    std::string path = "medialib_test";
     bool ret = ScannerUtils::CheckSkipScanList(path);
     EXPECT_EQ(ret, false);
+
+    path = "medialib_CheckSkipScanList_test_001";
+    ret = ScannerUtils::CheckSkipScanList(path);
+    EXPECT_EQ(ret, true);
 }
 
 } // namespace Media
