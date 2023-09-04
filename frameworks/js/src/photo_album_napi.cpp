@@ -911,6 +911,11 @@ napi_value PhotoAlbumNapi::JSPhoteAccessGetPhotoAssets(napi_env env, napi_callba
 static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,
     unique_ptr<PhotoAlbumNapiAsyncContext> &context)
 {
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
