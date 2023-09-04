@@ -72,7 +72,7 @@ static inline std::string GetThumbnailPath(const std::string &path, const std::s
     return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + "/" + key + ".jpg";
 }
 
-static inline std::string GetThumbSuffix(ThumbnailType type)
+static std::string GetThumbSuffix(ThumbnailType type)
 {
     switch (type) {
         case ThumbnailType::MTH:
@@ -106,7 +106,7 @@ static inline std::string GetSandboxPath(const std::string &path, ThumbnailType 
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
-    std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + GetThumbSuffix(type);
+    std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + "/" + GetThumbSuffix(type) + ".jpg";
     return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
 }
 
