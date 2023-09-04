@@ -66,7 +66,7 @@ static const std::string MEDIA_FILEMODE = "mode";
 
 thread_local napi_ref FileAssetNapi::sConstructor_ = nullptr;
 thread_local FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
-shared_ptr<ThumbnailManager> thumbnailManager_ = nullptr;
+shared_ptr<ThumbnailManager> FileAssetNapi::thumbnailManager_ = nullptr;
 
 constexpr int32_t IS_TRASH = 1;
 constexpr int32_t NOT_TRASH = 0;
@@ -207,8 +207,8 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("setPending", PhotoAccessHelperSetPending),
             DECLARE_NAPI_FUNCTION("getExif", JSGetExif),
             DECLARE_NAPI_FUNCTION("setUserComment", PhotoAccessHelperSetUserComment),
-            DECLARE_NAPI_FUNCTION("requestPhoto", PhotoAccessHelperRequestPhoto), // FileAsset.requestPhoto(size, callback) -> requestId
-            DECLARE_NAPI_FUNCTION("cancelRequestPhoto", PhotoAccessHelpercancelRequestPhoto), // FileAsset.cancelRequestPhoto(requestId)
+            DECLARE_NAPI_FUNCTION("requestPhoto", PhotoAccessHelperRequestPhoto),
+            DECLARE_NAPI_FUNCTION("cancelRequestPhoto", PhotoAccessHelperCancelRequestPhoto),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -1556,92 +1556,6 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
     return result;
 }
 
-static int OpenThumbnail(string &uriStr, const string &path, const Size &size)
-{
-    if (!path.empty()) {
-        string sandboxPath = GetSandboxPath(path, GetThumbType(size.width, size.height));
-        int fd = -1;
-        if (!sandboxPath.empty()) {
-            fd = open(sandboxPath.c_str(), O_RDONLY);
-        }
-        if (fd > 0) {
-            return fd;
-        }
-        if (IsAsciiString(path)) {
-            uriStr += "&" + THUMBNAIL_PATH + "=" + path;
-        }
-    }
-    Uri openUri(uriStr);
-    return UserFileClient::OpenFile(openUri, "R");
-}
-
-static bool IfSizeEqualsRatio(Size& imageSize, Size& targetSize)
-{
-    if (imageSize.height == 0 || targetSize.height == 0) {
-        return false;
-    }
-
-    return imageSize.width / imageSize.height == targetSize.width / targetSize.height;
-}
-
-static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd& uniqueFd, Size& size)
-{
-    SourceOptions opts;
-    uint32_t err = 0;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
-    if (imageSource  == nullptr) {
-        NAPI_ERR_LOG("CreateImageSource err %{public}d", err);
-        return nullptr;
-    }
-
-    ImageInfo imageInfo;
-    err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        NAPI_ERR_LOG("GetImageInfo err %{public}d", err);
-        return nullptr;
-    }
-
-    bool isEqualsRatio = IfSizeEqualsRatio(imageInfo.size, size);
-    DecodeOptions decodeOpts;
-    decodeOpts.desiredSize = isEqualsRatio ? size : imageInfo.size;
-    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    if (pixelMap == nullptr) {
-        NAPI_ERR_LOG("CreatePixelMap err %{public}d", err);
-        return nullptr;
-    }
-#ifdef IMAGE_PURGEABLE_PIXELMAP
-    PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
-#endif
-    PostProc postProc;
-    if (!isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
-        return nullptr;
-    }
-    return pixelMap;
-}
-
-static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
-    const bool isApiVersion10, const string &path)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("QueryThumbnail uri:" + uri);
-
-    string openUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
-        "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
-    if (isApiVersion10) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(openUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    }
-    tracer.Start("DataShare::OpenFile");
-    UniqueFd uniqueFd(OpenThumbnail(openUriStr, path, size));
-    if (uniqueFd.Get() < 0) {
-        NAPI_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
-        return nullptr;
-    }
-    tracer.Finish();
-    tracer.Start("ImageSource::CreateImageSource");
-    return DecodeThumbnail(uniqueFd, size);
-}
-
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
 {
     MediaLibraryTracer tracer;
@@ -1732,7 +1646,7 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
         napi_typeof(env, argv[i], &valueType);
 
         if (i == PARAM0 && valueType == napi_object) {
-            GetSizeInfo(env, argv[PARAM0], "width", asyncContext->size.width );
+            GetSizeInfo(env, argv[PARAM0], "width", asyncContext->size.width);
             GetSizeInfo(env, argv[PARAM0], "height", asyncContext->size.height);
         } else if (i == PARAM0 && valueType == napi_function) {
             napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
@@ -3531,6 +3445,8 @@ napi_value FileAssetNapi::PhotoAccessHelperRequestPhoto(napi_env env, napi_callb
     result = GetJSArgsForGetThumbnail(env, asyncContext->argc, asyncContext->argv, asyncContext);
     ASSERT_NULLPTR_CHECK(env, result);
     auto obj = asyncContext->objectInfo;
+    napi_value ret = nullptr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectInfo, ret, "FileAsset is nullptr");
 
     static std::once_flag onceFlag;
     std::call_once(onceFlag, []() mutable {
@@ -3541,7 +3457,8 @@ napi_value FileAssetNapi::PhotoAccessHelperRequestPhoto(napi_env env, napi_callb
     });
     string requestId;
     if (thumbnailManager_ != nullptr) {
-        requestId = thumbnailManager_->AddPhotoRequest(obj->GetFileUri(), asyncContext->size, env, asyncContext->callbackRef);
+        requestId = thumbnailManager_->AddPhotoRequest(obj->fileAssetPtr->GetUri(), obj->fileAssetPtr->GetPath(),
+            asyncContext->size, env, asyncContext->callbackRef);
     }
     napi_create_string_utf8(env, requestId.c_str(), NAPI_AUTO_LENGTH, &result);
     return result;
@@ -3561,6 +3478,7 @@ napi_value FileAssetNapi::PhotoAccessHelperCancelRequestPhoto(napi_env env, napi
         JS_ERR_PARAMETER_INVALID);
     napi_value jsResult = nullptr;
     napi_get_undefined(env, &jsResult);
+
     if (thumbnailManager_ != nullptr) {
         thumbnailManager_->RemovePhotoRequest(requestKey);
     }

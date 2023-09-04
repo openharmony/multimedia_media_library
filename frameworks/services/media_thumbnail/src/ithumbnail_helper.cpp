@@ -275,12 +275,15 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         return false;
     }
-    if (!GenThumbnail(opts, data, ThumbnailType::MTH)) {
-        return false;
+    if (opts.table != AudioColumn::AUDIOS_TABLE) {
+        if (!GenThumbnail(opts, data, ThumbnailType::MTH)) {
+            return false;
+        }
+        if (!GenThumbnail(opts, data, ThumbnailType::YEAR)) {
+            return false;
+        }
     }
-    if (!GenThumbnail(opts, data, ThumbnailType::YEAR)) {
-        return false;
-    }
+    
     return true;
 }
 } // namespace Media
