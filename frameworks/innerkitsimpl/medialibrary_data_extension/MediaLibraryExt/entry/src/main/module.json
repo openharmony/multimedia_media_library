@@ -45,6 +45,20 @@
         "type": "fileAccess",
         "uri": "fileAccess://media",
         "visible": true
+      },
+      {
+        "srcEntrance": "./ets/MediaBackupExtensionAbility/MediaBackupExtensionAbility.ts",
+        "name": "MediaBackupExtensionAbility",
+        "description": "mediabackupextension",
+        "icon": "$media:icon",
+        "type": "backup",
+        "visible": true,
+        "metadata": [
+            {
+                "name": "ohos.extension.backup",
+                "resource": "$profile:backup_config"
+            }
+        ]
       }
     ],
     "requestPermissions": [
