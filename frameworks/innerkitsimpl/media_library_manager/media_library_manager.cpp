@@ -419,6 +419,10 @@ unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(const std::string &uri,
     decodeOpts.desiredSize = isEqualsRatio ? size : imageInfo.size;
     decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    if (pixelMap == nullptr) {
+        MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);
+        return nullptr;
+    }
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
 #endif

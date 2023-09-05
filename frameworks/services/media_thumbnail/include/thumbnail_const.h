@@ -72,12 +72,41 @@ static inline std::string GetThumbnailPath(const std::string &path, const std::s
     return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + "/" + key + ".jpg";
 }
 
-static inline std::string GetSandboxPath(const std::string &path, bool isThumb)
+static inline std::string GetThumbSuffix(ThumbnailType type)
+{
+    switch (type) {
+        case ThumbnailType::MTH:
+            return THUMBNAIL_MTH_SUFFIX;
+        case ThumbnailType::YEAR:
+            return THUMBNAIL_YEAR_SUFFIX;
+        case ThumbnailType::THUMB:
+            return THUMBNAIL_THUMB_SUFFIX;
+        case ThumbnailType::LCD:
+            return THUMBNAIL_LCD_SUFFIX;
+        default:
+            return "";
+    }
+}
+
+static inline ThumbnailType GetThumbType(const int32_t width, const int32_t height)
+{
+    if (width > DEFAULT_THUMB_SIZE || height > DEFAULT_THUMB_SIZE) {
+        return ThumbnailType::LCD;
+    } else if (width > DEFAULT_MTH_SIZE || height > DEFAULT_MTH_SIZE) {
+        return ThumbnailType::THUMB;
+    } else if (width > DEFAULT_YEAR_SIZE || height > DEFAULT_YEAR_SIZE) {
+        return ThumbnailType::MTH;
+    } else {
+        return ThumbnailType::YEAR;
+    }
+}
+
+static inline std::string GetSandboxPath(const std::string &path, ThumbnailType type)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
-    std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + (isThumb ? "/THM.jpg" : "/LCD.jpg");
+    std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + GetThumbSuffix(type);
     return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
 }
 
