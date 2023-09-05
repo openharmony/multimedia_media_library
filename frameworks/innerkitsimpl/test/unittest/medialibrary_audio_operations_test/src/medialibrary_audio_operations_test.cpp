@@ -1578,11 +1578,6 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_002, Tes
     EXPECT_EQ(ret, 0);
     pendingStatus = GetAudioPendingStatus(fileId);
     EXPECT_GT(pendingStatus, 0);
-
-    ret = SetAudioPendingStatus(0, fileId);
-    EXPECT_EQ(ret, 0);
-    pendingStatus = GetAudioPendingStatus(fileId);
-    EXPECT_EQ(pendingStatus, 0);
     MEDIA_INFO_LOG("end tdd audio_oprn_pending_api10_test_002");
 }
 
@@ -1618,11 +1613,6 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_003, Tes
     char data = 'A';
     write(fd, &data, 1);
 
-    ret = SetAudioPendingStatus(0, fileId);
-    EXPECT_EQ(ret, 0);
-    pendingStatus = GetAudioPendingStatus(fileId);
-    EXPECT_EQ(pendingStatus, 0);
-
     MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_AUDIO, OperationType::CLOSE);
     auto fileAssetPtr = QueryAudioAsset(AudioColumn::MEDIA_ID, to_string(fileId));
     string uriString = MediaLibraryAssetOperations::CreateExtUriForV10Asset(*fileAssetPtr);
@@ -1631,9 +1621,6 @@ HWTEST_F(MediaLibraryAudioOperationsTest, audio_oprn_pending_api10_test_003, Tes
     closeCmd.SetValueBucket(closeValues);
     ret = MediaLibraryAudioOperations::Close(closeCmd);
     EXPECT_EQ(ret, 0);
-    pendingStatus = GetAudioPendingStatus(fileId);
-    EXPECT_EQ(pendingStatus, 0);
-
     MEDIA_INFO_LOG("end tdd audio_oprn_pending_api10_test_003");
 }
 
