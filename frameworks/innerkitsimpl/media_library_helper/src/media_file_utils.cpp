@@ -37,7 +37,6 @@
 #include "medialibrary_type_const.h"
 #include "mimetype_utils.h"
 #include "medialibrary_tracer.h"
-#include "string_ex.h"
 
 using namespace std;
 
@@ -1056,11 +1055,11 @@ string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri, const string 
 
     MediaFileUri fileUri(pureUri);
     string fileId = fileUri.GetFileId();
-    int32_t id;
-    if (!StrToInt(fileId, id)) {
-        MEDIA_ERR_LOG("invalid fileuri %{public}s", uri.c_str());
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
         return uri;
     }
+
+    int32_t id = stoi(fileId);
     int64_t virtualId;
     MediaType type;
     if ((pureUri.find(MEDIALIBRARY_TYPE_IMAGE_URI) != string::npos)) {
@@ -1118,11 +1117,10 @@ string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
 
     MediaFileUri fileUri(pureUri);
     string fileId = fileUri.GetFileId();
-    int32_t id;
-    if (!StrToInt(fileId, id)) {
-        MEDIA_ERR_LOG("invalid fileuri %{public}s", uri.c_str());
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
         return uri;
     }
+    int32_t id = stoi(fileId);
     int32_t realId = 0;
     MediaType type;
     if ((pureUri.find(MEDIALIBRARY_TYPE_IMAGE_URI) != string::npos)) {
