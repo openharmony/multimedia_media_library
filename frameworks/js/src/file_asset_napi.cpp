@@ -1556,7 +1556,7 @@ napi_value FileAssetNapi::JSClose(napi_env env, napi_callback_info info)
 static int OpenThumbnail(string &uriStr, const string &path, const Size &size)
 {
     if (!path.empty()) {
-        string sandboxPath = GetSandboxPath(path, IsThumbnail(size.width, size.height));
+        string sandboxPath = GetSandboxPath(path, GetThumbType(size.width, size.height));
         int fd = -1;
         if (!sandboxPath.empty()) {
             fd = open(sandboxPath.c_str(), O_RDONLY);
@@ -1581,25 +1581,8 @@ static bool IfSizeEqualsRatio(Size& imageSize, Size& targetSize)
     return imageSize.width / imageSize.height == targetSize.width / targetSize.height;
 }
 
-static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
-    const bool isApiVersion10, const string &path)
+static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd& uniqueFd, Size& size)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("QueryThumbnail uri:" + uri);
-
-    string openUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
-        "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
-    if (isApiVersion10) {
-        MediaLibraryNapiUtils::UriAppendKeyValue(openUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    }
-    tracer.Start("DataShare::OpenFile");
-    UniqueFd uniqueFd(OpenThumbnail(openUriStr, path, size));
-    if (uniqueFd.Get() < 0) {
-        NAPI_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
-        return nullptr;
-    }
-    tracer.Finish();
-    tracer.Start("ImageSource::CreateImageSource");
     SourceOptions opts;
     uint32_t err = 0;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
@@ -1620,6 +1603,10 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
     decodeOpts.desiredSize = isEqualsRatio ? size : imageInfo.size;
     decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    if (pixelMap == nullptr) {
+        NAPI_ERR_LOG("CreatePixelMap err %{public}d", err);
+        return nullptr;
+    }
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
 #endif
@@ -1628,6 +1615,28 @@ static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
         return nullptr;
     }
     return pixelMap;
+}
+
+static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size,
+    const bool isApiVersion10, const string &path)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("QueryThumbnail uri:" + uri);
+
+    string openUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
+        "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
+    if (isApiVersion10) {
+        MediaLibraryNapiUtils::UriAppendKeyValue(openUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    }
+    tracer.Start("DataShare::OpenFile");
+    UniqueFd uniqueFd(OpenThumbnail(openUriStr, path, size));
+    if (uniqueFd.Get() < 0) {
+        NAPI_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
+        return nullptr;
+    }
+    tracer.Finish();
+    tracer.Start("ImageSource::CreateImageSource");
+    return DecodeThumbnail(uniqueFd, size);
 }
 
 static void JSGetThumbnailExecute(FileAssetAsyncContext* context)
