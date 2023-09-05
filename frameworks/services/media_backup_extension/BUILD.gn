@@ -1,0 +1,63 @@
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import("//arkcompiler/ets_frontend/es2panda/es2abc_config.gni")
+import("//build/ohos.gni")
+import("//build/ohos/ace/ace.gni")
+import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
+import("//foundation/ability/ability_runtime/ability_runtime.gni")
+import("//foundation/arkui/ace_engine/ace_config.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+
+ohos_shared_library("mediabackup") {
+  include_dirs = [
+    "./include",
+    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+  ]
+
+  sources = [
+    "./src/backup_restore.cpp",
+    "./src/medialibrary_backup_napi.cpp",
+    "./src/native_module_ohos_medialibrary_backup.cpp",
+  ]
+
+  ldflags = [ "-Wl" ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_nutils",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "data_share:datashare_consumer",
+    "hilog:libhilog",
+    "napi:ace_napi",
+    "relational_store:native_rdb",
+  ]
+
+  defines = []
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  relative_install_dir = "module/multimedia"
+  subsystem_name = "multimedia"
+  part_name = "media_library"
+}
