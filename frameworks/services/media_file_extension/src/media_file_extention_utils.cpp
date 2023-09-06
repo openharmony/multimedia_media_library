@@ -1439,32 +1439,26 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
         MEDIA_ERR_LOG("Move target parent uri is not correct %{public}s", targetUri.c_str());
         return E_MODIFY_DATA_FAIL;
     }
-#ifdef MEDIALIBRARY_COMPATIBILITY
     if (!CheckDestRelativePath(destRelativePath)) {
         return JS_ERR_PERMISSION_DENIED;
     }
-#endif
     vector<string> columns = { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_URI, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_NAME,
         MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_RELATIVE_PATH };
     auto result = GetResultSetFromDb(MEDIA_DATA_DB_URI, sourceUri, columns);
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_MODIFY_DATA_FAIL, "Move source uri is not correct %{public}s",
         sourceUri.c_str());
-
     auto fileAsset = make_shared<FileAsset>();
     fileAsset->SetId(GetInt32Val(MEDIA_DATA_DB_ID, result));
     fileAsset->SetUri(GetStringVal(MEDIA_DATA_DB_URI, result));
     fileAsset->SetPath(GetStringVal(MEDIA_DATA_DB_FILE_PATH, result));
     fileAsset->SetDisplayName(GetStringVal(MEDIA_DATA_DB_NAME, result));
     fileAsset->SetMediaType(static_cast<MediaType>(GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result)));
-#ifdef MEDIALIBRARY_COMPATIBILITY
     string relativePath = GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result);
     if (!CheckDestRelativePath(relativePath)) {
         return JS_ERR_PERMISSION_DENIED;
     }
-#endif
     fileAsset->SetRelativePath(GetStringVal(MEDIA_DATA_DB_RELATIVE_PATH, result));
     result->Close();
-
     if (fileAsset->GetMediaType() == MediaType::MEDIA_TYPE_ALBUM) {
         if (!CheckRootDir(fileAsset, destRelativePath)) {
             MEDIA_ERR_LOG("Move file to another type album, denied");
