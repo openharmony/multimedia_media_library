@@ -101,18 +101,34 @@ static void HandleGroupBy(AbsPredicates &predicates, const vector<string> &colum
         " GROUP BY (DATE(date_added, 'unixepoch', 'localtime')) ORDER BY date_added DESC ");
 }
 
-static void HandleGroupBy(AbsPredicates &predicates, vector<string> &columns, const string &targetColumn)
+static void HandleGroupByDate(AbsPredicates &predicates, vector<string> &columns)
 {
-    auto it = find(columns.begin(), columns.end(), targetColumn);
-    if (it == columns.end()) {
-        return;
-    }
     if (!predicates.GetGroup().empty()) {
         return;
     }
+
+    vector<string> targetColumns = {
+        PhotoColumn::PHOTO_DATE_YEAR,
+        PhotoColumn::PHOTO_DATE_MONTH,
+        PhotoColumn::PHOTO_DATE_DAY
+    };
+    string groupColumns = "";
+    for (auto &target : targetColumns) {
+        auto it = find(columns.begin(), columns.end(), target);
+        if (it != columns.end()) {
+            groupColumns = groupColumns + target + ", ";
+        }
+    }
+
+    auto pos = groupColumns.find_last_of(",");
+    if (pos == string::npos) {
+        return;
+    }
+    groupColumns = groupColumns.substr(0, pos);
+
     string whereClause = predicates.GetWhereClause();
     predicates.SetWhereClause(whereClause +
-        " GROUP BY " + targetColumn + " ORDER BY " + targetColumn + " DESC ");
+        " GROUP BY " + groupColumns + " ORDER BY " + groupColumns + " DESC ");
     columns.push_back(MEDIA_COLUMN_COUNT);
 }
 
@@ -222,9 +238,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         return HandleIndexOfUri(cmd, predicates, photoId, albumId);
     } else {
         HandleGroupBy(predicates, columns);
-        HandleGroupBy(predicates, const_cast<vector<string> &>(columns), PhotoColumn::PHOTO_DATE_YEAR);
-        HandleGroupBy(predicates, const_cast<vector<string> &>(columns), PhotoColumn::PHOTO_DATE_MONTH);
-        HandleGroupBy(predicates, const_cast<vector<string> &>(columns), PhotoColumn::PHOTO_DATE_DAY);
+        HandleGroupByDate(predicates, const_cast<vector<string> &>(columns));
         return MediaLibraryRdbStore::Query(predicates, columns);
     }
 }
