@@ -31,6 +31,7 @@
 #include "datashare_abs_result_set.h"
 #include "datashare_helper.h"
 #include "foundation/ability/ability_runtime/interfaces/kits/native/appkit/ability_runtime/context/context.h"
+#include "thumbnail_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -127,6 +128,8 @@ private:
     static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperFavorite(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperRequestPhoto(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperCancelRequestPhoto(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetPending(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetUserComment(napi_env env, napi_callback_info info);
@@ -140,6 +143,7 @@ private:
     static thread_local napi_ref photoAccessHelperConstructor_;
     static thread_local FileAsset *sFileAsset_;
     std::shared_ptr<FileAsset> fileAssetPtr = nullptr;
+    static std::shared_ptr<ThumbnailManager> thumbnailManager_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;
 };
 struct FileAssetAsyncContext : public NapiError {
@@ -150,8 +154,7 @@ struct FileAssetAsyncContext : public NapiError {
     FileAssetNapi *objectInfo;
     std::shared_ptr<FileAsset> objectPtr = nullptr;
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
-    int32_t thumbWidth;
-    int32_t thumbHeight;
+    Size size;
     bool isDirectory;
     int32_t changedRows;
     int32_t fd;

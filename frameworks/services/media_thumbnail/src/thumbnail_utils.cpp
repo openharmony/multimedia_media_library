@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "media_column.h"
 #define MLOG_TAG "Thumbnail"
 
 #include "thumbnail_utils.h"
@@ -601,7 +602,11 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
     rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_VISIT, "0");
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
-    rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
+    if ((opts.table == PhotoColumn::PHOTOS_TABLE) || (opts.table == AudioColumn::AUDIOS_TABLE)) {
+        rdbPredicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
+    } else {
+        rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
+    }
     rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
 
     rdbPredicates.Limit(LcdLimit);
@@ -637,7 +642,11 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_VISIT, "0");
-    rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
+    if ((opts.table == PhotoColumn::PHOTOS_TABLE) || (opts.table == AudioColumn::AUDIOS_TABLE)) {
+        rdbPredicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
+    } else {
+        rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
+    }
     rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));

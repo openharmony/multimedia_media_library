@@ -20,6 +20,7 @@
 #include "datashare_helper.h"
 #include "media_volume.h"
 #include "pixel_map.h"
+#include "unique_fd.h"
 
 namespace OHOS {
 namespace Media {
@@ -141,6 +142,8 @@ public:
 private:
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size);
     static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path);
+    static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd &uniqueFd, const Size& size);
+    static unique_ptr<PixelMap> GetPixelMapWithoutDecode(UniqueFd &uniqueFd, const Size& size);
 
     static shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
 };
