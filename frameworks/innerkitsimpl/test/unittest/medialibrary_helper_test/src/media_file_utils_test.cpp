@@ -519,5 +519,82 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsPhotoTablePath_Test_005, T
     string filePath = ROOT_MEDIA_DIR + AUDIO_DIR_VALUES;
     EXPECT_EQ(MediaFileUtils::IsPhotoTablePath(filePath), false);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_001, TestSize.Level0)
+{
+    const string virtualUri = "file://media/image/12";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, "file://media/image/3");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_002, TestSize.Level0)
+{
+    const string virtualUri = "file://media/audio/12";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, "file://media/audio/3");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_003, TestSize.Level0)
+{
+    const string virtualUri = "file://media/video/12";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, "file://media/video/3");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_004, TestSize.Level0)
+{
+    const string virtualUri = "file://media/Photo/12/VID_2023_001/VID_2023.jpg";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, virtualUri);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_005, TestSize.Level0)
+{
+    const string virtualUri = "file://media/Audio/12/VID_169_001/VID_2023.mp3";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, virtualUri);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_006, TestSize.Level0)
+{
+    const string virtualUri = "file://com.demo.a/data/storage/e12/base/files/12.txt";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, virtualUri);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_007, TestSize.Level0)
+{
+    const string virtualUri = "file://docs/storage/Users/currentUsers/Documents/12.txt";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, virtualUri);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_008, TestSize.Level0)
+{
+    const string virtualUri = "file://docs/storage/Users/currentUsers/Desktop/12.txt";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, virtualUri);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_009, TestSize.Level0)
+{
+    const string virtualUri = "file://docs/storage/Users/currentUsers/Download/12.txt";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, virtualUri);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_010, TestSize.Level0)
+{
+    const string virtualUri = "file://docs/storage/External/12.txt";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, virtualUri);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Test_011, TestSize.Level0)
+{
+    const string virtualUri = "file://docs/storage/Share/12.txt";
+    string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
+    EXPECT_EQ(realUri, virtualUri);
+}
 } // namespace Media
 } // namespace OHOS
