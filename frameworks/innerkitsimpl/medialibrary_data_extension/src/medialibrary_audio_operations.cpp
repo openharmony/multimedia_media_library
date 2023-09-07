@@ -68,7 +68,7 @@ int32_t MediaLibraryAudioOperations::Delete(MediaLibraryCommand& cmd)
         cmd.GetOprnObject(), columns);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
         fileId.c_str());
-    
+
     int32_t deleteRow = DeleteAudio(fileAsset, cmd.GetApi());
     CHECK_AND_RETURN_RET_LOG(deleteRow >= 0, deleteRow, "delete audio failed, deleteRow=%{public}d", deleteRow);
 
@@ -119,7 +119,11 @@ static string GetPathFromUri(const std::string &uri)
     if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
         return "";
     }
-    int32_t fileUniqueId = stoi(fileId);
+    int32_t fileUniqueId;
+    if (!StrToInt(fileId, fileUniqueId)) {
+        MEDIA_ERR_LOG("invalid fileuri %{public}s", uri.c_str());
+        return "";
+    }
     int32_t bucketNum = 0;
     MediaLibraryAssetOperations::CreateAssetBucket(fileUniqueId, bucketNum);
     string ext = MediaFileUtils::GetExtensionFromPath(uri);
