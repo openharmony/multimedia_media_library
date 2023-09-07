@@ -913,7 +913,11 @@ static string GetVirtualIdFromApi10Uri(const string &uri)
     if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
         return fileId;
     }
-    int32_t id = stoi(fileId);
+    int32_t id;
+    if (!StrToInt(fileId, id)) {
+        NAPI_ERR_LOG("invalid fileuri %{public}s", uri.c_str());
+        return fileId;
+    }
     if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         return to_string(MediaFileUtils::GetVirtualIdByType(id, MediaType::MEDIA_TYPE_IMAGE));
     } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
