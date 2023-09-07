@@ -26,6 +26,7 @@
 #include "medialibrary_async_worker.h"
 #include "medialibrary_sync_operation.h"
 #include "result_set_bridge.h"
+#include "thumbnail_const.h"
 #include "thumbnail_utils.h"
 #include "pixel_map.h"
 
@@ -67,7 +68,7 @@ public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
     virtual int32_t CreateThumbnail(ThumbRdbOpt &opts, bool isSync = false);
-    virtual int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts);
+    virtual int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size);
     static void DeleteThumbnailKv(ThumbRdbOpt &opts);
     static void CreateLcd(AsyncTaskData *data);
     static void CreateThumbnail(AsyncTaskData *data);

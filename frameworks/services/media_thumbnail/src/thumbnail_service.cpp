@@ -173,7 +173,7 @@ int ThumbnailService::GetThumbnailFd(const string &uri)
     if (!IsThumbnail(size.width, size.height)) {
         opts.screenSize = screenSize_;
     }
-    int fd = thumbnailHelper->GetThumbnailPixelMap(opts);
+    int fd = thumbnailHelper->GetThumbnailPixelMap(opts, size);
     if (fd < 0) {
         MEDIA_ERR_LOG("GetThumbnailPixelMap failed : %{public}d", fd);
     }
