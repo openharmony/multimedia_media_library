@@ -266,6 +266,7 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
             string uri = static_cast<string>(item.GetSingle(VALUE_IDX));
             MediaFileUri::RemoveAllFragment(uri);
             MediaFileUri fileUri(uri);
+            context->uri = uri;
 #ifdef MEDIALIBRARY_COMPATIBILITY
             if ((fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
                 fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
