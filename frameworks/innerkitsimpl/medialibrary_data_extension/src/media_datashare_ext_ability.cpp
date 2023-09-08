@@ -554,8 +554,14 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     MediaLibraryCommand cmd(uri);
     int32_t err = CheckPermFromUri(cmd, false);
     if (err < 0) {
-        businessError.SetCode(err);
-        return nullptr;
+        auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
+        if (uriPermissionClient.VerifyUriPermission(Uri(uri), AAFwk::Want::FLAG_AUTH_READ_URI_PERMISSION,
+            IPCSkeleton::GetCallingTokenID())) {
+            MEDIA_DEBUG_LOG("Permission check pass , uri = %{private}s", uri.ToString().c_str());
+        } else {
+            businessError.SetCode(err);
+            return nullptr;
+        }
     }
 
     int errCode = businessError.GetCode();
