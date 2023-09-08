@@ -4844,6 +4844,15 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
     int errCode = 0;
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
         context->predicates, context->fetchColumn, errCode);
+    if (resultSet == nullptr && !context->uri.empty() && errCode == E_PERMISSION_DENIED) {
+        Uri queryWithUri(context->uri);
+        std::vector<std::string> FETCH_COLUMNS = {
+            MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_DATE_ADDED,
+            MEDIA_DATA_DB_DATE_MODIFIED, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_TAKEN,
+            MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_WIDTH, MEDIA_DATA_DB_HEIGHT, MEDIA_DATA_DB_DURATION
+        };
+        resultSet = UserFileClient::Query(queryWithUri, context->predicates, FETCH_COLUMNS, errCode);
+    }
     if (resultSet == nullptr) {
         context->SaveError(errCode);
         return;

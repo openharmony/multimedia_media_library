@@ -97,6 +97,7 @@ struct PhotoAlbumNapiAsyncContext : public NapiError {
     DataShare::DataShareValuesBucket valuesBucket;
     std::vector<DataShare::DataShareValuesBucket> valuesBuckets;
     std::string networkId;
+    std::string uri;
     std::unique_ptr<FetchResult<FileAsset>> fetchResult;
     ResultNapiType resultNapiType;
 
