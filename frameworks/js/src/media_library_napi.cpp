@@ -1982,6 +1982,22 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
+static void HandleCompatTrashAudio(MediaLibraryAsyncContext *context, const string &deleteId)
+{
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
+    DataSharePredicates predicates;
+    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
+    predicates.SetWhereArgs({ deleteId });
+    Uri uri(URI_UPDATE_AUDIO);
+    int32_t changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        return;
+    }
+    context->retVal = changedRows;
+}
+
 static void HandleCompatDeletePhoto(MediaLibraryAsyncContext *context,
     const string &mediaType, const string &deleteId)
 {
@@ -2004,6 +2020,10 @@ static inline void HandleCompatDelete(MediaLibraryAsyncContext *context,
     if (mediaType == IMAGE_ASSET_TYPE || mediaType == VIDEO_ASSET_TYPE) {
         return HandleCompatDeletePhoto(context, mediaType, deleteId);
     }
+    if (mediaType == AUDIO_ASSET_TYPE) {
+        return HandleCompatTrashAudio(context, deleteId);
+    }
+
     NAPI_WARN_LOG("Ignore unsupported media type deletion: %{public}s", mediaType.c_str());
 }
 #endif
