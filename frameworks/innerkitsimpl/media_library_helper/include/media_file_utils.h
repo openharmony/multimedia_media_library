@@ -76,6 +76,7 @@ public:
     static std::string GetFirstDirName(const std::string &filePath);
     static bool MoveFile(const std::string &oldPath, const std::string &newPath);
     static bool CopyFile(const std::string &filePath, const std::string &newPath);
+    static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
     static bool RenameDir(const std::string &oldPath, const std::string &newPath);
     static bool CreateDirectory(const std::string &dirPath);
     static int32_t CheckStringSize(const std::string &str, const size_t max);

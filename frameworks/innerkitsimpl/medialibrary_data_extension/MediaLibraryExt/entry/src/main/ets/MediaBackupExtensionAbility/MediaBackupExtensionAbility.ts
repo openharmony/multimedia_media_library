@@ -6,15 +6,23 @@ import mediabackup from '@ohos.multimedia.mediabackup';
 
 const TAG = 'MediaBackupExtAbility';
 const originPath = '/data/storage/el2/base/backup/restore';
+const clonePath = '/data/storage/el2/backup/restore';
 const updaterPath = '/storage/media/local/files/android';
 const documentPath = '/storage/media/local/files/Documents';
-const srcGalleryPath = originPath + '/com.huawei.photos/ce/databases/';
+const srcGalleryPath = '/com.huawei.photos/ce/databases/';
+const srcMediaPath = clonePath + '/data/storage/el2/database/rdb/';
+const cloneTag = '/cloneBackupData.json';
+const PREFIX_LEVEL = 4;
 const RESTORE_NUMBER = 500;
 const MILLISE_SECOND = 1000;
 let backupConext = undefined;
 const galleryDbConfig = {
   name: 'gallery.db',
   securityLevel: relationalStore.SecurityLevel.S1
+};
+const mediaDbConfig = {
+  name: 'media_library.db',
+  securityLevel: relationalStore.SecurityLevel.S2
 };
 
 interface FileInfo {
@@ -30,7 +38,7 @@ interface FileInfo {
 };
 
 export default class MediaBackupExtAbility extends BackupExtensionAbility {
-  onBackup() : void {
+  async onBackup() : Promise<void> {
     console.log(TAG, 'onBackup ok.');
   }
 
@@ -44,24 +52,42 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       });
       await this.delAppData();
     } else {
-      console.log(TAG, 'continue to do');
+      await this.restoreMediaForSingle().catch(err => {
+        console.error(TAG, `restoreMediaForSingle failed, message = ${err.message}; code = ${err.code}`);
+      });
     }
+    await this.moveRestFiles();
   }
 
   private async restoreMediaForDouble() : Promise<void> {
     console.log(TAG, 'Step1: Get media file for updater or clone');
-    await this.createRdb();
+    await this.createRdb(galleryDbConfig);
     let dbFileName : string[] = ['gallery.db', 'gallery.db-wal', 'gallery.db-shm'];
-    this.moveDbFiles(dbFileName, srcGalleryPath, backupConext.databaseDir + '/rdb/');
+    let dbPath = originPath + srcGalleryPath;
     let prefixPath = updaterPath;
+    if (this.isFileExist(clonePath + cloneTag)) {
+      dbPath = clonePath + srcGalleryPath;
+      prefixPath = clonePath;
+    }
+    this.moveDbFiles(dbFileName, dbPath, backupConext.databaseDir + '/rdb/');
     await this.restoreMedia(prefixPath).catch(err => {
       console.error(TAG, `restoreMedia failed, message = ${err.message}; code = ${err.code}`);
     });
   }
 
-  private async createRdb() : Promise<void> {
+  private async restoreMediaForSingle() : Promise<void> {
+    console.log(TAG, 'Step1: Get media file for clone');
+    await this.createRdb(mediaDbConfig);
+    let dbFileName : string[] = ['media_library.db', 'media_library.db-wal', 'media_library.db-shm'];
+    this.moveDbFiles(dbFileName, srcMediaPath, backupConext.databaseDir + '/rdb/');
+    await this.restoreMediaDbForSingle().catch(err => {
+      console.error(TAG, `restoreMediaDbForSingle failed, message = ${err.message}; code = ${err.code}`);
+    });
+  }
+
+  private async createRdb(dbConfig : relationalStore.StoreConfig) : Promise<void> {
     console.log(TAG, 'Step1.1: Create Rdb');
-    await relationalStore.getRdbStore(backupConext, galleryDbConfig).catch(err => {
+    await relationalStore.getRdbStore(backupConext, dbConfig).catch(err => {
       console.error(TAG, `createRdb failed, message = ${err.message}; code = ${err.code}`);
     });
   }
@@ -74,7 +100,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
         if (fs.accessSync(filePath)) {
           fs.copyFileSync(filePath, dstPath + filesName[i], 0);
         } else {
-          console.error(TAG, 'Gallery db file is not exist');
+          console.error(TAG, 'Db file is not exist');
         }
       } catch (err) {
         console.error(TAG, `Move db files failed, message = ${err.message}; code = ${err.code}`);
@@ -100,8 +126,29 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
         console.error(TAG, `batchRestoreFiles failed, message = ${err.message}; code = ${err.code}`);
       });
     }
-    mediabackup.moveFiles(updaterPath);
+    if (!this.isFileExist(clonePath + cloneTag)) {
+      mediabackup.moveFiles(updaterPath);
+    }
     console.log(TAG, 'Finish restore media files, then move other files.');
+  }
+
+  private async restoreMediaDbForSingle() : Promise<void> {
+    console.log(TAG, 'Step1.3: start to restore media_library.db.');
+    let rdbStore = await relationalStore.getRdbStore(backupConext, mediaDbConfig);
+    let totalNumber = 0;
+    let queryCount = 'SELECT count(1) as count FROM Photos';
+    let resultSet = await rdbStore.querySql(queryCount);
+    while (resultSet.goToNextRow()) {
+      totalNumber = resultSet.getLong(resultSet.getColumnIndex('count'));
+    }
+    resultSet.close();
+    console.log(TAG, `QueryCount, totalNumber = ${totalNumber}`);
+    for (let index = 0; index < totalNumber; index += RESTORE_NUMBER) {
+      await this.batchRestoreFilesForSingle(index, rdbStore).catch(err => {
+        console.error(TAG, `batchRestoreFilesForSingle failed, message = ${err.message}; code = ${err.code}`);
+      });
+    }
+    console.log(TAG, 'Finish restore media_library files, then move other files.');
   }
 
   private async batchRestoreFiles(offset: number, rdbStore: relationalStore.RdbStore,
@@ -125,8 +172,24 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     }
   }
 
+  private async batchRestoreFilesForSingle(offset: number, rdbStore: relationalStore.RdbStore) : Promise<void> {
+    let mediaLibraryFileList : FileInfo[] = [];
+    try {
+      let queryStatement = `SELECT data,display_name,size,duration,date_trashed,hidden,is_favorite,media_type,
+        date_added FROM Photos limit ${offset} ,${RESTORE_NUMBER}`;
+      let resultSet = await rdbStore.querySql(queryStatement);
+      while (resultSet.goToNextRow()) {
+        let tmpValue : FileInfo = this.parseResultSetForSingle(resultSet);
+        mediaLibraryFileList.push(tmpValue);
+      }
+      mediabackup.startRestore(mediaLibraryFileList);
+      resultSet.close();
+    } catch (err) {
+      console.error(TAG, `Try to restore media failed, message = ${err.message}; code = ${err.code}`);
+    }
+  }
+
   private parseResultSet(resultSet : relationalStore.ResultSet, prefixPath: string) : FileInfo {
-    const PREFIX_LEVEL = 4;
     const HIDDEN_ID = -4;
     let fileParts = resultSet.getString(resultSet.getColumnIndex('_data')).split('/');
     let srcPath = fileParts.slice(PREFIX_LEVEL).join('/');
@@ -148,6 +211,28 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     };
   }
 
+  private parseResultSetForSingle(resultSet : relationalStore.ResultSet) : FileInfo {
+    const OLD_VIDEO_TYPE = 3;
+    const MEDIA_VIDEO_TYPE = 2;
+    let fileParts = resultSet.getString(resultSet.getColumnIndex('data')).split('/');
+    let srcPath = fileParts.slice(PREFIX_LEVEL).join('/');
+    let mediaType = resultSet.getLong(resultSet.getColumnIndex('media_type'));
+    if (mediaType === MEDIA_VIDEO_TYPE) {
+      mediaType = OLD_VIDEO_TYPE;
+    }
+    return {
+      filePath: clonePath + '/' + srcPath,
+      displayName: resultSet.getString(resultSet.getColumnIndex('display_name')),
+      _size: resultSet.getLong(resultSet.getColumnIndex('size')),
+      duration: resultSet.getLong(resultSet.getColumnIndex('duration')),
+      recycledTime: resultSet.getLong(resultSet.getColumnIndex('date_trashed')),
+      hidden: resultSet.getLong(resultSet.getColumnIndex('hidden')),
+      isFavorite: resultSet.getLong(resultSet.getColumnIndex('is_favorite')),
+      fileType: mediaType,
+      showDateToken: resultSet.getLong(resultSet.getColumnIndex('date_added')),
+    };
+  }
+
   private isFileExist(filePath : string) : boolean {
     try {
       return fs.accessSync(filePath);
@@ -159,20 +244,27 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
 
   private async delAppData() : Promise<void> {
     console.log(TAG, 'Step2: Del application data.');
-    let photoPath = originPath + '/com.huawei.photos';
-    let mediaPath = originPath + '/com.android.providers.media.module';
-    fs.rmdir(photoPath).catch(err => {
+    let prefixPath = originPath;
+    if (this.isFileExist(clonePath + cloneTag)) {
+      prefixPath = clonePath;
+    }
+    let photoPath = prefixPath + '/com.huawei.photos';
+    let mediaPath = prefixPath + '/com.android.providers.media.module';
+    await fs.rmdir(photoPath).catch(err => {
       console.error(TAG, `remove photoPath failed, message = ${err.message}; code = ${err.code}`);
     });
-    fs.rmdir(mediaPath).catch(err => {
+    await fs.rmdir(mediaPath).catch(err => {
       console.error(TAG, `remove mediaPath failed, message = ${err.message}; code = ${err.code}`);
     });
   }
 
   private async moveRestFiles() : Promise<void> {
     console.log(TAG, 'Step3: Move rest files.');
+    if (!this.isFileExist(clonePath + cloneTag)) {
+      return;
+    }
     const MOVE_ERR_CODE = 13900015;
-    fs.moveDir(originPath + '/', documentPath, 1).then(() => {
+    await fs.moveDir(clonePath + '/', documentPath, 1).then(() => {
       console.info(TAG, 'Move rest files succeed');
     }).catch((err) => {
       if (err.code === MOVE_ERR_CODE) {
@@ -211,7 +303,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       }
       count++;
     }
-    fs.moveFile(srcFile, `${dirPath}/${newFileName}`).catch(err=>{
+    await fs.moveFile(srcFile, `${dirPath}/${newFileName}`).catch(err => {
       console.error(TAG, `moveFile file failed, message = ${err.message}; code = ${err.code}`);
     });
   }
