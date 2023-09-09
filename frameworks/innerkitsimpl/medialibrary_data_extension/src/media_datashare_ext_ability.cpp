@@ -483,8 +483,8 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
         err = UriPermissionOperations::CheckUriPermission(command.GetUriStringWithoutSegment(), unifyMode);
         if (err != E_OK) {
             auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
-            if (!uriPermissionClient.VerifyUriPermission(Uri(uri), GetFlagFromMode(unifyMode),
-                IPCSkeleton::GetCallingTokenID())) {
+            if (!uriPermissionClient.VerifyUriPermission(Uri(command.GetUriStringWithoutSegment()),
+                GetFlagFromMode(unifyMode), IPCSkeleton::GetCallingTokenID())) {
                 MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
                 return err;
             }
@@ -555,7 +555,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     int32_t err = CheckPermFromUri(cmd, false);
     if (err < 0) {
         auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
-        if (uriPermissionClient.VerifyUriPermission(Uri(uri), AAFwk::Want::FLAG_AUTH_READ_URI_PERMISSION,
+        if (uriPermissionClient.VerifyUriPermission(uri, AAFwk::Want::FLAG_AUTH_READ_URI_PERMISSION,
             IPCSkeleton::GetCallingTokenID())) {
             MEDIA_DEBUG_LOG("Permission check pass , uri = %{private}s", uri.ToString().c_str());
         } else {
