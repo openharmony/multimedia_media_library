@@ -17,6 +17,7 @@
 #include <fcntl.h>
 
 #include "default_thumbnail_helper.h"
+#include "media_column.h"
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
@@ -47,14 +48,18 @@ int32_t DefaultThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
     return E_OK;
 }
 
-int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts)
+int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size)
 {
     ThumbnailWait thumbnailWait(false);
     thumbnailWait.CheckAndWait(opts.row, false);
     ThumbnailData thumbnailData;
     GetThumbnailInfo(opts, thumbnailData);
 
-    string fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_THUMB_SUFFIX);
+    ThumbnailType type = GetThumbType(size.width, size.height);
+    if (opts.table == AudioColumn::AUDIOS_TABLE) {
+        type = ThumbnailType::THUMB;
+    }
+    string fileName = GetThumbnailPath(thumbnailData.path, GetThumbSuffix(type));
     if (access(fileName.c_str(), F_OK) != 0) {
         if (!DoCreateThumbnail(opts, thumbnailData)) {
             return E_THUMBNAIL_LOCAL_CREATE_FAIL;

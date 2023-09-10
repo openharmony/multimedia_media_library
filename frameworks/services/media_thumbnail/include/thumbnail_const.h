@@ -92,12 +92,12 @@ static inline ThumbnailType GetThumbType(const int32_t width, const int32_t heig
 {
     if (width > DEFAULT_THUMB_SIZE || height > DEFAULT_THUMB_SIZE) {
         return ThumbnailType::LCD;
-    } else if (width > DEFAULT_MTH_SIZE || height > DEFAULT_MTH_SIZE) {
-        return ThumbnailType::THUMB;
-    } else if (width > DEFAULT_YEAR_SIZE || height > DEFAULT_YEAR_SIZE) {
+    } else if (width == DEFAULT_MTH_SIZE && height == DEFAULT_MTH_SIZE) {
         return ThumbnailType::MTH;
-    } else {
+    } else if (width == DEFAULT_YEAR_SIZE && height == DEFAULT_YEAR_SIZE) {
         return ThumbnailType::YEAR;
+    } else {
+        return ThumbnailType::THUMB;
     }
 }
 

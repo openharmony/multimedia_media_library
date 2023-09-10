@@ -35,6 +35,10 @@
 #include "uv.h"
 #include "userfile_client.h"
 
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "purgeable_pixelmap_builder.h"
+#endif
+
 using namespace std;
 #define UUID_STR_LENGTH 37
 
@@ -48,6 +52,11 @@ ThumbnailRequest::ThumbnailRequest(const string &uri, const string &path, const 
     napi_env env, napi_ref callback) : callback_(env, callback), uri_(uri),
     path_(path), requestSize_(size)
 {
+}
+
+ThumbnailRequest::~ThumbnailRequest()
+{
+    napi_delete_reference(callback_.env_, callback_.callBackRef_);
 }
 
 bool ThumbnailRequest::UpdateStatus(ThumbnailStatus status)
@@ -124,6 +133,7 @@ string ThumbnailManager::AddPhotoRequest(const string &uri, const string &path, 
 {
     shared_ptr<ThumbnailRequest> request = make_shared<ThumbnailRequest>(uri, path, size, env, callback);
     string requestId = GenerateRequestId();
+    request->SetUUID(requestId);
     if (!thumbRequest_.Insert(requestId, request)) {
         return "";
     }
@@ -144,9 +154,7 @@ void ThumbnailManager::RemovePhotoRequest(const string &requestId)
             return;
         }
         // do not need delete from queue, just update remove status.
-        lock_guard<mutex> deleteLock(ptr->quitMutex_);
         ptr->UpdateStatus(ThumbnailStatus::THUMB_REMOVE);
-        napi_delete_reference(ptr->callback_.env_, ptr->callback_.callBackRef_);
     }
     thumbRequest_.Erase(requestId);
 }
@@ -318,6 +326,11 @@ unique_ptr<PixelMap> ThumbnailManager::QueryThumbnail(const string &uriStr, cons
     }
 }
 
+void ThumbnailManager::DeleteRequestIdFromMap(const string &requestId)
+{
+    thumbRequest_.Erase(requestId);
+}
+
 bool ThumbnailManager::RequestFastImage(const RequestSharedPtr &request)
 {
     Size fastSize;
@@ -328,7 +341,7 @@ bool ThumbnailManager::RequestFastImage(const RequestSharedPtr &request)
     }
     
     PixelMapPtr pixelMap = GetPixelMapWithoutDecode(uniqueFd, fastSize);
-    request->SetPixelMap(move(pixelMap));
+    request->SetFastPixelMap(move(pixelMap));
     return true;
 }
 
@@ -343,14 +356,14 @@ void ThumbnailManager::DealWithFastRequest(const RequestSharedPtr &request)
         return;
     }
     // callback
-    NotifyImage(request);
-    if (!request->NeedContinue()) {
+    if (!NotifyImage(request, true) || !request->NeedContinue()) {
         return;
     }
+
     if (request->NeedQualityPhoto()) {
         AddQualityPhotoRequest(request);
     } else {
-        napi_delete_reference(request->callback_.env_, request->callback_.callBackRef_);
+        DeleteRequestIdFromMap(request->GetUUID());
     }
 }
 
@@ -394,7 +407,7 @@ void ThumbnailManager::QualityImageWorker(int num)
                 request->SetPixelMap(QueryThumbnail(request->GetUri(),
                     request->GetRequestSize(), request->GetPath()));
                 // callback
-                NotifyImage(request);
+                NotifyImage(request, false);
             }
         }
     }
@@ -416,7 +429,6 @@ static void UvJsExecute(uv_work_t *work)
         if (!uvMsg->request_->NeedContinue()) {
             break;
         }
-        lock_guard<mutex> quitLock(uvMsg->request_->quitMutex_);
         napi_value jsCallback = nullptr;
         napi_status status = napi_get_reference_value(env, uvMsg->request_->callback_.callBackRef_,
             &jsCallback);
@@ -426,41 +438,55 @@ static void UvJsExecute(uv_work_t *work)
         }
         napi_value retVal = nullptr;
         napi_value result[ARGS_ONE];
-        result[PARAM0] = Media::PixelMapNapi::CreatePixelMap(env,
-            shared_ptr<PixelMap>(uvMsg->request_->GetPixelMap()));
         if (uvMsg->request_->GetStatus() == ThumbnailStatus::THUMB_REMOVE) {
-            napi_delete_reference(env, uvMsg->request_->callback_.callBackRef_);
-        }
-        if (result[PARAM0] == nullptr) {
             break;
+        } else {
+            if (uvMsg->isFastImage_) {
+                result[PARAM0] = Media::PixelMapNapi::CreatePixelMap(env,
+                    shared_ptr<PixelMap>(uvMsg->request_->GetFastPixelMap()));
+            } else {
+                result[PARAM0] = Media::PixelMapNapi::CreatePixelMap(env,
+                    shared_ptr<PixelMap>(uvMsg->request_->GetPixelMap()));
+            }
         }
+
         napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
         if (status != napi_ok) {
             NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
             break;
         }
     } while (0);
+    if ((uvMsg->request_->GetStatus() == ThumbnailStatus::THUMB_QUALITY && !uvMsg->isFastImage_) ||
+        (uvMsg->request_->GetStatus() == ThumbnailStatus::THUMB_REMOVE)) {
+        if (uvMsg->manager_ != nullptr) {
+            uvMsg->manager_->DeleteRequestIdFromMap(uvMsg->request_->GetUUID());
+        }
+    }
+
     delete uvMsg;
     delete work;
 }
 
-void ThumbnailManager::NotifyImage(const RequestSharedPtr &request)
+bool ThumbnailManager::NotifyImage(const RequestSharedPtr &request, bool isFastImage)
 {
     uv_loop_s *loop = nullptr;
     napi_get_uv_event_loop(request->callback_.env_, &loop);
     if (loop == nullptr) {
-        return;
+        DeleteRequestIdFromMap(request->GetUUID());
+        return false;
     }
 
     uv_work_t *work = new (nothrow) uv_work_t;
     if (work == nullptr) {
-        return;
+        DeleteRequestIdFromMap(request->GetUUID());
+        return false;
     }
 
-    ThumnailUv *msg = new (nothrow) ThumnailUv(request);
+    ThumnailUv *msg = new (nothrow) ThumnailUv(request, this, isFastImage);
     if (msg == nullptr) {
         delete work;
-        return;
+        DeleteRequestIdFromMap(request->GetUUID());
+        return false;
     }
 
     work->data = reinterpret_cast<void *>(msg);
@@ -471,7 +497,9 @@ void ThumbnailManager::NotifyImage(const RequestSharedPtr &request)
         NAPI_ERR_LOG("Failed to execute libuv work queue, ret: %{public}d", ret);
         delete msg;
         delete work;
+        return false;
     }
+    return true;
 }
 }
 }
