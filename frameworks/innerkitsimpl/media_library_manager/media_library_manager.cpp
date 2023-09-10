@@ -270,7 +270,11 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
 
 static inline bool IsSmallThumb(const int32_t width, const int32_t height)
 {
-    return (width < DEFAULT_THUMBNAIL_SIZE) && (height < DEFAULT_THUMBNAIL_SIZE);
+    if (((width == DEFAULT_MTH_SIZE) && (height == DEFAULT_MTH_SIZE)) ||
+        ((width == DEFAULT_YEAR_SIZE) && (height == DEFAULT_YEAR_SIZE))) {
+        return true;
+    }
+    return false;
 }
 
 static inline std::string GetSandboxPath(const std::string &path, const Size &size, bool isAudio)
@@ -288,12 +292,12 @@ static inline std::string GetSandboxPath(const std::string &path, const Size &si
     } else {
         if (size.width > DEFAULT_THUMBNAIL_SIZE || size.height > DEFAULT_THUMBNAIL_SIZE) {
             suffixStr += "LCD.jpg";
-        } else if (size.width > DEFAULT_MTH_SIZE || size.height > DEFAULT_MTH_SIZE) {
-            suffixStr += "THM.jpg";
-        } else if (size.width > DEFAULT_YEAR_SIZE || size.height > DEFAULT_YEAR_SIZE) {
+        } else if (size.width == DEFAULT_MTH_SIZE && size.height == DEFAULT_MTH_SIZE) {
             suffixStr += "MTH.jpg";
-        } else {
+        } else if (size.width == DEFAULT_YEAR_SIZE && size.height == DEFAULT_YEAR_SIZE) {
             suffixStr += "YEAR.jpg";
+        } else {
+            suffixStr += "THM.jpg";
         }
     }
 

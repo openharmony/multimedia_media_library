@@ -33,6 +33,7 @@
 namespace OHOS {
 namespace Media {
 class ThumbnailRequest;
+class ThumbnailManager;
 using RequestSharedPtr = std::shared_ptr<ThumbnailRequest>;
 using PixelMapPtr = std::unique_ptr<PixelMap>;
 
@@ -54,16 +55,18 @@ public:
 
 class ThumnailUv {
 public:
-    ThumnailUv(const RequestSharedPtr &request) : request_(request)
-    {}
+    ThumnailUv(const RequestSharedPtr &request, ThumbnailManager *manager, bool isFastImage) : request_(request),
+        manager_(manager), isFastImage_(isFastImage) {}
     RequestSharedPtr request_;
+    ThumbnailManager *manager_;
+    bool isFastImage_ = false;
 };
 
 class ThumbnailRequest {
 public:
     explicit ThumbnailRequest(const std::string &uri, const std::string &path, const Size &size,
         napi_env env, napi_ref callback);
-    virtual ~ThumbnailRequest() = default;
+    virtual ~ThumbnailRequest();
     bool UpdateStatus(ThumbnailStatus status);
     ThumbnailStatus GetStatus();
     bool NeedContinue();
@@ -86,24 +89,45 @@ public:
 
     PixelMapPtr GetPixelMap()
     {
-        return std::move(pixelmap);
+        return std::move(pixelMap);
     }
 
     void SetPixelMap(PixelMapPtr ptr)
     {
-        pixelmap = std::move(ptr);
+        pixelMap = std::move(ptr);
+    }
+
+    PixelMapPtr GetFastPixelMap()
+    {
+        return std::move(fastPixelMap);
+    }
+
+    void SetFastPixelMap(PixelMapPtr ptr)
+    {
+        fastPixelMap = std::move(ptr);
+    }
+
+    void SetUUID(const std::string &uuid)
+    {
+        uuid_ = uuid;
+    }
+
+    std::string GetUUID() const
+    {
+        return uuid_;
     }
 
     ThumbnailCallback callback_;
-    std::mutex quitMutex_;
 private:
     std::string uri_;
     std::string path_;
     Size requestSize_;
     ThumbnailStatus status_ = ThumbnailStatus::THUMB_INITIAL;
     std::mutex mutex_;
+    std::string uuid_;
     
-    PixelMapPtr pixelmap;
+    PixelMapPtr fastPixelMap;
+    PixelMapPtr pixelMap;
 };
 
 constexpr int THREAD_NUM = 4;
@@ -118,6 +142,7 @@ public:
     void RemovePhotoRequest(const std::string &requestId);
     static std::unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, const Size &size,
         const std::string &path);
+    void DeleteRequestIdFromMap(const std::string &requestId);
 private:
     ThumbnailManager() = default;
     void FastImageWorker(int num);
@@ -125,7 +150,8 @@ private:
     void QualityImageWorker(int num);
     void AddFastPhotoRequest(const RequestSharedPtr &request);
     void AddQualityPhotoRequest(const RequestSharedPtr &request);
-    void NotifyImage(const RequestSharedPtr &request);
+    void AddNewQualityPhotoRequest(const RequestSharedPtr &request);
+    bool NotifyImage(const RequestSharedPtr &request, bool isFastImage);
     bool RequestFastImage(const RequestSharedPtr &request);
 
     SafeMap<std::string, RequestSharedPtr> thumbRequest_;

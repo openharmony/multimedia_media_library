@@ -47,10 +47,6 @@
 #include "userfile_client.h"
 #include "userfilemgr_uri.h"
 
-#ifdef IMAGE_PURGEABLE_PIXELMAP
-#include "purgeable_pixelmap_builder.h"
-#endif
-
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
 using namespace std;
