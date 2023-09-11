@@ -469,12 +469,12 @@ void MediaLibraryCommand::ParseOprnObjectFromFileUri()
 
     string uri = uri_.ToString();
     static const map<string, OperationObject> oprnMap = {
-        { PhotoColumn::PHOTO_TYPE_URI, OperationObject::FILESYSTEM_PHOTO },
-        { AudioColumn::AUDIO_TYPE_URI, OperationObject::FILESYSTEM_AUDIO }
+        { PhotoColumn::PHOTO_URI_PREFIX, OperationObject::FILESYSTEM_PHOTO },
+        { AudioColumn::AUDIO_URI_PREFIX, OperationObject::FILESYSTEM_AUDIO }
     };
 
     for (const auto &item : oprnMap) {
-        if (uri.find(item.first) != string::npos) {
+        if (MediaFileUtils::StartsWith(uri, item.first)) {
             oprnObject_ = item.second;
             break;
         }
