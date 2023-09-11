@@ -254,7 +254,8 @@ void BackupRestore::StartRestore(std::vector<FileInfo> &fileInfos)
             MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s.", fileInfos[i].filePath.c_str());
             continue;
         }
-        if (!MediaFileUtils::MoveFile(fileInfos[i].filePath, localPath)) {
+        if (!MediaFileUtils::MoveFile(fileInfos[i].filePath, localPath) &&
+            !MediaFileUtils::CopyFileUtil(fileInfos[i].filePath, localPath)) {
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{private}s.", fileInfos[i].filePath.c_str());
             continue;
         }
