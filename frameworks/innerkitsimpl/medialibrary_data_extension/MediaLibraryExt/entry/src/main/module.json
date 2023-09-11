@@ -37,16 +37,6 @@
         "visible": true
       },
       {
-        "srcEntrance": "./ets/FileExtensionAbility/FileExtensionAbility.ts",
-        "name": "FileExtensionAbility",
-        "icon": "$media:icon",
-        "srcLanguage": "ets",
-        "description": "mediafileextension",
-        "type": "fileAccess",
-        "uri": "fileAccess://media",
-        "visible": true
-      },
-      {
         "srcEntrance": "./ets/MediaBackupExtensionAbility/MediaBackupExtensionAbility.ts",
         "name": "MediaBackupExtensionAbility",
         "description": "mediabackupextension",
