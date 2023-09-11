@@ -210,6 +210,10 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
+    if (data.source == nullptr) {
+        return false;
+    }
+
     if (!ThumbnailUtils::CompressImage(data.source, data.lcd)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
@@ -242,6 +246,11 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
         if (!TryLoadSource(opts, data, size, THUMBNAIL_THUMB_SUFFIX)) {
             return false;
         }
+
+        if (data.source == nullptr) {
+            return false;
+        }
+
         if (!ThumbnailUtils::CompressImage(data.source, data.thumbnail)) {
             MEDIA_ERR_LOG("CompressImage faild id %{private}s", opts.row.c_str());
             return false;
