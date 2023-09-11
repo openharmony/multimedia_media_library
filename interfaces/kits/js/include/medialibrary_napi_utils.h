@@ -343,6 +343,9 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("PACKAGE_NAME",              MediaColumn::MEDIA_PACKAGE_NAME),
     std::make_pair("CAMERA_SHOT_KEY",           PhotoColumn::CAMERA_SHOT_KEY),
     std::make_pair("USER_COMMENT",              PhotoColumn::PHOTO_USER_COMMENT),
+    std::make_pair("DATE_YEAR",                 PhotoColumn::PHOTO_DATE_YEAR),
+    std::make_pair("DATE_MONTH",                PhotoColumn::PHOTO_DATE_MONTH),
+    std::make_pair("DATE_DAY",                  PhotoColumn::PHOTO_DATE_DAY),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

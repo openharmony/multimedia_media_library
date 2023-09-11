@@ -128,7 +128,7 @@ static void HandleGroupByDate(AbsPredicates &predicates, vector<string> &columns
 
     string whereClause = predicates.GetWhereClause();
     predicates.SetWhereClause(whereClause +
-        " GROUP BY " + groupColumns + " ORDER BY " + groupColumns + " DESC ");
+        " GROUP BY " + groupColumns + " ORDER BY date_added DESC ");
     columns.push_back(MEDIA_COLUMN_COUNT);
 }
 
