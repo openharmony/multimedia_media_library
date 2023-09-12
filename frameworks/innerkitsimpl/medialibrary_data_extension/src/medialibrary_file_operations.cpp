@@ -337,7 +337,11 @@ static void ReplaceId(const string &fileId, string &idInstead, const string &tab
     if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
         return;
     }
-    int32_t id = stoi(fileId);
+    int32_t id;
+    if (!StrToInt(fileId, id)) {
+        MEDIA_ERR_LOG("invalid fileuri %{public}s", fileId.c_str());
+        return;
+    }
     idInstead = to_string(MediaFileUtils::GetRealIdByTable(id, tableName));
 }
 
