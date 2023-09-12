@@ -15,7 +15,7 @@ import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
 ohos_fuzztest("MediaLibraryExtensionDeleteFuzzTest") {
-  module_out_path = "media_library/medialibrary_extension_fuzzer"
+  module_out_path = "media_library/media_library"
   fuzz_config_file = "."
 
   include_dirs = [
