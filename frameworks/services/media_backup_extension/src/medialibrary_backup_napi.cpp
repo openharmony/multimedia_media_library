@@ -86,6 +86,8 @@ static std::vector<FileInfo> GetJSArgsForStartRestore(napi_env env, size_t argc,
         fileInfos[i].is_hw_favorite = GetJSInt32Args(env, fileInfoValue, "isFavorite");
         fileInfos[i].fileType = GetJSInt32Args(env, fileInfoValue, "fileType");
         fileInfos[i].showDateToken = GetJSInt64Args(env, fileInfoValue, "showDateToken");
+        fileInfos[i].height = GetJSInt32Args(env, fileInfoValue, "height");
+        fileInfos[i].width = GetJSInt64Args(env, fileInfoValue, "width");
     }
     return fileInfos;
 }

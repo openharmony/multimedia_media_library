@@ -284,11 +284,13 @@ int32_t BackupRestore::InsertSql(FileInfo &fileInfo, std::string &newPath) const
     std::string is_favorite = std::to_string(fileInfo.is_hw_favorite);
     std::string date_trashed = std::to_string(fileInfo.recycledTime);
     std::string hidden = std::to_string(fileInfo.hidden);
+    std::string height = std::to_string(fileInfo.height);
+    std::string width = std::to_string(fileInfo.width);
 
     std::string insertStatement = "INSERT INTO Photos (data,title,display_name,media_type,date_added, \
-        is_favorite, date_trashed, hidden, size, duration) VALUES ('" + data +
+        is_favorite, date_trashed, hidden, size, duration, height, width) VALUES ('" + data +
         "','" + title + "','" + displayName + "'," + media_type + "," + date_added + "," + is_favorite +
-        "," + date_trashed + "," + hidden + "," + fileSize + "," + duration + ");";
+        "," + date_trashed + "," + hidden + "," + fileSize + "," + duration + "," + height + "," + width + ");";
     return ExecuteSql(insertStatement);
 }
 

@@ -35,6 +35,8 @@ interface FileInfo {
   isFavorite : number;
   fileType : number;
   showDateToken : number;
+  height : number;
+  width : number;
 };
 
 export default class MediaBackupExtAbility extends BackupExtensionAbility {
@@ -156,7 +158,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     let galleyFileList : FileInfo[] = [];
     try {
       let queryStatement = `SELECT local_media_id,_data,_display_name,is_hw_favorite,recycledTime,_size,duration,
-        media_type,showDateToken FROM gallery_media WHERE (local_media_id >= 0 OR local_media_id == -4) AND
+        media_type,showDateToken,height,width FROM gallery_media WHERE (local_media_id >= 0 OR local_media_id == -4) AND
         (storage_id = 65537) AND relative_bucket_id NOT IN (
         SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1
         ) ORDER BY showDateToken ASC limit ${offset} ,${RESTORE_NUMBER}`;
@@ -176,7 +178,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     let mediaLibraryFileList : FileInfo[] = [];
     try {
       let queryStatement = `SELECT data,display_name,size,duration,date_trashed,hidden,is_favorite,media_type,
-        date_added FROM Photos limit ${offset} ,${RESTORE_NUMBER}`;
+        date_added,height,width FROM Photos limit ${offset} ,${RESTORE_NUMBER}`;
       let resultSet = await rdbStore.querySql(queryStatement);
       while (resultSet.goToNextRow()) {
         let tmpValue : FileInfo = this.parseResultSetForSingle(resultSet);
@@ -208,6 +210,8 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       isFavorite: resultSet.getLong(resultSet.getColumnIndex('is_hw_favorite')),
       fileType: resultSet.getLong(resultSet.getColumnIndex('media_type')),
       showDateToken: resultSet.getLong(resultSet.getColumnIndex('showDateToken')) / MILLISE_SECOND,
+      height: resultSet.getLong(resultSet.getColumnIndex('height')),
+      width: resultSet.getLong(resultSet.getColumnIndex('width')),
     };
   }
 
@@ -230,6 +234,8 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       isFavorite: resultSet.getLong(resultSet.getColumnIndex('is_favorite')),
       fileType: mediaType,
       showDateToken: resultSet.getLong(resultSet.getColumnIndex('date_added')),
+      height: resultSet.getLong(resultSet.getColumnIndex('height')),
+      width: resultSet.getLong(resultSet.getColumnIndex('width')),
     };
   }
 
