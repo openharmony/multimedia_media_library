@@ -1593,7 +1593,7 @@ static void CreateThumbnail(const string &uri, const string &path, bool isSync)
         return;
     }
     if (!uri.empty()) {
-        int32_t err = ThumbnailService::GetInstance()->CreateThumbnail(uri, path, true);
+        int32_t err = ThumbnailService::GetInstance()->CreateThumbnail(uri, path, isSync);
         if (err != E_SUCCESS) {
             MEDIA_ERR_LOG("ThumbnailService CreateThumbnail failed : %{public}d", err);
         }
