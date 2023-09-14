@@ -211,10 +211,6 @@ public:
     {
         return true;
     };
-    NativeValue* LoadJsModule(const string& path, const string& hapPath)
-    {
-        return nullptr;
-    };
 };
 #ifdef FILEEXT
 static inline void CreateFileFuzzer(MediaFileExtAbility &extension, const uint8_t* data, size_t size)
