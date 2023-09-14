@@ -33,6 +33,8 @@ struct FileInfo {
     int32_t fileType;
     int32_t orientation;
     int64_t showDateToken;
+    int32_t height;
+    int32_t width;
 };
 } // namespace Media
 } // namespace OHOS
