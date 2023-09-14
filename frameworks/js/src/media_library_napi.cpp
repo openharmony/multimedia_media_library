@@ -3753,28 +3753,33 @@ static void PeerInfoToJsArray(const napi_env &env, const vector<unique_ptr<PeerI
     }
 }
 
+shared_ptr<DataShare::DataShareResultSet> QueryActivePeer(int &errCode,
+    MediaLibraryAsyncContext *context, string &uriType)
+{
+    vector<string> columns;
+    DataShare::DataSharePredicates predicates;
+    Uri uri(uriType);
+    if (uriType == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE) {
+        string strQueryCondition = DEVICE_DB_DATE_MODIFIED + " = 0";
+        predicates.SetWhereClause(strQueryCondition);
+    } else if (uriType == MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE) {
+        predicates.SetWhereClause(context->selection);
+    }
+    predicates.SetWhereArgs(context->selectionArgs);
+    return UserFileClient::Query(uri, predicates, columns, errCode);
+}
+
 void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
     MediaLibraryAsyncContext *context)
 {
     napi_value jsPeerInfoArray = nullptr;
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     napi_get_undefined(env, &jsContext->data);
-
-    vector<string> columns;
-    DataShare::DataSharePredicates predicates;
-    string strQueryCondition = DEVICE_DB_DATE_MODIFIED + " = 0";
-    predicates.SetWhereClause(strQueryCondition);
-    predicates.SetWhereArgs(context->selectionArgs);
-
-    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE);
+    string uriType = MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYACTIVEDEVICE;
     int errCode = 0;
-    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(
-        uri, predicates, columns, errCode);
-
+    shared_ptr<DataShare::DataShareResultSet> resultSet = QueryActivePeer(errCode, context, uriType);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("JSGetActivePeers resultSet is null, errCode is %{public}d", errCode);
         delete context;
@@ -3823,23 +3828,13 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
     MediaLibraryAsyncContext *context)
 {
     napi_value jsPeerInfoArray = nullptr;
-
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     napi_get_undefined(env, &jsContext->data);
-
-    vector<string> columns;
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(context->selection);
-    predicates.SetWhereArgs(context->selectionArgs);
-
-    Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE);
+    string uriType = MEDIALIBRARY_DATA_URI + "/" + MEDIA_DEVICE_QUERYALLDEVICE;
     int errCode = 0;
-    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(
-        uri, predicates, columns, errCode);
-
+    shared_ptr<DataShare::DataShareResultSet> resultSet = QueryActivePeer(errCode, context, uriType);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("JSGetAllPeers resultSet is null, errCode is %{public}d", errCode);
         delete context;
