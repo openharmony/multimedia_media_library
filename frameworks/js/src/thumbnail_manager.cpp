@@ -17,16 +17,20 @@
 
 #include <memory>
 #include <mutex>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <uuid/uuid.h>
 
+#include "ashmem.h"
 #include "image_source.h"
+#include "image_type.h"
 #include "js_native_api.h"
 #include "media_file_uri.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
+#include "pixel_map.h"
 #include "pixel_map_napi.h"
 #include "post_proc.h"
 #include "string_ex.h"
@@ -49,9 +53,9 @@ shared_ptr<ThumbnailManager> ThumbnailManager::instance_ = nullptr;
 mutex ThumbnailManager::mutex_;
 bool ThumbnailManager::init_ = false;
 
-ThumbnailRequest::ThumbnailRequest(const string &uri, const string &path, const Size &size,
-    napi_env env, napi_ref callback) : callback_(env, callback), uri_(uri),
-    path_(path), requestSize_(size)
+ThumbnailRequest::ThumbnailRequest(const RequestPhotoParams &params, napi_env env,
+    napi_ref callback) : callback_(env, callback), requestPhotoType(params.type), uri_(params.uri),
+    path_(params.path), requestSize_(params.size)
 {
 }
 
@@ -81,14 +85,64 @@ bool ThumbnailRequest::NeedContinue()
     return GetStatus() < ThumbnailStatus::THUMB_REMOVE;
 }
 
-static bool IsPhotoNeedFastThumb(const Size &size)
+static bool IsPhotoSizeThumb(const Size &size)
 {
     return (size.width >= DEFAULT_THUMB_SIZE || size.height >= DEFAULT_THUMB_SIZE);
 }
 
-bool ThumbnailRequest::NeedQualityPhoto()
+static bool NeedFastThumb(const Size &size, RequestPhotoType type)
 {
-    return IsPhotoNeedFastThumb(requestSize_);
+    return IsPhotoSizeThumb(size) && (type != RequestPhotoType::REQUEST_QUALITY_THUMB);
+}
+
+static bool NeedQualityThumb(const Size &size, RequestPhotoType type)
+{
+    return IsPhotoSizeThumb(size) && (type != RequestPhotoType::REQUEST_FAST_THUMB);
+}
+
+MMapFdPtr::MMapFdPtr(int32_t fd)
+{
+    if (fd < 0) {
+        NAPI_ERR_LOG("Fd is invalid: %{public}d", fd);
+        return;
+    }
+
+    struct stat st;
+    if (fstat(fd, &st) == -1) {
+        NAPI_ERR_LOG("fstat error, errno:%{public}d", errno);
+        return;
+    }
+    size_ = st.st_size;
+
+    // mmap ptr from fd
+    fdPtr_ = mmap(nullptr, size_, PROT_READ, MAP_SHARED, fd, 0);
+    if (fdPtr_ == MAP_FAILED || fdPtr_ == nullptr) {
+        NAPI_ERR_LOG("mmap uniqueFd failed, errno = %{public}d", errno);
+        return;
+    }
+
+    isValid_ = true;
+}
+
+MMapFdPtr::~MMapFdPtr()
+{
+    // munmap ptr from fd
+    munmap(fdPtr_, size_);
+}
+
+void* MMapFdPtr::GetFdPtr()
+{
+    return fdPtr_;
+}
+
+off_t MMapFdPtr::GetFdSize()
+{
+    return size_;
+}
+
+bool MMapFdPtr::IsValid()
+{
+    return isValid_;
 }
 
 static string GenerateRequestId()
@@ -120,8 +174,10 @@ void ThumbnailManager::Init()
     }
     init_ = true;
     isThreadRunning_ = true;
-    fastThread_ = thread(bind(&ThumbnailManager::FastImageWorker, this, 0));
-    fastThread_.detach();
+    for (auto i = 0; i < FAST_THREAD_NUM; i++) {
+        fastThreads_.emplace_back(bind(&ThumbnailManager::FastImageWorker, this, i));
+        fastThreads_[i].detach();
+    }
     for (auto i = 0; i < THREAD_NUM; i++) {
         threads_.emplace_back(bind(&ThumbnailManager::QualityImageWorker, this, i));
         threads_[i].detach();
@@ -129,17 +185,16 @@ void ThumbnailManager::Init()
     return;
 }
 
-string ThumbnailManager::AddPhotoRequest(const string &uri, const string &path, const Size &size,
-    napi_env env, napi_ref callback)
+string ThumbnailManager::AddPhotoRequest(const RequestPhotoParams &params, napi_env env, napi_ref callback)
 {
-    shared_ptr<ThumbnailRequest> request = make_shared<ThumbnailRequest>(uri, path, size, env, callback);
+    shared_ptr<ThumbnailRequest> request = make_shared<ThumbnailRequest>(params, env, callback);
     string requestId = GenerateRequestId();
     request->SetUUID(requestId);
     if (!thumbRequest_.Insert(requestId, request)) {
         return "";
     }
     // judge from request option
-    if (IsPhotoNeedFastThumb(size)) {
+    if (NeedFastThumb(params.size, params.type)) {
         AddFastPhotoRequest(request);
     } else {
         AddQualityPhotoRequest(request);
@@ -165,8 +220,10 @@ ThumbnailManager::~ThumbnailManager()
     isThreadRunning_ = false;
     fastCv_.notify_all();
     qualityCv_.notify_all();
-    if (fastThread_.joinable()) {
-        fastThread_.join();
+    for (auto &fastThread_ : fastThreads_) {
+        if (fastThread_.joinable()) {
+            fastThread_.join();
+        }
     }
     for (auto &thread : threads_) {
         if (thread.joinable()) {
@@ -237,7 +294,67 @@ static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
     return imageSize.width / imageSize.height == targetSize.width / targetSize.height;
 }
 
-static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd& uniqueFd, const Size& size)
+static bool GetAshmemPtr(int32_t memSize, void **sharedPtr, int32_t &fd)
+{
+    fd = AshmemCreate("MediaLibrary Create Ashmem Data", memSize);
+    if (fd < 0) {
+        NAPI_ERR_LOG("Can not create ashmem, fd:%{public}d", fd);
+        return false;
+    }
+    int32_t result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
+    if (result < 0) {
+        NAPI_ERR_LOG("Can not set ashmem prot, result:%{public}d", result);
+        close(fd);
+        return false;
+    }
+    *sharedPtr = mmap(nullptr, memSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (*sharedPtr == MAP_FAILED || *sharedPtr == nullptr) {
+        NAPI_ERR_LOG("mmap ashmem ptr failed, errno = %{public}d", errno);
+        close(fd);
+        return false;
+    }
+
+    return true;
+}
+
+static PixelMapPtr CreateThumbnailByAshmem(UniqueFd &uniqueFd, const Size &size)
+{
+    Media::InitializationOptions option = {
+        .size = size,
+        .pixelFormat = PixelFormat::BGRA_8888
+    };
+    PixelMapPtr pixel = Media::PixelMap::Create(option);
+    if (pixel == nullptr) {
+        NAPI_ERR_LOG("Can not create pixel");
+        return nullptr;
+    }
+
+    MMapFdPtr mmapFd(uniqueFd.Get());
+    if (!mmapFd.IsValid()) {
+        NAPI_ERR_LOG("Can not mmap by fd");
+        return nullptr;
+    }
+    auto memSize = static_cast<int32_t>(mmapFd.GetFdSize());
+
+    // create ashmem and mmap
+    void *sharedPtr = nullptr;
+    int32_t fd = 0;
+    if (!GetAshmemPtr(memSize, &sharedPtr, fd)) {
+        return nullptr;
+    }
+    int32_t err = memcpy_s(sharedPtr, memSize + 1, mmapFd.GetFdPtr(), memSize);
+    if (err != EOK) {
+        NAPI_ERR_LOG("memcpy failed, errno:%{public}d", err);
+        return nullptr;
+    }
+    auto data = static_cast<uint8_t*>(sharedPtr);
+    void* fdPtr = new int32_t();
+    *static_cast<int32_t*>(fdPtr) = fd;
+    pixel->SetPixelsAddr(data, fdPtr, memSize, Media::AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    return pixel;
+}
+
+static PixelMapPtr DecodeThumbnail(UniqueFd &uniqueFd, const Size &size)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ImageSource::CreateImageSource");
@@ -275,25 +392,6 @@ static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd& uniqueFd, const Size& size
     return pixelMap;
 }
 
-static PixelMapPtr GetPixelMapWithoutDecode(UniqueFd &uniqueFd, const Size &size)
-{
-    struct stat statInfo;
-    if (fstat(uniqueFd.Get(), &statInfo) == E_ERR) {
-        return nullptr;
-    }
-    uint32_t *buffer = static_cast<uint32_t*>(malloc(statInfo.st_size));
-    if (buffer == nullptr) {
-        return nullptr;
-    }
-    read(uniqueFd.Get(), buffer, statInfo.st_size);
-    InitializationOptions option;
-    option.size = size;
-    
-    PixelMapPtr pixelMap = PixelMap::Create(buffer, statInfo.st_size, option);
-    free(buffer);
-    return pixelMap;
-}
-
 unique_ptr<PixelMap> ThumbnailManager::QueryThumbnail(const string &uriStr, const Size &size, const string &path)
 {
     MediaLibraryTracer tracer;
@@ -321,7 +419,7 @@ unique_ptr<PixelMap> ThumbnailManager::QueryThumbnail(const string &uriStr, cons
     }
     tracer.Finish();
     if (thumbType == ThumbnailType::MTH || thumbType == ThumbnailType::YEAR) {
-        return GetPixelMapWithoutDecode(uniqueFd, size);
+        return CreateThumbnailByAshmem(uniqueFd, size);
     } else {
         return DecodeThumbnail(uniqueFd, size);
     }
@@ -341,7 +439,7 @@ bool ThumbnailManager::RequestFastImage(const RequestSharedPtr &request)
         return false;
     }
     
-    PixelMapPtr pixelMap = GetPixelMapWithoutDecode(uniqueFd, fastSize);
+    PixelMapPtr pixelMap = CreateThumbnailByAshmem(uniqueFd, fastSize);
     request->SetFastPixelMap(move(pixelMap));
     return true;
 }
@@ -361,7 +459,7 @@ void ThumbnailManager::DealWithFastRequest(const RequestSharedPtr &request)
         return;
     }
 
-    if (request->NeedQualityPhoto()) {
+    if (NeedQualityThumb(request->GetRequestSize(), request->requestPhotoType)) {
         AddQualityPhotoRequest(request);
     } else {
         DeleteRequestIdFromMap(request->GetUUID());
@@ -480,6 +578,11 @@ static void UvJsExecute(uv_work_t *work)
 
 bool ThumbnailManager::NotifyImage(const RequestSharedPtr &request, bool isFastImage)
 {
+    if (!request->NeedContinue()) {
+        DeleteRequestIdFromMap(request->GetUUID());
+        return false;
+    }
+
     uv_loop_s *loop = nullptr;
     napi_get_uv_event_loop(request->callback_.env_, &loop);
     if (loop == nullptr) {

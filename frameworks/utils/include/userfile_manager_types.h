@@ -99,6 +99,12 @@ enum NotifyType {
     NOTIFY_ALBUM_ADD_ASSERT,
     NOTIFY_ALBUM_REMOVE_ASSET
 };
+
+enum class RequestPhotoType : int32_t {
+    REQUEST_ALL = 0,
+    REQUEST_FAST_THUMB = 1,
+    REQUEST_QUALITY_THUMB = 2,
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H

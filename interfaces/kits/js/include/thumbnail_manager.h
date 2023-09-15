@@ -29,6 +29,7 @@
 #include "safe_map.h"
 #include "safe_queue.h"
 #include "pixel_map.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -42,6 +43,13 @@ enum class ThumbnailStatus : int32_t {
     THUMB_FAST,
     THUMB_QUALITY,
     THUMB_REMOVE,
+};
+
+struct RequestPhotoParams {
+    std::string uri;
+    std::string path;
+    Size size;
+    RequestPhotoType type;
 };
 
 class ThumbnailCallback {
@@ -64,13 +72,11 @@ public:
 
 class ThumbnailRequest {
 public:
-    explicit ThumbnailRequest(const std::string &uri, const std::string &path, const Size &size,
-        napi_env env, napi_ref callback);
+    explicit ThumbnailRequest(const RequestPhotoParams &params, napi_env env, napi_ref callback);
     virtual ~ThumbnailRequest();
     bool UpdateStatus(ThumbnailStatus status);
     ThumbnailStatus GetStatus();
     bool NeedContinue();
-    bool NeedQualityPhoto();
 
     std::string GetUri() const
     {
@@ -118,6 +124,7 @@ public:
     }
 
     ThumbnailCallback callback_;
+    RequestPhotoType requestPhotoType;
 private:
     std::string uri_;
     std::string path_;
@@ -130,15 +137,28 @@ private:
     PixelMapPtr pixelMap;
 };
 
-constexpr int THREAD_NUM = 4;
+class MMapFdPtr {
+public:
+    explicit MMapFdPtr(int32_t fd);
+    ~MMapFdPtr();
+    void* GetFdPtr();
+    off_t GetFdSize();
+    bool IsValid();
+private:
+    void* fdPtr_;
+    off_t size_;
+    bool isValid_ = false;
+};
+
+constexpr int FAST_THREAD_NUM = 3;
+constexpr int THREAD_NUM = 2;
 class ThumbnailManager : NoCopyable {
 public:
     virtual ~ThumbnailManager();
     static std::shared_ptr<ThumbnailManager> GetInstance();
 
     void Init();
-    std::string AddPhotoRequest(const std::string &uri, const std::string &path, const Size &size,
-        napi_env env, napi_ref callback);
+    std::string AddPhotoRequest(const RequestPhotoParams &params, napi_env env, napi_ref callback);
     void RemovePhotoRequest(const std::string &requestId);
     static std::unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, const Size &size,
         const std::string &path);
@@ -158,11 +178,11 @@ private:
     SafeQueue<RequestSharedPtr> fastQueue_;
     SafeQueue<RequestSharedPtr> qualityQueue_;
 
-    std::thread fastThread_;
     std::mutex fastLock_;
     std::condition_variable fastCv_;
     std::mutex qualityLock_;
     std::condition_variable qualityCv_;
+    std::vector<std::thread> fastThreads_;
     std::vector<std::thread> threads_;
 
     static std::shared_ptr<ThumbnailManager> instance_;
