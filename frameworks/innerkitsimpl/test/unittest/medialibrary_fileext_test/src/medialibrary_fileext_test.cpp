@@ -84,10 +84,6 @@ public:
     {
         return true;
     };
-    NativeValue* LoadJsModule(const string& path, const string& hapPath)
-    {
-        return nullptr;
-    };
 };
 
 void MediaLibraryFileExtUnitTest::SetUpTestCase(void)

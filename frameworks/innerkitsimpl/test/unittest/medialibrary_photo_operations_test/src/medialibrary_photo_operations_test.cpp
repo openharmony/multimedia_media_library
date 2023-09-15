@@ -118,10 +118,6 @@ public:
     {
         return true;
     };
-    NativeValue* LoadJsModule(const string& path, const string& hapPath)
-    {
-        return nullptr;
-    };
 };
 
 #ifdef FILEEXT
