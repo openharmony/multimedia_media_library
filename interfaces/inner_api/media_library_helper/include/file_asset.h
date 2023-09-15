@@ -156,8 +156,6 @@ public:
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> &GetMemberMap();
     std::variant<int32_t, int64_t, std::string> &GetMemberValue(const std::string &name);
 
-    void CommitModify();
-    bool IsDirectory();
     std::string GetAssetJson();
     void SetResultTypeMap(const std::string &colName, ResultSetDataType type);
 
