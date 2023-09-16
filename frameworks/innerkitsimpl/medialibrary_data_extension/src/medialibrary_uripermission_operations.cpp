@@ -37,7 +37,7 @@ static bool CheckMode(string& mode)
 {
     transform(mode.begin(), mode.end(), mode.begin(), ::tolower);
     if (MEDIA_OPEN_MODES.find(mode) == MEDIA_OPEN_MODES.end()) {
-        MEDIA_ERR_LOG("mode format is error: %{public}s", mode.c_str());
+        MEDIA_ERR_LOG("mode format is error: %{private}s", mode.c_str());
         return false;
     }
     string tempMode;

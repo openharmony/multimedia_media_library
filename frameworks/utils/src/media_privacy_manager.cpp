@@ -151,7 +151,7 @@ static int32_t OpenFilterProxyFd(const string &path, const string &mode, const P
 
     int32_t originFd = open(path.c_str(), O_RDONLY);
     if (originFd < 0) {
-        MEDIA_ERR_LOG("Failed to open file, errno: %{public}d, path: %{public}s", errno, path.c_str());
+        MEDIA_ERR_LOG("Failed to open file, errno: %{public}d, path: %{private}s", errno, path.c_str());
         return originFd;
     }
     constexpr mode_t epfsFileMode = 0400;

@@ -166,7 +166,7 @@ bool MediaLibraryCommonUtils::CheckExpressValidation(std::vector<std::string> &s
             continue;
         }
         if (!CheckWhiteList(str)) {
-            MEDIA_ERR_LOG("Failed to check key word: %{public}s", str.c_str());
+            MEDIA_ERR_LOG("Failed to check key word: %{private}s", str.c_str());
             return false;
         }
     }

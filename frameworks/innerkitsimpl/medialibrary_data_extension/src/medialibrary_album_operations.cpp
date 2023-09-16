@@ -182,13 +182,13 @@ static void GetSqlArgs(MediaLibraryCommand &cmd, string &sql, vector<string> &se
 static void QueryAlbumDebug(MediaLibraryCommand &cmd, const vector<string> &columns,
     const shared_ptr<MediaLibraryUnistore> &store)
 {
-    MEDIA_DEBUG_LOG("Querying album, table: %{public}s selections: %{public}s",
+    MEDIA_DEBUG_LOG("Querying album, table: %{private}s selections: %{private}s",
         cmd.GetAbsRdbPredicates()->GetTableName().c_str(), cmd.GetAbsRdbPredicates()->GetWhereClause().c_str());
     for (const auto &arg : cmd.GetAbsRdbPredicates()->GetWhereArgs()) {
-        MEDIA_DEBUG_LOG("Querying album, arg: %{public}s", arg.c_str());
+        MEDIA_DEBUG_LOG("Querying album, arg: %{private}s", arg.c_str());
     }
     for (const auto &col : columns) {
-        MEDIA_DEBUG_LOG("Querying album, col: %{public}s", col.c_str());
+        MEDIA_DEBUG_LOG("Querying album, col: %{private}s", col.c_str());
     }
 
     auto resultSet = store->Query(cmd, columns);
@@ -210,13 +210,13 @@ static void QuerySqlDebug(const string &sql, const vector<string> &selectionArgs
 {
     constexpr int32_t printMax = 512;
     for (size_t pos = 0; pos < sql.size(); pos += printMax) {
-        MEDIA_DEBUG_LOG("Quering album sql: %{public}s", sql.substr(pos, printMax).c_str());
+        MEDIA_DEBUG_LOG("Quering album sql: %{private}s", sql.substr(pos, printMax).c_str());
     }
     for (const auto &arg : selectionArgs) {
-        MEDIA_DEBUG_LOG("Quering album, arg: %{public}s", arg.c_str());
+        MEDIA_DEBUG_LOG("Quering album, arg: %{private}s", arg.c_str());
     }
     for (const auto &col : columns) {
-        MEDIA_DEBUG_LOG("Quering album, col: %{public}s", col.c_str());
+        MEDIA_DEBUG_LOG("Quering album, col: %{private}s", col.c_str());
     }
     auto resultSet = store->QuerySql(sql, selectionArgs);
     if (resultSet == nullptr) {
@@ -243,7 +243,7 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     }
 
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
-        MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{public}s", QUERY_MEDIA_VOLUME.c_str());
+        MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{private}s", QUERY_MEDIA_VOLUME.c_str());
         return uniStore->QuerySql(QUERY_MEDIA_VOLUME + " UNION " + PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " +
             AudioColumn::QUERY_MEDIA_VOLUME);
     }
