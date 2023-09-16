@@ -135,9 +135,9 @@ static void MakeRootDirs()
         MediaLibraryCommand cmd(createAlbumUri, valuesBucket);
         auto ret = MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
         if (ret == E_FILE_EXIST) {
-            MEDIA_INFO_LOG("Root dir: %{public}s is exist", dir.c_str());
+            MEDIA_INFO_LOG("Root dir: %{private}s is exist", dir.c_str());
         } else if (ret <= 0) {
-            MEDIA_ERR_LOG("Failed to preset root dir: %{public}s", dir.c_str());
+            MEDIA_ERR_LOG("Failed to preset root dir: %{private}s", dir.c_str());
         }
         if (dir == DOC_DIR_VALUES || dir == DOWNLOAD_DIR_VALUES) {
             continue;
@@ -298,7 +298,7 @@ void MediaLibraryDataManager::SetOwner(const shared_ptr<MediaDataShareExtAbility
 
 string MediaLibraryDataManager::GetType(const Uri &uri)
 {
-    MEDIA_INFO_LOG("GetType uri: %{public}s", uri.ToString().c_str());
+    MEDIA_INFO_LOG("GetType uri: %{private}s", uri.ToString().c_str());
     return "";
 }
 
@@ -507,7 +507,7 @@ int32_t MediaLibraryDataManager::Delete(MediaLibraryCommand &cmd, const DataShar
     tracer.Start("CheckWhereClause");
     auto whereClause = predicates.GetWhereClause();
     if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
-        MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
+        MEDIA_ERR_LOG("illegal query whereClause input %{private}s", whereClause.c_str());
         return E_SQL_CHECK_FAIL;
     }
     tracer.Finish();
@@ -717,7 +717,7 @@ int MediaLibraryDataManager::GetThumbnail(const string &uri)
         return E_THUMBNAIL_SERVICE_NULLPTR;
     }
     if (!uri.empty() && MediaLibraryObjectUtils::CheckUriPending(uri)) {
-        MEDIA_ERR_LOG("failed to get thumbnail, the file:%{public}s is pending", uri.c_str());
+        MEDIA_ERR_LOG("failed to get thumbnail, the file:%{private}s is pending", uri.c_str());
         return E_FAIL;
     }
     return thumbnailService_->GetThumbnailFd(uri);
@@ -736,7 +736,7 @@ void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri, const stri
     }
     if (!uri.empty()) {
         if (MediaLibraryObjectUtils::CheckUriPending(uri)) {
-            MEDIA_ERR_LOG("failed to get thumbnail, the file:%{public}s is pending", uri.c_str());
+            MEDIA_ERR_LOG("failed to get thumbnail, the file:%{private}s is pending", uri.c_str());
             return;
         }
         int32_t err = thumbnailService_->CreateThumbnail(uri, path);
@@ -874,7 +874,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryC
     auto whereClause = predicates.GetWhereClause();
     if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
         errCode = E_INVALID_VALUES;
-        MEDIA_ERR_LOG("illegal query whereClause input %{public}s", whereClause.c_str());
+        MEDIA_ERR_LOG("illegal query whereClause input %{private}s", whereClause.c_str());
         return nullptr;
     }
     tracer.Finish();
@@ -1045,7 +1045,7 @@ int32_t MediaLibraryDataManager::RevertPendingByFileId(const std::string &fileId
     cmd.SetValueBucket(values);
     int32_t retVal = MediaLibraryObjectUtils::ModifyInfoByIdInDb(cmd, fileId);
     if (retVal <= 0) {
-        MEDIA_ERR_LOG("failed to revert pending error, fileId:%{public}s", fileId.c_str());
+        MEDIA_ERR_LOG("failed to revert pending error, fileId:%{private}s", fileId.c_str());
         return retVal;
     }
     auto fileAsset = MediaLibraryObjectUtils::GetFileAssetFromId(fileId);

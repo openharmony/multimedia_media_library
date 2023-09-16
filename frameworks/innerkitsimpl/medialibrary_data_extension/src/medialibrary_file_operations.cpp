@@ -339,7 +339,7 @@ static void ReplaceId(const string &fileId, string &idInstead, const string &tab
     }
     int32_t id;
     if (!StrToInt(fileId, id)) {
-        MEDIA_ERR_LOG("invalid fileuri %{public}s", fileId.c_str());
+        MEDIA_ERR_LOG("invalid fileuri %{private}s", fileId.c_str());
         return;
     }
     idInstead = to_string(MediaFileUtils::GetRealIdByTable(id, tableName));
@@ -472,10 +472,10 @@ static void CampatQueryDebug(const string &sql, const vector<string> &selectionA
 {
     constexpr int32_t printMax = 512;
     for (size_t pos = 0; pos < sql.size(); pos += printMax) {
-        MEDIA_DEBUG_LOG("Quering file sql: %{public}s", sql.substr(pos, printMax).c_str());
+        MEDIA_DEBUG_LOG("Quering file sql: %{private}s", sql.substr(pos, printMax).c_str());
     }
     for (const auto &arg : selectionArgs) {
-        MEDIA_DEBUG_LOG("Quering file, arg: %{public}s", arg.c_str());
+        MEDIA_DEBUG_LOG("Quering file, arg: %{private}s", arg.c_str());
     }
     auto resultSet = store->QuerySql(sql, selectionArgs);
     if (resultSet == nullptr) {

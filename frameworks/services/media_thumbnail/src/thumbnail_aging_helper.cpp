@@ -68,7 +68,7 @@ static void ClearThumbnailRecordTask(AsyncTaskData* data)
 
 int32_t ThumbnailAgingHelper::AgingLcdBatch(ThumbRdbOpt &opts)
 {
-    MEDIA_INFO_LOG("IN %{public}s", opts.table.c_str());
+    MEDIA_INFO_LOG("IN %{private}s", opts.table.c_str());
     if (opts.store == nullptr) {
         return E_HAS_DB_ERROR;
     }

@@ -2418,7 +2418,7 @@ bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value, 
         if (inputKey == MediaColumn::MEDIA_TITLE) {
             fileAssetPtr->SetTitle(value);
         } else {
-            NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
+            NAPI_ERR_LOG("invalid key %{private}s, no support key", inputKey.c_str());
             return false;
         }
     } else if (resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) {
@@ -2433,7 +2433,7 @@ bool FileAssetNapi::HandleParamSet(const string &inputKey, const string &value, 
                 fileAssetPtr->SetDisplayName(value + "." + extention);
             }
         } else {
-            NAPI_ERR_LOG("invalid key %{public}s, no support key", inputKey.c_str());
+            NAPI_ERR_LOG("invalid key %{private}s, no support key", inputKey.c_str());
             return false;
         }
     } else {

@@ -200,7 +200,7 @@ static inline bool ContainsFlag(const string &mode, const char flag)
 
 static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
 {
-    MEDIA_DEBUG_LOG("uri: %{public}s mode: %{public}s", cmd.GetUri().ToString().c_str(), mode.c_str());
+    MEDIA_DEBUG_LOG("uri: %{private}s mode: %{private}s", cmd.GetUri().ToString().c_str(), mode.c_str());
     MediaType mediaType = MediaFileUri::GetMediaTypeFromUri(cmd.GetUri().ToString());
     const bool containsRead = ContainsFlag(mode, 'r');
     const bool containsWrite = ContainsFlag(mode, 'w');
@@ -417,7 +417,7 @@ static void UnifyOprnObject(MediaLibraryCommand &cmd)
 
 static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
 {
-    MEDIA_DEBUG_LOG("uri: %{public}s object: %{public}d, opType: %{public}d isWrite: %{public}d",
+    MEDIA_DEBUG_LOG("uri: %{private}s object: %{public}d, opType: %{public}d isWrite: %{public}d",
         cmd.GetUri().ToString().c_str(), cmd.GetOprnObject(), cmd.GetOprnType(), isWrite);
 
     int err = SystemApiCheck(cmd);

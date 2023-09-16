@@ -154,13 +154,13 @@ bool MediaLibraryUnitTestUtils::CreateAlbum(string displayName, shared_ptr<FileA
     valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
     MediaLibraryCommand cmd(createAlbumUri);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    MEDIA_INFO_LOG("CreateAlbum:: %{public}s, retVal: %{public}d", dirPath.c_str(), retVal);
+    MEDIA_INFO_LOG("CreateAlbum:: %{private}s, retVal: %{public}d", dirPath.c_str(), retVal);
     if (retVal <= 0) {
-        MEDIA_ERR_LOG("CreateAlbum::create failed, %{public}s", dirPath.c_str());
+        MEDIA_ERR_LOG("CreateAlbum::create failed, %{private}s", dirPath.c_str());
         return false;
     }
     if (!GetFileAsset(retVal, albumAsset)) {
-        MEDIA_ERR_LOG("CreateAlbum::GetFileAsset failed, %{public}s", dirPath.c_str());
+        MEDIA_ERR_LOG("CreateAlbum::GetFileAsset failed, %{private}s", dirPath.c_str());
         return false;
     }
     return true;
@@ -183,13 +183,13 @@ bool MediaLibraryUnitTestUtils::CreateFile(string displayName, shared_ptr<FileAs
     valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     MediaLibraryCommand cmd(createAssetUri);
     int32_t retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    MEDIA_INFO_LOG("CreateFile:: %{public}s, retVal: %{public}d", (relativePath + displayName).c_str(), retVal);
+    MEDIA_INFO_LOG("CreateFile:: %{private}s, retVal: %{public}d", (relativePath + displayName).c_str(), retVal);
     if (retVal <= 0) {
-        MEDIA_ERR_LOG("CreateFile::create failed, %{public}s", (relativePath + displayName).c_str());
+        MEDIA_ERR_LOG("CreateFile::create failed, %{private}s", (relativePath + displayName).c_str());
         return false;
     }
     if (!GetFileAsset(retVal, fileAsset)) {
-        MEDIA_ERR_LOG("CreateFile::GetFileAsset failed, %{public}s", (relativePath + displayName).c_str());
+        MEDIA_ERR_LOG("CreateFile::GetFileAsset failed, %{private}s", (relativePath + displayName).c_str());
         return false;
     }
     return true;

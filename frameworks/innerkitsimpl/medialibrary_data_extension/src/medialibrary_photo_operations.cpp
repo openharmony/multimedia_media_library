@@ -79,7 +79,7 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
     };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
         cmd.GetOprnObject(), columns);
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{public}s",
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_FILEID, "Get fileAsset failed, fileId: %{private}s",
         fileId.c_str());
     int32_t deleteRow = DeletePhoto(fileAsset, cmd.GetApi());
     CHECK_AND_RETURN_RET_LOG(deleteRow >= 0, deleteRow, "delete photo failed, deleteRow=%{public}d", deleteRow);
@@ -282,7 +282,7 @@ static string GetPathFromUri(const std::string &uri)
     }
     int32_t fileUniqueId;
     if (!StrToInt(fileId, fileUniqueId)) {
-        MEDIA_ERR_LOG("invalid fileuri %{public}s", uri.c_str());
+        MEDIA_ERR_LOG("invalid fileuri %{private}s", uri.c_str());
         return "";
     }
     int32_t bucketNum = 0;

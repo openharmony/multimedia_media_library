@@ -767,7 +767,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
 
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX +
         (MediaFileUtils::GetNetworkIdFromUri(context->objectPtr->GetAlbumUri())) + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    NAPI_DEBUG_LOG("queryUri is = %{public}s", queryUri.c_str());
+    NAPI_DEBUG_LOG("queryUri is = %{private}s", queryUri.c_str());
     Uri uri(queryUri);
     int errCode = 0;
     std::shared_ptr<OHOS::DataShare::DataShareResultSet> resultSet =
@@ -836,7 +836,7 @@ static void CommitModifyNative(napi_env env, void *data)
     auto objectPtr = context->objectPtr;
     if (MediaFileUtils::CheckAlbumName(objectPtr->GetAlbumName()) < 0) {
         context->error = JS_E_DISPLAYNAME;
-        NAPI_ERR_LOG("album name invalid = %{public}s", objectPtr->GetAlbumName().c_str());
+        NAPI_ERR_LOG("album name invalid = %{private}s", objectPtr->GetAlbumName().c_str());
         return;
     }
 #ifdef MEDIALIBRARY_COMPATIBILITY

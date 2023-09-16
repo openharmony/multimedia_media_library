@@ -37,15 +37,15 @@ void MtpFileObserver::SendEvent(const inotify_event &event, const std::string &p
     std::shared_ptr<MtpEvent> eventPtr = std::make_shared<OHOS::Media::MtpEvent>(context);
     if ((event.mask & IN_CREATE) || (event.mask & IN_MOVED_TO)) {
         fileName = path + "/" + event.name;
-        MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents create/MOVED_TO: path:%{public}s", fileName.c_str());
+        MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents create/MOVED_TO: path:%{private}s", fileName.c_str());
         eventPtr->SendObjectAdded(fileName);
     } else if ((event.mask & IN_DELETE) || (event.mask & IN_MOVED_FROM)) {
         fileName = path + "/" + event.name;
-        MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents delete/MOVED_FROM: path:%{public}s", fileName.c_str());
+        MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents delete/MOVED_FROM: path:%{private}s", fileName.c_str());
         eventPtr->SendObjectRemoved(fileName);
     } else if (event.mask & IN_CLOSE_WRITE) {
         fileName = path + "/" + event.name;
-        MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents IN_CLOSE_WRITE : path:%{public}s", fileName.c_str());
+        MEDIA_DEBUG_LOG("MtpFileObserver AddInotifyEvents IN_CLOSE_WRITE : path:%{private}s", fileName.c_str());
         eventPtr->SendObjectInfoChanged(fileName);
     }
 }
