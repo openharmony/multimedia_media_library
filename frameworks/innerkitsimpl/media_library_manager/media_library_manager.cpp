@@ -203,7 +203,7 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
     vector<string> columns = { MEDIA_DATA_DB_FILE_PATH };
     auto resultSet = MediaLibraryManager::GetResultSetFromDb(MEDIA_DATA_DB_ID, virtualId, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INVALID_URI,
-        "GetFilePathFromUri::uri is not correct: %{public}s", uri.c_str());
+        "GetFilePathFromUri::uri is not correct: %{private}s", uri.c_str());
     if (CheckResultSet(resultSet) != E_SUCCESS) {
         return E_FAIL;
     }
@@ -253,7 +253,7 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     vector<string> columns = { MEDIA_DATA_DB_ID};
     auto resultSet = MediaLibraryManager::GetResultSetFromDb(MEDIA_DATA_DB_FILE_PATH, tempPath, columns);
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_INVALID_URI,
-        "GetUriFromFilePath::tempPath is not correct: %{public}s", tempPath.c_str());
+        "GetUriFromFilePath::tempPath is not correct: %{private}s", tempPath.c_str());
     if (CheckResultSet(resultSet) != E_SUCCESS) {
         return E_FAIL;
     }

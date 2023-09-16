@@ -344,7 +344,7 @@ bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_
 Status ThumbnailUtils::SaveImage(const shared_ptr<SingleKvStore> &kvStore, const string &key,
     const vector<uint8_t> &image)
 {
-    MEDIA_DEBUG_LOG("ThumbnailUtils::SaveImage IN key [%{public}s]", key.c_str());
+    MEDIA_DEBUG_LOG("ThumbnailUtils::SaveImage IN key [%{private}s]", key.c_str());
     Status status = Status::ERROR;
     if (kvStore == nullptr) {
         MEDIA_ERR_LOG("KvStore is not init");
@@ -416,7 +416,7 @@ bool ThumbnailUtils::QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err
     }
     MEDIA_DEBUG_LOG("rowCount is %{public}d", rowCount);
     if (rowCount <= 0) {
-        MEDIA_INFO_LOG("No match! %{public}s", rdbPredicates.ToString().c_str());
+        MEDIA_INFO_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
         rowCount = 0;
     }
 
@@ -445,7 +445,7 @@ bool ThumbnailUtils::QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount
     }
     MEDIA_INFO_LOG("rowCount is %{public}d", rowCount);
     if (rowCount <= 0) {
-        MEDIA_INFO_LOG("No match! %{public}s", rdbPredicates.ToString().c_str());
+        MEDIA_INFO_LOG("No match! %{private}s", rdbPredicates.ToString().c_str());
         rowCount = 0;
     }
     outLcdCount = rowCount;
@@ -1029,7 +1029,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSiz
         tracer.Start("CenterScale");
         PostProc postProc;
         if (!postProc.CenterScale(desiredSize, *data.source)) {
-            MEDIA_ERR_LOG("thumbnail center crop failed [%{public}s]", data.id.c_str());
+            MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
             return false;
         }
     }
@@ -1219,7 +1219,7 @@ int ThumbnailUtils::GetPixelMapFromResult(const shared_ptr<DataShare::DataShareR
     resultSet->Close();
     tracer.Finish();
 
-    MEDIA_DEBUG_LOG("key %{public}s key len %{public}d len %{public}d", string(key.begin(),
+    MEDIA_DEBUG_LOG("key %{private}s key len %{private}d len %{private}d", string(key.begin(),
         key.end()).c_str(), static_cast<int>(key.size()), static_cast<int>(image.size()));
 
     tracer.Start("ThumbnailUtils::ResizeImage");
@@ -1267,7 +1267,7 @@ bool ThumbnailUtils::RemoveDataFromKv(const shared_ptr<SingleKvStore> &kvStore, 
     tracer.Start("RemoveLcdFromKv kvStore->Get");
     auto status = kvStore->Delete(key);
     if (status != Status::SUCCESS) {
-        MEDIA_ERR_LOG("Failed to get key [%{public}s] ret [%{public}d]", key.c_str(), status);
+        MEDIA_ERR_LOG("Failed to get key [%{private}s] ret [%{private}d]", key.c_str(), status);
         return false;
     }
     return true;

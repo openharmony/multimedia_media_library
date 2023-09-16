@@ -314,7 +314,7 @@ static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<R
     }
     string oldCover = GetAlbumCover(albumResult);
     if (oldCover != newCover) {
-        MEDIA_INFO_LOG("Update album cover. oldCover: %{public}s, newCover: %{public}s",
+        MEDIA_INFO_LOG("Update album cover. oldCover: %{private}s, newCover: %{private}s",
             oldCover.c_str(), newCover.c_str());
         values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, newCover);
     }

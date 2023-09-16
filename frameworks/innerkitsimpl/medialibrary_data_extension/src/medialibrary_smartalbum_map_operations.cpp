@@ -60,7 +60,7 @@ static string MakeSuffixPathName(const string &assetPath)
     } else {
         outSuffixPath = assetPath + ASSET_RECYCLE_SUFFIX;
     }
-    MEDIA_DEBUG_LOG("outSuffixPath = %{public}s", outSuffixPath.c_str());
+    MEDIA_DEBUG_LOG("outSuffixPath = %{private}s", outSuffixPath.c_str());
     return outSuffixPath;
 }
 
@@ -81,7 +81,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryAgeingTrashFiles()
     int64_t dateAgeing = MediaFileUtils::UTCTimeSeconds();
     string strAgeingQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + "> 0" + " AND " + to_string(dateAgeing) + " - " +
         MEDIA_DATA_DB_DATE_TRASHED + " > " + to_string(recycleDays * ONEDAY_TO_SEC);
-    MEDIA_INFO_LOG("StrAgeingQueryCondition = %{public}s", strAgeingQueryCondition.c_str());
+    MEDIA_INFO_LOG("StrAgeingQueryCondition = %{private}s", strAgeingQueryCondition.c_str());
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->SetWhereClause(strAgeingQueryCondition);

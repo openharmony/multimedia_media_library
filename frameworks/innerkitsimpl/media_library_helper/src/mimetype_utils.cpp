@@ -43,6 +43,10 @@ const string DEFAULT_MIME_TYPE = "application/octet-stream";
 void MimeTypeUtils::CreateMapFromJson()
 {
     std::ifstream jFile(MIMETYPE_JSON_PATH);
+    if (!jFile.is_open()) {
+        MEDIA_ERR_LOG("Failed to open: %{private}s", MIMETYPE_JSON_PATH.c_str());
+        return;
+    }
     json firstFloorObjs;
     jFile >> firstFloorObjs;
     for (auto& firstFloorObj : firstFloorObjs.items()) {
@@ -88,7 +92,7 @@ MediaType MimeTypeUtils::GetMediaTypeFromMimeType(const string &mimeType)
 {
     size_t pos = mimeType.find_first_of("/");
     if (pos == string::npos) {
-        MEDIA_ERR_LOG("Invalid mime type: %{public}s", mimeType.c_str());
+        MEDIA_ERR_LOG("Invalid mime type: %{private}s", mimeType.c_str());
         return MEDIA_TYPE_FILE;
     }
     string prefix = mimeType.substr(0, pos);

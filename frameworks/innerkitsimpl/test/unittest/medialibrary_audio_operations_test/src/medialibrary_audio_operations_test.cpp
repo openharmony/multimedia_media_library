@@ -86,10 +86,10 @@ void CleanTestTables()
         string dropSql = "DROP TABLE " + dropTable + ";";
         int32_t ret = g_rdbStore->ExecuteSql(dropSql);
         if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Drop %{public}s table failed", dropTable.c_str());
+            MEDIA_ERR_LOG("Drop %{private}s table failed", dropTable.c_str());
             return;
         }
-        MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
+        MEDIA_DEBUG_LOG("Drop %{private}s table success", dropTable.c_str());
     }
 }
 
@@ -206,7 +206,7 @@ void ClearAndRestart()
     for (const auto &dir : TEST_ROOT_DIRS) {
         string ROOT_PATH = "/storage/cloud/100/files/";
         bool ret = MediaFileUtils::CreateDirectory(ROOT_PATH + dir + "/");
-        CHECK_AND_PRINT_LOG(ret, "make %{public}s dir failed, ret=%{public}d", dir.c_str(), ret);
+        CHECK_AND_PRINT_LOG(ret, "make %{private}s dir failed, ret=%{public}d", dir.c_str(), ret);
     }
     CleanTestTables();
     SetTables();
@@ -263,7 +263,7 @@ unique_ptr<FileAsset> QueryAudioAsset(const string &columnName, const string &va
     string querySql = "SELECT * FROM " + AudioColumn::AUDIOS_TABLE + " WHERE " +
         columnName + "='" + value + "';";
 
-    MEDIA_DEBUG_LOG("querySql: %{public}s", querySql.c_str());
+    MEDIA_DEBUG_LOG("querySql: %{private}s", querySql.c_str());
     auto resultSet = g_rdbStore->QuerySql(querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Get resultSet failed");
@@ -297,11 +297,11 @@ bool QueryAndVerifyAudioAsset(const string &columnName, const string &value,
         for (const auto &iter : verifyColumnAndValuesMap) {
             string resStr = GetFileAssetValueToStr(*fileAsset, iter.first);
             if (resStr.empty()) {
-                MEDIA_ERR_LOG("verify failed! Param %{public}s is empty", iter.first.c_str());
+                MEDIA_ERR_LOG("verify failed! Param %{private}s is empty", iter.first.c_str());
                 return false;
             }
             if (resStr != iter.second) {
-                MEDIA_ERR_LOG("verify failed! Except %{public}s param %{public}s, actually %{public}s",
+                MEDIA_ERR_LOG("verify failed! Except %{private}s param %{private}s, actually %{private}s",
                     iter.first.c_str(), iter.second.c_str(), resStr.c_str());
                 return false;
             }
@@ -448,7 +448,7 @@ int32_t GetAudioAssetCountIndb(const string &key, const string &value)
         MEDIA_ERR_LOG("Can not get result set count");
         return -1;
     }
-    MEDIA_DEBUG_LOG("Get AudioAsset count in db, key=%{public}s, value=%{public}s, count=%{public}d",
+    MEDIA_DEBUG_LOG("Get AudioAsset count in db, key=%{private}s, value=%{private}s, count=%{private}d",
         key.c_str(), value.c_str(), count);
     return count;
 }
@@ -457,7 +457,7 @@ void SetValuesBucketInUpdate(const string &columnKey, const string &columnValue,
     ValuesBucket &values)
 {
     if (FILEASSET_MEMBER_MAP.find(columnKey) == FILEASSET_MEMBER_MAP.end()) {
-        MEDIA_ERR_LOG("this columnKey %{public}s is not excepted", columnKey.c_str());
+        MEDIA_ERR_LOG("this columnKey %{private}s is not excepted", columnKey.c_str());
         return;
     }
     int type = FILEASSET_MEMBER_MAP.at(columnKey);
@@ -475,7 +475,7 @@ void SetValuesBucketInUpdate(const string &columnKey, const string &columnValue,
             values.PutDouble(columnKey, stod(columnValue));
             break;
         default:
-            MEDIA_ERR_LOG("this column type %{public}s is not excepted", columnKey.c_str());
+            MEDIA_ERR_LOG("this column type %{private}s is not excepted", columnKey.c_str());
     }
 }
 

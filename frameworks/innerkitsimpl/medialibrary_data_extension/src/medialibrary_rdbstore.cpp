@@ -123,7 +123,7 @@ static int32_t ExecSqls(const vector<string> &sqls, RdbStore &store)
     for (const auto &sql : sqls) {
         err = store.ExecuteSql(sql);
         if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to exec: %{public}s", sql.c_str());
+            MEDIA_ERR_LOG("Failed to exec: %{private}s", sql.c_str());
             /* try update as much as possible */
             continue;
         }
@@ -240,9 +240,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUri(const AbsRd
     sql.append("SELECT ").append(PHOTO_INDEX).append(" From (");
     sql.append(RdbSqlUtils::BuildQueryString(predicates, columns));
     sql.append(") where "+ MediaColumn::MEDIA_ID + " = ").append(id);
-    MEDIA_DEBUG_LOG("sql = %{public}s", sql.c_str());
+    MEDIA_DEBUG_LOG("sql = %{private}s", sql.c_str());
     for (auto &arg : predicates.GetWhereArgs()) {
-        MEDIA_DEBUG_LOG("arg = %{public}s", arg.c_str());
+        MEDIA_DEBUG_LOG("arg = %{private}s", arg.c_str());
     }
     return rdbStore_->QuerySql(sql, predicates.GetWhereArgs());
 }
@@ -259,13 +259,13 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
     tracer.Start("RdbStore->QueryByCmd");
 #ifdef MEDIALIBRARY_COMPATIBILITY
     auto predicates = cmd.GetAbsRdbPredicates();
-    MEDIA_DEBUG_LOG("tablename = %{public}s", predicates->GetTableName().c_str());
+    MEDIA_DEBUG_LOG("tablename = %{private}s", predicates->GetTableName().c_str());
     for (const auto &col : columns) {
-        MEDIA_DEBUG_LOG("col = %{public}s", col.c_str());
+        MEDIA_DEBUG_LOG("col = %{private}s", col.c_str());
     }
-    MEDIA_DEBUG_LOG("whereClause = %{public}s", predicates->GetWhereClause().c_str());
+    MEDIA_DEBUG_LOG("whereClause = %{private}s", predicates->GetWhereClause().c_str());
     for (auto &arg : predicates->GetWhereArgs()) {
-        MEDIA_DEBUG_LOG("whereArgs = %{public}s", arg.c_str());
+        MEDIA_DEBUG_LOG("whereArgs = %{private}s", arg.c_str());
     }
     MEDIA_DEBUG_LOG("limit = %{public}d", predicates->GetLimit());
 #endif

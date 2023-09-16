@@ -197,7 +197,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_001, TestSize.Lev
     Uri newUri("");
     string displayName = "CreateFile001.jpg";
     string filePath = albumAsset->GetPath() + "/" + displayName;
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_001 parentUri: %{public}s, displayName: %{public}s, filePath: %{public}s",
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_001 parentUri: %{private}s, displayName: %{public}s, filePath: %{private}s",
         parentUri.ToString().c_str(), displayName.c_str(), filePath.c_str());
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), false);
     int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
@@ -526,7 +526,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_001, TestSize.Level0)
     string srcPath = fileAsset->GetPath();
     string displayName = fileAsset->GetDisplayName();
     string targetPath = destAlbumAsset->GetPath() + "/" + displayName;
-    MEDIA_DEBUG_LOG("medialib_Move_test_001 srcPath: %{public}s, targetPath: %{public}s",
+    MEDIA_DEBUG_LOG("medialib_Move_test_001 srcPath: %{private}s, targetPath: %{private}s",
         srcPath.c_str(), targetPath.c_str());
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(srcPath), true);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(targetPath), false);
@@ -556,7 +556,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_002, TestSize.Level0)
     string srcPath = srcAlbumAsset->GetPath();
     string displayName = srcAlbumAsset->GetDisplayName();
     string targetPath = destAlbumAsset->GetPath() + "/" + displayName;
-    MEDIA_DEBUG_LOG("medialib_Move_test_002 srcPath: %{public}s, targetPath: %{public}s",
+    MEDIA_DEBUG_LOG("medialib_Move_test_002 srcPath: %{private}s, targetPath: %{private}s",
         srcPath.c_str(), targetPath.c_str());
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(srcPath), true);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(targetPath), false);
@@ -681,7 +681,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Move_test_008, TestSize.Level0)
     string srcPath = fileAsset->GetPath();
     string displayName = fileAsset->GetDisplayName();
     string targetPath = g_documents->GetPath() + "/" + displayName;
-    MEDIA_DEBUG_LOG("medialib_Move_test_008 srcPath: %{public}s, targetPath: %{public}s",
+    MEDIA_DEBUG_LOG("medialib_Move_test_008 srcPath: %{private}s, targetPath: %{private}s",
         srcPath.c_str(), targetPath.c_str());
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(srcPath), true);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(targetPath), false);
@@ -745,7 +745,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_001, TestSize.Level0)
         sourceUri.ToString().c_str(), displayName.c_str());
     string oldPath = fileAsset->GetPath();
     string newPath = oldPath.substr(0, oldPath.rfind('/')) + "/" + displayName;
-    MEDIA_DEBUG_LOG("medialib_Rename_test_001 oldPath: %{public}s, newPath: %{public}s",
+    MEDIA_DEBUG_LOG("medialib_Rename_test_001 oldPath: %{private}s, newPath: %{private}s",
         oldPath.c_str(), newPath.c_str());
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(oldPath), true);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(newPath), false);
@@ -772,7 +772,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_002, TestSize.Level0)
         sourceUri.ToString().c_str(), displayName.c_str());
     string oldPath = albumAsset->GetPath();
     string newPath = oldPath.substr(0, oldPath.rfind('/')) + "/" + displayName;
-    MEDIA_DEBUG_LOG("medialib_Rename_test_002 oldPath: %{public}s, newPath: %{public}s",
+    MEDIA_DEBUG_LOG("medialib_Rename_test_002 oldPath: %{private}s, newPath: %{private}s",
         oldPath.c_str(), newPath.c_str());
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(oldPath), true);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(newPath), false);
@@ -1426,7 +1426,7 @@ void MediaFileExtensionCheck(const shared_ptr<FileAsset> &parent, const unordere
             EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), false);
         }
         if (expect && ret) {
-            MEDIA_INFO_LOG("Root dir: %{public}s, file: %{public}s, path: %{private}s, CreateFile ret: %{public}d",
+            MEDIA_INFO_LOG("Root dir: %{private}s, file: %{public}s, path: %{private}s, CreateFile ret: %{public}d",
                 parent->GetDisplayName().c_str(), displayName.c_str(), filePath.c_str(), ret);
         }
     }
@@ -1451,7 +1451,7 @@ void DocumentsExtensionCheck(const shared_ptr<FileAsset> &parent, const string &
             EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), false);
         }
         if (expect && ret) {
-            MEDIA_ERR_LOG("Root dir: %{public}s, file: %{public}s, path: %{private}s, CreateFile ret: %{public}d",
+            MEDIA_ERR_LOG("Root dir: %{private}s, file: %{public}s, path: %{private}s, CreateFile ret: %{public}d",
                 parent->GetDisplayName().c_str(), displayName.c_str(), filePath.c_str(), ret);
         }
     }

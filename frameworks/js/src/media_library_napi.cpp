@@ -915,7 +915,7 @@ static string GetVirtualIdFromApi10Uri(const string &uri)
     }
     int32_t id;
     if (!StrToInt(fileId, id)) {
-        NAPI_ERR_LOG("invalid fileuri %{public}s", uri.c_str());
+        NAPI_ERR_LOG("invalid fileuri %{private}s", uri.c_str());
         return fileId;
     }
     if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
@@ -931,7 +931,7 @@ static string GetVirtualIdFromApi10Uri(const string &uri)
 static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
 {
     if (!context->uri.empty()) {
-        NAPI_ERR_LOG("context->uri is = %{public}s", context->uri.c_str());
+        NAPI_ERR_LOG("context->uri is = %{private}s", context->uri.c_str());
         context->networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(context->uri);
 #ifdef MEDIALIBRARY_COMPATIBILITY
         string fileId = GetVirtualIdFromApi10Uri(context->uri);
@@ -1179,7 +1179,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     string queryUri = MEDIALIBRARY_DATA_URI;
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-        NAPI_DEBUG_LOG("querycoverUri is = %{public}s", queryUri.c_str());
+        NAPI_DEBUG_LOG("querycoverUri is = %{private}s", queryUri.c_str());
     }
     Uri uri(queryUri);
     int errCode = 0;
@@ -1195,7 +1195,7 @@ static void SetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr<Album
     CHECK_NULL_PTR_RETURN_VOID(fileAsset, "SetAlbumCoverUr:FileAsset is nullptr");
     string coverUri = fileAsset->GetUri();
     album->SetCoverUri(coverUri);
-    NAPI_DEBUG_LOG("coverUri is = %{public}s", album->GetCoverUri().c_str());
+    NAPI_DEBUG_LOG("coverUri is = %{private}s", album->GetCoverUri().c_str());
 }
 #endif
 
@@ -1385,7 +1385,7 @@ static void GetResultDataExecute(napi_env env, void *data)
     if (!context->networkId.empty()) {
         queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + context->networkId +
             MEDIALIBRARY_DATA_URI_IDENTIFIER + "/" + MEDIA_ALBUMOPRN_QUERYALBUM;
-        NAPI_DEBUG_LOG("queryAlbumUri is = %{public}s", queryUri.c_str());
+        NAPI_DEBUG_LOG("queryAlbumUri is = %{private}s", queryUri.c_str());
     }
     Uri uri(queryUri);
     int errCode = 0;
@@ -1808,7 +1808,7 @@ static bool CheckRelativePathParams(MediaLibraryAsyncContext *context)
     if (!firstDirName.empty()) {
         NAPI_DEBUG_LOG("firstDirName = %{private}s", firstDirName.c_str());
         for (unsigned int i = 0; i < directoryEnumValues.size(); i++) {
-            NAPI_DEBUG_LOG("directoryEnumValues%{public}d = %{public}s", i, directoryEnumValues[i].c_str());
+            NAPI_DEBUG_LOG("directoryEnumValues%{private}d = %{private}s", i, directoryEnumValues[i].c_str());
             if (!strcmp(firstDirName.c_str(), directoryEnumValues[i].c_str())) {
                 return CheckTypeOfType(firstDirName, fileMediaType);
             }
@@ -2027,7 +2027,7 @@ static inline void HandleCompatDelete(MediaLibraryAsyncContext *context,
         return HandleCompatTrashAudio(context, deleteId);
     }
 
-    NAPI_WARN_LOG("Ignore unsupported media type deletion: %{public}s", mediaType.c_str());
+    NAPI_WARN_LOG("Ignore unsupported media type deletion: %{private}s", mediaType.c_str());
 }
 #endif
 
@@ -2059,7 +2059,7 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
         }
     }
     if (MediaFileUtils::IsUriV10(mediaType)) {
-        NAPI_ERR_LOG("Unsupported media type: %{public}s", mediaType.c_str());
+        NAPI_ERR_LOG("Unsupported media type: %{private}s", mediaType.c_str());
         context->SaveError(E_INVALID_URI);
         return;
     }
@@ -4150,7 +4150,7 @@ static napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
         relativePath = GetDefaultDirectory(mediaType);
     }
     context->valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
-    NAPI_DEBUG_LOG("src:%{public}s mime:%{public}s relp:%{private}s filename:%{private}s",
+    NAPI_DEBUG_LOG("src:%{private}s mime:%{private}s relp:%{private}s filename:%{private}s",
         context->storeMediaSrc.c_str(), mimeType.c_str(), relativePath.c_str(), fileName.c_str());
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -4248,7 +4248,7 @@ static napi_value GetImagePreviewArgsUri(napi_env env, napi_value param, MediaLi
         uri += ",";
     }
     context.uri = uri.substr(0, uri.length() - 1);
-    NAPI_DEBUG_LOG("GetImagePreviewArgs res %{public}s", context.uri.c_str());
+    NAPI_DEBUG_LOG("GetImagePreviewArgs res %{private}s", context.uri.c_str());
     napi_value res;
     napi_get_undefined(env, &res);
     return res;
