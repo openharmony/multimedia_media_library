@@ -28,26 +28,26 @@ ObjectInfo::~ObjectInfo()
 
 void ObjectInfo::Dump()
 {
-    MEDIA_DEBUG_LOG("=== ObjectInfo {handle=%{public}x, name=[%{public}s]} begin ===", handle, name.c_str());
+    MEDIA_DEBUG_LOG("=== ObjectInfo {handle=%{private}x, name=[%{private}s]} begin ===", handle, name.c_str());
 
-    MEDIA_DEBUG_LOG("    storageID=%{public}x, format=%{public}s(%{public}x), parent=%{public}x",
+    MEDIA_DEBUG_LOG("    storageID=%{private}x, format=%{private}s(%{private}x), parent=%{private}x",
         storageID, MtpPacketTool::GetFormatName(format).c_str(), format, parent);
 
-    MEDIA_DEBUG_LOG("    association={type=%{public}s(%{public}x), desc=%{public}x}",
+    MEDIA_DEBUG_LOG("    association={type=%{private}s(%{private}x), desc=%{private}x}",
         MtpPacketTool::GetAssociationName(associationType).c_str(), associationType, associationDesc);
 
-    MEDIA_DEBUG_LOG("    protectionStatus=%{public}u, compressedSize=%{public}u, size=%{public}u",
+    MEDIA_DEBUG_LOG("    protectionStatus=%{private}u, compressedSize=%{private}u, size=%{private}u",
         protectionStatus, compressedSize, size);
 
-    MEDIA_DEBUG_LOG("    image={pixWidth=%{public}u, pixHeight=%{public}u, pixDepth=%{public}u}",
+    MEDIA_DEBUG_LOG("    image={pixWidth=%{private}u, pixHeight=%{private}u, pixDepth=%{private}u}",
         imagePixWidth, imagePixHeight, imagePixDepth);
 
-    MEDIA_DEBUG_LOG("    thumb={format=%{public}s(%{public}x), compressedSize=%{public}u,"
-        " pixWidth=%{public}u, pixHeight=%{public}u}",
+    MEDIA_DEBUG_LOG("    thumb={format=%{private}s(%{private}x), compressedSize=%{private}u,"
+        " pixWidth=%{private}u, pixHeight=%{private}u}",
         MtpPacketTool::GetFormatName(thumbFormat).c_str(), thumbFormat, thumbCompressedSize,
         thumbPixWidth, thumbPixHeight);
 
-    MEDIA_DEBUG_LOG("    keywords=[%{public}s]", keywords.c_str());
+    MEDIA_DEBUG_LOG("    keywords=[%{private}s]", keywords.c_str());
     MEDIA_DEBUG_LOG("--- ObjectInfo end ---");
 }
 } // namespace Media

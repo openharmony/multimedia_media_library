@@ -274,15 +274,15 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetAssetFromResultSet(
     for (const auto &column : columns) {
         int32_t columnIndex = 0;
         CHECK_AND_RETURN_RET_LOG(resultSet->GetColumnIndex(column, columnIndex) == NativeRdb::E_OK,
-            nullptr, "Can not get column %{public}s index", column.c_str());
+            nullptr, "Can not get column %{private}s index", column.c_str());
         CHECK_AND_RETURN_RET_LOG(FILEASSET_MEMBER_MAP.find(column) != FILEASSET_MEMBER_MAP.end(), nullptr,
-            "Can not find column %{public}s from member map", column.c_str());
+            "Can not find column %{private}s from member map", column.c_str());
         int32_t memberType = FILEASSET_MEMBER_MAP.at(column);
         switch (memberType) {
             case MEMBER_TYPE_INT32: {
                 int32_t value = 0;
                 CHECK_AND_RETURN_RET_LOG(resultSet->GetInt(columnIndex, value) == NativeRdb::E_OK, nullptr,
-                    "Can not get int value from column %{public}s", column.c_str());
+                    "Can not get int value from column %{private}s", column.c_str());
                 auto &map = fileAsset->GetMemberMap();
                 map[column] = value;
                 break;
@@ -290,7 +290,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetAssetFromResultSet(
             case MEMBER_TYPE_INT64: {
                 int64_t value = 0;
                 CHECK_AND_RETURN_RET_LOG(resultSet->GetLong(columnIndex, value) == NativeRdb::E_OK, nullptr,
-                    "Can not get long value from column %{public}s", column.c_str());
+                    "Can not get long value from column %{private}s", column.c_str());
                 auto &map = fileAsset->GetMemberMap();
                 map[column] = value;
                 break;
@@ -298,7 +298,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetAssetFromResultSet(
             case MEMBER_TYPE_STRING: {
                 string value;
                 CHECK_AND_RETURN_RET_LOG(resultSet->GetString(columnIndex, value) == NativeRdb::E_OK, nullptr,
-                    "Can not get string value from column %{public}s", column.c_str());
+                    "Can not get string value from column %{private}s", column.c_str());
                 auto &map = fileAsset->GetMemberMap();
                 map[column] = value;
                 break;
@@ -478,7 +478,7 @@ static bool CheckTypeFromRootDir(const std::string &rootDirName, int32_t type)
     if (!strcmp(rootDirName.c_str(), DOWNLOAD_DIR_VALUES.c_str())) {
         return true;
     }
-    MEDIA_ERR_LOG("Cannot match rootDir %{public}s and mediaType %{public}d",
+    MEDIA_ERR_LOG("Cannot match rootDir %{private}s and mediaType %{public}d",
         rootDirName.c_str(), type);
     return false;
 }
@@ -506,7 +506,7 @@ int32_t MediaLibraryAssetOperations::CheckDisplayNameWithType(const string &disp
 
     auto typeFromExt = MediaFileUtils::GetMediaType(displayName);
     CHECK_AND_RETURN_RET_LOG(typeFromExt == mediaType, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL,
-        "cannot match, mediaType=%{public}d, ext=%{public}s, type from ext=%{public}d",
+        "cannot match, mediaType=%{public}d, ext=%{private}s, type from ext=%{public}d",
         mediaType, ext.c_str(), typeFromExt);
     return E_OK;
 }
@@ -516,7 +516,7 @@ int32_t MediaLibraryAssetOperations::CheckExtWithType(const string &extention, i
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extention);
     auto typeFromExt = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
     CHECK_AND_RETURN_RET_LOG(typeFromExt == mediaType, E_CHECK_MEDIATYPE_MATCH_EXTENSION_FAIL,
-        "cannot match, mediaType=%{public}d, ext=%{public}s, type from ext=%{public}d",
+        "cannot match, mediaType=%{public}d, ext=%{private}s, type from ext=%{public}d",
         mediaType, extention.c_str(), typeFromExt);
     return E_OK;
 }
@@ -600,7 +600,7 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
     if (strDeleteCondition.empty()) {
         string strRow = cmd.GetOprnFileId();
         if (strRow.empty() || !MediaLibraryDataManagerUtils::IsNumber(strRow)) {
-            MEDIA_ERR_LOG("MediaLibraryAssetOperations DeleteFile: Index not digit, fileIdStr=%{public}s",
+            MEDIA_ERR_LOG("MediaLibraryAssetOperations DeleteFile: Index not digit, fileIdStr=%{private}s",
                 strRow.c_str());
             return E_INVALID_FILEID;
         }
@@ -846,7 +846,7 @@ static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const 
     int64_t pendingTime = fileAsset->GetTimePending();
     if (pendingTime != 0) {
         if (mode == MEDIA_FILEMODE_READONLY) {
-            MEDIA_ERR_LOG("FileAsset [%{public}s] pending status is %{private}ld and open mode is READ_ONLY",
+            MEDIA_ERR_LOG("FileAsset [%{private}s] pending status is %{private}ld and open mode is READ_ONLY",
                 fileAsset->GetUri().c_str(), (long) pendingTime);
             return E_IS_PENDING_ERROR;
         }
@@ -1290,7 +1290,7 @@ std::string MediaLibraryAssetOperations::CreateExtUriForV10Asset(FileAsset &file
     const std::string &displayName = fileAsset.GetDisplayName();
     auto mediaType = fileAsset.GetMediaType();
     if (filePath.empty() || displayName.empty() || mediaType < 0) {
-        MEDIA_ERR_LOG("param invalid, filePath %{public}s or displayName %{public}s invalid failed.",
+        MEDIA_ERR_LOG("param invalid, filePath %{private}s or displayName %{private}s invalid failed.",
             filePath.c_str(), displayName.c_str());
         return "";
     }
@@ -1490,12 +1490,12 @@ bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
     values.GetAll(valuesMap);
     for (auto &iter : valuesMap) {
         if (UPDATE_VERIFY_PARAM_MAP.find(iter.first) == UPDATE_VERIFY_PARAM_MAP.end()) {
-            MEDIA_ERR_LOG("param [%{public}s] is not allowed", iter.first.c_str());
+            MEDIA_ERR_LOG("param [%{private}s] is not allowed", iter.first.c_str());
             return false;
         }
         for (auto &verifyFunc : UPDATE_VERIFY_PARAM_MAP.at(iter.first)) {
             if (!verifyFunc(iter.second, cmd)) {
-                MEDIA_ERR_LOG("verify param [%{public}s] failed", iter.first.c_str());
+                MEDIA_ERR_LOG("verify param [%{private}s] failed", iter.first.c_str());
                 return false;
             }
         }

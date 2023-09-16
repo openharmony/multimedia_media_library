@@ -267,7 +267,7 @@ napi_value SmartAlbumNapi::JSGetSmartAlbumName(napi_env env, napi_callback_info 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if ((status == napi_ok) && (obj != nullptr)) {
         name = obj->GetSmartAlbumName();
-        NAPI_DEBUG_LOG("JSGetSmartAlbumName name = %{public}s", name.c_str());
+        NAPI_DEBUG_LOG("JSGetSmartAlbumName name = %{private}s", name.c_str());
         status = napi_create_string_utf8(env, name.c_str(), NAPI_AUTO_LENGTH, &jsResult);
         if (status == napi_ok) {
             return jsResult;

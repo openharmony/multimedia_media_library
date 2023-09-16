@@ -544,7 +544,7 @@ int32_t MediaLibraryObjectUtils::DeleteInfoRecursively(const shared_ptr<FileAsse
     MediaLibraryCommand deleteCmd(Uri(MEDIALIBRARY_DATA_URI), OperationType::DELETE);
     int32_t deleteRows = MediaLibraryObjectUtils::DeleteInfoByIdInDb(deleteCmd, fileId);
     if (deleteRows <= 0) {
-        MEDIA_ERR_LOG("Delete file info in database failed, file_id: %{public}s", fileId.c_str());
+        MEDIA_ERR_LOG("Delete file info in database failed, file_id: %{private}s", fileId.c_str());
         return E_DB_FAIL;
     }
     return E_SUCCESS;
@@ -930,7 +930,7 @@ unique_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetByPredicates(const Na
 shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromId(const string &id, const string &networkId)
 {
     if ((id.empty()) || (!MediaLibraryDataManagerUtils::IsNumber(id)) || (stoi(id) == -1)) {
-        MEDIA_ERR_LOG("Id for the path is incorrect: %{public}s", id.c_str());
+        MEDIA_ERR_LOG("Id for the path is incorrect: %{private}s", id.c_str());
         return nullptr;
     }
 
@@ -1563,7 +1563,7 @@ int32_t MediaLibraryObjectUtils::CheckDirExtension(const string &relativePath, c
     string fileMimeType = MimeTypeUtils::GetMimeTypeFromExtension(fileExtension);
     string fileMediaType = to_string(static_cast<int32_t>(MimeTypeUtils::GetMediaTypeFromMimeType(fileMimeType)));
     if (dirMediaTypes.find(fileMediaType) == string::npos) {
-        MEDIA_ERR_LOG("CheckDirExtension failed, file extension: %{private}s, root dir media_type: %{public}s",
+        MEDIA_ERR_LOG("CheckDirExtension failed, file extension: %{private}s, root dir media_type: %{private}s",
             fileExtension.c_str(), dirMediaTypes.c_str());
         return E_CHECK_EXTENSION_FAIL;
     }

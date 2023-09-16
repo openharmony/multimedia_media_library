@@ -95,7 +95,7 @@ bool DevicePermissionVerification::QueryTrustedRelationship(const std::string &u
     std::vector<TrustedRelationshipGroupInfo> groupList;
     groupList = jsonObject.get<std::vector<TrustedRelationshipGroupInfo>>();
     for (auto &a : groupList) {
-        MEDIA_INFO_LOG("group info:[groupName] %{public}s, [groupId] %{public}s, [groupType] %{public}d,",
+        MEDIA_INFO_LOG("group info:[groupName] %{private}s, [groupId] %{private}s, [groupType] %{private}d,",
                        a.groupName.c_str(), a.groupId.c_str(), a.groupType);
         if (a.groupType == PEER_TO_PEER_GROUP || a.groupType == ACROSS_ACCOUNT_AUTHORIZE_GROUP) {
             return true;

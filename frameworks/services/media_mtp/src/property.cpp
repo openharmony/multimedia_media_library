@@ -35,7 +35,7 @@ Property::Value::Value()
 
 void Property::Value::Dump(uint32_t valueType)
 {
-    MEDIA_DEBUG_LOG("%{public}s", ToString(valueType).c_str());
+    MEDIA_DEBUG_LOG("%{private}s", ToString(valueType).c_str());
 }
 
 std::string Property::Value::ToString(uint32_t valueType)
@@ -159,7 +159,7 @@ Property::Property(uint16_t propCode, uint16_t propType, bool propWriteable, int
                 defaultValue->bin_.ui64 = static_cast<uint64_t>(value);
                 break;
             default:
-                MEDIA_ERR_LOG("Property::Property unknown type %{public}u", type_);
+                MEDIA_ERR_LOG("Property::Property unknown type %{private}u", type_);
                 break;
         }
     }
@@ -222,7 +222,7 @@ void Property::Write(std::vector<uint8_t> &buffer)
     WriteValueData(buffer);
 
     bool deviceProp = IsDeviceProperty();
-    MEDIA_DEBUG_LOG("Property::write deviceProp=%{public}u", deviceProp);
+    MEDIA_DEBUG_LOG("Property::write deviceProp=%{private}u", deviceProp);
     if (!deviceProp) {
         MtpPacketTool::PutUInt32(buffer, groupCode_);
     }
@@ -290,7 +290,7 @@ void Property::SetFormRange(int min, int max, int step)
             stepSize->bin_.ui64 = static_cast<uint64_t>(step);
             break;
         default:
-            MEDIA_ERR_LOG("Property::setFormRange unsupported type %{public}u", type_);
+            MEDIA_ERR_LOG("Property::setFormRange unsupported type %{private}u", type_);
             break;
     }
 }
@@ -328,7 +328,7 @@ void Property::SetFormEnum(const std::vector<int> &values)
                 v.bin_.ui64 = static_cast<uint64_t>(value);
                 break;
             default:
-                MEDIA_ERR_LOG("Property::setFormEnum unsupported type %{public}u", type_);
+                MEDIA_ERR_LOG("Property::setFormEnum unsupported type %{private}u", type_);
                 break;
         }
         enumValues->push_back(v);
@@ -423,7 +423,7 @@ bool Property::ReadFormData(const std::vector<uint8_t> &buffer, size_t &offset)
         Value value;
         for (int i = 0; i < len; i++) {
             if (!ReadValue(buffer, offset, value)) {
-                MEDIA_ERR_LOG("Property::readFormData i=%{public}u", i);
+                MEDIA_ERR_LOG("Property::readFormData i=%{private}u", i);
                 return false;
             }
             enumValues->push_back(value);
@@ -566,7 +566,7 @@ bool Property::ReadValueEx(const std::vector<uint8_t> &buffer, size_t &offset, V
             break;
         }
         default:
-            MEDIA_ERR_LOG("unknown type %{public}u in Property::ReadValue", type_);
+            MEDIA_ERR_LOG("unknown type %{private}u in Property::ReadValue", type_);
             return false;
     }
     return true;
@@ -633,7 +633,7 @@ void Property::WriteValueEx(std::vector<uint8_t> &buffer, const Value &value)
             }
             break;
         default:
-            MEDIA_ERR_LOG("Property::writeValue unknown type %{public}u", type_);
+            MEDIA_ERR_LOG("Property::writeValue unknown type %{private}u", type_);
     }
 }
 
@@ -680,10 +680,10 @@ void Property::Dump()
     int indent = 1;
     std::string indentStr = MtpPacketTool::GetIndentBlank(indent);
 
-    MEDIA_DEBUG_LOG("handle=%{public}x", handle_);
-    MEDIA_DEBUG_LOG("### Property {property=%{public}s(%{public}x)} begin ###",
+    MEDIA_DEBUG_LOG("handle=%{private}x", handle_);
+    MEDIA_DEBUG_LOG("### Property {property=%{private}s(%{private}x)} begin ###",
         MtpPacketTool::GetObjectPropName(code_).c_str(), code_);
-    MEDIA_DEBUG_LOG("%{public}stype=[%{public}s](%{public}x)}, writeable_=%{public}d",
+    MEDIA_DEBUG_LOG("%{private}stype=[%{private}s](%{private}x)}, writeable_=%{private}d",
         indentStr.c_str(), MtpPacketTool::GetDataTypeName(type_).c_str(), type_, writeable_);
 
     if (!IsArrayType()) {
@@ -694,7 +694,7 @@ void Property::Dump()
         DumpValues(indent, currentValues, "currentValues");
     }
 
-    MEDIA_DEBUG_LOG("%{public}sgroupCode=%{public}u", indentStr.c_str(), groupCode_);
+    MEDIA_DEBUG_LOG("%{private}sgroupCode=%{private}u", indentStr.c_str(), groupCode_);
     DumpForm(indent);
     MEDIA_DEBUG_LOG("+++ Property end +++");
 }
@@ -703,7 +703,7 @@ void Property::DumpValue(uint8_t indent, const std::shared_ptr<Value> &value, co
 {
     std::string indentStr = MtpPacketTool::GetIndentBlank(indent);
 
-    MEDIA_DEBUG_LOG("%{public}s%{public}s=%{public}s", indentStr.c_str(), name.c_str(),
+    MEDIA_DEBUG_LOG("%{private}s%{private}s=%{private}s", indentStr.c_str(), name.c_str(),
         (value == nullptr) ? "nullptr" : value->ToString(type_).c_str());
 }
 
@@ -712,13 +712,13 @@ void Property::DumpValues(uint8_t indent, const std::shared_ptr<std::vector<Valu
     std::string indentStr = MtpPacketTool::GetIndentBlank(indent);
 
     if (values == nullptr) {
-        MEDIA_DEBUG_LOG("%{public}s%{public}s=nullptr", indentStr.c_str(), name.c_str());
+        MEDIA_DEBUG_LOG("%{private}s%{private}s=nullptr", indentStr.c_str(), name.c_str());
     } else {
         std::string indentStr2 = MtpPacketTool::GetIndentBlank(indent + 1);
         for (auto &v : (*values)) {
-            MEDIA_DEBUG_LOG("%{public}s%{public}s", indentStr2.c_str(), v.ToString(type_).c_str());
+            MEDIA_DEBUG_LOG("%{private}s%{private}s", indentStr2.c_str(), v.ToString(type_).c_str());
         }
-        MEDIA_DEBUG_LOG("%{public}s--- value end ---", indentStr.c_str());
+        MEDIA_DEBUG_LOG("%{private}s--- value end ---", indentStr.c_str());
     }
 }
 
@@ -726,7 +726,7 @@ void Property::DumpForm(uint8_t indent)
 {
     std::string indentStr = MtpPacketTool::GetIndentBlank(indent);
 
-    MEDIA_DEBUG_LOG("%{public}sformFlag=%{public}s(%{public}u)",
+    MEDIA_DEBUG_LOG("%{private}sformFlag=%{private}s(%{private}u)",
         indentStr.c_str(), MtpPacketTool::CodeToStrByMap(formFlag_, FormMap).c_str(), formFlag_);
 
     if (formFlag_ == Form::Range) {

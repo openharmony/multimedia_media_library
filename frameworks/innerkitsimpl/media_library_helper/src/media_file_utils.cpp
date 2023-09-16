@@ -485,12 +485,12 @@ int32_t MediaFileUtils::CheckRelativePath(const std::string &relativePath)
         }
         int len = lastPoint - firstPoint;
         if (len == 0) {
-            MEDIA_ERR_LOG("relativePath %{public}s is invalid", relativePath.c_str());
+            MEDIA_ERR_LOG("relativePath %{private}s is invalid", relativePath.c_str());
             return -EINVAL;
         }
         string checkedDirName = relativePath.substr(firstPoint, len);
         if (CheckDentryName(checkedDirName) != E_OK) {
-            MEDIA_ERR_LOG("Dir Name %{public}s is invalid in path %{public}s",
+            MEDIA_ERR_LOG("Dir Name %{private}s is invalid in path %{private}s",
                 checkedDirName.c_str(), relativePath.c_str());
             return -EINVAL;
         }
@@ -773,7 +773,7 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
     int32_t errCode = E_ERR;
 
     if (filePath.empty() || mode.empty()) {
-        MEDIA_ERR_LOG("Invalid open argument! mode: %{public}s, path: %{private}s", mode.c_str(), filePath.c_str());
+        MEDIA_ERR_LOG("Invalid open argument! mode: %{private}s, path: %{private}s", mode.c_str(), filePath.c_str());
         return errCode;
     }
 
@@ -882,7 +882,7 @@ int32_t MediaFileUtils::DeleteAsset(const string &filePath)
         errCode = RemoveDirectory(filePath);
     }
     if (errCode != E_SUCCESS) {
-        MEDIA_ERR_LOG("DeleteAsset failed, filePath: %{private}s, errno: %{public}d, errmsg: %{public}s",
+        MEDIA_ERR_LOG("DeleteAsset failed, filePath: %{private}s, errno: %{public}d, errmsg: %{private}s",
             filePath.c_str(), errno, strerror(errno));
     }
     return errCode;
@@ -991,7 +991,7 @@ bool MediaFileUtils::CheckMode(const string &mode)
     if (MEDIA_OPEN_MODES.find(mode) != MEDIA_OPEN_MODES.end()) {
         return true;
     } else {
-        MEDIA_ERR_LOG("Input Mode %{public}s is invalid", mode.c_str());
+        MEDIA_ERR_LOG("Input Mode %{private}s is invalid", mode.c_str());
         return false;
     }
 }
@@ -1061,7 +1061,7 @@ string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri, const string 
     }
     int32_t id;
     if (!StrToInt(fileId, id)) {
-        MEDIA_ERR_LOG("invalid fileuri %{public}s", uri.c_str());
+        MEDIA_ERR_LOG("invalid fileuri %{private}s", uri.c_str());
         return uri;
     }
     int64_t virtualId;
@@ -1126,7 +1126,7 @@ string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
     }
     int32_t id;
     if (!StrToInt(fileId, id)) {
-        MEDIA_ERR_LOG("invalid fileuri %{public}s", uri.c_str());
+        MEDIA_ERR_LOG("invalid fileuri %{private}s", uri.c_str());
         return uri;
     }
     int32_t realId = 0;

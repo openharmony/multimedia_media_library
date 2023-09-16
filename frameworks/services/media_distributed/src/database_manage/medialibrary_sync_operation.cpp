@@ -238,7 +238,7 @@ static bool SyncPullTableCallbackExec(const MediaLibrarySyncOpts &syncOpts, cons
         return false;
     }
     if (syncResult != 0) {
-        MEDIA_ERR_LOG("SyncPullTable tableName = %{public}s device = %{private}s syncResult = %{private}d",
+        MEDIA_ERR_LOG("SyncPullTable tableName = %{private}s device = %{private}s syncResult = %{private}d",
                       syncOpts.table.c_str(), networkId.c_str(), syncResult);
         return false;
     }
@@ -351,7 +351,7 @@ static bool SyncPushTableCallbackExec(const MediaLibrarySyncOpts &syncOpts, cons
         return false;
     }
     if (syncResult != 0) {
-        MEDIA_ERR_LOG("SyncPushTable tableName = %{public}s device = %{private}s syncResult = %{private}d",
+        MEDIA_ERR_LOG("SyncPushTable tableName = %{private}s device = %{private}s syncResult = %{private}d",
                       syncOpts.table.c_str(), networkId.c_str(), syncResult);
         return false;
     }

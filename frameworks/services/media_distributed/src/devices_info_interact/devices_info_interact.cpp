@@ -67,7 +67,7 @@ void DevicesInfoInteract::Init()
         MEDIA_ERR_LOG("KvStore get failed! %{public}d", status);
         return;
     }
-    MEDIA_INFO_LOG("KvStore using for %{public}s init success!", ML_MULTIDEV_INFO_ID.c_str());
+    MEDIA_INFO_LOG("KvStore using for %{private}s init success!", ML_MULTIDEV_INFO_ID.c_str());
 }
 
 std::string DevicesInfoInteract::GenerateKey(const std::string &udid)
@@ -116,7 +116,7 @@ bool DevicesInfoInteract::GetMLDeviceInfos(const std::string &udid, std::string 
         return false;
     }
     val = jsonObj.at("medialibrary_version");
-    MEDIA_INFO_LOG("get kvstore success! ml version info %{public}s, val %{public}s",
+    MEDIA_INFO_LOG("get kvstore success! ml version info %{private}s, val %{private}s",
         versionInfo.c_str(), val.c_str());
     return true;
 }
@@ -140,7 +140,7 @@ void DevicesInfoInteract::PutMLDeviceInfos(const std::string &udid)
         MEDIA_ERR_LOG("put kvstore failed %{public}d", status);
         return;
     }
-    MEDIA_INFO_LOG("put kvstore success!, val %{public}s", val.c_str());
+    MEDIA_INFO_LOG("put kvstore success!, val %{private}s", val.c_str());
 }
 
 void DevicesInfoInteract::SyncCompleted(const std::map<std::string, DistributedKv::Status> &results)
