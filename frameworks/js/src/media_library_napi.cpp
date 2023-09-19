@@ -4249,7 +4249,7 @@ static napi_value GetImagePreviewArgsUri(napi_env env, napi_value param, MediaLi
             return nullptr;
         }
         uri += string(inputStr.get());
-        uri += ",";
+        uri += "?";
     }
     context.uri = uri.substr(0, uri.length() - 1);
     NAPI_DEBUG_LOG("GetImagePreviewArgs res %{private}s", context.uri.c_str());
