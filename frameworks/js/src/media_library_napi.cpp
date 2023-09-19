@@ -2414,6 +2414,10 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
                     break;
                 }
                 napi_env env = msg->env_;
+                NapiScopeHandler scopeHandler(env);
+                if (!scopeHandler.IsValid()) {
+                    break;
+                }
 
                 napi_value jsCallback = nullptr;
                 napi_status status = napi_get_reference_value(env, msg->ref_, &jsCallback);

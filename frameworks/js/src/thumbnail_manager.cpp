@@ -32,6 +32,7 @@
 #include "string_ex.h"
 #include "thumbnail_const.h"
 #include "unique_fd.h"
+#include "userfile_manager_types.h"
 #include "uv.h"
 #include "userfile_client.h"
 
@@ -167,7 +168,7 @@ ThumbnailManager::~ThumbnailManager()
     if (fastThread_.joinable()) {
         fastThread_.join();
     }
-    for (auto &thread : qualityThreads_) {
+    for (auto &thread : threads_) {
         if (thread.joinable()) {
             thread.join();
         }
@@ -413,6 +414,37 @@ void ThumbnailManager::QualityImageWorker(int num)
     }
 }
 
+static void HandlePixelCallback(const RequestSharedPtr &request, bool isFastImage)
+{
+    napi_env env = request->callback_.env_;
+    napi_value jsCallback = nullptr;
+    napi_status status = napi_get_reference_value(env, request->callback_.callBackRef_, &jsCallback);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+        return;
+    }
+
+    napi_value retVal = nullptr;
+    napi_value result[ARGS_ONE];
+    if (request->GetStatus() == ThumbnailStatus::THUMB_REMOVE) {
+        return;
+    }
+        
+    if (isFastImage) {
+        result[PARAM0] = Media::PixelMapNapi::CreatePixelMap(env,
+            shared_ptr<PixelMap>(request->GetFastPixelMap()));
+    } else {
+        result[PARAM0] = Media::PixelMapNapi::CreatePixelMap(env,
+            shared_ptr<PixelMap>(request->GetPixelMap()));
+    }
+
+    napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
+        return;
+    }
+}
+
 static void UvJsExecute(uv_work_t *work)
 {
     // js thread
@@ -429,32 +461,11 @@ static void UvJsExecute(uv_work_t *work)
         if (!uvMsg->request_->NeedContinue()) {
             break;
         }
-        napi_value jsCallback = nullptr;
-        napi_status status = napi_get_reference_value(env, uvMsg->request_->callback_.callBackRef_,
-            &jsCallback);
-        if (status != napi_ok) {
-            NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+        NapiScopeHandler scopeHandler(env);
+        if (!scopeHandler.IsValid()) {
             break;
         }
-        napi_value retVal = nullptr;
-        napi_value result[ARGS_ONE];
-        if (uvMsg->request_->GetStatus() == ThumbnailStatus::THUMB_REMOVE) {
-            break;
-        } else {
-            if (uvMsg->isFastImage_) {
-                result[PARAM0] = Media::PixelMapNapi::CreatePixelMap(env,
-                    shared_ptr<PixelMap>(uvMsg->request_->GetFastPixelMap()));
-            } else {
-                result[PARAM0] = Media::PixelMapNapi::CreatePixelMap(env,
-                    shared_ptr<PixelMap>(uvMsg->request_->GetPixelMap()));
-            }
-        }
-
-        napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
-        if (status != napi_ok) {
-            NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
-            break;
-        }
+        HandlePixelCallback(uvMsg->request_, uvMsg->isFastImage_);
     } while (0);
     if ((uvMsg->request_->GetStatus() == ThumbnailStatus::THUMB_QUALITY && !uvMsg->isFastImage_) ||
         (uvMsg->request_->GetStatus() == ThumbnailStatus::THUMB_REMOVE)) {
