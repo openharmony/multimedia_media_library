@@ -302,11 +302,11 @@ string ThumbnailUtils::GetUdid()
     return "";
 }
 
-bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data)
+bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isHigh)
 {
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
-        .quality = THUMBNAIL_QUALITY,
+        .quality = isHigh ? THUMBNAIL_HIGH : THUMBNAIL_MID,
         .numberHint = NUMBER_HINT_1
     };
     data.resize(pixelMap->GetByteCount());
