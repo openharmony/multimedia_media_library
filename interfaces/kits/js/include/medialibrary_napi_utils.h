@@ -16,6 +16,7 @@
 #ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIALIBRARY_NAPI_UTILS_H_
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIALIBRARY_NAPI_UTILS_H_
 
+#include <memory>
 #include <vector>
 
 #include "datashare_predicates.h"
@@ -493,6 +494,18 @@ public:
 
 private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
+};
+
+class NapiScopeHandler {
+public:
+    NapiScopeHandler(napi_env env);
+    ~NapiScopeHandler();
+    bool IsValid();
+    
+private:
+    napi_env env_;
+    napi_handle_scope scope_;
+    bool isValid_ = false;
 };
 } // namespace Media
 } // namespace OHOS

@@ -858,6 +858,32 @@ bool MediaLibraryNapiUtils::IsSystemApp()
     return isSys;
 }
 
+NapiScopeHandler::NapiScopeHandler(napi_env env): env_(env)
+{
+    napi_status status = napi_open_handle_scope(env_, &scope_);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Open Handler scope failed, status %{public}d", status);
+        isValid_ = false;
+    } else {
+        isValid_ = true;
+    }
+}
+
+NapiScopeHandler::~NapiScopeHandler()
+{
+    if (isValid_) {
+        napi_status status = napi_close_handle_scope(env_, scope_);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Close Handler scope failed, status %{public}d", status);
+        }
+    }
+}
+
+bool NapiScopeHandler::IsValid()
+{
+    return isValid_;
+}
+
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
     unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
     const FetchOptionType &fetchOptType);
