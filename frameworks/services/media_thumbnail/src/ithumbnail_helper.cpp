@@ -214,7 +214,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    if (!ThumbnailUtils::CompressImage(data.source, data.lcd)) {
+    if (!ThumbnailUtils::CompressImage(data.source, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
     }
