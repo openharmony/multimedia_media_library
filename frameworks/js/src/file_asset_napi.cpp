@@ -204,7 +204,7 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("getExif", JSGetExif),
             DECLARE_NAPI_FUNCTION("setUserComment", PhotoAccessHelperSetUserComment),
             DECLARE_NAPI_FUNCTION("requestPhoto", PhotoAccessHelperRequestPhoto),
-            DECLARE_NAPI_FUNCTION("cancelRequestPhoto", PhotoAccessHelperCancelRequestPhoto),
+            DECLARE_NAPI_FUNCTION("cancelPhotoRequest", PhotoAccessHelperCancelPhotoRequest),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -1603,24 +1603,44 @@ static void JSGetThumbnailCompleteCallback(napi_env env, napi_status status,
     delete context;
 }
 
-static void GetSizeInfo(napi_env env, napi_value configObj, std::string type, int32_t &result)
+static bool GetInt32InfoFromNapiObject(napi_env env, napi_value configObj, std::string type, int32_t &result)
 {
     napi_value item = nullptr;
     bool exist = false;
     napi_status status = napi_has_named_property(env, configObj, type.c_str(), &exist);
     if (status != napi_ok || !exist) {
         NAPI_ERR_LOG("can not find named property, status: %{public}d", status);
-        return;
+        return false;
     }
 
     if (napi_get_named_property(env, configObj, type.c_str(), &item) != napi_ok) {
         NAPI_ERR_LOG("get named property fail");
-        return;
+        return false;
     }
 
     if (napi_get_value_int32(env, item, &result) != napi_ok) {
         NAPI_ERR_LOG("get property value fail");
+        return false;
     }
+
+    return true;
+}
+
+static bool GetNapiObjectFromNapiObject(napi_env env, napi_value configObj, std::string type, napi_value *object)
+{
+    bool exist = false;
+    napi_status status = napi_has_named_property(env, configObj, type.c_str(), &exist);
+    if (status != napi_ok || !exist) {
+        NAPI_ERR_LOG("can not find named property, status: %{public}d", status);
+        return false;
+    }
+
+    if (napi_get_named_property(env, configObj, type.c_str(), object) != napi_ok) {
+        NAPI_ERR_LOG("get named property fail");
+        return false;
+    }
+
+    return true;
 }
 
 napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value argv[],
@@ -1642,11 +1662,51 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
         napi_typeof(env, argv[i], &valueType);
 
         if (i == PARAM0 && valueType == napi_object) {
-            GetSizeInfo(env, argv[PARAM0], "width", asyncContext->size.width);
-            GetSizeInfo(env, argv[PARAM0], "height", asyncContext->size.height);
+            GetInt32InfoFromNapiObject(env, argv[PARAM0], "width", asyncContext->size.width);
+            GetInt32InfoFromNapiObject(env, argv[PARAM0], "height", asyncContext->size.height);
         } else if (i == PARAM0 && valueType == napi_function) {
             napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
             break;
+        } else if (i == PARAM1 && valueType == napi_function) {
+            napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
+            break;
+        } else {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid parameter type");
+            return nullptr;
+        }
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value GetPhotoRequestArgs(napi_env env, size_t argc, const napi_value argv[],
+    unique_ptr<FileAssetAsyncContext> &asyncContext, RequestPhotoType &type)
+{
+    if (argc != ARGS_TWO) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid parameter number " + to_string(argc));
+        return nullptr;
+    }
+    asyncContext->size.width = DEFAULT_THUMB_SIZE;
+    asyncContext->size.height = DEFAULT_THUMB_SIZE;
+
+    for (size_t i = PARAM0; i < argc; i++) {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[i], &valueType);
+
+        if (i == PARAM0 && valueType == napi_object) {
+            napi_value sizeObj;
+            if (GetNapiObjectFromNapiObject(env, argv[PARAM0], "size", &sizeObj)) {
+                GetInt32InfoFromNapiObject(env, sizeObj, "width", asyncContext->size.width);
+                GetInt32InfoFromNapiObject(env, sizeObj, "height", asyncContext->size.height);
+            }
+            int32_t requestType = 0;
+            if (GetInt32InfoFromNapiObject(env, argv[i], REQUEST_PHOTO_TYPE, requestType)) {
+                type = static_cast<RequestPhotoType>(requestType);
+            } else {
+                type = RequestPhotoType::REQUEST_ALL;
+            }
         } else if (i == PARAM1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
             break;
@@ -3438,12 +3498,19 @@ napi_value FileAssetNapi::PhotoAccessHelperRequestPhoto(napi_env env, napi_callb
     CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) ==
         napi_ok, result, "Failed to get object info");
     // use current parse args function temporary
-    result = GetJSArgsForGetThumbnail(env, asyncContext->argc, asyncContext->argv, asyncContext);
+    RequestPhotoType type = RequestPhotoType::REQUEST_ALL;
+    result = GetPhotoRequestArgs(env, asyncContext->argc, asyncContext->argv, asyncContext, type);
     ASSERT_NULLPTR_CHECK(env, result);
     auto obj = asyncContext->objectInfo;
     napi_value ret = nullptr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectInfo, ret, "FileAsset is nullptr");
 
+    RequestPhotoParams params = {
+        .uri = obj->fileAssetPtr->GetUri(),
+        .path = obj->fileAssetPtr->GetFilePath(),
+        .size = asyncContext->size,
+        .type = type
+    };
     static std::once_flag onceFlag;
     std::call_once(onceFlag, []() mutable {
         thumbnailManager_ = ThumbnailManager::GetInstance();
@@ -3453,17 +3520,16 @@ napi_value FileAssetNapi::PhotoAccessHelperRequestPhoto(napi_env env, napi_callb
     });
     string requestId;
     if (thumbnailManager_ != nullptr) {
-        requestId = thumbnailManager_->AddPhotoRequest(obj->fileAssetPtr->GetUri(), obj->fileAssetPtr->GetPath(),
-            asyncContext->size, env, asyncContext->callbackRef);
+        requestId = thumbnailManager_->AddPhotoRequest(params, env, asyncContext->callbackRef);
     }
     napi_create_string_utf8(env, requestId.c_str(), NAPI_AUTO_LENGTH, &result);
     return result;
 }
 
-napi_value FileAssetNapi::PhotoAccessHelperCancelRequestPhoto(napi_env env, napi_callback_info info)
+napi_value FileAssetNapi::PhotoAccessHelperCancelPhotoRequest(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("PhotoAccessHelperCancelRequestPhoto");
+    tracer.Start("PhotoAccessHelperCancelPhotoRequest");
 
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();

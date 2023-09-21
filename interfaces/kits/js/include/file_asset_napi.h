@@ -129,7 +129,7 @@ private:
     static napi_value PhotoAccessHelperFavorite(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperRequestPhoto(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperCancelRequestPhoto(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperCancelPhotoRequest(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetPending(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetUserComment(napi_env env, napi_callback_info info);
