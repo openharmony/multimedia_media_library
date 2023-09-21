@@ -36,6 +36,7 @@
 #include "post_proc.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
+#include "thumbnail_const.h"
 #include "unique_fd.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
@@ -48,12 +49,7 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sDataShareHelper_ = nullptr;
-const string THUMBNAIL_PATH = "path";
-const string THUMBNAIL_HEIGHT = "height";
-const string THUMBNAIL_WIDTH = "width";
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
-constexpr int32_t DEFAULT_MTH_SIZE = 128;
-constexpr int32_t DEFAULT_YEAR_SIZE = 64;
 
 MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 {
@@ -403,7 +399,7 @@ static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOl
 
 static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
 {
-    if (imageSize.height == 0 || targetSize.height == 0) {
+    if (imageSize.height <= 0 || targetSize.height <= 0) {
         return false;
     }
 
@@ -442,7 +438,7 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
     PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
 #endif
     PostProc postProc;
-    if (!isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
+    if (size.width != DEFAULT_ORIGINAL && !isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
         return nullptr;
     }
     return pixelMap;

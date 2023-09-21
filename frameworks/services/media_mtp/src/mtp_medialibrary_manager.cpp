@@ -38,7 +38,7 @@ constexpr int32_t NORMAL_HEIGHT = 256;
 constexpr int32_t COMPRE_SIZE_LEVEL_1 = 256;
 constexpr int32_t COMPRE_SIZE_LEVEL_2 = 204800;
 const string THUMBNAIL_FORMAT = "image/jpeg";
-static constexpr uint8_t THUMBNAIL_QUALITY = 90;
+static constexpr uint8_t THUMBNAIL_MID = 90;
 std::shared_ptr<MtpMedialibraryManager> MtpMedialibraryManager::instance_ = nullptr;
 std::mutex MtpMedialibraryManager::mutex_;
 shared_ptr<DataShare::DataShareHelper> MtpMedialibraryManager::dataShareHelper_ = nullptr;
@@ -238,7 +238,7 @@ bool MtpMedialibraryManager::CompressImage(std::unique_ptr<PixelMap> &pixelMap,
 
     PackOption option = {
         .format = THUMBNAIL_FORMAT,
-        .quality = THUMBNAIL_QUALITY,
+        .quality = THUMBNAIL_MID,
         .numberHint = 1
     };
 
