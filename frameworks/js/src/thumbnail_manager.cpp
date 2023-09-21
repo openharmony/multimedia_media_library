@@ -230,7 +230,7 @@ static int OpenThumbnail(const string &path, ThumbnailType type)
 
 static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
 {
-    if (imageSize.height == 0 || targetSize.height == 0) {
+    if (imageSize.height <= 0 || targetSize.height <= 0) {
         return false;
     }
 
@@ -269,7 +269,7 @@ static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd& uniqueFd, const Size& size
     PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
 #endif
     PostProc postProc;
-    if (!isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
+    if (size.width != DEFAULT_ORIGINAL && !isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
         return nullptr;
     }
     return pixelMap;

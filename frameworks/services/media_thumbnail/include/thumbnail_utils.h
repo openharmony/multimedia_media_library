@@ -70,7 +70,8 @@ public:
     ~ThumbnailUtils() = delete;
     // utils
     static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
-    static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data);
+    static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
+        bool isHigh = false);
     static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
     static int GetPixelMapFromResult(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, const Size &size,
         std::unique_ptr<PixelMap> &outPixelMap);

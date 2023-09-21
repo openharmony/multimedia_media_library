@@ -20,6 +20,7 @@
 #include <map>
 
 #include "media_file_uri.h"
+#include "media_file_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "media_column.h"
@@ -69,7 +70,27 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
         outPath = queryKey[THUMBNAIL_PATH];
     }
 
-    if (outSize.width <= 0 || outSize.height <= 0) {
+    if (!CheckSize(outSize, outPath)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool ThumbnailUriUtils::IsOriginalImg(const Size &outSize, const string &outPath)
+{
+    return outSize.width == DEFAULT_ORIGINAL && outSize.height == DEFAULT_ORIGINAL &&
+        MediaFileUtils::GetMediaType(outPath) == MEDIA_TYPE_AUDIO;
+}
+
+bool ThumbnailUriUtils::CheckSize(Size &outSize, const string &outPath)
+{
+    if (IsOriginalImg(outSize, outPath)) {
+        outSize.width = DEFAULT_LCD_SIZE;
+        outSize.height = DEFAULT_LCD_SIZE;
+    }
+
+    if ((outSize.width <= 0 || outSize.height <= 0) && !IsOriginalImg(outSize, outPath)) {
         return false;
     }
 
