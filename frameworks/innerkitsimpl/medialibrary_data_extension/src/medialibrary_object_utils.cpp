@@ -694,14 +694,13 @@ static bool CheckIsOwner(const string &bundleName)
 static int32_t OpenDocument(const string &uri, const string &mode)
 {
     static constexpr uint32_t BASE_USER_RANGE = 200000;
-    string uriString = AppFileService::SandboxHelper::Decode(uri);
     uid_t uid = getuid() / BASE_USER_RANGE;
     string realPath;
-    int32_t ret = AppFileService::SandboxHelper::GetPhysicalPath(uriString,
+    int32_t ret = AppFileService::SandboxHelper::GetPhysicalPath(uri,
         to_string(uid), realPath);
     if (ret != E_OK || !AppFileService::SandboxHelper::CheckValidPath(realPath)) {
         MEDIA_ERR_LOG("file not exist, uri=%{private}s, realPath=%{private}s",
-                      uriString.c_str(), realPath.c_str());
+                      uri.c_str(), realPath.c_str());
         return E_INVALID_URI;
     }
     return MediaFileUtils::OpenFile(realPath, mode);
