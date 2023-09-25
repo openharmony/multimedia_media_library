@@ -1187,7 +1187,7 @@ int32_t MediaLibraryAssetOperations::SetPendingFalse(const shared_ptr<FileAsset>
         MEDIA_ERR_LOG("file is created but not open, not allowed, id=%{public}d", fileAsset->GetId());
         return E_INVALID_VALUES;
     } else if (fileAsset->GetTimePending() > 0) {
-        ScanFile(fileAsset->GetPath(), false, true);
+        ScanFile(fileAsset->GetPath(), true, true);
     } else {
         MEDIA_ERR_LOG("fileAsset time_pending is invalid, time_pending:%{public}ld, id=%{public}d",
             (long) fileAsset->GetTimePending(), fileAsset->GetId());

@@ -319,6 +319,9 @@ static bool GetAshmemPtr(int32_t memSize, void **sharedPtr, int32_t &fd)
 
 static PixelMapPtr CreateThumbnailByAshmem(UniqueFd &uniqueFd, const Size &size)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateThumbnailByAshmem");
+
     Media::InitializationOptions option = {
         .size = size,
         .pixelFormat = PixelFormat::BGRA_8888
@@ -432,6 +435,8 @@ void ThumbnailManager::DeleteRequestIdFromMap(const string &requestId)
 
 bool ThumbnailManager::RequestFastImage(const RequestSharedPtr &request)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ThumbnailManager::RequestFastImage");
     Size fastSize;
     GetFastThumbNewSize(request->GetRequestSize(), fastSize);
     UniqueFd uniqueFd(OpenThumbnail(request->GetPath(), GetThumbType(fastSize.width, fastSize.height)));
@@ -446,6 +451,9 @@ bool ThumbnailManager::RequestFastImage(const RequestSharedPtr &request)
 
 void ThumbnailManager::DealWithFastRequest(const RequestSharedPtr &request)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ThumbnailManager::DealWithFastRequest");
+
     if (request == nullptr) {
         return;
     }
@@ -578,6 +586,9 @@ static void UvJsExecute(uv_work_t *work)
 
 bool ThumbnailManager::NotifyImage(const RequestSharedPtr &request, bool isFastImage)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ThumbnailManager::NotifyImage");
+
     if (!request->NeedContinue()) {
         DeleteRequestIdFromMap(request->GetUUID());
         return false;
