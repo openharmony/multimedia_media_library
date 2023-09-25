@@ -84,6 +84,7 @@
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/medialibrary_data_extension:userfilemanager_mimetypes.json",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_scanner:scanner",
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/test/unittest/medialibrary_tool:mediatool",
+            "//foundation/multimedia/media_library/frameworks/services/media_backup_extension:mediabackup",
             "//foundation/multimedia/media_library/frameworks/services/media_mtp:mtp"
           ]
         },

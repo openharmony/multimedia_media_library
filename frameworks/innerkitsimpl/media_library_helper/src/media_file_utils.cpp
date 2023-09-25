@@ -313,7 +313,7 @@ bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
     return errRet;
 }
 
-bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
+bool CopyFileUtil(const string &filePath, const string &newPath)
 {
     struct stat fst{};
     bool errCode = false;

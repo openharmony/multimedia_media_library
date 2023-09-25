@@ -13,30 +13,33 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H_
-#define OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H_
+#ifndef OHOS_MEDIA_CLONE_RESTORE_H_
+#define OHOS_MEDIA_CLONE_RESTORE_H_
 
-#include <mutex>
-#include <vector>
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
-#include "napi_error.h"
-#include "napi_remote_object.h"
-#include "backup_defines.h"
+#include "base_restore.h"
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryBackupNapi {
+class CloneRestore : public BaseRestore {
 public:
-    static napi_value Init(napi_env env, napi_value exports);
+    CloneRestore() = default;
+    virtual ~CloneRestore() = default;
 
-    MediaLibraryBackupNapi() = default;
-    ~MediaLibraryBackupNapi() = default;
+    int32_t Init(void) override;
+    void RestorePhoto(void) override;
+    void HandleRestData(void) override;
 
 private:
-    static napi_value JSStartRestore(napi_env env, napi_callback_info info);
+    int32_t QueryTotalNumber(void) override;
+    std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
+    bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
+
+private:
+    std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
+    std::string filePath_;
+    std::string dbPath_;
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H_
+#endif  // OHOS_MEDIA_CLONE_RESTORE_H_
