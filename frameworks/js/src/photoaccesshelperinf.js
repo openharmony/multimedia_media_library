@@ -331,7 +331,7 @@ async function photoPickerSelect(...args) {
       } else {
         reject(selectResult.error);
       }
-    })
+    });
   } catch (error) {
     console.log('[picker] error: ' + error);
   }
