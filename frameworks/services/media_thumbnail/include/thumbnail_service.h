@@ -54,10 +54,17 @@ public:
     THUMBNAIL_API_EXPORT void Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
+    THUMBNAIL_API_EXPORT int32_t GetAgingDataSize(const int64_t &time, int &count);
+    THUMBNAIL_API_EXPORT int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
 private:
     ThumbnailService();
     bool CheckSizeValid();
-
+    int32_t ParseThumbnailParam(const std::string &uri, std::string &fileId, std::string &networkId,
+        std::string &tableName);
+    int GetThumbFd(const std::string &path, const std::string &table, const std::string &id,
+        const std::string &uri, const Size &size);
+    int32_t CreateThumbnailInfo(const std::string &path, const std::string &tableName, const std::string &fileId,
+        const std::string &uri, const bool &isSync);
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;

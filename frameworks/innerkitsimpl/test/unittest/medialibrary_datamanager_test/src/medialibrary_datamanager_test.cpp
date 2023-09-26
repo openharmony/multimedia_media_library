@@ -384,7 +384,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Leve
     MEDIA_INFO_LOG("DataManager_Revert_Package_Test_001::Start");
     shared_ptr<FileAsset> fileAsset = nullptr;
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Revert_Package_Test_001.jpg", g_pictures, fileAsset), true);
-    
+
     DataShare::DataShareValuesBucket valuesBucketUpdate;
     valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
     valuesBucketUpdate.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
@@ -400,7 +400,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Leve
     MediaLibraryCommand cmd(updateAssetUri);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
     EXPECT_GT(retVal, 0);
-    
+
     string package = fileAsset->GetOwnerPackage();
     MEDIA_INFO_LOG("DataManager_Revert_Package_Test_001 package:%{publc}s", package.c_str());
 
