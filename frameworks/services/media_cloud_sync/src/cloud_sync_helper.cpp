@@ -19,7 +19,7 @@
 
 #include "medialibrary_errno.h"
 #include "media_log.h"
-#include "post_event_utils.h"
+
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -63,9 +63,6 @@ void CloudSyncHelper::StartSync()
     }
     timerId_ = timer_.Register(bind(&CloudSyncHelper::OnTimerCallback, this),
         SYNC_INTERVAL, true);
-    
-    VariantMap map;
-    PostEventUtils::GetInstance().PostStatProcess(StatType::SYNC_STAT, map);
 }
 
 void CloudSyncHelper::OnTimerCallback()

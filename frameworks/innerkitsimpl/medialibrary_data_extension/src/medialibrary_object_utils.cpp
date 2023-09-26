@@ -53,7 +53,6 @@
 #include "thumbnail_service.h"
 #include "value_object.h"
 #include "medialibrary_tracer.h"
-#include "post_event_utils.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -195,26 +194,22 @@ void GetRelativePathFromValues(ValuesBucket &values, string &relativePath, int32
     }
 }
 
-int32_t MediaLibraryObjectUtils::BuildFileAsset(MediaLibraryCommand &cmd, FileAsset &fileAsset,
-    NativeAlbumAsset &dirAsset, string &path, int32_t &mediaType)
+// create
+int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
 {
     string relativePath;
+    string path;
     string displayName;
-    
+    int32_t mediaType = static_cast<int32_t>(MEDIA_TYPE_FILE);
+    FileAsset fileAsset;
     ValueObject valueObject;
     ValuesBucket &values = cmd.GetValueBucket();
     if (!values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
-            {KEY_OPT_TYPE, OptType::CREATE}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_HAS_DB_ERROR;
     }
     valueObject.GetString(displayName);
     fileAsset.SetDisplayName(displayName);
     if (!values.GetObject(MEDIA_DATA_DB_MEDIA_TYPE, valueObject)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
-            {KEY_OPT_TYPE, OptType::CREATE}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_HAS_DB_ERROR;
     }
     valueObject.GetInt(mediaType);
@@ -229,70 +224,33 @@ int32_t MediaLibraryObjectUtils::BuildFileAsset(MediaLibraryCommand &cmd, FileAs
 
     // check dir and extension
     int32_t errCode = CheckDirExtension(relativePath, displayName);
-    if (errCode != E_SUCCESS) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::CREATE}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-    }
     CHECK_AND_RETURN_RET_LOG(errCode == E_SUCCESS, errCode, "CreateFileAsset: check file asset failed");
-    dirAsset = GetDirAsset(ROOT_MEDIA_DIR + relativePath);
+    NativeAlbumAsset dirAsset = GetDirAsset(ROOT_MEDIA_DIR + relativePath);
     if (dirAsset.GetAlbumId() < 0) {
         return dirAsset.GetAlbumId();
     }
     fileAsset.SetTimePending(0);
-    return E_SUCCESS;
-}
 
-// create
-int32_t MediaLibraryObjectUtils::CreateFileObj(MediaLibraryCommand &cmd)
-{
-    FileAsset fileAsset;
-    NativeAlbumAsset dirAsset;
-    string path;
-    int32_t mediaType = static_cast<int32_t>(MEDIA_TYPE_FILE);
-    int errCode = BuildFileAsset(cmd, fileAsset, dirAsset, path, mediaType);
-    if (errCode != E_SUCCESS) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
-            {KEY_OPT_TYPE, OptType::CREATE}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
-        MEDIA_ERR_LOG("Build file asset error");
-        return errCode;
-    }
     // delete rows in database but not in real filesystem
     errCode = DeleteInvalidRowInDb(path);
     if (errCode != E_SUCCESS) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
-            {KEY_OPT_TYPE, OptType::CREATE}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         MEDIA_ERR_LOG("Delete invalid row in database failed");
         return errCode;
     }
 
     errCode = MediaFileUtils::CreateAsset(path);
     if (errCode != E_SUCCESS) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::CREATE}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("CreateFileAsset: create file asset failed");
         return errCode;
     }
 
     if (mediaType == MEDIA_TYPE_NOFILE) {
-        errCode = UpdateDateModified(MediaFileUtils::GetParentPath(MediaFileUtils::GetParentPath(fileAsset.GetPath())));
-        if (errCode == E_HAS_DB_ERROR) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
-                {KEY_OPT_TYPE, OptType::CREATE}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
-        }
+        UpdateDateModified(MediaFileUtils::GetParentPath(MediaFileUtils::GetParentPath(fileAsset.GetPath())));
         return dirAsset.GetAlbumId();
     }
     auto ret = InsertFileInDb(cmd, fileAsset, dirAsset);
     if (ret > 0) {
         UpdateDateModified(MediaFileUtils::GetParentPath(fileAsset.GetPath()));
-    } else if (ret < 0) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
-            {KEY_OPT_TYPE, OptType::CREATE}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
     }
     return ret;
 }
@@ -423,9 +381,6 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
     }
     if (dirPath.empty()) {
         MEDIA_ERR_LOG("Dir path is empty!");
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_INVALID_PATH},
-            {KEY_OPT_TYPE, OptType::CREATE}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_INVALID_PATH;
     }
 
@@ -433,19 +388,11 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
     MEDIA_DEBUG_LOG("dirPath %{private}s id in database is %{private}d", dirPath.c_str(), static_cast<int>(rowId));
     if ((rowId < 0) || (!MediaFileUtils::IsDirectory(dirPath))) {
         if ((!MediaFileUtils::CreateDirectory(dirPath)) && (errno != EEXIST)) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-                {KEY_OPT_FILE, dirPath}, {KEY_OPT_TYPE, OptType::CREATE}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             return E_FAIL;
         }
-        auto ret = InsertDirToDbRecursively(dirPath, rowId);
-        if (ret != E_SUCCESS) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
-                {KEY_OPT_TYPE, OptType::CREATE}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
-        }
-        return ret;
+        return InsertDirToDbRecursively(dirPath, rowId);
     }
+
     return E_FILE_EXIST;
 }
 
