@@ -3805,7 +3805,7 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
         }
     }
 
-    if (!peerInfoArray.empty() && (napi_create_array(env, &jsPeerInfoArray) == napi_ok)) {
+    if (napi_create_array(env, &jsPeerInfoArray) == napi_ok) {
         for (size_t i = 0; i < peerInfoArray.size(); ++i) {
             PeerInfoToJsArray(env, peerInfoArray, i, jsPeerInfoArray);
         }
@@ -3813,11 +3813,6 @@ void JSGetActivePeersCompleteCallback(napi_env env, napi_status status,
         jsContext->data = jsPeerInfoArray;
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
-    } else {
-        NAPI_DEBUG_LOG("No peer info found!");
-        napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Failed to obtain peer info array from DB");
     }
 
     if (context->work != nullptr) {
@@ -3861,7 +3856,7 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
         }
     }
 
-    if (!peerInfoArray.empty() && (napi_create_array(env, &jsPeerInfoArray) == napi_ok)) {
+    if (napi_create_array(env, &jsPeerInfoArray) == napi_ok) {
         for (size_t i = 0; i < peerInfoArray.size(); ++i) {
             PeerInfoToJsArray(env, peerInfoArray, i, jsPeerInfoArray);
         }
@@ -3869,11 +3864,6 @@ void JSGetAllPeersCompleteCallback(napi_env env, napi_status status,
         jsContext->data = jsPeerInfoArray;
         napi_get_undefined(env, &jsContext->error);
         jsContext->status = true;
-    } else {
-        NAPI_DEBUG_LOG("No peer info found!");
-        napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
-            "Failed to obtain peer info array from DB");
     }
 
     if (context->work != nullptr) {
