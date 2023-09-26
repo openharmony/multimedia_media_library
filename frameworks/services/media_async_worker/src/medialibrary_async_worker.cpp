@@ -178,7 +178,6 @@ void MediaLibraryAsyncWorker::StartWorker(int num)
                 fgTask->executor_(fgTask->data_);
                 fgTask = nullptr;
                 doneTotal_++;
-                SleepFgWork();
             }
         } else if (!IsBgQueueEmpty()) {
             shared_ptr<MediaLibraryAsyncTask> bgTask = GetBgTask();

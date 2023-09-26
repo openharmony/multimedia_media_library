@@ -511,7 +511,7 @@ int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates,
         if (filePath.empty()) {
             return E_HAS_DB_ERROR;
         }
-        if (!MediaFileUtils::DeleteFile(filePath) && (errno != -ENOENT)) {
+        if (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT)) {
             MEDIA_ERR_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
             return E_HAS_FS_ERROR;
         }

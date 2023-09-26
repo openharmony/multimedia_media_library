@@ -916,6 +916,8 @@ static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,
         return nullptr;
     }
 
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
@@ -927,17 +929,28 @@ static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,
     }
 
     /* Parse the first argument */
-    vector<string> assetsArray;
-    CHECK_NULLPTR_RET(GetAssetsIdArray(env, context->argv[PARAM0], assetsArray));
-    if (assetsArray.empty()) {
-        napi_value result = nullptr;
-        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    vector<napi_value> napiValues;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM0], napiValues));
+    if (napiValues.empty()) {
         return result;
     }
-    context->predicates.In(MediaColumn::MEDIA_ID, assetsArray);
+    napi_valuetype valueType = napi_undefined;
+    vector<string> uris;
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_ERR_PARAMETER_INVALID);
+    if (valueType == napi_string) {
+        // The input should be an array of asset uri.
+        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetStringArray(env, napiValues, uris));
+    } else if (valueType == napi_object) {
+        // The input should be an array of asset object.
+        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetUriArrayFromAssets(env, napiValues, uris));
+    }
+    if (uris.empty()) {
+        return result;
+    }
+
+    context->predicates.In(MediaColumn::MEDIA_ID, uris);
     context->valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, 0);
 
-    napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
 }
