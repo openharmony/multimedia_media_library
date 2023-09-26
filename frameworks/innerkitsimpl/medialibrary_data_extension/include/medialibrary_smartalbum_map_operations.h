@@ -19,7 +19,6 @@
 #include <string>
 #include <variant>
 #include <grp.h>
-#include <memory>
 #include <mutex>
 #include <securec.h>
 #include <unistd.h>
@@ -45,7 +44,7 @@ public:
         const int32_t childAlbumId, MediaLibraryCommand &cmd);
     static int32_t HandleRemoveAssetOperation(const int32_t albumId, const int32_t childFileAssetId,
         MediaLibraryCommand &cmd);
-    static int32_t HandleAgingOperation(std::shared_ptr<int> countPtr = nullptr);
+    static int32_t HandleAgingOperation();
     static void SetInterrupt(bool interrupt);
     static bool GetInterrupt();
 

@@ -43,7 +43,6 @@
           "eventhandler",
           "file_api",
           "hilog",
-          "hisysevent",
           "hitrace",
           "huks",
           "init",

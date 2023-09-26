@@ -16,7 +16,6 @@
 
 #include "thumbnail_service.h"
 
-#include "ipc_skeleton.h"
 #include "display_manager.h"
 #include "media_column.h"
 #include "medialibrary_async_worker.h"
@@ -29,7 +28,6 @@
 #include "thumbnail_generate_helper.h"
 #include "thumbnail_helper_factory.h"
 #include "thumbnail_uri_utils.h"
-#include "post_event_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -122,9 +120,6 @@ static int32_t GetPathFromDb(const shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
     const string &table, string &path)
 {
     if (rdbStorePtr == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_HAS_DB_ERROR;
     }
     if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
@@ -135,9 +130,6 @@ static int32_t GetPathFromDb(const shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
     vector<string> selectionArgs = { fileId };
     auto resultSet = rdbStorePtr->QuerySql(querySql, selectionArgs);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return E_HAS_DB_ERROR;
     }
     path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
@@ -148,9 +140,25 @@ static int32_t GetPathFromDb(const shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
 }
 #endif
 
-int ThumbnailService::GetThumbFd(const string &path, const string &table, const string &id, const string &uri,
-    const Size &size)
+int ThumbnailService::GetThumbnailFd(const string &uri)
 {
+    if (!CheckSizeValid()) {
+        return E_THUMBNAIL_INVALID_SIZE;
+    }
+    string id, path, table;
+    Size size;
+    if (!ThumbnailUriUtils::ParseThumbnailInfo(uri, id, size, path, table)) {
+        return E_FAIL;
+    }
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    if (path.empty()) {
+        int32_t errCode = GetPathFromDb(rdbStorePtr_, id, table, path);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("GetPathFromDb failed, errCode = %{public}d", errCode);
+            return errCode;
+        }
+    }
+#endif
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .path = path,
@@ -160,9 +168,6 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     };
     shared_ptr<IThumbnailHelper> thumbnailHelper = ThumbnailHelperFactory::GetThumbnailHelper(size);
     if (thumbnailHelper == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_NO_MEMORY},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_NO_MEMORY;
     }
     if (!IsThumbnail(size.width, size.height)) {
@@ -170,67 +175,24 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     }
     int fd = thumbnailHelper->GetThumbnailPixelMap(opts, size);
     if (fd < 0) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, fd},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("GetThumbnailPixelMap failed : %{public}d", fd);
     }
     return fd;
 }
 
-int ThumbnailService::GetThumbnailFd(const string &uri)
+int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &path, bool isSync)
 {
     if (!CheckSizeValid()) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_INVALID_SIZE},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_THUMBNAIL_INVALID_SIZE;
     }
-    string id, path, table;
-    Size size;
-    if (!ThumbnailUriUtils::ParseThumbnailInfo(uri, id, size, path, table)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_FAIL},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return E_FAIL;
-    }
-#ifdef MEDIALIBRARY_COMPATIBILITY
-    if (path.empty()) {
-        int32_t errCode = GetPathFromDb(rdbStorePtr_, id, table, path);
-        if (errCode != E_OK) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
-                {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
-            MEDIA_ERR_LOG("GetPathFromDb failed, errCode = %{public}d", errCode);
-            return errCode;
-        }
-    }
-#endif
-    return GetThumbFd(path, table, id, uri, size);
-}
-
-int32_t ThumbnailService::ParseThumbnailParam(const std::string &uri, string &fileId, string &networkId,
-    string &tableName)
-{
-    if (!CheckSizeValid()) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_INVALID_SIZE},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return E_THUMBNAIL_INVALID_SIZE;
-    }
+    string fileId;
+    string networkId;
+    string tableName;
     if (!ThumbnailUriUtils::ParseFileUri(uri, fileId, networkId, tableName)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("ParseThumbnailInfo faild");
         return E_ERR;
     }
-    return E_OK;
-}
 
-int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &tableName, const string &fileId,
-    const string &uri, const bool &isSync)
-{
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .path = path,
@@ -238,67 +200,30 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
         .row = fileId,
         .screenSize = screenSize_
     };
-    
-    Size size = {DEFAULT_THUMB_SIZE, DEFAULT_THUMB_SIZE};
+    Size size = { DEFAULT_THUMB_SIZE, DEFAULT_THUMB_SIZE };
     shared_ptr<IThumbnailHelper> thumbnailHelper = ThumbnailHelperFactory::GetThumbnailHelper(size);
     if (thumbnailHelper == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("thumbnailHelper nullptr");
         return E_ERR;
     }
     int32_t err = thumbnailHelper->CreateThumbnail(opts, isSync);
     if (err != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("CreateThumbnail failed : %{public}d", err);
         return err;
     }
 
-    size = {DEFAULT_LCD_SIZE, DEFAULT_LCD_SIZE};
+    size = { DEFAULT_LCD_SIZE, DEFAULT_LCD_SIZE };
     shared_ptr<IThumbnailHelper> lcdHelper = ThumbnailHelperFactory::GetThumbnailHelper(size);
     if (lcdHelper == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("lcdHelper nullptr");
         return E_ERR;
     }
     err = lcdHelper->CreateThumbnail(opts, isSync);
     if (err != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("CreateLcd failed : %{public}d", err);
         return err;
     }
-    return E_OK;
-}
-
-int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &path, bool isSync)
-{
-    string fileId;
-    string networkId;
-    string tableName;
-    
-    int err = ParseThumbnailParam(uri, fileId, networkId, tableName);
-    if (err != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-    }
-    
-    err = CreateThumbnailInfo(path, tableName, fileId, uri, isSync);
-    if (err != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return err;
-    }
-   
-    return E_OK;
+    return err;
 }
 
 void ThumbnailService::InterruptBgworker()
@@ -339,7 +264,6 @@ int32_t ThumbnailService::GenerateThumbnails()
         if (err != E_OK) {
             MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
         }
-
         if (tableName != AudioColumn::AUDIOS_TABLE) {
             err = ThumbnailGenerateHelper::CreateLcdBatch(opts);
             if (err != E_OK) {
@@ -415,57 +339,6 @@ void ThumbnailService::InvalidateThumbnail(const std::string &id, const std::str
     };
     ThumbnailData thumbnailData;
     ThumbnailUtils::DeleteOriginImage(opts);
-}
-
-int32_t ThumbnailService::GetAgingDataSize(const int64_t &time, int &count)
-{
-    int32_t err = 0;
-    vector<string> tableList;
-    tableList.emplace_back(PhotoColumn::PHOTOS_TABLE);
-    tableList.emplace_back(AudioColumn::AUDIOS_TABLE);
-    tableList.emplace_back(MEDIALIBRARY_TABLE);
-
-    for (const auto &tableName : tableList) {
-        ThumbRdbOpt opts = {
-            .store = rdbStorePtr_,
-            .kvStore = kvStorePtr_,
-            .table = tableName,
-        };
-        int tempCount = 0;
-        err = ThumbnailAgingHelper::GetAgingDataCount(time, true, opts, tempCount);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("AgingLcdBatch failed : %{public}d", err);
-            return err;
-        }
-        count += tempCount;
-    }
-
-    return err;
-}
-
-int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &count)
-{
-    int32_t err = 0;
-    vector<string> tableList;
-    tableList.emplace_back(PhotoColumn::PHOTOS_TABLE);
-    tableList.emplace_back(AudioColumn::AUDIOS_TABLE);
-    tableList.emplace_back(MEDIALIBRARY_TABLE);
-
-    for (const auto &tableName : tableList) {
-        ThumbRdbOpt opts = {
-            .store = rdbStorePtr_,
-            .kvStore = kvStorePtr_,
-            .table = tableName
-        };
-        int32_t tempCount = 0;
-        err = ThumbnailGenerateHelper::GetNewThumbnailCount(opts, time, tempCount);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
-            return err;
-        }
-        count += tempCount;
-    }
-    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS
