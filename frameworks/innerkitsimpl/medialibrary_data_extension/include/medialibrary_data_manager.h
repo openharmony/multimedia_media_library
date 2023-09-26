@@ -16,6 +16,7 @@
 #ifndef OHOS_MEDIALIBRARY_DATA_MANAGER_H
 #define OHOS_MEDIALIBRARY_DATA_MANAGER_H
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <shared_mutex>
@@ -73,7 +74,7 @@ public:
     EXPORT int32_t GenerateThumbnails();
     EXPORT void InterruptBgworker();
     EXPORT int32_t DoAging();
-    EXPORT int32_t DoTrashAging();
+    EXPORT int32_t DoTrashAging(std::shared_ptr<int> countPtr = nullptr);
     /**
      * @brief Revert the pending state through the package name
      * @param bundleName packageName
@@ -97,6 +98,8 @@ public:
     std::shared_ptr<MediaDataShareExtAbility> GetOwner();
     void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);
     int GetThumbnail(const std::string &uri);
+    int32_t GetAgingDataSize(const int64_t &time, int &count);
+    int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
 
 private:
 #ifdef DISTRIBUTED
@@ -110,6 +113,8 @@ private:
     void ScanFile(const NativeRdb::ValuesBucket &values, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore1);
     int32_t InitDeviceData();
     int32_t InitialiseThumbnailService(const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
+    std::shared_ptr<NativeRdb::ResultSet> QuerySet(MediaLibraryCommand &cmd, const std::vector<std::string> &columns,
+        const DataShare::DataSharePredicates &predicates, int &errCode);
 #ifdef DISTRIBUTED
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();

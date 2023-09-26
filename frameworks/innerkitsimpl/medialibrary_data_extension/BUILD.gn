@@ -165,6 +165,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension:mediabackup",
     "${MEDIALIB_UTILS_PATH}:medialibrary_common_utils",
     "${MEDIALIB_UTILS_PATH}:permission_utils",
+    "${MEDIALIB_UTILS_PATH}:post_event_utils",
   ]
 
   include_dirs = [ "${MEDIALIB_CLOUD_SYNC_PATH}/include" ]
