@@ -27,6 +27,7 @@ const string OPT_CREATE = "CREATE";
 const string OPT_THUMB = "THUMB";
 const string OPT_SCAN = "SCAN";
 const string OPT_QUERY = "QUERY";
+static constexpr char MEDIA_LIBRARY[] = "";
 
 string PostEventUtils::GetOptType(const uint32_t &optType)
 {
@@ -78,7 +79,7 @@ void PostEventUtils::PostFileOptError(const VariantMap &error)
 {
     uint32_t uid = getuid();
     int ret = HiSysEventWrite(
-        HiviewDFX::HiSysEvent::Domain::MEDIA_LIBRARY,
+        MEDIA_LIBRARY,
         "MEDIALIB_FILE_OPT_ERROR",
         HiviewDFX::HiSysEvent::EventType::FAULT,
         "UID", uid,
@@ -97,7 +98,7 @@ void PostEventUtils::PostDbOptError(const VariantMap &error)
 {
     uint32_t uid = getuid();
     int ret = HiSysEventWrite(
-        HiviewDFX::HiSysEvent::Domain::MEDIA_LIBRARY,
+        MEDIA_LIBRARY,
         "MEDIALIB_DB_OPT_ERROR",
         HiviewDFX::HiSysEvent::EventType::FAULT,
         "UID", uid,
@@ -114,7 +115,7 @@ void PostEventUtils::PostDbOptError(const VariantMap &error)
 void PostEventUtils::PostDbUpgradeError(const VariantMap &error)
 {
     int ret = HiSysEventWrite(
-        HiviewDFX::HiSysEvent::Domain::MEDIA_LIBRARY,
+        MEDIA_LIBRARY,
         "MEDIALIB_DB_UPGRADE_ERROR",
         HiviewDFX::HiSysEvent::EventType::FAULT,
         "ERR_FILE", GetStringValue(KEY_ERR_FILE, error),
@@ -129,7 +130,7 @@ void PostEventUtils::PostThumbnailStat(const VariantMap &stat)
     uint32_t uid = getuid();
     thumbnailTimes_++;
     int ret = HiSysEventWrite(
-        HiviewDFX::HiSysEvent::Domain::MEDIA_LIBRARY,
+        MEDIA_LIBRARY,
         "MEDIALIB_THUMBNAIL_STAT",
         HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
         "UID", uid,
@@ -147,7 +148,7 @@ void PostEventUtils::PostDbUpgradeStat(const VariantMap &stat)
     int32_t afterVersion = GetIntValue(KEY_AFTER_VERSION, stat);
     dbUpgradeTimes_++;
     int ret = HiSysEventWrite(
-        HiviewDFX::HiSysEvent::Domain::MEDIA_LIBRARY,
+        MEDIA_LIBRARY,
         "MEDIALIB_DB_UPGRADE_STAT",
         HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
         "PRE_VERSION", preVersion,
@@ -163,7 +164,7 @@ void PostEventUtils::PostSyncStat()
 {
     syncTimes_++;
     int ret = HiSysEventWrite(
-        HiviewDFX::HiSysEvent::Domain::MEDIA_LIBRARY,
+        MEDIA_LIBRARY,
         "MEDIALIB_SYNC_STAT",
         HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
         "TIMES", syncTimes_);
@@ -176,7 +177,7 @@ void PostEventUtils::PostAgingStat(const VariantMap &stat)
 {
     recycleTimes_++;
     int ret = HiSysEventWrite(
-        HiviewDFX::HiSysEvent::Domain::MEDIA_LIBRARY,
+        MEDIA_LIBRARY,
         "MEDIALIB_AGING_STAT",
         HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
         "TIMES", recycleTimes_,
