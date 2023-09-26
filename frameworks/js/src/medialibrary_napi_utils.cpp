@@ -852,6 +852,28 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
     }
 }
 
+string MediaLibraryNapiUtils::GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
+    const string &propertyName)
+{
+    size_t res = 0;
+    char buffer[PATH_MAX] = {0};
+    napi_value property = nullptr;
+    napi_has_named_property(env, arg, propertyName.c_str(), &present);
+    if (present) {
+        if ((napi_get_named_property(env, arg, propertyName.c_str(), &property) != napi_ok) ||
+            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
+            NAPI_ERR_LOG("Could not get the string argument!");
+            err = true;
+            return "";
+        } else {
+            string str(buffer);
+            present = false;
+            return str;
+        }
+    }
+    return "";
+}
+
 bool MediaLibraryNapiUtils::IsSystemApp()
 {
     static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
