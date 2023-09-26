@@ -89,16 +89,6 @@ int32_t ThumbnailAgingHelper::AgingLcdBatch(ThumbRdbOpt &opts)
     return E_OK;
 }
 
-int32_t ThumbnailAgingHelper::GetAgingDataCount(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &count)
-{
-    int err = GetLcdCountByTime(time, before, opts, count);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to GetAgingDataCount %{public}d", err);
-        return err;
-    }
-    return E_OK;
-}
-
 int32_t ThumbnailAgingHelper::ClearLcdFromFileTable(ThumbRdbOpt &opts)
 {
     int lcdCount = 0;
@@ -195,18 +185,6 @@ int32_t ThumbnailAgingHelper::GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount)
     }
     return E_OK;
 }
-
-int32_t ThumbnailAgingHelper::GetLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts,
-    int &outLcdCount)
-{
-    int32_t err = E_ERR;
-    if (!ThumbnailUtils::QueryLcdCountByTime(time, before, opts, outLcdCount, err)) {
-        MEDIA_ERR_LOG("Failed to QueryLcdCountByTime %{public}d", err);
-        return err;
-    }
-    return E_OK;
-}
-
 #ifdef DISTRIBUTED
 int32_t ThumbnailAgingHelper::GetDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount)
 {

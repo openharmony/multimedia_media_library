@@ -130,10 +130,10 @@ bool AlbumAsset::GetAlbumVirtual() const
     return albumVirtual_;
 }
 
-bool AlbumAsset::CreateAlbumAsset(shared_ptr<int> errCodePtr)
+bool AlbumAsset::CreateAlbumAsset()
 {
-    if (!(MediaFileUtils::IsDirectory(albumPath_, errCodePtr))) {
-        return MediaFileUtils::CreateDirectory(albumPath_, errCodePtr);
+    if (!(MediaFileUtils::IsDirectory(albumPath_))) {
+        return MediaFileUtils::CreateDirectory(albumPath_);
     } else {
         MEDIA_ERR_LOG("Cannot create album that already exists: %{private}s", albumPath_.c_str());
         return false;

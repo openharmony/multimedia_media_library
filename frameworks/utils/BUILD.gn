@@ -73,21 +73,3 @@ ohos_static_library("permission_utils") {
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
-
-ohos_static_library("post_event_utils") {
-  include_dirs = [
-    "./include/",
-    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-  ]
-
-  sources = [ "src/post_event_utils.cpp" ]
-
-  external_deps = [
-    "hilog:libhilog",
-    "hisysevent:libhisysevent",
-    "ipc:ipc_core",
-  ]
-
-  subsystem_name = "multimedia"
-  part_name = "media_library"
-}
