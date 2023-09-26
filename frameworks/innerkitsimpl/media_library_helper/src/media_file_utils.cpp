@@ -164,22 +164,7 @@ int32_t MediaFileUtils::RemoveDirectory(const string &path)
     return nftw(path.c_str(), UnlinkCb, OPEN_FDS, FTW_DEPTH | FTW_PHYS);
 }
 
-bool MediaFileUtils::Mkdir(const string &subStr, shared_ptr<int> errCodePtr)
-{
-    mode_t mask = umask(0);
-    if (mkdir(subStr.c_str(), CHOWN_RWX_USR_GRP) == -1) {
-        if (errCodePtr != nullptr) {
-            *errCodePtr = errno;
-        }
-        MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
-        umask(mask);
-        return (errno == EEXIST) ? true : false;
-    }
-    umask(mask);
-    return true;
-}
-
-bool MediaFileUtils::CreateDirectory(const string &dirPath, shared_ptr<int> errCodePtr)
+bool MediaFileUtils::CreateDirectory(const string &dirPath)
 {
     string subStr;
     string segment;
@@ -196,10 +181,14 @@ bool MediaFileUtils::CreateDirectory(const string &dirPath, shared_ptr<int> errC
         }
 
         subStr.append(SLASH_CHAR + segment);
-        if (!IsDirectory(subStr, errCodePtr)) {
-            if (!Mkdir(subStr, errCodePtr)) {
-                return false;
+        if (!IsDirectory(subStr)) {
+            mode_t mask = umask(0);
+            if (mkdir(subStr.c_str(), CHOWN_RWX_USR_GRP) == -1) {
+                MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
+                umask(mask);
+                return (errno == EEXIST) ? true : false;
             }
+            umask(mask);
         }
     }
 
@@ -249,17 +238,13 @@ string MediaFileUtils::GetFileName(const string &filePath)
     return fileName;
 }
 
-bool MediaFileUtils::IsDirectory(const string &dirName, shared_ptr<int> errCodePtr)
+bool MediaFileUtils::IsDirectory(const string &dirName)
 {
     struct stat statInfo {};
-
     if (stat(dirName.c_str(), &statInfo) == SUCCESS) {
         if (statInfo.st_mode & S_IFDIR) {
             return true;
         }
-    } else if (errCodePtr != nullptr) {
-        *errCodePtr = errno;
-        return false;
     }
 
     return false;

@@ -88,7 +88,7 @@ static shared_ptr<NativeRdb::ResultSet> QueryAgeingTrashFiles()
     return MediaLibraryObjectUtils::QueryWithCondition(cmd, {});
 }
 
-int32_t MediaLibrarySmartAlbumMapOperations::HandleAgingOperation(shared_ptr<int> countPtr)
+int32_t MediaLibrarySmartAlbumMapOperations::HandleAgingOperation()
 {
     auto resultSet = QueryAgeingTrashFiles();
     CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "Failed to query ageing trash files");
@@ -120,9 +120,6 @@ int32_t MediaLibrarySmartAlbumMapOperations::HandleAgingOperation(shared_ptr<int
             errCode = MediaLibraryObjectUtils::DeleteInfoByIdInDb(cmd, to_string(fileAsset->GetId()));
         }
         CHECK_AND_RETURN_RET_LOG(errCode >= 0, errCode, "Failed to delete during trash aging: %{public}d", errCode);
-    }
-    if (countPtr != nullptr) {
-        *countPtr = count;
     }
     return E_SUCCESS;
 }

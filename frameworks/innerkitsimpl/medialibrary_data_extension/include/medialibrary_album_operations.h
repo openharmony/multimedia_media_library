@@ -16,7 +16,6 @@
 #ifndef OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
 #define OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H
 
-#include <memory>
 #include <securec.h>
 #include <string>
 
@@ -43,7 +42,7 @@ public:
     static int32_t DeletePhotoAlbum(NativeRdb::RdbPredicates &predicates);
     static int32_t AddPhotoAssets(const vector<DataShare::DataShareValuesBucket> &values);
     static int32_t HandlePhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
-        const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
+        const DataShare::DataSharePredicates &predicates);
 
 private:
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);

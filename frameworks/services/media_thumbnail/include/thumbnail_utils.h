@@ -22,7 +22,6 @@
 #include "ability_context.h"
 #include "avmetadatahelper.h"
 #include "datashare_result_set.h"
-#include "image_source.h"
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
@@ -72,7 +71,7 @@ public:
     // utils
     static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
     static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
-        bool isHigh = false, std::shared_ptr<std::string> pathPtr = nullptr);
+        bool isHigh = false);
     static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
     static int GetPixelMapFromResult(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, const Size &size,
         std::unique_ptr<PixelMap> &outPixelMap);
@@ -110,9 +109,6 @@ public:
     static DistributedKv::Status SaveLcdData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
     static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
-    static int ToSaveFile(ThumbnailData &data, const ThumbnailType &type, const std::string &fileName,
-        uint8_t *output, const int &writeSize);
-    static int SaveFileCreateDir(const std::string &path, const std::string &suffix, std::string &fileName);
     static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
@@ -128,10 +124,8 @@ public:
         std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
-    static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
     static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
-    static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
-        int &err);
+
 private:
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     static int64_t UTCTimeMilliSeconds();
@@ -145,8 +139,6 @@ private:
     static Size ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail);
     static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
-    static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
-        const bool isThumbnail, const Size &desiredSize, uint32_t &errCode);
     static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static std::string GetUdid();
     // KV Store
