@@ -36,12 +36,17 @@ private:
     static const std::vector<std::string> events_;
     bool isScreenOff_;
     bool isPowerConnected_;
-
+    int32_t agingCount_;
+    int32_t scanCount_;
+    int64_t lockTime_;
     void DoBackgroundOperation();
     void StopBackgroundOperation();
 
     void DoStartMtpService();
     void RevertPendingByPackage(const std::string &bundleName);
+    void WriteThumbnailStat();
+    int64_t GetNowTime();
+    void Init();
 };
 }  // namespace Media
 }  // namespace OHOS

@@ -16,6 +16,7 @@
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_ALBUM_ASSET_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_ALBUM_ASSET_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 #include "userfile_manager_types.h"
@@ -54,7 +55,7 @@ public:
     string GetAlbumPath() const;
     bool GetAlbumVirtual() const;
 
-    bool CreateAlbumAsset();
+    bool CreateAlbumAsset(std::shared_ptr<int> errCodePtr = nullptr);
     bool DeleteAlbumAsset(const std::string &albumUri);
     bool ModifyAlbumAsset(const std::string &albumUri);
 

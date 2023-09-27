@@ -481,7 +481,7 @@ int32_t MediaLibraryAudioOperations::UpdateV9(MediaLibraryCommand &cmd)
     return rowId;
 }
 
-int32_t MediaLibraryAudioOperations::TrashAging()
+int32_t MediaLibraryAudioOperations::TrashAging(shared_ptr<int> countPtr)
 {
     auto time = MediaFileUtils::UTCTimeSeconds();
     RdbPredicates predicates(AudioColumn::AUDIOS_TABLE);
@@ -490,6 +490,9 @@ int32_t MediaLibraryAudioOperations::TrashAging()
     int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(predicates, false);
     if (deletedRows < 0) {
         return deletedRows;
+    }
+    if (countPtr != nullptr) {
+        *countPtr = deletedRows;
     }
     return E_OK;
 }
