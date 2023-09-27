@@ -64,6 +64,7 @@
 #include "timer.h"
 #include "trash_async_worker.h"
 #include "value_object.h"
+#include "post_event_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -787,6 +788,9 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(MediaLibraryCommand &
     if (refCnt_.load() <= 0) {
         errCode = E_FAIL;
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return nullptr;
     }
 
@@ -795,12 +799,18 @@ shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(MediaLibraryCommand &
     if (rdbStore_ == nullptr) {
         errCode = E_FAIL;
         MEDIA_ERR_LOG("Rdb Store is not initialized");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return nullptr;
     }
 
     auto absResultSet = QueryRdb(cmd, columns, predicates, errCode);
     if (absResultSet == nullptr) {
         errCode = (errCode != E_OK) ? errCode : E_FAIL;
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return nullptr;
     }
     return RdbUtils::ToResultSetBridge(absResultSet);
@@ -848,15 +858,9 @@ int32_t MediaLibraryDataManager::SyncPullThumbnailKeys(const Uri &uri)
 }
 #endif
 
-shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand &cmd,
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
-    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
-    if (refCnt_.load() <= 0) {
-        errCode = E_FAIL;
-        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
-        return nullptr;
-    }
     MediaLibraryTracer tracer;
     tracer.Start("QueryRdb");
     static const map<OperationObject, string> queryConditionMap {
@@ -875,6 +879,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryC
     if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
         errCode = E_INVALID_VALUES;
         MEDIA_ERR_LOG("illegal query whereClause input %{private}s", whereClause.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return nullptr;
     }
     tracer.Finish();
@@ -906,6 +913,22 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryC
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
     }
     return queryResultSet;
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand &cmd,
+    const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        errCode = E_FAIL;
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
+            {KEY_OPT_TYPE, OptType::QUERY}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return nullptr;
+    }
+  
+    return QuerySet(cmd, columns, predicates, errCode);
 }
 
 #ifdef DISTRIBUTED
@@ -1029,11 +1052,20 @@ int32_t MediaLibraryDataManager::SetCmdBundleAndDevice(MediaLibraryCommand &outC
     return 0;
 }
 
-int32_t MediaLibraryDataManager::DoTrashAging()
+int32_t MediaLibraryDataManager::DoTrashAging(shared_ptr<int> countPtr)
 {
-    MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
-    MediaLibraryAlbumOperations::HandlePhotoAlbum(OperationType::AGING, {}, {});
-    MediaLibraryAudioOperations::TrashAging();
+    shared_ptr<int> smartAlbumTrashPtr = make_shared<int>();
+    MediaLibrarySmartAlbumMapOperations::HandleAgingOperation(smartAlbumTrashPtr);
+
+    shared_ptr<int> albumTrashtPtr = make_shared<int>();
+    MediaLibraryAlbumOperations::HandlePhotoAlbum(OperationType::AGING, {}, {}, albumTrashtPtr);
+
+    shared_ptr<int> audioTrashtPtr = make_shared<int>();
+    MediaLibraryAudioOperations::TrashAging(audioTrashtPtr);
+
+    if (countPtr != nullptr) {
+      *countPtr = *smartAlbumTrashPtr + *albumTrashtPtr + *audioTrashtPtr;
+    }
     return E_SUCCESS;
 }
 
@@ -1108,6 +1140,35 @@ int32_t MediaLibraryDataManager::HandleRevertPending()
         }
     }
     return ret;
+}
+
+int32_t MediaLibraryDataManager::GetAgingDataSize(const int64_t &time, int &count)
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+    return thumbnailService_->GetAgingDataSize(time, count);
+}
+
+
+int32_t MediaLibraryDataManager::QueryNewThumbnailCount(const int64_t &time, int &count)
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+    return thumbnailService_->QueryNewThumbnailCount(time, count);
 }
 }  // namespace Media
 }  // namespace OHOS

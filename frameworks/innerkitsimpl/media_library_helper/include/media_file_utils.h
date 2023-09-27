@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_
 #define FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_FILE_UTILS_H_
 
+#include <memory>
 #include <string>
 #include <unordered_set>
 
@@ -72,13 +73,13 @@ public:
     static std::string GetLastDentry(const std::string &path);
     static std::string GetParentPath(const std::string &path);
     static std::string GetTitleFromDisplayName(const std::string &displayName);
-    static bool IsDirectory(const std::string &dirName);
+    static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
     static std::string GetFirstDirName(const std::string &filePath);
     static bool MoveFile(const std::string &oldPath, const std::string &newPath);
     static bool CopyFile(const std::string &filePath, const std::string &newPath);
     static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
     static bool RenameDir(const std::string &oldPath, const std::string &newPath);
-    static bool CreateDirectory(const std::string &dirPath);
+    static bool CreateDirectory(const std::string &dirPath, std::shared_ptr<int> errCodePtr = nullptr);
     static int32_t CheckStringSize(const std::string &str, const size_t max);
     static int32_t CheckAlbumName(const std::string &albumName);
     static int32_t CheckDentryName(const std::string &dentryName);
@@ -128,6 +129,9 @@ public:
     static bool IsFileTablePath(const std::string &path);
     static bool IsPhotoTablePath(const std::string &path);
     static std::string StrCreateTime(const std::string &format, int64_t time);
+
+private:
+    static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
 };
 } // namespace OHOS::Media
 
