@@ -178,7 +178,7 @@ bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, 
 
     DecodeOptions decOpts;
     decOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
-    decOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
+    decOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     data.source = audioImageSource->CreatePixelMap(decOpts, errCode);
     if ((errCode != E_OK) || (data.source == nullptr)) {
         MEDIA_ERR_LOG("Av meta data helper fetch frame at time failed");
@@ -257,7 +257,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
 
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
-    decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     data.source = imageSource->CreatePixelMap(decodeOpts, err);
     if ((err != E_OK) || (data.source == nullptr)) {
         MEDIA_ERR_LOG("Failed to create pixelmap path %{private}s err %{public}d",
@@ -1040,25 +1040,40 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSiz
 
 static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
 {
+    string tempFileName = fileName + ".tmp";
     const mode_t fileMode = 0664;
     mode_t mask = umask(0);
-    UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
+    UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
     umask(mask);
     if (fd.Get() < 0) {
         if (errno == EEXIST) {
-            UniqueFd fd(open(fileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
+            UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
         }
         if (fd.Get() < 0) {
-            MEDIA_ERR_LOG("save failed! filePath %{private}s status %{public}d", fileName.c_str(), errno);
+            MEDIA_ERR_LOG("save failed! filePath %{private}s status %{public}d", tempFileName.c_str(), errno);
             return -errno;
         }
     }
     int ret = write(fd.Get(), output, writeSize);
     if (ret < 0) {
         return -errno;
-    } else {
-        return ret;
     }
+    int32_t errCode = fsync(fd.Get());
+    if (errCode < 0) {
+        return -errno;
+    }
+    close(fd.Release());
+
+    if (MediaFileUtils::IsFileExists(fileName)) {
+        if (!MediaFileUtils::DeleteFile(fileName)) {
+            return -errno;
+        }
+    }
+    errCode = MediaFileUtils::ModifyAsset(tempFileName, fileName);
+    if (errCode != E_OK) {
+        return errCode;
+    }
+    return ret;
 }
 
 int ThumbnailUtils::TrySaveFile(ThumbnailData &data, ThumbnailType type)

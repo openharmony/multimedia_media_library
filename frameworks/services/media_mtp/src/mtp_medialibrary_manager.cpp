@@ -231,7 +231,7 @@ bool MtpMedialibraryManager::CompressImage(std::unique_ptr<PixelMap> &pixelMap,
 {
     InitializationOptions opts = {
         .size = size,
-        .pixelFormat = PixelFormat::BGRA_8888,
+        .pixelFormat = PixelFormat::RGBA_8888,
         .alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL
     };
     unique_ptr<PixelMap> compressImage = PixelMap::Create(*pixelMap, opts);
