@@ -2589,13 +2589,14 @@ napi_value MediaLibraryNapi::UserFileMgrOnCallback(napi_env env, napi_callback_i
             return undefinedResult;
         }
         const int32_t refCount = 1;
-        napi_ref cbOnRef;
+        napi_ref cbOnRef = nullptr;
         napi_create_reference(env, argv[PARAM2], refCount, &cbOnRef);
         tracer.Start("RegisterNotifyChange");
         if (CheckRef(env, cbOnRef, *g_listObj, false, uri)) {
             obj->RegisterNotifyChange(env, uri, isDerived, cbOnRef, *g_listObj);
         } else {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            napi_delete_reference(env, cbOnRef);
             return undefinedResult;
         }
         tracer.Finish();
@@ -5588,13 +5589,14 @@ napi_value MediaLibraryNapi::PhotoAccessHelperOnCallback(napi_env env, napi_call
             return undefinedResult;
         }
         const int32_t refCount = 1;
-        napi_ref cbOnRef;
+        napi_ref cbOnRef = nullptr;
         napi_create_reference(env, argv[PARAM2], refCount, &cbOnRef);
         tracer.Start("RegisterNotifyChange");
         if (CheckRef(env, cbOnRef, *g_listObj, false, uri)) {
             obj->RegisterNotifyChange(env, uri, isDerived, cbOnRef, *g_listObj);
         } else {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            napi_delete_reference(env, cbOnRef);
             return undefinedResult;
         }
         tracer.Finish();
