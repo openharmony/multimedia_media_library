@@ -1044,32 +1044,16 @@ static void GetFetchOptionsParam(napi_env env, napi_value arg, const SmartAlbumN
     bool present = false;
     bool boolResult = false;
 
-    napi_has_named_property(env, arg, "selections", &present);
-    if (present) {
-        if (napi_get_named_property(env, arg, "selections", &property) != napi_ok
-            || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
-            NAPI_ERR_LOG("Could not get the string argument!");
-            err = true;
-            return;
-        } else {
-            asyncContext->selection = buffer;
-            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
-        }
-        present = false;
+    string propertyName = "selections";
+    string tmp = MediaLibraryNapiUtils::GetStringFetchProperty(env, arg, err, present, propertyName);
+    if (!tmp.empty()) {
+        asyncContext->selection = tmp;
     }
 
-    napi_has_named_property(env, arg, "order", &present);
-    if (present) {
-        if (napi_get_named_property(env, arg, "order", &property) != napi_ok
-            || napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok) {
-            NAPI_ERR_LOG("Could not get the string argument!");
-            err = true;
-            return;
-        } else {
-            asyncContext->order = buffer;
-            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
-        }
-        present = false;
+    propertyName = "order";
+    tmp = MediaLibraryNapiUtils::GetStringFetchProperty(env, arg, err, present, propertyName);
+    if (!tmp.empty()) {
+        asyncContext->order = tmp;
     }
 
     napi_has_named_property(env, arg, "selectionArgs", &present);

@@ -664,75 +664,35 @@ static void DealWithCommonParam(napi_env env, napi_value arg,
 {
     MediaLibraryAsyncContext *asyncContext = const_cast<MediaLibraryAsyncContext *>(&context);
     CHECK_NULL_PTR_RETURN_VOID(asyncContext, "Async context is null");
-    char buffer[PATH_MAX];
-    size_t res = 0;
-    napi_value property = nullptr;
-    napi_has_named_property(env, arg, "selections", &present);
-    if (present) {
-        if ((napi_get_named_property(env, arg, "selections", &property) != napi_ok) ||
-            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
-            NAPI_ERR_LOG("Could not get the string argument!");
-            err = true;
-            return;
-        } else {
-            asyncContext->selection = buffer;
-            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
-        }
-        present = false;
+
+    string propertyName = "selections";
+    string tmp = MediaLibraryNapiUtils::GetStringFetchProperty(env, arg, err, present, propertyName);
+    if (!tmp.empty()) {
+        asyncContext->selection = tmp;
     }
 
-    napi_has_named_property(env, arg, "order", &present);
-    if (present) {
-        if ((napi_get_named_property(env, arg, "order", &property) != napi_ok) ||
-            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
-            NAPI_ERR_LOG("Could not get the string argument!");
-            err = true;
-            return;
-        } else {
-            asyncContext->order = buffer;
-            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
-        }
-        present = false;
+    propertyName = "order";
+    tmp = MediaLibraryNapiUtils::GetStringFetchProperty(env, arg, err, present, propertyName);
+    if (!tmp.empty()) {
+        asyncContext->order = tmp;
     }
 
-    napi_has_named_property(env, arg, "uri", &present);
-    if (present) {
-        if ((napi_get_named_property(env, arg, "uri", &property) != napi_ok)||
-            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
-            NAPI_ERR_LOG("Could not get the uri property!");
-            err = true;
-            return;
-        }
-        asyncContext->uri = buffer;
-        CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
-        present = false;
+    propertyName = "uri";
+    tmp = MediaLibraryNapiUtils::GetStringFetchProperty(env, arg, err, present, propertyName);
+    if (!tmp.empty()) {
+        asyncContext->uri = tmp;
     }
 
-    napi_has_named_property(env, arg, "networkId", &present);
-    if (present) {
-        if ((napi_get_named_property(env, arg, "networkId", &property) != napi_ok) ||
-            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
-            NAPI_ERR_LOG("Could not get the networkId string argument!");
-            err = true;
-            return;
-        } else {
-            asyncContext->networkId = buffer;
-            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
-        }
-        present = false;
+    propertyName = "networkId";
+    tmp = MediaLibraryNapiUtils::GetStringFetchProperty(env, arg, err, present, propertyName);
+    if (!tmp.empty()) {
+        asyncContext->networkId = tmp;
     }
-    napi_has_named_property(env, arg, "extendArgs", &present);
-    if (present) {
-        if ((napi_get_named_property(env, arg, "extendArgs", &property) != napi_ok) ||
-            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
-            NAPI_ERR_LOG("Could not get the extendArgs string argument!");
-            err = true;
-            return;
-        } else {
-            asyncContext->extendArgs = buffer;
-            CHECK_IF_EQUAL(memset_s(buffer, PATH_MAX, 0, sizeof(buffer)) == 0, "Memset for buffer failed");
-        }
-        present = false;
+
+    propertyName = "extendArgs";
+    tmp = MediaLibraryNapiUtils::GetStringFetchProperty(env, arg, err, present, propertyName);
+    if (!tmp.empty()) {
+        asyncContext->extendArgs = tmp;
     }
 }
 
