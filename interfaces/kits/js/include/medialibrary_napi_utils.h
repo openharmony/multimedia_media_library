@@ -491,7 +491,8 @@ public:
         DataShare::DataSharePredicates &predicates);
     static int32_t GetUserAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
     static bool IsSystemApp();
-
+    static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
+        const std::string &propertyName);
 private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
 };
