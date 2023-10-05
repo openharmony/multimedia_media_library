@@ -252,7 +252,7 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
         uri.c_str(), notifyType, albumId);
     shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(AddNfListMap, taskData);
     if (notifyAsyncTask != nullptr) {
-        asyncWorker->AddTask(notifyAsyncTask, false);
+        asyncWorker->AddTask(notifyAsyncTask, true);
     }
     return E_OK;
 }

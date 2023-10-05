@@ -493,6 +493,13 @@ public:
     static bool IsSystemApp();
     static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
         const std::string &propertyName);
+
+    static napi_value GetNapiValueArray(napi_env env, napi_value arg, std::vector<napi_value> &values);
+    static napi_value GetUriArrayFromAssets(
+        napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
+    static napi_value GetStringArray(
+        napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
+
 private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
 };
