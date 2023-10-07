@@ -54,20 +54,13 @@ ohos_shared_library("media_library_manager") {
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
-  if (purgeable_ashmem_enable) {
+  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_memmgr_plugin)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.resourceschedule_memmgr_plugin)) {
-      external_deps += [
-        "memmgr_plugin:libpurgeablemem_plugin",
-        "memmgr_plugin:purgeable_pixelmap_builder",
-      ]
-    } else {
-      external_deps += [
-        "memmgr:purgeable_pixelmap_builder",
-        "memory_utils:libpurgeablemem",
-      ]
-    }
+    external_deps += [
+      "memmgr_plugin:libpurgeablemem_plugin",
+      "memmgr_plugin:purgeable_pixelmap_builder",
+    ]
   }
 
   part_name = "media_library"
