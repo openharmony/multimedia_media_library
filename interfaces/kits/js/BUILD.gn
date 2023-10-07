@@ -137,20 +137,13 @@ ohos_shared_library("medialibrary_nutils") {
     }
   }
 
-  if (purgeable_ashmem_enable) {
+  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_memmgr_plugin)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.resourceschedule_memmgr_plugin)) {
-      external_deps += [
-        "memmgr_plugin:libpurgeablemem_plugin",
-        "memmgr_plugin:purgeable_pixelmap_builder",
-      ]
-    } else {
-      external_deps += [
-        "memmgr:purgeable_pixelmap_builder",
-        "memory_utils:libpurgeablemem",
-      ]
-    }
+    external_deps += [
+      "memmgr_plugin:libpurgeablemem_plugin",
+      "memmgr_plugin:purgeable_pixelmap_builder",
+    ]
   }
 
   if (ability_runtime_graphics) {
@@ -197,20 +190,13 @@ ohos_shared_library("medialibrary") {
     }
   }
 
-  if (purgeable_ashmem_enable) {
+  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_memmgr_plugin)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.resourceschedule_memmgr_plugin)) {
-      external_deps += [
-        "memmgr_plugin:libpurgeablemem_plugin",
-        "memmgr_plugin:purgeable_pixelmap_builder",
-      ]
-    } else {
-      external_deps += [
-        "memmgr:purgeable_pixelmap_builder",
-        "memory_utils:libpurgeablemem",
-      ]
-    }
+    external_deps += [
+      "memmgr_plugin:libpurgeablemem_plugin",
+      "memmgr_plugin:purgeable_pixelmap_builder",
+    ]
   }
 
   if (ability_runtime_graphics) {
@@ -255,20 +241,13 @@ ohos_shared_library("userfilemanager") {
     }
   }
 
-  if (purgeable_ashmem_enable) {
+  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_memmgr_plugin)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.resourceschedule_memmgr_plugin)) {
-      external_deps += [
-        "memmgr_plugin:libpurgeablemem_plugin",
-        "memmgr_plugin:purgeable_pixelmap_builder",
-      ]
-    } else {
-      external_deps += [
-        "memmgr:purgeable_pixelmap_builder",
-        "memory_utils:libpurgeablemem",
-      ]
-    }
+    external_deps += [
+      "memmgr_plugin:libpurgeablemem_plugin",
+      "memmgr_plugin:purgeable_pixelmap_builder",
+    ]
   }
 
   if (ability_runtime_graphics) {
@@ -358,20 +337,13 @@ ohos_shared_library("photoaccesshelper") {
     }
   }
 
-  if (purgeable_ashmem_enable) {
+  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_memmgr_plugin)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.resourceschedule_memmgr_plugin)) {
-      external_deps += [
-        "memmgr_plugin:libpurgeablemem_plugin",
-        "memmgr_plugin:purgeable_pixelmap_builder",
-      ]
-    } else {
-      external_deps += [
-        "memmgr:purgeable_pixelmap_builder",
-        "memory_utils:libpurgeablemem",
-      ]
-    }
+    external_deps += [
+      "memmgr_plugin:libpurgeablemem_plugin",
+      "memmgr_plugin:purgeable_pixelmap_builder",
+    ]
   }
 
   if (ability_runtime_graphics) {
