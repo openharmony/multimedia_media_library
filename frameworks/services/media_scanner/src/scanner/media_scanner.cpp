@@ -20,6 +20,7 @@
 #include "directory_ex.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
@@ -349,6 +350,10 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     data_->SetFileSize(statInfo.st_size);
     data_->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
     data_->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
+    int64_t cTime = static_cast<int64_t>(statInfo.st_ctime);
+    data_->SetDateYear(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, cTime));
+    data_->SetDateMonth(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, cTime));
+    data_->SetDateDay(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, cTime));
 
     // extension and type
     string extension = ScannerUtils::GetFileExtension(path_);
@@ -376,7 +381,6 @@ int32_t MediaScannerObj::GetFileMetadata()
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_SYSCALL;
     }
-
     int errCode = BuildData(statInfo);
     if (errCode != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
@@ -474,7 +478,6 @@ int32_t MediaScannerObj::BuildFileInfo(const string &parent, int32_t parentId)
 int32_t MediaScannerObj::ScanFileInTraversal(const string &path, const string &parent, int32_t parentId)
 {
     path_ = path;
-
     if (ScannerUtils::IsFileHidden(path_)) {
         MEDIA_ERR_LOG("the file is hidden");
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_FILE_HIDDEN},
@@ -482,7 +485,6 @@ int32_t MediaScannerObj::ScanFileInTraversal(const string &path, const string &p
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_FILE_HIDDEN;
     }
-
     int32_t err = GetFileMetadata();
     if (err != E_OK) {
         if (err != E_SCANNED) {
@@ -713,7 +715,6 @@ int32_t MediaScannerObj::ScanDirInternal()
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return err;
     }
-
     /* no further operation when stopped */
     err = WalkFileTree(dir_, NO_PARENT);
     if (err != E_OK) {
@@ -723,7 +724,6 @@ int32_t MediaScannerObj::ScanDirInternal()
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return err;
     }
-
     err = CommitTransaction();
     if (err != E_OK) {
         MEDIA_ERR_LOG("commit transaction err %{public}d", err);
@@ -732,7 +732,6 @@ int32_t MediaScannerObj::ScanDirInternal()
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return err;
     }
-
     err = CleanupDirectory();
     if (err != E_OK) {
         MEDIA_ERR_LOG("clean up dir err %{public}d", err);

@@ -45,12 +45,12 @@ using namespace OHOS::NativeRdb;
 namespace {
 class AddYearTaskData : public OHOS::Media::AsyncTaskData {
 public:
-    explicit AddYearTaskData(const shared_ptr<OHOS::Media::MediaLibraryRdbStore> store)
+    explicit AddYearTaskData(RdbStore* store)
         : store_(store)
     {
     }
     virtual ~AddYearTaskData() = default;
-    shared_ptr<OHOS::Media::MediaLibraryRdbStore> store_;
+    RdbStore* store_;
 };
 }
 namespace OHOS::Media {
@@ -1269,75 +1269,47 @@ void AddUpdateCloudSyncTrigger(RdbStore &store)
 void SetYearMonthDayData(AsyncTaskData *data)
 {
     auto* taskData = static_cast<AddYearTaskData*>(data);
-    string queryRowSql = "SELECT " + MEDIA_DATA_DB_DATE_ADDED  +"," +
-        PhotoColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE;
-    auto resultSet = taskData->store_->QuerySql(queryRowSql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not get dataAdded");
-        UpdateFail(__FILE__, __LINE__);
-        return;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int64_t dateAdd = GetInt64Val(MEDIA_DATA_DB_DATE_ADDED, resultSet);
-        int32_t id = GetInt32Val(PhotoColumn::MEDIA_ID, resultSet);
-        ValuesBucket valuesBucket;
-        valuesBucket.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdd));
-        valuesBucket.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdd));
-        valuesBucket.PutString(PhotoColumn::PHOTO_DATE_DAY,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdd));
-        AbsRdbPredicates yearAbsPred(PhotoColumn::PHOTOS_TABLE);
-        yearAbsPred.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
-        yearAbsPred.SetWhereArgs({to_string(id)});
-        taskData->store_->Update(valuesBucket, yearAbsPred);
-    }
+    MEDIA_DEBUG_LOG("UpdateYearMonthDayData start");
+    const vector<string> updateSql = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+            PhotoColumn::PHOTO_DATE_YEAR + " = strftime('%Y', datetime(date_added, 'unixepoch', 'localtime')), " +
+            PhotoColumn::PHOTO_DATE_MONTH + " = strftime('%Y%m', datetime(date_added, 'unixepoch', 'localtime')), " +
+            PhotoColumn::PHOTO_DATE_DAY + " = strftime('%Y%m%d', datetime(date_added, 'unixepoch', 'localtime'))",
+        PhotoColumn::CREATE_YEAR_INDEX,
+        PhotoColumn::CREATE_MONTH_INDEX,
+        PhotoColumn::CREATE_DAY_INDEX
+    };
+    ExecSqls(updateSql, *(taskData->store_));
+    MEDIA_DEBUG_LOG("UpdateYearMonthDayData end");
+    delete taskData;
 }
 
 void AddYearMonthDayColumn(RdbStore &store)
 {
-    const std::string alterYear =
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-        PhotoColumn::PHOTO_DATE_YEAR + " TEXT";
-    int32_t result = store.ExecuteSql(alterYear);
-    if (result != NativeRdb::E_OK) {
-        UpdateFail(__FILE__, __LINE__);
-        MEDIA_ERR_LOG("Upgrade rdb year error %{private}d", result);
-    }
-    const std::string alterMonth =
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-        PhotoColumn::PHOTO_DATE_MONTH + " TEXT";
-    result = store.ExecuteSql(alterMonth);
-    if (result != NativeRdb::E_OK) {
-        UpdateFail(__FILE__, __LINE__);
-        MEDIA_ERR_LOG("Upgrade rdb month error %{private}d", result);
-    }
-    const std::string alterDay =
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
-        PhotoColumn::PHOTO_DATE_DAY + " TEXT";
-    result = store.ExecuteSql(alterDay);
-    if (result != NativeRdb::E_OK) {
-        UpdateFail(__FILE__, __LINE__);
-        MEDIA_ERR_LOG("Upgrade rdb day error %{private}d", result);
-    }
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DATE_YEAR + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DATE_MONTH + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DATE_DAY + " TEXT",
+    };
+    ExecSqls(sqls, store);
+
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("asyncWorker is nullptr");
         return;
     }
-    shared_ptr<OHOS::Media::MediaLibraryRdbStore> rdbStore =
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    auto *taskData = new (nothrow) AddYearTaskData(rdbStore);
+
+    auto *taskData = new (nothrow) AddYearTaskData(&store);
     if (taskData == nullptr) {
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("taskData is nullptr");
         return;
     }
-    shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask =
+    shared_ptr<MediaLibraryAsyncTask> asyncTask =
         make_shared<MediaLibraryAsyncTask>(SetYearMonthDayData, taskData);
-    if (notifyAsyncTask != nullptr) {
-        asyncWorker->AddTask(notifyAsyncTask, false);
+    if (asyncTask != nullptr) {
+        asyncWorker->AddTask(asyncTask, false);
     }
 }
 

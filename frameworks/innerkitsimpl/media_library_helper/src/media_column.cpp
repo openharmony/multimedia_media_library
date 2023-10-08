@@ -136,20 +136,14 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DATE_DAY + " TEXT)";
 
 
-const std::string PhotoColumn::CREATE_YEAR_INDEX = "CREATE INDEX '" +
-    PHOTO_DATE_YEAR_INDEX + "'" + " ON " +
-    PHOTOS_TABLE + " ('" +
-    PHOTO_DATE_YEAR + "')";
+const std::string PhotoColumn::CREATE_YEAR_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_DATE_YEAR_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_DATE_YEAR + " DESC)";
 
-const std::string PhotoColumn::CREATE_MONTH_INDEX = "CREATE INDEX '" +
-    PHOTO_DATE_MONTH_INDEX + "'" + " ON " +
-    PHOTOS_TABLE + " ('" +
-    PHOTO_DATE_MONTH + "')";
+const std::string PhotoColumn::CREATE_MONTH_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_DATE_MONTH_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_DATE_MONTH + " DESC)";
 
-const std::string PhotoColumn::CREATE_DAY_INDEX = "CREATE INDEX '" +
-    PHOTO_DATE_DAY_INDEX + "'" + " ON " +
-    PHOTOS_TABLE + " ('" +
-    PHOTO_DATE_DAY + "')";
+const std::string PhotoColumn::CREATE_DAY_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_DATE_DAY_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_DATE_DAY + " DESC)";
 
 const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn::MEDIA_SIZE + ") AS " +
     MediaColumn::MEDIA_SIZE + "," +
