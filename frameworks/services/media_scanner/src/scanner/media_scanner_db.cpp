@@ -131,6 +131,12 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
     values.PutLong(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
     values.PutLong(MEDIA_DATA_DB_TIME_PENDING, 0);
 
+    if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO) {
+        values.PutString(PhotoColumn::PHOTO_DATE_YEAR, metadata.getDateYear());
+        values.PutString(PhotoColumn::PHOTO_DATE_MONTH, metadata.getDateMonth());
+        values.PutString(PhotoColumn::PHOTO_DATE_DAY, metadata.getDateDay());
+    }
+
     SetValuesFromMetaDataAndType(metadata, values, mediaType, table);
 
     if (isInsert) {
@@ -162,6 +168,9 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutDouble(PhotoColumn::PHOTO_LATITUDE, metadata.GetLatitude());
         values.PutString(PhotoColumn::PHOTO_USER_COMMENT, metadata.GetUserComment());
         values.PutString(PhotoColumn::PHOTO_ALL_EXIF, metadata.GetAllExif());
+        values.PutString(PhotoColumn::PHOTO_DATE_YEAR, metadata.getDateYear());
+        values.PutString(PhotoColumn::PHOTO_DATE_MONTH, metadata.getDateMonth());
+        values.PutString(PhotoColumn::PHOTO_DATE_DAY, metadata.getDateDay());
 #ifdef MEDIALIBRARY_COMPATIBILITY
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
