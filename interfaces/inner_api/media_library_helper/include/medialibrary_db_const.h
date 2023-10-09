@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 22;
+const int32_t MEDIA_RDB_VERSION = 23;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -49,6 +49,7 @@ enum {
     VERSION_ADD_VISION_TABLE = 20,
     VERSION_ADD_PHOTO_EDIT_TIME = 21,
     VERSION_ADD_SHOOTING_MODE = 22,
+    VERSION_FIX_INDEX_ORDER = 23,
 };
 
 enum {
@@ -197,6 +198,7 @@ const std::string MEDIA_DATA_IMAGE_ISO_SPEED_RATINGS = "ISOSpeedRatings";
 const std::string MEDIA_DATA_IMAGE_SCENE_TYPE = "SceneType";
 
 const std::string MEDIA_COLUMN_COUNT = "count(*)";
+const std::string MEDIA_COLUMN_COUNT_1 = "count(1)";
 
 const std::string PHOTO_INDEX = "photo_index";
 

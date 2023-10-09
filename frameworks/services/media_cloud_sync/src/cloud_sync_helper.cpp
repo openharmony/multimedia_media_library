@@ -63,9 +63,6 @@ void CloudSyncHelper::StartSync()
     }
     timerId_ = timer_.Register(bind(&CloudSyncHelper::OnTimerCallback, this),
         SYNC_INTERVAL, true);
-    
-    VariantMap map;
-    PostEventUtils::GetInstance().PostStatProcess(StatType::SYNC_STAT, map);
 }
 
 void CloudSyncHelper::OnTimerCallback()

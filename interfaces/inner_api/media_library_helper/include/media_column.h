@@ -100,7 +100,9 @@ public:
     static const std::string PHOTO_DATE_YEAR_INDEX;
     static const std::string PHOTO_DATE_MONTH_INDEX;
     static const std::string PHOTO_DATE_DAY_INDEX;
-    static const std::string PHOTO_MEDIA_TYPE_INDEX;
+    static const std::string PHOTO_SHPT_ADDED_INDEX;
+    static const std::string PHOTO_SHPT_MEDIA_TYPE_INDEX;
+    static const std::string PHOTO_SHPT_DAY_INDEX;
     // format in PhotoTable year month day
     static const std::string PHOTO_DATE_YEAR_FORMAT;
     static const std::string PHOTO_DATE_MONTH_FORMAT;
@@ -113,7 +115,8 @@ public:
     static const std::string CREATE_YEAR_INDEX;
     static const std::string CREATE_MONTH_INDEX;
     static const std::string CREATE_DAY_INDEX;
-    static const std::string CREATE_MEDIA_TYPE_INDEX;
+    static const std::string CREATE_SHPT_MEDIA_TYPE_INDEX;
+    static const std::string CREATE_SHPT_DAY_INDEX;
 
     // create indexes for Photo
     static const std::string INDEX_STHP_ADDTIME;
