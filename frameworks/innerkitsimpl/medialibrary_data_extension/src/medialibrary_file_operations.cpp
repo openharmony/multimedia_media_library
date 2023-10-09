@@ -501,6 +501,12 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryFileOperations::QueryFileOperation(
         return nullptr;
     }
 
+    // for vision table
+    OperationObject oprnObject = cmd.GetOprnObject();
+    if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::VISION_SHIELD) {
+        return uniStore->Query(cmd, columns);
+    }
+
     string fileId = cmd.GetOprnFileId();
     if (cmd.GetAbsRdbPredicates()->GetWhereClause().empty() && !fileId.empty()) {
         cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, fileId);
