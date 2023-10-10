@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 18;
+const int32_t MEDIA_RDB_VERSION = 19;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -46,6 +46,7 @@ enum {
     VERSION_ADD_UPDATE_CLOUD_SYNC_TRIGGER = 16,
     VERSION_ADD_YEAR_MONTH_DAY = 17,
     VERSION_ADD_VISION_TABLE = 18,
+    VERSION_ADD_MEDIA_TYPE_INDEX = 19,
 };
 
 enum {
@@ -606,6 +607,11 @@ const std::string ASSET_EXTENTION = "extention";
 // delete_tool
 const std::string DELETE_TOOL_ONLY_DATABASE = "only_db";
 
+const std::string QUERY_SQL_GROUP_DAY = "SELECT count(*), date_added FROM Photos INDEXED BY date_day_index "
+    " WHERE sync_status = 0 AND date_trashed = 0 AND time_pending = 0 AND hidden = 0 GROUP BY date_day";
+
+const std::string QUERY_SQL_GROUP_MEDIA_TYPE = "SELECT count(*), media_type FROM Photos INDEXED BY idx_media_type "
+    " WHERE sync_status = 0 AND date_trashed = 0 AND time_pending = 0 AND hidden = 0 GROUP BY media_type";
 } // namespace Media
 } // namespace OHOS
 
