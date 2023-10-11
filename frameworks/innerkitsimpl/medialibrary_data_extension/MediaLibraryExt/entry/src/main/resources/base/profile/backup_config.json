@@ -1,3 +1,12 @@
 {
-    "allowToBackupRestore": true
+    "allowToBackupRestore": true,
+    "includes": [
+        "/storage/cloud/files/Photo/",
+        "/storage/cloud/files/.thumbs/Photo/",
+        "/storage/cloud/files/Camera/",
+        "/storage/cloud/files/Pictures/",
+        "/storage/cloud/files/Videos/",
+        "/data/storage/el2/database/rdb/"
+    ],
+    "fullBackupOnly": true
 }
