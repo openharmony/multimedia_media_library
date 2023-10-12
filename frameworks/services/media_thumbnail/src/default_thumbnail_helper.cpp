@@ -41,7 +41,7 @@ int32_t DefaultThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
     }
 
     if (isSync) {
-        DoCreateThumbnail(opts, thumbnailData);
+        DoCreateThumbnail(opts, thumbnailData, false);
     } else {
         IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateThumbnail, opts, thumbnailData, true);
     }
