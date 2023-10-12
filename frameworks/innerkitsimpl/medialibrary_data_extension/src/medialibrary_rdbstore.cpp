@@ -39,7 +39,6 @@
 #include "rdb_sql_utils.h"
 #include "result_set_utils.h"
 #include "post_event_utils.h"
-#include "vision_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1345,23 +1344,6 @@ void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
-static void AddVisionTables(RdbStore &store)
-{
-    static const vector<string> executeSqlStrs = {
-        CREATE_TAB_ANALYSIS_OCR,
-        CREATE_TAB_ANALYSIS_LABEL,
-        CREATE_TAB_ANALYSIS_AESTHETICS,
-        CREATE_TAB_ANALYSIS_TOTAL,
-        CREATE_TAB_APPLICATION_SHIELD,
-        CREATE_VISION_UPDATE_TRIGGER,
-        CREATE_VISION_DELETE_TRIGGER,
-        CREATE_VISION_INSERT_TRIGGER,
-        INIT_TAB_ANALYSIS_TOTAL,
-    };
-    MEDIA_INFO_LOG("start init vision db");
-    ExecSqls(executeSqlStrs, store);
-}
-
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1407,10 +1389,6 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);
-    }
-
-    if (oldVersion < VERSION_ADD_VISION_TABLE) {
-        AddVisionTables(store);
     }
     return NativeRdb::E_OK;
 }
