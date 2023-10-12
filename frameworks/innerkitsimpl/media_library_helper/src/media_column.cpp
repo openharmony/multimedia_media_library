@@ -78,7 +78,6 @@ const std::string PhotoColumn::PHOTO_DATE_DAY = "date_day";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_INDEX = "date_month_index";
 const std::string PhotoColumn::PHOTO_DATE_DAY_INDEX = "date_day_index";
-const std::string PhotoColumn::PHOTO_MEDIA_TYPE_INDEX = "idx_media_type";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -145,9 +144,6 @@ const std::string PhotoColumn::CREATE_MONTH_INDEX = BaseColumn::CreateIndex() +
 
 const std::string PhotoColumn::CREATE_DAY_INDEX = BaseColumn::CreateIndex() +
     PHOTO_DATE_DAY_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_DATE_DAY + " DESC)";
-
-const std::string PhotoColumn::CREATE_MEDIA_TYPE_INDEX = BaseColumn::CreateIndex() +
-    PHOTO_MEDIA_TYPE_INDEX + " ON " + PHOTOS_TABLE + " (" + MEDIA_TYPE + " DESC)";
 
 const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn::MEDIA_SIZE + ") AS " +
     MediaColumn::MEDIA_SIZE + "," +

@@ -87,20 +87,18 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
     return deleteRow;
 }
 
-static string HandleGroupBy(AbsPredicates &predicates, const vector<string> &columns)
+static void HandleGroupBy(AbsPredicates &predicates, const vector<string> &columns)
 {
-    string ret;
     auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
     if (it == columns.end()) {
-        return ret;
+        return;
     }
     if (!predicates.GetGroup().empty()) {
-        if (predicates.GetGroup() == PhotoColumn::MEDIA_TYPE) {
-            return QUERY_SQL_GROUP_MEDIA_TYPE;
-        }
-        return ret;
+        return;
     }
-    return QUERY_SQL_GROUP_DAY;
+    string whereClause = predicates.GetWhereClause();
+    predicates.SetWhereClause(whereClause +
+        " GROUP BY (DATE(date_added, 'unixepoch', 'localtime')) ORDER BY date_added DESC ");
 }
 
 static int32_t GetAlbumTypeSubTypeById(const string &albumId, PhotoAlbumType &type, PhotoAlbumSubType &subType)
@@ -208,14 +206,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         }
         return HandleIndexOfUri(cmd, predicates, photoId, albumId);
     } else {
-        string querySql = HandleGroupBy(predicates, columns);
-        if (!querySql.empty()) {
-            auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-            if (rdbStore == nullptr) {
-                return nullptr;
-            }
-            return rdbStore->QuerySql(querySql);
-        }
+        HandleGroupBy(predicates, columns);
         return MediaLibraryRdbStore::Query(predicates, columns);
     }
 }

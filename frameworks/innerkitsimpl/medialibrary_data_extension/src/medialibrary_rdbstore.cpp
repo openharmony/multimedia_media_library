@@ -43,6 +43,17 @@
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+namespace {
+class AddYearTaskData : public OHOS::Media::AsyncTaskData {
+public:
+    explicit AddYearTaskData(RdbStore* store)
+        : store_(store)
+    {
+    }
+    virtual ~AddYearTaskData() = default;
+    RdbStore* store_;
+};
+}
 namespace OHOS::Media {
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 struct UniqueMemberValuesBucket {
@@ -829,7 +840,7 @@ static const string &TriggerUpdateUserAlbumCount()
 
 static int32_t ExecuteSql(RdbStore &store)
 {
-    static const vector<string> EXECUTE_SQL_STRS = {
+    static const vector<string> executeSqlStrs = {
         CREATE_MEDIA_TABLE,
         PhotoColumn::CREATE_PHOTO_TABLE,
         PhotoColumn::INDEX_STHP_ADDTIME,
@@ -837,7 +848,6 @@ static int32_t ExecuteSql(RdbStore &store)
         PhotoColumn::CREATE_YEAR_INDEX,
         PhotoColumn::CREATE_MONTH_INDEX,
         PhotoColumn::CREATE_DAY_INDEX,
-        PhotoColumn::CREATE_MEDIA_TYPE_INDEX,
         PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -875,7 +885,11 @@ static int32_t ExecuteSql(RdbStore &store)
         TriggerDeletePhotoClearMap(),
     };
 
-    ExecSqls(EXECUTE_SQL_STRS, store);
+    for (const string& sqlStr : executeSqlStrs) {
+        if (store.ExecuteSql(sqlStr) != NativeRdb::E_OK) {
+            return NativeRdb::E_ERROR;
+        }
+    }
     return NativeRdb::E_OK;
 }
 
@@ -1253,6 +1267,24 @@ void AddUpdateCloudSyncTrigger(RdbStore &store)
     ExecSqls(addUpdateCloudSyncTrigger, store);
 }
 
+void SetYearMonthDayData(AsyncTaskData *data)
+{
+    auto* taskData = static_cast<AddYearTaskData*>(data);
+    MEDIA_DEBUG_LOG("UpdateYearMonthDayData start");
+    const vector<string> updateSql = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+            PhotoColumn::PHOTO_DATE_YEAR + " = strftime('%Y', datetime(date_added, 'unixepoch', 'localtime')), " +
+            PhotoColumn::PHOTO_DATE_MONTH + " = strftime('%Y%m', datetime(date_added, 'unixepoch', 'localtime')), " +
+            PhotoColumn::PHOTO_DATE_DAY + " = strftime('%Y%m%d', datetime(date_added, 'unixepoch', 'localtime'))",
+        PhotoColumn::CREATE_YEAR_INDEX,
+        PhotoColumn::CREATE_MONTH_INDEX,
+        PhotoColumn::CREATE_DAY_INDEX
+    };
+    ExecSqls(updateSql, *(taskData->store_));
+    MEDIA_DEBUG_LOG("UpdateYearMonthDayData end");
+    delete taskData;
+}
+
 void AddYearMonthDayColumn(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -1261,56 +1293,28 @@ void AddYearMonthDayColumn(RdbStore &store)
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DATE_DAY + " TEXT",
     };
     ExecSqls(sqls, store);
+
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("asyncWorker is nullptr");
+        return;
+    }
+
+    auto *taskData = new (nothrow) AddYearTaskData(&store);
+    if (taskData == nullptr) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("taskData is nullptr");
+        return;
+    }
+    shared_ptr<MediaLibraryAsyncTask> asyncTask =
+        make_shared<MediaLibraryAsyncTask>(SetYearMonthDayData, taskData);
+    if (asyncTask != nullptr) {
+        asyncWorker->AddTask(asyncTask, false);
+    }
 }
 
-static void AddVisionTables(RdbStore &store)
-{
-    static const vector<string> executeSqlStrs = {
-        CREATE_TAB_ANALYSIS_OCR,
-        CREATE_TAB_ANALYSIS_LABEL,
-        CREATE_TAB_ANALYSIS_AESTHETICS,
-        CREATE_TAB_ANALYSIS_TOTAL,
-        CREATE_TAB_APPLICATION_SHIELD,
-        CREATE_VISION_UPDATE_TRIGGER,
-        CREATE_VISION_DELETE_TRIGGER,
-        CREATE_VISION_INSERT_TRIGGER,
-        INIT_TAB_ANALYSIS_TOTAL,
-    };
-    MEDIA_INFO_LOG("start init vision db");
-    ExecSqls(executeSqlStrs, store);
-}
-
-static void AddMediaTypeIndex(RdbStore &store)
-{
-    const vector<string> sqls = {
-        "DROP TRIGGER IF EXISTS naturalbase_rdb_Audios_ON_DELETE",
-        "DROP TRIGGER IF EXISTS naturalbase_rdb_Audios_ON_INSERT",
-        "DROP TRIGGER IF EXISTS naturalbase_rdb_Audios_ON_UPDATE",
-        "DROP TRIGGER IF EXISTS naturalbase_rdb_Files_ON_DELETE",
-        "DROP TRIGGER IF EXISTS naturalbase_rdb_Files_ON_INSERT",
-        "DROP TRIGGER IF EXISTS naturalbase_rdb_Files_ON_UPDATE",
-        "DROP TRIGGER IF EXISTS naturalbase_rdb_Photos_ON_DELETE",
-        "DROP TRIGGER IF EXISTS naturalbase_rdb_Photos_ON_INSERT",
-        "DROP TRIGGER IF EXISTS naturalbase_rdb_Photos_ON_UPDATE",
-
-        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
-        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_MONTH_INDEX,
-        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_DAY_INDEX,
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
-            PhotoColumn::PHOTO_DATE_YEAR + " = strftime('%Y', datetime(date_added, 'unixepoch', 'localtime')), " +
-            PhotoColumn::PHOTO_DATE_MONTH + " = strftime('%Y%m', datetime(date_added, 'unixepoch', 'localtime')), " +
-            PhotoColumn::PHOTO_DATE_DAY + " = strftime('%Y%m%d', datetime(date_added, 'unixepoch', 'localtime'))",
-
-        PhotoColumn::CREATE_YEAR_INDEX,
-        PhotoColumn::CREATE_MONTH_INDEX,
-        PhotoColumn::CREATE_DAY_INDEX,
-        PhotoColumn::CREATE_MEDIA_TYPE_INDEX,
-    };
-
-    ExecSqls(sqls, store);
-}
-
-static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
+void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
         AddPackageNameColumnOnTables(store);
@@ -1339,14 +1343,23 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_YEAR_MONTH_DAY) {
         AddYearMonthDayColumn(store);
     }
+}
 
-    if (oldVersion < VERSION_ADD_VISION_TABLE) {
-        AddVisionTables(store);
-    }
-
-    if (oldVersion < VERSION_ADD_MEDIA_TYPE_INDEX) {
-        AddMediaTypeIndex(store);
-    }
+static void AddVisionTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_TAB_ANALYSIS_OCR,
+        CREATE_TAB_ANALYSIS_LABEL,
+        CREATE_TAB_ANALYSIS_AESTHETICS,
+        CREATE_TAB_ANALYSIS_TOTAL,
+        CREATE_TAB_APPLICATION_SHIELD,
+        CREATE_VISION_UPDATE_TRIGGER,
+        CREATE_VISION_DELETE_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER,
+        INIT_TAB_ANALYSIS_TOTAL,
+    };
+    MEDIA_INFO_LOG("start init vision db");
+    ExecSqls(executeSqlStrs, store);
 }
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
@@ -1388,11 +1401,16 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     if (oldVersion < VERSION_ADD_TABLE_TYPE) {
         AddTableType(store);
     }
+
     UpgradeOtherTable(store, oldVersion);
 
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);
+    }
+
+    if (oldVersion < VERSION_ADD_VISION_TABLE) {
+        AddVisionTables(store);
     }
     return NativeRdb::E_OK;
 }
