@@ -31,6 +31,7 @@
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
+#include "rdb_predicates.h"
 #include "rdb_store.h"
 #include "result_set_bridge.h"
 #include "uri.h"
@@ -124,6 +125,7 @@ private:
 #ifdef DISTRIBUTED
     int32_t SyncPullThumbnailKeys(const Uri &uri);
 #endif
+    int32_t DeleteInRdbPredicates(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
     std::shared_mutex mgrSharedMutex_;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
     DistributedKv::DistributedKvDataManager dataManager_;
