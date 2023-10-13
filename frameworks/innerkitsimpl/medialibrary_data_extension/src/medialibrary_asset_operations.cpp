@@ -204,6 +204,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
         return E_INVALID_VALUES;
     }
     MediaLibraryRdbStore::UpdateAPI10Tables();
+    MediaLibraryRdbStore::ResetAnalysisTables();
     const static vector<string> DELETE_DIR_LIST = {
         ROOT_MEDIA_DIR + PHOTO_BUCKET,
         ROOT_MEDIA_DIR + AUDIO_BUCKET,
