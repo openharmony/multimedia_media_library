@@ -64,13 +64,13 @@ void IThumbnailHelper::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outDat
 void IThumbnailHelper::CreateLcd(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
-    DoCreateLcd(taskData->opts, taskData->thumbnailData);
+    DoCreateLcd(taskData->opts, taskData->thumbnailData, false);
 }
 
 void IThumbnailHelper::CreateThumbnail(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
-    DoCreateThumbnail(taskData->opts, taskData->thumbnailData);
+    DoCreateThumbnail(taskData->opts, taskData->thumbnailData, false);
 }
 
 void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront)
@@ -206,11 +206,11 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, con
 }
 
 
-bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, true);
-    if (ret == WaitStatus::WAIT_SUCCESS) {
+    if (ret == WaitStatus::WAIT_SUCCESS && forQuery) {
         return true;
     }
 
@@ -306,11 +306,11 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
     return true;
 }
 
-bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, false);
-    if (ret == WaitStatus::WAIT_SUCCESS) {
+    if (ret == WaitStatus::WAIT_SUCCESS && forQuery) {
         return true;
     }
 
