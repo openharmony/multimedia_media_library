@@ -187,6 +187,7 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_OpenFile_test_002, TestSize.Level
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_001, TestSize.Level0)
 {
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_001::Start");
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
@@ -197,17 +198,19 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_001, TestSize.Lev
     Uri newUri("");
     string displayName = "CreateFile001.jpg";
     string filePath = albumAsset->GetPath() + "/" + displayName;
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_001 parentUri: %{private}s, displayName: %{public}s, filePath: %{private}s",
+    MEDIA_DEBUG_LOG("parentUri: %{private}s, displayName: %{public}s, filePath: %{private}s",
         parentUri.ToString().c_str(), displayName.c_str(), filePath.c_str());
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), false);
     int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
     EXPECT_EQ(ret, E_SUCCESS);
     EXPECT_EQ(MediaLibraryUnitTestUtils::IsFileExists(filePath), true);
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_001 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    MEDIA_DEBUG_LOG("ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_001::End");
 }
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_002, TestSize.Level0)
 {
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_002::Start");
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
@@ -217,15 +220,17 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_002, TestSize.Lev
     Uri parentUri(albumAsset->GetUri());
     Uri newUri("");
     string displayName = INVALID_FILE_NAME;
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_002 parentUri: %{public}s, displayName: %{public}s",
+    MEDIA_DEBUG_LOG("parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
     EXPECT_EQ(ret, JS_E_DISPLAYNAME);
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_002 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    MEDIA_DEBUG_LOG("ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_002::End");
 }
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_003, TestSize.Level0)
 {
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_003::Start");
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
@@ -233,15 +238,17 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_003, TestSize.Lev
     Uri parentUri(ReturnUri(COMMON_PREFIX, INVALID_URI));
     Uri newUri("");
     string displayName = "CreateFile001.jpg";
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_003 parentUri: %{public}s, displayName: %{public}s",
+    MEDIA_DEBUG_LOG("parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
     EXPECT_EQ(ret, JS_E_URI);
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_003 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    MEDIA_DEBUG_LOG("ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_003::End");
 }
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_004, TestSize.Level0)
 {
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_004::Start");
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
@@ -249,15 +256,17 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_004, TestSize.Lev
     Uri parentUri(ReturnUri(DISTRIBUTED_PREFIX, COMMON_URI));
     Uri newUri("");
     string displayName = "CreateFile001.jpg";
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_004 parentUri: %{public}s, displayName: %{public}s",
+    MEDIA_DEBUG_LOG("parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
     EXPECT_EQ(ret, JS_E_URI);
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_004 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    MEDIA_DEBUG_LOG("ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_004::End");
 }
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_005, TestSize.Level0)
 {
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_005::Start");
     if (!MediaLibraryUnitTestUtils::IsValid()) {
         MEDIA_ERR_LOG("MediaLibraryDataManager invalid");
         exit(1);
@@ -269,11 +278,12 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_CreateFile_test_005, TestSize.Lev
     Uri parentUri(albumAsset->GetUri());
     Uri newUri("");
     string displayName = "CreateFile_test_005.jpg";
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_005 parentUri: %{public}s, displayName: %{public}s",
+    MEDIA_DEBUG_LOG("parentUri: %{public}s, displayName: %{public}s",
         parentUri.ToString().c_str(), displayName.c_str());
     int32_t ret = mediaFileExtAbility->CreateFile(parentUri, displayName, newUri);
     EXPECT_EQ(ret, JS_ERR_FILE_EXIST);
-    MEDIA_DEBUG_LOG("medialib_CreateFile_test_005 ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    MEDIA_DEBUG_LOG("ret: %{public}d, newUri: %{public}s", ret, newUri.ToString().c_str());
+    MEDIA_DEBUG_LOG("medialib_CreateFile_test_005::End");
 }
 
 HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Mkdir_test_001, TestSize.Level0)
@@ -892,10 +902,12 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_Rename_test_008, TestSize.Level0)
 
 void DisplayFileList(const vector<FileInfo> &fileList)
 {
+    MEDIA_DEBUG_LOG("DisplayFileList::Start");
     for (auto t : fileList) {
-        MEDIA_DEBUG_LOG("medialib_ListFile_test_001 file.uri: %s, file.fileName: %s, file.mode: %d, file.mimeType: %s",
+        MEDIA_DEBUG_LOG("file.uri: %s, file.fileName: %s, file.mode: %d, file.mimeType: %s",
             t.uri.c_str(), t.fileName.c_str(), t.mode, t.mimeType.c_str());
     }
+    MEDIA_DEBUG_LOG("DisplayFileList::End");
 }
 
 void ListFileFromRootResult(vector<FileInfo> rootFileList, int offset, int maxCount)
