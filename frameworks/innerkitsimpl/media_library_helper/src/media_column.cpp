@@ -74,6 +74,7 @@ const std::string PhotoColumn::PHOTO_ALL_EXIF = "all_exif";
 const std::string PhotoColumn::PHOTO_DATE_YEAR = "date_year";
 const std::string PhotoColumn::PHOTO_DATE_MONTH = "date_month";
 const std::string PhotoColumn::PHOTO_DATE_DAY = "date_day";
+const std::string PhotoColumn::PHOTO_HIDDEN_TIME = "hidden_time";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_INDEX = "date_month_index";
@@ -134,7 +135,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_ALL_EXIF  + " TEXT, " +
     PHOTO_DATE_YEAR + " TEXT, " +
     PHOTO_DATE_MONTH + " TEXT, " +
-    PHOTO_DATE_DAY + " TEXT)";
+    PHOTO_DATE_DAY + " TEXT, " + 
+    PHOTO_HIDDEN_TIME + " BIGINT)";
 
 
 const std::string PhotoColumn::CREATE_YEAR_INDEX = BaseColumn::CreateIndex() +

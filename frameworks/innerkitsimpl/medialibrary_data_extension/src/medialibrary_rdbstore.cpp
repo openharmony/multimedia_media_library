@@ -1295,6 +1295,14 @@ void AddYearMonthDayColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddHiddenTimeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT"
+    };
+    ExecSqls(sqls, store);
+}
+
 void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1325,8 +1333,13 @@ void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
         AddYearMonthDayColumn(store);
     }
 
+    //comment this code block out if it introduces bugs
     if (oldVersion < VERSION_UPDATE_YEAR_MONTH_DAY) {
         UpdateYearMonthDayData(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIDDEN_TIME) {
+        AddHiddenTimeColumn(store);
     }
 }
 
