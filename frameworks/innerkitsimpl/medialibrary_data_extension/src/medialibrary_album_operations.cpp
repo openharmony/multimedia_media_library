@@ -460,6 +460,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore);
 
     auto watch = MediaLibraryNotify::GetInstance();
     size_t count = whereArgs.size() - THAN_AGR_SIZE;

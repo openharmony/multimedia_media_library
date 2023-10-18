@@ -125,7 +125,6 @@ protected:
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
-    static int32_t SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static int32_t SendModifyUserCommentNotify(MediaLibraryCommand &cmd, int32_t rowId,
         const std::string &extraUri = "");
     static int32_t SetPendingStatus(MediaLibraryCommand &cmd);
