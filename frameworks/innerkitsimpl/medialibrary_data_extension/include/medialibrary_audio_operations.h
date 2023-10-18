@@ -45,7 +45,6 @@ private:
     static int32_t UpdateV9(MediaLibraryCommand &cmd);
     static int32_t UpdateV10(MediaLibraryCommand &cmd);
 };
-
 } // namespace Media
 } // namespace OHOS
 
