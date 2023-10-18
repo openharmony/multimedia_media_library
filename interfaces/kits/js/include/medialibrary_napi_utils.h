@@ -215,8 +215,17 @@ enum FetchOptionType {
     ALBUM_FETCH_OPT = 1
 };
 
+enum HiddenAlbumFetchMode {
+    HIDDEN_ALBUM_SELF = 0,
+    ALBUMS_VIEW = 1
+};
+
 const std::vector<std::string> privateAlbumTypeNameEnum {
     "TYPE_FAVORITE", "TYPE_TRASH", "TYPE_HIDE", "TYPE_SMART", "TYPE_SEARCH"
+};
+
+const std::vector<std::string> HIDDEN_ALBUM_FETCH_MODE_ENUM {
+    "HIDDEN_ALBUM_SELF", "ALBUMS_VIEW"
 };
 
 const std::vector<std::string> mediaTypesEnum {
@@ -372,7 +381,8 @@ const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES 
 const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTIES = {
     std::make_pair("DEFAULT_PHOTO_URI",         PhotoColumn::DEFAULT_PHOTO_URI),
     std::make_pair("DEFAULT_ALBUM_URI",         PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI),
-    std::make_pair("DEFAULT_AUDIO_URI",         AudioColumn::DEFAULT_AUDIO_URI)
+    std::make_pair("DEFAULT_AUDIO_URI",         AudioColumn::DEFAULT_AUDIO_URI),
+    std::make_pair("DEFAULT_HIDDEN_ALBUM_URI",  PhotoAlbumColumns::DEFAULT_HIDDEN_ALBUM_URI),
 };
 
 struct JSAsyncContextOutput {
@@ -500,8 +510,9 @@ public:
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
 
     static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType,
-        DataShare::DataSharePredicates &predicates);
-    static int32_t GetUserAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
+        DataShare::DataSharePredicates &predicates, const bool hiddenOnly);
+    static int32_t GetUserAlbumPredicates(const int32_t albumId,
+        DataShare::DataSharePredicates &predicates, const bool hiddenOnly);
     static bool IsSystemApp();
     static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
         const std::string &propertyName);
