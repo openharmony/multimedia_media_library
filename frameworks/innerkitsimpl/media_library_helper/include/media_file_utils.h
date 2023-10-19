@@ -23,7 +23,6 @@
 #include "userfile_manager_types.h"
 
 namespace OHOS::Media {
-
 const std::string MEDIA_FILEMODE_READONLY = "r";
 const std::string MEDIA_FILEMODE_WRITEONLY = "w";
 const std::string MEDIA_FILEMODE_READWRITE = "rw";
