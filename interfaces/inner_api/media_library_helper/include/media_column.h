@@ -79,6 +79,7 @@ public:
     static const std::string PHOTO_HEIGHT;
     static const std::string PHOTO_WIDTH;
     static const std::string PHOTO_LCD_VISIT_TIME;
+    static const std::string PHOTO_EDIT_TIME;
     static const std::string PHOTO_POSITION;
     static const std::string PHOTO_DIRTY;
     static const std::string PHOTO_CLOUD_ID;

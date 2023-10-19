@@ -75,8 +75,9 @@ public:
     static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
     static std::string GetFirstDirName(const std::string &filePath);
     static bool MoveFile(const std::string &oldPath, const std::string &newPath);
-    static bool CopyFile(const std::string &filePath, const std::string &newPath);
     static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
+    static bool WriteStrToFile(const std::string &filePath, const std::string &str);
+    static bool CopyFile(int32_t rfd, int32_t wfd);
     static bool RenameDir(const std::string &oldPath, const std::string &newPath);
     static bool CreateDirectory(const std::string &dirPath, std::shared_ptr<int> errCodePtr = nullptr);
     static int32_t CheckStringSize(const std::string &str, const size_t max);

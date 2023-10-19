@@ -27,7 +27,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_utils.h"
 #include "userfile_client_ex.h"
-#include "utils/file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -139,7 +138,7 @@ static int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo)
         close(rfd);
         return Media::E_ERR;
     }
-    int32_t ret = FileUtils::SendData(rfd, wfd);
+    int32_t ret = MediaFileUtils::CopyFile(rfd, wfd);
     if (!ret) {
         printf("%s send data failed. rfd:%d, wfd:%d\n", STR_FAIL.c_str(), rfd, wfd);
         close(rfd);
