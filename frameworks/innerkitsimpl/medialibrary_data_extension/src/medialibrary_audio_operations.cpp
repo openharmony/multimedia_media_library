@@ -326,6 +326,7 @@ int32_t MediaLibraryAudioOperations::CreateV10(MediaLibraryCommand& cmd)
     int32_t outRow = InsertAssetInDb(cmd, fileAsset);
     CHECK_AND_RETURN_RET_LOG(outRow > 0, errCode, "insert file in db failed, error = %{public}d", outRow);
     transactionOprn.Finish();
+    fileAsset.SetId(outRow);
     string fileUri = CreateExtUriForV10Asset(fileAsset);
     if (isNeedGrant) {
         int32_t ret = GrantUriPermission(fileUri, cmd.GetBundleName(), fileAsset.GetPath());
