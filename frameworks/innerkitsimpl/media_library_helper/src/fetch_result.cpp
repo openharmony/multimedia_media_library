@@ -73,6 +73,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_DATE_YEAR, TYPE_STRING},
         { PhotoColumn::PHOTO_DATE_MONTH, TYPE_STRING},
         { PhotoColumn::PHOTO_DATE_DAY, TYPE_STRING},
+        { PhotoColumn::PHOTO_SHOOTING_MODE, TYPE_STRING},
     };
     return RESULT_TYPE_MAP;
 }

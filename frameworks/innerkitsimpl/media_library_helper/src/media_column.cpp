@@ -71,6 +71,7 @@ const std::string PhotoColumn::PHOTO_POSITION = "position";
 const std::string PhotoColumn::PHOTO_SUBTYPE = "subtype";
 const std::string PhotoColumn::CAMERA_SHOT_KEY = "camera_shot_key";
 const std::string PhotoColumn::PHOTO_USER_COMMENT = "user_comment";
+const std::string PhotoColumn::PHOTO_SHOOTING_MODE = "shooting_mode";
 const std::string PhotoColumn::PHOTO_ALL_EXIF = "all_exif";
 const std::string PhotoColumn::PHOTO_DATE_YEAR = "date_year";
 const std::string PhotoColumn::PHOTO_DATE_MONTH = "date_month";
@@ -136,7 +137,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_ALL_EXIF  + " TEXT, " +
     PHOTO_DATE_YEAR + " TEXT, " +
     PHOTO_DATE_MONTH + " TEXT, " +
-    PHOTO_DATE_DAY + " TEXT)";
+    PHOTO_DATE_DAY + " TEXT, " +
+    PHOTO_SHOOTING_MODE + " TEXT)";
 
 
 const std::string PhotoColumn::CREATE_YEAR_INDEX = BaseColumn::CreateIndex() +
@@ -218,7 +220,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_HEIGHT, PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_LCD_VISIT_TIME, PhotoColumn::PHOTO_POSITION,
     PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::CAMERA_SHOT_KEY, PhotoColumn::PHOTO_ALL_EXIF,
     PhotoColumn::PHOTO_USER_COMMENT, PhotoColumn::PHOTO_DATE_YEAR, PhotoColumn::PHOTO_DATE_MONTH,
-    PhotoColumn::PHOTO_DATE_DAY, PhotoColumn::PHOTO_EDIT_TIME,
+    PhotoColumn::PHOTO_DATE_DAY, PhotoColumn::PHOTO_EDIT_TIME, PHOTO_SHOOTING_MODE
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

@@ -1357,6 +1357,18 @@ static void AddPhotoEditTimeColumn(RdbStore &store)
     ExecSqls(addEditTime, store);
 }
 
+void AddShootingModeColumn(RdbStore &store)
+{
+    const std::string addShootringMode =
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_SHOOTING_MODE + " TEXT";
+    const vector<string> addShootingModeColumn = { addShootringMode };
+    int32_t result = ExecSqls(addShootingModeColumn, store);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb shooting_mode error %{private}d", result);
+    }
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1393,6 +1405,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_PHOTO_EDIT_TIME) {
         AddPhotoEditTimeColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SHOOTING_MODE) {
+        AddShootingModeColumn(store);
     }
 }
 
