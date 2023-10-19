@@ -134,6 +134,5 @@ uint16_t MtpEvent::EventPayloadData(const uint16_t code, shared_ptr<PayloadData>
     }
     return responseCode;
 }
-
 } // namespace Media
 } // namespace OHOS
