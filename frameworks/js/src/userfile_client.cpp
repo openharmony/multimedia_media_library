@@ -26,7 +26,6 @@ using namespace OHOS::DataShare;
 using namespace OHOS::AppExecFwk;
 namespace OHOS {
 namespace Media {
-
 shared_ptr<DataShare::DataShareHelper> UserFileClient::GetDataShareHelper(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_ONE;
