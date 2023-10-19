@@ -14,6 +14,9 @@
  */
 #include "command_line.h"
 
+#include <cstddef>
+#include <string>
+
 #include "constant.h"
 #include "directory_ex.h"
 #include "exec_env.h"
@@ -23,9 +26,6 @@
 #include "medialibrary_errno.h"
 #include "option_args.h"
 #include "userfile_client_ex.h"
-#include "utils/file_utils.h"
-#include <cstddef>
-#include <string>
 
 namespace OHOS {
 namespace Media {
@@ -191,7 +191,7 @@ static bool CheckSend(ExecEnv &env)
         printf("%s path issue. errno:%d, path:%s.\n", STR_FAIL.c_str(), errno, env.optArgs.path.c_str());
         return false;
     }
-    if (FileUtils::IsFile(env.sendParam.sendPath)) {
+    if (!MediaFileUtils::IsDirectory(env.sendParam.sendPath)) {
         env.sendParam.isFile = true;
     } else if (MediaFileUtils::IsDirectory(env.sendParam.sendPath)) {
         env.sendParam.sendPath = IncludeTrailingPathDelimiter(env.sendParam.sendPath);

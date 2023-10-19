@@ -34,6 +34,53 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
+namespace {
+static const map<string, OperationType> OPRN_TYPE_MAP = {
+    { MEDIA_FILEOPRN_CLOSEASSET, OperationType::CLOSE },
+    { MEDIA_FILEOPRN_CREATEASSET, OperationType::CREATE },
+    { MEDIA_ALBUMOPRN_CREATEALBUM, OperationType::CREATE },
+    { MEDIA_FILEOPRN_DELETEASSET, OperationType::DELETE },
+    { MEDIA_ALBUMOPRN_DELETEALBUM, OperationType::DELETE },
+    { MEDIA_FILEOPRN_MODIFYASSET, OperationType::UPDATE },
+    { MEDIA_ALBUMOPRN_MODIFYALBUM, OperationType::UPDATE },
+    { MEDIA_ALBUMOPRN_QUERYALBUM, OperationType::QUERY },
+    { MEDIA_FILEOPRN_GETALBUMCAPACITY, OperationType::QUERY },
+    { MEDIA_QUERYOPRN_QUERYVOLUME, OperationType::QUERY },
+    { MEDIA_BOARDCASTOPRN, OperationType::SCAN },
+    { OPRN_SCAN, OperationType::SCAN },
+    { OPRN_DELETE_BY_TOOL, OperationType::DELETE_TOOL },
+    { MEDIA_FILEOPRN_COPYASSET, OperationType::COPY },
+    { MEDIA_DIROPRN_DELETEDIR, OperationType::DELETE },
+    { MEDIA_DIROPRN_FMS_CREATEDIR, OperationType::CREATE },
+    { MEDIA_DIROPRN_FMS_DELETEDIR, OperationType::DELETE },
+    { MEDIA_DIROPRN_FMS_TRASHDIR, OperationType::TRASH },
+    { MEDIA_SMARTALBUMOPRN_CREATEALBUM, OperationType::CREATE },
+    { MEDIA_SMARTALBUMOPRN_DELETEALBUM, OperationType::DELETE },
+    { MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM, OperationType::CREATE },
+    { MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM, OperationType::DELETE },
+    { MEDIA_SMARTALBUMMAPOPRN_AGEINGSMARTALBUM, OperationType::AGING },
+    { MEDIA_SMARTALBUMOPRN_MODIFYALBUM, OperationType::UPDATE },
+    { BUNDLE_PERMISSION_INSERT, OperationType::INSERT_PERMISSION },
+    { OPRN_CREATE, OperationType::CREATE },
+    { OPRN_CREATE_COMPONENT, OperationType::CREATE },
+    { OPRN_DELETE, OperationType::DELETE },
+    { OPRN_QUERY, OperationType::QUERY },
+    { OPRN_UPDATE, OperationType::UPDATE },
+    { OPRN_ALBUM_ADD_PHOTOS, OperationType::ALBUM_ADD_PHOTOS },
+    { OPRN_ALBUM_REMOVE_PHOTOS, OperationType::ALBUM_REMOVE_PHOTOS },
+    { OPRN_RECOVER_PHOTOS, OperationType::ALBUM_RECOVER_ASSETS },
+    { OPRN_DELETE_PHOTOS, OperationType::ALBUM_DELETE_ASSETS },
+    { OPRN_COMPAT_DELETE_PHOTOS, OperationType::COMPAT_ALBUM_DELETE_ASSETS },
+    { OPRN_CLOSE, OperationType::CLOSE },
+    { OPRN_TRASH, OperationType::TRASH_PHOTO },
+    { OPRN_PENDING, OperationType::UPDATE_PENDING },
+    { OPRN_SET_USER_COMMENT, OperationType::SET_USER_COMMENT },
+    { OPRN_INDEX, OperationType::INDEX },
+    { OPRN_COMMIT_EDIT, OperationType::COMMIT_EDIT },
+    { OPRN_REVERT_EDIT, OperationType::REVERT_EDIT },
+};
+}
+
 MediaLibraryCommand::MediaLibraryCommand(const Uri &uri) : uri_(uri)
 {
     ParseOprnObjectFromUri();
@@ -271,49 +318,6 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
 
 void MediaLibraryCommand::ParseOprnTypeFromUri()
 {
-    static const map<string, OperationType> OPRN_TYPE_MAP = {
-        { MEDIA_FILEOPRN_CLOSEASSET, OperationType::CLOSE },
-        { MEDIA_FILEOPRN_CREATEASSET, OperationType::CREATE },
-        { MEDIA_ALBUMOPRN_CREATEALBUM, OperationType::CREATE },
-        { MEDIA_FILEOPRN_DELETEASSET, OperationType::DELETE },
-        { MEDIA_ALBUMOPRN_DELETEALBUM, OperationType::DELETE },
-        { MEDIA_FILEOPRN_MODIFYASSET, OperationType::UPDATE },
-        { MEDIA_ALBUMOPRN_MODIFYALBUM, OperationType::UPDATE },
-        { MEDIA_ALBUMOPRN_QUERYALBUM, OperationType::QUERY },
-        { MEDIA_FILEOPRN_GETALBUMCAPACITY, OperationType::QUERY },
-        { MEDIA_QUERYOPRN_QUERYVOLUME, OperationType::QUERY },
-        { MEDIA_BOARDCASTOPRN, OperationType::SCAN },
-        { OPRN_SCAN, OperationType::SCAN },
-        { OPRN_DELETE_BY_TOOL, OperationType::DELETE_TOOL },
-        { MEDIA_FILEOPRN_COPYASSET, OperationType::COPY },
-        { MEDIA_DIROPRN_DELETEDIR, OperationType::DELETE },
-        { MEDIA_DIROPRN_FMS_CREATEDIR, OperationType::CREATE },
-        { MEDIA_DIROPRN_FMS_DELETEDIR, OperationType::DELETE },
-        { MEDIA_DIROPRN_FMS_TRASHDIR, OperationType::TRASH },
-        { MEDIA_SMARTALBUMOPRN_CREATEALBUM, OperationType::CREATE },
-        { MEDIA_SMARTALBUMOPRN_DELETEALBUM, OperationType::DELETE },
-        { MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM, OperationType::CREATE },
-        { MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM, OperationType::DELETE },
-        { MEDIA_SMARTALBUMMAPOPRN_AGEINGSMARTALBUM, OperationType::AGING },
-        { MEDIA_SMARTALBUMOPRN_MODIFYALBUM, OperationType::UPDATE },
-        { BUNDLE_PERMISSION_INSERT, OperationType::INSERT_PERMISSION },
-        { OPRN_CREATE, OperationType::CREATE },
-        { OPRN_CREATE_COMPONENT, OperationType::CREATE },
-        { OPRN_DELETE, OperationType::DELETE },
-        { OPRN_QUERY, OperationType::QUERY },
-        { OPRN_UPDATE, OperationType::UPDATE },
-        { OPRN_ALBUM_ADD_PHOTOS, OperationType::ALBUM_ADD_PHOTOS },
-        { OPRN_ALBUM_REMOVE_PHOTOS, OperationType::ALBUM_REMOVE_PHOTOS },
-        { OPRN_RECOVER_PHOTOS, OperationType::ALBUM_RECOVER_ASSETS },
-        { OPRN_DELETE_PHOTOS, OperationType::ALBUM_DELETE_ASSETS },
-        { OPRN_COMPAT_DELETE_PHOTOS, OperationType::COMPAT_ALBUM_DELETE_ASSETS },
-        { OPRN_CLOSE, OperationType::CLOSE },
-        { OPRN_TRASH, OperationType::TRASH_PHOTO },
-        { OPRN_PENDING, OperationType::UPDATE_PENDING },
-        { OPRN_SET_USER_COMMENT, OperationType::SET_USER_COMMENT },
-        { OPRN_INDEX, OperationType::INDEX },
-    };
-
     const string opType = MediaFileUri::GetPathSecondDentry(uri_);
     if (OPRN_TYPE_MAP.find(opType) != OPRN_TYPE_MAP.end()) {
         oprnType_ = OPRN_TYPE_MAP.at(opType);

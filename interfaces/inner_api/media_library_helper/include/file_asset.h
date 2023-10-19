@@ -168,6 +168,9 @@ public:
     const std::string &GetFilePath() const;
     void SetFilePath(const std::string &filePath);
 
+    int64_t GetPhotoEditTime() const;
+    void SetPhotoEditTime(int64_t photoEditTime);
+
 private:
     const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;

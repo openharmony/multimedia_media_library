@@ -16,6 +16,7 @@
 #include "medialibrary_photo_operations.h"
 
 #include <memory>
+#include <mutex>
 
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
@@ -29,6 +30,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_inotify.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdb_utils.h"
@@ -43,6 +45,7 @@
 #include "rdb_predicates.h"
 #include "result_set_utils.h"
 #include "thumbnail_const.h"
+#include "uri.h"
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
@@ -54,6 +57,9 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+
+shared_ptr<PhotoEditingRecord> PhotoEditingRecord::instance_ = nullptr;
+mutex PhotoEditingRecord::mutex_;
 
 int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
 {
@@ -226,48 +232,6 @@ int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
     return E_OK;
 }
 
-// temp function, delete after MediaFileUri::Getpath is finish
-static string GetPathFromUri(const std::string &uri)
-{
-    string realTitle = uri;
-    size_t index = uri.rfind('/');
-    if (index == string::npos) {
-        return "";
-    }
-    realTitle = uri.substr(0, index);
-    index = realTitle.rfind('/');
-    if (index == string::npos) {
-        return "";
-    }
-    realTitle = realTitle.substr(index + 1);
-    index = realTitle.rfind('_');
-    if (index == string::npos) {
-        return "";
-    }
-    string fileId = realTitle.substr(index + 1);
-    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
-        return "";
-    }
-    int32_t fileUniqueId;
-    if (!StrToInt(fileId, fileUniqueId)) {
-        MEDIA_ERR_LOG("invalid fileuri %{private}s", uri.c_str());
-        return "";
-    }
-    int32_t bucketNum = 0;
-    MediaLibraryAssetOperations::CreateAssetBucket(fileUniqueId, bucketNum);
-    string ext = MediaFileUtils::GetExtensionFromPath(uri);
-    if (ext.empty()) {
-        return "";
-    }
-
-    string path = ROOT_MEDIA_DIR + PHOTO_BUCKET + "/" + to_string(bucketNum) + "/" + realTitle + "." + ext;
-    if (!MediaFileUtils::IsFileExists(path)) {
-        MEDIA_ERR_LOG("file not exist, path=%{private}s", path.c_str());
-        return "";
-    }
-    return path;
-}
-
 const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::MEDIA_FILE_PATH,
     PhotoColumn::MEDIA_TYPE,
@@ -279,41 +243,24 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::Open");
 
+    bool isSkipEdit = true;
+    int32_t errCode = OpenEditOperation(cmd, isSkipEdit);
+    if (errCode != E_OK || !isSkipEdit) {
+        return errCode;
+    }
+
     string uriString = cmd.GetUriStringWithoutSegment();
     string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
     if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
         return E_INVALID_URI;
     }
-
-    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
     string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
-    MediaFileUri fileUri(uriString);
-    if (pendingStatus.empty() || !fileUri.IsApi10()) {
-        fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_PHOTO,
-            PHOTO_COLUMN_VECTOR);
-        if (fileAsset == nullptr) {
-            MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
-            return E_INVALID_URI;
-        }
-    } else {
-        string path = GetPathFromUri(uriString);
-        if (path.empty()) {
-            fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_PHOTO,
-                PHOTO_COLUMN_VECTOR);
-            if (fileAsset == nullptr) {
-                MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
-                return E_INVALID_URI;
-            }
-        } else {
-            fileAsset->SetPath(path);
-            fileAsset->SetMediaType(MediaFileUtils::GetMediaType(path));
-            int32_t timePending = stoi(pendingStatus);
-            fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
-        }
-    }
 
-    fileAsset->SetId(stoi(id));
-    fileAsset->SetUri(uriString);
+    shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, true,  PHOTO_COLUMN_VECTOR, pendingStatus);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
+        return E_INVALID_URI;
+    }
 
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10);
@@ -328,40 +275,13 @@ int32_t MediaLibraryPhotoOperations::Close(MediaLibraryCommand &cmd)
     if (!GetStringFromValuesBucket(values, MEDIA_DATA_DB_URI, uriString)) {
         return E_INVALID_VALUES;
     }
-    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
-    if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(fileId))) {
+    string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
+
+    shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, true, PHOTO_COLUMN_VECTOR, pendingStatus);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
         return E_INVALID_URI;
     }
-
-    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
-    string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
-    MediaFileUri fileUri(uriString);
-    if (pendingStatus.empty() || !fileUri.IsApi10()) {
-        fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_PHOTO,
-            PHOTO_COLUMN_VECTOR);
-        if (fileAsset == nullptr) {
-            MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
-            return E_INVALID_URI;
-        }
-    } else {
-        string path = GetPathFromUri(uriString);
-        if (path.empty()) {
-            fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_PHOTO,
-                PHOTO_COLUMN_VECTOR);
-            if (fileAsset == nullptr) {
-                MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
-                return E_INVALID_URI;
-            }
-        } else {
-            fileAsset->SetPath(path);
-            fileAsset->SetMediaType(MediaFileUtils::GetMediaType(path));
-            int32_t timePending = stoi(pendingStatus);
-            fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
-        }
-    }
-
-    fileAsset->SetId(stoi(fileId));
-    fileAsset->SetUri(uriString);
 
     int32_t isSync = 0;
     int32_t errCode = 0;
@@ -571,11 +491,12 @@ int32_t MediaLibraryPhotoOperations::DeletePhoto(const shared_ptr<FileAsset> &fi
 
     transactionOprn.Finish();
     auto watch = MediaLibraryNotify::GetInstance();
-
     string notifyDeleteUri =
         MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(deleteRows),
         (api == MediaLibraryApi::API_10 ? MediaFileUtils::GetExtraUri(displayName, filePath) : ""));
     watch->Notify(notifyDeleteUri, NotifyType::NOTIFY_REMOVE);
+
+    DeleteRevertMessage(filePath);
     return deleteRows;
 }
 
@@ -732,6 +653,438 @@ int32_t MediaLibraryPhotoOperations::UpdateV9(MediaLibraryCommand &cmd)
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId())),
         NotifyType::NOTIFY_UPDATE);
     return rowId;
+}
+
+int32_t MediaLibraryPhotoOperations::OpenEditOperation(MediaLibraryCommand &cmd, bool &isSkip)
+{
+    isSkip = true;
+    string operationKey = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
+    if (operationKey.empty()) {
+        return E_OK;
+    }
+    if (operationKey == EDIT_DATA_REQUEST) {
+        isSkip = false;
+        return RequestEditData(cmd);
+    } else if (operationKey == SOURCE_REQUEST) {
+        isSkip = false;
+        return RequestEditSource(cmd);
+    } else if (operationKey == COMMIT_REQUEST) {
+        isSkip = false;
+        return CommitEditOpen(cmd);
+    }
+
+    return E_OK;
+}
+
+const static vector<string> EDITED_COLUMN_VECTOR = {
+    PhotoColumn::MEDIA_FILE_PATH,
+    PhotoColumn::PHOTO_EDIT_TIME,
+    PhotoColumn::MEDIA_TIME_PENDING,
+    PhotoColumn::MEDIA_DATE_TRASHED
+};
+
+int32_t MediaLibraryPhotoOperations::RequestEditData(MediaLibraryCommand &cmd)
+{
+    string uriString = cmd.GetUriStringWithoutSegment();
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
+        return E_INVALID_URI;
+    }
+
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
+        OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI, "Get FileAsset From Uri Failed, uri:%{public}s",
+        uriString.c_str());
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetTimePending() == 0, E_IS_PENDING_ERROR,
+        "FileAsset is in PendingStatus %{public}ld", (long) fileAsset->GetTimePending());
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetDateTrashed() == 0, E_IS_RECYCLED, "FileAsset is in recycle");
+
+    string path = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_URI, "Can not get file path, uri=%{private}s",
+        uriString.c_str());
+
+    string dataPath = GetEditDataPath(path);
+    CHECK_AND_RETURN_RET_LOG(!dataPath.empty(), E_INVALID_PATH, "Get edit data path from path %{private}s failed",
+        dataPath.c_str());
+    if (fileAsset->GetPhotoEditTime() == 0) {
+        MEDIA_INFO_LOG("File %{private}s does not have edit data", uriString.c_str());
+        string dataPathDir = GetEditDataDirPath(path);
+        CHECK_AND_RETURN_RET_LOG(!dataPathDir.empty(), E_INVALID_PATH,
+            "Get edit data dir path from path %{private}s failed", path.c_str());
+        if (!MediaFileUtils::IsDirectory(dataPathDir)) {
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dataPathDir), E_HAS_FS_ERROR,
+                "Failed to create dir %{private}s", dataPathDir.c_str());
+        }
+
+        if (!MediaFileUtils::IsFileExists(dataPath)) {
+            int32_t err = MediaFileUtils::CreateAsset(dataPath);
+            CHECK_AND_RETURN_RET_LOG(err == E_SUCCESS || err == E_FILE_EXIST, E_HAS_FS_ERROR,
+                "Failed to create file %{private}s", dataPath.c_str());
+        }
+    } else {
+        if (!MediaFileUtils::IsFileExists(dataPath)) {
+            MEDIA_INFO_LOG("File %{public}s has edit at %{public}ld, but cannot get editdata", uriString.c_str(),
+                (long)fileAsset->GetPhotoEditTime());
+            return E_HAS_FS_ERROR;
+        }
+    }
+
+    return OpenFileWithPrivacy(dataPath, "r");
+}
+
+int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
+{
+    string uriString = cmd.GetUriStringWithoutSegment();
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
+        return E_INVALID_URI;
+    }
+
+    if (PhotoEditingRecord::GetInstance()->IsInEditOperation(stoi(id))) {
+        MEDIA_ERR_LOG("File %{public}s is in editing, can not rqeuest source", id.c_str());
+        return E_IS_IN_COMMIT;
+    }
+
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
+        OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get fileAsset from uri failed, uri:%{public}s", uriString.c_str());
+        return E_INVALID_URI;
+    }
+    if (fileAsset->GetTimePending() != 0) {
+        MEDIA_ERR_LOG("FileAsset is in PendingStatus %{public}ld", (long) fileAsset->GetTimePending());
+        return E_IS_PENDING_ERROR;
+    }
+    if (fileAsset->GetDateTrashed() != 0) {
+        MEDIA_ERR_LOG("FileAsset is in recycle");
+        return E_IS_RECYCLED;
+    }
+    string path = fileAsset->GetFilePath();
+    if (path.empty()) {
+        MEDIA_ERR_LOG("Can not get file path, uri=%{private}s", uriString.c_str());
+        return E_INVALID_URI;
+    }
+
+    if (fileAsset->GetPhotoEditTime() == 0) {
+        return OpenFileWithPrivacy(path, "r");
+    }
+
+    string sourcePath = GetEditDataSourcePath(path);
+    if (sourcePath.empty() || !MediaFileUtils::IsFileExists(sourcePath)) {
+        return OpenFileWithPrivacy(path, "r");
+    } else {
+        return OpenFileWithPrivacy(sourcePath, "r");
+    }
+}
+
+int32_t MediaLibraryPhotoOperations::CommitEditOpen(MediaLibraryCommand &cmd)
+{
+    string uriString = cmd.GetUriStringWithoutSegment();
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
+        return E_INVALID_URI;
+    }
+
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
+        OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
+        return E_INVALID_URI;
+    }
+    int32_t fileId = stoi(id);  // after MediaLibraryDataManagerUtils::IsNumber, id must be number
+    if (!PhotoEditingRecord::GetInstance()->StartCommitEdit(fileId)) {
+        return E_IS_IN_REVERT;
+    }
+    int32_t fd = CommitEditOpenExecute(fileAsset);
+    if (fd < 0) {
+        PhotoEditingRecord::GetInstance()->EndCommitEdit(fileId);
+    }
+    return fd;
+}
+
+int32_t MediaLibraryPhotoOperations::CommitEditOpenExecute(const shared_ptr<FileAsset> &fileAsset)
+{
+    if (fileAsset == nullptr) {
+        return E_INVALID_URI;
+    }
+    if (fileAsset->GetTimePending() != 0) {
+        MEDIA_ERR_LOG("FileAsset is in PendingStatus %{public}ld", (long) fileAsset->GetTimePending());
+        return E_IS_PENDING_ERROR;
+    }
+    if (fileAsset->GetDateTrashed() != 0) {
+        MEDIA_ERR_LOG("FileAsset is in recycle");
+        return E_IS_RECYCLED;
+    }
+    string path = fileAsset->GetFilePath();
+    if (path.empty()) {
+        MEDIA_ERR_LOG("Can not get file path");
+        return E_INVALID_URI;
+    }
+    if (fileAsset->GetPhotoEditTime() == 0) {
+        string sourceDirPath = GetEditDataDirPath(path);
+        CHECK_AND_RETURN_RET_LOG(!sourceDirPath.empty(), E_INVALID_URI, "Can not get edit dir path");
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(sourceDirPath), E_HAS_FS_ERROR,
+            "Can not create dir %{private}s", sourceDirPath.c_str());
+        string sourcePath = GetEditDataSourcePath(path);
+        CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Can not get edit source path");
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(path, sourcePath) == E_SUCCESS, E_HAS_FS_ERROR,
+            "Move file failed, srcPath:%{private}s, newPath:%{private}s", path.c_str(), sourcePath.c_str());
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(path), E_HAS_FS_ERROR,
+            "Create file failed, path:%{private}s", path.c_str());
+    }
+
+    return OpenFileWithPrivacy(path, "rw");
+}
+
+static int32_t UpdateEditTime(int32_t fileId, int64_t time)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    MediaLibraryCommand updatePendingCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updatePendingCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    ValuesBucket updateValues;
+    updateValues.PutLong(PhotoColumn::PHOTO_EDIT_TIME, time);
+    updatePendingCmd.SetValueBucket(updateValues);
+    int32_t rowId = 0;
+    int32_t result = rdbStore->Update(updatePendingCmd, rowId);
+    if (result != NativeRdb::E_OK || rowId <= 0) {
+        MEDIA_ERR_LOG("Update File pending failed. Result %{public}d.", result);
+        return E_HAS_DB_ERROR;
+    }
+
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::CommitEditInsert(MediaLibraryCommand &cmd)
+{
+    const ValuesBucket &values = cmd.GetValueBucket();
+    string editData;
+    int32_t id = 0;
+    if (!GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id)) {
+        MEDIA_ERR_LOG("Failed to get fileId");
+        PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
+        return E_INVALID_VALUES;
+    }
+    if (!GetStringFromValuesBucket(values, EDIT_DATA, editData)) {
+        MEDIA_ERR_LOG("Failed to get editdata");
+        PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
+        return E_INVALID_VALUES;
+    }
+
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(id),
+        OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get FileAsset Failed, fileId=%{public}d", id);
+        PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
+        return E_INVALID_VALUES;
+    }
+    fileAsset->SetId(id);
+    int32_t ret = CommitEditInsertExecute(fileAsset, editData);
+    PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
+    return ret;
+}
+
+int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<FileAsset> &fileAsset,
+    const string &editData)
+{
+    if (fileAsset == nullptr) {
+        return E_INVALID_VALUES;
+    }
+
+    if (fileAsset->GetTimePending() != 0) {
+        MEDIA_ERR_LOG("FileAsset is in PendingStatus %{public}ld", static_cast<long>(fileAsset->GetTimePending()));
+        return E_IS_PENDING_ERROR;
+    }
+    if (fileAsset->GetDateTrashed() != 0) {
+        MEDIA_ERR_LOG("FileAsset is in recycle");
+        return E_IS_RECYCLED;
+    }
+
+    string path = fileAsset->GetPath();
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_VALUES, "File path is empty");
+    string editDataPath = GetEditDataPath(path);
+    CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_VALUES, "EditData path is empty");
+    if (!MediaFileUtils::IsFileExists(editDataPath)) {
+        string dataPathDir = GetEditDataDirPath(path);
+        CHECK_AND_RETURN_RET_LOG(!dataPathDir.empty(), E_INVALID_PATH,
+            "Get edit data dir path from path %{private}s failed", path.c_str());
+        if (!MediaFileUtils::IsDirectory(dataPathDir)) {
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dataPathDir), E_HAS_FS_ERROR,
+                "Failed to create dir %{private}s", dataPathDir.c_str());
+        }
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateAsset(editDataPath) == E_SUCCESS, E_HAS_FS_ERROR,
+            "Failed to create file %{private}s", editDataPath.c_str());
+    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, editData), E_HAS_FS_ERROR,
+        "Failed to write editdata path:%{private}s", editDataPath.c_str());
+    
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
+        to_string(PhotoAlbumSubType::IMAGES),
+        to_string(PhotoAlbumSubType::VIDEO),
+        to_string(PhotoAlbumSubType::SCREENSHOT),
+        to_string(PhotoAlbumSubType::CAMERA),
+        to_string(PhotoAlbumSubType::FAVORITE),
+    });
+    ScanFile(path, true, true, true);
+    int32_t errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
+        fileAsset->GetId());
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::RevertToOrigin(MediaLibraryCommand &cmd)
+{
+    const ValuesBucket &values = cmd.GetValueBucket();
+    int32_t fileId = 0;
+    CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, fileId), E_INVALID_VALUES,
+        "Failed to get fileId");
+
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(fileId),
+        OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get FileAsset From Uri Failed, fileId:%{public}d", fileId);
+        return E_INVALID_VALUES;
+    }
+    fileAsset->SetId(fileId);
+    if (!PhotoEditingRecord::GetInstance()->StartRevert(fileId)) {
+        return E_IS_IN_COMMIT;
+    }
+
+    int32_t errCode = DoRevertEdit(fileAsset);
+    PhotoEditingRecord::GetInstance()->EndRevert(fileId);
+    return errCode;
+}
+
+int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset)
+{
+    if (fileAsset == nullptr) {
+        return E_INVALID_VALUES;
+    }
+
+    int32_t fileId = fileAsset->GetId();
+    if (fileAsset->GetTimePending() != 0) {
+        MEDIA_ERR_LOG("FileAsset is in PendingStatus %{public}ld", static_cast<long>(fileAsset->GetTimePending()));
+        return E_IS_PENDING_ERROR;
+    }
+    if (fileAsset->GetDateTrashed() != 0) {
+        MEDIA_ERR_LOG("FileAsset is in recycle");
+        return E_IS_RECYCLED;
+    }
+    if (fileAsset->GetPhotoEditTime() == 0) {
+        MEDIA_INFO_LOG("File %{public}d is not edit", fileId);
+        return E_OK;
+    }
+
+    string path = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_URI, "Can not get file path, fileId=%{public}d", fileId);
+    string sourcePath = GetEditDataSourcePath(path);
+    CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Cannot get source path, id=%{public}d", fileId);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourcePath), E_NO_SUCH_FILE, "Can not get source file");
+    
+    string editDataPath = GetEditDataPath(path);
+    CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_URI, "Cannot get editdata path, id=%{public}d", fileId);
+    if (MediaFileUtils::IsFileExists(editDataPath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(editDataPath), E_HAS_FS_ERROR,
+            "Failed to delete edit data, path:%{private}s", editDataPath.c_str());
+    }
+    
+    if (MediaFileUtils::IsFileExists(path)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(path), E_HAS_FS_ERROR,
+            "Failed to delete asset, path:%{private}s", path.c_str());
+    }
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourcePath, path) == E_OK, E_HAS_FS_ERROR,
+        "Can not modify %{private}s to %{private}s", sourcePath.c_str(), path.c_str());
+
+    int32_t errCode = UpdateEditTime(fileId, 0);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
+        fileId);
+    ScanFile(path, true, true, true);
+    return E_OK;
+}
+
+void MediaLibraryPhotoOperations::DeleteRevertMessage(const string &path)
+{
+    if (path.empty()) {
+        MEDIA_ERR_LOG("Input path is empty");
+        return;
+    }
+
+    string editDirPath = GetEditDataDirPath(path);
+    if (editDirPath.empty()) {
+        MEDIA_ERR_LOG("Can not get edit data dir path from path %{private}s", path.c_str());
+        return;
+    }
+
+    if (!MediaFileUtils::IsDirectory(editDirPath)) {
+        return;
+    }
+    if (!MediaFileUtils::DeleteDir(editDirPath)) {
+        MEDIA_ERR_LOG("Failed to delete %{private}s dir, filePath is %{private}s",
+            editDirPath.c_str(), path.c_str());
+        return;
+    }
+    return;
+}
+
+PhotoEditingRecord::PhotoEditingRecord()
+{
+}
+
+shared_ptr<PhotoEditingRecord> PhotoEditingRecord::GetInstance()
+{
+    if (instance_ == nullptr) {
+        lock_guard<mutex> lock(mutex_);
+        if (instance_ == nullptr) {
+            instance_ = make_shared<PhotoEditingRecord>();
+        }
+    }
+    return instance_;
+}
+
+bool PhotoEditingRecord::StartCommitEdit(int32_t fileId)
+{
+    unique_lock<shared_mutex> lock(addMutex_);
+    if (revertingPhotoSet_.count(fileId) > 0) {
+        MEDIA_ERR_LOG("Photo %{public}d is reverting", fileId);
+        return false;
+    }
+    editingPhotoSet_.insert(fileId);
+    return true;
+}
+
+void PhotoEditingRecord::EndCommitEdit(int32_t fileId)
+{
+    unique_lock<shared_mutex> lock(addMutex_);
+    editingPhotoSet_.erase(fileId);
+}
+
+bool PhotoEditingRecord::StartRevert(int32_t fileId)
+{
+    unique_lock<shared_mutex> lock(addMutex_);
+    if (editingPhotoSet_.count(fileId) > 0) {
+        MEDIA_ERR_LOG("Photo %{public}d is committing edit", fileId);
+        return false;
+    }
+    revertingPhotoSet_.insert(fileId);
+    return true;
+}
+
+void PhotoEditingRecord::EndRevert(int32_t fileId)
+{
+    unique_lock<shared_mutex> lock(addMutex_);
+    revertingPhotoSet_.erase(fileId);
+}
+
+bool PhotoEditingRecord::IsInEditOperation(int32_t fileId)
+{
+    shared_lock<shared_mutex> lock(addMutex_);
+    if (editingPhotoSet_.count(fileId) > 0 || revertingPhotoSet_.count(fileId) > 0) {
+        return true;
+    }
+    return false;
 }
 } // namespace Media
 } // namespace OHOS

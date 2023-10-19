@@ -67,7 +67,7 @@ int32_t MediaScannerManager::ScanFile(const std::string &path, const std::shared
 }
 
 int32_t MediaScannerManager::ScanFileSync(const std::string &path,
-    const std::shared_ptr<IMediaScannerCallback> &callback, MediaLibraryApi api)
+    const std::shared_ptr<IMediaScannerCallback> &callback, MediaLibraryApi api, bool isForceScan)
 {
     MEDIA_DEBUG_LOG("scan file %{private}s, api%{public}d", path.c_str(), static_cast<int>(api));
 
@@ -83,6 +83,9 @@ int32_t MediaScannerManager::ScanFileSync(const std::string &path,
     }
 
     MediaScannerObj scanner = MediaScannerObj(realPath, callback, MediaScannerObj::FILE, api);
+    if (isForceScan) {
+        scanner.SetForceScan(true);
+    }
     scanner.Scan();
 
     return E_OK;
