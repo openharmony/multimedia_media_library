@@ -162,6 +162,5 @@ int32_t MtpErrorUtils::SolveCloseFdError(const int32_t mediaError)
         return MTP_ERROR_INVALID_OBJECTHANDLE;
     }
 }
-
 } // namespace Media
 } // namespace OHOS
