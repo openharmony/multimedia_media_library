@@ -7,6 +7,8 @@ const TAG = 'MediaBackupExtAbility';
 
 const backupPath = '/data/storage/el2/backup/restore/';
 const documentPath = '/storage/media/local/files/Documents';
+const galleryAppName = 'com.huawei.photos';
+const mediaAppName = 'com.android.providers.media.module';
 
 const UPDATE_RESTORE : number = 0;
 const CLONE_RESTORE : number = 1;
@@ -19,9 +21,9 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   async onRestore(bundleVersion : BundleVersion) : Promise<void> {
     console.log(TAG, `onRestore ok ${JSON.stringify(bundleVersion)}`);
     if (bundleVersion.name === '0.0.0.0' && bundleVersion.code === 0) {
-      await mediabackup.startRestore(UPDATE_RESTORE);
+      await mediabackup.startRestore(UPDATE_RESTORE, galleryAppName, mediaAppName);
     } else {
-      await mediabackup.startRestore(CLONE_RESTORE);
+      await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName);
     }
     await this.moveRestFiles();
   }

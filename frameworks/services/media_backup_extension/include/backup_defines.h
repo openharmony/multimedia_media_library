@@ -16,9 +16,9 @@
 #ifndef OHOS_MEDIA_BACKUP_DEFINES_H_
 #define OHOS_MEDIA_BACKUP_DEFINES_H_
 
-#include <vector>
-#include <string>
 #include <stdint.h>
+#include <string>
+#include <vector>
 
 namespace OHOS {
 namespace Media {

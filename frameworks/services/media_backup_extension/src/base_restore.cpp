@@ -16,20 +16,20 @@
 #define MLOG_TAG "MediaLibraryBaseRestore"
 
 #include "base_restore.h"
-#include "media_log.h"
-#include "media_file_utils.h"
-#include "medialibrary_errno.h"
-#include "result_set_utils.h"
-#include "media_column.h"
-#include "photo_album_column.h"
-#include "medialibrary_data_manager.h"
-#include "extension_context.h"
 #include "application_context.h"
-#include "userfilemgr_uri.h"
-#include "medialibrary_type_const.h"
-#include "medialibrary_asset_operations.h"
-#include "medialibrary_object_utils.h"
+#include "extension_context.h"
+#include "media_column.h"
+#include "media_file_utils.h"
+#include "media_log.h"
 #include "media_scanner_manager.h"
+#include "medialibrary_asset_operations.h"
+#include "medialibrary_data_manager.h"
+#include "medialibrary_object_utils.h"
+#include "medialibrary_type_const.h"
+#include "medialibrary_errno.h"
+#include "photo_album_column.h"
+#include "result_set_utils.h"
+#include "userfilemgr_uri.h"
 
 namespace OHOS {
 namespace Media {
@@ -63,7 +63,7 @@ int32_t BaseRestore::Init(void)
     RdbCallback cb;
     mediaLibraryRdb_ = NativeRdb::RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, cb, err);
     if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Init media rdb fail");
+        MEDIA_ERR_LOG("Init media rdb fail, err = %{public}d", err);
         return E_FAIL;
     }
 
@@ -126,17 +126,10 @@ int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dst
     if (MediaFileUtils::MoveFile(srcFile, dstFile)) {
         return E_OK;
     }
-    // backup file location and target localtion are across file system, try to "copy_rename_delete"
-    if (!MediaFileUtils::CopyFile(srcFile, MediaFileUtils::GetParentPath(dstFile))) {
+
+    if (!MediaFileUtils::CopyFileUtil(srcFile, dstFile)) {
         MEDIA_ERR_LOG("CopyFile failed, filePath: %{private}s, errmsg: %{public}s", srcFile.c_str(),
             strerror(errno));
-        return E_FAIL;
-    }
-    std::string tmpPath = MediaFileUtils::GetParentPath(dstFile) + "/" + MediaFileUtils::GetFileName(srcFile);
-    if (!MediaFileUtils::MoveFile(tmpPath, dstFile)) {
-        MEDIA_ERR_LOG("MoveFile failed, filePath: %{private}s, errmsg: %{public}s", tmpPath.c_str(),
-            strerror(errno));
-        (void)MediaFileUtils::DeleteFile(tmpPath);
         return E_FAIL;
     }
     (void)MediaFileUtils::DeleteFile(srcFile);
