@@ -79,6 +79,7 @@ public:
     static const std::string PHOTO_HEIGHT;
     static const std::string PHOTO_WIDTH;
     static const std::string PHOTO_LCD_VISIT_TIME;
+    static const std::string PHOTO_EDIT_TIME;
     static const std::string PHOTO_POSITION;
     static const std::string PHOTO_DIRTY;
     static const std::string PHOTO_CLOUD_ID;
@@ -98,6 +99,7 @@ public:
     static const std::string PHOTO_DATE_YEAR_INDEX;
     static const std::string PHOTO_DATE_MONTH_INDEX;
     static const std::string PHOTO_DATE_DAY_INDEX;
+    static const std::string PHOTO_MEDIA_TYPE_INDEX;
     // format in PhotoTable year month day
     static const std::string PHOTO_DATE_YEAR_FORMAT;
     static const std::string PHOTO_DATE_MONTH_FORMAT;
@@ -110,6 +112,7 @@ public:
     static const std::string CREATE_YEAR_INDEX;
     static const std::string CREATE_MONTH_INDEX;
     static const std::string CREATE_DAY_INDEX;
+    static const std::string CREATE_MEDIA_TYPE_INDEX;
 
     // create indexes for Photo
     static const std::string INDEX_STHP_ADDTIME;

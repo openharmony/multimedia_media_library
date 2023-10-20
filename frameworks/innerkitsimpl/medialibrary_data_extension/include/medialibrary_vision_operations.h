@@ -12,19 +12,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef FRAMEWORKS_MEDIATOOLS_UTILS_FILE_UTILS_H_
-#define FRAMEWORKS_MEDIATOOLS_UTILS_FILE_UTILS_H_
+
+#ifndef OHOS_MEDIALIBRARY_VISION_OPERATIOINS_H
+#define OHOS_MEDIALIBRARY_VISION_OPERATIOINS_H
+
 #include <string>
+#include <unordered_map>
+
+#include "abs_shared_result_set.h"
+#include "medialibrary_command.h"
 
 namespace OHOS {
 namespace Media {
-namespace MediaTool {
-class FileUtils {
+class MediaLibraryVisionOperations {
 public:
-    static bool IsFile(const std::string &path);
-    static bool SendData(const int rfd, const int wfd);
+    static int32_t InsertOperation(MediaLibraryCommand &cmd);
+    static int32_t UpdateOperation(MediaLibraryCommand &cmd);
+    static int32_t DeleteOperation(MediaLibraryCommand &cmd);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns);
 };
-} // namespace MediaTool
 } // namespace Media
 } // namespace OHOS
-#endif // FRAMEWORKS_MEDIATOOLS_UTILS_FILEASSET_UTILS_H_
+#endif // OHOS_MEDIALIBRARY_VISION_OPERATIOINS_H

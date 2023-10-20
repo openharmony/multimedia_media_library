@@ -18,6 +18,7 @@
 
 #include "ability_manager_client.h"
 #include "hitrace_meter.h"
+#include "ipc_skeleton.h"
 #include "media_column.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
@@ -25,6 +26,7 @@
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
+#include "post_event_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -62,13 +64,13 @@ void IThumbnailHelper::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outDat
 void IThumbnailHelper::CreateLcd(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
-    DoCreateLcd(taskData->opts, taskData->thumbnailData);
+    DoCreateLcd(taskData->opts, taskData->thumbnailData, false);
 }
 
 void IThumbnailHelper::CreateThumbnail(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
-    DoCreateThumbnail(taskData->opts, taskData->thumbnailData);
+    DoCreateThumbnail(taskData->opts, taskData->thumbnailData, false);
 }
 
 void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront)
@@ -181,6 +183,9 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, con
     if (!ThumbnailUtils::LoadSourceImage(data, size, suffix == THUMBNAIL_THUMB_SUFFIX)) {
         if (opts.path.empty()) {
             MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+                {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             return false;
         } else {
             opts.path = "";
@@ -190,6 +195,9 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, con
                 return true;
             }
             if (!ThumbnailUtils::LoadSourceImage(data, size, suffix == THUMBNAIL_THUMB_SUFFIX)) {
+                VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
+                    {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+                PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
                 return false;
             }
         }
@@ -198,23 +206,33 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, con
 }
 
 
-bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, true);
-    if (ret == WaitStatus::WAIT_SUCCESS) {
+    if (ret == WaitStatus::WAIT_SUCCESS && forQuery) {
         return true;
     }
 
     if (!TryLoadSource(opts, data, opts.screenSize, THUMBNAIL_LCD_SUFFIX)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
 
     if (data.source == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
 
-    if (!ThumbnailUtils::CompressImage(data.source, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO)) {
+    shared_ptr<string> pathPtr = make_shared<string>(data.path);
+    if (!ThumbnailUtils::CompressImage(data.source, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO, pathPtr)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
     }
@@ -222,12 +240,18 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
     int err = ThumbnailUtils::TrySaveFile(data, ThumbnailType::LCD);
     if (err < 0) {
         MEDIA_ERR_LOG("SaveLcd faild %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
 
     data.lcd.clear();
     if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
         MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
 
@@ -244,6 +268,9 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
     if (isThumb) {
         size = { DEFAULT_THUMB_SIZE, DEFAULT_THUMB_SIZE };
         if (!TryLoadSource(opts, data, size, THUMBNAIL_THUMB_SUFFIX)) {
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+                {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             return false;
         }
 
@@ -253,6 +280,9 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
 
         if (!ThumbnailUtils::CompressImage(data.source, data.thumbnail)) {
             MEDIA_ERR_LOG("CompressImage faild id %{private}s", opts.row.c_str());
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+                {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             return false;
         }
     } else {
@@ -267,32 +297,44 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
     int err = ThumbnailUtils::TrySaveFile(data, type);
     if (err < 0) {
         MEDIA_ERR_LOG("SaveThumbnailData faild %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     data.thumbnail.clear();
     return true;
 }
 
-bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, false);
-    if (ret == WaitStatus::WAIT_SUCCESS) {
+    if (ret == WaitStatus::WAIT_SUCCESS && forQuery) {
         return true;
     }
 
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     if (opts.table != AudioColumn::AUDIOS_TABLE) {
         if (!GenThumbnail(opts, data, ThumbnailType::MTH)) {
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+                {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             return false;
         }
         if (!GenThumbnail(opts, data, ThumbnailType::YEAR)) {
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+                {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             return false;
         }
     }
-    
+
     return true;
 }
 } // namespace Media

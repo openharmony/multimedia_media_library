@@ -69,15 +69,17 @@ public:
     int32_t RecordError(const std::string &err);
     std::set<std::string> ReadError();
     int32_t DeleteError(const std::string &err);
-
     static void UpdateAlbumInfo(const std::vector<std::string> &subtypes = {},
         const std::vector<std::string> &userAlbumIds = {});
 
 private:
     int32_t FillMetadata(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         std::unique_ptr<Metadata> &ptr);
+    int32_t GetFileSet(MediaLibraryCommand &cmd, const vector<string> &columns,
+        std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     void ExtractMetaFromColumn(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         std::unique_ptr<Metadata> &metadata, const std::string &col);
+    bool InsertData(const NativeRdb::ValuesBucket values, const std::string &tableName, int64_t &rowNum);
 };
 } // namespace Media
 } // namespace OHOS

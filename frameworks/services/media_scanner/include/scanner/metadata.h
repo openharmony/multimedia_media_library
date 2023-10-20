@@ -114,6 +114,15 @@ public:
     void SetAllExif(const VariantData &allExif);
     const std::string &GetAllExif() const;
 
+    void SetDateYear(const VariantData &dateYear);
+    const std::string &getDateYear() const;
+
+    void SetDateMonth(const VariantData &dateMonth);
+    const std::string &getDateMonth() const;
+
+    void SetDateDay(const VariantData &dateDay);
+    const std::string &getDateDay() const;
+
 #ifdef MEDIALIBRARY_COMPATIBILITY
     void SetPhotoSubType(const VariantData &photoSubType);
     int32_t GetPhotoSubType() const;
@@ -155,6 +164,9 @@ private:
     int32_t width_;
     int32_t duration_;
     int32_t orientation_;
+    string dateYear_;
+    string dateMonth_;
+    string dateDay_;
 
     // video, audio, image
     int64_t dateTaken_;

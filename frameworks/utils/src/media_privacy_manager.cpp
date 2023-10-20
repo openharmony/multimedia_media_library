@@ -37,7 +37,6 @@ using PrivacyRanges = vector<pair<uint32_t, uint32_t>>;
 
 namespace OHOS {
 namespace Media {
-
 constexpr uint32_t E_NO_EXIF = 1;
 constexpr uint32_t E_NO_PRIVACY_EXIF_TAG = 2;
 

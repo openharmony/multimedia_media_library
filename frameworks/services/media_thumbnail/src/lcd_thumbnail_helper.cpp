@@ -41,7 +41,7 @@ int32_t LcdThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
     }
 
     if (isSync) {
-        DoCreateLcd(opts, thumbnailData);
+        DoCreateLcd(opts, thumbnailData, false);
     } else {
         IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateLcd, opts, thumbnailData, true);
     }

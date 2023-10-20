@@ -27,7 +27,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
 class ConfigTestOpenCall : public NativeRdb::RdbOpenCallback {
 public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override;
@@ -203,6 +202,5 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_00
     EXPECT_EQ(ret, E_OK);
     serverTest.ReleaseService();
 }
-
 } // namespace Media
 } // namespace OHOS

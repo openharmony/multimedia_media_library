@@ -442,6 +442,16 @@ void FileAsset::SetFilePath(const std::string &filePath)
     member_[MediaColumn::MEDIA_FILE_PATH] = filePath;
 }
 
+int64_t FileAsset::GetPhotoEditTime() const
+{
+    return GetInt64Member(PhotoColumn::PHOTO_EDIT_TIME);
+}
+
+void FileAsset::SetPhotoEditTime(int64_t photoEditTime)
+{
+    member_[PhotoColumn::PHOTO_EDIT_TIME] = photoEditTime;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);

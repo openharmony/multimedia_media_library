@@ -12,7 +12,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-#include "mtp_operation_utils.h"
 #include <cinttypes>
 #include <cstdint>
 #include <fstream>
@@ -20,6 +19,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "mtp_operation_utils.h"
 #include "directory_ex.h"
 #include "iservice_registry.h"
 #include "media_log.h"

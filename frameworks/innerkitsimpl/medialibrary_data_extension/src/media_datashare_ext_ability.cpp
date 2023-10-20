@@ -296,7 +296,7 @@ static int32_t HandleSecurityComponentPermission(MediaLibraryCommand &cmd)
     if (cmd.GetUri().ToString().find(OPRN_CREATE_COMPONENT) != string::npos) {
 #ifdef MEDIALIBRARY_SECURITY_OPEN
         auto tokenId = PermissionUtils::GetTokenId();
-        if (!Security::SecurityComponent::SecCompKit::ReduceAfterVerifySavePermission(tokenId)) {
+        if (!Security::SecurityComponent::SecCompKit::VerifySavePermission(tokenId)) {
             return E_NEED_FURTHER_CHECK;
         }
         return E_SUCCESS;

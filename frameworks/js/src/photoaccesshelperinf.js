@@ -219,11 +219,13 @@ const PhotoViewMIMETypes = {
 const ErrCode = {
   INVALID_ARGS: 13900020,
   RESULT_ERROR: 13900042,
+  CONTEXT_NO_EXIST: 16000011,
 }
 
 const ERRCODE_MAP = new Map([
   [ErrCode.INVALID_ARGS, 'Invalid argument'],
   [ErrCode.RESULT_ERROR, 'Unknown error'],
+  [ErrCode.CONTEXT_NO_EXIST, 'Current ability failed to obtain context'],
 ]);
 
 const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
@@ -314,8 +316,17 @@ async function photoPickerSelect(...args) {
   const config = parsePhotoPickerSelectOption(args);
   console.log('[picker] config: ' + JSON.stringify(config));
 
+  let context = undefined;
   try {
-    let context = getContext(this);
+    context = getContext(this);
+  } catch (getContextError) {
+    console.error('[picker] getContext error: ' + getContextError);
+    throw getErr(ErrCode.CONTEXT_NO_EXIST);
+  }
+  try {
+    if (context === undefined) {
+      throw getErr(ErrCode.CONTEXT_NO_EXIST);
+    }
     let result = await context.startAbilityForResult(config, {windowMode: 1});
     console.log('[picker] result: ' + JSON.stringify(result));
     const selectResult = getPhotoPickerSelectResult(result);
@@ -333,7 +344,7 @@ async function photoPickerSelect(...args) {
       }
     })
   } catch (error) {
-    console.log('[picker] error: ' + error);
+    console.error('[picker] error: ' + JSON.stringify(error));
   }
   return undefined;
 }
