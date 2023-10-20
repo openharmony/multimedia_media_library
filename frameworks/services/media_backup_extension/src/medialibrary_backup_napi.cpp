@@ -55,7 +55,7 @@ static std::string GetStringFromParams(napi_env env, const napi_value args[], si
     napi_valuetype valueType = napi_undefined;
     if (napi_typeof(env, args[index], &valueType) != napi_ok || valueType != napi_string) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return result;
+        return "";
     }
 
     size_t resultLength;
@@ -94,9 +94,9 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
     GET_JS_ARGS(env, info, argc, argv, thisVar);
     NAPI_ASSERT(env, (argc == ARGS_THREE), "requires 3 parameters");
     napi_get_undefined(env, &result);
-    int32_t sceneCode = GetJSArgsForStartRestore(env, argv, PARAM0);
-    std::string galleryAppName = GetJSArgsForStartRestore(env, argv, PARAM1);
-    std::string mediaAppName = GetJSArgsForStartRestore(env, argv, PARAM2);
+    int32_t sceneCode = GetIntFromParams(env, argv, PARAM0);
+    std::string galleryAppName = GetStringFromParams(env, argv, PARAM1);
+    std::string mediaAppName = GetStringFromParams(env, argv, PARAM2);
     NAPI_INFO_LOG("StartRestore, sceneCode = %{public}d", sceneCode);
     if (sceneCode < 0) {
         NAPI_INFO_LOG("Parameters error, sceneCode = %{public}d", sceneCode);
