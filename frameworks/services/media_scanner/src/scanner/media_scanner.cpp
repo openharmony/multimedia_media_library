@@ -334,7 +334,8 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     }
 
     // may need isPending here
-    if ((data_->GetFileDateModified() == statInfo.st_mtime) && (data_->GetFileSize() == statInfo.st_size)) {
+    if ((data_->GetFileDateModified() == statInfo.st_mtime) && (data_->GetFileSize() == statInfo.st_size) &&
+        (!isForceScan_)) {
         scannedIds_.insert(make_pair(data_->GetTableName(), data_->GetFileId()));
         return E_SCANNED;
     }

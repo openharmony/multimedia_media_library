@@ -20,6 +20,7 @@
 
 #include "cloud_sync_helper.h"
 #include "ipc_skeleton.h"
+#include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -29,6 +30,7 @@
 #endif
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_tracer.h"
 #include "media_scanner.h"
 #include "media_scanner_manager.h"
@@ -506,6 +508,9 @@ int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates,
             return E_HAS_FS_ERROR;
         }
         MediaLibraryObjectUtils::InvalidateThumbnail(to_string(fileId), predicates.GetTableName(), filePath);
+        if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+            MediaLibraryPhotoOperations::DeleteRevertMessage(filePath);
+        }
         deletedRows += deletedRow;
     }
     return deletedRows;
@@ -1343,7 +1348,16 @@ void AddYearMonthDayColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
+static void AddPhotoEditTimeColumn(RdbStore &store)
+{
+    const string addEditTimeOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+        " ADD COLUMN " + PhotoColumn::PHOTO_EDIT_TIME + " BIGINT DEFAULT 0";
+
+    const vector<string> addEditTime = { addEditTimeOnPhotos };
+    ExecSqls(addEditTime, store);
+}
+
+static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
         AddPackageNameColumnOnTables(store);
@@ -1375,6 +1389,10 @@ void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_YEAR_MONTH_DAY) {
         UpdateYearMonthDayData(store);
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_EDIT_TIME) {
+        AddPhotoEditTimeColumn(store);
     }
 }
 

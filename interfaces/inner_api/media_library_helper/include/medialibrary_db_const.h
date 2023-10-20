@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 20;
+const int32_t MEDIA_RDB_VERSION = 21;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -47,6 +47,7 @@ enum {
     VERSION_ADD_YEAR_MONTH_DAY = 17,
     VERSION_UPDATE_YEAR_MONTH_DAY = 18,
     VERSION_ADD_VISION_TABLE = 20,
+    VERSION_ADD_PHOTO_EDIT_TIME = 21,
 };
 
 enum {
@@ -607,6 +608,11 @@ const std::string ASSET_EXTENTION = "extention";
 // delete_tool
 const std::string DELETE_TOOL_ONLY_DATABASE = "only_db";
 
+// edit param
+const std::string EDIT_DATA_REQUEST = "edit_data_request";  // MEDIA_OPERN_KEYWORD=EDIT_DATA_REQUEST
+const std::string SOURCE_REQUEST = "source_request";        // MEDIA_OPERN_KEYWORD=SOURCE_REQUEST
+const std::string COMMIT_REQUEST = "commit_request";        // MEDIA_OPERN_KEYWORD=COMMIT_REQUEST
+const std::string EDIT_DATA = "edit_data";
 } // namespace Media
 } // namespace OHOS
 
