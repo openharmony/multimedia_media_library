@@ -488,6 +488,5 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_media_column_Test_001, TestSize
     ret = AudioColumn::IsAudioColumn("media_column");
     EXPECT_EQ(ret, false);
 }
-
 } // namespace Media
 } // namespace OHOS

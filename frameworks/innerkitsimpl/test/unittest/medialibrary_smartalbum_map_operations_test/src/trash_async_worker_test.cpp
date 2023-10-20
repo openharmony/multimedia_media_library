@@ -26,7 +26,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, TrashAsyncWorker_GetInstance_test_001, TestSize.Level0)
 {
     shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
@@ -67,6 +66,5 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, TrashAsyncWorker_TrashAsyncTask
     EXPECT_EQ((asyncWorker1->asyncWorkerInstance_ != nullptr), true);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
-
 }
 }

@@ -25,7 +25,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleUriPermOperations_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::INSERT_PERMISSION);

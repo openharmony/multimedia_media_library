@@ -35,7 +35,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 class ArkJsRuntime : public AbilityRuntime::JsRuntime {
 public:
     ArkJsRuntime() {};

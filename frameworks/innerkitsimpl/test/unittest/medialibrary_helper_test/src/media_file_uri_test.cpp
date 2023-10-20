@@ -27,7 +27,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 static const string networkId_ = "1d3cb099659d53b3ee15faaab3c00a8ff983382ebc8b01aabde039ed084e167b";
 static const string DEFAULT_EXTR_PATH = "/IMG_1690336600_001/test.jpg";
 
@@ -525,6 +524,5 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetPhotoId_Test_001, TestSiz
     uri = "file://media/Photo/test";
     EXPECT_EQ(MediaFileUri::GetPhotoId(uri), "test");
 }
-
 } // namespace Media
 } // namespace OHOS

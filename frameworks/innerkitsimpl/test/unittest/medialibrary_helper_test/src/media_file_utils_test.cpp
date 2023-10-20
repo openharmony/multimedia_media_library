@@ -31,7 +31,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileExists_Test_001, TestSize.Level0)
 {
     string filePath = "/data/test/isfileexists_001";

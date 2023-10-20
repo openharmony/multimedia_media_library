@@ -57,7 +57,6 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
-
 shared_ptr<PhotoEditingRecord> PhotoEditingRecord::instance_ = nullptr;
 mutex PhotoEditingRecord::mutex_;
 

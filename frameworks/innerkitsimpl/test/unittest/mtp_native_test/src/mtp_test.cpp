@@ -26,7 +26,6 @@ using namespace std;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-
 HWTEST_F(MtpNativeTest, mtp_packet_tools_test_001, TestSize.Level0)
 {
     MtpPacketTool::GetUInt16(0, 0);
@@ -672,6 +671,5 @@ HWTEST_F(MtpNativeTest, mtp_packet_003, TestSize.Level0)
     ret = mtpPacket->ParserPayload();
     EXPECT_EQ(ret, MTP_ERROR_PACKET_INCORRECT);
 }
-
 } // namespace Media
 } // ohos
