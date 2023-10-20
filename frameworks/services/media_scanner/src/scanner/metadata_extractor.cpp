@@ -99,7 +99,10 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
     if (err == 0) {
         data->SetUserComment(propertyStr);
     }
-
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_PHOTO_MODE, propertyStr);
+    if (err == 0) {
+        data->SetShootingMode(propertyStr);
+    }
     return E_OK;
 }
 
@@ -158,10 +161,26 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
         dbleTempMeta = GetLongitudeLatitude(propertyStr);
         data->SetLatitude(dbleTempMeta);
     }
-
     ExtractImageExif(imageSource, data);
-
     return E_OK;
+}
+
+static std::string ExtractVideoShootingMode(const std::string &genreJson)
+{
+    if (genreJson.empty()) {
+        return "";
+    }
+    size_t pos = genreJson.find("param-use-tag");
+    if (pos != std::string::npos) {
+        size_t start = genreJson.find(":", pos);
+        size_t end = genreJson.find(",", pos);
+        if (end == std::string::npos) {
+            end = genreJson.find("}", pos);
+        }
+        return genreJson.substr(start + 1, end - start - 1); // 1: length offset
+    } else {
+        return "";
+    }
 }
 
 void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,
@@ -228,6 +247,11 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     strTemp = resultMap.at(AV_KEY_TITLE);
     if (!strTemp.empty()) {
         data->SetFileTitle(strTemp);
+    }
+    strTemp = resultMap.at(AV_KEY_GENRE);
+    if (!strTemp.empty()) {
+        std::string videoShootingMode = ExtractVideoShootingMode(strTemp);
+        data->SetShootingMode(videoShootingMode);
     }
 }
 

@@ -171,6 +171,8 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutString(PhotoColumn::PHOTO_DATE_YEAR, metadata.getDateYear());
         values.PutString(PhotoColumn::PHOTO_DATE_MONTH, metadata.getDateMonth());
         values.PutString(PhotoColumn::PHOTO_DATE_DAY, metadata.getDateDay());
+        values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, metadata.GetShootingMode());
+
 #ifdef MEDIALIBRARY_COMPATIBILITY
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());

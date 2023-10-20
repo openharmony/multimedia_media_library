@@ -41,6 +41,7 @@ Metadata::Metadata()
     width_(FILE_WIDTH_DEFAULT),
     duration_(FILE_DURATION_DEFAULT),
     orientation_(FILE_ORIENTATION_DEFAULT),
+    shootingMode_(FILE_SHOOTINGMODE_DEFAULT),
     dateTaken_(FILE_DATE_TAKEN_DEFAULT),
     longitude_(FILE_LONGITUDE_DEFAULT),
     latitude_(FILE_LATITUDE_DEFAULT),
@@ -397,6 +398,16 @@ void Metadata::SetDateDay(const VariantData &dateDay)
 const string &Metadata::getDateDay() const
 {
     return dateDay_;
+}
+
+void Metadata::SetShootingMode(const VariantData &shootingMode)
+{
+    shootingMode_ = get<string>(shootingMode);
+}
+
+const string &Metadata::GetShootingMode() const
+{
+    return shootingMode_;
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
