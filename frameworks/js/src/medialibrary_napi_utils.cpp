@@ -917,11 +917,6 @@ napi_value MediaLibraryNapiUtils::GetNapiValueArray(napi_env env, napi_value arg
 
     uint32_t len = 0;
     CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_INNER_FAIL);
-    if (len < 0) {
-        NAPI_ERR_LOG("Failed to check array length: %{public}u", len);
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array length");
-        return nullptr;
-    }
     if (len == 0) {
         napi_value result = nullptr;
         CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
