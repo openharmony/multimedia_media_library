@@ -25,7 +25,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 void MediaLibrarySmartalbumMapOperationTest::SetUpTestCase(void) {}
 
 void MediaLibrarySmartalbumMapOperationTest::TearDownTestCase(void) {}
@@ -242,6 +241,5 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAgingOperation_t
     EXPECT_EQ(ret, E_OK);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
-
 } // namespace Media
 } // namespace OHOSfu

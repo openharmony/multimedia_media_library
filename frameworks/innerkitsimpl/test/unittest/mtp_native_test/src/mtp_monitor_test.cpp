@@ -21,7 +21,6 @@ using namespace std;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-
 HWTEST_F(MtpNativeTest, mtp_monitor_test_001, TestSize.Level0)
 {
     MtpMonitor mtpMonitor;
