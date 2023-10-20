@@ -18,7 +18,6 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
-
 static inline void AppendStr(std::string &str, const std::string paramName, const int param)
 {
     if (str.empty()) {

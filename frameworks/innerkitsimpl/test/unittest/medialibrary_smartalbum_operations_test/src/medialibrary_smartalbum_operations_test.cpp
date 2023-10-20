@@ -25,7 +25,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 void MediaLibrarySmartalbumOperationTest::SetUpTestCase(void) {}
 
 void MediaLibrarySmartalbumOperationTest::TearDownTestCase(void) {}
@@ -139,6 +138,5 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_DeleteSmartAlbumOperation
     EXPECT_EQ(ret, E_DELETE_SMARTALBUM_MAP_FAIL);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
-
 } // namespace Media
 } // namespace OHOS
