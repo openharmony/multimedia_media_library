@@ -14,13 +14,13 @@
  */
 #include <sstream>
 
-#include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_helper_container.h"
 #include "medialibrary_type_const.h"
 #include "photo_album_column.h"
+#include "media_file_uri.h"
 
 using namespace std;
 namespace OHOS {

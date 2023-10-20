@@ -15,11 +15,11 @@
 
 #include "photo_album_column.h"
 
+#include <string>
 #include "media_column.h"
 #include "media_log.h"
 #include "medialibrary_type_const.h"
 #include "photo_map_column.h"
-#include <string>
 
 namespace OHOS::Media {
 using namespace std;

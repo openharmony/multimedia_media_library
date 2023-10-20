@@ -16,8 +16,8 @@
 #ifndef MTP_NATIVE_TEST_H
 #define MTP_NATIVE_TEST_H
 
-#include "get_self_permissions.h"
 #include "gtest/gtest.h"
+#include "get_self_permissions.h"
 #include "iservice_registry.h"
 #include "media_library_manager.h"
 #include "media_log.h"
