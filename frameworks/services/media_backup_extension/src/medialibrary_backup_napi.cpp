@@ -16,13 +16,13 @@
 #define MLOG_TAG "MediaLibraryBackupNapi"
 
 #include "medialibrary_backup_napi.h"
-#include "js_native_api.h"
 #include "application_context.h"
-#include "medialibrary_napi_utils.h"
-#include "medialibrary_napi_log.h"
-#include "medialibrary_errno.h"
-#include "medialibrary_client_errno.h"
 #include "backup_restore_service.h"
+#include "js_native_api.h"
+#include "medialibrary_client_errno.h"
+#include "medialibrary_errno.h"
+#include "medialibrary_napi_log.h"
+#include "medialibrary_napi_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -38,15 +38,30 @@ napi_value MediaLibraryBackupNapi::Init(napi_env env, napi_value exports)
     return exports;
 }
 
-static int32_t GetJSArgsForStartRestore(napi_env env, size_t argc, const napi_value args[])
+static int32_t GetIntFromParams(napi_env env, const napi_value args[], size_t index)
 {
     int32_t result = -1;
     napi_valuetype valueType = napi_undefined;
-    if (napi_typeof(env, args[0], &valueType) != napi_ok || valueType != napi_number) {
+    if (napi_typeof(env, args[index], &valueType) != napi_ok || valueType != napi_number) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return result;
     }
-    napi_get_value_int32(env, args[0], &result);
+    napi_get_value_int32(env, args[index], &result);
+    return result;
+}
+
+static std::string GetStringFromParams(napi_env env, const napi_value args[], size_t index)
+{
+    napi_valuetype valueType = napi_undefined;
+    if (napi_typeof(env, args[index], &valueType) != napi_ok || valueType != napi_string) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return result;
+    }
+
+    size_t resultLength;
+    napi_get_value_string_utf8(env, args[index], nullptr, 0, &resultLength);
+    std::string result(resultLength, '\0');
+    napi_get_value_string_utf8(env, args[index], &result[0], resultLength + 1, &resultLength);
     return result;
 }
 
@@ -72,20 +87,22 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
         return result;
     }
 
-    size_t argc = ARGS_TWO;
-    napi_value argv[ARGS_TWO] = {0};
+    size_t argc = ARGS_THREE;
+    napi_value argv[ARGS_THREE] = {0};
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_TWO), "requires 2 parameters maximum");
+    NAPI_ASSERT(env, (argc == ARGS_THREE), "requires 3 parameters");
     napi_get_undefined(env, &result);
-    int32_t sceneCode = GetJSArgsForStartRestore(env, argc, argv);
+    int32_t sceneCode = GetJSArgsForStartRestore(env, argv, PARAM0);
+    std::string galleryAppName = GetJSArgsForStartRestore(env, argv, PARAM1);
+    std::string mediaAppName = GetJSArgsForStartRestore(env, argv, PARAM2);
     NAPI_INFO_LOG("StartRestore, sceneCode = %{public}d", sceneCode);
     if (sceneCode < 0) {
         NAPI_INFO_LOG("Parameters error, sceneCode = %{public}d", sceneCode);
         return result;
     }
-    BackupRestoreService::GetInstance().StartRestore(sceneCode);
+    BackupRestoreService::GetInstance().StartRestore(sceneCode, galleryAppName, mediaAppName);
     return result;
 }
 } // namespace Media

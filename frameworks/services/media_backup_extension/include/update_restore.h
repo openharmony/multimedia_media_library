@@ -22,7 +22,7 @@ namespace OHOS {
 namespace Media {
 class UpdateRestore : public BaseRestore {
 public:
-    UpdateRestore() = default;
+    UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName);
     virtual ~UpdateRestore() = default;
 
     int32_t Init(void) override;
@@ -39,6 +39,8 @@ private:
     std::string filePath_;
     std::string dbPath_;
     std::string appDataPath_;
+    std::string galleryAppName_;
+    std::string mediaAppName_;
 };
 } // namespace Media
 } // namespace OHOS

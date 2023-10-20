@@ -16,13 +16,13 @@
 #define MLOG_TAG "MediaLibraryCloneRestore"
 
 #include "clone_restore.h"
-#include "media_log.h"
+#include "media_column.h"
 #include "media_file_utils.h"
+#include "media_log.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
-#include "media_column.h"
 #include "userfile_manager_types.h"
-#include "medialibrary_data_manager.h"
 
 namespace OHOS {
 namespace Media {

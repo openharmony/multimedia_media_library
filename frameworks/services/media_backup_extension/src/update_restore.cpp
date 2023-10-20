@@ -16,36 +16,37 @@
 #define MLOG_TAG "MediaLibraryUpdateRestore"
 
 #include "update_restore.h"
-#include "media_log.h"
-#include "media_file_utils.h"
-#include "medialibrary_errno.h"
-#include "result_set_utils.h"
 #include "media_column.h"
-#include "userfile_manager_types.h"
+#include "media_file_utils.h"
+#include "media_log.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_data_manager.h"
+#include "result_set_utils.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
-const std::string UPDATE_DB_DIR = "/data/storage/el2/backup/restore";
 const std::string UPDATE_FILE_DIR = "/storage/media/local/files/data";
 const std::string UPDATE_DB_NAME = "gallery.db";
-const std::string GALLERY_BUNDLE = "com.huawei.photos";
 const std::string CLONE_TAG = "/data/storage/el2/backup/restore/cloneBackupData.json";
-const std::string GALLERY_DB_PATH = "/com.huawei.photos/ce/databases/gallery.db";
 
 constexpr int32_t GALLERY_IMAGE_TYPE = 1;
 constexpr int32_t GALLERY_VIDEO_TYPE = 3;
 
+UpdateRestore::UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName)
+{
+    galleryAppName_ = galleryAppName;
+    mediaAppName_ = mediaAppName;
+}
+
 int32_t UpdateRestore::Init(void)
 {
+    dbPath_ = ORIGIN_PATH + "/" + galleryAppName_ + "/ce/databases/gallery.db";
+    appDataPath_ = ORIGIN_PATH;
     if (MediaFileUtils::IsFileExists(CLONE_TAG)) {
-        dbPath_ = ORIGIN_PATH + GALLERY_DB_PATH;
         filePath_ = ORIGIN_PATH;
-        appDataPath_ = ORIGIN_PATH;
     } else {
-        dbPath_ = UPDATE_DB_DIR + GALLERY_DB_PATH;
         filePath_ = UPDATE_FILE_DIR;
-        appDataPath_ = UPDATE_DB_DIR;
     }
     if (!MediaFileUtils::IsFileExists(dbPath_)) {
         MEDIA_ERR_LOG("Gallery media db is not exist.");
@@ -57,7 +58,7 @@ int32_t UpdateRestore::Init(void)
 
     NativeRdb::RdbStoreConfig config(UPDATE_DB_NAME);
     config.SetPath(dbPath_);
-    config.SetBundleName(GALLERY_BUNDLE);
+    config.SetBundleName(galleryAppName_);
     config.SetReadConSize(CONNECT_SIZE);
     config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
 
@@ -65,7 +66,7 @@ int32_t UpdateRestore::Init(void)
     RdbCallback cb;
     galleryRdb_ = NativeRdb::RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, cb, err);
     if (galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("gallyer data syncer init rdb fail");
+        MEDIA_ERR_LOG("gallyer data syncer init rdb fail, err = %{public}d", err);
         return E_FAIL;
     }
     MEDIA_INFO_LOG("Init db succ.");
@@ -86,8 +87,8 @@ void UpdateRestore::RestorePhoto(void)
 void UpdateRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
-    std::string photoData = appDataPath_ + "/com.huawei.photos";
-    std::string mediaData = appDataPath_ + "/com.android.providers.media.module";
+    std::string photoData = appDataPath_ + "/" + galleryAppName_;
+    std::string mediaData = appDataPath_ + "/" + mediaAppName_;
     if (MediaFileUtils::IsFileExists(photoData)) {
         MEDIA_DEBUG_LOG("Start to delete photo data.");
         (void)MediaFileUtils::DeleteDir(photoData);

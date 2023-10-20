@@ -17,8 +17,8 @@
 
 #include "backup_restore_service.h"
 #include "media_log.h"
-#include "update_restore.h"
 #include "clone_restore.h"
+#include "update_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -28,11 +28,12 @@ BackupRestoreService &BackupRestoreService::GetInstance(void)
     return inst;
 }
 
-void BackupRestoreService::StartRestore(int32_t sceneCode)
+void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &galleryAppName,
+    const std::string &mediaAppName)
 {
     std::unique_ptr<BaseRestore> restoreService;
     if (sceneCode == 0) {
-        restoreService = std::make_unique<UpdateRestore>();
+        restoreService = std::make_unique<UpdateRestore>(galleryAppName, mediaAppName);
     } else {
         restoreService = std::make_unique<CloneRestore>();
     }

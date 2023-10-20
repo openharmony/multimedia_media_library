@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H_
 
 #include <stdint.h>
+#include <string>
 
 namespace OHOS {
 namespace Media {
@@ -24,7 +25,7 @@ class BackupRestoreService {
 public:
     virtual ~BackupRestoreService() = default;
     static BackupRestoreService &GetInstance(void);
-    void StartRestore(int32_t sceneCode);
+    void StartRestore(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName);
 
 private:
     BackupRestoreService() = default;
