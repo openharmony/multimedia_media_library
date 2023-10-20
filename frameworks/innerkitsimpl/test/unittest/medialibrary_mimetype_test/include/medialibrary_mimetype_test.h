@@ -26,7 +26,6 @@ public:
     void SetUp();
     void TearDown();
 };
-
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIALIBRARY_UNITTEST_MIMETYPE_H

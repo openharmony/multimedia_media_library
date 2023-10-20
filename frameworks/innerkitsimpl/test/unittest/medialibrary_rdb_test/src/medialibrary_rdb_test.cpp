@@ -418,6 +418,5 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_003, TestSize.
     rdbStorePtr->Stop();
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_003 finish");
 }
-
 } // namespace Media
 } // namespace OHOS

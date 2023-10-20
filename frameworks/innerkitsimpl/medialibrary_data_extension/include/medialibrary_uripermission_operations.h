@@ -32,7 +32,6 @@ public:
     static int32_t DeleteBundlePermission(const std::string &fileId, const std::string &bundleName,
         const std::string &tableName);
 };
-
 } // Media
 } // OHOS
 #endif // OHOS_MEDIALIBRARY_BUNDLEPERMM_OPERATIONS_H

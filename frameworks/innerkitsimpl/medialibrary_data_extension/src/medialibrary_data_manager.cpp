@@ -82,7 +82,6 @@ const OHOS::DistributedKv::StoreId KVSTORE_STOREID = {"medialibrary_thumbnail"};
 
 namespace OHOS {
 namespace Media {
-
 shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
