@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H_
-#define OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H_
+#ifndef OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H
+#define OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H
 
-#include <stdint.h>
 #include <string>
 
 namespace OHOS {
@@ -33,4 +32,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H_
+#endif  // OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H

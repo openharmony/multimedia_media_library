@@ -13,10 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_BACKUP_DEFINES_H_
-#define OHOS_MEDIA_BACKUP_DEFINES_H_
+#ifndef OHOS_MEDIA_BACKUP_DEFINES_H
+#define OHOS_MEDIA_BACKUP_DEFINES_H
 
-#include <stdint.h>
 #include <string>
 #include <vector>
 
@@ -65,4 +64,4 @@ struct FileInfo {
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_BACKUP_DEFINES_H_
+#endif  // OHOS_MEDIA_BACKUP_DEFINES_H
