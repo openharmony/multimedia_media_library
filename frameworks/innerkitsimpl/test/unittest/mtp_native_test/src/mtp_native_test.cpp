@@ -2654,6 +2654,5 @@ HWTEST_F(MtpNativeTest, mtp_medialibrary_manager_001, TestSize.Level0)
     EXPECT_TRUE(ret == MTP_ERROR_SPECIFICATION_BY_GROUP_UNSUPPORTED);
     MEDIA_INFO_LOG("mtp_medialibrary_manager_001::End");
 }
-
 } // namespace Media
 } // ohos

@@ -166,7 +166,6 @@
 
 namespace OHOS {
 namespace Media {
-
 /* Constants for array index */
 const int32_t PARAM0 = 0;
 const int32_t PARAM1 = 1;

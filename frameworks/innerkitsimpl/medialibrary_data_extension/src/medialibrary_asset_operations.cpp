@@ -62,7 +62,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
 mutex g_uniqueNumberLock;
 
 const string DEFAULT_IMAGE_NAME = "IMG_";
