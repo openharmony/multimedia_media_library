@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H_
-#define OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H_
+#ifndef OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
+#define OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
 
 #include <mutex>
 #include <vector>
@@ -39,4 +39,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H_
+#endif  // OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H

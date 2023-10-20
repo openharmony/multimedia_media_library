@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_BACKUP_RESTORE_H_
-#define OHOS_MEDIA_BACKUP_RESTORE_H_
+#ifndef OHOS_MEDIA_BASE_RESTORE_H
+#define OHOS_MEDIA_BASE_RESTORE_H
 
 #include "backup_defines.h"
 #include "rdb_helper.h"
@@ -65,4 +65,4 @@ public:
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_BACKUP_RESTORE_H_
+#endif  // OHOS_MEDIA_BASE_RESTORE_H

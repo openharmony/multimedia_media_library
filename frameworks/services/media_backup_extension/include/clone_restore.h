@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_CLONE_RESTORE_H_
-#define OHOS_MEDIA_CLONE_RESTORE_H_
+#ifndef OHOS_MEDIA_CLONE_RESTORE_H
+#define OHOS_MEDIA_CLONE_RESTORE_H
 
 #include "base_restore.h"
 
@@ -42,4 +42,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_CLONE_RESTORE_H_
+#endif  // OHOS_MEDIA_CLONE_RESTORE_H
