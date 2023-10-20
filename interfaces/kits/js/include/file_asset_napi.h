@@ -134,6 +134,11 @@ private:
     static napi_value PhotoAccessHelperSetPending(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperSetUserComment(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrGetJson(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperIsEdited(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperRequestEditData(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperRequestSource(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperCommitEditedAsset(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperRevertToOriginal(napi_env env, napi_callback_info info);
 
     bool HandleParamSet(const std::string &inputKey, const std::string &value, ResultNapiType resultNapiType);
     napi_env env_;
@@ -162,6 +167,7 @@ struct FileAssetAsyncContext : public NapiError {
     bool isTrash = false;
     bool isHidden = false;
     bool isPending = false;
+    bool hasEdit = false;
     std::string networkId;
     std::shared_ptr<PixelMap> pixelmap;
 
@@ -170,6 +176,9 @@ struct FileAssetAsyncContext : public NapiError {
     ResultNapiType resultNapiType;
     std::string userComment;
     std::string jsonStr;
+    std::string editData;
+    std::string uri;
+    char* editDataBuffer;
 };
 } // namespace Media
 } // namespace OHOS
