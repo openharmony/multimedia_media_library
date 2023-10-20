@@ -40,6 +40,14 @@
         }                                                           \
     } while (0)
 
+#define CHECK_COND_WITH_MESSAGE(env, cond, msg)                 \
+    do {                                                            \
+        if (!(cond)) {                                    \
+            NapiError::ThrowError(env, -OHOS_INVALID_PARAM_CODE, __FUNCTION__, __LINE__, msg); \
+            return nullptr;                                          \
+        }                                                           \
+    } while (0)
+
 #define NAPI_ASSERT(env, cond, msg) CHECK_ARGS_WITH_MESSAGE(env, cond, msg)
 
 #define GET_JS_ARGS(env, info, argc, argv, thisVar)                         \
@@ -144,6 +152,8 @@
 
 #define CHECK_ARGS(env, cond, err) CHECK_ARGS_BASE(env, cond, err, nullptr)
 
+#define CHECK_ARGS_THROW_INVALID_PARAM(env, cond) CHECK_ARGS(env, cond, -OHOS_INVALID_PARAM_CODE)
+
 #define CHECK_ARGS_RET_VOID(env, cond, err) CHECK_ARGS_BASE(env, cond, err, NAPI_RETVAL_NOTHING)
 
 #define CHECK_COND(env, cond, err)                                  \
@@ -185,6 +195,8 @@ const int32_t FAVORIT_SMART_ALBUM_ID = 2;
 const std::string FAVORIT_SMART_ALBUM_NAME = "FavoritAlbum";
 
 const std::string API_VERSION = "api_version";
+
+const std::string PENDING_STATUS = "pending";
 
 enum NapiAssetType {
     TYPE_DEFAULT = 0,
@@ -347,6 +359,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DATE_YEAR",                 PhotoColumn::PHOTO_DATE_YEAR),
     std::make_pair("DATE_MONTH",                PhotoColumn::PHOTO_DATE_MONTH),
     std::make_pair("DATE_DAY",                  PhotoColumn::PHOTO_DATE_DAY),
+    std::make_pair("PENDING",                   PENDING_STATUS),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
@@ -491,6 +504,14 @@ public:
         DataShare::DataSharePredicates &predicates);
     static int32_t GetUserAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
     static bool IsSystemApp();
+    static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
+        const std::string &propertyName);
+
+    static napi_value GetNapiValueArray(napi_env env, napi_value arg, std::vector<napi_value> &values);
+    static napi_value GetUriArrayFromAssets(
+        napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
+    static napi_value GetStringArray(
+        napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
 
 private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);

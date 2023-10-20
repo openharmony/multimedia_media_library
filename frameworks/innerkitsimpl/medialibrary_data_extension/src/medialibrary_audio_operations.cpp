@@ -97,47 +97,6 @@ int32_t MediaLibraryAudioOperations::Update(MediaLibraryCommand &cmd)
     return E_OK;
 }
 
-// temp function, delete after MediaFileUri::Getpath is finish
-static string GetPathFromUri(const std::string &uri)
-{
-    string realTitle = uri;
-    size_t index = uri.rfind('/');
-    if (index == string::npos) {
-        return "";
-    }
-    realTitle = uri.substr(0, index);
-    index = realTitle.rfind('/');
-    if (index == string::npos) {
-        return "";
-    }
-    realTitle = realTitle.substr(index + 1);
-    index = realTitle.rfind('_');
-    if (index == string::npos) {
-        return "";
-    }
-    string fileId = realTitle.substr(index + 1);
-    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
-        return "";
-    }
-    int32_t fileUniqueId;
-    if (!StrToInt(fileId, fileUniqueId)) {
-        MEDIA_ERR_LOG("invalid fileuri %{private}s", uri.c_str());
-        return "";
-    }
-    int32_t bucketNum = 0;
-    MediaLibraryAssetOperations::CreateAssetBucket(fileUniqueId, bucketNum);
-    string ext = MediaFileUtils::GetExtensionFromPath(uri);
-    if (ext.empty()) {
-        return "";
-    }
-    string path = ROOT_MEDIA_DIR + AUDIO_BUCKET + "/" + to_string(bucketNum) + "/" + realTitle + "." + ext;
-    if (!MediaFileUtils::IsFileExists(path)) {
-        MEDIA_ERR_LOG("file not exist, path=%{private}s", path.c_str());
-        return "";
-    }
-    return path;
-}
-
 const static vector<string> AUDIO_COLUMN_VECTOR = {
     AudioColumn::MEDIA_FILE_PATH,
     AudioColumn::MEDIA_TIME_PENDING
@@ -146,40 +105,13 @@ const static vector<string> AUDIO_COLUMN_VECTOR = {
 int32_t MediaLibraryAudioOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     string uriString = cmd.GetUriStringWithoutSegment();
-    string id = MediaFileUri(uriString).GetFileId();
-    if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
-        return E_INVALID_URI;
-    }
-
-    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
     string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
-    MediaFileUri fileUri(uriString);
-    if (pendingStatus.empty() || !fileUri.IsApi10()) {
-        fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_AUDIO,
-            AUDIO_COLUMN_VECTOR);
-        if (fileAsset == nullptr) {
-            MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
-            return E_INVALID_URI;
-        }
-    } else {
-        string path = GetPathFromUri(uriString);
-        if (path.empty()) {
-            fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_AUDIO,
-                AUDIO_COLUMN_VECTOR);
-            if (fileAsset == nullptr) {
-                MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
-                return E_INVALID_URI;
-            }
-        } else {
-            fileAsset->SetPath(path);
-            int32_t timePending = stoi(pendingStatus);
-            fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
-        }
-    }
 
-    fileAsset->SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
-    fileAsset->SetId(stoi(id));
-    fileAsset->SetUri(uriString);
+    shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, false, AUDIO_COLUMN_VECTOR, pendingStatus);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
+        return E_URI_INVALID;
+    }
 
     if (uriString.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
         return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10);
@@ -194,40 +126,13 @@ int32_t MediaLibraryAudioOperations::Close(MediaLibraryCommand &cmd)
     if (!GetStringFromValuesBucket(values, MEDIA_DATA_DB_URI, uriString)) {
         return E_INVALID_VALUES;
     }
-    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
-    if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(fileId))) {
-        return E_INVALID_URI;
-    }
-
-    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
     string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
-    MediaFileUri fileUri(uriString);
-    if (pendingStatus.empty() || !fileUri.IsApi10()) {
-        fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_AUDIO,
-            AUDIO_COLUMN_VECTOR);
-        if (fileAsset == nullptr) {
-            MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
-            return E_INVALID_URI;
-        }
-    } else {
-        string path = GetPathFromUri(uriString);
-        if (path.empty()) {
-            fileAsset = GetFileAssetFromDb(AudioColumn::MEDIA_ID, fileId, OperationObject::FILESYSTEM_AUDIO,
-                AUDIO_COLUMN_VECTOR);
-            if (fileAsset == nullptr) {
-                MEDIA_ERR_LOG("Failed to obtain path from Database, uri=%{private}s", uriString.c_str());
-                return E_INVALID_URI;
-            }
-        } else {
-            fileAsset->SetPath(path);
-            int32_t timePending = stoi(pendingStatus);
-            fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
-        }
-    }
 
-    fileAsset->SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
-    fileAsset->SetId(stoi(fileId));
-    fileAsset->SetUri(uriString);
+    shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, false, AUDIO_COLUMN_VECTOR, pendingStatus);
+    if (fileAsset == nullptr) {
+        MEDIA_ERR_LOG("Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
+        return E_URI_INVALID;
+    }
 
     int32_t isSync = 0;
     int32_t errCode = 0;
@@ -481,7 +386,7 @@ int32_t MediaLibraryAudioOperations::UpdateV9(MediaLibraryCommand &cmd)
     return rowId;
 }
 
-int32_t MediaLibraryAudioOperations::TrashAging()
+int32_t MediaLibraryAudioOperations::TrashAging(shared_ptr<int> countPtr)
 {
     auto time = MediaFileUtils::UTCTimeSeconds();
     RdbPredicates predicates(AudioColumn::AUDIOS_TABLE);
@@ -490,6 +395,9 @@ int32_t MediaLibraryAudioOperations::TrashAging()
     int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(predicates, false);
     if (deletedRows < 0) {
         return deletedRows;
+    }
+    if (countPtr != nullptr) {
+        *countPtr = deletedRows;
     }
     return E_OK;
 }

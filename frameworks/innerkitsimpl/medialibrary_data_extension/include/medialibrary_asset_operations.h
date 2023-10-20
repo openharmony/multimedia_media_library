@@ -68,6 +68,7 @@ const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_HEIGHT, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_WIDTH, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
+    { PhotoColumn::PHOTO_EDIT_TIME, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
     { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
     { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING }
@@ -95,6 +96,8 @@ protected:
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(NativeRdb::AbsPredicates &predicates,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
+    static std::shared_ptr<FileAsset> GetFileAssetByUri(const std::string &fileUri, bool isPhoto,
+        const std::vector<std::string> &columns, const std::string &pendingStatus = "");
 
     static int32_t InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset);
     static int32_t CheckWithType(bool isContains, const std::string &displayName,
@@ -134,11 +137,17 @@ protected:
     static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
     static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
+    static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode);
+    static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
+        bool isForceScan = false);
+
+    static std::string GetEditDataDirPath(const std::string &path);
+    static std::string GetEditDataSourcePath(const std::string &path);
+    static std::string GetEditDataPath(const std::string &path);
 
 private:
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &name);
-    static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb);
     static int32_t SetPendingTrue(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t SetPendingFalse(const std::shared_ptr<FileAsset> &fileAsset);
     static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,

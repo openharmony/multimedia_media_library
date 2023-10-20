@@ -25,7 +25,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 void MediaLibraryManagerUtilsTest::SetUpTestCase(void) {}
 
 void MediaLibraryManagerUtilsTest::TearDownTestCase(void) {}

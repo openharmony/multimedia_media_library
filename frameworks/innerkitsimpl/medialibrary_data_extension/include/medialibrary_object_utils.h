@@ -39,6 +39,8 @@ const std::string MEDIA_NO_FILE = ".nofile";
 
 class MediaLibraryObjectUtils {
 public:
+    static int32_t BuildFileAsset(MediaLibraryCommand &cmd, FileAsset &fileAsset, NativeAlbumAsset &dirAsset,
+        std::string &path, int32_t &mediaType);
     static int32_t CreateFileObj(MediaLibraryCommand &cmd);
     static int32_t CreateDirWithPath(const std::string &path);
     static int32_t CreateDirObj(MediaLibraryCommand &cmd, int64_t &rowId);

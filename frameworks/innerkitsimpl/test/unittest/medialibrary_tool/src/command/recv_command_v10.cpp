@@ -27,7 +27,6 @@
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
 #include "userfile_client_ex.h"
-#include "utils/file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -70,7 +69,7 @@ static int32_t RecvFile(const ExecEnv &env, const FileAsset &fileAsset)
         close(wfd);
         return Media::E_ERR;
     }
-    auto ret = FileUtils::SendData(rfd, wfd);
+    auto ret = MediaFileUtils::CopyFile(rfd, wfd);
     if (!ret) {
         printf("%s receive data failed. uri:%s\n", STR_FAIL.c_str(), fileAsset.GetUri().c_str());
     } else {

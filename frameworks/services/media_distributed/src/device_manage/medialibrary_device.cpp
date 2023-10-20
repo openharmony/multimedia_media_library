@@ -482,6 +482,5 @@ bool MediaLibraryDevice::IsHasActiveDevice()
         return false;
     }
 }
-
 } // namespace Media
 } // namespace OHOS

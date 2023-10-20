@@ -56,6 +56,11 @@ enum class OperationObject : uint32_t {
     PAH_MAP,
     TOOL_PHOTO,
     TOOL_AUDIO,
+    VISION_OCR,              // Vision start
+    VISION_LABEL,
+    VISION_AESTHETICS,
+    VISION_TOTAL,
+    VISION_SHIELD,           // Vision end
 };
 
 enum class OperationType : uint32_t {
@@ -84,6 +89,8 @@ enum class OperationType : uint32_t {
     SET_USER_COMMENT,
     INDEX,
     COMPAT_ALBUM_DELETE_ASSETS,
+    COMMIT_EDIT,
+    REVERT_EDIT,
 };
 
 class MediaLibraryCommand {

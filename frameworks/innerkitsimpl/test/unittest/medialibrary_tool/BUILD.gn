@@ -39,7 +39,6 @@ ohos_static_library("mediatoollib") {
     "src/exec_env.cpp",
     "src/userfile_client_ex.cpp",
     "src/utils/database_utils.cpp",
-    "src/utils/file_utils.cpp",
   ]
 
   deps = [

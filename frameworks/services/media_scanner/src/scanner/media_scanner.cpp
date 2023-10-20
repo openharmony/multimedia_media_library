@@ -19,11 +19,14 @@
 
 #include "directory_ex.h"
 #include "hitrace_meter.h"
+#include "ipc_skeleton.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "mimetype_utils.h"
+#include "post_event_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -65,6 +68,9 @@ int32_t MediaScannerObj::ScanFile()
     int32_t ret = ScanFileInternal();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("ScanFileInternal err %{public}d", ret);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
     }
 
     (void)InvokeCallback(ret);
@@ -79,6 +85,9 @@ int32_t MediaScannerObj::ScanDir()
     int32_t ret = ScanDirInternal();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("ScanDirInternal err %{public}d", ret);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
     }
 
     (void)InvokeCallback(ret);
@@ -265,6 +274,9 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
 
     if (parentPath.find(ROOT_MEDIA_DIR) != 0) {
         MEDIA_ERR_LOG("invaid path %{private}s, not managed by scanner", path_.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_DATA},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_DATA;
     }
 
@@ -282,6 +294,9 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
                 parentId = 0;
             } else {
                 MEDIA_ERR_LOG("failed to get parent id");
+                VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_DATA},
+                    {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+                PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
                 return E_DATA;
             }
         }
@@ -291,31 +306,30 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
     return E_OK;
 }
 
-int32_t MediaScannerObj::GetFileMetadata()
+int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
 {
-    if (path_.empty()) {
-        return E_INVALID_ARGUMENTS;
-    }
-
-    struct stat statInfo = { 0 };
-    if (stat(path_.c_str(), &statInfo) != 0) {
-        MEDIA_ERR_LOG("stat syscall err %{public}d", errno);
-        return E_SYSCALL;
-    }
-
     data_ = make_unique<Metadata>();
     if (data_ == nullptr) {
         MEDIA_ERR_LOG("failed to make unique ptr for metadata");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_DATA},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_DATA;
     }
 
     if (S_ISDIR(statInfo.st_mode)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_INVALID_ARGUMENTS},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_INVALID_ARGUMENTS;
     }
 
     int32_t err = mediaScannerDb_->GetFileBasicInfo(path_, data_, api_);
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get file basic info");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return err;
     }
     if (data_->GetFileDateModified() == 0) {
@@ -323,7 +337,8 @@ int32_t MediaScannerObj::GetFileMetadata()
     }
 
     // may need isPending here
-    if ((data_->GetFileDateModified() == statInfo.st_mtime) && (data_->GetFileSize() == statInfo.st_size)) {
+    if ((data_->GetFileDateModified() == statInfo.st_mtime) && (data_->GetFileSize() == statInfo.st_size) &&
+        (!isForceScan_)) {
         scannedIds_.insert(make_pair(data_->GetTableName(), data_->GetFileId()));
         return E_SCANNED;
     }
@@ -339,6 +354,10 @@ int32_t MediaScannerObj::GetFileMetadata()
     data_->SetFileSize(statInfo.st_size);
     data_->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
     data_->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
+    int64_t cTime = static_cast<int64_t>(statInfo.st_ctime);
+    data_->SetDateYear(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, cTime));
+    data_->SetDateMonth(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, cTime));
+    data_->SetDateDay(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, cTime));
 
     // extension and type
     string extension = ScannerUtils::GetFileExtension(path_);
@@ -350,10 +369,40 @@ int32_t MediaScannerObj::GetFileMetadata()
     return E_OK;
 }
 
+int32_t MediaScannerObj::GetFileMetadata()
+{
+    if (path_.empty()) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_INVALID_ARGUMENTS},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return E_INVALID_ARGUMENTS;
+    }
+    struct stat statInfo = { 0 };
+    if (stat(path_.c_str(), &statInfo) != 0) {
+        MEDIA_ERR_LOG("stat syscall err %{public}d", errno);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_SYSCALL},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return E_SYSCALL;
+    }
+    int errCode = BuildData(statInfo);
+    if (errCode != E_OK) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return errCode;
+    }
+
+    return E_OK;
+}
+
 int32_t MediaScannerObj::ScanFileInternal()
 {
     if (ScannerUtils::IsFileHidden(path_)) {
         MEDIA_ERR_LOG("the file is hidden");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_FILE_HIDDEN},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_FILE_HIDDEN;
     }
 
@@ -361,6 +410,9 @@ int32_t MediaScannerObj::ScanFileInternal()
     if (err != E_OK) {
         if (err != E_SCANNED) {
             MEDIA_ERR_LOG("failed to get file metadata");
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+                {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         }
         return err;
     }
@@ -368,51 +420,40 @@ int32_t MediaScannerObj::ScanFileInternal()
     err = GetParentDirInfo(parent, UNKNOWN_ID);
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get dir info");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return err;
     }
 
     err = GetMediaInfo();
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get media info");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         // no return here for fs metadata being updated or inserted
     }
 
     err = Commit();
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to commit err %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return err;
     }
 
     return E_OK;
 }
 
-int32_t MediaScannerObj::ScanFileInTraversal(const string &path, const string &parent, int32_t parentId)
+int32_t MediaScannerObj::BuildFileInfo(const string &parent, int32_t parentId)
 {
-    path_ = path;
-
-    if (ScannerUtils::IsFileHidden(path_)) {
-        MEDIA_ERR_LOG("the file is hidden");
-        return E_FILE_HIDDEN;
-    }
-
-    int32_t err = GetFileMetadata();
+    int32_t err = GetParentDirInfo(parent, parentId);
     if (err != E_OK) {
-        if (err != E_SCANNED) {
-            MEDIA_ERR_LOG("failed to get file metadata");
-        }
-        return err;
-    }
-
-    if (data_->GetTimePending() != 0) {
-        MEDIA_INFO_LOG("File %{private}s is pending", path.c_str());
-        return E_IS_PENDING;
-    }
-
-#ifdef MEDIALIBRARY_COMPATIBILITY
-    SetPhotoSubType(parent);
-#endif
-    err = GetParentDirInfo(parent, parentId);
-    if (err != E_OK) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("failed to get dir info");
         return err;
     }
@@ -421,14 +462,65 @@ int32_t MediaScannerObj::ScanFileInTraversal(const string &path, const string &p
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get media info");
         // no return here for fs metadata being updated or inserted
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
     }
 
     err = AddToTransaction();
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to add to transaction err %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return err;
+    }
+    
+    return E_OK;
+}
+
+int32_t MediaScannerObj::ScanFileInTraversal(const string &path, const string &parent, int32_t parentId)
+{
+    path_ = path;
+    if (ScannerUtils::IsFileHidden(path_)) {
+        MEDIA_ERR_LOG("the file is hidden");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_FILE_HIDDEN},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return E_FILE_HIDDEN;
+    }
+    int32_t err = GetFileMetadata();
+    if (err != E_OK) {
+        if (err != E_SCANNED) {
+            MEDIA_ERR_LOG("failed to get file metadata");
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+                {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        }
         return err;
     }
 
+    if (data_->GetTimePending() != 0) {
+        MEDIA_INFO_LOG("File %{private}s is pending", path.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_IS_PENDING},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return E_IS_PENDING;
+    }
+
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    SetPhotoSubType(parent);
+#endif
+    
+    err = BuildFileInfo(parent, parentId);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to get other file metadata");
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return err;
+    }
+    
     return E_OK;
 }
 
@@ -441,6 +533,9 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
 
     if (stat(albumPath.c_str(), &statInfo)) {
         MEDIA_ERR_LOG("stat dir error %{public}d", errno);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
+            {KEY_OPT_FILE, albumPath}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return UNKNOWN_ID;
     }
     if (SkipBucket(albumPath)) {
@@ -553,6 +648,9 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
     if ((dirPath = opendir(path.c_str())) == nullptr) {
         MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{private}d", path.c_str(), errno);
         FREE_MEMORY_AND_SET_NULL(fName);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
+            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return ERR_NOT_ACCESSIBLE;
     }
 
@@ -603,6 +701,9 @@ int32_t MediaScannerObj::ScanDirInternal()
 {
     if (ScannerUtils::IsDirHiddenRecursive(dir_, skipPhoto_)) {
         MEDIA_ERR_LOG("the dir %{private}s is hidden", dir_.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_DIR_HIDDEN},
+            {KEY_OPT_FILE, dir_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_DIR_HIDDEN;
     }
 
@@ -613,25 +714,34 @@ int32_t MediaScannerObj::ScanDirInternal()
     int32_t err = mediaScannerDb_->ReadAlbums(dir_, albumMap_);
     if (err != E_OK) {
         MEDIA_ERR_LOG("read albums err %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return err;
     }
-
     /* no further operation when stopped */
     err = WalkFileTree(dir_, NO_PARENT);
     if (err != E_OK) {
         MEDIA_ERR_LOG("walk file tree err %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, dir_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return err;
     }
-
     err = CommitTransaction();
     if (err != E_OK) {
         MEDIA_ERR_LOG("commit transaction err %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return err;
     }
-
     err = CleanupDirectory();
     if (err != E_OK) {
         MEDIA_ERR_LOG("clean up dir err %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, dir_}, {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return err;
     }
 
@@ -652,6 +762,9 @@ int32_t MediaScannerObj::Start()
     ret = mediaScannerDb_->RecordError(ROOT_MEDIA_DIR);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("record err fail %{public}d", ret);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
+            {KEY_OPT_TYPE, OptType::SCAN}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return ret;
     }
 
@@ -665,6 +778,9 @@ int32_t MediaScannerObj::ScanError(bool isBoot)
         string realPath;
         if (!PathToRealPath(err, realPath)) {
             MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", err.c_str(), errno);
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
+                {KEY_OPT_FILE, err}, {KEY_OPT_TYPE, OptType::SCAN}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             (void)mediaScannerDb_->DeleteError(err);
             continue;
         }

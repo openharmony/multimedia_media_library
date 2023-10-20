@@ -84,6 +84,9 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::PHOTO_USER_COMMENT] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetUserComment);
     memberFuncMap_[PhotoColumn::PHOTO_ALL_EXIF] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetAllExif);
+    memberFuncMap_[PhotoColumn::PHOTO_DATE_YEAR] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetDateYear);
+    memberFuncMap_[PhotoColumn::PHOTO_DATE_MONTH] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetDateMonth);
+    memberFuncMap_[PhotoColumn::PHOTO_DATE_DAY] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetDateDay);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -364,6 +367,36 @@ void Metadata::SetAllExif(const VariantData &allExif)
 const string &Metadata::GetAllExif() const
 {
     return allExif_;
+}
+
+void Metadata::SetDateYear(const VariantData &dateYear)
+{
+    dateYear_ = get<string>(dateYear);
+}
+
+const string &Metadata::getDateYear() const
+{
+    return dateYear_;
+}
+
+void Metadata::SetDateMonth(const VariantData &dateMonth)
+{
+    dateMonth_ = get<string>(dateMonth);
+}
+
+const string &Metadata::getDateMonth() const
+{
+    return dateMonth_;
+}
+
+void Metadata::SetDateDay(const VariantData &dateDay)
+{
+    dateDay_ = get<string>(dateDay);
+}
+
+const string &Metadata::getDateDay() const
+{
+    return dateDay_;
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY

@@ -36,37 +36,50 @@
 # DESCRIPTION contains userid，request type.
 # REASON contains errno num, and failed interface.
 
-domain: MULTI_MEDIA
+domain: MEDIALIBRARY
 
-MEDIALIBRARY_FILESYSTEM_ERROR:
-  __BASE: { type: FAULT, level: CRITICAL, desc: filesystem error }
-  UID: { type: INT32, desc: application uid}
-  PACKAGE_NAME: { type: STRING, desc: application package name }
-  DESCRIPTION: { type: STRING, desc: errro message }
-  REASON: { type: STRING, desc: fault reason }
+MEDIALIB_FILE_OPT_ERROR:
+  __BASE: { type: FAULT, level: CRITICAL, desc: create file error }
+  UID: { type: INT32, desc: user id}
+  ERR_FILE: { type: STRING, desc: failed file }
+  LINE: { type: UINT32, desc: failed line }
+  ERROR_CODE: { type: INT32, desc: error code }
+  FILE: { type: STRING, desc: file name }
+  TYPE: { type: STRING, desc: operation type }
+  CALLING_ID: { type: INT32, desc: calling uid }
 
-MEDIALIBRARY_RDB_ERROR:
-  __BASE: { type: FAULT, level: CRITICAL, desc: filesystem error }
-  UID: { type: INT32, desc: application uid }
-  PACKAGE_NAME: { type: STRING, desc: application package name }
-  DESCRIPTION: { type: STRING, desc: errro message }
-  REASON: { type: STRING, desc: fault reason }
+MEDIALIB_DB_OPT_ERROR:
+  __BASE: { type: FAULT, level: CRITICAL, desc: local db create file failure }
+  UID: { type: INT32, desc: user id}
+  ERR_FILE: { type: STRING, desc: failed file }
+  LINE: { type: UINT32, desc: upgrade failed line }
+  ERROR_CODE: { type: INT32, desc: error code }
+  TYPE: { type: STRING, desc: operation type }
+  CALLING_ID: { type: INT32, desc: calling uid }
 
-MEDIALIBRARY_KVSTORE_ERROR:
-  __BASE: { type: FAULT, level: CRITICAL, desc: filesystem error }
-  UID: { type: INT32, desc: application uid }
-  PACKAGE_NAME: { type: STRING, desc: application package name }
-  DESCRIPTION: { type: STRING, desc: errro message }
-  REASON: { type: STRING, desc: fault reason }
+MEDIALIB_DB_UPGRADE_ERROR:
+  __BASE: { type: FAULT, level: CRITICAL, desc: local database upgrade failure }
+  ERR_FILE: { type: STRING, desc: upgrade failed file }
+  LINE: { type: UINT32, desc: upgrade failed line }
 
-MEDIALIBRARY_DISTRIBUTE_ERROR:
-  __BASE: { type: FAULT, level: CRITICAL, desc: filesystem error }
-  DESCRIPTION: { type: STRING, desc: errro message }
-  REASON: { type: STRING, desc: fault reason }
-
-MEDIALIBRARY_THUMBNAIL_STAT:
-  __BASE: { type: BEHAVIOR, level: MINOR, desc: thumbnail numbers statistic}
-  TIMES: { type: UINT32, desc: generate times }
+MEDIALIB_THUMBNAIL_STAT:
+  __BASE: { type: BEHAVIOR, level: MINOR, desc: thumbnail aging is triggered when the screen is off }
+  UID: { type: INT32, desc: user id}
+  TIMES: { type: UINT32, desc: history trigger number }
   GNUMS: { type: UINT32, desc: generate thumbnail nums }
   ANUMS: { type: UINT32, desc: aging thumbnail nums }
-  ADEVICES: { type: UINT32, desc: aging devices nums }
+
+MEDIALIB_DB_UPGRADE_STAT:
+  __BASE: { type: BEHAVIOR, level: MINOR, desc: database upgrade }
+  PRE_VERSION: { type: INT32, desc: pre upgrade version number }
+  AFTER_VERSION: { type: INT32, desc: after upgrade version number }
+  COUNT: { type: UINT32, desc: upgrade events count }
+
+MEDIALIB_SYNC_STAT:
+  __BASE: { type: BEHAVIOR, level: MINOR, desc: synchronization times between the local end and the cloud }
+  TIMES: { type: UINT32, desc: sync times }
+
+MEDIALIB_AGING_STAT:
+  __BASE: { type: BEHAVIOR, level: MINOR, desc: aging state }
+  TIMES: { type: UINT32, desc: history trigger times }
+  COUNT: { type: UINT32, desc: the recycle number of aging }

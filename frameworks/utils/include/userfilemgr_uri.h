@@ -41,6 +41,8 @@ const std::string OPRN_DELETE_PHOTOS = "delete_photos_permanently";   // Delete 
 const std::string OPRN_COMPAT_DELETE_PHOTOS = "compat_delete_photos_permanently";
 const std::string OPRN_DELETE_BY_TOOL = "delete_by_tool";
 const std::string OPRN_SET_USER_COMMENT = "set_user_comment";
+const std::string OPRN_COMMIT_EDIT = "operation_commit_edit";
+const std::string OPRN_REVERT_EDIT = "operation_revert_edit";
 
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -188,6 +190,9 @@ const std::string PAH_PHOTO_ALBUM_REMOVE_ASSET = MEDIALIBRARY_DATA_URI + "/" + P
 const std::string PAH_QUERY_PHOTO_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_MAP + "/" + OPRN_QUERY;
 const std::string PAH_RECOVER_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_RECOVER_PHOTOS;
 const std::string PAH_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_DELETE_PHOTOS;
+const std::string PAH_COMMIT_EDIT_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_COMMIT_EDIT;
+const std::string PAH_REVERT_EDIT_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_REVERT_EDIT;
+
 
 // mediatool operation constants
 const std::string TOOL_PHOTO = "mediatool_photo_operation";

@@ -37,16 +37,16 @@ int32_t DeleteCommandV10::DeleteOne(const std::string &uri)
     return Media::E_OK;
 }
 
-int32_t DeleteCommandV10::DeleteAll(bool isDeleteAll)
+int32_t DeleteCommandV10::DeleteAll(bool isOnlyDeleteDb)
 {
-    return UserFileClientEx::Delete(isDeleteAll);
+    return UserFileClientEx::Delete(isOnlyDeleteDb);
 }
 
 int32_t DeleteCommandV10::Start(const ExecEnv &env)
 {
     int32_t ret = 0;
     if (env.deleteParam.isDeleteAll) {
-        ret = DeleteAll(env.deleteParam.isDeleteAll);
+        ret = DeleteAll(env.deleteParam.isOnlyDeleteDb);
     } else {
         ret = DeleteOne(env.deleteParam.deleteUri);
     }

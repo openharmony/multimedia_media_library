@@ -117,7 +117,7 @@ static napi_status GetParamStr(napi_env env, napi_value arg, const size_t size, 
 
 napi_status MediaLibraryNapiUtils::GetParamString(napi_env env, napi_value arg, string &result)
 {
-    CHECK_STATUS_RET(GetParamStr(env, arg, ARG_BUF_SIZE, result), "Failed to get string parameter");
+    CHECK_STATUS_RET(GetParamStr(env, arg, PATH_MAX, result), "Failed to get string parameter");
     return napi_ok;
 }
 
@@ -852,6 +852,28 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
     }
 }
 
+string MediaLibraryNapiUtils::GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
+    const string &propertyName)
+{
+    size_t res = 0;
+    char buffer[PATH_MAX] = {0};
+    napi_value property = nullptr;
+    napi_has_named_property(env, arg, propertyName.c_str(), &present);
+    if (present) {
+        if ((napi_get_named_property(env, arg, propertyName.c_str(), &property) != napi_ok) ||
+            (napi_get_value_string_utf8(env, property, buffer, PATH_MAX, &res) != napi_ok)) {
+            NAPI_ERR_LOG("Could not get the string argument!");
+            err = true;
+            return "";
+        } else {
+            string str(buffer);
+            present = false;
+            return str;
+        }
+    }
+    return "";
+}
+
 bool MediaLibraryNapiUtils::IsSystemApp()
 {
     static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());
@@ -882,6 +904,85 @@ NapiScopeHandler::~NapiScopeHandler()
 bool NapiScopeHandler::IsValid()
 {
     return isValid_;
+}
+
+napi_value MediaLibraryNapiUtils::GetNapiValueArray(napi_env env, napi_value arg, vector<napi_value> &values)
+{
+    bool isArray = false;
+    CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_ERR_PARAMETER_INVALID);
+    if (!isArray) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array type");
+        return nullptr;
+    }
+
+    uint32_t len = 0;
+    CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_INNER_FAIL);
+    if (len == 0) {
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
+    }
+
+    for (uint32_t i = 0; i < len; i++) {
+        napi_value value = nullptr;
+        CHECK_ARGS(env, napi_get_element(env, arg, i, &value), JS_INNER_FAIL);
+        if (value == nullptr) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset element");
+            return nullptr;
+        }
+        values.push_back(value);
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value MediaLibraryNapiUtils::GetStringArray(napi_env env, vector<napi_value> &napiValues, vector<string> &values)
+{
+    napi_valuetype valueType = napi_undefined;
+    unique_ptr<char[]> buffer = make_unique<char[]>(PATH_MAX);
+    for (const auto &napiValue : napiValues) {
+        CHECK_ARGS(env, napi_typeof(env, napiValue, &valueType), JS_ERR_PARAMETER_INVALID);
+        CHECK_COND(env, valueType == napi_string, JS_ERR_PARAMETER_INVALID);
+
+        size_t res = 0;
+        CHECK_ARGS(
+            env, napi_get_value_string_utf8(env, napiValue, buffer.get(), PATH_MAX, &res), JS_ERR_PARAMETER_INVALID);
+        values.emplace_back(buffer.get());
+    }
+    napi_value ret = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);
+    return ret;
+}
+
+std::string GetUriFromAsset(const FileAssetNapi *obj)
+{
+    string displayName = obj->GetFileDisplayName();
+    string filePath = obj->GetFilePath();
+    return MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(obj->GetFileId()),
+        MediaFileUtils::GetExtraUri(displayName, filePath));
+}
+
+napi_value MediaLibraryNapiUtils::GetUriArrayFromAssets(
+    napi_env env, vector<napi_value> &napiValues, vector<string> &values)
+{
+    FileAssetNapi *obj = nullptr;
+    for (const auto &napiValue : napiValues) {
+        CHECK_ARGS(env, napi_unwrap(env, napiValue, reinterpret_cast<void **>(&obj)), JS_INNER_FAIL);
+        if (obj == nullptr) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset napi object");
+            return nullptr;
+        }
+        if ((obj->GetMediaType() != MEDIA_TYPE_IMAGE && obj->GetMediaType() != MEDIA_TYPE_VIDEO)) {
+            NAPI_INFO_LOG("Skip invalid asset, mediaType: %{public}d", obj->GetMediaType());
+            continue;
+        }
+        values.push_back(GetUriFromAsset(obj));
+    }
+    napi_value ret = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &ret), JS_INNER_FAIL);
+    return ret;
 }
 
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
