@@ -148,30 +148,17 @@ static shared_ptr<AbsSharedResultSet> Query(const shared_ptr<NativeRdb::RdbStore
 static inline shared_ptr<ResultSet> QueryGoToFirst(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const RdbPredicates &predicates, const vector<string> &columns)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("QueryGoToFirst");
     auto resultSet = Query(rdbStore, predicates, columns);
     if (resultSet == nullptr) {
         return nullptr;
     }
-    int32_t count = 0;
-    int32_t err = resultSet->GetRowCount(count);
-    if (err != NativeRdb::E_OK) {
-        return nullptr;
-    }
-    if (count > 0) {
-        err = resultSet->GoToFirstRow();
-        if (err != E_OK) {
-            return nullptr;
-        }
-    }
 
+    MediaLibraryTracer goToFirst;
+    goToFirst.Start("GoToFirstRow");
+    resultSet->GoToFirstRow();
     return resultSet;
-}
-
-static inline shared_ptr<ResultSet> QueryAlbumAssets(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    RdbPredicates &predicates,
-    const vector<string> &columns)
-{
-    return QueryGoToFirst(rdbStore, predicates, columns);
 }
 
 static int32_t ForEachRow(const shared_ptr<RdbStore> &rdbStore, const shared_ptr<ResultSet> &resultSet,
@@ -193,12 +180,7 @@ static int32_t ForEachRow(const shared_ptr<RdbStore> &rdbStore, const shared_ptr
 
 static inline int32_t GetFileCount(const shared_ptr<ResultSet> &resultSet)
 {
-    int32_t count = 0;
-    int32_t err = resultSet->GetRowCount(count);
-    if (err != E_OK) {
-        return E_SUCCESS;
-    }
-    return count;
+    return GetIntValFromColumn(resultSet, MEDIA_COLUMN_COUNT_1);
 }
 
 static inline int32_t GetAlbumCount(const shared_ptr<ResultSet> &resultSet)
@@ -324,6 +306,7 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const shared_ptr<ResultSet> &albumResult, ValuesBucket &values, PhotoAlbumSubType subtype)
 {
     const vector<string> columns = {
+        MEDIA_COLUMN_COUNT_1,
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_NAME
@@ -335,8 +318,8 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     } else {
         PhotoAlbumColumns::GetUserAlbumPredicates(GetAlbumId(albumResult), predicates);
     }
-    predicates.OrderByDesc(PhotoColumn::MEDIA_DATE_ADDED);
-    auto fileResult = QueryAlbumAssets(rdbStore, predicates, columns);
+    predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_ADDED_INDEX);
+    auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
     if (fileResult == nullptr) {
         return E_HAS_DB_ERROR;
     }
