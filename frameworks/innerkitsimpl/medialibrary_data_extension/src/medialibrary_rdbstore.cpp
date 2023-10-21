@@ -840,7 +840,8 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_YEAR_INDEX,
     PhotoColumn::CREATE_MONTH_INDEX,
     PhotoColumn::CREATE_DAY_INDEX,
-    PhotoColumn::CREATE_MEDIA_TYPE_INDEX,
+    PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
+    PhotoColumn::CREATE_SHPT_DAY_INDEX,
     PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -1322,9 +1323,9 @@ void UpdateYearMonthDayData(RdbStore &store)
         "DROP TRIGGER IF EXISTS naturalbase_rdb_Photos_ON_DELETE",
         "DROP TRIGGER IF EXISTS naturalbase_rdb_Photos_ON_INSERT",
         "DROP TRIGGER IF EXISTS naturalbase_rdb_Photos_ON_UPDATE",
-        "DROP INDEX IF EXISTS " + PhotoColumn::CREATE_YEAR_INDEX,
-        "DROP INDEX IF EXISTS " + PhotoColumn::CREATE_MONTH_INDEX,
-        "DROP INDEX IF EXISTS " + PhotoColumn::CREATE_DAY_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_MONTH_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_DAY_INDEX,
         "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
             PhotoColumn::PHOTO_DATE_YEAR + " = strftime('%Y', datetime(date_added, 'unixepoch', 'localtime')), " +
             PhotoColumn::PHOTO_DATE_MONTH + " = strftime('%Y%m', datetime(date_added, 'unixepoch', 'localtime')), " +
@@ -1332,10 +1333,28 @@ void UpdateYearMonthDayData(RdbStore &store)
         PhotoColumn::CREATE_YEAR_INDEX,
         PhotoColumn::CREATE_MONTH_INDEX,
         PhotoColumn::CREATE_DAY_INDEX,
-        PhotoColumn::CREATE_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
     };
     ExecSqls(updateSql, store);
     MEDIA_DEBUG_LOG("UpdateYearMonthDayData end");
+}
+
+void FixIndexOrder(RdbStore &store)
+{
+    const vector<string> updateSql = {
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_MONTH_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_DAY_INDEX,
+        "DROP INDEX IF EXISTS idx_media_type",
+        "DROP INDEX IF EXISTS idx_sthp_dateadded",
+        PhotoColumn::CREATE_YEAR_INDEX,
+        PhotoColumn::CREATE_MONTH_INDEX,
+        PhotoColumn::CREATE_DAY_INDEX,
+        PhotoColumn::INDEX_STHP_ADDTIME,
+        PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SHPT_DAY_INDEX,
+    };
+    ExecSqls(updateSql, store);
 }
 
 void AddYearMonthDayColumn(RdbStore &store)
@@ -1409,6 +1428,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_SHOOTING_MODE) {
         AddShootingModeColumn(store);
+    }
+
+    if (oldVersion < VERSION_FIX_INDEX_ORDER) {
+        FixIndexOrder(store);
     }
 }
 
