@@ -30,6 +30,7 @@ ohos_unittest("medialibrary_vision_unittest") {
 
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_vision_test.cpp",
   ]
   deps = [
@@ -48,9 +49,12 @@ ohos_unittest("medialibrary_vision_unittest") {
     "access_token:libnativetoken",
     "access_token:libtoken_setproc",
     "c_utils:utils",
-    "data_share:datashare_consumer",
+    "data_share:datashare_common",
+    "data_share:datashare_provider",
     "hilog:libhilog",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
+    "ipc:ipc_single",
+    "kv_store:distributeddata_inner",
+    "napi:ace_napi",
+    "relational_store:native_rdb",
   ]
 }
