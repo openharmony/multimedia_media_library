@@ -267,14 +267,16 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
             MediaFileUri::RemoveAllFragment(uri);
             MediaFileUri fileUri(uri);
             context->uri = uri;
-#ifdef MEDIALIBRARY_COMPATIBILITY
             if ((fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
                 fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
             }
-#endif
             context->networkId = fileUri.GetNetworkId();
             string field = (fetchOptType == ALBUM_FETCH_OPT) ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
             operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
+            continue;
+        }
+        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == PENDING_STATUS) {
+            // do not query pending files below API11
             continue;
         }
         operations.push_back(item);
@@ -718,7 +720,9 @@ napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<st
             break;
     }
     for (const auto &column : fetchColumn) {
-        if (isValidColumn(column)) {
+        if (column == PENDING_STATUS) {
+            validFetchColumns.insert(MediaColumn::MEDIA_TIME_PENDING);
+        } else if (isValidColumn(column)) {
             validFetchColumns.insert(column);
         } else if (column == MEDIA_DATA_DB_URI) {
             continue;
