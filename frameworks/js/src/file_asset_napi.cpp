@@ -3699,11 +3699,11 @@ static void PhotoAccessHelperSetPendingExecute(napi_env env, void *data)
     changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
         if (changedRows == E_PERMISSION_DENIED) {
-            context->SaveError(OHOS_PERMISSION_DENIED_CODE);
+            context->error = OHOS_PERMISSION_DENIED_CODE;
         } else {
             context->SaveError(changedRows);
         }
-        
+
         NAPI_ERR_LOG("Failed to modify pending state, err: %{public}d", changedRows);
     } else {
         context->changedRows = changedRows;
@@ -3723,8 +3723,7 @@ static void PhotoAccessHelperSetPendingComplete(napi_env env, napi_status status
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->changedRows,
-            "Failed to modify pending state");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -3946,7 +3945,7 @@ static void PhotoAccessHelperIsEditedExecute(napi_env env, void *data)
     shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
     if (!GetEditTimeFromResultSet(resultSet, editTime)) {
         if (errCode == E_PERMISSION_DENIED) {
-            context->SaveError(OHOS_PERMISSION_DENIED_CODE);
+            context->error = OHOS_PERMISSION_DENIED_CODE;
         } else {
             context->SaveError(E_FAIL);
         }
@@ -4022,7 +4021,7 @@ static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
     UniqueFd uniqueFd(UserFileClient::OpenFile(uri, "r"));
     if (uniqueFd.Get() <= 0) {
         if (uniqueFd.Get() == E_PERMISSION_DENIED) {
-            context->SaveError(OHOS_PERMISSION_DENIED_CODE);
+            context->error = OHOS_PERMISSION_DENIED_CODE;
         } else {
             context->SaveError(uniqueFd.Get());
         }
@@ -4131,7 +4130,7 @@ static void PhotoAccessHelperRequestSourceExecute(napi_env env, void *data)
     int32_t retVal = UserFileClient::OpenFile(uri, "r");
     if (retVal <= 0) {
         if (retVal == E_PERMISSION_DENIED) {
-            context->SaveError(OHOS_PERMISSION_DENIED_CODE);
+            context->error = OHOS_PERMISSION_DENIED_CODE;
         } else {
             context->SaveError(retVal);
         }
@@ -4228,7 +4227,7 @@ static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
     UniqueFd fd(UserFileClient::OpenFile(uri, "rw"));
     if (fd.Get() <= 0) {
         if (fd.Get() == E_PERMISSION_DENIED) {
-            context->SaveError(OHOS_PERMISSION_DENIED_CODE);
+            context->error = OHOS_PERMISSION_DENIED_CODE;
         } else {
             context->SaveError(fd.Get());
         }
@@ -4251,7 +4250,7 @@ static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
         int32_t ret = UserFileClient::Insert(insertUri, context->valuesBucket);
         if (ret != E_SUCCESS) {
             if (ret == E_PERMISSION_DENIED) {
-                context->SaveError(OHOS_PERMISSION_DENIED_CODE);
+                context->error = OHOS_PERMISSION_DENIED_CODE;
             } else {
                 context->SaveError(ret);
             }
@@ -4327,7 +4326,7 @@ static void PhotoAccessHelperRevertToOriginalExecute(napi_env env, void *data)
     int32_t ret = UserFileClient::Insert(uri, context->valuesBucket);
     if (ret < 0) {
         if (ret == E_PERMISSION_DENIED) {
-            context->SaveError(OHOS_PERMISSION_DENIED_CODE);
+            context->error = OHOS_PERMISSION_DENIED_CODE;
         } else {
             context->SaveError(ret);
         }
