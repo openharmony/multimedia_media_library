@@ -13,30 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
-#define OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
+#ifndef OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H
+#define OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H
 
-#include <mutex>
-#include <vector>
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
-#include "napi_error.h"
-#include "napi_remote_object.h"
-#include "backup_defines.h"
+#include <string>
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryBackupNapi {
+class BackupRestoreService {
 public:
-    static napi_value Init(napi_env env, napi_value exports);
-
-    MediaLibraryBackupNapi() = default;
-    ~MediaLibraryBackupNapi() = default;
+    virtual ~BackupRestoreService() = default;
+    static BackupRestoreService &GetInstance(void);
+    void StartRestore(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName);
 
 private:
-    static napi_value JSStartRestore(napi_env env, napi_callback_info info);
+    BackupRestoreService() = default;
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
+#endif  // OHOS_MEDIA_BACKUP_RESTORE_SERVICE_H

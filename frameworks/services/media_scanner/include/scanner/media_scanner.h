@@ -131,6 +131,7 @@ private:
     std::string dir_;
     std::string uri_;
     std::string errorPath_;
+    bool skipPhoto_;
     std::unique_ptr<MediaScannerDb> mediaScannerDb_;
     std::shared_ptr<IMediaScannerCallback> callback_;
     std::shared_ptr<bool> stopFlag_;

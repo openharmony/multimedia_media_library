@@ -52,7 +52,7 @@ public:
     std::string InsertMetadata(const Metadata &metadata, std::string &tableName,
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
     std::string UpdateMetadata(const Metadata &metadata, std::string &tableName,
-        MediaLibraryApi api = MediaLibraryApi::API_OLD);
+        MediaLibraryApi api = MediaLibraryApi::API_OLD, bool skipPhoto = true);
     std::string GetFileDBUriFromPath(const std::string &path);
     std::vector<std::string> BatchInsert(const std::vector<Metadata> &metadataList);
 

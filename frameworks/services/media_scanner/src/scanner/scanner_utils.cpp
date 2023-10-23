@@ -141,7 +141,7 @@ string ScannerUtils::GetFileTitle(const string &displayName)
     return (pos == string::npos) ? displayName : displayName.substr(0, pos);
 }
 
-bool ScannerUtils::IsDirHidden(const string &path)
+bool ScannerUtils::IsDirHidden(const string &path, bool skipPhoto)
 {
     bool dirHid = false;
 
@@ -160,7 +160,7 @@ bool ScannerUtils::IsDirHidden(const string &path)
         }
 
         // Check is the dir is part of skiplist
-        if (CheckSkipScanList(path)) {
+        if (skipPhoto && CheckSkipScanList(path)) {
             MEDIA_DEBUG_LOG("skip Directory, path:%{private}s", path.c_str());
             return true;
         }
@@ -169,13 +169,13 @@ bool ScannerUtils::IsDirHidden(const string &path)
     return dirHid;
 }
 
-bool ScannerUtils::IsDirHiddenRecursive(const string &path)
+bool ScannerUtils::IsDirHiddenRecursive(const string &path, bool skipPhoto)
 {
     bool dirHid = false;
     string curPath = path;
 
     do {
-        dirHid = IsDirHidden(curPath);
+        dirHid = IsDirHidden(curPath, skipPhoto);
         if (dirHid) {
             break;
         }
