@@ -191,15 +191,13 @@ void PostEventUtils::PostErrorProcess(const uint32_t &errType, const VariantMap 
 {
     switch (errType) {
         case ErrType::FILE_OPT_ERR:
-            PostFileOptError(error);
-            break;
         case ErrType::DB_OPT_ERR:
-            PostDbOptError(error);
-            break;
         case ErrType::DB_UPGRADE_ERR:
-            PostDbUpgradeError(error);
             break;
         default:
+            PostFileOptError(error);
+            PostDbOptError(error);
+            PostDbUpgradeError(error);
             break;
     }
 }
@@ -208,18 +206,15 @@ void PostEventUtils::PostStatProcess(const uint32_t &statType, const VariantMap 
 {
     switch (statType) {
         case StatType::THUMBNAIL_STAT:
-            PostThumbnailStat(stat);
-            break;
         case StatType::DB_UPGRADE_STAT:
-            PostDbUpgradeStat(stat);
-            break;
         case StatType::SYNC_STAT:
-            PostSyncStat();
-            break;
         case StatType::AGING_STAT:
-            PostAgingStat(stat);
             break;
         default:
+            PostThumbnailStat(stat);
+            PostDbUpgradeStat(stat);
+            PostSyncStat();
+            PostAgingStat(stat);
             break;
     }
 }

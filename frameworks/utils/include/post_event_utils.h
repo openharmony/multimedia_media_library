@@ -45,13 +45,15 @@ enum OptType {
 };
 
 enum ErrType {
-    FILE_OPT_ERR = 0,
+    DEFAULT_ERR = 0,
+    FILE_OPT_ERR,
     DB_OPT_ERR,
     DB_UPGRADE_ERR,
 };
 
 enum StatType {
-    THUMBNAIL_STAT = 0,
+    DEFAULT_STAT = 0,
+    THUMBNAIL_STAT,
     DB_UPGRADE_STAT,
     SYNC_STAT,
     AGING_STAT,
