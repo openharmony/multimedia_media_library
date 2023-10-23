@@ -190,8 +190,8 @@ public:
     static bool IsRegularFile(const std::string &path);
     static void GetRootMediaDir(std::string &dir);
     static std::string GetFileTitle(const std::string &displayName);
-    static bool IsDirHiddenRecursive(const std::string &path);
-    static bool IsDirHidden(const std::string &path);
+    static bool IsDirHiddenRecursive(const std::string &path, bool skipPhoto = true);
+    static bool IsDirHidden(const std::string &path, bool skipPhoto = true);
     static void InitSkipList();
     static bool CheckSkipScanList(const std::string &path);
 

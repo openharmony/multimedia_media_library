@@ -87,6 +87,9 @@ public:
     static int32_t DeleteToolOperation(MediaLibraryCommand &cmd);
 
     static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
+    static int32_t CreateAssetUniqueId(int32_t type);
+    static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
+        std::string &filePath);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
@@ -143,11 +146,8 @@ protected:
     static std::string GetEditDataPath(const std::string &path);
 
 private:
-    static int32_t CreateAssetUniqueId(int32_t type);
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &name);
-    static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
-        std::string &filePath);
     static int32_t SetPendingTrue(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t SetPendingFalse(const std::shared_ptr<FileAsset> &fileAsset);
     static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,

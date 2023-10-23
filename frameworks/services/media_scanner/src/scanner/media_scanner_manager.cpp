@@ -113,6 +113,28 @@ int32_t MediaScannerManager::ScanDir(const std::string &path, const std::shared_
     return E_OK;
 }
 
+int32_t MediaScannerManager::ScanDirSync(const std::string &path,
+    const std::shared_ptr<IMediaScannerCallback> &callback)
+{
+    MEDIA_DEBUG_LOG("scan dir %{private}s", path.c_str());
+
+    string realPath;
+    if (!PathToRealPath(path, realPath)) {
+        MEDIA_ERR_LOG("failed to get real path %{private}s, errno %{public}d", path.c_str(), errno);
+        return E_INVALID_PATH;
+    }
+
+    if (!ScannerUtils::IsDirectory(realPath)) {
+        MEDIA_ERR_LOG("the path %{private}s is not a directory", realPath.c_str());
+        return E_INVALID_PATH;
+    }
+
+    MediaScannerObj scanner = MediaScannerObj(realPath, callback, MediaScannerObj::DIRECTORY);
+    scanner.Scan();
+
+    return E_OK;
+}
+
 void MediaScannerManager::Start()
 {
     executor_.Start();
