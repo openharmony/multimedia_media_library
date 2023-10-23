@@ -131,7 +131,7 @@ int32_t MediaLibraryAudioOperations::Close(MediaLibraryCommand &cmd)
     shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, false, AUDIO_COLUMN_VECTOR, pendingStatus);
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
-        return E_URI_INVALID;
+        return E_INVALID_URI;
     }
 
     int32_t isSync = 0;
