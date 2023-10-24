@@ -62,7 +62,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
 mutex g_uniqueNumberLock;
 
 const string DEFAULT_IMAGE_NAME = "IMG_";
@@ -78,6 +77,12 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
             break;
         case OperationType::CLOSE:
             errCode = CloseOperation(cmd);
+            break;
+        case OperationType::COMMIT_EDIT:
+            errCode = MediaLibraryPhotoOperations::CommitEditInsert(cmd);
+            break;
+        case OperationType::REVERT_EDIT:
+            errCode = MediaLibraryPhotoOperations::RevertToOrigin(cmd);
             break;
         default:
             MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
@@ -204,6 +209,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
         return E_INVALID_VALUES;
     }
     MediaLibraryRdbStore::UpdateAPI10Tables();
+    MediaLibraryRdbStore::ResetAnalysisTables();
     const static vector<string> DELETE_DIR_LIST = {
         ROOT_MEDIA_DIR + PHOTO_BUCKET,
         ROOT_MEDIA_DIR + AUDIO_BUCKET,
@@ -355,6 +361,100 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredica
         return nullptr;
     }
     return GetAssetFromResultSet(resultSet, columns);
+}
+
+// temp function, delete after MediaFileUri::Getpath is finish
+static string GetPathFromUri(const std::string &uri, bool isPhoto)
+{
+    string realTitle = uri;
+    size_t index = uri.rfind('/');
+    if (index == string::npos) {
+        return "";
+    }
+    realTitle = uri.substr(0, index);
+    index = realTitle.rfind('/');
+    if (index == string::npos) {
+        return "";
+    }
+    realTitle = realTitle.substr(index + 1);
+    index = realTitle.rfind('_');
+    if (index == string::npos) {
+        return "";
+    }
+    string fileId = realTitle.substr(index + 1);
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+        return "";
+    }
+    int32_t fileUniqueId = 0;
+    if (!StrToInt(fileId, fileUniqueId)) {
+        MEDIA_ERR_LOG("invalid fileuri %{private}s", uri.c_str());
+        return "";
+    }
+    int32_t bucketNum = 0;
+    MediaLibraryAssetOperations::CreateAssetBucket(fileUniqueId, bucketNum);
+    string ext = MediaFileUtils::GetExtensionFromPath(uri);
+    if (ext.empty()) {
+        return "";
+    }
+
+    string path = ROOT_MEDIA_DIR;
+    if (isPhoto) {
+        path += PHOTO_BUCKET + "/" + to_string(bucketNum) + "/" + realTitle + "." + ext;
+    } else {
+        path += AUDIO_BUCKET + "/" + to_string(bucketNum) + "/" + realTitle + "." + ext;
+    }
+    if (!MediaFileUtils::IsFileExists(path)) {
+        MEDIA_ERR_LOG("file not exist, path=%{private}s", path.c_str());
+        return "";
+    }
+    return path;
+}
+
+shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const string &uri, bool isPhoto,
+    const std::vector<std::string> &columns, const string &pendingStatus)
+{
+    if (uri.empty()) {
+        MEDIA_ERR_LOG("fileUri is empty");
+        return nullptr;
+    }
+
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
+    if (uri.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
+        return nullptr;
+    }
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
+    MediaFileUri fileUri(uri);
+    if (pendingStatus.empty() || !fileUri.IsApi10()) {
+        if (isPhoto) {
+            fileAsset = GetFileAssetFromDb(MediaColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_PHOTO, columns);
+        } else {
+            fileAsset = GetFileAssetFromDb(MediaColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_AUDIO, columns);
+        }
+    } else {
+        string path = GetPathFromUri(uri, isPhoto);
+        if (path.empty()) {
+            if (isPhoto) {
+                fileAsset = GetFileAssetFromDb(MediaColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_PHOTO, columns);
+            } else {
+                fileAsset = GetFileAssetFromDb(MediaColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_AUDIO, columns);
+            }
+        } else {
+            fileAsset->SetPath(path);
+            fileAsset->SetMediaType(MediaFileUtils::GetMediaType(path));
+            int32_t timePending = stoi(pendingStatus);
+            fileAsset->SetTimePending((timePending > 0) ? MediaFileUtils::UTCTimeSeconds() : timePending);
+        }
+    }
+
+    if (fileAsset == nullptr) {
+        return nullptr;
+    }
+    if (!isPhoto) {
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_AUDIO);
+    }
+    fileAsset->SetId(stoi(id));
+    fileAsset->SetUri(uri);
+    return fileAsset;
 }
 
 static inline string GetVirtualPath(const string &relativePath, const string &displayName)
@@ -796,7 +896,7 @@ int32_t MediaLibraryAssetOperations::UpdateFileInDb(MediaLibraryCommand &cmd)
     return updateRows;
 }
 
-static int32_t OpenFile(const string &filePath, const string &mode)
+int32_t MediaLibraryAssetOperations::OpenFileWithPrivacy(const string &filePath, const string &mode)
 {
     std::string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
@@ -903,8 +1003,8 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     }
 
-    tracer.Start("OpenFile");
-    int32_t fd = OpenFile(path, lowerMode);
+    tracer.Start("OpenFileWithPrivacy");
+    int32_t fd = OpenFileWithPrivacy(path, lowerMode);
     tracer.Finish();
     if (fd < 0) {
         MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
@@ -991,8 +1091,10 @@ void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int3
     ThumbnailService::GetInstance()->InvalidateThumbnail(fileId, tableName);
 }
 
-void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync, bool isInvalidateThumb)
+void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync, bool isInvalidateThumb,
+    bool isForceScan)
 {
+    // Force Scan means medialibrary will scan file without checking E_SCANNED
     shared_ptr<ScanAssetCallback> scanAssetCallback = make_shared<ScanAssetCallback>();
     if (scanAssetCallback == nullptr) {
         MEDIA_ERR_LOG("Failed to create scan file callback object");
@@ -1005,10 +1107,37 @@ void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThum
         scanAssetCallback->SetIsInvalidateThumb(false);
     }
 
-    int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanAssetCallback, MediaLibraryApi::API_10);
+    int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanAssetCallback, MediaLibraryApi::API_10,
+        isForceScan);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed!");
     }
+}
+
+string MediaLibraryAssetOperations::GetEditDataDirPath(const string &path)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    return ROOT_MEDIA_DIR + ".editData/" + path.substr(ROOT_MEDIA_DIR.length());
+}
+
+string MediaLibraryAssetOperations::GetEditDataSourcePath(const string &path)
+{
+    string parentPath = GetEditDataDirPath(path);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/source." + MediaFileUtils::GetExtensionFromPath(path);
+}
+
+string MediaLibraryAssetOperations::GetEditDataPath(const string &path)
+{
+    string parentPath = GetEditDataDirPath(path);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/editdata";
 }
 
 int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
@@ -1467,7 +1596,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_IS_FAV, { IsBool, IsUniqueValue } },
     { MediaColumn::MEDIA_DATE_TRASHED, { IsInt64, IsUniqueValue } },
     { MediaColumn::MEDIA_DATE_DELETED, { IsInt64, IsUniqueValue } },
-    { MediaColumn::MEDIA_HIDDEN, { IsBool, IsUniqueValue } },
+    { MediaColumn::MEDIA_HIDDEN, { IsBool } },
     { MediaColumn::MEDIA_PARENT_ID, { IsInt64, IsBelowApi9 } },
     { MediaColumn::MEDIA_RELATIVE_PATH, { IsString, IsBelowApi9 } },
     { MediaColumn::MEDIA_VIRTURL_PATH, { Forbidden } },
@@ -1477,6 +1606,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_HEIGHT, { Forbidden } },
     { PhotoColumn::PHOTO_WIDTH, { Forbidden } },
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, { IsInt64 } },
+    { PhotoColumn::PHOTO_EDIT_TIME, { IsInt64 } },
     { AudioColumn::AUDIO_ALBUM, { Forbidden } },
     { AudioColumn::AUDIO_ARTIST, { Forbidden } },
     { PhotoColumn::CAMERA_SHOT_KEY, { Forbidden } },

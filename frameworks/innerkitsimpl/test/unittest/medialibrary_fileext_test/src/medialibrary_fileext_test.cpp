@@ -1792,6 +1792,5 @@ HWTEST_F(MediaLibraryFileExtUnitTest, medialib_getAlbumRelativePathFromDB_test_0
     bool ret = MediaFileExtentionUtils::GetAlbumRelativePathFromDB(selectUri, relativePath);
     EXPECT_EQ(ret, false);
 }
-
 } // namespace Media
 } // namespace OHOS

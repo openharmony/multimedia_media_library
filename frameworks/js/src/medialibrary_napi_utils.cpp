@@ -117,7 +117,7 @@ static napi_status GetParamStr(napi_env env, napi_value arg, const size_t size, 
 
 napi_status MediaLibraryNapiUtils::GetParamString(napi_env env, napi_value arg, string &result)
 {
-    CHECK_STATUS_RET(GetParamStr(env, arg, ARG_BUF_SIZE, result), "Failed to get string parameter");
+    CHECK_STATUS_RET(GetParamStr(env, arg, PATH_MAX, result), "Failed to get string parameter");
     return napi_ok;
 }
 
@@ -267,14 +267,16 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
             MediaFileUri::RemoveAllFragment(uri);
             MediaFileUri fileUri(uri);
             context->uri = uri;
-#ifdef MEDIALIBRARY_COMPATIBILITY
             if ((fetchOptType != ALBUM_FETCH_OPT) && (!fileUri.IsApi10())) {
                 fileUri = MediaFileUri(MediaFileUtils::GetRealUriFromVirtualUri(uri));
             }
-#endif
             context->networkId = fileUri.GetNetworkId();
             string field = (fetchOptType == ALBUM_FETCH_OPT) ? PhotoAlbumColumns::ALBUM_ID : MEDIA_DATA_DB_ID;
             operations.push_back({ item.operation, { field, fileUri.GetFileId() } });
+            continue;
+        }
+        if (static_cast<string>(item.GetSingle(FIELD_IDX)) == PENDING_STATUS) {
+            // do not query pending files below API11
             continue;
         }
         operations.push_back(item);
@@ -718,7 +720,9 @@ napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<st
             break;
     }
     for (const auto &column : fetchColumn) {
-        if (isValidColumn(column)) {
+        if (column == PENDING_STATUS) {
+            validFetchColumns.insert(MediaColumn::MEDIA_TIME_PENDING);
+        } else if (isValidColumn(column)) {
             validFetchColumns.insert(column);
         } else if (column == MEDIA_DATA_DB_URI) {
             continue;
@@ -917,11 +921,6 @@ napi_value MediaLibraryNapiUtils::GetNapiValueArray(napi_env env, napi_value arg
 
     uint32_t len = 0;
     CHECK_ARGS(env, napi_get_array_length(env, arg, &len), JS_INNER_FAIL);
-    if (len < 0) {
-        NAPI_ERR_LOG("Failed to check array length: %{public}u", len);
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array length");
-        return nullptr;
-    }
     if (len == 0) {
         napi_value result = nullptr;
         CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);

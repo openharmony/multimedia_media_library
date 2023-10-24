@@ -84,6 +84,12 @@ public:
     /* Record Error */
     void SetErrorPath(const std::string &path);
 
+    /* set is Force Scan */
+    void SetForceScan(bool isForceScan)
+    {
+        isForceScan_ = isForceScan;
+    }
+
 private:
     /* file */
     int32_t ScanFile();
@@ -125,6 +131,7 @@ private:
     std::string dir_;
     std::string uri_;
     std::string errorPath_;
+    bool skipPhoto_;
     std::unique_ptr<MediaScannerDb> mediaScannerDb_;
     std::shared_ptr<IMediaScannerCallback> callback_;
     std::shared_ptr<bool> stopFlag_;
@@ -134,6 +141,7 @@ private:
     std::set<std::pair<std::string, int32_t>> scannedIds_;
     std::vector<std::unique_ptr<Metadata>> dataBuffer_;
     MediaLibraryApi api_;
+    bool isForceScan_ = false;
 };
 
 class ScanErrCallback : public IMediaScannerCallback {

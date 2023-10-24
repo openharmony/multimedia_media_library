@@ -42,6 +42,8 @@ MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<
     } else if (type_ == FILE) {
         path_ = path;
     }
+    // when path is /Photo, it means update or clone scene
+    skipPhoto_ = path.compare("/storage/cloud/files/Photo") != 0;
     stopFlag_ = make_shared<bool>(false);
 }
 
@@ -136,7 +138,8 @@ int32_t MediaScannerObj::CommitTransaction()
     for (uint32_t i = 0; i < dataBuffer_.size(); i++) {
         data = move(dataBuffer_[i]);
         if (data->GetFileId() != FILE_ID_DEFAULT) {
-            uri = mediaScannerDb_->UpdateMetadata(*data, tableName);
+            MediaLibraryApi api = skipPhoto_ ? MediaLibraryApi::API_OLD : MediaLibraryApi::API_10;
+            uri = mediaScannerDb_->UpdateMetadata(*data, tableName, api, skipPhoto_);
             scannedIds_.insert(make_pair(tableName, data->GetFileId()));
         } else {
             uri = mediaScannerDb_->InsertMetadata(*data, tableName);
@@ -334,7 +337,8 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     }
 
     // may need isPending here
-    if ((data_->GetFileDateModified() == statInfo.st_mtime) && (data_->GetFileSize() == statInfo.st_size)) {
+    if ((data_->GetFileDateModified() == statInfo.st_mtime) && (data_->GetFileSize() == statInfo.st_size) &&
+        (!isForceScan_)) {
         scannedIds_.insert(make_pair(data_->GetTableName(), data_->GetFileId()));
         return E_SCANNED;
     }
@@ -670,7 +674,7 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
 
         string currentPath = fName;
         if (S_ISDIR(statInfo.st_mode)) {
-            if (ScannerUtils::IsDirHidden(currentPath)) {
+            if (ScannerUtils::IsDirHidden(currentPath, skipPhoto_)) {
                 continue;
             }
 
@@ -695,7 +699,7 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
 
 int32_t MediaScannerObj::ScanDirInternal()
 {
-    if (ScannerUtils::IsDirHiddenRecursive(dir_)) {
+    if (ScannerUtils::IsDirHiddenRecursive(dir_, skipPhoto_)) {
         MEDIA_ERR_LOG("the dir %{private}s is hidden", dir_.c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_DIR_HIDDEN},
             {KEY_OPT_FILE, dir_}, {KEY_OPT_TYPE, OptType::SCAN}};

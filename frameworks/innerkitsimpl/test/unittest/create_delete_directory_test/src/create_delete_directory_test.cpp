@@ -37,7 +37,6 @@ using namespace std;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-
 unsigned char g_fileContentJpg[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b,
     0x20, 0x20, 0x20, 0x50
@@ -229,7 +228,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_007, TestSize.Level0)
     int32_t resSecond = CreateDir("Pictures/test007/");
     ASSERT_GE(resFirst, 0);
     ASSERT_LT(resSecond, 0);
-    //clean
+    // clean
     int32_t albumId = GetAlbumId("Pictures/test007");
     string uri = g_dataSharePath + std::to_string(albumId);
     int32_t resDelete = DeleteDir(uri);
@@ -270,7 +269,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_009, TestSize.Level0)
     int32_t resSecond = CreateDir("Videos/test009/");
     ASSERT_GE(resFirst, 0);
     ASSERT_LT(resSecond, 0);
-    //clean
+    // clean
     int32_t albumId = GetAlbumId("Videos/test009");
     string uri = g_dataSharePath + std::to_string(albumId);
     int32_t resDelete = DeleteDir(uri);
@@ -351,7 +350,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_013, TestSize.Level0)
     int32_t resSecond = CreateDir("Documents/test013/");
     ASSERT_GE(resFirst, 0);
     ASSERT_LT(resSecond, 0);
-    //clean
+    // clean
     int32_t albumId = GetAlbumId("Documents/test013");
     string uri = g_dataSharePath + std::to_string(albumId);
     int32_t resDelete = DeleteDir(uri);
@@ -392,7 +391,7 @@ HWTEST_F(CreateDeleteDirectory, directory_test_015, TestSize.Level0)
     int32_t resSecond = CreateDir("Download/test015/");
     ASSERT_GE(resFirst, 0);
     ASSERT_LT(resSecond, 0);
-    //clean
+    // clean
     int32_t albumId = GetAlbumId("Download/test015");
     string uri = g_dataSharePath + std::to_string(albumId);
     int32_t resDelete = DeleteDir(uri);

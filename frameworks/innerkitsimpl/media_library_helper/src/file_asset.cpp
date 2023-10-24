@@ -16,9 +16,6 @@
 
 #include "file_asset.h"
 
-#include <fcntl.h>
-#include <fstream>
-#include <unistd.h>
 #include <nlohmann/json.hpp>
 
 #include "datashare_business_error.h"
@@ -440,6 +437,16 @@ const std::string &FileAsset::GetFilePath() const
 void FileAsset::SetFilePath(const std::string &filePath)
 {
     member_[MediaColumn::MEDIA_FILE_PATH] = filePath;
+}
+
+int64_t FileAsset::GetPhotoEditTime() const
+{
+    return GetInt64Member(PhotoColumn::PHOTO_EDIT_TIME);
+}
+
+void FileAsset::SetPhotoEditTime(int64_t photoEditTime)
+{
+    member_[PhotoColumn::PHOTO_EDIT_TIME] = photoEditTime;
 }
 
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)

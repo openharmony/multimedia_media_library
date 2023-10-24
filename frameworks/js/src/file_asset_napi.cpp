@@ -19,12 +19,20 @@
 #include <algorithm>
 #include <cstring>
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/stat.h>
 
 #include "abs_shared_result_set.h"
+#include "datashare_errno.h"
+#include "datashare_predicates.h"
+#include "datashare_result_set.h"
+#include "datashare_values_bucket.h"
 #include "hitrace_meter.h"
 #include "fetch_result.h"
+#include "file_uri.h"
 #include "hilog/log.h"
+#include "js_native_api.h"
+#include "js_native_api_types.h"
 #include "media_exif.h"
 #include "medialibrary_asset_operations.h"
 #include "media_column.h"
@@ -207,6 +215,11 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("setUserComment", PhotoAccessHelperSetUserComment),
             DECLARE_NAPI_FUNCTION("requestPhoto", PhotoAccessHelperRequestPhoto),
             DECLARE_NAPI_FUNCTION("cancelPhotoRequest", PhotoAccessHelperCancelPhotoRequest),
+            DECLARE_NAPI_FUNCTION("isEdited", PhotoAccessHelperIsEdited),
+            DECLARE_NAPI_FUNCTION("requestEditData", PhotoAccessHelperRequestEditData),
+            DECLARE_NAPI_FUNCTION("requestSource", PhotoAccessHelperRequestSource),
+            DECLARE_NAPI_FUNCTION("commitEditedAsset", PhotoAccessHelperCommitEditedAsset),
+            DECLARE_NAPI_FUNCTION("revertToOriginal", PhotoAccessHelperRevertToOriginal),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -2426,6 +2439,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         MediaColumn::MEDIA_HIDDEN,
         PhotoColumn::PHOTO_USER_COMMENT,
         PhotoColumn::CAMERA_SHOT_KEY,
+        PENDING_STATUS,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {
@@ -2433,6 +2447,32 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         return E_CHECK_SYSTEMAPP_FAIL;
     }
     return E_SUCCESS;
+}
+
+static bool IsSpecialKey(const string &key)
+{
+    static const set<string> SPECIAL_KEY = {
+        PENDING_STATUS
+    };
+
+    if (SPECIAL_KEY.find(key) != SPECIAL_KEY.end()) {
+        return true;
+    }
+    return false;
+}
+
+static napi_value HandleGettingSpecialKey(napi_env env, const string &key, const shared_ptr<FileAsset> &fileAssetPtr)
+{
+    napi_value jsResult = nullptr;
+    if (key == PENDING_STATUS) {
+        if (fileAssetPtr->GetTimePending() == 0) {
+            napi_get_boolean(env, false, &jsResult);
+        } else {
+            napi_get_boolean(env, true, &jsResult);
+        }
+    }
+
+    return jsResult;
 }
 
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
@@ -2459,6 +2499,10 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
         // no exist throw error
         NapiError::ThrowError(env, JS_E_FILE_KEY);
         return jsResult;
+    }
+
+    if (IsSpecialKey(inputKey)) {
+        return HandleGettingSpecialKey(env, inputKey, obj->fileAssetPtr);
     }
     auto m = obj->fileAssetPtr->GetMemberMap().at(inputKey);
     if (m.index() == MEMBER_TYPE_STRING) {
@@ -2954,7 +2998,7 @@ static void UserFileMgrSetPendingExecute(napi_env env, void *data)
     } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
         uri += UFM_AUDIO + "/" + OPRN_PENDING;
     } else {
-        context->SaveError(-EINVAL);
+        context->SaveError(OHOS_INVALID_PARAM_CODE);
         return;
     }
 
@@ -2969,7 +3013,7 @@ static void UserFileMgrSetPendingExecute(napi_env env, void *data)
 
     changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
-        context->SaveError(changedRows);
+        context->SaveError(E_FAIL);
         NAPI_ERR_LOG("Failed to modify pending state, err: %{public}d", changedRows);
     } else {
         context->changedRows = changedRows;
@@ -3008,8 +3052,8 @@ napi_value FileAssetNapi::UserFileMgrSetPending(napi_env env, napi_callback_info
 
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isPending),
-        JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS_THROW_INVALID_PARAM(env,
+        MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isPending));
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
     CHECK_NULLPTR_RET(asyncContext->objectPtr);
 
@@ -3567,11 +3611,9 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
     Uri updateAssetUri(uri);
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
-    DataShareValuesBucket valuesBucket2;
     int32_t changedRows = 0;
-    int32_t changedRows2 = 0;
     valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, context->isHidden ? IS_HIDDEN : NOT_HIDDEN);
-    valuesBucket2.Put(PhotoColumn::PHOTO_HIDDEN_TIME, context->isHidden ? MediaFileUtils::UTCTimeSeconds() : NOT_TIME);
+    valuesBucket.Put(PhotoColumn::PHOTO_HIDDEN_TIME, context->isHidden ? MediaFileUtils::UTCTimeSeconds() : NOT_TIME);
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
@@ -3582,11 +3624,6 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
     } else {
         context->objectPtr->SetHidden(context->isHidden);
         context->changedRows = changedRows;
-        changedRows2 = UserFileClient::Update(updateAssetUri, predicates, valuesBucket2);
-        if (changedRows2 < 0) {
-            context->SaveError(changedRows2);
-            NAPI_ERR_LOG("Failed to modify hidden time, err: %{public}d", changedRows2);
-        }
     }
 }
 
@@ -3633,6 +3670,7 @@ napi_value FileAssetNapi::PhotoAccessHelperSetHidden(napi_env env, napi_callback
         "Failed to parse js args");
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
+
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperSetHidden",
         PhotoAccessHelperSetHiddenExecute, PhotoAccessHelperSetHiddenComplete);
 }
@@ -3663,7 +3701,12 @@ static void PhotoAccessHelperSetPendingExecute(napi_env env, void *data)
 
     changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
-        context->SaveError(changedRows);
+        if (changedRows == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(changedRows);
+        }
+
         NAPI_ERR_LOG("Failed to modify pending state, err: %{public}d", changedRows);
     } else {
         context->changedRows = changedRows;
@@ -3683,8 +3726,7 @@ static void PhotoAccessHelperSetPendingComplete(napi_env env, napi_status status
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, context->changedRows,
-            "Failed to modify pending state");
+        context->HandleError(env, jsContext->error);
         napi_get_undefined(env, &jsContext->data);
     }
 
@@ -3709,8 +3751,8 @@ napi_value FileAssetNapi::PhotoAccessHelperSetPending(napi_env env, napi_callbac
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
-    NAPI_ASSERT(
-        env, MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isPending) == napi_ok,
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, asyncContext->isPending) == napi_ok,
         "Failed to parse js args");
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
@@ -3849,6 +3891,496 @@ napi_value FileAssetNapi::UserFileMgrGetJson(napi_env env, napi_callback_info in
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetJson",
         UserFileMgrGetJsonExecute, UserFileMgrGetJsonComplete);
+}
+
+static bool GetEditTimeFromResultSet(const shared_ptr<DataShare::DataShareResultSet> &resultSet,
+    int64_t &editTime)
+{
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("ResultSet is null");
+        return false;
+    }
+    int32_t count = 0;
+    int32_t errCode = resultSet->GetRowCount(count);
+    if (errCode != DataShare::E_OK) {
+        NAPI_ERR_LOG("Can not get row count from resultSet, errCode=%{public}d", errCode);
+        return false;
+    }
+    if (count == 0) {
+        NAPI_ERR_LOG("Can not find photo edit time from database");
+        return false;
+    }
+    errCode = resultSet->GoToFirstRow();
+    if (errCode != DataShare::E_OK) {
+        NAPI_ERR_LOG("ResultSet GotoFirstRow failed, errCode=%{public}d", errCode);
+        return false;
+    }
+    int32_t index = 0;
+    errCode = resultSet->GetColumnIndex(PhotoColumn::PHOTO_EDIT_TIME, index);
+    if (errCode != DataShare::E_OK) {
+        NAPI_ERR_LOG("ResultSet GetColumnIndex failed, errCode=%{public}d", errCode);
+        return false;
+    }
+    errCode = resultSet->GetLong(index, editTime);
+    if (errCode != DataShare::E_OK) {
+        NAPI_ERR_LOG("ResultSet GetLong failed, errCode=%{public}d", errCode);
+        return false;
+    }
+    return true;
+}
+
+static void PhotoAccessHelperIsEditedExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperIsEditedExecute");
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    int32_t fileId = context->objectPtr->GetId();
+    string queryUriStr = PAH_QUERY_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(queryUriStr);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    DataShare::DataShareValuesBucket values;
+    vector<string> columns = { PhotoColumn::PHOTO_EDIT_TIME };
+    int32_t errCode = 0;
+    int64_t editTime = 0;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri, predicates, columns, errCode);
+    if (!GetEditTimeFromResultSet(resultSet, editTime)) {
+        if (errCode == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(E_FAIL);
+        }
+    } else {
+        if (editTime == 0) {
+            context->hasEdit = false;
+        } else {
+            context->hasEdit = true;
+        }
+    }
+}
+
+static void PhotoAccessHelperIsEditedComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_get_boolean(env, context->hasEdit, &jsContext->data), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperIsEdited(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperIsEdited");
+
+    // edit function in API11 is system api, maybe public soon
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
+        "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    napi_value ret = nullptr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "PhotoAsset is nullptr");
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperIsEdited",
+        PhotoAccessHelperIsEditedExecute, PhotoAccessHelperIsEditedComplete);
+}
+
+static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperRequestEditDataExecute");
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    bool isValid = false;
+    string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
+    if (!isValid) {
+        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        return;
+    }
+    MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, EDIT_DATA_REQUEST);
+    Uri uri(fileUri);
+    UniqueFd uniqueFd(UserFileClient::OpenFile(uri, "r"));
+    if (uniqueFd.Get() <= 0) {
+        if (uniqueFd.Get() == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(uniqueFd.Get());
+        }
+        NAPI_ERR_LOG("Photo request edit data failed, ret: %{public}d", uniqueFd.Get());
+    } else {
+        struct stat fileInfo;
+        if (fstat(uniqueFd.Get(), &fileInfo) == 0) {
+            off_t fileSize = fileInfo.st_size;
+            if (fileSize < 0) {
+                NAPI_ERR_LOG("fileBuffer error : %{public}ld", (long)fileSize);
+                context->SaveError(E_FAIL);
+                return;
+            }
+            context->editDataBuffer = (char*)malloc(fileSize + 1);
+            if (!context->editDataBuffer) {
+                NAPI_ERR_LOG("Photo request edit data failed, fd: %{public}d", uniqueFd.Get());
+                context->SaveError(E_FAIL);
+                return;
+            }
+            ssize_t bytes = read(uniqueFd.Get(), context->editDataBuffer, fileSize);
+            if (bytes < 0) {
+                NAPI_ERR_LOG("Read edit data failed, errno: %{public}d", errno);
+                context->SaveError(E_FAIL);
+                return;
+            }
+            context->editDataBuffer[bytes] = '\0';
+        } else {
+            NAPI_ERR_LOG("can not get stat errno:%{public}d", errno);
+            context->SaveError(E_FAIL);
+        }
+    }
+}
+
+static void PhotoAccessHelperRequestEditDataComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+
+    if (context->error == ERR_DEFAULT) {
+        if (context->editDataBuffer == nullptr) {
+            CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH,
+                &jsContext->data), JS_INNER_FAIL);
+        } else {
+            CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, context->editDataBuffer, NAPI_AUTO_LENGTH,
+                &jsContext->data), JS_INNER_FAIL);
+        }
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    if (context->editDataBuffer != nullptr) {
+        free(context->editDataBuffer);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperRequestEditData(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperRequestEditData");
+
+    // edit function in API11 is system api, maybe public soon
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
+        "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    napi_value ret = nullptr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "PhotoAsset is nullptr");
+    auto fileUri = asyncContext->objectInfo->GetFileUri();
+    MediaLibraryNapiUtils::UriAppendKeyValue(fileUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    asyncContext->valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperRequestEditData",
+        PhotoAccessHelperRequestEditDataExecute, PhotoAccessHelperRequestEditDataComplete);
+}
+
+static void PhotoAccessHelperRequestSourceExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperRequestSourceExecute");
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    bool isValid = false;
+    string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
+    if (!isValid) {
+        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        return;
+    }
+    MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
+    Uri uri(fileUri);
+    int32_t retVal = UserFileClient::OpenFile(uri, "r");
+    if (retVal <= 0) {
+        if (retVal == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(retVal);
+        }
+        NAPI_ERR_LOG("Photo request edit data failed, ret: %{public}d", retVal);
+    } else {
+        context->fd = retVal;
+        context->objectPtr->SetOpenStatus(retVal, OPEN_TYPE_READONLY);
+    }
+}
+
+static void PhotoAccessHelperRequestSourceComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_create_int32(env, context->fd, &jsContext->data), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperRequestSource(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperRequestSource");
+
+    // edit function in API11 is system api, maybe public soon
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
+        "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    napi_value ret = nullptr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "PhotoAsset is nullptr");
+    auto fileUri = asyncContext->objectInfo->GetFileUri();
+    MediaLibraryNapiUtils::UriAppendKeyValue(fileUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    asyncContext->valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperRequestSource",
+        PhotoAccessHelperRequestSourceExecute, PhotoAccessHelperRequestSourceComplete);
+}
+
+static int32_t GetFileUriFd(FileAssetAsyncContext *context)
+{
+    string uriRealPath = AppFileService::ModuleFileUri::FileUri(context->uri).GetRealPath();
+    if (uriRealPath.empty()) {
+        NAPI_ERR_LOG("Can not get file in path by uri %{private}s", context->uri.c_str());
+        context->SaveError(E_FAIL);
+        return E_FAIL;
+    }
+    int32_t fd = open(uriRealPath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        NAPI_ERR_LOG("Can not open fileUri, ret: %{public}d", fd);
+        context->SaveError(E_FAIL);
+        return E_FAIL;
+    }
+    return fd;
+}
+
+static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperCommitEditExecute");
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    UniqueFd uriFd(GetFileUriFd(context));
+    CHECK_IF_EQUAL(uriFd.Get() > 0, "Can not open fileUri");
+
+    bool isValid = false;
+    string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
+    if (!isValid) {
+        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        return;
+    }
+    MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, COMMIT_REQUEST);
+    Uri uri(fileUri);
+    UniqueFd fd(UserFileClient::OpenFile(uri, "rw"));
+    if (fd.Get() <= 0) {
+        if (fd.Get() == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(fd.Get());
+        }
+        NAPI_ERR_LOG("File request edit data failed, ret: %{public}d", fd.Get());
+    } else {
+        if (ftruncate(fd.Get(), 0) == -1) {
+            NAPI_ERR_LOG("Can not erase content from old file, errno:%{public}d", errno);
+            context->SaveError(E_FAIL);
+            return;
+        }
+        if (!MediaFileUtils::CopyFile(uriFd.Get(), fd.Get())) {
+            NAPI_ERR_LOG("Failed to copy file: rfd:%{public}d, wfd:%{public}d, errno:%{public}d",
+                uriFd.Get(), fd.Get(), errno);
+            context->SaveError(E_FAIL);
+            return;
+        }
+        string insertUriStr = PAH_COMMIT_EDIT_PHOTOS;
+        MediaLibraryNapiUtils::UriAppendKeyValue(insertUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri insertUri(insertUriStr);
+        int32_t ret = UserFileClient::Insert(insertUri, context->valuesBucket);
+        if (ret != E_SUCCESS) {
+            if (ret == E_PERMISSION_DENIED) {
+                context->error = OHOS_PERMISSION_DENIED_CODE;
+            } else {
+                context->SaveError(ret);
+            }
+            NAPI_ERR_LOG("File commit edit execute failed");
+        }
+    }
+}
+
+static void PhotoAccessHelperCommitEditComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperCommitEditedAsset(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperCommitEditedAsset");
+
+    // edit function in API11 is system api, maybe public soon
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_ARGS_THROW_INVALID_PARAM(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_THREE));
+    string editData;
+    CHECK_ARGS_THROW_INVALID_PARAM(env,
+        MediaLibraryNapiUtils::GetParamString(env, asyncContext->argv[0], editData));
+    CHECK_ARGS_THROW_INVALID_PARAM(env,
+        MediaLibraryNapiUtils::GetParamString(env, asyncContext->argv[1], asyncContext->uri));
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    napi_value ret = nullptr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "PhotoAsset is nullptr");
+    auto fileUri = asyncContext->objectInfo->GetFileUri();
+    MediaLibraryNapiUtils::UriAppendKeyValue(fileUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    asyncContext->valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
+    asyncContext->valuesBucket.Put(EDIT_DATA, editData);
+    asyncContext->valuesBucket.Put(MediaColumn::MEDIA_ID, asyncContext->objectPtr->GetId());
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperCommitEditedAsset",
+        PhotoAccessHelperCommitEditExecute, PhotoAccessHelperCommitEditComplete);
+}
+
+static void PhotoAccessHelperRevertToOriginalExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperRevertToOriginalExecute");
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    string uriString = PAH_REVERT_EDIT_PHOTOS;
+    MediaFileUtils::UriAppendKeyValue(uriString, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(uriString);
+    int32_t ret = UserFileClient::Insert(uri, context->valuesBucket);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(ret);
+        }
+        NAPI_ERR_LOG("Photo revert edit data failed, ret: %{public}d", ret);
+    }
+}
+
+static void PhotoAccessHelperRevertToOriginalComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperRevertToOriginal(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperRevertToOriginal");
+
+    // edit function in API11 is system api, maybe public soon
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
+        "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    napi_value ret = nullptr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "PhotoAsset is nullptr");
+    asyncContext->valuesBucket.Put(MediaColumn::MEDIA_ID, asyncContext->objectPtr->GetId());
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperRevertToOriginal",
+        PhotoAccessHelperRevertToOriginalExecute, PhotoAccessHelperRevertToOriginalComplete);
 }
 } // namespace Media
 } // namespace OHOS

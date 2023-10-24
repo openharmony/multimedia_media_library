@@ -28,7 +28,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 shared_ptr<FileAsset> g_pictures = nullptr;
 void MediaLibraryScannerTest::SetUpTestCase(void)
 {
@@ -211,7 +210,6 @@ HWTEST_F(MediaLibraryScannerTest, medialib_CheckSkipScanList_test_001, TestSize.
     std::string path = "medialib_test";
     bool ret = ScannerUtils::CheckSkipScanList(path);
     EXPECT_EQ(ret, false);
-
     path = "medialib_CheckSkipScanList_test_001";
     ret = ScannerUtils::CheckSkipScanList(path);
     EXPECT_EQ(ret, true);

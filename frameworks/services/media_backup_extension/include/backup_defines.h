@@ -13,30 +13,55 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_BACKUP_DEFINES_H_
-#define OHOS_MEDIA_BACKUP_DEFINES_H_
+#ifndef OHOS_MEDIA_BACKUP_DEFINES_H
+#define OHOS_MEDIA_BACKUP_DEFINES_H
 
-#include <vector>
 #include <string>
-#include <stdint.h>
+#include <vector>
 
 namespace OHOS {
 namespace Media {
+constexpr int32_t QUERY_COUNT = 500;
+constexpr int32_t CONNECT_SIZE = 10;
+constexpr int32_t MILLISECONDS = 1000;
+constexpr int32_t GALLERY_HIDDEN_ID = -4;
+
+const std::string ORIGIN_PATH = "/data/storage/el2/backup/restore";
+const std::string DOCUMENT_PATH = "/storage/media/local/files/Documents";
+const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
+const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
+
+// DB field for update scene
+const std::string GALLERY_LOCAL_MEDIA_ID = "local_media_id";
+const std::string GALLERY_FILE_DATA = "_data";
+const std::string GALLERY_TITLE = "title";
+const std::string GALLERY_DISPLAY_NAME = "_display_name";
+const std::string GALLERY_DESCRIPTION = "description";
+const std::string GALLERY_IS_FAVORITE = "is_hw_favorite";
+const std::string GALLERY_RECYCLED_TIME = "recycledTime";
+const std::string GALLERY_FILE_SIZE = "_size";
+const std::string GALLERY_DURATION = "duration";
+const std::string GALLERY_MEDIA_TYPE = "media_type";
+const std::string GALLERY_SHOW_DATE_TOKEN = "showDateToken";
+const std::string GALLERY_HEIGHT = "height";
+const std::string GALLERY_WIDTH = "width";
+
 struct FileInfo {
     std::string filePath;
     std::string displayName;
-    int64_t _size;
-    int64_t duration;
-    int64_t recycledTime;
-    int32_t hidden;
-    int32_t is_hw_favorite;
-    int32_t fileType;
-    int32_t orientation;
-    int64_t showDateToken;
-    int32_t height;
-    int32_t width;
+    std::string title;
+    std::string userComment;
+    int64_t fileSize {0};
+    int64_t duration {0};
+    int64_t recycledTime {0};
+    int32_t hidden {0};
+    int32_t isFavorite {0};
+    int32_t fileType {0};
+    int64_t showDateToken {0};
+    int32_t height {0};
+    int32_t width {0};
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_BACKUP_DEFINES_H_
+#endif  // OHOS_MEDIA_BACKUP_DEFINES_H

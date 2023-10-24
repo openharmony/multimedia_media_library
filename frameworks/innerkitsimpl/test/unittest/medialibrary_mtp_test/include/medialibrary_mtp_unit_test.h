@@ -34,7 +34,6 @@ public:
     /* TearDown:Execute after each test case */
     void TearDown();
 };
-
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_INNERKITSIMPL_TEST_UNITTEST_MEDIALIBRARY_TEST_INCLUDE_MEDIALIBRARY_UNIT_TEST_H_

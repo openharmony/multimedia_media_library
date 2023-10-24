@@ -33,6 +33,5 @@ shared_ptr<IThumbnailHelper> ThumbnailHelperFactory::GetThumbnailHelper(const Si
         return resultHelper;
     }
 }
-
 } // namespace Media
 } // namespace OHOS

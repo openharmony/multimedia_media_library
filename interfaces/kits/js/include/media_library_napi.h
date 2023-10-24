@@ -95,7 +95,7 @@ public:
         return *this;
     }
 
-    ~ChangeListenerNapi(){};
+    ~ChangeListenerNapi() {};
 
     void OnChange(MediaChangeListener &listener, const napi_ref cbRef);
     static napi_value SolveOnChange(napi_env env, UvChangeMsg *msg);

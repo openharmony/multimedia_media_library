@@ -20,6 +20,7 @@
 
 #include "cloud_sync_helper.h"
 #include "ipc_skeleton.h"
+#include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -29,6 +30,7 @@
 #endif
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_tracer.h"
 #include "media_scanner.h"
 #include "media_scanner_manager.h"
@@ -39,6 +41,7 @@
 #include "rdb_sql_utils.h"
 #include "result_set_utils.h"
 #include "post_event_utils.h"
+#include "vision_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -505,6 +508,9 @@ int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates,
             return E_HAS_FS_ERROR;
         }
         MediaLibraryObjectUtils::InvalidateThumbnail(to_string(fileId), predicates.GetTableName(), filePath);
+        if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+            MediaLibraryPhotoOperations::DeleteRevertMessage(filePath);
+        }
         deletedRows += deletedRow;
     }
     return deletedRows;
@@ -826,55 +832,64 @@ static const string &TriggerUpdateUserAlbumCount()
     return TRIGGER_UPDATE_USER_ALBUM_COUNT;
 }
 
+static const vector<string> onCreateSqlStrs = {
+    CREATE_MEDIA_TABLE,
+    PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoColumn::INDEX_STHP_ADDTIME,
+    PhotoColumn::INDEX_CAMERA_SHOT_KEY,
+    PhotoColumn::CREATE_YEAR_INDEX,
+    PhotoColumn::CREATE_MONTH_INDEX,
+    PhotoColumn::CREATE_DAY_INDEX,
+    PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
+    PhotoColumn::CREATE_SHPT_DAY_INDEX,
+    PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
+    PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
+    PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
+    PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC,
+    PhotoColumn::CREATE_PHOTOS_UPDATE_CLOUD_SYNC,
+    AudioColumn::CREATE_AUDIO_TABLE,
+    CREATE_SMARTALBUM_TABLE,
+    CREATE_SMARTALBUMMAP_TABLE,
+    CREATE_DEVICE_TABLE,
+    CREATE_CATEGORY_SMARTALBUMMAP_TABLE,
+    CREATE_ASSET_UNIQUE_NUMBER_TABLE,
+    CREATE_IMAGE_VIEW,
+    CREATE_VIDEO_VIEW,
+    CREATE_AUDIO_VIEW,
+    CREATE_ALBUM_VIEW,
+    CREATE_SMARTALBUMASSETS_VIEW,
+    CREATE_ASSETMAP_VIEW,
+    CREATE_MEDIATYPE_DIRECTORY_TABLE,
+    CREATE_BUNDLE_PREMISSION_TABLE,
+    CREATE_MEDIALIBRARY_ERROR_TABLE,
+    CREATE_REMOTE_THUMBNAIL_TABLE,
+    CREATE_FILES_DELETE_TRIGGER,
+    CREATE_FILES_MDIRTY_TRIGGER,
+    CREATE_FILES_FDIRTY_TRIGGER,
+    CREATE_INSERT_CLOUD_SYNC_TRIGGER,
+    PhotoAlbumColumns::CREATE_TABLE,
+    PhotoAlbumColumns::INDEX_ALBUM_TYPES,
+    PhotoAlbumColumns::CREATE_ALBUM_INSERT_TRIGGER,
+    PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER,
+    PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER,
+    PhotoMap::CREATE_TABLE,
+    PhotoMap::CREATE_NEW_TRIGGER,
+    PhotoMap::CREATE_DELETE_TRIGGER,
+    TriggerDeleteAlbumClearMap(),
+    TriggerDeletePhotoClearMap(),
+    CREATE_TAB_ANALYSIS_OCR,
+    CREATE_TAB_ANALYSIS_LABEL,
+    CREATE_TAB_ANALYSIS_AESTHETICS,
+    CREATE_TAB_ANALYSIS_TOTAL,
+    CREATE_TAB_APPLICATION_SHIELD,
+    CREATE_VISION_UPDATE_TRIGGER,
+    CREATE_VISION_DELETE_TRIGGER,
+    CREATE_VISION_INSERT_TRIGGER,
+};
+
 static int32_t ExecuteSql(RdbStore &store)
 {
-    static const vector<string> executeSqlStrs = {
-        CREATE_MEDIA_TABLE,
-        PhotoColumn::CREATE_PHOTO_TABLE,
-        PhotoColumn::INDEX_STHP_ADDTIME,
-        PhotoColumn::INDEX_CAMERA_SHOT_KEY,
-        PhotoColumn::CREATE_YEAR_INDEX,
-        PhotoColumn::CREATE_MONTH_INDEX,
-        PhotoColumn::CREATE_DAY_INDEX,
-        PhotoColumn::CREATE_MEDIA_TYPE_INDEX,
-        PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
-        PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
-        PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
-        PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC,
-        PhotoColumn::CREATE_PHOTOS_UPDATE_CLOUD_SYNC,
-        AudioColumn::CREATE_AUDIO_TABLE,
-        CREATE_SMARTALBUM_TABLE,
-        CREATE_SMARTALBUMMAP_TABLE,
-        CREATE_DEVICE_TABLE,
-        CREATE_CATEGORY_SMARTALBUMMAP_TABLE,
-        CREATE_ASSET_UNIQUE_NUMBER_TABLE,
-        CREATE_IMAGE_VIEW,
-        CREATE_VIDEO_VIEW,
-        CREATE_AUDIO_VIEW,
-        CREATE_ALBUM_VIEW,
-        CREATE_SMARTALBUMASSETS_VIEW,
-        CREATE_ASSETMAP_VIEW,
-        CREATE_MEDIATYPE_DIRECTORY_TABLE,
-        CREATE_BUNDLE_PREMISSION_TABLE,
-        CREATE_MEDIALIBRARY_ERROR_TABLE,
-        CREATE_REMOTE_THUMBNAIL_TABLE,
-        CREATE_FILES_DELETE_TRIGGER,
-        CREATE_FILES_MDIRTY_TRIGGER,
-        CREATE_FILES_FDIRTY_TRIGGER,
-        CREATE_INSERT_CLOUD_SYNC_TRIGGER,
-        PhotoAlbumColumns::CREATE_TABLE,
-        PhotoAlbumColumns::INDEX_ALBUM_TYPES,
-        PhotoAlbumColumns::CREATE_ALBUM_INSERT_TRIGGER,
-        PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER,
-        PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER,
-        PhotoMap::CREATE_TABLE,
-        PhotoMap::CREATE_NEW_TRIGGER,
-        PhotoMap::CREATE_DELETE_TRIGGER,
-        TriggerDeleteAlbumClearMap(),
-        TriggerDeletePhotoClearMap(),
-    };
-
-    for (const string& sqlStr : executeSqlStrs) {
+    for (const string& sqlStr : onCreateSqlStrs) {
         if (store.ExecuteSql(sqlStr) != NativeRdb::E_OK) {
             return NativeRdb::E_ERROR;
         }
@@ -1130,6 +1145,45 @@ void MediaLibraryRdbStore::UpdateAPI10Tables()
     UpdateAPI10Table(*rdbStore_);
 }
 
+static void AddAnalysisTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_analysis_label",
+        CREATE_TAB_ANALYSIS_OCR,
+        CREATE_TAB_ANALYSIS_LABEL,
+        CREATE_TAB_ANALYSIS_AESTHETICS,
+        CREATE_TAB_ANALYSIS_TOTAL,
+        CREATE_TAB_APPLICATION_SHIELD,
+        CREATE_VISION_UPDATE_TRIGGER,
+        CREATE_VISION_DELETE_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER,
+        INIT_TAB_ANALYSIS_TOTAL,
+    };
+    MEDIA_INFO_LOG("start init vision db");
+    ExecSqls(executeSqlStrs, store);
+}
+
+void MediaLibraryRdbStore::ResetAnalysisTables()
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return;
+    }
+    static const vector<string> executeSqlStrs = {
+        "DROP TRIGGER IF EXISTS delete_vision_trigger",
+        "DROP TRIGGER IF EXISTS insert_vision_trigger",
+        "DROP TRIGGER IF EXISTS update_vision_trigger",
+        "DROP TABLE IF EXISTS tab_analysis_ocr",
+        "DROP TABLE IF EXISTS tab_analysis_label",
+        "DROP TABLE IF EXISTS tab_analysis_aesthetics_score",
+        "DROP TABLE IF EXISTS tab_analysis_total",
+        "DROP TABLE IF EXISTS tab_application_shield",
+    };
+    MEDIA_INFO_LOG("start update analysis db");
+    ExecSqls(executeSqlStrs, *rdbStore_);
+    AddAnalysisTables(*rdbStore_);
+}
+
 static void AddPackageNameColumnOnTables(RdbStore &store)
 {
     static const string ADD_PACKAGE_NAME_ON_PHOTOS = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
@@ -1269,9 +1323,9 @@ void UpdateYearMonthDayData(RdbStore &store)
         "DROP TRIGGER IF EXISTS naturalbase_rdb_Photos_ON_DELETE",
         "DROP TRIGGER IF EXISTS naturalbase_rdb_Photos_ON_INSERT",
         "DROP TRIGGER IF EXISTS naturalbase_rdb_Photos_ON_UPDATE",
-        "DROP INDEX IF EXISTS " + PhotoColumn::CREATE_YEAR_INDEX,
-        "DROP INDEX IF EXISTS " + PhotoColumn::CREATE_MONTH_INDEX,
-        "DROP INDEX IF EXISTS " + PhotoColumn::CREATE_DAY_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_MONTH_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_DAY_INDEX,
         "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
             PhotoColumn::PHOTO_DATE_YEAR + " = strftime('%Y', datetime(date_added, 'unixepoch', 'localtime')), " +
             PhotoColumn::PHOTO_DATE_MONTH + " = strftime('%Y%m', datetime(date_added, 'unixepoch', 'localtime')), " +
@@ -1279,10 +1333,28 @@ void UpdateYearMonthDayData(RdbStore &store)
         PhotoColumn::CREATE_YEAR_INDEX,
         PhotoColumn::CREATE_MONTH_INDEX,
         PhotoColumn::CREATE_DAY_INDEX,
-        PhotoColumn::CREATE_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
     };
     ExecSqls(updateSql, store);
     MEDIA_DEBUG_LOG("UpdateYearMonthDayData end");
+}
+
+void FixIndexOrder(RdbStore &store)
+{
+    const vector<string> updateSql = {
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_MONTH_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_DAY_INDEX,
+        "DROP INDEX IF EXISTS idx_media_type",
+        "DROP INDEX IF EXISTS idx_sthp_dateadded",
+        PhotoColumn::CREATE_YEAR_INDEX,
+        PhotoColumn::CREATE_MONTH_INDEX,
+        PhotoColumn::CREATE_DAY_INDEX,
+        PhotoColumn::INDEX_STHP_ADDTIME,
+        PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SHPT_DAY_INDEX,
+    };
+    ExecSqls(updateSql, store);
 }
 
 void AddYearMonthDayColumn(RdbStore &store)
@@ -1298,12 +1370,34 @@ void AddYearMonthDayColumn(RdbStore &store)
 void AddHiddenTimeColumn(RdbStore &store)
 {
     const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT"
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + 
+            " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0"
     };
     ExecSqls(sqls, store);
 }
 
-void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
+static void AddPhotoEditTimeColumn(RdbStore &store)
+{
+    const string addEditTimeOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+        " ADD COLUMN " + PhotoColumn::PHOTO_EDIT_TIME + " BIGINT DEFAULT 0";
+
+    const vector<string> addEditTime = { addEditTimeOnPhotos };
+    ExecSqls(addEditTime, store);
+}
+
+void AddShootingModeColumn(RdbStore &store)
+{
+    const std::string addShootringMode =
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_SHOOTING_MODE + " TEXT";
+    const vector<string> addShootingModeColumn = { addShootringMode };
+    int32_t result = ExecSqls(addShootingModeColumn, store);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb shooting_mode error %{private}d", result);
+    }
+}
+
+static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
         AddPackageNameColumnOnTables(store);
@@ -1335,6 +1429,18 @@ void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_YEAR_MONTH_DAY) {
         UpdateYearMonthDayData(store);
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_EDIT_TIME) {
+        AddPhotoEditTimeColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SHOOTING_MODE) {
+        AddShootingModeColumn(store);
+    }
+
+    if (oldVersion < VERSION_FIX_INDEX_ORDER) {
+        FixIndexOrder(store);
     }
 
     if (oldVersion < VERSION_ADD_HIDDEN_TIME) {
@@ -1389,6 +1495,9 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);
     }
 
+    if (oldVersion < VERSION_ADD_VISION_TABLE) {
+        AddAnalysisTables(store);
+    }
     return NativeRdb::E_OK;
 }
 

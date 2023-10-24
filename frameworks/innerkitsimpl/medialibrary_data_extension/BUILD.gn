@@ -149,6 +149,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_subscriber.cpp",
     "src/medialibrary_uripermission_operations.cpp",
+    "src/medialibrary_vision_operations.cpp",
     "src/photo_map_operations.cpp",
     "src/trash_async_worker.cpp",
   ]
@@ -162,7 +163,6 @@ ohos_shared_library("medialibrary_data_extension") {
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker:medialibrary_async_worker",
-    "${MEDIALIB_SERVICES_PATH}/media_backup_extension:mediabackup",
     "${MEDIALIB_UTILS_PATH}:medialibrary_common_utils",
     "${MEDIALIB_UTILS_PATH}:permission_utils",
     "${MEDIALIB_UTILS_PATH}:post_event_utils",

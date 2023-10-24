@@ -21,7 +21,6 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-
 shared_ptr<TrashAsyncTaskWorker> TrashAsyncTaskWorker::asyncWorkerInstance_{nullptr};
 mutex TrashAsyncTaskWorker::instanceLock_;
 

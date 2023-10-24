@@ -17,7 +17,6 @@
 #include <chrono>
 #include <thread>
 #include "medialibrary_device.h"
-#include "medialibrary_rdb_test.h"
 #include "context.h"
 #include "ability_context_impl.h"
 #include "js_runtime.h"
@@ -25,6 +24,7 @@
 #include "media_file_utils.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_sync_operation.h"
+#include "medialibrary_rdb_test.h"
 #define private public
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"
@@ -418,6 +418,5 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_003, TestSize.
     rdbStorePtr->Stop();
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_003 finish");
 }
-
 } // namespace Media
 } // namespace OHOS

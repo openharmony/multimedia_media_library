@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -54,6 +54,7 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
+#include "medialibrary_vision_operations.h"
 #include "mimetype_utils.h"
 #include "permission_utils.h"
 #include "photo_map_operations.h"
@@ -81,7 +82,6 @@ const OHOS::DistributedKv::StoreId KVSTORE_STOREID = {"medialibrary_thumbnail"};
 
 namespace OHOS {
 namespace Media {
-
 shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
@@ -394,6 +394,13 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::BUNDLE_PERMISSION: {
             return UriPermissionOperations::HandleUriPermOperations(cmd);
         }
+        case OperationObject::VISION_OCR:
+        case OperationObject::VISION_LABEL:
+        case OperationObject::VISION_AESTHETICS:
+        case OperationObject::VISION_TOTAL:
+        case OperationObject::VISION_SHIELD: {
+            return MediaLibraryVisionOperations::InsertOperation(cmd);
+        }
         default: {
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
@@ -518,7 +525,11 @@ int32_t MediaLibraryDataManager::Delete(MediaLibraryCommand &cmd, const DataShar
         cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    return DeleteInRdbPredicates(cmd, rdbPredicate);
+}
 
+int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate)
+{
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET:
         case OperationObject::FILESYSTEM_DIR:
@@ -543,6 +554,13 @@ int32_t MediaLibraryDataManager::Delete(MediaLibraryCommand &cmd, const DataShar
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::DeleteOperation(cmd);
+        }
+        case OperationObject::VISION_OCR:
+        case OperationObject::VISION_LABEL:
+        case OperationObject::VISION_AESTHETICS:
+        case OperationObject::VISION_TOTAL:
+        case OperationObject::VISION_SHIELD: {
+            return MediaLibraryVisionOperations::DeleteOperation(cmd);
         }
         default:
             break;
@@ -573,8 +591,11 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
 
     cmd.SetValueBucket(value);
     cmd.SetDataSharePred(predicates);
-    cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
+    // MEDIALIBRARY_TABLE just for RdbPredicates
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates,
+        cmd.GetTableName());
+    cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
+    cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
 
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
