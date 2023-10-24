@@ -102,11 +102,31 @@ static void RemoveFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
     fileInfos.clear();
 }
 
+static std::string EncodeDisplayName(const std::string &displayName)
+{
+    std::string title = MediaFileUtils::GetTitleFromDisplayName(displayName);
+    std::string ext = MediaFileUtils::GetExtensionFromPath(displayName);
+    std::set<char> CHAR_FILTERS = {
+        '.', '\\', '/', ':',
+        '*', '?', '"', '\'',
+        '`', '<', '>', '|',
+        '{', '}', '[', ']' };
+    std::string encodedStr = "";
+    for (char c : displayName) {
+        if (CHAR_FILTERS.find(c) != CHAR_FILTERS.end()) {
+            encodedStr += MediaFileUtils::Encode(string(1, c));
+        } else {
+            encodedStr += c;
+        }
+    }
+    return encodedStr;
+}
+
 static int32_t CreateRecord(const ExecEnv &env, FileInfo &fileInfo)
 {
     const MediaType mediaType = fileInfo.mediaType;
     std::string tableName = UserFileClientEx::GetTableNameByMediaType(mediaType);
-    const std::string displayName = fileInfo.displayName;
+    const std::string displayName = EncodeDisplayName(fileInfo.displayName);
     string uri;
     auto fileId = UserFileClientEx::InsertExt(tableName, displayName, uri);
     if (fileId <= 0) {
