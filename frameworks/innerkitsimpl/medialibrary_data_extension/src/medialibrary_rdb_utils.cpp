@@ -18,7 +18,6 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
-#include <utility>
 
 #include "media_log.h"
 #include "medialibrary_db_const.h"
