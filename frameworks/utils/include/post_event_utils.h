@@ -21,7 +21,6 @@
 #include "singleton.h"
 namespace OHOS {
 namespace Media {
-
 const std::string KEY_OPT_TYPE = "optType";
 
 const std::string KEY_ERR_FILE = "errFile";
