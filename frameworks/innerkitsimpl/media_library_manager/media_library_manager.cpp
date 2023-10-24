@@ -273,7 +273,7 @@ static inline bool IsSmallThumb(const int32_t width, const int32_t height)
     return false;
 }
 
-static inline std::string GetSandboxPath(const std::string &path, const Size &size, bool isAudio)
+static std::string GetSandboxPath(const std::string &path, const Size &size, bool isAudio)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";

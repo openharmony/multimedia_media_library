@@ -28,7 +28,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 void EventCreateTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
