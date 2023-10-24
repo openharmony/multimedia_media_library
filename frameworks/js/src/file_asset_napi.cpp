@@ -73,6 +73,8 @@ constexpr int32_t NOT_FAV = 0;
 constexpr int32_t IS_HIDDEN = 1;
 constexpr int32_t NOT_HIDDEN = 0;
 
+constexpr int32_t NOT_TIME = 0;
+
 constexpr int32_t USER_COMMENT_MAX_LEN = 140;
 
 using CompleteCallback = napi_async_complete_callback;
@@ -3565,8 +3567,11 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
     Uri updateAssetUri(uri);
     DataSharePredicates predicates;
     DataShareValuesBucket valuesBucket;
+    DataShareValuesBucket valuesBucket2;
     int32_t changedRows = 0;
+    int32_t changedRows2 = 0;
     valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, context->isHidden ? IS_HIDDEN : NOT_HIDDEN);
+    valuesBucket2.Put(PhotoColumn::PHOTO_HIDDEN_TIME, context->isHidden ? MediaFileUtils::UTCTimeSeconds() : NOT_TIME);
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
@@ -3577,6 +3582,11 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
     } else {
         context->objectPtr->SetHidden(context->isHidden);
         context->changedRows = changedRows;
+        changedRows2 = UserFileClient::Update(updateAssetUri, predicates, valuesBucket2);
+        if (changedRows2 < 0) {
+            context->SaveError(changedRows2);
+            NAPI_ERR_LOG("Failed to modify hidden time, err: %{public}d", changedRows2);
+        }
     }
 }
 
@@ -3623,7 +3633,6 @@ napi_value FileAssetNapi::PhotoAccessHelperSetHidden(napi_env env, napi_callback
         "Failed to parse js args");
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "FileAsset is nullptr");
-
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperSetHidden",
         PhotoAccessHelperSetHiddenExecute, PhotoAccessHelperSetHiddenComplete);
 }
