@@ -1333,7 +1333,6 @@ void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
         AddYearMonthDayColumn(store);
     }
 
-    //comment this code block out if it introduces bugs
     if (oldVersion < VERSION_UPDATE_YEAR_MONTH_DAY) {
         UpdateYearMonthDayData(store);
     }
