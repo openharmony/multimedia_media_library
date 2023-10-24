@@ -923,6 +923,19 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
     context->selectionArgs.emplace_back(to_string(MEDIA_TYPE_ALBUM));
 }
 
+static void FixSpecialDateType(string &selections)
+{
+    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
+    for (string dateType : dateTypes) {
+        string date2Second = dateType + "_s";
+        auto pos = selections.find(dateType);
+        while (pos != string::npos) {
+            selections.replace(pos, dateType.length(), date2Second);
+            pos = selections.find(dateType, pos + date2Second.length());
+        }
+    }
+}
+
 static void GetFileAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -939,7 +952,7 @@ static void GetFileAssetsExecute(napi_env env, void *data)
         context->selection += group;
         context->fetchColumn.insert(context->fetchColumn.begin(), "count(*)");
     }
-
+    FixSpecialDateType(context->selection);
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
     context->predicates.SetOrder(context->order);
@@ -2100,7 +2113,7 @@ static void JSTrashAssetExecute(napi_env env, void *data)
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ trashId });
     DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
@@ -5692,7 +5705,7 @@ static void PhotoAccessHelperTrashExecute(napi_env env, void *data)
     DataSharePredicates predicates;
     predicates.In(MediaColumn::MEDIA_ID, context->uris);
     DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);

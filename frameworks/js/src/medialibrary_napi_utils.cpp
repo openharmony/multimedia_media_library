@@ -23,6 +23,7 @@
 #include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_napi.h"
@@ -234,6 +235,23 @@ MediaType MediaLibraryNapiUtils::GetMediaTypeFromUri(const string &uri)
     return MediaType::MEDIA_TYPE_ALL;
 }
 
+static bool HandleSpecialDateTypePredicate(const OperationItem &item,
+    vector<OperationItem> &operations, const FetchOptionType &fetchOptType)
+{
+    constexpr int32_t FIELD_IDX = 0;
+    constexpr int32_t VALUE_IDX = 1;
+    vector<std::string>dateTypes = {MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED};
+    string dateType = item.GetSingle(FIELD_IDX);
+    auto it = std::find(dateTypes.begin(), dateTypes.end(), dateType);
+    if (it != dateTypes.end() && item.operation != DataShare::ORDER_BY_ASC &&
+        item.operation != DataShare::ORDER_BY_DESC) {
+        dateType += "_s";
+        operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
+        return true;
+    }
+    return false;
+}
+
 template <class AsyncContext>
 bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
     shared_ptr<DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType)
@@ -245,6 +263,9 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
     for (auto &item : items) {
         if (item.singleParams.empty()) {
             operations.push_back(item);
+            continue;
+        }
+        if (HandleSpecialDateTypePredicate(item, operations, fetchOptType)) {
             continue;
         }
         // change uri ->file id
