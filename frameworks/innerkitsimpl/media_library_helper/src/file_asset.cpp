@@ -16,9 +16,6 @@
 
 #include "file_asset.h"
 
-#include <fcntl.h>
-#include <fstream>
-#include <unistd.h>
 #include <nlohmann/json.hpp>
 
 #include "datashare_business_error.h"
