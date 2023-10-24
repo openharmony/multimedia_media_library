@@ -147,12 +147,12 @@ private:
     void SetApiFromQuerySetMap();
     void ParseOprnObjectFromFileUri();
 
-    Uri uri_{""};
+    Uri uri_ {""};
     NativeRdb::ValuesBucket insertValue_;
     std::unique_ptr<NativeRdb::AbsRdbPredicates> absRdbPredicates_;
     std::unique_ptr<const DataShare::DataSharePredicates> datasharePred_;
-    OperationObject oprnObject_{OperationObject::UNKNOWN_OBJECT};
-    OperationType oprnType_{OperationType::UNKNOWN_TYPE};
+    OperationObject oprnObject_ {OperationObject::UNKNOWN_OBJECT};
+    OperationType oprnType_ {OperationType::UNKNOWN_TYPE};
     std::string oprnFileId_;
     std::string oprnDevice_;
     std::string tableName_;
