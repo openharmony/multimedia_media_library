@@ -123,6 +123,9 @@ public:
     void SetDateDay(const VariantData &dateDay);
     const std::string &getDateDay() const;
 
+    void SetShootingMode(const VariantData &shootingMode);
+    const std::string &GetShootingMode() const;
+
 #ifdef MEDIALIBRARY_COMPATIBILITY
     void SetPhotoSubType(const VariantData &photoSubType);
     int32_t GetPhotoSubType() const;
@@ -167,6 +170,7 @@ private:
     string dateYear_;
     string dateMonth_;
     string dateDay_;
+    string shootingMode_;
 
     // video, audio, image
     int64_t dateTaken_;

@@ -204,6 +204,8 @@ void ClearAndRestart()
     }
 
     system("rm -rf /storage/cloud/files/*");
+    system("rm -rf /storage/cloud/files/.thumbs");
+    system("rm -rf /storage/cloud/files/.editData");
     for (const auto &dir : TEST_ROOT_DIRS) {
         string ROOT_PATH = "/storage/cloud/100/files/";
         bool ret = MediaFileUtils::CreateDirectory(ROOT_PATH + dir + "/");
@@ -400,6 +402,24 @@ int32_t MakePhotoUnpending(int fileId)
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t changedRows = -1;
     errCode = g_rdbStore->Update(cmd, changedRows);
+    if (errCode != E_OK || changedRows <= 0) {
+        MEDIA_ERR_LOG("Update pending failed, errCode = %{public}d, changeRows = %{public}d",
+            errCode, changedRows);
+        return errCode;
+    }
+
+    return E_OK;
+}
+
+int32_t SetPendingOnly(int32_t pendingTime, int64_t fileId)
+{
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    ValuesBucket values;
+    values.PutLong(PhotoColumn::MEDIA_TIME_PENDING, pendingTime);
+    cmd.SetValueBucket(values);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    int32_t changedRows = -1;
+    int32_t errCode = g_rdbStore->Update(cmd, changedRows);
     if (errCode != E_OK || changedRows <= 0) {
         MEDIA_ERR_LOG("Update pending failed, errCode = %{public}d, changeRows = %{public}d",
             errCode, changedRows);
@@ -679,6 +699,22 @@ void TestPhotoOpenParamsApi10(int32_t fileId, const string &mode, ExceptIntFunct
 {
     string uriString = MediaFileUtils::GetMediaTypeUriV10(MediaType::MEDIA_TYPE_IMAGE);
     uriString += "/" + to_string(fileId);
+    Uri uri(uriString);
+    MediaLibraryCommand cmd(uri);
+    int32_t fd = MediaLibraryPhotoOperations::Open(cmd, mode);
+    func(fd);
+    if (fd > 0) {
+        close(fd);
+        MediaLibraryInotify::GetInstance()->RemoveByFileUri(cmd.GetUriStringWithoutSegment(),
+            MediaLibraryApi::API_10);
+    }
+}
+
+void TestPhotoOpenEditParamsApi10(int32_t fileId, const string &addKey,
+    const std::string &mode, ExceptIntFunction func)
+{
+    string uriString = MediaFileUtils::GetMediaTypeUriV10(MediaType::MEDIA_TYPE_IMAGE);
+    uriString += "/" + to_string(fileId) + "?" + addKey;
     Uri uri(uriString);
     MediaLibraryCommand cmd(uri);
     int32_t fd = MediaLibraryPhotoOperations::Open(cmd, mode);
@@ -1565,6 +1601,91 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_001, TestSi
     MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_001");
 }
 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_002, TestSize.Level0)
+{
+    // test function MediaLibraryPhotoOperations::RequestEditData
+    MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_002");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+
+    const static int LARGE_NUM = 1000;
+    string requestEditDataStr = MEDIA_OPERN_KEYWORD + "=" + EDIT_DATA_REQUEST;
+    TestPhotoOpenEditParamsApi10(fileId, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_GE(result, E_OK); });
+    TestPhotoOpenEditParamsApi10(fileId + LARGE_NUM, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    TestPhotoOpenEditParamsApi10(-1, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    TestPhotoOpenEditParamsApi10(fileId + LARGE_NUM, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    int32_t ret = SetPendingOnly(UNCLOSE_FILE_TIMEPENDING, fileId);
+    EXPECT_EQ(ret, 0);
+    TestPhotoOpenEditParamsApi10(fileId, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_IS_PENDING_ERROR); });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_003, TestSize.Level0)
+{
+    // test function MediaLibraryPhotoOperations::RequestEditSource
+    MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_003");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+
+    const static int LARGE_NUM = 1000;
+    string requestEditDataStr = MEDIA_OPERN_KEYWORD + "=" + SOURCE_REQUEST;
+    TestPhotoOpenEditParamsApi10(fileId + LARGE_NUM, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    TestPhotoOpenEditParamsApi10(-1, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    TestPhotoOpenEditParamsApi10(fileId + LARGE_NUM, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    int32_t ret = SetPendingOnly(UNCLOSE_FILE_TIMEPENDING, fileId);
+    EXPECT_EQ(ret, 0);
+    TestPhotoOpenEditParamsApi10(fileId, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_IS_PENDING_ERROR); });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_003");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_api10_test_004, TestSize.Level0)
+{
+    // test function MediaLibraryPhotoOperations::CommitEditOpen
+    MEDIA_INFO_LOG("start tdd photo_oprn_open_api10_test_004");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+
+    const static int LARGE_NUM = 1000;
+    string requestEditDataStr = MEDIA_OPERN_KEYWORD + "=" + COMMIT_REQUEST;
+    TestPhotoOpenEditParamsApi10(fileId, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_GE(result, E_OK); });
+    TestPhotoOpenEditParamsApi10(fileId + LARGE_NUM, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    TestPhotoOpenEditParamsApi10(-1, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    TestPhotoOpenEditParamsApi10(fileId + LARGE_NUM, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_INVALID_URI); });
+    int32_t ret = SetPendingOnly(UNCLOSE_FILE_TIMEPENDING, fileId);
+    EXPECT_EQ(ret, 0);
+    TestPhotoOpenEditParamsApi10(fileId, requestEditDataStr, "r",
+        [] (int32_t result) { EXPECT_EQ(result, E_IS_PENDING_ERROR); });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_open_api10_test_004");
+}
+
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_close_api10_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_close_api10_test_001");
@@ -1765,6 +1886,195 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_pending_api9_test_001, Test
     EXPECT_EQ(pendingStatus, 0);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_pending_api9_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_commit_edit_insert_test_001");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+
+    const static int LARGE_NUM = 1000;
+    string editData = "123456";
+    
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::COMMIT_EDIT,
+        MediaLibraryApi::API_10);
+    ValuesBucket values1;
+    cmd.SetValueBucket(values1);
+    EXPECT_EQ(MediaLibraryPhotoOperations::CommitEditInsert(cmd), E_INVALID_VALUES);
+    ValuesBucket values2;
+    values2.PutString(EDIT_DATA, editData);
+    cmd.SetValueBucket(values2);
+    EXPECT_EQ(MediaLibraryPhotoOperations::CommitEditInsert(cmd), E_INVALID_VALUES);
+    ValuesBucket values3;
+    values3.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    cmd.SetValueBucket(values3);
+    EXPECT_EQ(MediaLibraryPhotoOperations::CommitEditInsert(cmd), E_INVALID_VALUES);
+    ValuesBucket values4;
+    values4.PutString(EDIT_DATA, editData);
+    values4.PutInt(PhotoColumn::MEDIA_ID, fileId + LARGE_NUM);
+    cmd.SetValueBucket(values4);
+    EXPECT_EQ(MediaLibraryPhotoOperations::CommitEditInsert(cmd), E_INVALID_VALUES);
+    int32_t ret = SetPendingOnly(UNCLOSE_FILE_TIMEPENDING, fileId);
+    EXPECT_EQ(ret, 0);
+    ValuesBucket values5;
+    values5.PutString(EDIT_DATA, editData);
+    values5.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    cmd.SetValueBucket(values5);
+    EXPECT_EQ(MediaLibraryPhotoOperations::CommitEditInsert(cmd), E_IS_PENDING_ERROR);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_commit_edit_insert_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_commit_edit_insert_test_002");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+
+    string editData = "123456";
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::COMMIT_EDIT,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutString(EDIT_DATA, editData);
+    values.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    cmd.SetValueBucket(values);
+    EXPECT_EQ(MediaLibraryPhotoOperations::CommitEditInsert(cmd), E_OK);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_commit_edit_insert_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_revert_edit_insert_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_revert_edit_insert_test_001");
+
+    int fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed error=%{public}d", fileId);
+        return;
+    }
+
+    const static int LARGE_NUM = 1000;
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::REVERT_EDIT,
+        MediaLibraryApi::API_10);
+    ValuesBucket values1;
+    cmd.SetValueBucket(values1);
+    EXPECT_EQ(MediaLibraryPhotoOperations::RevertToOrigin(cmd), E_INVALID_VALUES);
+    ValuesBucket values2;
+    values2.PutInt(PhotoColumn::MEDIA_ID, fileId + LARGE_NUM);
+    cmd.SetValueBucket(values2);
+    EXPECT_EQ(MediaLibraryPhotoOperations::RevertToOrigin(cmd), E_INVALID_VALUES);
+    int32_t ret = SetPendingOnly(UNCLOSE_FILE_TIMEPENDING, fileId);
+    EXPECT_EQ(ret, 0);
+    ValuesBucket values3;
+    values3.PutInt(PhotoColumn::MEDIA_ID, fileId);
+    cmd.SetValueBucket(values3);
+    EXPECT_EQ(MediaLibraryPhotoOperations::RevertToOrigin(cmd), E_IS_PENDING_ERROR);
+    ret = SetPendingOnly(0, fileId);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(MediaLibraryPhotoOperations::RevertToOrigin(cmd), E_OK);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_revert_edit_insert_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_edit_record_test_001");
+
+    int32_t fileId1 = 1000;
+    int32_t fileId2 = 1001;
+
+    auto instance = PhotoEditingRecord::GetInstance();
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), false);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+    EXPECT_EQ(instance->StartCommitEdit(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+    EXPECT_EQ(instance->StartCommitEdit(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+    EXPECT_EQ(instance->StartCommitEdit(fileId2), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->StartRevert(fileId1), false);
+    EXPECT_EQ(instance->StartRevert(fileId2), false);
+    instance->EndCommitEdit(fileId1);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), false);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->StartRevert(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->StartRevert(fileId2), false);
+    instance->EndCommitEdit(fileId2);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+    EXPECT_EQ(instance->StartRevert(fileId1), true);
+    EXPECT_EQ(instance->StartRevert(fileId2), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+
+    instance->EndCommitEdit(fileId1);
+    instance->EndCommitEdit(fileId2);
+    instance->EndRevert(fileId1);
+    instance->EndRevert(fileId2);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), false);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+
+    MEDIA_INFO_LOG("end tdd photo_edit_record_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_edit_record_test_002");
+
+    int32_t fileId1 = 1000;
+    int32_t fileId2 = 1001;
+
+    auto instance = PhotoEditingRecord::GetInstance();
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), false);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+    EXPECT_EQ(instance->StartRevert(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+    EXPECT_EQ(instance->StartRevert(fileId1), true);
+    EXPECT_EQ(instance->StartRevert(fileId2), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->StartCommitEdit(fileId1), false);
+    EXPECT_EQ(instance->StartCommitEdit(fileId2), false);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    instance->EndRevert(fileId1);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), false);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->StartCommitEdit(fileId1), true);
+    EXPECT_EQ(instance->StartCommitEdit(fileId2), false);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    instance->EndRevert(fileId2);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+    EXPECT_EQ(instance->StartCommitEdit(fileId1), true);
+    EXPECT_EQ(instance->StartCommitEdit(fileId2), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+
+    instance->EndCommitEdit(fileId1);
+    instance->EndCommitEdit(fileId2);
+    instance->EndRevert(fileId1);
+    instance->EndRevert(fileId2);
+    EXPECT_EQ(instance->IsInEditOperation(fileId1), false);
+    EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+
+    MEDIA_INFO_LOG("end tdd photo_edit_record_test_002");
 }
 } // namespace Media
 } // namespace OHOS

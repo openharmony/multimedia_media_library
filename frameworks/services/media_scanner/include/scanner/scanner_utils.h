@@ -61,6 +61,7 @@ const int32_t FILE_WIDTH_DEFAULT = 0;
 const int32_t FILE_ALBUM_ID_DEFAULT = 0;
 const std::string FILE_ALBUM_NAME_DEFAULT = "";
 const int32_t FILE_ORIENTATION_DEFAULT = 0;
+const std::string FILE_SHOOTINGMODE_DEFAULT = "";
 const std::string FILE_RELATIVE_PATH_DEFAULT = "";
 const std::string FILE_RECYCLE_PATH_DEFAULT = "";
 const int64_t FILE_DATE_TAKEN_DEFAULT = 0;
@@ -189,8 +190,8 @@ public:
     static bool IsRegularFile(const std::string &path);
     static void GetRootMediaDir(std::string &dir);
     static std::string GetFileTitle(const std::string &displayName);
-    static bool IsDirHiddenRecursive(const std::string &path);
-    static bool IsDirHidden(const std::string &path);
+    static bool IsDirHiddenRecursive(const std::string &path, bool skipPhoto = true);
+    static bool IsDirHidden(const std::string &path, bool skipPhoto = true);
     static void InitSkipList();
     static bool CheckSkipScanList(const std::string &path);
 

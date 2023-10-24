@@ -378,36 +378,67 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
     return errCode;
 }
 
-bool MediaFileUtils::CopyFile(const string &filePath, const string &newPath)
+bool MediaFileUtils::WriteStrToFile(const string &filePath, const string &str)
 {
-    string newPathCorrected;
-    bool errCode = false;
-
-    if (!(newPath.empty()) && !(filePath.empty())) {
-        newPathCorrected = newPath + "/" + GetFileName(filePath);
-    } else {
-        MEDIA_ERR_LOG("Src filepath or dest filePath value cannot be empty");
+    if (filePath.empty()) {
+        MEDIA_ERR_LOG("FilePath is empty");
+        return false;
+    }
+    if (str.empty()) {
+        MEDIA_ERR_LOG("Write str is empty");
         return false;
     }
 
-    if (IsFileExists(filePath) && !IsFileExists(newPathCorrected)) {
-        errCode = true; // set to create file if directory exists
-        if (!(IsDirectory(newPath))) {
-            errCode = CreateDirectory(newPath);
-        }
-        if (errCode) {
-            string canonicalDirPath;
-            if (!PathToRealPath(newPath, canonicalDirPath)) {
-                MEDIA_ERR_LOG("Failed to obtain the canonical path for newpath %{private}s %{public}d",
-                              filePath.c_str(), errno);
-                return false;
-            }
-            newPathCorrected = canonicalDirPath + "/" + GetFileName(filePath);
-            errCode = CopyFileUtil(filePath, newPathCorrected);
-        }
+    if (!IsFileExists(filePath)) {
+        MEDIA_ERR_LOG("Can not get FilePath %{private}s", filePath.c_str());
+        return false;
     }
 
-    return errCode;
+    ofstream file(filePath);
+    if (!file.is_open()) {
+        MEDIA_ERR_LOG("Can not open FilePath %{private}s", filePath.c_str());
+        return false;
+    }
+
+    file << str;
+    file.close();
+    if (!file.good()) {
+        MEDIA_ERR_LOG("Can not write FilePath %{private}s", filePath.c_str());
+        return false;
+    }
+    return true;
+}
+
+bool MediaFileUtils::CopyFile(int32_t rfd, int32_t wfd)
+{
+    static const off_t sendSize1G = 1LL * 1024 * 1024 * 1024;
+    static const off_t maxSendSize2G = 2LL * 1024 * 1024 * 1024;
+    struct stat fst = {0};
+    if (fstat(rfd, &fst) != 0) {
+        MEDIA_INFO_LOG("send failed, errno=%{public}d", errno);
+        return false;
+    }
+    off_t fileSize = fst.st_size;
+
+    if (fileSize >= maxSendSize2G) {
+        off_t offset = 0;
+        while (offset < fileSize) {
+            off_t sendSize = fileSize - offset;
+            if (sendSize > sendSize1G) {
+                sendSize = sendSize1G;
+            }
+            if (sendfile(wfd, rfd, &offset, sendSize) != sendSize) {
+                MEDIA_INFO_LOG("send failed, errno=%{public}d", errno);
+                return false;
+            }
+        }
+    } else {
+        if (sendfile(wfd, rfd, nullptr, fst.st_size) != fileSize) {
+            MEDIA_INFO_LOG("send failed, errno=%{public}d", errno);
+            return false;
+        }
+    }
+    return true;
 }
 
 bool MediaFileUtils::RenameDir(const string &oldPath, const string &newPath)
@@ -1313,5 +1344,4 @@ string MediaFileUtils::Encode(const string &uri)
 
     return outPutStream.str();
 }
-
 } // namespace OHOS::Media

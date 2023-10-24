@@ -26,7 +26,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 const string TDD_TEST_PATH = "/storage/cloud/files/Photo/";
 
 HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_001, TestSize.Level0)
@@ -168,6 +167,5 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TrashDirOperation_test_001, TestSize.Leve
     EXPECT_EQ(ret, E_GET_ASSET_FAIL);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
-
 }
 }

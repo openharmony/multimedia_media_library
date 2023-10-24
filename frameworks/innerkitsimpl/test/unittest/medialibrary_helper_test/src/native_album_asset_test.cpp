@@ -24,7 +24,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 /*
  * Feature : MediaLibraryHelperUnitTest
  * Function : Check set get function

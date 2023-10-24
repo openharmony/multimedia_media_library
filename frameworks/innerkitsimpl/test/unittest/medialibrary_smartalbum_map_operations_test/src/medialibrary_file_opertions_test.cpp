@@ -27,7 +27,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleFileOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
@@ -202,6 +201,5 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryTrashFiles_te
     EXPECT_EQ((resultset != nullptr), true);
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
-
 }
 }

@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 19;
+const int32_t MEDIA_RDB_VERSION = 24;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -46,7 +46,11 @@ enum {
     VERSION_ADD_UPDATE_CLOUD_SYNC_TRIGGER = 16,
     VERSION_ADD_YEAR_MONTH_DAY = 17,
     VERSION_UPDATE_YEAR_MONTH_DAY = 18,
-    VERSION_ADD_HIDDEN_TIME = 19
+    VERSION_ADD_VISION_TABLE = 20,
+    VERSION_ADD_PHOTO_EDIT_TIME = 21,
+    VERSION_ADD_SHOOTING_MODE = 22,
+    VERSION_FIX_INDEX_ORDER = 23,
+    VERSION_ADD_HIDDEN_TIME = 24,
 };
 
 enum {
@@ -195,6 +199,7 @@ const std::string MEDIA_DATA_IMAGE_ISO_SPEED_RATINGS = "ISOSpeedRatings";
 const std::string MEDIA_DATA_IMAGE_SCENE_TYPE = "SceneType";
 
 const std::string MEDIA_COLUMN_COUNT = "count(*)";
+const std::string MEDIA_COLUMN_COUNT_1 = "count(1)";
 
 const std::string PHOTO_INDEX = "photo_index";
 
@@ -607,6 +612,11 @@ const std::string ASSET_EXTENTION = "extention";
 // delete_tool
 const std::string DELETE_TOOL_ONLY_DATABASE = "only_db";
 
+// edit param
+const std::string EDIT_DATA_REQUEST = "edit_data_request";  // MEDIA_OPERN_KEYWORD=EDIT_DATA_REQUEST
+const std::string SOURCE_REQUEST = "source_request";        // MEDIA_OPERN_KEYWORD=SOURCE_REQUEST
+const std::string COMMIT_REQUEST = "commit_request";        // MEDIA_OPERN_KEYWORD=COMMIT_REQUEST
+const std::string EDIT_DATA = "edit_data";
 } // namespace Media
 } // namespace OHOS
 

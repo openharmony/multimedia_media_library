@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H_
-#define OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H_
+#ifndef OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
+#define OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
 
 #include <mutex>
 #include <vector>
@@ -26,8 +26,6 @@
 
 namespace OHOS {
 namespace Media {
-static const std::string MEDIA_LIB_BACKUP_NAPI_CLASS_NAME = "MediaLibraryBackup";
-
 class MediaLibraryBackupNapi {
 public:
     static napi_value Init(napi_env env, napi_value exports);
@@ -37,9 +35,8 @@ public:
 
 private:
     static napi_value JSStartRestore(napi_env env, napi_callback_info info);
-    static napi_value JSMoveFiles(napi_env env, napi_callback_info info);
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H_
+#endif  // OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H

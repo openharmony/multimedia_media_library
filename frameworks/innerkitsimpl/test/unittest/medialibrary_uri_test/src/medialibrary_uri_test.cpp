@@ -98,6 +98,5 @@ HWTEST_F(MediaLibraryUriTest, medialib_GetIdFromUri_test_001, TestSize.Level0)
     rowNum = ThumbnailUriUtils::GetIdFromUri("GetIdFromUri/test");
     EXPECT_EQ(rowNum, "-1");
 }
-
 } // namespace Media
 } // namespace OHOS

@@ -15,10 +15,15 @@
 
 #include "medialibrary_helper_test.h"
 
+#include <fcntl.h>
+#include <fstream>
+#include <iterator>
+
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
+#include "medialibrary_type_const.h"
 #include "userfile_manager_types.h"
 
 using namespace std;
@@ -26,7 +31,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileExists_Test_001, TestSize.Level0)
 {
     string filePath = "/data/test/isfileexists_001";
@@ -136,62 +140,51 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RemoveDirectory_Test_001, Te
     EXPECT_EQ(MediaFileUtils::RemoveDirectory(dirPath), 0);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_001, TestSize.Level0)
+static bool CheckFileString(const string &filePath, const string &text)
 {
-    string oldPath = "/data/test/copyfile_001";
-    string newPath = "/data/test/copyfile_001_copy";
+    ifstream inputFile(filePath);
+    if (inputFile.is_open()) {
+        string context((istreambuf_iterator<char>(inputFile)), (istreambuf_iterator<char>()));
+        inputFile.close();
+        if (context == text) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_WriteStrToFile_Test_001, TestSize.Level0)
+{
+    string testString = "123456";
+    string testPath = "/data/test/WriteStrToFileTest_001";
+    EXPECT_EQ(MediaFileUtils::WriteStrToFile("", testString), false);
+    EXPECT_EQ(MediaFileUtils::WriteStrToFile(testPath, ""), false);
+    EXPECT_EQ(MediaFileUtils::WriteStrToFile(testPath, testString), false);
+    EXPECT_EQ(MediaFileUtils::CreateFile(testPath), true);
+    EXPECT_EQ(MediaFileUtils::WriteStrToFile(testPath, ""), false);
+    EXPECT_EQ(MediaFileUtils::WriteStrToFile(testPath, testString), true);
+    EXPECT_EQ(CheckFileString(testPath, testString), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyByFd_Test_001, TestSize.Level0)
+{
+    string oldPath = "/data/test/CopyByFd_001";
+    string newPath = "/data/test/CopyByFd_002";
+    string testString = "123456";
+
     EXPECT_EQ(MediaFileUtils::CreateFile(oldPath), true);
-    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), true);
-}
+    EXPECT_EQ(MediaFileUtils::CreateFile(newPath), true);
+    EXPECT_EQ(MediaFileUtils::WriteStrToFile(oldPath, testString), true);
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_002, TestSize.Level0)
-{
-    string oldPath = "";
-    string newPath = "";
-    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_003, TestSize.Level0)
-{
-    string oldPath = "/data/test/copyfile_003";
-    string newPath = "";
-    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_004, TestSize.Level0)
-{
-    string oldPath = "/data/test/copyfile_004";
-    string newPath = "/data/test/copyfile_004_copy";
-    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_005, TestSize.Level0)
-{
-    string oldPath = "/data/test/copyfile_005";
-    string newPath = "/data/test/copyfile_005_copy";
-    string newPathCorrected = "/data/test/copyfile_005_copy/copyfile_005";
-    EXPECT_EQ(MediaFileUtils::CreateFile(oldPath), true);
-    EXPECT_EQ(MediaFileUtils::CreateDirectory(newPath), true);
-    EXPECT_EQ(MediaFileUtils::CreateFile(newPathCorrected), true);
-    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_006, TestSize.Level0)
-{
-    string oldPath = "/data/test/copyfile_006";
-    string newPath = "/data/test/copyfile_006_copy";
-    EXPECT_EQ(MediaFileUtils::CreateFile(oldPath), true);
-    EXPECT_EQ(MediaFileUtils::CreateDirectory(newPath), true);
-    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), true);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CopyFile_Test_008, TestSize.Level0)
-{
-    string oldPath = "/data/test/";
-    string newPath = "/data/test/copyfile_008_copy";
-    EXPECT_EQ(MediaFileUtils::CreateFile(oldPath), false);
-    EXPECT_EQ(MediaFileUtils::CreateDirectory(newPath), true);
-    EXPECT_EQ(MediaFileUtils::CopyFile(oldPath, newPath), false);
+    int32_t rfd = open(oldPath.c_str(), O_RDONLY);
+    int32_t wfd = open(newPath.c_str(), O_RDWR);
+    EXPECT_EQ(MediaFileUtils::CopyFile(rfd, wfd), true);
+    close(rfd);
+    close(wfd);
+    EXPECT_EQ(CheckFileString(newPath, testString), true);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RenameDir_Test_001, TestSize.Level0)

@@ -66,10 +66,12 @@ const std::string PhotoColumn::PHOTO_LONGITUDE = "longitude";
 const std::string PhotoColumn::PHOTO_HEIGHT = "height";
 const std::string PhotoColumn::PHOTO_WIDTH = "width";
 const std::string PhotoColumn::PHOTO_LCD_VISIT_TIME = "lcd_visit_time";
+const std::string PhotoColumn::PHOTO_EDIT_TIME = "edit_time";
 const std::string PhotoColumn::PHOTO_POSITION = "position";
 const std::string PhotoColumn::PHOTO_SUBTYPE = "subtype";
 const std::string PhotoColumn::CAMERA_SHOT_KEY = "camera_shot_key";
 const std::string PhotoColumn::PHOTO_USER_COMMENT = "user_comment";
+const std::string PhotoColumn::PHOTO_SHOOTING_MODE = "shooting_mode";
 const std::string PhotoColumn::PHOTO_ALL_EXIF = "all_exif";
 const std::string PhotoColumn::PHOTO_DATE_YEAR = "date_year";
 const std::string PhotoColumn::PHOTO_DATE_MONTH = "date_month";
@@ -79,7 +81,9 @@ const std::string PhotoColumn::PHOTO_HIDDEN_TIME = "hidden_time";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_INDEX = "date_month_index";
 const std::string PhotoColumn::PHOTO_DATE_DAY_INDEX = "date_day_index";
-const std::string PhotoColumn::PHOTO_MEDIA_TYPE_INDEX = "idx_media_type";
+const std::string PhotoColumn::PHOTO_SHPT_ADDED_INDEX = "idx_shpt_date_added";
+const std::string PhotoColumn::PHOTO_SHPT_MEDIA_TYPE_INDEX = "idx_shpt_media_type";
+const std::string PhotoColumn::PHOTO_SHPT_DAY_INDEX = "idx_shpt_date_day";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -127,6 +131,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_LONGITUDE + " DOUBLE DEFAULT 0, " +
     PHOTO_HEIGHT + " INT, " +
     PHOTO_WIDTH + " INT, " +
+    PHOTO_EDIT_TIME + " BIGINT DEFAULT 0, " +
     PHOTO_LCD_VISIT_TIME + " BIGINT DEFAULT 0, " +
     PHOTO_POSITION + " INT DEFAULT 1, " +
     PHOTO_SUBTYPE + " INT DEFAULT 0, " +
@@ -135,8 +140,9 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_ALL_EXIF  + " TEXT, " +
     PHOTO_DATE_YEAR + " TEXT, " +
     PHOTO_DATE_MONTH + " TEXT, " +
-    PHOTO_DATE_DAY + " TEXT, " + 
-    PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0)";
+    PHOTO_DATE_DAY + " TEXT, " +
+    PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0, " +
+    PHOTO_SHOOTING_MODE + " TEXT)";
 
 
 const std::string PhotoColumn::CREATE_YEAR_INDEX = BaseColumn::CreateIndex() +
@@ -148,8 +154,15 @@ const std::string PhotoColumn::CREATE_MONTH_INDEX = BaseColumn::CreateIndex() +
 const std::string PhotoColumn::CREATE_DAY_INDEX = BaseColumn::CreateIndex() +
     PHOTO_DATE_DAY_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_DATE_DAY + " DESC)";
 
-const std::string PhotoColumn::CREATE_MEDIA_TYPE_INDEX = BaseColumn::CreateIndex() +
-    PHOTO_MEDIA_TYPE_INDEX + " ON " + PHOTOS_TABLE + " (" + MEDIA_TYPE + " DESC)";
+const std::string PhotoColumn::CREATE_SHPT_DAY_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SHPT_DAY_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
+    "," + MEDIA_DATE_TRASHED + "," + PHOTO_DATE_DAY + " DESC);";
+
+const std::string PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_SHPT_MEDIA_TYPE_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
+    "," + MEDIA_DATE_TRASHED + "," + MEDIA_TYPE + " DESC);";
 
 const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn::MEDIA_SIZE + ") AS " +
     MediaColumn::MEDIA_SIZE + "," +
@@ -161,9 +174,9 @@ const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn:
 
 // Create indexes
 const std::string PhotoColumn::INDEX_STHP_ADDTIME =
-    BaseColumn::CreateIndex() + "idx_sthp_dateadded" + " ON " + PHOTOS_TABLE +
-    " (" + PHOTO_SYNC_STATUS + "," + MEDIA_DATE_TRASHED + "," + MEDIA_HIDDEN +
-    "," + MEDIA_TIME_PENDING + "," + MEDIA_DATE_ADDED + ");";
+    BaseColumn::CreateIndex() + PHOTO_SHPT_ADDED_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
+    "," + MEDIA_DATE_TRASHED + "," + MEDIA_DATE_ADDED + " DESC);";
 
 const std::string PhotoColumn::INDEX_CAMERA_SHOT_KEY =
     BaseColumn::CreateIndex() + "idx_camera_shot_key" + " ON " + PHOTOS_TABLE +
@@ -218,7 +231,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_HEIGHT, PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_LCD_VISIT_TIME, PhotoColumn::PHOTO_POSITION,
     PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::CAMERA_SHOT_KEY, PhotoColumn::PHOTO_ALL_EXIF,
     PhotoColumn::PHOTO_USER_COMMENT, PhotoColumn::PHOTO_DATE_YEAR, PhotoColumn::PHOTO_DATE_MONTH,
-    PhotoColumn::PHOTO_DATE_DAY, PhotoColumn::PHOTO_HIDDEN_TIME,
+    PhotoColumn::PHOTO_DATE_DAY, PhotoColumn::PHOTO_HIDDEN_TIME, PhotoColumn::PHOTO_EDIT_TIME, PHOTO_SHOOTING_MODE
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

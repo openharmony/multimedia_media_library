@@ -144,14 +144,17 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
     }
 }
 
-static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert)
+static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert,
+    bool skipPhoto = true)
 {
     MediaType mediaType = metadata.GetFileMediaType();
 
     values.PutString(MediaColumn::MEDIA_FILE_PATH, metadata.GetFilePath());
     values.PutString(MediaColumn::MEDIA_MIME_TYPE, metadata.GetFileMimeType());
     values.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
-    values.PutString(MediaColumn::MEDIA_NAME, metadata.GetFileName());
+    if (skipPhoto) {
+        values.PutString(MediaColumn::MEDIA_NAME, metadata.GetFileName());
+    }
     values.PutString(MediaColumn::MEDIA_TITLE, metadata.GetFileTitle());
 
     values.PutLong(MediaColumn::MEDIA_SIZE, metadata.GetFileSize());
@@ -166,11 +169,15 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata.GetOrientation());
         values.PutDouble(PhotoColumn::PHOTO_LONGITUDE, metadata.GetLongitude());
         values.PutDouble(PhotoColumn::PHOTO_LATITUDE, metadata.GetLatitude());
-        values.PutString(PhotoColumn::PHOTO_USER_COMMENT, metadata.GetUserComment());
+        if (skipPhoto) {
+            values.PutString(PhotoColumn::PHOTO_USER_COMMENT, metadata.GetUserComment());
+        }
         values.PutString(PhotoColumn::PHOTO_ALL_EXIF, metadata.GetAllExif());
         values.PutString(PhotoColumn::PHOTO_DATE_YEAR, metadata.getDateYear());
         values.PutString(PhotoColumn::PHOTO_DATE_MONTH, metadata.getDateMonth());
         values.PutString(PhotoColumn::PHOTO_DATE_DAY, metadata.getDateDay());
+        values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, metadata.GetShootingMode());
+
 #ifdef MEDIALIBRARY_COMPATIBILITY
         if (metadata.GetPhotoSubType() != 0) {
             values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
@@ -328,7 +335,7 @@ static inline void GetUriStringInUpdate(MediaType mediaType, MediaLibraryApi api
  * @param metadata The metadata object which has the information about the file
  * @return string The mediatypeUri corresponding to the given metadata
  */
-string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api)
+string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableName, MediaLibraryApi api, bool skipPhoto)
 {
     int32_t updateCount(0);
     ValuesBucket values;
@@ -340,7 +347,7 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableNam
 
     tableName = MEDIALIBRARY_TABLE;
     if (api == MediaLibraryApi::API_10) {
-        SetValuesFromMetaDataApi10(metadata, values, false);
+        SetValuesFromMetaDataApi10(metadata, values, false, skipPhoto);
         GetTableNameByPath(mediaType, tableName);
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY

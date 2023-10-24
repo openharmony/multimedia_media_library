@@ -21,7 +21,6 @@ using namespace std;
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
-
 HWTEST_F(MtpNativeTest, mtp_service_test_001, TestSize.Level0)
 {
     MtpService mtpService;

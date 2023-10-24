@@ -342,6 +342,5 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_BatchInsert_test_001, TestSize.Leve
     vector<string> ret = mediaScannerDb.BatchInsert(metadataList);
     EXPECT_EQ(ret.size(), 0);
 }
-
 } // namespace Media
 } // namespace OHOS
