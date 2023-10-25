@@ -23,13 +23,13 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-shared_ptr<IThumbnailHelper> ThumbnailHelperFactory::GetThumbnailHelper(const Size &size)
+shared_ptr<IThumbnailHelper> ThumbnailHelperFactory::GetThumbnailHelper(const ThumbnailHelperType &type)
 {
-    if (IsThumbnail(size.width, size.height)) {
-        shared_ptr<DefaultThumbnailHelper> resultHelper = make_shared<DefaultThumbnailHelper>();
+    if (type == ThumbnailHelperType::LCD) {
+        shared_ptr<LcdThumbnailHelper> resultHelper = make_shared<LcdThumbnailHelper>();
         return resultHelper;
     } else {
-        shared_ptr<LcdThumbnailHelper> resultHelper = make_shared<LcdThumbnailHelper>();
+        shared_ptr<DefaultThumbnailHelper> resultHelper = make_shared<DefaultThumbnailHelper>();
         return resultHelper;
     }
 }
