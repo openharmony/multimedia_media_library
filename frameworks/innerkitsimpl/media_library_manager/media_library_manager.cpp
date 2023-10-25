@@ -280,13 +280,13 @@ static inline std::string GetSandboxPath(const std::string &path, const Size &si
     }
     std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + "/";
     if (isAudio) {
-        if (size.width > DEFAULT_THUMBNAIL_SIZE || size.height > DEFAULT_THUMBNAIL_SIZE) {
+        if (size.width > DEFAULT_THUMBNAIL_SIZE && size.height > DEFAULT_THUMBNAIL_SIZE) {
             suffixStr += "LCD.jpg";
         } else {
             suffixStr += "THM.jpg";
         }
     } else {
-        if (size.width > DEFAULT_THUMBNAIL_SIZE || size.height > DEFAULT_THUMBNAIL_SIZE) {
+        if (size.width > DEFAULT_THUMBNAIL_SIZE && size.height > DEFAULT_THUMBNAIL_SIZE) {
             suffixStr += "LCD.jpg";
         } else if (size.width == DEFAULT_MTH_SIZE && size.height == DEFAULT_MTH_SIZE) {
             suffixStr += "MTH.jpg";

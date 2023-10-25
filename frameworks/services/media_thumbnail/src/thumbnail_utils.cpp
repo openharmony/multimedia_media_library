@@ -54,6 +54,12 @@ namespace Media {
 constexpr int32_t KEY_INDEX = 0;
 constexpr int32_t VALUE_INDEX = 1;
 constexpr float EPSILON = 1e-6;
+constexpr int32_t SHORT_SIDE_THRESHOLD = 256;
+constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 768;
+constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 256;
+constexpr int32_t LCD_LONG_SIDE_THRESHOLD = 1920;
+constexpr int32_t MAXIMUM_LCD_LONG_SIDE = 4096;
+
 bool ThumbnailUtils::UpdateRemotePath(string &path, const string &networkId)
 {
     MEDIA_DEBUG_LOG("ThumbnailUtils::UpdateRemotePath IN path = %{private}s, networkId = %{private}s",
@@ -1677,6 +1683,97 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
     if (err == NativeRdb::E_OK) {
         data.mediaType = MediaType::MEDIA_TYPE_ALL;
         err = resultSet->GetInt(index, data.mediaType);
+    }
+}
+
+void ThumbnailUtils::ResizeTHUMB(int &width, int &height)
+{
+    int maxLen = max(width, height);
+    int minLen = min(width, height);
+    double ratio = (double)maxLen / minLen;
+    if (minLen > SHORT_SIDE_THRESHOLD)
+    {
+        minLen = SHORT_SIDE_THRESHOLD;
+        maxLen = (int)SHORT_SIDE_THRESHOLD * ratio;
+        if (maxLen > MAXIMUM_SHORT_SIDE_THRESHOLD)
+        {
+            maxLen = MAXIMUM_SHORT_SIDE_THRESHOLD;
+        }
+        if (height > width)
+        {
+            width = minLen;
+            height = maxLen;
+        }
+        else
+        {
+            width = maxLen;
+            height = minLen;
+        }
+    }
+    else if (maxLen <= SHORT_SIDE_THRESHOLD)
+    {
+        // do nothing,reuse original image
+    }
+    else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD)
+    {
+        if (ratio <= 3)
+        {
+            // do nothing,reuse original image
+        }
+        else
+        {
+            int newMaxLen = minLen * 3;
+            if (height > width)
+            {
+                width = minLen;
+                height = newMaxLen;
+            }
+            else
+            {
+                width = maxLen;
+                height = newMaxLen;
+            }
+        }
+    }
+}
+
+void ThumbnailUtils::ResizeLCD(int &width, int &height)
+{
+    int maxLen = max(width, height);
+    int minLen = min(width, height);
+    double ratio = (double)maxLen / minLen;
+    int newMaxLen = maxLen;
+    int newMinLen = minLen;
+    if (maxLen <= LCD_LONG_SIDE_THRESHOLD)
+    {
+        // do nothing,reuse original image
+    }
+    else
+    {
+        newMaxLen = LCD_LONG_SIDE_THRESHOLD;
+        newMinLen = newMaxLen * ratio;
+    }
+    int lastMinLen = newMinLen;
+    int lastMaxLen = newMaxLen;
+    if (newMinLen < LCD_SHORT_SIDE_THRESHOLD && minLen >= LCD_SHORT_SIDE_THRESHOLD)
+    {
+        lastMinLen = LCD_SHORT_SIDE_THRESHOLD;
+        lastMaxLen = lastMinLen * ratio;
+        if (lastMaxLen > MAXIMUM_LCD_LONG_SIDE)
+        {
+            lastMaxLen = MAXIMUM_LCD_LONG_SIDE;
+            lastMinLen = lastMaxLen * ratio;
+        }
+    }
+    if (height > width)
+    {
+        width = lastMinLen;
+        height = lastMaxLen;
+    }
+    else
+    {
+        width = lastMaxLen;
+        height = lastMinLen;
     }
 }
 } // namespace Media
