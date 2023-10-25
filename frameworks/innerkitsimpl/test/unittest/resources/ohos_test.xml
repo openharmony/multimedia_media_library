@@ -20,10 +20,21 @@
             <option name="shell" value="rm -rf /storage/cloud/100/files/Audios/*"/>
             <option name="shell" value="rm -rf /storage/cloud/100/files/Camera/*"/>
             <option name="shell" value="rm -rf /storage/cloud/100/files/Documents/*"/>
+            <option name="shell" value="rm -rf /storage/cloud/100/files/Download/*"/>
             <option name="shell" value="rm -rf /storage/cloud/100/files/Photo/*"/>
             <option name="shell" value="rm -rf /storage/cloud/100/files/Pictures/*"/>
             <option name="shell" value="rm -rf /storage/cloud/100/files/Videos/*"/>
             <option name="shell" value="rm -rf /storage/cloud/100/files/.*"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/Audio/*"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/Audios/*"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/Camera/*"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/Documents/*"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/Download/*"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/Photo/*"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/Pictures/*"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/Videos/*"/>
+            <option name="shell" value="rm -rf /storage/cloud/files/.*"/>
+            <option name="shell" value="scanner"/>
         </preparer>
     </target>
     <target name="media_library_helper_test">
