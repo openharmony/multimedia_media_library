@@ -27,6 +27,8 @@ constexpr int RDB_TRANSACTION_WAIT_MS = 1000;
 std::mutex TransactionOperations::transactionMutex_;
 std::condition_variable TransactionOperations::transactionCV_;
 std::atomic<bool> TransactionOperations::isInTransaction_(false);
+constexpr int32_t MAX_TRY_TIMES = 30;
+constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
 
 TransactionOperations::TransactionOperations(
     const shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore) : rdbStore_(rdbStore) {}
@@ -71,13 +73,25 @@ int32_t TransactionOperations::BeginTransaction()
     }
 
     unique_lock<mutex> cvLock(transactionMutex_);
-    if (isInTransaction_.load()) {
-        transactionCV_.wait_for(cvLock, chrono::milliseconds(RDB_TRANSACTION_WAIT_MS),
-            [this] () { return !(isInTransaction_.load()); });
+    int curTryTime = 0;
+    while (curTryTime < MAX_TRY_TIMES) {
+        if (isInTransaction_.load()) {
+            transactionCV_.wait_for(cvLock, chrono::milliseconds(RDB_TRANSACTION_WAIT_MS),
+                [this] () { return !(isInTransaction_.load()); });
+        }
+        if (rdbStore_->IsInTransaction()) {
+            this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
+        }
+        if (isInTransaction_.load() || rdbStore_->IsInTransaction()) {
+            curTryTime++;
+            MEDIA_INFO_LOG("RdbStore is in transaction, try %{public}d times...", curTryTime);
+            continue;
+        }
+        break;
     }
 
     if (rdbStore_->IsInTransaction()) {
-        MEDIA_ERR_LOG("RdbStore is still in transaction");
+        MEDIA_ERR_LOG("RdbStore is still in transaction after try %{public}d times, abort.", MAX_TRY_TIMES);
         return E_HAS_DB_ERROR;
     }
 
