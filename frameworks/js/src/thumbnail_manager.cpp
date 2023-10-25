@@ -45,7 +45,7 @@
 #endif
 
 using namespace std;
-#define UUID_STR_LENGTH 37
+const int UUID_STR_LENGTH = 37;
 
 namespace OHOS {
 namespace Media {
