@@ -33,13 +33,13 @@ constexpr int32_t E_NO_SUCH_FILE      = -ENOENT;
 constexpr int32_t E_FILE_EXIST        = -EEXIST;
 constexpr int32_t E_NO_MEMORY         = -ENOMEM;
 constexpr int32_t E_NO_SPACE          = -ENOSPC;
+constexpr int32_t E_CHECK_SYSTEMAPP_FAIL = 202;
 
 // medialibary inner common err { 200, 1999 }
 constexpr int32_t E_COMMON_OFFSET = 200;
 constexpr int32_t E_COMMON_START =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 0);
 constexpr int32_t E_FAIL =                  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 0);
 constexpr int32_t E_FILE_OPER_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1);
-constexpr int32_t E_CHECK_SYSTEMAPP_FAIL =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 2);
 constexpr int32_t E_HAS_FS_ERROR =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 3);
 constexpr int32_t E_CHECK_DIR_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 4);
 constexpr int32_t E_MODIFY_DATA_FAIL =      MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 5);
