@@ -76,8 +76,8 @@ private:
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;
 #endif
-    std::string bundleName_{BUNDLE_NAME};
-    NativeRdb::RdbStoreConfig config_{""};
+    std::string bundleName_ {BUNDLE_NAME};
+    NativeRdb::RdbStoreConfig config_ {""};
 };
 
 class MediaLibraryDataCallBack : public NativeRdb::RdbOpenCallback {
@@ -117,7 +117,7 @@ private:
     void NotifyDeviceChange();
     static constexpr int NOTIFY_TIME_INTERVAL = 10000;
     std::unique_ptr<OHOS::Utils::Timer> timer_;
-    uint32_t timerId_{0};
+    uint32_t timerId_ {0};
     std::string bundleName_;
     bool isNotifyDeviceChange_;
 };
