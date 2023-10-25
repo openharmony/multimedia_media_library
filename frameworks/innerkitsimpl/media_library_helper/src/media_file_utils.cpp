@@ -1146,15 +1146,8 @@ void GetExtrParamFromUri(const std::string &uri, std::string &displayName)
     }
 }
 
-string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
+void InitPureAndSuffixUri(string &pureUri, string &suffixUri, const string &uri)
 {
-    if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
-       (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos)) {
-        return uri;
-    }
-
-    string pureUri = uri;
-    string suffixUri;
     size_t questionMaskPoint = uri.rfind('?');
     size_t hashKeyPoint = uri.rfind('#');
     if (questionMaskPoint != string::npos) {
@@ -1164,7 +1157,18 @@ string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
         suffixUri = uri.substr(hashKeyPoint);
         pureUri = uri.substr(0, hashKeyPoint);
     }
+}
 
+string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
+{
+    if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
+       (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos)) {
+        return uri;
+    }
+
+    string pureUri = uri;
+    string suffixUri;
+    InitPureAndSuffixUri(pureUri, suffixUri, uri);
     MediaFileUri fileUri(pureUri);
     string fileId = fileUri.GetFileId();
     if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
