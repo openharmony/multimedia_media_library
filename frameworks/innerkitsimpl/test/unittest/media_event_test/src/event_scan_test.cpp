@@ -29,7 +29,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 void EventScanTest::SetUpTestCase(void) {}
 
 void EventScanTest::TearDownTestCase(void) {}

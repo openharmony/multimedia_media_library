@@ -87,7 +87,7 @@ static inline shared_ptr<ResultSet> GetUserAlbum(const shared_ptr<NativeRdb::Rdb
     return rdbStore->Query(predicates, columns);
 }
 
-static inline string GetQueryFilter(const string &tableName)
+static string GetQueryFilter(const string &tableName)
 {
     if (tableName == MEDIALIBRARY_TABLE) {
         return MEDIALIBRARY_TABLE + "." + MEDIA_DATA_DB_SYNC_STATUS + " = " +
@@ -144,7 +144,7 @@ static shared_ptr<AbsSharedResultSet> Query(const shared_ptr<NativeRdb::RdbStore
     return rdbStore->Query(predicates, columns);
 }
 
-static inline shared_ptr<ResultSet> QueryGoToFirst(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+static shared_ptr<ResultSet> QueryGoToFirst(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const RdbPredicates &predicates, const vector<string> &columns)
 {
     MediaLibraryTracer tracer;
