@@ -887,22 +887,22 @@ int32_t MediaLibraryDataManager::SyncPullThumbnailKeys(const Uri &uri)
 }
 #endif
 
+static const map<OperationObject, string> QUERY_CONDITION_MAP {
+    { OperationObject::SMART_ALBUM, SMARTALBUM_DB_ID },
+    { OperationObject::SMART_ALBUM_MAP, SMARTALBUMMAP_DB_ALBUM_ID },
+    { OperationObject::FILESYSTEM_DIR, MEDIA_DATA_DB_ID },
+    { OperationObject::ALL_DEVICE, "" },
+    { OperationObject::ACTIVE_DEVICE, "" },
+    { OperationObject::ASSETMAP, "" },
+    { OperationObject::SMART_ALBUM_ASSETS, "" },
+    { OperationObject::BUNDLE_PERMISSION, "" },
+};
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryRdb");
-    static const map<OperationObject, string> queryConditionMap {
-        { OperationObject::SMART_ALBUM, SMARTALBUM_DB_ID },
-        { OperationObject::SMART_ALBUM_MAP, SMARTALBUMMAP_DB_ALBUM_ID },
-        { OperationObject::FILESYSTEM_DIR, MEDIA_DATA_DB_ID },
-        { OperationObject::ALL_DEVICE, "" },
-        { OperationObject::ACTIVE_DEVICE, "" },
-        { OperationObject::ASSETMAP, "" },
-        { OperationObject::SMART_ALBUM_ASSETS, "" },
-        { OperationObject::BUNDLE_PERMISSION, "" },
-    };
-
     tracer.Start("CheckWhereClause");
     auto whereClause = predicates.GetWhereClause();
     if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
@@ -925,8 +925,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
 
     shared_ptr<NativeRdb::ResultSet> queryResultSet;
     OperationObject oprnObject = cmd.GetOprnObject();
-    auto it = queryConditionMap.find(oprnObject);
-    if (it != queryConditionMap.end()) {
+    auto it = QUERY_CONDITION_MAP.find(oprnObject);
+    if (it != QUERY_CONDITION_MAP.end()) {
         queryResultSet = MediaLibraryObjectUtils::QueryWithCondition(cmd, columns, it->second);
     } else if (oprnObject == OperationObject::FILESYSTEM_ALBUM || oprnObject == OperationObject::MEDIA_VOLUME) {
         queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
@@ -937,6 +937,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
             RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
     } else if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
         queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
+    } else if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::VISION_SHIELD) {
+        queryResultSet = MediaLibraryVisionOperations::QueryOperation(cmd, columns);
     } else {
         tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
