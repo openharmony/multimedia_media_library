@@ -63,7 +63,8 @@ private:
         std::string &tableName);
     int GetThumbFd(const std::string &path, const std::string &table, const std::string &id,
         const std::string &uri, const Size &size);
-    int32_t CreateThumbnailInfo(ThumbRdbOpt &opts, const bool &isSync);
+    int32_t CreateThumbnailInfo(const std::string &path, const std::string &tableName, const std::string &fileId,
+        const std::string &uri, const bool &isSync);
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
