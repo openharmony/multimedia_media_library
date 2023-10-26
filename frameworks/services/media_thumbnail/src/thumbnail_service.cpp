@@ -160,7 +160,8 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     };
     bool isThumbnail = IsThumbnail(size.width, size.height);
     shared_ptr<IThumbnailHelper> thumbnailHelper 
-        = ThumbnailHelperFactory::GetThumbnailHelper(isThumbnail ? ThumbnailHelperType::DEFAULT : ThumbnailHelperType::LCD);
+        = ThumbnailHelperFactory::GetThumbnailHelper(isThumbnail 
+            ? ThumbnailHelperType::DEFAULT : ThumbnailHelperType::LCD);
     if (thumbnailHelper == nullptr) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_NO_MEMORY},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -256,8 +257,15 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
 
     int width = imageInfo.size.width;
     int height = imageInfo.size.height;
-    ThumbnailUtils::ResizeTHUMB(width, height);
-    shared_ptr<IThumbnailHelper> thumbnailHelper = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::DEFAULT);
+    if (!ThumbnailUtils::ResizeTHUMB(width, height)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
+            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        MEDIA_ERR_LOG("ResizeTHUMB failed");
+        return E_ERR;
+    }
+    shared_ptr<IThumbnailHelper> thumbnailHelper 
+        = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::DEFAULT);
     if (thumbnailHelper == nullptr) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -283,7 +291,6 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
         MEDIA_ERR_LOG("CreateThumbnail failed : %{public}d", err);
         return err;
     }
-
     
     shared_ptr<IThumbnailHelper> lcdHelper = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::LCD);
     if (lcdHelper == nullptr) {
@@ -296,7 +303,13 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
 
     int widthLCD = imageInfo.size.width;
     int heightLCD = imageInfo.size.height;
-    ThumbnailUtils::ResizeLCD(widthLCD, heightLCD);
+    if (!ThumbnailUtils::ResizeLCD(widthLCD, heightLCD)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
+            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        MEDIA_ERR_LOG("ResizeLCD failed");
+        return E_ERR;
+    }
     Size imageSizeLCD = {widthLCD, heightLCD};
     opts.imageSize = imageSizeLCD;
     err = lcdHelper->CreateThumbnail(opts, isSync);
