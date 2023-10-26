@@ -1370,7 +1370,7 @@ void AddYearMonthDayColumn(RdbStore &store)
 void AddHiddenTimeColumn(RdbStore &store)
 {
     const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + 
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
             " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0"
     };
     ExecSqls(sqls, store);
