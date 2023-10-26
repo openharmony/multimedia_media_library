@@ -59,6 +59,7 @@ constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 768;
 constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 256;
 constexpr int32_t LCD_LONG_SIDE_THRESHOLD = 1920;
 constexpr int32_t MAXIMUM_LCD_LONG_SIDE = 4096;
+constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
 
 bool ThumbnailUtils::UpdateRemotePath(string &path, const string &networkId)
 {
@@ -1686,95 +1687,82 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
     }
 }
 
-void ThumbnailUtils::ResizeTHUMB(int &width, int &height)
+bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
 {
     int maxLen = max(width, height);
     int minLen = min(width, height);
+    if (minLen == 0) {
+        MEDIA_ERR_LOG("Divisor minLen is 0");
+        return false;
+    }
     double ratio = (double)maxLen / minLen;
-    if (minLen > SHORT_SIDE_THRESHOLD)
-    {
+    if (minLen > SHORT_SIDE_THRESHOLD) {
         minLen = SHORT_SIDE_THRESHOLD;
         maxLen = (int)SHORT_SIDE_THRESHOLD * ratio;
-        if (maxLen > MAXIMUM_SHORT_SIDE_THRESHOLD)
-        {
+        if (maxLen > MAXIMUM_SHORT_SIDE_THRESHOLD) {
             maxLen = MAXIMUM_SHORT_SIDE_THRESHOLD;
         }
-        if (height > width)
-        {
+        if (height > width) {
             width = minLen;
             height = maxLen;
-        }
-        else
-        {
+        } else {
             width = maxLen;
             height = minLen;
         }
-    }
-    else if (maxLen <= SHORT_SIDE_THRESHOLD)
-    {
+    } else if (maxLen <= SHORT_SIDE_THRESHOLD) {
         // do nothing,reuse original image
-    }
-    else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD)
-    {
-        if (ratio <= 3)
-        {
+    } else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD) {
+        if (ratio <= ASPECT_RATIO_THRESHOLD) {
             // do nothing,reuse original image
-        }
-        else
-        {
-            int newMaxLen = minLen * 3;
-            if (height > width)
-            {
+        } else {
+            int newMaxLen = minLen * ASPECT_RATIO_THRESHOLD;
+            if (height > width) {
                 width = minLen;
                 height = newMaxLen;
-            }
-            else
-            {
+            } else {
                 width = maxLen;
                 height = newMaxLen;
             }
         }
     }
+    return true;
 }
 
-void ThumbnailUtils::ResizeLCD(int &width, int &height)
+bool ThumbnailUtils::ResizeLCD(int &width, int &height)
 {
     int maxLen = max(width, height);
     int minLen = min(width, height);
+    if (minLen == 0) {
+        MEDIA_ERR_LOG("Divisor minLen is 0");
+        return false;
+    }
     double ratio = (double)maxLen / minLen;
     int newMaxLen = maxLen;
     int newMinLen = minLen;
-    if (maxLen <= LCD_LONG_SIDE_THRESHOLD)
-    {
+    if (maxLen <= LCD_LONG_SIDE_THRESHOLD) {
         // do nothing,reuse original image
-    }
-    else
-    {
+    } else {
         newMaxLen = LCD_LONG_SIDE_THRESHOLD;
         newMinLen = newMaxLen * ratio;
     }
     int lastMinLen = newMinLen;
     int lastMaxLen = newMaxLen;
-    if (newMinLen < LCD_SHORT_SIDE_THRESHOLD && minLen >= LCD_SHORT_SIDE_THRESHOLD)
-    {
+    if (newMinLen < LCD_SHORT_SIDE_THRESHOLD && minLen >= LCD_SHORT_SIDE_THRESHOLD) {
         lastMinLen = LCD_SHORT_SIDE_THRESHOLD;
         lastMaxLen = lastMinLen * ratio;
-        if (lastMaxLen > MAXIMUM_LCD_LONG_SIDE)
-        {
+        if (lastMaxLen > MAXIMUM_LCD_LONG_SIDE) {
             lastMaxLen = MAXIMUM_LCD_LONG_SIDE;
             lastMinLen = lastMaxLen * ratio;
         }
     }
-    if (height > width)
-    {
+    if (height > width) {
         width = lastMinLen;
         height = lastMaxLen;
-    }
-    else
-    {
+    } else {
         width = lastMaxLen;
         height = lastMinLen;
     }
+    return true;
 }
 } // namespace Media
 } // namespace OHOS
