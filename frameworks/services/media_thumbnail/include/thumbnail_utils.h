@@ -51,9 +51,9 @@ struct ThumbnailData {
         source = nullptr;
         thumbnail.clear();
         lcd.clear();
-    }
-    int mediaType{-1};
-    int64_t dateModified{0};
+    } 
+    int mediaType {-1};
+    int64_t dateModified {0};
     float degrees;
     std::shared_ptr<PixelMap> source;
     std::vector<uint8_t> thumbnail;
