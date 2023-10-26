@@ -182,6 +182,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "ability_runtime:uri_permission_mgr",
     "access_token:libaccesstoken_sdk",
     "app_file_service:sandbox_helper_native",
+    "background_task_mgr:bgtaskmgr_innerkits",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
