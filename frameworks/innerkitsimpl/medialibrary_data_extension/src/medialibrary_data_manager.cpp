@@ -22,11 +22,13 @@
 
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
+#include "background_task_mgr_helper.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
 #include "device_manager.h"
 #include "device_manager_callback.h"
 #endif
+#include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
 #include "media_column.h"
@@ -58,6 +60,7 @@
 #include "mimetype_utils.h"
 #include "permission_utils.h"
 #include "photo_map_operations.h"
+#include "resource_type.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
@@ -158,6 +161,10 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
         return E_OK;
     }
 
+    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo =
+        BackgroundTaskMgr::EfficiencyResourceInfo(BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
+    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
+
     context_ = context;
     int32_t errCode = InitMediaLibraryRdbStore();
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitMediaLibraryRdbStore");
@@ -180,6 +187,7 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     if (errCode != E_OK) {
         MEDIA_WARN_LOG("Ignore trash aging failures, just continue");
     }
+    BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
     refCnt_++;
     return E_OK;
 }
