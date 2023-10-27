@@ -70,6 +70,7 @@ constexpr int32_t E_INVALID_TIMESTAMP =     MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 2
 constexpr int32_t E_GRANT_URI_PERM_FAIL =   MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 29);
 constexpr int32_t E_IS_IN_COMMIT =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 30);
 constexpr int32_t E_IS_IN_REVERT =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 31);
+constexpr int32_t E_GET_PRAMS_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 32);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }

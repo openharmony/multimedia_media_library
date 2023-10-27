@@ -71,6 +71,7 @@
 #include "trash_async_worker.h"
 #include "value_object.h"
 #include "post_event_utils.h"
+#include "medialibrary_formmap_operations.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -429,6 +430,9 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::InsertOperation(cmd);
 
+        case OperationObject::PAH_FORM_MAP:
+            return MediaLibraryFormMapOperations::HandleStoreFormIdOperation(cmd);
+
         default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
@@ -600,6 +604,9 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE: {
             return MediaLibraryLocationOperations::DeleteOperation(cmd);
+        }
+        case OperationObject::PAH_FORM_MAP: {
+            return MediaLibraryFormMapOperations::RemoveFormIdOperations(rdbPredicate);
         }
         default:
             break;
