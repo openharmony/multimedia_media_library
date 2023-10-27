@@ -95,6 +95,7 @@ public:
     static const std::string PHOTO_DATE_YEAR;
     static const std::string PHOTO_DATE_MONTH;
     static const std::string PHOTO_DATE_DAY;
+    static const std::string PHOTO_HIDDEN_TIME;
     static const std::string PHOTO_SHOOTING_MODE;
     // index in PhotoTable
     static const std::string PHOTO_DATE_YEAR_INDEX;
