@@ -231,16 +231,15 @@ int32_t ThumbnailService::ParseThumbnailParam(const std::string &uri, string &fi
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &tableName, const string &fileId,
-    const string &uri, const bool &isSync)
+int32_t ThumbnailService::CreateThumbnailInfo(ThumbRdbOpt &opts, const bool &isSync)
 {
     uint32_t err = 0;
     SourceOptions sopts;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, sopts, err);
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(opts.path, sopts, err);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to create image source %{public}d", err);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_ERR;
     }
@@ -250,7 +249,7 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
     if (err != E_OK) {
         MEDIA_ERR_LOG("GetImageInfo err %{public}d", err);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_ERR;
     }
@@ -259,7 +258,7 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
     int height = imageInfo.size.height;
     if (!ThumbnailUtils::ResizeTHUMB(width, height)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("ResizeTHUMB failed");
         return E_ERR;
@@ -268,25 +267,20 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
         = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::DEFAULT);
     if (thumbnailHelper == nullptr) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("thumbnailHelper nullptr");
         return E_ERR;
     }
     Size imageSize = {width, height};
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .path = path,
-        .table = tableName,
-        .row = fileId,
-        .screenSize = screenSize_,
-        .imageSize = imageSize
-    };
+    opts.screenSize = screenSize_;
+    opts.imageSize = imageSize;
+
 
     err = thumbnailHelper->CreateThumbnail(opts, isSync);
     if (err != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("CreateThumbnail failed : %{public}d", err);
         return err;
@@ -295,7 +289,7 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
     shared_ptr<IThumbnailHelper> lcdHelper = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::LCD);
     if (lcdHelper == nullptr) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("lcdHelper nullptr");
         return E_ERR;
@@ -305,7 +299,7 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
     int heightLCD = imageInfo.size.height;
     if (!ThumbnailUtils::ResizeLCD(widthLCD, heightLCD)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("ResizeLCD failed");
         return E_ERR;
@@ -315,7 +309,7 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
     err = lcdHelper->CreateThumbnail(opts, isSync);
     if (err != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("CreateLcd failed : %{public}d", err);
         return err;
@@ -335,8 +329,13 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
     }
-    
-    err = CreateThumbnailInfo(path, tableName, fileId, uri, isSync);
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .path = path,
+        .table = tableName,
+        .row = fileId
+    };
+    err = CreateThumbnailInfo(opts, isSync);
     if (err != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
