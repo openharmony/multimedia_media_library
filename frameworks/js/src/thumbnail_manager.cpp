@@ -253,7 +253,7 @@ void ThumbnailManager::AddQualityPhotoRequest(const RequestSharedPtr &request)
     qualityCv_.notify_one();
 }
 
-static inline void GetFastThumbNewSize(const Size &size, Size &newSize)
+static void GetFastThumbNewSize(const Size &size, Size &newSize)
 {
     if (size.width > DEFAULT_THUMB_SIZE || size.height > DEFAULT_THUMB_SIZE) {
         newSize.height = DEFAULT_THUMB_SIZE;
