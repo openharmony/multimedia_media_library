@@ -238,6 +238,7 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
 
         OperationObject::ALL_DEVICE,
         OperationObject::ACTIVE_DEVICE,
+        OperationObject::PAH_FORM_MAP,
     };
 
     static const set<string> SYSTEM_API_URIS = {
@@ -353,6 +354,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::PAH_PHOTO,
         OperationObject::PAH_ALBUM,
         OperationObject::PAH_MAP,
+        OperationObject::PAH_FORM_MAP,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);

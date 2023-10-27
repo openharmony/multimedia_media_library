@@ -140,6 +140,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_data_manager_utils.cpp",
     "src/medialibrary_dir_operations.cpp",
     "src/medialibrary_file_operations.cpp",
+    "src/medialibrary_formmap_operations.cpp",
     "src/medialibrary_inotify.cpp",
     "src/medialibrary_location_operations.cpp",
     "src/medialibrary_notify.cpp",

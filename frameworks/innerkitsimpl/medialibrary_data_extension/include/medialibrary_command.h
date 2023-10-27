@@ -71,6 +71,7 @@ enum class OperationObject : uint32_t {
     GEO_KNOWLEDGE,
     ANALYSIS_PHOTO_ALBUM,
     ANALYSIS_PHOTO_MAP,
+    PAH_FORM_MAP,
 };
 
 enum class OperationType : uint32_t {
@@ -104,6 +105,8 @@ enum class OperationType : uint32_t {
     HIDE,
     QUERY_HIDDEN,
     ALBUM_ORDER,
+    OPRN_STORE_FORM_ID,
+    OPRN_REMOVE_FORM_ID,
 };
 
 class MediaLibraryCommand {

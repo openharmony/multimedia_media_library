@@ -28,6 +28,7 @@
 #include "medialibrary_errno.h"
 #include "userfilemgr_uri.h"
 #include "vision_column.h"
+#include "form_map.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -84,6 +85,8 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_HIDE, OperationType::HIDE },
     { OPRN_QUERY_HIDDEN, OperationType::QUERY_HIDDEN },
     { OPRN_ORDER_ALBUM, OperationType::ALBUM_ORDER},
+    { OPRN_STORE_FORM_ID, OperationType::OPRN_STORE_FORM_ID },
+    { OPRN_REMOVE_FORM_ID, OperationType::OPRN_REMOVE_FORM_ID },
 };
 }
 
@@ -294,6 +297,7 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     { PAH_ANA_MAP, OperationObject::ANALYSIS_PHOTO_MAP },
     { TOOL_PHOTO, OperationObject::TOOL_PHOTO },
     { TOOL_AUDIO, OperationObject::TOOL_AUDIO },
+    { PAH_FORM_MAP, OperationObject::PAH_FORM_MAP },
 
     // use in Query...
     { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -412,6 +416,7 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
     { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
     { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
+    { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
 };
 
 void MediaLibraryCommand::ParseTableName()
