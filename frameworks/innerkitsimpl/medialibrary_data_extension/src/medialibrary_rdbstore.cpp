@@ -880,11 +880,14 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_OCR,
     CREATE_TAB_ANALYSIS_LABEL,
     CREATE_TAB_ANALYSIS_AESTHETICS,
-    CREATE_TAB_ANALYSIS_TOTAL,
+    CREATE_TAB_IMAGE_FACE,
+    CREATE_TAB_FACE_TAG,
+    CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
     CREATE_TAB_APPLICATION_SHIELD,
     CREATE_VISION_UPDATE_TRIGGER,
     CREATE_VISION_DELETE_TRIGGER,
-    CREATE_VISION_INSERT_TRIGGER,
+    CREATE_NEW_INSERT_VISION_TRIGGER,
+    CREATE_IMAGE_FACE_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -1163,6 +1166,22 @@ static void AddAnalysisTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddFaceTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_TAB_IMAGE_FACE,
+        CREATE_TAB_FACE_TAG,
+        DROP_INSERT_VISION_TRIGGER,
+        CREATE_NEW_INSERT_VISION_TRIGGER,
+        ADD_FACE_STATUS_COLUMN,
+        UPDATE_TOTAL_VALUE,
+        UPDATE_NOT_SUPPORT_VALUE,
+        CREATE_IMAGE_FACE_INDEX
+    };
+    MEDIA_INFO_LOG("start add face tables");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void MediaLibraryRdbStore::ResetAnalysisTables()
 {
     if (rdbStore_ == nullptr) {
@@ -1178,10 +1197,13 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
         "DROP TABLE IF EXISTS tab_analysis_aesthetics_score",
         "DROP TABLE IF EXISTS tab_analysis_total",
         "DROP TABLE IF EXISTS tab_application_shield",
+        "DROP TABLE IF EXISTS tab_analysis_image_face",
+        "DROP TABLE IF EXISTS tab_analysis_face_tag",
     };
     MEDIA_INFO_LOG("start update analysis db");
     ExecSqls(executeSqlStrs, *rdbStore_);
     AddAnalysisTables(*rdbStore_);
+    AddFaceTables(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -1484,6 +1506,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_VISION_TABLE) {
         AddAnalysisTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_FACE_TABLE) {
+        AddFaceTables(store);
     }
     return NativeRdb::E_OK;
 }

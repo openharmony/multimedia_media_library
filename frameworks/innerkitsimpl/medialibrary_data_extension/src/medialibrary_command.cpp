@@ -306,6 +306,8 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { VISION_LABEL_TABLE, OperationObject::VISION_LABEL },
         { VISION_AESTHETICS_TABLE, OperationObject::VISION_AESTHETICS },
         { VISION_TOTAL_TABLE, OperationObject::VISION_TOTAL },
+        { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
+        { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
         { VISION_SHIELD_TABLE, OperationObject::VISION_SHIELD },
     };
 
@@ -379,6 +381,8 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
     { OperationObject::VISION_AESTHETICS, { { OperationType::UNKNOWN_TYPE, VISION_AESTHETICS_TABLE } } },
     { OperationObject::VISION_TOTAL, { { OperationType::UNKNOWN_TYPE, VISION_TOTAL_TABLE } } },
+    { OperationObject::VISION_IMAGE_FACE, { { OperationType::UNKNOWN_TYPE, VISION_IMAGE_FACE_TABLE } } },
+    { OperationObject::VISION_FACE_TAG, { { OperationType::UNKNOWN_TYPE, VISION_FACE_TAG_TABLE } } },
     { OperationObject::VISION_SHIELD, { { OperationType::UNKNOWN_TYPE, VISION_SHIELD_TABLE } } },
 };
 

@@ -406,6 +406,8 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::VISION_LABEL:
         case OperationObject::VISION_AESTHETICS:
         case OperationObject::VISION_TOTAL:
+        case OperationObject::VISION_IMAGE_FACE:
+        case OperationObject::VISION_FACE_TAG:
         case OperationObject::VISION_SHIELD: {
             return MediaLibraryVisionOperations::InsertOperation(cmd);
         }
@@ -567,6 +569,8 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::VISION_LABEL:
         case OperationObject::VISION_AESTHETICS:
         case OperationObject::VISION_TOTAL:
+        case OperationObject::VISION_IMAGE_FACE:
+        case OperationObject::VISION_FACE_TAG:
         case OperationObject::VISION_SHIELD: {
             return MediaLibraryVisionOperations::DeleteOperation(cmd);
         }
