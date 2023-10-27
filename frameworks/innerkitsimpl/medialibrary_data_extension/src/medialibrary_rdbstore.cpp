@@ -1367,6 +1367,15 @@ void AddYearMonthDayColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddHiddenTimeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0"
+    };
+    ExecSqls(sqls, store);
+}
+
 static void AddPhotoEditTimeColumn(RdbStore &store)
 {
     const string addEditTimeOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
@@ -1432,6 +1441,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_FIX_INDEX_ORDER) {
         FixIndexOrder(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIDDEN_TIME) {
+        AddHiddenTimeColumn(store);
     }
 }
 
