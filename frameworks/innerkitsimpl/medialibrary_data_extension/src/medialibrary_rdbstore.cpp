@@ -1410,6 +1410,21 @@ void AddShootingModeColumn(RdbStore &store)
     }
 }
 
+void UpdateMillisecondDate(RdbStore &store)
+{
+    MEDIA_DEBUG_LOG("UpdateMillisecondDate start");
+    const vector<string> updateSql = {
+        "UPDATE" + PhotoColumn::PHOTOS_TABLE + " SET " +
+        PhotoColumn::PHOTO_DATE_ADDED + " = " + PhotoColumn::PHOTO_DATE_ADDED + "*1000," +
+        PhotoColumn::PHOTO_DATE_MODIFIED + " = " + PhotoColumn::PHOTO_DATE_MODIFIED + "*1000," +
+        PhotoColumn::PHOTO_DATE_TRASHED + " = " + PhotoColumn::PHOTO_DATE_TRASHED + "*1000;"+
+        "UPDATE" + PhotoColumn::PHOTO_ALBUM_TABLE + " SET " +
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " +  MediaColumn::MEDIA_DATE_MODIFIED + "*1000;",
+    };
+    ExecSqls(updateSql, store);
+    MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1454,6 +1469,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_FIX_INDEX_ORDER) {
         FixIndexOrder(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
+        UpdateMillisecondDate(store);
     }
 }
 

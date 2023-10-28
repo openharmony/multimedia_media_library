@@ -482,7 +482,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // Fill basic file information into DB
     const string& displayName = fileAsset.GetDisplayName();
-    int64_t nowTime = MediaFileUtils::UTCTimeSeconds();
+    int64_t nowTime = MediaFileUtils::UTCTimeMilliSeconds();
     ValuesBucket assetInfo;
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, fileAsset.GetMediaType());
     string extension = ScannerUtils::GetFileExtension(displayName);
@@ -504,11 +504,11 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, nowTime));
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, nowTime / MSEC_TO_SEC));
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, nowTime));
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, nowTime / MSEC_TO_SEC));
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_DAY,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, nowTime));
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, nowTime / MSEC_TO_SEC));
     }
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
     if (!cmd.GetBundleName().empty()) {
