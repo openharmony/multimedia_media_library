@@ -63,7 +63,8 @@ enum PhotoAlbumSubType : int32_t {
     SCREENSHOT,
     CAMERA,
     IMAGES,
-    SYSTEM_END = IMAGES,
+    SOURCE,
+    SYSTEM_END = SOURCE,
     ANY = std::numeric_limits<int32_t>::max()
 };
 

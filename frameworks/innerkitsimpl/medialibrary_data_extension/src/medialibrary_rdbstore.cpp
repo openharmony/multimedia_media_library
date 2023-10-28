@@ -42,6 +42,7 @@
 #include "result_set_utils.h"
 #include "post_event_utils.h"
 #include "vision_column.h"
+#include "source_album.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1182,6 +1183,18 @@ static void AddFaceTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddSourceAlbumTrigger(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_SOURCE_ALBUM_TRIGGER,
+        DROP_UPDATE_SOURCE_ALBUM_TRIGGER,
+        INSERT_SOURCE_ALBUM,
+        UPDATE_SOURCE_ALBUM
+    };
+    MEDIA_INFO_LOG("start add source album trigger");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void MediaLibraryRdbStore::ResetAnalysisTables()
 {
     if (rdbStore_ == nullptr) {
@@ -1510,6 +1523,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_FACE_TABLE) {
         AddFaceTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SOURCE_ALBUM_TRIGGER) {
+        AddSourceAlbumTrigger(store);
     }
     return NativeRdb::E_OK;
 }
