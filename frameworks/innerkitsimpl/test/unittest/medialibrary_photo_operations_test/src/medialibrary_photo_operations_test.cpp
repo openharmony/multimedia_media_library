@@ -1264,6 +1264,28 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestS
         MEDIA_ERR_LOG("Test first tdd Query failed");
         return;
     }
+
+    // Update
+    MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    SetValuesBucketInUpdate(PhotoColumn::MEDIA_NAME, "phophopho.jpg", values);
+    cmd_u.SetValueBucket(values);
+    cmd_u.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    MediaLibraryPhotoOperations::Update(cmd_u);
+
+    // Query again
+    resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        EXPECT_EQ(name, "phophopho.jpg");
+        int64_t hidden_time = GetInt64Val(PhotoColumn::PHOTO_HIDDEN_TIME, resultSet);
+        EXPECT_EQ(hidden_time, 0L);
+    } else {
+        MEDIA_ERR_LOG("Test first tdd Query failed");
+        return;
+    }
+
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_004");
 }
 

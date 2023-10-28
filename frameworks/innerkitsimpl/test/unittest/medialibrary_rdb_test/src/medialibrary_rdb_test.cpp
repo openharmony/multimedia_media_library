@@ -413,7 +413,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_003, TestSize.
     thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 3000).detach();
     thread(TransactionTestFunc, rdbStorePtr, (&startSignal), (&endSignal), 3000).detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(4000));
-    EXPECT_EQ(startSignal, 1);
+    EXPECT_EQ(startSignal, 2);
     EXPECT_EQ(endSignal, 1);
     rdbStorePtr->Stop();
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_003 finish");

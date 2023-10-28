@@ -580,7 +580,6 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
     // Update hidden_time if set hidden operation
     ValueObject hidden_valueObject;
     if (cmd.GetValueBucket().GetObject(MediaColumn::MEDIA_HIDDEN, hidden_valueObject)){
-        MEDIA_INFO_LOG("freeloop hidden_time set");
         int32_t isHidden = 0;
         hidden_valueObject.GetInt(isHidden);
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_HIDDEN_TIME, isHidden ? MediaFileUtils::UTCTimeSeconds() : 0);
