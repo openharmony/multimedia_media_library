@@ -243,14 +243,8 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
         return E_ERR;
     }
 
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .path = path,
-        .table = tableName,
-        .row = fileId,
-        .screenSize = screenSize_
-    };
-    if (CreateDefaultThumbnail(imageInfo, opts, isSync) != E_OK) {
+    
+    if (CreateDefaultThumbnail(imageInfo, path, tableName, fileId, isSync) != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -258,7 +252,7 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
         return E_ERR;
     }
 
-    if (CreateLCDThumbnail(imageInfo, opts, isSync) != E_OK) {
+    if (CreateLCDThumbnail(imageInfo, path, tableName, fileId, isSync) != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -311,7 +305,8 @@ int32_t ThumbnailService::GetImageSourceByPath(const std::string &path, ImageInf
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateDefaultThumbnail(ImageInfo& imageInfo, ThumbRdbOpt& opts, const bool &isSync)
+int32_t ThumbnailService::CreateDefaultThumbnail(ImageInfo& imageInfo,
+    const std::string &path, const std::string &tableName, const std::string &fileId, const bool &isSync)
 {
     int width = imageInfo.size.width;
     int height = imageInfo.size.height;
@@ -326,8 +321,14 @@ int32_t ThumbnailService::CreateDefaultThumbnail(ImageInfo& imageInfo, ThumbRdbO
         return E_ERR;
     }
     Size imageSize = {width, height};
-    opts.imageSize = imageSize;
-
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .path = path,
+        .table = tableName,
+        .row = fileId,
+        .screenSize = screenSize_,
+        .imageSize = imageSize
+    };
     int32_t err = thumbnailHelper->CreateThumbnail(opts, isSync);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CreateThumbnail failed : %{public}d", err);
@@ -336,7 +337,8 @@ int32_t ThumbnailService::CreateDefaultThumbnail(ImageInfo& imageInfo, ThumbRdbO
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateLCDThumbnail(ImageInfo& imageInfo, ThumbRdbOpt& opts, const bool &isSync)
+int32_t ThumbnailService::CreateLCDThumbnail(ImageInfo& imageInfo,
+    const std::string &path, const std::string &tableName, const std::string &fileId, const bool &isSync)
 {
     shared_ptr<IThumbnailHelper> lcdHelper = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::LCD);
     if (lcdHelper == nullptr) {
@@ -351,7 +353,14 @@ int32_t ThumbnailService::CreateLCDThumbnail(ImageInfo& imageInfo, ThumbRdbOpt& 
         return E_ERR;
     }
     Size imageSizeLCD = {widthLCD, heightLCD};
-    opts.imageSize = imageSizeLCD;
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .path = path,
+        .table = tableName,
+        .row = fileId,
+        .screenSize = screenSize_,
+        .imageSize = imageSizeLCD
+    };
     int32_t err = lcdHelper->CreateThumbnail(opts, isSync);
     if (err != E_OK) {
         MEDIA_ERR_LOG("CreateLcd failed : %{public}d", err);

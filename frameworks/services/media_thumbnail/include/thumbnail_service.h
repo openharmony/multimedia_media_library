@@ -26,7 +26,6 @@
 #include "single_kvstore.h"
 #include "userfile_manager_types.h"
 #include "thumbnail_const.h"
-#include "thumbnail_utils.h"
 
 #define THUMBNAIL_API_EXPORT __attribute__ ((visibility ("default")))
 namespace OHOS {
@@ -67,8 +66,10 @@ private:
     int32_t CreateThumbnailInfo(const std::string &path, const std::string &tableName, const std::string &fileId,
         const std::string &uri, const bool &isSync);
     int32_t GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo);
-    int32_t CreateDefaultThumbnail(ImageInfo& imageInfo, ThumbRdbOpt& opts, const bool &isSync);
-    int32_t CreateLCDThumbnail(ImageInfo& imageInfo, ThumbRdbOpt& opts, const bool &isSync);
+    int32_t CreateDefaultThumbnail(ImageInfo& imageInfo, const std::string &path,
+        const std::string &tableName, const std::string &fileId, const bool &isSync);
+    int32_t CreateLCDThumbnail(ImageInfo& imageInfo, const std::string &path,
+        const std::string &tableName, const std::string &fileId, const bool &isSync);
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
