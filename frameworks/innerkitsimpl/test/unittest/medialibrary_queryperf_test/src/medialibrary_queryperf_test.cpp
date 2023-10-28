@@ -58,8 +58,8 @@ void MakeTestData()
     datashareValues.Put(MEDIA_DATA_DB_NAME, displayName);
     datashareValues.Put(MEDIA_DATA_DB_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
     datashareValues.Put(MEDIA_DATA_DB_SIZE, 0);
-    datashareValues.Put(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
-    datashareValues.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    datashareValues.Put(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
+    datashareValues.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     datashareValues.Put(MEDIA_DATA_DB_FILE_PATH, ROOT_MEDIA_DIR + PIC_DIR_VALUES + displayName);
     datashareValues.Put(MEDIA_DATA_DB_BUCKET_ID, 1);
     datashareValues.Put(MEDIA_DATA_DB_PARENT_ID, 1);

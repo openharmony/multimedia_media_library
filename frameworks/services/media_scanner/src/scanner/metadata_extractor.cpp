@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include "hitrace_meter.h"
 #include "media_exif.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -134,13 +135,13 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
     if (err == 0) {
         int64TempMeta = convertTimeStr2TimeStamp(propertyStr);
         if (int64TempMeta < 0) {
-            data->SetDateTaken(data->GetFileDateModified());
+            data->SetDateTaken(data->GetFileDateModified() / MSEC_TO_SEC);
         } else {
             data->SetDateTaken(int64TempMeta);
         }
     } else {
         // use modified time as date taken time when date taken not set
-        data->SetDateTaken(data->GetFileDateModified());
+        data->SetDateTaken(data->GetFileDateModified() / MSEC_TO_SEC);
     }
 
     int32_t intTempMeta = 0;
@@ -227,13 +228,13 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     if (strTemp != "") {
         int64TempMeta = convertTimeStr2TimeStamp(strTemp);
         if (int64TempMeta < 0) {
-            data->SetDateTaken(data->GetFileDateModified());
+            data->SetDateTaken(data->GetFileDateModified() / MSEC_TO_SEC);
         } else {
             data->SetDateTaken(int64TempMeta);
         }
     } else {
         // use modified time as date taken time when date taken not set
-        data->SetDateTaken(data->GetFileDateModified());
+        data->SetDateTaken(data->GetFileDateModified() / MSEC_TO_SEC);
     }
 
     strTemp = resultMap.at(AV_KEY_VIDEO_ORIENTATION);

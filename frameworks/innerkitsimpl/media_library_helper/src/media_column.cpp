@@ -76,6 +76,9 @@ const std::string PhotoColumn::PHOTO_ALL_EXIF = "all_exif";
 const std::string PhotoColumn::PHOTO_DATE_YEAR = "date_year";
 const std::string PhotoColumn::PHOTO_DATE_MONTH = "date_month";
 const std::string PhotoColumn::PHOTO_DATE_DAY = "date_day";
+const std::string PhotoColumn::PHOTO_DATE_ADDED = "date_added";
+const std::string PhotoColumn::PHOTO_DATE_MODIFIED = "date_modified";
+const std::string PhotoColumn::PHOTO_DATE_TRASHED = "date_trashed";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_INDEX = "date_month_index";
@@ -90,6 +93,7 @@ const std::string PhotoColumn::PHOTO_DATE_DAY_FORMAT = "%Y%m%d";
 
 
 const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
+const std::string PhotoColumn::PHOTO_ALBUM_TABLE = "PhotoAlbum";
 
 const std::string PhotoColumn::PHOTO_URI_PREFIX = "file://media/Photo/";
 const std::string PhotoColumn::DEFAULT_PHOTO_URI = "file://media/Photo";
