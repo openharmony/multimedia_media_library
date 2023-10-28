@@ -231,89 +231,41 @@ int32_t ThumbnailService::ParseThumbnailParam(const std::string &uri, string &fi
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateThumbnailInfo(ThumbRdbOpt &opts, const bool &isSync)
+int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &tableName, const string &fileId,
+    const string &uri, const bool &isSync)
 {
-    uint32_t err = 0;
-    SourceOptions sopts;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(opts.path, sopts, err);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to create image source %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return E_ERR;
-    }
-
     ImageInfo imageInfo;
-    err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GetImageInfo err %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return E_ERR;
-    }
-
-    int width = imageInfo.size.width;
-    int height = imageInfo.size.height;
-    if (!ThumbnailUtils::ResizeTHUMB(width, height)) {
+    if (GetImageSourceByPath(path, imageInfo) != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        MEDIA_ERR_LOG("ResizeTHUMB failed");
+        MEDIA_ERR_LOG("GetImageSourceByPath failed");
         return E_ERR;
     }
-    shared_ptr<IThumbnailHelper> thumbnailHelper
-        = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::DEFAULT);
-    if (thumbnailHelper == nullptr) {
+
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .path = path,
+        .table = tableName,
+        .row = fileId,
+        .screenSize = screenSize_
+    };
+    if (CreateDefaultThumbnail(imageInfo, opts, isSync) != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        MEDIA_ERR_LOG("thumbnailHelper nullptr");
+        MEDIA_ERR_LOG("CreateDefaultThumbnail failed");
         return E_ERR;
     }
-    Size imageSize = {width, height};
-    opts.screenSize = screenSize_;
-    opts.imageSize = imageSize;
 
-
-    err = thumbnailHelper->CreateThumbnail(opts, isSync);
-    if (err != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+    if (CreateLCDThumbnail(imageInfo, opts, isSync) != E_OK) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
+            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        MEDIA_ERR_LOG("CreateThumbnail failed : %{public}d", err);
-        return err;
+        MEDIA_ERR_LOG("CreateLCDThumbnail failed");
+        return E_ERR;
     }
     
-    shared_ptr<IThumbnailHelper> lcdHelper = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::LCD);
-    if (lcdHelper == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        MEDIA_ERR_LOG("lcdHelper nullptr");
-        return E_ERR;
-    }
-
-    int widthLCD = imageInfo.size.width;
-    int heightLCD = imageInfo.size.height;
-    if (!ThumbnailUtils::ResizeLCD(widthLCD, heightLCD)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
-            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        MEDIA_ERR_LOG("ResizeLCD failed");
-        return E_ERR;
-    }
-    Size imageSizeLCD = {widthLCD, heightLCD};
-    opts.imageSize = imageSizeLCD;
-    err = lcdHelper->CreateThumbnail(opts, isSync);
-    if (err != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, opts.uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        MEDIA_ERR_LOG("CreateLcd failed : %{public}d", err);
-        return err;
-    }
     return E_OK;
 }
 
@@ -329,13 +281,8 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
     }
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .path = path,
-        .table = tableName,
-        .row = fileId
-    };
-    err = CreateThumbnailInfo(opts, isSync);
+    
+    err = CreateThumbnailInfo(path, tableName, fileId, uri, isSync);
     if (err != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -343,6 +290,73 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
         return err;
     }
    
+    return E_OK;
+}
+
+int32_t ThumbnailService::GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo)
+{
+    uint32_t err = 0;
+    SourceOptions opts;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to CreateImageSource %{public}d", err);
+        return E_ERR;
+    }
+    
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("GetImageInfo err %{public}d", err);
+        return E_ERR;
+    }
+    return E_OK;
+}
+
+int32_t ThumbnailService::CreateDefaultThumbnail(ImageInfo& imageInfo, ThumbRdbOpt& opts, const bool &isSync)
+{
+    int width = imageInfo.size.width;
+    int height = imageInfo.size.height;
+    if (!ThumbnailUtils::ResizeTHUMB(width, height)) {
+        MEDIA_ERR_LOG("ResizeTHUMB failed");
+        return E_ERR;
+    }
+    shared_ptr<IThumbnailHelper> thumbnailHelper
+        = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::DEFAULT);
+    if (thumbnailHelper == nullptr) {
+        MEDIA_ERR_LOG("thumbnailHelper nullptr");
+        return E_ERR;
+    }
+    Size imageSize = {width, height};
+    opts.imageSize = imageSize;
+
+    int32_t err = thumbnailHelper->CreateThumbnail(opts, isSync);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("CreateThumbnail failed : %{public}d", err);
+        return err;
+    }
+    return E_OK;
+}
+
+int32_t ThumbnailService::CreateLCDThumbnail(ImageInfo& imageInfo, ThumbRdbOpt& opts, const bool &isSync)
+{
+    shared_ptr<IThumbnailHelper> lcdHelper = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::LCD);
+    if (lcdHelper == nullptr) {
+        MEDIA_ERR_LOG("lcdHelper nullptr");
+        return E_ERR;
+    }
+
+    int widthLCD = imageInfo.size.width;
+    int heightLCD = imageInfo.size.height;
+    if (!ThumbnailUtils::ResizeLCD(widthLCD, heightLCD)) {
+        MEDIA_ERR_LOG("ResizeLCD failed");
+        return E_ERR;
+    }
+    Size imageSizeLCD = {widthLCD, heightLCD};
+    opts.imageSize = imageSizeLCD;
+    int32_t err = lcdHelper->CreateThumbnail(opts, isSync);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("CreateLcd failed : %{public}d", err);
+        return err;
+    }
     return E_OK;
 }
 
