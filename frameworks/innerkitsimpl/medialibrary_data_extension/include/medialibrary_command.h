@@ -60,6 +60,8 @@ enum class OperationObject : uint32_t {
     VISION_LABEL,
     VISION_AESTHETICS,
     VISION_TOTAL,
+    VISION_IMAGE_FACE,
+    VISION_FACE_TAG,
     VISION_SHIELD,           // Vision end
 };
 

@@ -190,7 +190,6 @@ private:
     static bool init_;
     std::atomic<bool> isThreadRunning_;
 };
-
 } // Media
 } // OHOS
 

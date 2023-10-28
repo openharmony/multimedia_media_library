@@ -3205,7 +3205,7 @@ static void GetSmartAlbumsResultDataExecute(napi_env env, void *data)
         predicates.SetWhereClause(SMARTABLUMASSETS_PARENTID + " ISNULL");
     } else {
         predicates.SetWhereClause(SMARTABLUMASSETS_PARENTID + " = ? ");
-        predicates.SetWhereArgs({ to_string(context->parentSmartAlbumId)});
+        predicates.SetWhereArgs({ to_string(context->parentSmartAlbumId) });
     }
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + SMARTALBUMASSETS_VIEW_NAME);
