@@ -1389,15 +1389,6 @@ void AddYearMonthDayColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void AddHiddenTimeColumn(RdbStore &store)
-{
-    const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
-            " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0"
-    };
-    ExecSqls(sqls, store);
-}
-
 static void AddPhotoEditTimeColumn(RdbStore &store)
 {
     const string addEditTimeOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
@@ -1417,6 +1408,30 @@ void AddShootingModeColumn(RdbStore &store)
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb shooting_mode error %{private}d", result);
     }
+}
+
+void UpdateMillisecondDate(RdbStore &store)
+{
+    MEDIA_DEBUG_LOG("UpdateMillisecondDate start");
+    const vector<string> updateSql = {
+        "UPDATE" + PhotoColumn::PHOTOS_TABLE + " SET " +
+        PhotoColumn::PHOTO_DATE_ADDED + " = " + PhotoColumn::PHOTO_DATE_ADDED + "*1000," +
+        PhotoColumn::PHOTO_DATE_MODIFIED + " = " + PhotoColumn::PHOTO_DATE_MODIFIED + "*1000," +
+        PhotoColumn::PHOTO_DATE_TRASHED + " = " + PhotoColumn::PHOTO_DATE_TRASHED + "*1000;"+
+        "UPDATE" + PhotoColumn::PHOTO_ALBUM_TABLE + " SET " +
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " +  MediaColumn::MEDIA_DATE_MODIFIED + "*1000;",
+    };
+    ExecSqls(updateSql, store);
+    MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
+}
+
+void AddHiddenTimeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0"
+    };
+    ExecSqls(sqls, store);
 }
 
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
@@ -1463,6 +1478,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_FIX_INDEX_ORDER) {
         FixIndexOrder(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
+        UpdateMillisecondDate(store);
     }
 
     if (oldVersion < VERSION_ADD_HIDDEN_TIME) {

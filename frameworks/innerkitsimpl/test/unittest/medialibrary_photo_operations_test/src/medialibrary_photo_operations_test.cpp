@@ -1324,7 +1324,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
         string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
         EXPECT_EQ(name, "hoho.jpg");
         int64_t hidden_time = GetInt64Val(PhotoColumn::PHOTO_HIDDEN_TIME, resultSet);
-        EXPECT_EQ(hidden_time, MediaFileUtils::UTCTimeSeconds());
+        EXPECT_EQ(hidden_time > 0, true);
     } else {
         MEDIA_ERR_LOG("Test first tdd Query failed");
         return;

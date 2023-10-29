@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 25;
+const int32_t MEDIA_RDB_VERSION = 26;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -51,7 +51,8 @@ enum {
     VERSION_ADD_SHOOTING_MODE = 22,
     VERSION_FIX_INDEX_ORDER = 23,
     VERSION_ADD_FACE_TABLE = 24,
-    VERSION_ADD_HIDDEN_TIME = 25,
+    VERSION_UPDATE_DATE_TO_MILLISECOND = 25,
+    VERSION_ADD_HIDDEN_TIME = 26,
 };
 
 enum {
@@ -131,7 +132,11 @@ const std::string MEDIA_DATA_DB_FILE_PATH = "data";
 const std::string MEDIA_DATA_DB_SIZE = "size";
 const std::string MEDIA_DATA_DB_PARENT_ID = "parent";
 const std::string MEDIA_DATA_DB_DATE_MODIFIED = "date_modified";
+const std::string MEDIA_DATA_DB_DATE_MODIFIED_S = "date_modified_s";
+const std::string MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND = "CAST(date_modified / 1000 AS BIGINT) AS date_modified_s";
 const std::string MEDIA_DATA_DB_DATE_ADDED = "date_added";
+const std::string MEDIA_DATA_DB_DATE_ADDED_S = "date_added_s";
+const std::string MEDIA_DATA_DB_DATE_ADDED_TO_SECOND = "CAST(date_added / 1000 AS BIGINT) AS date_added_s";
 const std::string MEDIA_DATA_DB_MIME_TYPE = "mime_type";
 const std::string MEDIA_DATA_DB_TITLE = "title";
 const std::string MEDIA_DATA_DB_DESCRIPTION = "description";
@@ -167,6 +172,8 @@ const std::string MEDIA_DATA_DB_IS_FAV = "is_favorite";
 const std::string MEDIA_DATA_DB_IS_TRASH = "is_trash";
 const std::string MEDIA_DATA_DB_RECYCLE_PATH = "recycle_path";
 const std::string MEDIA_DATA_DB_DATE_TRASHED = "date_trashed";
+const std::string MEDIA_DATA_DB_DATE_TRASHED_S = "date_trashed_s";
+const std::string MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND = "CAST(date_trashed / 1000 AS BIGINT) AS date_trashed_s";
 const std::string MEDIA_DATA_DB_IS_PENDING = "is_pending";
 const std::string MEDIA_DATA_DB_TIME_PENDING = "time_pending";
 const std::string MEDIA_DATA_DB_RELATIVE_PATH = "relative_path";

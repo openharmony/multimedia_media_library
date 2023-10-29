@@ -95,8 +95,11 @@ public:
     static const std::string PHOTO_DATE_YEAR;
     static const std::string PHOTO_DATE_MONTH;
     static const std::string PHOTO_DATE_DAY;
-    static const std::string PHOTO_HIDDEN_TIME;
     static const std::string PHOTO_SHOOTING_MODE;
+    static const std::string PHOTO_DATE_ADDED;
+    static const std::string PHOTO_DATE_MODIFIED;
+    static const std::string PHOTO_DATE_TRASHED;
+    static const std::string PHOTO_HIDDEN_TIME;
     // index in PhotoTable
     static const std::string PHOTO_DATE_YEAR_INDEX;
     static const std::string PHOTO_DATE_MONTH_INDEX;
@@ -110,6 +113,7 @@ public:
     static const std::string PHOTO_DATE_DAY_FORMAT;
     // table name
     static const std::string PHOTOS_TABLE;
+    static const std::string PHOTO_ALBUM_TABLE;
 
     // create PhotoTable sql
     static const std::string CREATE_PHOTO_TABLE;
