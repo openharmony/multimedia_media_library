@@ -311,7 +311,7 @@ int32_t UserFileClientEx::Trash(const std::string &uri)
     }
 
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ fileUri.GetFileId() });

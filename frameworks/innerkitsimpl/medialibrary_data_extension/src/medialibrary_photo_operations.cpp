@@ -533,7 +533,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     vector<string> notifyUris = rdbPredicate.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
     ValuesBucket values;
-    values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
+    values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     cmd.SetValueBucket(values);
     int32_t updatedRows = rdbStore->Update(values, rdbPredicate);
     if (updatedRows < 0) {
@@ -582,7 +582,7 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
     if (cmd.GetValueBucket().GetObject(MediaColumn::MEDIA_HIDDEN, hidden_valueObject)){
         int32_t isHidden = 0;
         hidden_valueObject.GetInt(isHidden);
-        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_HIDDEN_TIME, isHidden ? MediaFileUtils::UTCTimeSeconds() : 0);
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_HIDDEN_TIME, isHidden ? MediaFileUtils::UTCTimeMilliSeconds() : 0);
     }
 
     // Update if FileAsset.title or FileAsset.displayName is modified
