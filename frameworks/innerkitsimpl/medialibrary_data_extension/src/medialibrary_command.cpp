@@ -78,6 +78,8 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_INDEX, OperationType::INDEX },
     { OPRN_COMMIT_EDIT, OperationType::COMMIT_EDIT },
     { OPRN_REVERT_EDIT, OperationType::REVERT_EDIT },
+    { OPRN_HIDE, OperationType::HIDE },
+    { OPRN_QUERY_HIDDEN, OperationType::QUERY_HIDDEN },
 };
 }
 

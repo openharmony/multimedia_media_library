@@ -30,6 +30,7 @@ public:
         const std::vector<std::string> &userAlbumIds = {});
 
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);
+    static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIALIBRARY_RDB_UTILS_H

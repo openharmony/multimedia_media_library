@@ -41,4 +41,14 @@ const string &BaseColumn::DropTrigger()
     static const string DROP_TRIGGER = "DROP TRIGGER IF EXISTS ";
     return DROP_TRIGGER;
 }
+
+string BaseColumn::AlterTableAddIntColumn(const std::string &table, const std::string &column)
+{
+    return "ALTER TABLE " + table + " ADD COLUMN " + column + " INT DEFAULT 0;";
+}
+
+string BaseColumn::AlterTableAddTextColumn(const std::string &table, const std::string &column)
+{
+    return "ALTER TABLE " + table + " ADD COLUMN " + column + " TEXT DEFAULT '';";
+}
 } // namespace OHOS::Media

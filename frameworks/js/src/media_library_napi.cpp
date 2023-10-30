@@ -92,6 +92,7 @@ thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPrivateAlbumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPhotoSubType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sHiddenAlbumFetchModeEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
 
@@ -148,7 +149,8 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("MediaType", CreateMediaTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("FileKey", CreateFileKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("DirectoryType", CreateDirectoryTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("PrivateAlbumType", CreatePrivateAlbumTypeEnum(env))
+        DECLARE_NAPI_PROPERTY("PrivateAlbumType", CreatePrivateAlbumTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("HiddenAlbumFetchMode", CreatePrivateAlbumTypeEnum(env)),
     };
     napi_value ctorObj;
     napi_status status = napi_define_class(env, MEDIA_LIB_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
@@ -191,6 +193,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("deleteAlbums", DeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", GetPhotoAlbums),
             DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex),
+            DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
+            DECLARE_NAPI_FUNCTION("getHiddenAlbums", UfmGetHiddenAlbums),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -232,6 +236,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("deleteAlbums", PhotoAccessDeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", PhotoAccessGetPhotoAlbums),
             DECLARE_NAPI_FUNCTION("getPhotoIndex", PhotoAccessGetPhotoIndex),
+            DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
+            DECLARE_NAPI_FUNCTION("getHiddenAlbums", PahGetHiddenAlbums),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -1061,9 +1067,9 @@ static void CompatSetAlbumCoverUri(MediaLibraryAsyncContext *context, unique_ptr
     DataSharePredicates predicates;
     int err;
     if (album->GetAlbumType() == PhotoAlbumType::USER) {
-        err = MediaLibraryNapiUtils::GetUserAlbumPredicates(album->GetAlbumId(), predicates);
+        err = MediaLibraryNapiUtils::GetUserAlbumPredicates(album->GetAlbumId(), predicates, false);
     } else {
-        err = MediaLibraryNapiUtils::GetSystemAlbumPredicates(album->GetAlbumSubType(), predicates);
+        err = MediaLibraryNapiUtils::GetSystemAlbumPredicates(album->GetAlbumSubType(), predicates, false);
     }
     if (err < 0) {
         NAPI_WARN_LOG("Failed to set cover uri for album subtype: %{public}d", album->GetAlbumSubType());
@@ -1116,9 +1122,9 @@ static void CompatSetAlbumCount(unique_ptr<AlbumAsset> &album)
     DataSharePredicates predicates;
     int err;
     if (album->GetAlbumType() == PhotoAlbumType::USER) {
-        err = MediaLibraryNapiUtils::GetUserAlbumPredicates(album->GetAlbumId(), predicates);
+        err = MediaLibraryNapiUtils::GetUserAlbumPredicates(album->GetAlbumId(), predicates, false);
     } else {
-        err = MediaLibraryNapiUtils::GetSystemAlbumPredicates(album->GetAlbumSubType(), predicates);
+        err = MediaLibraryNapiUtils::GetSystemAlbumPredicates(album->GetAlbumSubType(), predicates, false);
     }
     if (err < 0) {
         NAPI_WARN_LOG("Failed to set count for album subtype: %{public}d", album->GetAlbumSubType());
@@ -4811,7 +4817,7 @@ napi_value MediaLibraryNapi::JSGetPhotoAssets(napi_env env, napi_callback_info i
 static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("JSGetAssetsExecute");
+    tracer.Start("PhotoAccessGetAssetsExecute");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     string queryUri;
@@ -4890,19 +4896,34 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     tracer.Start("JSGetPhotoAlbumsExecute");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
-    string queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
-        UFM_QUERY_PHOTO_ALBUM : PAH_QUERY_PHOTO_ALBUM;
+    string queryUri;
+    if (context->hiddenOnly) {
+        queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+            UFM_QUERY_HIDDEN_ALBUM : PAH_QUERY_HIDDEN_ALBUM;
+    } else {
+        queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+            UFM_QUERY_PHOTO_ALBUM : PAH_QUERY_PHOTO_ALBUM;
+    }
     Uri uri(queryUri);
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
-        context->SaveError(E_HAS_DB_ERROR);
+        if (errCode == E_PERMISSION_DENIED) {
+            if (context->hiddenOnly) {
+                context->error = OHOS_PERMISSION_DENIED_CODE;
+            } else {
+                context->SaveError(E_HAS_DB_ERROR);
+            }
+        } else {
+            context->SaveError(E_HAS_DB_ERROR);
+        }
         return;
     }
 
     context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
     context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
+    context->fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
 }
 
 static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, void *data)
@@ -5027,6 +5048,11 @@ napi_value MediaLibraryNapi::CreateVirtualAlbumTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreatePrivateAlbumTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, privateAlbumTypeNameEnum, sPrivateAlbumEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateHiddenAlbumFetchModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, HIDDEN_ALBUM_FETCH_MODE_ENUM, sHiddenAlbumFetchModeEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreateFileKeyEnum(napi_env env)
@@ -5722,6 +5748,185 @@ napi_value MediaLibraryNapi::PhotoAccessHelperTrashAsset(napi_env env, napi_call
     CHECK_NULLPTR_RET(ParseArgsPHAccessHelperTrash(env, info, asyncContext));
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperTrashAsset",
         PhotoAccessHelperTrashExecute, JSTrashAssetCompleteCallback);
+}
+
+napi_value ParseArgsSetHidden(napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_THREE;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+
+    /* Parse the first argument */
+    vector<napi_value> napiValues;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM0], napiValues));
+    if (napiValues.empty()) {
+        return result;
+    }
+    napi_valuetype valueType = napi_undefined;
+    vector<string> uris;
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_ERR_PARAMETER_INVALID);
+    if (valueType == napi_string) {
+        // The input should be an array of asset uri.
+        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetStringArray(env, napiValues, uris));
+    } else if (valueType == napi_object) {
+        // The input should be an array of asset object.
+        CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetUriArrayFromAssets(env, napiValues, uris));
+    }
+    if (uris.empty()) {
+        return result;
+    }
+    bool hiddenState = false;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamBool(env, context->argv[PARAM1], hiddenState),
+        JS_ERR_PARAMETER_INVALID);
+    context->predicates.In(MediaColumn::MEDIA_ID, uris);
+    context->valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, static_cast<int32_t>(hiddenState));
+    return result;
+}
+
+static void SetHiddenExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetHiddenExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    string hideUri = PAH_HIDE_PHOTOS;
+    MediaLibraryNapiUtils::UriAppendKeyValue(hideUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(hideUri);
+    int32_t changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
+    if (changedRows < 0) {
+        context->SaveError(changedRows);
+        NAPI_ERR_LOG("Media asset delete failed, err: %{public}d", changedRows);
+    }
+}
+
+static void SetHiddenCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetHiddenCompleteCallback");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    if (context->error == ERR_DEFAULT) {
+        jsContext->status = true;
+        napi_get_undefined(env, &jsContext->error);
+        napi_get_undefined(env, &jsContext->data);
+    } else {
+        napi_get_undefined(env, &jsContext->data);
+        context->HandleError(env, jsContext->error);
+    }
+    if (context->work != nullptr) {
+        tracer.Finish();
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+
+    delete context;
+}
+
+napi_value MediaLibraryNapi::SetHidden(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsSetHidden(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "SetHidden",
+        SetHiddenExecute, SetHiddenCompleteCallback);
+}
+
+napi_value ParseHiddenAlbumFetchMode(napi_env env,
+    const unique_ptr<MediaLibraryAsyncContext> &context, const int32_t fetchMode)
+{
+    switch (fetchMode) {
+        case HIDDEN_ALBUM_SELF:
+            context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::HIDDEN);
+            break;
+        case ALBUMS_VIEW:
+            context->predicates.EqualTo(PhotoAlbumColumns::CONTAINS_HIDDEN, to_string(1));
+            break;
+        default:
+            NapiError::ThrowError(
+                env, OHOS_INVALID_PARAM_CODE, "Invalid fetch mode: " + to_string(fetchMode));
+            return nullptr;
+    }
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value ParseArgsGetHiddenAlbums(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_THREE;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs),
+        OHOS_INVALID_PARAM_CODE);
+
+    bool hasCallback = false;
+    CHECK_ARGS(env, MediaLibraryNapiUtils::HasCallback(env, context->argc, context->argv, hasCallback),
+        OHOS_INVALID_PARAM_CODE);
+    if (context->argc == ARGS_THREE) {
+        napi_valuetype valueType = napi_undefined;
+        if (napi_typeof(env, context->argv[PARAM2], &valueType) == napi_ok &&
+            (valueType == napi_undefined || valueType == napi_null)) {
+            context->argc -= 1;
+        }
+    }
+    int32_t fetchMode = 0;
+    switch (context->argc - hasCallback) {
+        case ARGS_ONE:
+            CHECK_ARGS(
+                env, MediaLibraryNapiUtils::GetInt32(env, context->argv[PARAM0], fetchMode), OHOS_INVALID_PARAM_CODE);
+            break;
+        case ARGS_TWO:
+            CHECK_ARGS(
+                env, MediaLibraryNapiUtils::GetInt32(env, context->argv[PARAM0], fetchMode), OHOS_INVALID_PARAM_CODE);
+            CHECK_ARGS(
+                env, MediaLibraryNapiUtils::GetFetchOption(
+                    env, context->argv[PARAM1], ALBUM_FETCH_OPT, context), OHOS_INVALID_PARAM_CODE);
+            break;
+        default:
+            NapiError::ThrowError(
+                env, OHOS_INVALID_PARAM_CODE, "Invalid parameter count: " + to_string(context->argc));
+            return nullptr;
+    }
+    CHECK_NULLPTR_RET(ParseHiddenAlbumFetchMode(env, context, fetchMode));
+    context->hiddenOnly = true;
+    CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
+    context->fetchColumn.push_back(PhotoAlbumColumns::HIDDEN_COUNT);
+    context->fetchColumn.push_back(PhotoAlbumColumns::HIDDEN_COVER);
+    return result;
+}
+
+napi_value MediaLibraryNapi::UfmGetHiddenAlbums(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
+    CHECK_NULLPTR_RET(ParseArgsGetHiddenAlbums(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UfmGetHiddenAlbums",
+        JSGetPhotoAlbumsExecute, JSGetPhotoAlbumsCompleteCallback);
+}
+
+napi_value MediaLibraryNapi::PahGetHiddenAlbums(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsGetHiddenAlbums(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PahGetHiddenAlbums",
+        JSGetPhotoAlbumsExecute, JSGetPhotoAlbumsCompleteCallback);
 }
 } // namespace Media
 } // namespace OHOS

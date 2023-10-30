@@ -50,10 +50,14 @@ public:
     void SetNetworkId(const string &networkId);
     void SetResultNapiType(const ResultNapiType napiType);
     void SetFetchResType(const FetchResType resType);
+    void SetHiddenOnly(const bool hiddenOnly);
+
     std::string GetNetworkId();
     ResultNapiType GetResultNapiType();
     std::shared_ptr<DataShare::DataShareResultSet> &GetDataShareResultSet();
     FetchResType GetFetchResType();
+    bool GetHiddenOnly();
+
     std::unique_ptr<T> GetObjectAtPosition(int32_t index);
     std::unique_ptr<T> GetFirstObject();
     std::unique_ptr<T> GetObjectFromRdb(std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx);
@@ -79,11 +83,11 @@ private:
     void GetObjectFromResultSet(PhotoAlbum *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
     void GetObjectFromResultSet(SmartAlbumAsset *asset, shared_ptr<NativeRdb::ResultSet> &resultSet);
 
-private:
     std::string networkId_;
     ResultNapiType resultNapiType_;
     std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
     FetchResType fetchResType_;
+    bool hiddenOnly_ = false;
 };
 } // namespace Media
 } // namespace OHOS
