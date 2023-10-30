@@ -15,6 +15,7 @@ group("test") {
   testonly = true
 
   deps = [
+    "unittest/album_count_cover_test:AlbumCountCoverTest",
     "unittest/media_event_test:unittest",
     "unittest/medialib_statistic_test:unittest",
     "unittest/medialibrary_audio_operations_test:unittest",
