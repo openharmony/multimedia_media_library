@@ -39,6 +39,11 @@ public:
 
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH;
+
+    static const std::string CONTAINS_HIDDEN;
+    static const std::string HIDDEN_COUNT;
+    static const std::string HIDDEN_COVER;
+
     // default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS;
 
@@ -58,11 +63,15 @@ public:
     // util constants
     static const std::string ALBUM_URI_PREFIX;
     static const std::string DEFAULT_PHOTO_ALBUM_URI;
+    static const std::string HIDDEN_ALBUM_URI_PREFIX;
+    static const std::string DEFAULT_HIDDEN_ALBUM_URI;
 
     static bool IsPhotoAlbumColumn(const std::string &columnName);
 
-    static void GetUserAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates);
-    static void GetSystemAlbumPredicates(const PhotoAlbumSubType subType, NativeRdb::RdbPredicates &predicates);
+    static void GetUserAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
+        const bool hiddenState);
+    static void GetSystemAlbumPredicates(const PhotoAlbumSubType subType, NativeRdb::RdbPredicates &predicates,
+        const bool hiddenState);
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_ALBUM_COLUMN_H

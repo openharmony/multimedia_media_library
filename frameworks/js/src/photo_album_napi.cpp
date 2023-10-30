@@ -180,6 +180,16 @@ shared_ptr<PhotoAlbum> PhotoAlbumNapi::GetPhotoAlbumInstance() const
     return photoAlbumPtr;
 }
 
+bool PhotoAlbumNapi::GetHiddenOnly() const
+{
+    return photoAlbumPtr->GetHiddenOnly();
+}
+
+void PhotoAlbumNapi::SetHiddenOnly(const bool hiddenOnly_)
+{
+    return photoAlbumPtr->SetHiddenOnly(hiddenOnly_);
+}
+
 void PhotoAlbumNapi::SetPhotoAlbumNapiProperties()
 {
     photoAlbumPtr = shared_ptr<PhotoAlbum>(pAlbumData_);
@@ -759,7 +769,7 @@ napi_value PhotoAlbumNapi::PhotoAccessHelperRemoveAssets(napi_env env, napi_call
 }
 
 static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbum,
-    DataSharePredicates &predicates)
+    DataSharePredicates &predicates, const bool hiddenOnly)
 {
     auto albumId = photoAlbum->GetAlbumId();
     if (albumId <= 0) {
@@ -772,14 +782,14 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
     }
 
     if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
-        return MediaLibraryNapiUtils::GetUserAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
+        return MediaLibraryNapiUtils::GetUserAlbumPredicates(photoAlbum->GetAlbumId(), predicates, hiddenOnly);
     }
 
     if ((type != PhotoAlbumType::SYSTEM) || (subType == PhotoAlbumSubType::USER_GENERIC) ||
         (subType == PhotoAlbumSubType::ANY)) {
         return E_INVALID_ARGUMENTS;
     }
-    return MediaLibraryNapiUtils::GetSystemAlbumPredicates(subType, predicates);
+    return MediaLibraryNapiUtils::GetSystemAlbumPredicates(subType, predicates, hiddenOnly);
 }
 
 static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
@@ -795,13 +805,19 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
         JS_INNER_FAIL);
 
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    auto ret = GetPredicatesByAlbumTypes(photoAlbum, context->predicates);
+    auto ret = GetPredicatesByAlbumTypes(photoAlbum, context->predicates, photoAlbum->GetHiddenOnly());
     if (ret != E_SUCCESS) {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
         PhotoColumn::IsPhotoColumn));
+    if (photoAlbum->GetHiddenOnly()) {
+        if (!MediaLibraryNapiUtils::IsSystemApp()) {
+            NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+            return nullptr;
+        }
+    }
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);

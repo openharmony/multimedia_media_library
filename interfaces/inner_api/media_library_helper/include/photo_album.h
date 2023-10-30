@@ -55,6 +55,9 @@ public:
     void SetResultNapiType(const ResultNapiType resultNapiType);
     ResultNapiType GetResultNapiType() const;
 
+    void SetHiddenOnly(const bool hiddenOnly);
+    bool GetHiddenOnly() const;
+
     static bool IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     static bool IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     static bool CheckPhotoAlbumType(const PhotoAlbumType albumType);
@@ -72,6 +75,7 @@ private:
     std::string relativePath_;
 
     ResultNapiType resultNapiType_;
+    bool hiddenOnly_ = false;
 };
 } // namespace Media
 } // namespace OHOS

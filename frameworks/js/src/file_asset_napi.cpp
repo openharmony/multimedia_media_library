@@ -2932,17 +2932,15 @@ static void UserFileMgrSetHiddenExecute(napi_env env, void *data)
         return;
     }
 
-    string uri = UFM_UPDATE_PHOTO;
+    string uri = UFM_HIDE_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(uri);
     DataSharePredicates predicates;
+    predicates.In(MediaColumn::MEDIA_ID, vector<string>({ context->objectPtr->GetUri() }));
     DataShareValuesBucket valuesBucket;
-    int32_t changedRows;
     valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, context->isHidden ? IS_HIDDEN : NOT_HIDDEN);
-    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
-    changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Failed to modify hidden state, err: %{public}d", changedRows);
@@ -3613,17 +3611,15 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
         return;
     }
 
-    string uri = PAH_UPDATE_PHOTO;
+    string uri = PAH_HIDE_PHOTOS;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(uri);
     DataSharePredicates predicates;
+    predicates.In(MediaColumn::MEDIA_ID, vector<string>({ context->objectPtr->GetUri() }));
     DataShareValuesBucket valuesBucket;
-    int32_t changedRows = 0;
     valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, context->isHidden ? IS_HIDDEN : NOT_HIDDEN);
-    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
-    changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Failed to modify hidden state, err: %{public}d", changedRows);

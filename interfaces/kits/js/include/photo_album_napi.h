@@ -45,6 +45,9 @@ public:
     PhotoAlbumSubType GetPhotoAlbumSubType() const;
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
 
+    void SetHiddenOnly(const bool hiddenOnly);
+    bool GetHiddenOnly() const;
+
 private:
     void SetPhotoAlbumNapiProperties();
     static napi_value PhotoAlbumNapiConstructor(napi_env env, napi_callback_info info);
