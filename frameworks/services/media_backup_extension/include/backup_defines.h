@@ -30,6 +30,7 @@ const std::string ORIGIN_PATH = "/data/storage/el2/backup/restore";
 const std::string DOCUMENT_PATH = "/storage/media/local/files/Documents";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
+const std::string UPDATE_FILE_DIR = "/storage/media/local/files/data";
 
 // DB field for update scene
 const std::string GALLERY_LOCAL_MEDIA_ID = "local_media_id";
@@ -45,12 +46,14 @@ const std::string GALLERY_MEDIA_TYPE = "media_type";
 const std::string GALLERY_SHOW_DATE_TOKEN = "showDateToken";
 const std::string GALLERY_HEIGHT = "height";
 const std::string GALLERY_WIDTH = "width";
+const std::string GALLERY_ORIENTATION = "orientation";
 
 struct FileInfo {
     std::string filePath;
     std::string displayName;
     std::string title;
     std::string userComment;
+    std::string relativePath;
     int64_t fileSize {0};
     int64_t duration {0};
     int64_t recycledTime {0};
@@ -60,6 +63,8 @@ struct FileInfo {
     int64_t showDateToken {0};
     int32_t height {0};
     int32_t width {0};
+    int64_t dateAdded {0};
+    int32_t orientation {0};
 };
 } // namespace Media
 } // namespace OHOS

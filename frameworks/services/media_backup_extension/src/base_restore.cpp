@@ -35,9 +35,9 @@ namespace OHOS {
 namespace Media {
 const std::string DATABASE_PATH = "/data/storage/el2/database/rdb/media_library.db";
 
-void BaseRestore::StartRestore(void)
+void BaseRestore::StartRestore(const std::string &orignPath, const std::string &updatePath)
 {
-    int32_t errorCode = Init();
+    int32_t errorCode = Init(orignPath, updatePath, true);
     if (errorCode == E_OK) {
         RestorePhoto();
         MediaScannerManager::GetInstance()->ScanDirSync(RESTORE_CLOUD_DIR, nullptr);
@@ -90,7 +90,8 @@ std::string BaseRestore::IsCallerSelfFunc(const std::vector<std::string> &args)
     return "false";
 }
 
-bool BaseRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath)
+bool BaseRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
+    std::string &newPath, std::string &relativePath)
 {
     int32_t pos = 0;
     int32_t count = 0;
@@ -107,7 +108,8 @@ bool BaseRestore::ConvertPathToRealPath(const std::string &srcPath, const std::s
     if (count < prefixLevel) {
         return false;
     }
-    newPath = prefix + srcPath.substr(pos);
+    relativePath = srcPath.substr(pos);
+    newPath = prefix + relativePath;
     return true;
 }
 
@@ -151,7 +153,13 @@ void BaseRestore::InsertPhoto(const std::vector<FileInfo> &fileInfos) const
             MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
             continue;
         }
-        if (InsertSql(fileInfos[i], cloudPath) != E_OK) {
+        NativeRdb::ValuesBucket values = GetInsertValue(fileInfos[i], cloudPath);
+        int64_t rowNum = 0;
+        if (mediaLibraryRdb_ == nullptr) {
+            MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
+            return;
+        }
+        if (mediaLibraryRdb_->Insert(rowNum, PhotoColumn::PHOTOS_TABLE, values) != E_OK) {
             MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s.", fileInfos[i].filePath.c_str());
             continue;
         }
@@ -166,7 +174,7 @@ void BaseRestore::InsertPhoto(const std::vector<FileInfo> &fileInfos) const
     }
 }
 
-int32_t BaseRestore::InsertSql(const FileInfo &fileInfo, const std::string &newPath) const
+NativeRdb::ValuesBucket BaseRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath) const
 {
     NativeRdb::ValuesBucket values;
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
@@ -183,8 +191,7 @@ int32_t BaseRestore::InsertSql(const FileInfo &fileInfo, const std::string &newP
     values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
 
-    int64_t rowNum = 0;
-    return mediaLibraryRdb_->Insert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
+    return values;
 }
 } // namespace Media
 } // namespace OHOS
