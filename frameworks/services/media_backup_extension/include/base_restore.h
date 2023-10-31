@@ -43,7 +43,7 @@ protected:
     static std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
-    const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
+        const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
     void InsertPhoto(const std::vector<FileInfo> &fileInfos) const;
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
         std::string &newPath, std::string &relativePath);
