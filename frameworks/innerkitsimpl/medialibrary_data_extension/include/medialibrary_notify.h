@@ -32,12 +32,13 @@ namespace OHOS {
 namespace Media {
 class NotifyTaskData : public AsyncTaskData {
 public:
-    NotifyTaskData(const std::string &uri, const NotifyType &notifyType, const int albumId)
-        : uri_(std::move(uri)), notifyType_(notifyType), albumId_(albumId) {}
+    NotifyTaskData(const std::string &uri, const NotifyType &notifyType, const int albumId, const bool hiddenOnly)
+        : uri_(std::move(uri)), notifyType_(notifyType), albumId_(albumId), hiddenOnly_(hiddenOnly) {}
     virtual ~NotifyTaskData() override = default;
     std::string uri_;
     NotifyType notifyType_;
     int albumId_;
+    bool hiddenOnly_ = false;
 };
 constexpr size_t MAX_NOTIFY_LIST_SIZE = 32;
 constexpr size_t MNOTIFY_TIME_INTERVAL = 100;
@@ -45,7 +46,8 @@ class MediaLibraryNotify {
 public:
     static std::shared_ptr<MediaLibraryNotify> GetInstance();
     virtual ~MediaLibraryNotify();
-    int32_t Notify(const std::string &uri, const NotifyType notifyType, const int albumId = 0);
+    int32_t Notify(
+        const std::string &uri, const NotifyType notifyType, const int albumId = 0, bool hiddenOnly = false);
     int32_t Notify(const std::shared_ptr<FileAsset> &closeAsset);
     int32_t GetAlbumIdBySubType(const PhotoAlbumSubType subType);
     static void GetNotifyUris(const NativeRdb::RdbPredicates &predicates, std::vector<std::string> &notifyUris);

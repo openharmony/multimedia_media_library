@@ -132,6 +132,16 @@ ResultNapiType PhotoAlbum::GetResultNapiType() const
     return resultNapiType_;
 }
 
+void PhotoAlbum::SetHiddenOnly(const bool hiddenOnly)
+{
+    hiddenOnly_ = hiddenOnly;
+}
+
+bool PhotoAlbum::GetHiddenOnly() const
+{
+    return hiddenOnly_;
+}
+
 bool PhotoAlbum::IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
 {
     return (albumType == PhotoAlbumType::USER) && (albumSubType == PhotoAlbumSubType::USER_GENERIC);

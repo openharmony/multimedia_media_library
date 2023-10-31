@@ -135,6 +135,7 @@ void FetchResult<T>::SetInfo(unique_ptr<FetchResult<T>> &fetch)
 {
     networkId_ = fetch->networkId_;
     resultNapiType_ = fetch->resultNapiType_;
+    hiddenOnly_ = fetch->hiddenOnly_;
 }
 
 template <class T>
@@ -153,6 +154,12 @@ template<class T>
 void FetchResult<T>::SetFetchResType(const FetchResType resType)
 {
     fetchResType_ = resType;
+}
+
+template<class T>
+void FetchResult<T>::SetHiddenOnly(const bool hiddenOnly)
+{
+    hiddenOnly_ = hiddenOnly;
 }
 
 template<class T>
@@ -177,6 +184,12 @@ template<class T>
 FetchResType FetchResult<T>::GetFetchResType()
 {
     return fetchResType_;
+}
+
+template<class T>
+bool FetchResult<T>::GetHiddenOnly()
+{
+    return hiddenOnly_;
 }
 
 template <class T>
@@ -505,15 +518,23 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, resultSet))));
     photoAlbumData->SetPhotoAlbumSubType(static_cast<PhotoAlbumSubType>(
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, resultSet))));
-    photoAlbumData->SetAlbumUri(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(albumId));
+
     photoAlbumData->SetAlbumName(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_NAME, TYPE_STRING,
         resultSet)));
-    photoAlbumData->SetCount(get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, TYPE_INT32, resultSet)));
-    photoAlbumData->SetCoverUri(get<string>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_COVER_URI, TYPE_STRING,
-        resultSet)));
+
     photoAlbumData->SetDateModified(get<int64_t>(GetRowValFromColumn(
         PhotoAlbumColumns::ALBUM_DATE_MODIFIED, TYPE_INT64, resultSet)));
     photoAlbumData->SetResultNapiType(resultNapiType_);
+    photoAlbumData->SetHiddenOnly(hiddenOnly_);
+
+    string countColumn = hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_COUNT : PhotoAlbumColumns::ALBUM_COUNT;
+    string coverColumn = hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_COVER : PhotoAlbumColumns::ALBUM_COVER_URI;
+    string albumUriPrefix =
+        hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX : PhotoAlbumColumns::ALBUM_URI_PREFIX;
+    photoAlbumData->SetAlbumUri(albumUriPrefix + to_string(albumId));
+    photoAlbumData->SetCount(get<int32_t>(GetRowValFromColumn(countColumn, TYPE_INT32, resultSet)));
+    photoAlbumData->SetCoverUri(get<string>(GetRowValFromColumn(coverColumn, TYPE_STRING,
+        resultSet)));
 }
 
 template<class T>

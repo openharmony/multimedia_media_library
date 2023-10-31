@@ -144,7 +144,7 @@ static int32_t GetPredicatesByAlbumId(const string &albumId, RdbPredicates &pred
     }
 
     if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
-        PhotoAlbumColumns::GetUserAlbumPredicates(stoi(albumId), predicates);
+        PhotoAlbumColumns::GetUserAlbumPredicates(stoi(albumId), predicates, false);
         return E_SUCCESS;
     }
 
@@ -153,7 +153,7 @@ static int32_t GetPredicatesByAlbumId(const string &albumId, RdbPredicates &pred
         MEDIA_ERR_LOG("album id %{private}s type:%d subtype:%d", albumId.c_str(), type, subType);
         return E_INVALID_ARGUMENTS;
     }
-    PhotoAlbumColumns::GetSystemAlbumPredicates(subType, predicates);
+    PhotoAlbumColumns::GetSystemAlbumPredicates(subType, predicates, false);
     return E_SUCCESS;
 }
 
@@ -543,6 +543,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw());
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw());
+    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore->GetRaw());
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
             notifyUris.size(), updatedRows);
@@ -551,14 +552,87 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     return updatedRows;
 }
 
-int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
+static int32_t GetHiddenState(const ValuesBucket &values)
 {
-    if (cmd.GetOprnType() == OperationType::TRASH_PHOTO) {
-        return TrashPhotos(cmd);
-    } else if (cmd.GetOprnType() == OperationType::UPDATE_PENDING) {
-        return SetPendingStatus(cmd);
+    ValueObject obj;
+    auto ret = values.GetObject(MediaColumn::MEDIA_HIDDEN, obj);
+    if (!ret) {
+        return E_INVALID_VALUES;
+    }
+    int32_t hiddenState = 0;
+    ret = obj.GetInt(hiddenState);
+    if (ret != E_OK) {
+        return E_INVALID_VALUES;
+    }
+    return hiddenState == 0 ? 0 : 1;
+}
+
+static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState)
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        return;
+    }
+    int hiddenAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::HIDDEN);
+    if (hiddenAlbumId <= 0) {
+        return;
     }
 
+    NotifyType assetNotifyType;
+    NotifyType albumNotifyType;
+    NotifyType hiddenAlbumNotifyType;
+    if (hiddenState > 0) {
+        assetNotifyType = NotifyType::NOTIFY_REMOVE;
+        albumNotifyType = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+        hiddenAlbumNotifyType = NotifyType::NOTIFY_ALBUM_ADD_ASSERT;
+    } else {
+        assetNotifyType = NotifyType::NOTIFY_ADD;
+        albumNotifyType = NotifyType::NOTIFY_ALBUM_ADD_ASSERT;
+        hiddenAlbumNotifyType = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+    }
+    for (const auto &notifyUri : notifyUris) {
+        watch->Notify(notifyUri, assetNotifyType);
+        watch->Notify(notifyUri, albumNotifyType, 0, true);
+        watch->Notify(notifyUri, hiddenAlbumNotifyType, hiddenAlbumId);
+    }
+}
+
+static int32_t HidePhotos(MediaLibraryCommand &cmd)
+{
+    int32_t hiddenState = GetHiddenState(cmd.GetValueBucket());
+    if (hiddenState < 0) {
+        return hiddenState;
+    }
+
+    RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
+    vector<string> notifyUris = predicates.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+    ValuesBucket values;
+    values.Put(MediaColumn::MEDIA_HIDDEN, hiddenState);
+    int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
+    if (changedRows < 0) {
+        return changedRows;
+    }
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
+            std::to_string(PhotoAlbumSubType::FAVORITE),
+            std::to_string(PhotoAlbumSubType::VIDEO),
+            std::to_string(PhotoAlbumSubType::HIDDEN),
+            std::to_string(PhotoAlbumSubType::SCREENSHOT),
+            std::to_string(PhotoAlbumSubType::CAMERA),
+            std::to_string(PhotoAlbumSubType::IMAGES),
+        });
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+
+    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    SendHideNotify(notifyUris, hiddenState);
+    return changedRows;
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
+{
     vector<string> columns = {
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
@@ -579,10 +653,11 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
 
     // Update hidden_time if set hidden operation
     ValueObject hidden_valueObject;
-    if (cmd.GetValueBucket().GetObject(MediaColumn::MEDIA_HIDDEN, hidden_valueObject)){
+    if (cmd.GetValueBucket().GetObject(MediaColumn::MEDIA_HIDDEN, hidden_valueObject)) {
         int32_t isHidden = 0;
         hidden_valueObject.GetInt(isHidden);
-        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_HIDDEN_TIME, isHidden ? MediaFileUtils::UTCTimeMilliSeconds() : 0);
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_HIDDEN_TIME,
+            isHidden ? MediaFileUtils::UTCTimeMilliSeconds() : 0);
     }
 
     // Update if FileAsset.title or FileAsset.displayName is modified
@@ -610,12 +685,26 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
         return rowId;
     }
     SendFavoriteNotify(cmd, fileAsset->GetId(), extraUri);
-    SendHideNotify(cmd, fileAsset->GetId(), extraUri);
     SendModifyUserCommentNotify(cmd, fileAsset->GetId(), extraUri);
     auto watch = MediaLibraryNotify::GetInstance();
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()),
         extraUri), NotifyType::NOTIFY_UPDATE);
     return rowId;
+}
+
+int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
+{
+    switch (cmd.GetOprnType()) {
+        case OperationType::TRASH_PHOTO:
+            return TrashPhotos(cmd);
+        case OperationType::UPDATE_PENDING:
+            return SetPendingStatus(cmd);
+        case OperationType::HIDE:
+            return HidePhotos(cmd);
+        default:
+            return UpdateFileAsset(cmd);
+    }
+    return E_OK;
 }
 
 int32_t MediaLibraryPhotoOperations::UpdateV9(MediaLibraryCommand &cmd)

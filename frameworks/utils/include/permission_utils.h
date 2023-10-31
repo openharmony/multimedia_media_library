@@ -34,6 +34,7 @@ const std::string PERM_READ_DOCUMENT = "ohos.permission.READ_DOCUMENT";
 const std::string PERM_WRITE_IMAGEVIDEO = "ohos.permission.WRITE_IMAGEVIDEO";
 const std::string PERM_WRITE_AUDIO = "ohos.permission.WRITE_AUDIO";
 const std::string PERM_WRITE_DOCUMENT = "ohos.permission.WRITE_DOCUMENT";
+const std::string PERM_MANAGE_PRIVATE_PHOTOS = "ohos.permission.MANAGE_PRIVATE_PHOTOS";
 
 constexpr int PERM_GRP_SIZE = 3;
 const std::array<std::string, PERM_GRP_SIZE> READ_PERMS = {
