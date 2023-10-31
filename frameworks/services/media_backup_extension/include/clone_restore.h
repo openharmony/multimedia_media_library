@@ -24,12 +24,12 @@ class CloneRestore : public BaseRestore {
 public:
     CloneRestore() = default;
     virtual ~CloneRestore() = default;
-
-    int32_t Init(void) override;
-    void RestorePhoto(void) override;
-    void HandleRestData(void) override;
+    // updatePath is useless now
+    int32_t Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate) override;
 
 private:
+    void RestorePhoto(void) override;
+    void HandleRestData(void) override;
     int32_t QueryTotalNumber(void) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
     bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
