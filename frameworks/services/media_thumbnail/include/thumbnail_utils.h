@@ -52,6 +52,7 @@ struct ThumbnailData {
         thumbnail.clear();
         lcd.clear();
     }
+    
     int mediaType {-1};
     int64_t dateModified {0};
     float degrees;
