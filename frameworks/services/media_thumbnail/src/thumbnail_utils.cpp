@@ -1689,7 +1689,7 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
 
 bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
 {
-        int maxLen = max(width, height);
+    int maxLen = max(width, height);
     int minLen = min(width, height);
     if (minLen == 0) {
         MEDIA_ERR_LOG("Divisor minLen is 0");
@@ -1697,7 +1697,7 @@ bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
     }
     double ratio = (double)maxLen / minLen;
     if (minLen > SHORT_SIDE_THRESHOLD) {
-                minLen = SHORT_SIDE_THRESHOLD;
+        minLen = SHORT_SIDE_THRESHOLD;
         maxLen = (int)SHORT_SIDE_THRESHOLD * ratio;
         if (maxLen > MAXIMUM_SHORT_SIDE_THRESHOLD) {
             maxLen = MAXIMUM_SHORT_SIDE_THRESHOLD;
@@ -1711,10 +1711,10 @@ bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
         }
     } else if (maxLen <= SHORT_SIDE_THRESHOLD) {
         // do nothing,reuse original image
-            } else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD) {
-                if (ratio <= ASPECT_RATIO_THRESHOLD) {
+    } else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD) {
+        if (ratio <= ASPECT_RATIO_THRESHOLD) {
             // do nothing,reuse original image
-                    } else {
+        } else {
             int newMaxLen = minLen * ASPECT_RATIO_THRESHOLD;
             if (height > width) {
                 width = minLen;
@@ -1723,16 +1723,16 @@ bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
                 width = maxLen;
                 height = newMaxLen;
             }
-                    }
+        }
     }
-        return true;
+    return true;
 }
 
 bool ThumbnailUtils::ResizeLCD(int &width, int &height)
 {
     int maxLen = max(width, height);
     int minLen = min(width, height);
-        if (minLen == 0) {
+    if (minLen == 0) {
         MEDIA_ERR_LOG("Divisor minLen is 0");
         return false;
     }
@@ -1745,7 +1745,7 @@ bool ThumbnailUtils::ResizeLCD(int &width, int &height)
         newMaxLen = LCD_LONG_SIDE_THRESHOLD;
         newMinLen = newMaxLen / ratio;
     }
-        int lastMinLen = newMinLen;
+    int lastMinLen = newMinLen;
     int lastMaxLen = newMaxLen;
     if (newMinLen < LCD_SHORT_SIDE_THRESHOLD && minLen >= LCD_SHORT_SIDE_THRESHOLD) {
         lastMinLen = LCD_SHORT_SIDE_THRESHOLD;
@@ -1755,7 +1755,7 @@ bool ThumbnailUtils::ResizeLCD(int &width, int &height)
             lastMinLen = lastMaxLen / ratio;
         }
     }
-        if (height > width) {
+    if (height > width) {
         width = lastMinLen;
         height = lastMaxLen;
     } else {
