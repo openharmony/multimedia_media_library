@@ -96,7 +96,7 @@ int32_t UpdateRestore::InitGarbageAlbum()
         string nick_name;
         resultSet->GetString(0, nick_dir);
         resultSet->GetString(1, nick_name);
-        garbageMap_.insert({ nick_dir, nick_name });
+        garbageMap_.insert({nick_dir, nick_name});
     }
     MEDIA_INFO_LOG("add map success!");
     resultSet->Close();
