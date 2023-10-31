@@ -154,11 +154,11 @@ void BaseRestore::InsertPhoto(const std::vector<FileInfo> &fileInfos) const
             continue;
         }
         NativeRdb::ValuesBucket values = GetInsertValue(fileInfos[i], cloudPath);
-        int64_t rowNum = 0;
         if (mediaLibraryRdb_ == nullptr) {
             MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
             return;
         }
+        int64_t rowNum = 0;
         if (mediaLibraryRdb_->Insert(rowNum, PhotoColumn::PHOTOS_TABLE, values) != E_OK) {
             MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s.", fileInfos[i].filePath.c_str());
             continue;

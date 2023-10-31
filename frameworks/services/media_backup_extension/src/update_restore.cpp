@@ -230,7 +230,7 @@ NativeRdb::ValuesBucket UpdateRestore::GetInsertValue(const FileInfo &fileInfo, 
     std::string package_name = "";
     std::string findPath = fileInfo.relativePath;
     for (auto &garbageItem : garbageMap_) {
-        if (findPath.find(garbageItem.first, 0) == 0) {
+        if (findPath.find(garbageItem.first) == 0) {
             package_name = garbageItem.second;
             break;
         }
