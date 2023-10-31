@@ -101,7 +101,7 @@ void InitGalleryDB()
     store->ExecuteSql(string("INSERT INTO gallery_media VALUES(1, 1, ") +
         "'/storage/emulated/0/tencent/MicroMsg/WeiXin/fake_wechat.jpg', 'fake_wechat.jpg', 'fake_wechat', " +
         " null, 2419880, 0, 0, 1, 1432973383179, 1432973383, 2976, 3968, 'fake_wechat', 0, 65537, -1803300197)");
-    store->ExecuteSql(string("INSERT INTO galPlery_media VALUES(2, 2, '/storage/emulated/0/Pictures/favorite.jpg', ") +
+    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(2, 2, '/storage/emulated/0/Pictures/favorite.jpg', ") +
         "'favorite.jpg', 'favorite', 1, 7440437, 0, 0, 1, 1495957457427, 15464937461, 3840, 5120, " +
         "'favorite', 0, 65537, 218866788)");
     store->ExecuteSql(string("INSERT INTO gallery_media VALUES(3, -4, ") +
@@ -116,9 +116,9 @@ void InitGalleryDB()
     store->ExecuteSql(string("INSERT INTO gallery_media VALUES(6, 6, ") +
         "'/storage/emulated/0/BaiduMap/cache/fake_garbage_baidu.jpg', 'fake_garbage_baidu.jpg', " +
         "'fake_garbage_baidu', null, 2160867, 0, 0, 1, 1495954569032, 1546937461, 2976, 3968, " +
-        "'fake_garbage_baidu', 0, 65537, -1492241466)");
+        "'fake_garbage_baidu', 0, 65537, 1151084355)");
     store->ExecuteSql(string("INSERT INTO garbage_album VALUES('baidu', '/BaiduMap/cache', ") +
-        "null, null, 1, -1492241466);");
+        "null, null, 1, 1151084355);");
     store->ExecuteSql("INSERT INTO garbage_album VALUES(null, null, 'wechat', '/tencent/MicroMsg/WeiXin', 0, null);");
 }
 
@@ -126,7 +126,7 @@ void InitMediaDB()
 {
     const string dbPath = TEST_ORIGIN_PATH + "/" + MEDIA_LIBRARY_APP_NAME + "/ce/databases/media_library.db";
     NativeRdb::RdbStoreConfig config(dbPath);
-    GalleryMediaOpenCall helper;
+    PhotosOpenCall helper;
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     photosStorePtr = store;
@@ -175,6 +175,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_total_number, TestSi
     std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME);
     restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
     int32_t number = restoreService -> QueryTotalNumber();
+    MEDIA_INFO_LOG("medialib_backup_test_query_total_number %{public}d", number);
     EXPECT_EQ(number, EXPECTED_NUM);
     MEDIA_INFO_LOG("medialib_backup_test_query_total_number end");
 }
@@ -182,7 +183,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_total_number, TestSi
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_trashed, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_trashed start");
-    std::string queryTrashed = "SELECT file_id, date_trashed from Photos where display_name 'trashed.jpg'";
+    std::string queryTrashed = "SELECT file_id, date_trashed from Photos where display_name ='trashed.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryTrashed);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultsql is null.");
@@ -198,7 +199,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_trashed, TestSize.Le
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_favorite, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_favorite start");
-    std::string queryFavorite = "SELECT file_id, is_favorite from Photos where display_name 'favorite.jpg'";
+    std::string queryFavorite = "SELECT file_id, is_favorite from Photos where display_name ='favorite.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryFavorite);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultsql is null.");
@@ -214,7 +215,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_favorite, TestSize.L
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_hidden, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_hidden start");
-    std::string queryHidden = "SELECT file_id, hidden from Photos where display_name 'hidden.jpg'";
+    std::string queryHidden = "SELECT file_id, hidden from Photos where display_name ='hidden.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryHidden);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultsql is null.");
@@ -230,7 +231,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_hidden, TestSize.Lev
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_orientation, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_orientation start");
-    std::string queryOrientation = "SELECT file_id, orientation from Photos where display_name 'orientation.jpg'";
+    std::string queryOrientation = "SELECT file_id, orientation from Photos where display_name ='orientation.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryOrientation);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultsql is null.");
@@ -246,7 +247,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_orientation, TestSiz
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_package_name, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_package_name start");
-    std::string queryPackageName = "SELECT file_id, package_name from Photos where display_name 'fake_wechat.jpg'";
+    std::string queryPackageName = "SELECT file_id, package_name from Photos where display_name ='fake_wechat.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryPackageName);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultsql is null.");
@@ -262,7 +263,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_package_name, TestSi
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_user_comment, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_user_comment start");
-    std::string queryUserComment = "SELECT file_id, user_comment from Photos where display_name 'fake_wechat.jpg'";
+    std::string queryUserComment = "SELECT file_id, user_comment from Photos where display_name ='fake_wechat.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryUserComment);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultsql is null.");
