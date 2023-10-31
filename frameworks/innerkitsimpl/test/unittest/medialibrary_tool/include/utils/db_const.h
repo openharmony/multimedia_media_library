@@ -39,7 +39,6 @@ const std::unordered_map<std::string, ResultSetDataType> RESULT_TYPE_MAP = {
     { MediaColumn::MEDIA_DATE_ADDED, ResultSetDataType::TYPE_INT64 },
     { MediaColumn::MEDIA_DATE_MODIFIED, ResultSetDataType::TYPE_INT64 },
     { MediaColumn::MEDIA_DATE_TAKEN, ResultSetDataType::TYPE_INT64 },
-    { MediaColumn::MEDIA_TIME_VISIT, ResultSetDataType::TYPE_INT64 },
     { MediaColumn::MEDIA_DURATION, ResultSetDataType::TYPE_INT32 },
     { MediaColumn::MEDIA_TIME_PENDING, ResultSetDataType::TYPE_INT64 },
     { MediaColumn::MEDIA_IS_FAV, ResultSetDataType::TYPE_INT32 },

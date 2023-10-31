@@ -585,7 +585,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseQueryResult_test_001, TestSize.Lev
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.Limit(0);
-    rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     ThumbnailUtils::ParseQueryResult(resultSet, data, err);
     EXPECT_NE(err, 0);
@@ -624,7 +623,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_parseStringResult_test_001, TestSize.Le
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.Limit(0);
-    rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     string dataTest = "";
     ThumbnailUtils::ParseStringResult(resultSet, -1, dataTest, err);
@@ -653,7 +651,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_checkResultSetCount_test_001, TestSize.
     rdbPredicates.IsNotNull(MEDIA_DATA_DB_LCD);
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
     rdbPredicates.Limit(0);
-    rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     bool ret = ThumbnailUtils::CheckResultSetCount(nullptr, err);
     EXPECT_EQ(ret, false);

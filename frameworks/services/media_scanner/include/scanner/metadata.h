@@ -126,6 +126,9 @@ public:
     void SetShootingMode(const VariantData &shootingMode);
     const std::string &GetShootingMode() const;
 
+    void SetLastVisitTime(const VariantData &lastVisitTime);
+    int64_t GetLastVisitTime() const;
+
 #ifdef MEDIALIBRARY_COMPATIBILITY
     void SetPhotoSubType(const VariantData &photoSubType);
     int32_t GetPhotoSubType() const;
@@ -171,6 +174,7 @@ private:
     string dateMonth_;
     string dateDay_;
     string shootingMode_;
+    int64_t lastVisitTime_;
 
     // video, audio, image
     int64_t dateTaken_;

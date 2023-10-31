@@ -268,6 +268,14 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         return E_INVALID_URI;
     }
 
+    int32_t changedRows = 0;
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+    changedRows =  MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
+    if (changedRows <= 0) {
+        MEDIA_ERR_LOG("uodate lastVisitTime Failed, changedRows = %{public}d.", changedRows); 
+    }
+
+
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10);
     }
@@ -543,7 +551,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw());
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw());
-    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore->GetRaw());
+MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore->GetRaw());
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
             notifyUris.size(), updatedRows);

@@ -366,7 +366,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredica
 // temp function, delete after MediaFileUri::Getpath is finish
 static string GetPathFromUri(const std::string &uri, bool isPhoto)
 {
-    size_t index = uri.rfind('/');
+        size_t index = uri.rfind('/');
     if (index == string::npos) {
         return "";
     }
@@ -1551,7 +1551,6 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_DATE_MODIFIED, { Forbidden } },
     { MediaColumn::MEDIA_DATE_ADDED, { Forbidden } },
     { MediaColumn::MEDIA_DATE_TAKEN, { Forbidden } },
-    { MediaColumn::MEDIA_TIME_VISIT, { IsInt64 } },
     { MediaColumn::MEDIA_DURATION, { Forbidden } },
     { MediaColumn::MEDIA_TIME_PENDING, { IsInt64, IsUniqueValue } },
     { MediaColumn::MEDIA_IS_FAV, { IsBool, IsUniqueValue } },
