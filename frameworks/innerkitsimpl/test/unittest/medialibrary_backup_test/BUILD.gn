@@ -22,26 +22,26 @@ group("unittest") {
 
 ohos_unittest("medialibrary_backup_test") {
   module_out_path = "media_library/medialibraryextention"
-  include_dirs = [ 
+  include_dirs = [
     "./include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
-    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include"
-    ]
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include",
+  ]
 
-  sources = [ 
-    "./src/medialibrary_backup_test.cpp",
+  sources = [
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/base_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/update_restore.cpp",
-    ]
+    "./src/medialibrary_backup_test.cpp",
+  ]
 
   deps = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-    ]
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
 
   external_deps = [
     "ability_base:want",
@@ -56,8 +56,8 @@ ohos_unittest("medialibrary_backup_test") {
     "data_share:datashare_provider",
     "hilog:libhilog",
     "kv_store:distributeddata_inner",
-    "player_framework:media_client",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]
