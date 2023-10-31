@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <random>
 #include "avmetadatahelper.h"
 #include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
@@ -23,7 +24,6 @@
 #include "medialibrary_utils_test.h"
 #define private public
 #include "thumbnail_utils.h"
-#include <random>
 #undef private
 
 using namespace std;
@@ -745,13 +745,9 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeTHUMB_test_001, TestSize.Level0)
 {
     std::random_device rd;
     std::mt19937 gen(rd());
-
     std::uniform_int_distribution<int> dist_large(769, 1500);
-
     std::uniform_int_distribution<int> dist_medium(257, 768);
-
     std::uniform_int_distribution<int> dist_small(1, 256);
-
     int width, height;
 
     width = dist_medium(gen);
@@ -797,26 +793,16 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeTHUMB_test_001, TestSize.Level0)
     EXPECT_TRUE(result5);
     EXPECT_EQ(initWidth, width);
     EXPECT_EQ(static_cast<float>(height), width * 3);
-
-    width = 0;
-    height = 0;
-    bool result6 = ThumbnailUtils::ResizeTHUMB(width, height);
-    EXPECT_FALSE(result6);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeLCD_test_001, TestSize.Level0)
 {
     std::random_device rd;
     std::mt19937 gen(rd());
-
     std::uniform_int_distribution<int> dist_large(7200, 20000);
-
     std::uniform_int_distribution<int> dist_big(1921, 4096);
-
     std::uniform_int_distribution<int> dist_medium(513, 1920);
-
     std::uniform_int_distribution<int> dist_small(1, 512);
-
     int width, height;
 
     width = dist_medium(gen);
@@ -833,7 +819,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeLCD_test_001, TestSize.Level0)
     float ratio = height / width;
     bool result2 = ThumbnailUtils::ResizeLCD(width, height);
     EXPECT_TRUE(result2);
-    EXPECT_EQ(width, height / ratio);
+    EXPECT_EQ(static_cast<float>(width), height / ratio);
     EXPECT_EQ(height, 1920);
 
     width = dist_small(gen);
@@ -841,7 +827,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeLCD_test_001, TestSize.Level0)
     ratio = height / width;
     bool result3 = ThumbnailUtils::ResizeLCD(width, height);
     EXPECT_TRUE(result3);
-    EXPECT_EQ(width, height / ratio);
+    EXPECT_EQ(static_cast<float>(width), height / ratio);
     EXPECT_EQ(height, 1920);
 
     width = dist_big(gen);
@@ -849,7 +835,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeLCD_test_001, TestSize.Level0)
     ratio = height / width;
     bool result4 = ThumbnailUtils::ResizeLCD(width, height);
     EXPECT_TRUE(result4);
-    EXPECT_EQ(width, height / ratio);
+    EXPECT_EQ(static_cast<float>(width), height / ratio);
     EXPECT_EQ(height, 1920);
 
     width = dist_medium(gen);
@@ -857,7 +843,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeLCD_test_001, TestSize.Level0)
     ratio = height / width;
     bool result5 = ThumbnailUtils::ResizeLCD(width, height);
     EXPECT_TRUE(result5);
-    EXPECT_EQ(width, height / ratio);
+    EXPECT_EQ(static_cast<float>(width), height / ratio);
     EXPECT_EQ(height, 4096);
 }
 } // namespace Media

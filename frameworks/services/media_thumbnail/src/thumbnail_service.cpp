@@ -242,7 +242,6 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
         MEDIA_ERR_LOG("GetImageSourceByPath failed");
         return E_ERR;
     }
-
     
     if (CreateDefaultThumbnail(imageInfo, path, tableName, fileId, isSync) != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
@@ -345,7 +344,6 @@ int32_t ThumbnailService::CreateLCDThumbnail(ImageInfo& imageInfo,
         MEDIA_ERR_LOG("lcdHelper nullptr");
         return E_ERR;
     }
-
     int widthLCD = imageInfo.size.width;
     int heightLCD = imageInfo.size.height;
     if (!ThumbnailUtils::ResizeLCD(widthLCD, heightLCD)) {
