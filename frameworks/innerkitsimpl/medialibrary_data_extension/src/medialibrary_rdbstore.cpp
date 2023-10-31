@@ -217,6 +217,8 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
             MediaFileUtils::UTCTimeMilliSeconds());
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, 
+            MediaFileUtils::UTCTimeMilliSeconds());    
     }
 
     MediaLibraryTracer tracer;
@@ -248,6 +250,25 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUri(const AbsRd
         MEDIA_DEBUG_LOG("arg = %{private}s", arg.c_str());
     }
     return rdbStore_->QuerySql(sql, predicates.GetWhereArgs());
+}
+
+int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return E_HAS_DB_ERROR;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateLastVisitTime");
+    cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, 
+        MediaFileUtils::UTCTimeMilliSeconds()); 
+    int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
+        cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->Update lastVisitTime failed, ret = %{public}d", ret);
+        return E_HAS_DB_ERROR;
+    }
+    return changedRows;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
@@ -410,6 +431,7 @@ int32_t MediaLibraryRdbStore::Update(ValuesBucket &values,
 
     if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+        values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     }
 
     MediaLibraryTracer tracer;
@@ -1203,7 +1225,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     MEDIA_INFO_LOG("start update analysis db");
     ExecSqls(executeSqlStrs, *rdbStore_);
     AddAnalysisTables(*rdbStore_);
-    AddFaceTables(*rdbStore_);
+AddFaceTables(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -1423,7 +1445,7 @@ void UpdateMillisecondDate(RdbStore &store)
     };
     ExecSqls(updateSql, store);
     MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
-}
+    }
 
 static void AddHiddenViewColumn(RdbStore &store)
 {
@@ -1433,6 +1455,46 @@ static void AddHiddenViewColumn(RdbStore &store)
         BaseColumn::AlterTableAddTextColumn(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::HIDDEN_COVER),
     };
     ExecSqls(upgradeSqls, store);
+}
+
+void ModifyMdirtyTriggers(RdbStore &store)
+{
+    /* drop old mdirty trigger */
+    const vector<string> dropMdirtyTriggers = {
+        "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
+        "DROP TRIGGER IF EXISTS mdirty_trigger",
+    };
+    if (ExecSqls(dropMdirtyTriggers, store) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("upgrade fail: drop old mdirty trigger");
+    }
+
+    /* create new mdirty trigger */
+    if (store.ExecuteSql(PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("upgrade fail: create new photos mdirty trigger");
+    }
+
+    if (store.ExecuteSql(CREATE_FILES_MDIRTY_TRIGGER) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("upgrade fail: create new mdirty trigger");
+    }
+}
+
+void AddLastVisitTimeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + AudioColumn::AUDIOS_TABLE + " DROP time_visit ",
+        "ALTER TABLE " + REMOTE_THUMBNAIL_TABLE + " DROP time_visit ",
+        "ALTER TABLE " + MEDIALIBRARY_TABLE + " DROP time_visit ",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " DROP time_visit ",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +  
+        PhotoColumn::PHOTO_LAST_VISIT_TIME + " BIGINT DEFAULT 0",
+    };
+    int32_t result = ExecSqls(sqls, store);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb last_visit_time error %{private}d", result);
+    }
 }
 
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
@@ -1487,6 +1549,11 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_HIDDEN_VIEW_COLUMNS) {
         AddHiddenViewColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_LAST_VISIT_TIME) {
+        ModifyMdirtyTriggers(store);
+        AddLastVisitTimeColumn(store);
     }
 }
 
