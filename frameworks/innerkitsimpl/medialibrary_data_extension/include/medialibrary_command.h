@@ -93,6 +93,8 @@ enum class OperationType : uint32_t {
     COMPAT_ALBUM_DELETE_ASSETS,
     COMMIT_EDIT,
     REVERT_EDIT,
+    HIDE,
+    QUERY_HIDDEN,
 };
 
 class MediaLibraryCommand {

@@ -57,6 +57,7 @@ private:
     static int32_t CommitEditInsertExecute(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &editData);
     static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
 };
 
 class PhotoEditingRecord {

@@ -1425,6 +1425,16 @@ void UpdateMillisecondDate(RdbStore &store)
     MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
 }
 
+static void AddHiddenViewColumn(RdbStore &store)
+{
+    vector<string> upgradeSqls = {
+        BaseColumn::AlterTableAddIntColumn(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::CONTAINS_HIDDEN),
+        BaseColumn::AlterTableAddIntColumn(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::HIDDEN_COUNT),
+        BaseColumn::AlterTableAddTextColumn(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::HIDDEN_COVER),
+    };
+    ExecSqls(upgradeSqls, store);
+}
+
 void AddHiddenTimeColumn(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -1482,6 +1492,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
         UpdateMillisecondDate(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIDDEN_VIEW_COLUMNS) {
+        AddHiddenViewColumn(store);
     }
 
     if (oldVersion < VERSION_ADD_HIDDEN_TIME) {

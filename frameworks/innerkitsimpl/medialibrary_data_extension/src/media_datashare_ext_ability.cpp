@@ -219,6 +219,14 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
+static inline void AddHiddenAlbumPermission(MediaLibraryCommand &cmd, vector<string> &outPerms)
+{
+    Media::OperationType type = cmd.GetOprnType();
+    if (type == Media::OperationType::QUERY_HIDDEN) {
+        outPerms.push_back(PERM_MANAGE_PRIVATE_PHOTOS);
+    }
+}
+
 static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
 {
     static const set<OperationObject> SYSTEM_API_OBJECTS = {
@@ -327,13 +335,14 @@ static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool i
         return err;
     }
 
-    string perm;
+    vector<string> perms;
     if (obj == OperationObject::UFM_AUDIO) {
-        perm = isWrite ? PERM_WRITE_AUDIO : PERM_READ_AUDIO;
+        perms.push_back(isWrite ? PERM_WRITE_AUDIO : PERM_READ_AUDIO);
     } else {
-        perm = isWrite ? PERM_WRITE_IMAGEVIDEO : PERM_READ_IMAGEVIDEO;
+        perms.push_back(isWrite ? PERM_WRITE_IMAGEVIDEO : PERM_READ_IMAGEVIDEO);
     }
-    return PermissionUtils::CheckCallerPermission(perm) ? E_SUCCESS : E_PERMISSION_DENIED;
+    AddHiddenAlbumPermission(cmd, perms);
+    return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool isWrite)
@@ -353,8 +362,10 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
     if (PHOTO_ACCESS_HELPER_OBJECTS.find(obj) == PHOTO_ACCESS_HELPER_OBJECTS.end()) {
         return E_NEED_FURTHER_CHECK;
     }
-    return PermissionUtils::CheckCallerPermission(
-        isWrite ? PERM_WRITE_IMAGEVIDEO : PERM_READ_IMAGEVIDEO) ? E_SUCCESS : E_PERMISSION_DENIED;
+    vector<string> perms;
+    AddHiddenAlbumPermission(cmd, perms);
+    perms.push_back(isWrite ? PERM_WRITE_IMAGEVIDEO : PERM_READ_IMAGEVIDEO);
+    return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)

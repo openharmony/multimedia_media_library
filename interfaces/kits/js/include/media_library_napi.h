@@ -195,6 +195,7 @@ private:
     static napi_value CreateVirtualAlbumTypeEnum(napi_env env);
     static napi_value CreatePrivateAlbumTypeEnum(napi_env env);
     static napi_value CreatePhotoKeysEnum(napi_env env);
+    static napi_value CreateHiddenAlbumFetchModeEnum(napi_env env);
 
     static napi_value CreateMediaTypeUserFileEnum(napi_env env);
 
@@ -238,6 +239,10 @@ private:
     static napi_value PhotoAccessDeletePhotoAlbums(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
 
+    static napi_value SetHidden(napi_env env, napi_callback_info info);
+    static napi_value UfmGetHiddenAlbums(napi_env env, napi_callback_info info);
+    static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
+
     static napi_value CreateAlbumTypeEnum(napi_env env);
     static napi_value CreateAlbumSubTypeEnum(napi_env env);
     static napi_value CreateNotifyTypeEnum(napi_env env);
@@ -275,6 +280,7 @@ private:
     static thread_local napi_ref sAlbumType_;
     static thread_local napi_ref sAlbumSubType_;
     static thread_local napi_ref sPositionTypeEnumRef_;
+    static thread_local napi_ref sHiddenAlbumFetchModeEnumRef_;
     static thread_local napi_ref sPhotoSubType_;
     static thread_local napi_ref sNotifyType_;
     static thread_local napi_ref sDefaultChangeUriRef_;
@@ -327,6 +333,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
+    bool hiddenOnly = false;
 };
 
 struct MediaLibraryInitContext : public NapiError  {
