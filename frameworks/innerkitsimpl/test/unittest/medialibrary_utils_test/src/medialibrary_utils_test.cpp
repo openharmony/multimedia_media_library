@@ -23,6 +23,7 @@
 #include "medialibrary_utils_test.h"
 #define private public
 #include "thumbnail_utils.h"
+#include <random>
 #undef private
 
 using namespace std;
@@ -738,6 +739,126 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_updateRemoteThumbnailInfo_test_001, Tes
     EXPECT_EQ(ret, false);
     ret = ThumbnailUtils::CleanDistributeLcdInfo(opts);
     EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeTHUMB_test_001, TestSize.Level0)
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::uniform_int_distribution<int> dist_large(769, 1500);
+
+    std::uniform_int_distribution<int> dist_medium(257, 768);
+
+    std::uniform_int_distribution<int> dist_small(1, 256);
+
+    int width, height;
+
+    width = dist_medium(gen);
+    height = dist_medium(gen);
+    int min = std::min(width, height);
+    int max = std::min(width, height);
+    float ratio = max / min;
+    bool result1 = ThumbnailUtils::ResizeTHUMB(min, max);
+    EXPECT_TRUE(result1);
+    EXPECT_EQ(min, 256);
+    EXPECT_EQ(static_cast<float>(max), min * ratio);
+
+    width = dist_medium(gen);
+    height = dist_large(gen);
+    bool result2 = ThumbnailUtils::ResizeTHUMB(width, height);
+    EXPECT_TRUE(result2);
+    EXPECT_EQ(width, 256);
+    EXPECT_EQ(height, 768);
+
+    width = dist_small(gen);
+    height = dist_small(gen);
+    int initWidth = width;
+    int initHeight = height;
+    bool result3 = ThumbnailUtils::ResizeTHUMB(width, height);
+    EXPECT_TRUE(result3);
+    EXPECT_EQ(initWidth, width);
+    EXPECT_EQ(initHeight, height);
+
+    width = dist_small(gen);
+    height = dist_medium(gen);
+    initWidth = width;
+    initHeight = height;
+    bool result4 = ThumbnailUtils::ResizeTHUMB(width, height);
+    EXPECT_TRUE(result4);
+    EXPECT_EQ(width, initWidth);
+    EXPECT_EQ(height, initHeight);
+
+    width = dist_small(gen);
+    height = dist_large(gen);
+    initWidth = width;
+    initHeight = height;
+    bool result5 = ThumbnailUtils::ResizeTHUMB(width, height);
+    EXPECT_TRUE(result5);
+    EXPECT_EQ(initWidth, width);
+    EXPECT_EQ(static_cast<float>(height), width * 3);
+
+    width = 0;
+    height = 0;
+    bool result6 = ThumbnailUtils::ResizeTHUMB(width, height);
+    EXPECT_FALSE(result6);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeLCD_test_001, TestSize.Level0)
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::uniform_int_distribution<int> dist_large(7200, 20000);
+
+    std::uniform_int_distribution<int> dist_big(1921, 4096);
+
+    std::uniform_int_distribution<int> dist_medium(513, 1920);
+
+    std::uniform_int_distribution<int> dist_small(1, 512);
+
+    int width, height;
+
+    width = dist_medium(gen);
+    height = dist_medium(gen);
+    int initWidth = width;
+    int initHeight = height;
+    bool result1 = ThumbnailUtils::ResizeLCD(width, height);
+    EXPECT_TRUE(result1);
+    EXPECT_EQ(width, initWidth);
+    EXPECT_EQ(height, initHeight);
+
+    width = dist_small(gen);
+    height = dist_big(gen);
+    float ratio = height / width;
+    bool result2 = ThumbnailUtils::ResizeLCD(width, height);
+    EXPECT_TRUE(result2);
+    EXPECT_EQ(width, height / ratio);
+    EXPECT_EQ(height, 1920);
+
+    width = dist_small(gen);
+    height = dist_large(gen);
+    ratio = height / width;
+    bool result3 = ThumbnailUtils::ResizeLCD(width, height);
+    EXPECT_TRUE(result3);
+    EXPECT_EQ(width, height / ratio);
+    EXPECT_EQ(height, 1920);
+
+    width = dist_big(gen);
+    height = dist_large(gen);
+    ratio = height / width;
+    bool result4 = ThumbnailUtils::ResizeLCD(width, height);
+    EXPECT_TRUE(result4);
+    EXPECT_EQ(width, height / ratio);
+    EXPECT_EQ(height, 1920);
+
+    width = dist_medium(gen);
+    height = dist_large(gen);
+    ratio = height / width;
+    bool result5 = ThumbnailUtils::ResizeLCD(width, height);
+    EXPECT_TRUE(result5);
+    EXPECT_EQ(width, height / ratio);
+    EXPECT_EQ(height, 4096);
 }
 } // namespace Media
 } // namespace OHOS
