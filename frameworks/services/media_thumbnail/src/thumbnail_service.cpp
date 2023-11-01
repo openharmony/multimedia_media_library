@@ -235,7 +235,7 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
     const string &uri, const bool &isSync)
 {
     ImageInfo imageInfo;
-    if (GetImageSourceByPath(path, imageInfo) != E_OK) {
+    if (ThumbnailUtils::GetImageSourceByPath(path, imageInfo) != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -283,24 +283,6 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
         return err;
     }
    
-    return E_OK;
-}
-
-int32_t ThumbnailService::GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo)
-{
-    uint32_t err = 0;
-    SourceOptions opts;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to CreateImageSource %{public}d", err);
-        return E_ERR;
-    }
-    
-    err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GetImageInfo err %{public}d", err);
-        return E_ERR;
-    }
     return E_OK;
 }
 
