@@ -217,7 +217,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
             MediaFileUtils::UTCTimeMilliSeconds());
-        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, 
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME,
             MediaFileUtils::UTCTimeMilliSeconds());    
     }
 
@@ -260,7 +260,7 @@ int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int3
     }
     MediaLibraryTracer tracer;
     tracer.Start("UpdateLastVisitTime");
-    cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds()); 
+    cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
         cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
     if (ret != NativeRdb::E_OK) {
@@ -1457,7 +1457,7 @@ static void AddHiddenViewColumn(RdbStore &store)
     ExecSqls(upgradeSqls, store);
 }
 
-void ModifyMdirtyTriggers(RdbStore &store)
+static void ModifyMdirtyTriggers(RdbStore &store)
 {
     /* drop old mdirty trigger */
     const vector<string> dropMdirtyTriggers = {
@@ -1481,14 +1481,14 @@ void ModifyMdirtyTriggers(RdbStore &store)
     }
 }
 
-void AddLastVisitTimeColumn(RdbStore &store)
+static void AddLastVisitTimeColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + AudioColumn::AUDIOS_TABLE + " DROP time_visit ",
         "ALTER TABLE " + REMOTE_THUMBNAIL_TABLE + " DROP time_visit ",
         "ALTER TABLE " + MEDIALIBRARY_TABLE + " DROP time_visit ",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " DROP time_visit ",
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +  
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + 
         PhotoColumn::PHOTO_LAST_VISIT_TIME + " BIGINT DEFAULT 0",
     };
     int32_t result = ExecSqls(sqls, store);

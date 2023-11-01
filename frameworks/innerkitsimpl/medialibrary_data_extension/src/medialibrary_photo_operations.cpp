@@ -272,7 +272,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
     changedRows =  MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
     if (changedRows <= 0) {
-        MEDIA_ERR_LOG("uodate lastVisitTime Failed, changedRows = %{public}d.", changedRows); 
+        MEDIA_ERR_LOG("uodate lastVisitTime Failed, changedRows = %{public}d.", changedRows);
     }
 
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
