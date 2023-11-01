@@ -218,7 +218,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
             MediaFileUtils::UTCTimeMilliSeconds());
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME,
-            MediaFileUtils::UTCTimeMilliSeconds());    
+            MediaFileUtils::UTCTimeMilliSeconds());
     }
 
     MediaLibraryTracer tracer;
@@ -1487,7 +1487,7 @@ static void AddLastVisitTimeColumn(RdbStore &store)
         "ALTER TABLE " + REMOTE_THUMBNAIL_TABLE + " DROP time_visit ",
         "ALTER TABLE " + MEDIALIBRARY_TABLE + " DROP time_visit ",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " DROP time_visit ",
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + 
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
         PhotoColumn::PHOTO_LAST_VISIT_TIME + " BIGINT DEFAULT 0",
     };
     int32_t result = ExecSqls(sqls, store);
