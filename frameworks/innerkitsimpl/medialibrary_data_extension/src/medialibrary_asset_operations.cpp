@@ -366,7 +366,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredica
 // temp function, delete after MediaFileUri::Getpath is finish
 static string GetPathFromUri(const std::string &uri, bool isPhoto)
 {
-    size_t index = uri.rfind('/');
+        size_t index = uri.rfind('/');
     if (index == string::npos) {
         return "";
     }

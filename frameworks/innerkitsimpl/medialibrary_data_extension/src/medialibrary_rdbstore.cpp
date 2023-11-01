@@ -217,7 +217,15 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
             MediaFileUtils::UTCTimeMilliSeconds());
+<<<<<<< HEAD
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, 
+=======
+<<<<<<< HEAD
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, 
+=======
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME,
+>>>>>>> c082c08514a5d76328795160a85b9697b78d244d
+>>>>>>> 9d88f458113f05d5ddcc8f8e3ff947f8f855f45b
             MediaFileUtils::UTCTimeMilliSeconds());    
     }
 
@@ -1224,7 +1232,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     MEDIA_INFO_LOG("start update analysis db");
     ExecSqls(executeSqlStrs, *rdbStore_);
     AddAnalysisTables(*rdbStore_);
-    AddFaceTables(*rdbStore_);
+AddFaceTables(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -1458,7 +1466,15 @@ static void AddHiddenViewColumn(RdbStore &store)
 
 void ModifyMdirtyTriggers(RdbStore &store)
 {
+<<<<<<< HEAD
     /* drop old mdirty trigger */
+=======
+<<<<<<< HEAD
+    /* drop old mdirty trigger */
+=======
+    /* drop old mdirty trigger*/
+>>>>>>> c082c08514a5d76328795160a85b9697b78d244d
+>>>>>>> 9d88f458113f05d5ddcc8f8e3ff947f8f855f45b
     const vector<string> dropMdirtyTriggers = {
         "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
         "DROP TRIGGER IF EXISTS mdirty_trigger",
@@ -1487,8 +1503,17 @@ void AddLastVisitTimeColumn(RdbStore &store)
         "ALTER TABLE " + REMOTE_THUMBNAIL_TABLE + " DROP time_visit ",
         "ALTER TABLE " + MEDIALIBRARY_TABLE + " DROP time_visit ",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " DROP time_visit ",
+<<<<<<< HEAD
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +  
         PhotoColumn::PHOTO_LAST_VISIT_TIME + " BIGINT DEFAULT 0",
+=======
+<<<<<<< HEAD
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +  
+        PhotoColumn::PHOTO_LAST_VISIT_TIME + " BIGINT DEFAULT 0",
+=======
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_LAST_VISIT_TIME + " BIGINT DEFAULT 0",
+>>>>>>> c082c08514a5d76328795160a85b9697b78d244d
+>>>>>>> 9d88f458113f05d5ddcc8f8e3ff947f8f855f45b
     };
     int32_t result = ExecSqls(sqls, store);
     if (result != NativeRdb::E_OK) {
