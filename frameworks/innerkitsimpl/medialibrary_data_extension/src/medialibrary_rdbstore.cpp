@@ -1444,7 +1444,6 @@ void UpdateMillisecondDate(RdbStore &store)
     };
     ExecSqls(updateSql, store);
     MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
-    }
 }
 
 static void AddHiddenViewColumn(RdbStore &store)
