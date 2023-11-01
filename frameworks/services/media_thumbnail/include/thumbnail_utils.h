@@ -52,7 +52,7 @@ struct ThumbnailData {
         thumbnail.clear();
         lcd.clear();
     }
-    
+
     int mediaType {-1};
     int64_t dateModified {0};
     float degrees;
@@ -136,6 +136,7 @@ public:
         int &err);
     static bool ResizeTHUMB(int& width, int& height);
     static bool ResizeLCD(int& width, int& height);
+    static int32_t GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo);
 private:
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     static int64_t UTCTimeMilliSeconds();

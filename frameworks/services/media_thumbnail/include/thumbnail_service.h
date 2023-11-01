@@ -65,7 +65,6 @@ private:
         const std::string &uri, const Size &size);
     int32_t CreateThumbnailInfo(const std::string &path, const std::string &tableName, const std::string &fileId,
         const std::string &uri, const bool &isSync);
-    int32_t GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo);
     int32_t CreateDefaultThumbnail(ImageInfo& imageInfo, const std::string &path,
         const std::string &tableName, const std::string &fileId, const bool &isSync);
     int32_t CreateLCDThumbnail(ImageInfo& imageInfo, const std::string &path,

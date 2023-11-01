@@ -1764,5 +1764,27 @@ bool ThumbnailUtils::ResizeLCD(int &width, int &height)
     }
     return true;
 }
+
+int32_t ThumbnailUtils::GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo)
+{
+    if (path.empty()) {
+        MEDIA_ERR_LOG("path is empty");
+        return E_ERR;
+    }
+    uint32_t err = 0;
+    SourceOptions opts;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to CreateImageSource %{public}d", err);
+        return E_ERR;
+    }
+    
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("GetImageInfo err %{public}d", err);
+        return E_ERR;
+    }
+    return E_OK;
+}
 } // namespace Media
 } // namespace OHOS

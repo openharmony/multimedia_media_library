@@ -198,8 +198,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_00
     }
     string url = "";
     ThumbnailService serverTest;
-    int32_t ret = serverTest.CreateThumbnail(url, "");
-    EXPECT_EQ(ret, E_OK);
+    int32_t ret = serverTest.CreateThumbnail(url, "", true);
+    EXPECT_EQ(ret, -1);
     serverTest.ReleaseService();
 }
 } // namespace Media
