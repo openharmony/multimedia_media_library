@@ -268,6 +268,13 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         return E_INVALID_URI;
     }
 
+    int32_t changedRows = 0;
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+    changedRows =  MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
+    if (changedRows <= 0) {
+        MEDIA_ERR_LOG("uodate lastVisitTime Failed, changedRows = %{public}d.", changedRows); 
+    }
+
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10);
     }
