@@ -609,6 +609,10 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_HIDDEN, hiddenState);
+    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        values.PutLong(PhotoColumn::PHOTO_HIDDEN_TIME,
+                hiddenState ? MediaFileUtils::UTCTimeMilliSeconds() : 0);
+    }
     int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
     if (changedRows < 0) {
         return changedRows;
@@ -649,15 +653,6 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     if (cmd.GetOprnType() == OperationType::SET_USER_COMMENT) {
         errCode = SetUserComment(cmd, fileAsset);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Edit user comment errCode = %{private}d", errCode);
-    }
-
-    // Update hidden_time if set hidden operation
-    ValueObject hidden_valueObject;
-    if (cmd.GetValueBucket().GetObject(MediaColumn::MEDIA_HIDDEN, hidden_valueObject)) {
-        int32_t isHidden = 0;
-        hidden_valueObject.GetInt(isHidden);
-        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_HIDDEN_TIME,
-            isHidden ? MediaFileUtils::UTCTimeMilliSeconds() : 0);
     }
 
     // Update if FileAsset.title or FileAsset.displayName is modified

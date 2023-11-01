@@ -1302,14 +1302,14 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
     DataSharePredicates predicates;
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
 
-    // Update
-    MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
+    // Set hidden
+    MediaLibraryCommand cmd_hide(OperationObject::FILESYSTEM_PHOTO, OperationType::HIDE,
         MediaLibraryApi::API_10);
     ValuesBucket values;
     SetValuesBucketInUpdate(MediaColumn::MEDIA_HIDDEN, "1", values);
-    cmd_u.SetValueBucket(values);
-    cmd_u.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
-    MediaLibraryPhotoOperations::Update(cmd_u);
+    cmd_hide.SetValueBucket(values);
+    cmd_hide.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    MediaLibraryPhotoOperations::Update(cmd_hide);
 
     // Query
     MediaLibraryCommand cmd_q(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
@@ -1329,6 +1329,28 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
         MEDIA_ERR_LOG("Test first tdd Query failed");
         return;
     }
+
+    // Set unhidden
+    MediaLibraryCommand cmd_unhide(OperationObject::FILESYSTEM_PHOTO, OperationType::HIDE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    SetValuesBucketInUpdate(MediaColumn::MEDIA_HIDDEN, "0", values);
+    cmd_unhide.SetValueBucket(values);
+    cmd_unhide.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    MediaLibraryPhotoOperations::Update(cmd_unhide);
+
+    // Query again
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd_q, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+        EXPECT_EQ(name, "hoho.jpg");
+        int64_t hidden_time = GetInt64Val(PhotoColumn::PHOTO_HIDDEN_TIME, resultSet);
+        EXPECT_EQ(hidden_time, 0L);
+    } else {
+        MEDIA_ERR_LOG("Test first tdd Query failed");
+        return;
+    }
+
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_005");
 }
 
