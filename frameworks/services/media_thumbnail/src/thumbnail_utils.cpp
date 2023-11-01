@@ -1698,7 +1698,7 @@ bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
     double ratio = (double)maxLen / minLen;
     if (minLen > SHORT_SIDE_THRESHOLD) {
         minLen = SHORT_SIDE_THRESHOLD;
-        maxLen = (int)SHORT_SIDE_THRESHOLD * ratio;
+        maxLen = static_cast<int>(SHORT_SIDE_THRESHOLD * ratio);
         if (maxLen > MAXIMUM_SHORT_SIDE_THRESHOLD) {
             maxLen = MAXIMUM_SHORT_SIDE_THRESHOLD;
         }
@@ -1715,7 +1715,7 @@ bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
         if (ratio <= ASPECT_RATIO_THRESHOLD) {
             // do nothing,reuse original image
         } else {
-            int newMaxLen = minLen * ASPECT_RATIO_THRESHOLD;
+            int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
             if (height > width) {
                 width = minLen;
                 height = newMaxLen;
@@ -1725,7 +1725,7 @@ bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
             }
         }
     }
-    return true;
+        return true;
 }
 
 bool ThumbnailUtils::ResizeLCD(int &width, int &height)
@@ -1743,16 +1743,16 @@ bool ThumbnailUtils::ResizeLCD(int &width, int &height)
         // do nothing,reuse original image
     } else {
         newMaxLen = LCD_LONG_SIDE_THRESHOLD;
-        newMinLen = newMaxLen / ratio;
+        newMinLen = static_cast<int>(newMaxLen / ratio);
     }
     int lastMinLen = newMinLen;
     int lastMaxLen = newMaxLen;
     if (newMinLen < LCD_SHORT_SIDE_THRESHOLD && minLen >= LCD_SHORT_SIDE_THRESHOLD) {
         lastMinLen = LCD_SHORT_SIDE_THRESHOLD;
-        lastMaxLen = lastMinLen * ratio;
+        lastMaxLen = static_cast<int>(lastMinLen * ratio);
         if (lastMaxLen > MAXIMUM_LCD_LONG_SIDE) {
             lastMaxLen = MAXIMUM_LCD_LONG_SIDE;
-            lastMinLen = lastMaxLen / ratio;
+            lastMinLen = static_cast<int>(lastMaxLen / ratio);
         }
     }
     if (height > width) {
