@@ -773,7 +773,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_ResizeTHUMB_test_001, TestSize.Level0)
     height = dist_medium(gen);
     initWidth = width;
     initHeight = height;
-    ratio = (double)width / height;
+    ratio = (double)height / width;
     bool result4 = ThumbnailUtils::ResizeTHUMB(width, height);
     EXPECT_TRUE(result4);
     EXPECT_EQ(width, initWidth);
