@@ -34,7 +34,6 @@
 #include "js_native_api.h"
 #include "js_native_api_types.h"
 #include "media_exif.h"
-#include "medialibrary_asset_operations.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
