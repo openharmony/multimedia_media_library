@@ -24,14 +24,15 @@ class UpdateRestore : public BaseRestore {
 public:
     UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName);
     virtual ~UpdateRestore() = default;
-
-    int32_t Init(void) override;
-    void RestorePhoto(void) override;
-    void HandleRestData(void) override;
-
-private:
+    int32_t Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate) override;
     int32_t QueryTotalNumber(void) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
+    int32_t InitGarbageAlbum();
+    NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath) const override;
+
+private:
+    void RestorePhoto(void) override;
+    void HandleRestData(void) override;
     bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
 
 private:
@@ -41,6 +42,7 @@ private:
     std::string appDataPath_;
     std::string galleryAppName_;
     std::string mediaAppName_;
+    std::unordered_map<std::string, std::string> garbageMap_;
 };
 } // namespace Media
 } // namespace OHOS
