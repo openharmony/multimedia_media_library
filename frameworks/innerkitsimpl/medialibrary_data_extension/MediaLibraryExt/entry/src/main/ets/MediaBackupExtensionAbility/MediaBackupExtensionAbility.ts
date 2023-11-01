@@ -20,16 +20,16 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
 
   async onRestore(bundleVersion : BundleVersion) : Promise<void> {
     console.log(TAG, `onRestore ok ${JSON.stringify(bundleVersion)}`);
-    console.time(TAG + " RESTORE");
+    console.time(TAG + ' RESTORE');
     if (bundleVersion.name === '0.0.0.0' && bundleVersion.code === 0) {
       await mediabackup.startRestore(UPDATE_RESTORE, galleryAppName, mediaAppName);
     } else {
       await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName);
     }
-    console.timeEnd(TAG + " RESTORE");
-    console.time(TAG + " MOVE REST FILES");
+    console.timeEnd(TAG + ' RESTORE');
+    console.time(TAG + ' MOVE REST FILES');
     await this.moveRestFiles();
-    console.timeEnd(TAG + " MOVE REST FILES");
+    console.timeEnd(TAG + ' MOVE REST FILES');
   }
 
   private isFileExist(filePath : string) : boolean {
