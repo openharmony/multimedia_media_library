@@ -550,7 +550,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw());
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw());
-MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore->GetRaw());
+    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore->GetRaw());
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
             notifyUris.size(), updatedRows);
