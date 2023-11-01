@@ -275,6 +275,10 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         MEDIA_ERR_LOG("uodate lastVisitTime Failed, changedRows = %{public}d.", changedRows); 
     }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> c082c08514a5d76328795160a85b9697b78d244d
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10);
     }
