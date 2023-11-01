@@ -28,16 +28,13 @@
 #include "file_asset.h"
 #include "imedia_scanner_callback.h"
 #include "media_column.h"
+#include "medialibrary_async_worker.h"
 #include "medialibrary_command.h"
 #include "value_object.h"
 #include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
-static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
-static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
-static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
-
 const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_ID, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_FILE_PATH, MEMBER_TYPE_STRING },
@@ -173,6 +170,16 @@ private:
         bool isCreateThumbSync = false;
         bool isInvalidateThumb = true;
     };
+};
+
+class DeleteNotifyAsyncTaskData : public AsyncTaskData {
+public:
+    DeleteNotifyAsyncTaskData() = default;
+    virtual ~DeleteNotifyAsyncTaskData() override = default;
+    int32_t updateRows = 0;
+    std::vector<std::string> notifyUris;
+    std::string notifyUri;
+    int64_t trashDate = 0;
 };
 
 using VerifyFunction = bool (*) (NativeRdb::ValueObject&, MediaLibraryCommand&);
