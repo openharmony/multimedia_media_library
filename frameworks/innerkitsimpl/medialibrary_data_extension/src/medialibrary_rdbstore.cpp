@@ -264,7 +264,8 @@ int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int3
     int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
         cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
     if (ret != NativeRdb::E_OK || changedRows <= 0) {
-        MEDIA_ERR_LOG("rdbStore_->UpdateLastVisitTime failed, changedRows = %{public}d, ret = %{public}d", changedRows, ret);
+        MEDIA_ERR_LOG("rdbStore_->UpdateLastVisitTime failed, changedRows = %{public}d, ret = %{public}d",
+            changedRows, ret);
     }
     return changedRows;
 }
