@@ -48,7 +48,6 @@ public:
     static const std::string MEDIA_DATE_MODIFIED;
     static const std::string MEDIA_DATE_ADDED;
     static const std::string MEDIA_DATE_TAKEN;
-    static const std::string MEDIA_TIME_VISIT;
     static const std::string MEDIA_DURATION;
     static const std::string MEDIA_TIME_PENDING;
     static const std::string MEDIA_IS_FAV;
@@ -99,6 +98,7 @@ public:
     static const std::string PHOTO_DATE_ADDED;
     static const std::string PHOTO_DATE_MODIFIED;
     static const std::string PHOTO_DATE_TRASHED;
+    static const std::string PHOTO_LAST_VISIT_TIME;
     static const std::string PHOTO_HIDDEN_TIME;
     // index in PhotoTable
     static const std::string PHOTO_DATE_YEAR_INDEX;

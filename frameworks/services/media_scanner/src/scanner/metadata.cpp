@@ -42,6 +42,7 @@ Metadata::Metadata()
     duration_(FILE_DURATION_DEFAULT),
     orientation_(FILE_ORIENTATION_DEFAULT),
     shootingMode_(FILE_SHOOTINGMODE_DEFAULT),
+    lastVisitTime_(FILE_LAST_VISIT_TIME_DEFAULT),
     dateTaken_(FILE_DATE_TAKEN_DEFAULT),
     longitude_(FILE_LONGITUDE_DEFAULT),
     latitude_(FILE_LATITUDE_DEFAULT),
@@ -440,6 +441,16 @@ void Metadata::SetForAdd(bool forAdd)
 bool Metadata::GetForAdd() const
 {
     return forAdd_;
+}
+
+void Metadata::SetLastVisitTime(const VariantData &lastVisitTime)
+{
+    lastVisitTime_ = std::get<int64_t>(lastVisitTime);
+}
+
+int64_t Metadata::GetLastVisitTime() const
+{
+    return lastVisitTime_;
 }
 } // namespace Media
 } // namespace OHOS
