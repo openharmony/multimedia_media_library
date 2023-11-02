@@ -110,7 +110,7 @@ void UpdateRestore::RestorePhoto(void)
     InitGarbageAlbum();
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<FileInfo> infos = QueryFileInfos(offset);
-        InsertPhoto(infos);
+        InsertPhoto(UPDATE_RESTORE_ID, infos);
     }
     (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
 }

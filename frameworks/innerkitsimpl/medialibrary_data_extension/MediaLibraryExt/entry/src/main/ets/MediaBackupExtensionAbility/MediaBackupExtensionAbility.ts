@@ -6,6 +6,7 @@ import mediabackup from '@ohos.multimedia.mediabackup';
 const TAG = 'MediaBackupExtAbility';
 
 const backupPath = '/data/storage/el2/backup/restore/';
+const backupClonePath = '/data/storage/el2/backup/restore/storage/cloud/files/';
 const documentPath = '/storage/media/local/files/Documents';
 const galleryAppName = 'com.huawei.photos';
 const mediaAppName = 'com.android.providers.media.module';
@@ -21,14 +22,17 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   async onRestore(bundleVersion : BundleVersion) : Promise<void> {
     console.log(TAG, `onRestore ok ${JSON.stringify(bundleVersion)}`);
     console.time(TAG + ' RESTORE');
+    var path:string;
     if (bundleVersion.name === '0.0.0.0' && bundleVersion.code === 0) {
       await mediabackup.startRestore(UPDATE_RESTORE, galleryAppName, mediaAppName);
+      path = backupPath;
     } else {
       await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName);
+      path = backupClonePath;
     }
     console.timeEnd(TAG + ' RESTORE');
     console.time(TAG + ' MOVE REST FILES');
-    await this.moveRestFiles();
+    await this.moveRestFiles(path);
     console.timeEnd(TAG + ' MOVE REST FILES');
   }
 
@@ -41,11 +45,11 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     }
   }
 
-  private async moveRestFiles() : Promise<void> {
+  private async moveRestFiles(path : string) : Promise<void> {
     console.log(TAG, 'Start to move rest files.');
     const MOVE_ERR_CODE = 13900015;
     let list = [];
-    await fs.moveDir(backupPath, documentPath, 1).then(() => {
+    await fs.moveDir(path, documentPath, 1).then(() => {
       console.info(TAG, 'Move rest files succeed');
     }).catch((err) => {
       if (err.code === MOVE_ERR_CODE) {
