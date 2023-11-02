@@ -225,7 +225,7 @@ NativeRdb::ValuesBucket UpdateRestore::GetInsertValue(const FileInfo &fileInfo, 
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, fileInfo.height);
     values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
-    values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
+    values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation);
     std::string package_name = "";
     std::string findPath = fileInfo.relativePath;
