@@ -619,6 +619,10 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_HIDDEN, hiddenState);
+    if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        values.PutLong(PhotoColumn::PHOTO_HIDDEN_TIME,
+            hiddenState ? MediaFileUtils::UTCTimeMilliSeconds() : 0);
+    }
     int32_t changedRows = MediaLibraryRdbStore::Update(values, predicates);
     if (changedRows < 0) {
         return changedRows;

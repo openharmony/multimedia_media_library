@@ -26,9 +26,8 @@
 
 namespace OHOS {
 namespace Media {
-const std::string UPDATE_FILE_DIR = "/storage/media/local/files/data";
 const std::string UPDATE_DB_NAME = "gallery.db";
-const std::string CLONE_TAG = "/data/storage/el2/backup/restore/cloneBackupData.json";
+const std::string CLONE_TAG = "cloneBackupData.json";
 
 constexpr int32_t GALLERY_IMAGE_TYPE = 1;
 constexpr int32_t GALLERY_VIDEO_TYPE = 3;
@@ -39,20 +38,20 @@ UpdateRestore::UpdateRestore(const std::string &galleryAppName, const std::strin
     mediaAppName_ = mediaAppName;
 }
 
-int32_t UpdateRestore::Init(void)
+int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate)
 {
-    dbPath_ = ORIGIN_PATH + "/" + galleryAppName_ + "/ce/databases/gallery.db";
-    appDataPath_ = ORIGIN_PATH;
-    if (MediaFileUtils::IsFileExists(CLONE_TAG)) {
-        filePath_ = ORIGIN_PATH;
+    dbPath_ = orignPath + "/" + galleryAppName_ + "/ce/databases/gallery.db";
+    appDataPath_ = orignPath;
+    if (MediaFileUtils::IsFileExists(orignPath + "/" + CLONE_TAG)) {
+        filePath_ = orignPath;
     } else {
-        filePath_ = UPDATE_FILE_DIR;
+        filePath_ = updatePath;
     }
     if (!MediaFileUtils::IsFileExists(dbPath_)) {
         MEDIA_ERR_LOG("Gallery media db is not exist.");
         return E_FAIL;
     }
-    if (BaseRestore::Init() != E_OK) {
+    if (isUpdate && BaseRestore::Init() != E_OK) {
         return E_FAIL;
     }
 
@@ -73,10 +72,42 @@ int32_t UpdateRestore::Init(void)
     return E_OK;
 }
 
+int32_t UpdateRestore::InitGarbageAlbum()
+{
+    if (galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdb_ is nullptr, Maybe init failed.");
+        return E_FAIL;
+    }
+
+    const string querySql = "SELECT nick_dir, nick_name FROM garbage_album where type = 0";
+    auto resultSet = galleryRdb_->QuerySql(querySql);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t count = -1;
+    int32_t err = resultSet->GetRowCount(count);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
+        return E_FAIL;
+    }
+    MEDIA_INFO_LOG("garbageCount: %{public}d", count);
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string nick_dir;
+        string nick_name;
+        resultSet->GetString(0, nick_dir);
+        resultSet->GetString(1, nick_name);
+        garbageMap_[nick_dir] = nick_name;
+    }
+    MEDIA_INFO_LOG("add map success!");
+    resultSet->Close();
+    return E_OK;
+}
+
 void UpdateRestore::RestorePhoto(void)
 {
     int32_t totalNumber = QueryTotalNumber();
     MEDIA_INFO_LOG("QueryTotalNumber, totalNumber = %{public}d", totalNumber);
+    InitGarbageAlbum();
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<FileInfo> infos = QueryFileInfos(offset);
         InsertPhoto(infos);
@@ -130,8 +161,8 @@ std::vector<FileInfo> UpdateRestore::QueryFileInfos(int32_t offset)
     std::string querySql = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + GALLERY_FILE_DATA + "," + GALLERY_DISPLAY_NAME +
         "," + GALLERY_DESCRIPTION + "," + GALLERY_IS_FAVORITE + "," + GALLERY_RECYCLED_TIME + "," + GALLERY_FILE_SIZE +
         "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," + GALLERY_HEIGHT +
-        "," + GALLERY_WIDTH + "," + GALLERY_TITLE + " FROM gallery_media WHERE (local_media_id>= 0 OR \
-        local_media_id == -4) AND (storage_id = 65537) AND relative_bucket_id NOT IN ( \
+        "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + " FROM gallery_media \
+        WHERE (local_media_id>= 0 OR local_media_id == -4) AND (storage_id = 65537) AND relative_bucket_id NOT IN ( \
         SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1 \
         ) ORDER BY showDateToken ASC limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = galleryRdb_->QuerySql(querySql);
@@ -139,7 +170,6 @@ std::vector<FileInfo> UpdateRestore::QueryFileInfos(int32_t offset)
         MEDIA_ERR_LOG("Query resultSql is null.");
         return result;
     }
-
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
         if (ParseResultSet(resultSet, tmpInfo)) {
@@ -158,7 +188,7 @@ bool UpdateRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &
         return false;
     }
     std::string oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
-    if (!ConvertPathToRealPath(oldPath, filePath_, info.filePath)) {
+    if (!ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
         return false;
     }
 
@@ -175,7 +205,40 @@ bool UpdateRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &
     info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet) / MILLISECONDS;
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
+    info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
     return true;
+}
+
+NativeRdb::ValuesBucket UpdateRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath) const
+{
+    NativeRdb::ValuesBucket values;
+    values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
+    values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
+    values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
+    values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
+    values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
+    values.PutLong(MediaColumn::MEDIA_DURATION, fileInfo.duration);
+    values.PutInt(MediaColumn::MEDIA_IS_FAV, fileInfo.isFavorite);
+    values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
+    values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
+    values.PutInt(PhotoColumn::PHOTO_HEIGHT, fileInfo.height);
+    values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
+    values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
+    values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken);
+    values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation);
+    std::string package_name = "";
+    std::string findPath = fileInfo.relativePath;
+    for (auto &garbageItem : garbageMap_) {
+        if (findPath.find(garbageItem.first) == 0) {
+            package_name = garbageItem.second;
+            break;
+        }
+    }
+    if (package_name != "") {
+        values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
+    }
+    return values;
 }
 } // namespace Media
 } // namespace OHOS

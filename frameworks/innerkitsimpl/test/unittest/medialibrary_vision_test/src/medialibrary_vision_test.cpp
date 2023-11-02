@@ -430,6 +430,9 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level
     valuesBucket1.Put(IMAGE_FACE_VERSION, "1.01");
     valuesBucket1.Put(PROB, 2.344);
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 1);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ((retVal1 < 0), true);
 }
 
@@ -501,6 +504,9 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertFaceTag_Test_001, TestSize.Level0)
     valuesBucket1.Put(IS_REMOVED, 1);
     valuesBucket1.Put(TAG_VERSION, "33");
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(TAG_ID, "tag111");
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ((retVal1 < 0), true);
 }
 
