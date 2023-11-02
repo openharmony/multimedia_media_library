@@ -1503,7 +1503,6 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_HIDDEN_TIME) {
         AddHiddenTimeColumn(store);
     }
-
 }
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
