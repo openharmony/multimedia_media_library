@@ -23,12 +23,14 @@
 #include "datashare_result_set.h"
 #include "directory_ex.h"
 #include "media_column.h"
+#include "media_exif.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_helper_container.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
+#include "sandbox_helper.h"
 #include "uri.h"
 #include "values_bucket.h"
 
@@ -539,6 +541,8 @@ string FileAsset::GetAssetJson()
                 break;
         }
     }
+    jsonObject[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
+        AppFileService::SandboxHelper::Decode(jsonObject[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
     return jsonObject.dump();
 }
 }  // namespace Media
