@@ -842,6 +842,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_DAY_INDEX,
     PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
     PhotoColumn::CREATE_SHPT_DAY_INDEX,
+    PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -1435,6 +1436,16 @@ static void AddHiddenViewColumn(RdbStore &store)
     ExecSqls(upgradeSqls, store);
 }
 
+void AddHiddenTimeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0",
+        PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
+    };
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1487,6 +1498,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_HIDDEN_VIEW_COLUMNS) {
         AddHiddenViewColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIDDEN_TIME) {
+        AddHiddenTimeColumn(store);
     }
 }
 

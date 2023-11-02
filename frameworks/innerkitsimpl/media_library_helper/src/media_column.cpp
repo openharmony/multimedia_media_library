@@ -79,6 +79,7 @@ const std::string PhotoColumn::PHOTO_DATE_DAY = "date_day";
 const std::string PhotoColumn::PHOTO_DATE_ADDED = "date_added";
 const std::string PhotoColumn::PHOTO_DATE_MODIFIED = "date_modified";
 const std::string PhotoColumn::PHOTO_DATE_TRASHED = "date_trashed";
+const std::string PhotoColumn::PHOTO_HIDDEN_TIME = "hidden_time";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_INDEX = "date_month_index";
@@ -86,6 +87,7 @@ const std::string PhotoColumn::PHOTO_DATE_DAY_INDEX = "date_day_index";
 const std::string PhotoColumn::PHOTO_SHPT_ADDED_INDEX = "idx_shpt_date_added";
 const std::string PhotoColumn::PHOTO_SHPT_MEDIA_TYPE_INDEX = "idx_shpt_media_type";
 const std::string PhotoColumn::PHOTO_SHPT_DAY_INDEX = "idx_shpt_date_day";
+const std::string PhotoColumn::PHOTO_HIDDEN_TIME_INDEX = "hidden_time_index";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -144,7 +146,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DATE_YEAR + " TEXT, " +
     PHOTO_DATE_MONTH + " TEXT, " +
     PHOTO_DATE_DAY + " TEXT, " +
-    PHOTO_SHOOTING_MODE + " TEXT)";
+    PHOTO_SHOOTING_MODE + " TEXT, " +
+    PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0)";
 
 
 const std::string PhotoColumn::CREATE_YEAR_INDEX = BaseColumn::CreateIndex() +
@@ -165,6 +168,9 @@ const std::string PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX = BaseColumn::Create
     PHOTO_SHPT_MEDIA_TYPE_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
     "," + MEDIA_DATE_TRASHED + "," + MEDIA_TYPE + " DESC);";
+
+const std::string PhotoColumn::CREATE_HIDDEN_TIME_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_HIDDEN_TIME_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_HIDDEN_TIME + " DESC)";
 
 const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn::MEDIA_SIZE + ") AS " +
     MediaColumn::MEDIA_SIZE + "," +
