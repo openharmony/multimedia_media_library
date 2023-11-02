@@ -248,7 +248,6 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::Open");
-
     bool isSkipEdit = true;
     int32_t errCode = OpenEditOperation(cmd, isSkipEdit);
     if (errCode != E_OK || !isSkipEdit) {
@@ -268,11 +267,14 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         return E_INVALID_URI;
     }
 
-    int32_t changedRows = 0;
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
-    changedRows =  MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
-    if (changedRows <= 0) {
-        MEDIA_ERR_LOG("uodate lastVisitTime Failed, changedRows = %{public}d.", changedRows);
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
+        int32_t changedRows = 0;
+        MEDIA_DEBUG_LOG("uodate lastVisitTime begin");
+        cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+        changedRows =  MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
+        if (changedRows <= 0) {
+            MEDIA_ERR_LOG("uodate lastVisitTime Failed, changedRows = %{public}d.", changedRows);
+        }
     }
 
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
