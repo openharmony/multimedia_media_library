@@ -529,7 +529,7 @@ static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates, b
 
 int32_t AgingPhotoAssets(shared_ptr<int> countPtr)
 {
-    auto time = MediaFileUtils::UTCTimeSeconds();
+    auto time = MediaFileUtils::UTCTimeMilliSeconds();
     DataSharePredicates predicates;
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));
