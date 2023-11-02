@@ -263,9 +263,8 @@ int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int3
     cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
         cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
-    if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("rdbStore_->Update lastVisitTime failed, ret = %{public}d", ret);
-        return E_HAS_DB_ERROR;
+    if (ret != NativeRdb::E_OK || changedRows <= 0) {
+        MEDIA_ERR_LOG("rdbStore_->Update lastVisitTime failed, changedRows = %{public}d", changedRows);
     }
     return changedRows;
 }
