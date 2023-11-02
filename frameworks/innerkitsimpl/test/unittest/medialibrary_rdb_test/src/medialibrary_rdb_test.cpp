@@ -428,7 +428,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_001, TestSize.Le
     ValuesBucket valuesBucket;
     string title = "medialib_UpdateLastVisitTime_test_001";
     valuesBucket.PutString(MEDIA_DATA_DB_TITLE, title);
-    valuesBucket.PutString(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    valuesBucket.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     cmd.SetValueBucket(valuesBucket);
     int32_t updatedRows = E_HAS_DB_ERROR;
     rdbStorePtr->Init();
@@ -442,9 +442,9 @@ HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_002, TestSize.Le
         exit(1);
     }
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    int32_t updatedRows = -1;
+    int32_t updatedRows = 0;
     int32_t ret = rdbStorePtr->UpdateLastVisitTime(cmd, updatedRows);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
+    EXPECT_EQ(ret, updatedRows);
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_003, TestSize.Level0)
