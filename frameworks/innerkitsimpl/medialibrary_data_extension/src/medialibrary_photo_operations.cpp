@@ -248,6 +248,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::Open");
+
     bool isSkipEdit = true;
     int32_t errCode = OpenEditOperation(cmd, isSkipEdit);
     if (errCode != E_OK || !isSkipEdit) {
@@ -269,11 +270,11 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
 
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         int32_t changedRows = 0;
-        MEDIA_DEBUG_LOG("uodate lastVisitTime begin");
+        MEDIA_DEBUG_LOG("update lastVisitTime begin");
         cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
         changedRows =  MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
         if (changedRows <= 0) {
-            MEDIA_ERR_LOG("uodate lastVisitTime Failed, changedRows = %{public}d.", changedRows);
+            MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
         }
     }
 
