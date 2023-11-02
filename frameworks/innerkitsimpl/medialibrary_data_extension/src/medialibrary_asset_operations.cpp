@@ -29,6 +29,7 @@
 #include "media_log.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
@@ -1139,6 +1140,44 @@ string MediaLibraryAssetOperations::GetEditDataPath(const string &path)
     return parentPath + "/editdata";
 }
 
+static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    DeleteNotifyAsyncTaskData* notifyData = static_cast<DeleteNotifyAsyncTaskData*>(data);
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Can not get rdbstore");
+        return;
+    }
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore);
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Can not get MediaLibraryNotify");
+        return;
+    }
+    if (notifyData->trashDate > 0) {
+        watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_REMOVE);
+        watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+    } else {
+        watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_ADD);
+        watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+    }
+
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    if (trashAlbumId <= 0) {
+        return;
+    }
+    NotifyType type = (notifyData->trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT :
+        NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+    watch->Notify(notifyData->notifyUri, type, trashAlbumId);
+}
+
 int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
 {
     ValueObject value;
@@ -1146,9 +1185,6 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
     if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_DATE_TRASHED, value)) {
         return E_DO_NOT_NEDD_SEND_NOTIFY;
     }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
 
     value.GetLong(trashDate);
 
@@ -1162,21 +1198,21 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
     }
 
     string notifyUri = MediaFileUtils::GetUriByExtrConditions(prefix, to_string(rowId), extraUri);
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (trashDate > 0) {
-        watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return E_ERR;
+    }
+    DeleteNotifyAsyncTaskData* taskData = new (std::nothrow) DeleteNotifyAsyncTaskData();
+    taskData->notifyUri = notifyUri;
+    taskData->trashDate = trashDate;
+    shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(
+        UpdateAlbumsAndSendNotifyInTrash, taskData);
+    if (notifyAsyncTask != nullptr) {
+        asyncWorker->AddTask(notifyAsyncTask, true);
     } else {
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+        MEDIA_ERR_LOG("Start UpdateAlbumsAndSendNotifyInTrash failed");
     }
-
-    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-    if (trashAlbumId <= 0) {
-        return E_OK;
-    }
-    NotifyType type = (trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
-    watch->Notify(notifyUri, type, trashAlbumId);
     return E_OK;
 }
 
