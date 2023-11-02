@@ -35,7 +35,6 @@ const std::string MediaColumn::MEDIA_DEVICE_NAME = "device_name";
 const std::string MediaColumn::MEDIA_DATE_MODIFIED = "date_modified";
 const std::string MediaColumn::MEDIA_DATE_ADDED = "date_added";
 const std::string MediaColumn::MEDIA_DATE_TAKEN = "date_taken";
-const std::string MediaColumn::MEDIA_TIME_VISIT = "time_visit";
 const std::string MediaColumn::MEDIA_DURATION = "duration";
 const std::string MediaColumn::MEDIA_TIME_PENDING = "time_pending";
 const std::string MediaColumn::MEDIA_IS_FAV = "is_favorite";
@@ -48,7 +47,7 @@ const std::string MediaColumn::MEDIA_VIRTURL_PATH = "virtual_path";
 const std::set<std::string> MediaColumn::MEDIA_COLUMNS = {
     MEDIA_ID, MEDIA_FILE_PATH, MEDIA_SIZE, MEDIA_TITLE, MEDIA_NAME, MEDIA_TYPE, MEDIA_MIME_TYPE,
     MEDIA_OWNER_PACKAGE, MEDIA_PACKAGE_NAME, MEDIA_DEVICE_NAME, MEDIA_DATE_MODIFIED, MEDIA_DATE_ADDED,
-    MEDIA_DATE_TAKEN, MEDIA_TIME_VISIT, MEDIA_DURATION, MEDIA_TIME_PENDING, MEDIA_IS_FAV, MEDIA_DATE_TRASHED,
+    MEDIA_DATE_TAKEN, MEDIA_DURATION, MEDIA_TIME_PENDING, MEDIA_IS_FAV, MEDIA_DATE_TRASHED,
     MEDIA_DATE_DELETED, MEDIA_HIDDEN, MEDIA_PARENT_ID, MEDIA_RELATIVE_PATH, MEDIA_VIRTURL_PATH
 };
 const std::set<std::string> MediaColumn::DEFAULT_FETCH_COLUMNS = {
@@ -79,6 +78,7 @@ const std::string PhotoColumn::PHOTO_DATE_DAY = "date_day";
 const std::string PhotoColumn::PHOTO_DATE_ADDED = "date_added";
 const std::string PhotoColumn::PHOTO_DATE_MODIFIED = "date_modified";
 const std::string PhotoColumn::PHOTO_DATE_TRASHED = "date_trashed";
+const std::string PhotoColumn::PHOTO_LAST_VISIT_TIME = "last_visit_time";
 const std::string PhotoColumn::PHOTO_HIDDEN_TIME = "hidden_time";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -116,7 +116,6 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_DATE_ADDED + " BIGINT, " +
     MEDIA_DATE_MODIFIED + " BIGINT, " +
     MEDIA_DATE_TAKEN + " BIGINT DEFAULT 0, " +
-    MEDIA_TIME_VISIT + " BIGINT DEFAULT 0, " +
     MEDIA_DURATION + " INT, " +
     MEDIA_TIME_PENDING + " BIGINT DEFAULT 0, " +
     MEDIA_IS_FAV + " INT DEFAULT 0, " +
@@ -147,6 +146,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DATE_MONTH + " TEXT, " +
     PHOTO_DATE_DAY + " TEXT, " +
     PHOTO_SHOOTING_MODE + " TEXT, " +
+    PHOTO_LAST_VISIT_TIME + " BIGINT DEFAULT 0, " +
     PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0)";
 
 
@@ -215,7 +215,6 @@ const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
                         " AND new.date_modified = old.date_modified AND old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
-                        " AND new.time_visit = old.time_visit " +
                         " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET dirty = " +
@@ -276,7 +275,6 @@ const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_DATE_ADDED + " BIGINT, " +
     MEDIA_DATE_MODIFIED + " BIGINT, " +
     MEDIA_DATE_TAKEN + " BIGINT DEFAULT 0, " +
-    MEDIA_TIME_VISIT + " BIGINT DEFAULT 0, " +
     MEDIA_DURATION + " INT, " +
     MEDIA_TIME_PENDING + " BIGINT DEFAULT 0, " +
     MEDIA_IS_FAV + " INT DEFAULT 0, " +
