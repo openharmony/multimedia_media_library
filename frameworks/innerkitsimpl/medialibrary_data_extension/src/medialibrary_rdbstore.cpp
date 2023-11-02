@@ -1440,17 +1440,9 @@ void AddHiddenTimeColumn(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
-            " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0"
-    };
-    ExecSqls(sqls, store);
-}
-
-void AddHiddenTimeIndex(RdbStore &store)
-{
-    const vector<string> sqls = {
+            " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0",
         PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
     };
-
     ExecSqls(sqls, store);
 }
 
@@ -1512,9 +1504,6 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
         AddHiddenTimeColumn(store);
     }
 
-    if (oldVersion < VERSION_ADD_HIDDEN_TIME_INDEX) {
-        AddHiddenTimeIndex(store);
-    }
 }
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
