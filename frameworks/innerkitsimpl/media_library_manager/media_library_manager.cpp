@@ -403,7 +403,13 @@ static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
         return false;
     }
 
-    return imageSize.width / imageSize.height == targetSize.width / targetSize.height;
+    float imageSizeScale = static_cast<float>(imageSize.width) / static_cast<float>(imageSize.height);
+    float targetSizeScale = static_cast<float>(targetSize.width) / static_cast<float>(targetSize.height);
+    if (imageSizeScale - targetSizeScale > FLOAT_EPSILON || targetSizeScale - imageSizeScale > FLOAT_EPSILON) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, const Size& size)
