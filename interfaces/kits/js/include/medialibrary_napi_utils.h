@@ -171,6 +171,7 @@ const int32_t PARAM0 = 0;
 const int32_t PARAM1 = 1;
 const int32_t PARAM2 = 2;
 const int32_t PARAM3 = 3;
+const int32_t PARAM4 = 4;
 
 /* Constants for array size */
 const int32_t ARGS_ZERO = 0;
@@ -178,10 +179,11 @@ const int32_t ARGS_ONE = 1;
 const int32_t ARGS_TWO = 2;
 const int32_t ARGS_THREE = 3;
 const int32_t ARGS_FOUR = 4;
+const int32_t ARGS_FIVE = 5;
 const int32_t ARG_BUF_SIZE = 100;
 constexpr uint32_t NAPI_INIT_REF_COUNT = 1;
 
-constexpr size_t NAPI_ARGC_MAX = 4;
+constexpr size_t NAPI_ARGC_MAX = 5;
 
 // Error codes
 const int32_t ERR_DEFAULT = 0;
@@ -433,6 +435,10 @@ public:
 
     template <class AsyncContext>
     static napi_status AsyncContextSetObjectInfo(napi_env env, napi_callback_info info, AsyncContext &asyncContext,
+        const size_t minArgs, const size_t maxArgs);
+
+    template <class AsyncContext>
+    static napi_status AsyncContextGetArgs(napi_env env, napi_callback_info info, AsyncContext &asyncContext,
         const size_t minArgs, const size_t maxArgs);
 
     template <class AsyncContext>
