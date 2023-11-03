@@ -1580,6 +1580,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_HIDDEN_TIME) {
         AddHiddenTimeColumn(store);
     }
+
+    if (oldVersion < VERSION_ADD_LOCATION_TABLE) {
+        AddLocationTables(store);
+    }
 }
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
@@ -1636,10 +1640,6 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     if (oldVersion < VERSION_ADD_FACE_TABLE) {
         AddFaceTables(store);
     }
-     
-    if (oldVersion < VERSION_ADD_LOCATION_TABLE) {
-        AddLocationTables(store);
-    } 
     return NativeRdb::E_OK;
 }
 

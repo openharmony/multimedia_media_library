@@ -29,26 +29,27 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-
 void ClearLocationData()
 {
     DataShare::DataSharePredicates predicates;
     Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
     MediaLibraryCommand geoKnowledgeCmd(geoKnowledgeUri);
     Uri geoDictionaryUri(URI_GEO_DICTIONARY);
-    MediaLibraryCommand geoDictionaryCmd(labelUri);
-    MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeUri, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryUri, predicates);
+    MediaLibraryCommand geoDictionaryCmd(geoDictionaryUri);
+    MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryCmd, predicates);
 }
 
 void MediaLibraryLocationTest::SetUpTestCase(void) {}
 
-void MediaLibraryLocationTest::TearDownTestCase(void) {
+void MediaLibraryLocationTest::TearDownTestCase(void)
+{
     ClearLocationData();
     MEDIA_INFO_LOG("Location_Test::End");
 }
 
-void MediaLibraryLocationTest::SetUp(void) {
+void MediaLibraryLocationTest::SetUp(void)
+{
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
@@ -101,7 +102,8 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_002, TestSiz
     DataShare::DataShareValuesBucket valuesBucket2;
     EXPECT_GT(retVal1, 0);
     EXPECT_LT(retVal2, 0);
-    MEDIA_INFO_LOG("Location_InsertGeoKnowledge_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal1, retVal2);
+    MEDIA_INFO_LOG("Location_InsertGeoKnowledge_Test_002::retVal = %{public}d. retVal2 = %{public}d. End",
+        retVal1, retVal2);
 }
 
 HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoKnowledge_Test_001, TestSize.Level0)
@@ -125,7 +127,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoKnowledge_Test_001, TestSiz
     vector<string> inValues;
     inValues.push_back("141189990037");
     inValues.push_back("140877099576");
-    predicates.IN(LOCATION_KEY, inValues);
+    predicates.In(LOCATION_KEY, inValues);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
     EXPECT_EQ((retVal == 1), true);
     vector<string> columns;
@@ -164,7 +166,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_DeleteGeoKnowledge_Test_001, TestSiz
     vector<string> inValues;
     inValues.push_back("141189990037");
     inValues.push_back("140877099576");
-    predicates.IN(LOCATION_KEY, inValues);
+    predicates.In(LOCATION_KEY, inValues);
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ((retVal == 1), true);
     MEDIA_INFO_LOG("Location_DeleteOcr_Test_001::retVal = %{public}d. End", retVal);
@@ -200,7 +202,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoDictionary_Test_001, TestSi
     vector<string> inValues;
     inValues.push_back("123456789123456789");
     inValues.push_back("987654321987654321");
-    predicates.IN(CITY_ID, inIdValues)
+    predicates.In(CITY_ID, inValues);
     predicates.And();
     predicates.EqualTo(LANGUAGE, "en");
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
@@ -233,7 +235,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_DeleteGeoDictionary_Test_001, TestSi
     vector<string> inValues;
     inValues.push_back("123456789123456789");
     inValues.push_back("987654321987654321");
-    predicates.IN(CITY_ID, inIdValues)
+    predicates.In(CITY_ID, inValues);
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ((retVal == 1), true);
     MEDIA_INFO_LOG("Location_DeleteGeoDictionary_Test_001::retVal = %{public}d. End", retVal);
