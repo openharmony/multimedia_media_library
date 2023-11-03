@@ -2379,50 +2379,55 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
     }
     work->data = reinterpret_cast<void *>(msg);
 
-    int ret = uv_queue_work(loop, work, [](uv_work_t *w) {}, [](uv_work_t *w, int s) {
-            // js thread
-            if (w == nullptr) {
-                return;
-            }
-
-            UvChangeMsg *msg = reinterpret_cast<UvChangeMsg *>(w->data);
-            do {
-                if (msg == nullptr) {
-                    NAPI_ERR_LOG("UvChangeMsg is null");
-                    break;
-                }
-                napi_env env = msg->env_;
-                NapiScopeHandler scopeHandler(env);
-                if (!scopeHandler.IsValid()) {
-                    break;
-                }
-
-                napi_value jsCallback = nullptr;
-                napi_status status = napi_get_reference_value(env, msg->ref_, &jsCallback);
-                if (status != napi_ok) {
-                    NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
-                    break;
-                }
-                napi_value retVal = nullptr;
-                napi_value result[ARGS_ONE];
-                result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, msg);
-                if (result[PARAM0] == nullptr) {
-                    break;
-                }
-                napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
-                if (status != napi_ok) {
-                    NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
-                    break;
-                }
-            } while (0);
-            delete msg;
-            delete w;
-    });
+    int ret = UvQueueWork(loop, work);
     if (ret != 0) {
         NAPI_ERR_LOG("Failed to execute libuv work queue, ret: %{public}d", ret);
         delete msg;
         delete work;
     }
+}
+
+int ChangeListenerNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
+{
+    return uv_queue_work(loop, work, [](uv_work_t *w) {}, [](uv_work_t *w, int s) {
+        // js thread
+        if (w == nullptr) {
+            return;
+        }
+
+        UvChangeMsg *msg = reinterpret_cast<UvChangeMsg *>(w->data);
+        do {
+            if (msg == nullptr) {
+                NAPI_ERR_LOG("UvChangeMsg is null");
+                break;
+            }
+            napi_env env = msg->env_;
+            NapiScopeHandler scopeHandler(env);
+            if (!scopeHandler.IsValid()) {
+                break;
+            }
+
+            napi_value jsCallback = nullptr;
+            napi_status status = napi_get_reference_value(env, msg->ref_, &jsCallback);
+            if (status != napi_ok) {
+                NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+                break;
+            }
+            napi_value retVal = nullptr;
+            napi_value result[ARGS_ONE];
+            result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, msg);
+            if (result[PARAM0] == nullptr) {
+                break;
+            }
+            napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
+            if (status != napi_ok) {
+                NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
+                break;
+            }
+        } while (0);
+        delete msg;
+        delete w;
+    });
 }
 
 int32_t MediaLibraryNapi::GetListenerType(const string &str) const
