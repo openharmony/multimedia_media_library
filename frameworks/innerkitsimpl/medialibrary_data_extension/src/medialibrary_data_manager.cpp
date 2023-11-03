@@ -49,6 +49,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_location_operations.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
@@ -407,6 +408,10 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::VISION_SHIELD: {
             return MediaLibraryVisionOperations::InsertOperation(cmd);
         }
+        case OperationObject::GEO_DICTIONARY:
+        case OperationObject::GEO_KNOWLEDGE: {
+            return MediaLibraryLocationOperations::InsertOperation(cmd);
+        }
         default: {
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
@@ -570,6 +575,10 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::VISION_SHIELD: {
             return MediaLibraryVisionOperations::DeleteOperation(cmd);
         }
+        case OperationObject::GEO_DICTIONARY:
+        case OperationObject::GEO_KNOWLEDGE: {
+            return MediaLibraryLocationOperations::DeleteOperation(cmd);
+        }
         default:
             break;
     }
@@ -627,6 +636,10 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
         }
         case OperationObject::PHOTO_ALBUM: {
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
+        }
+        case OperationObject::GEO_DICTIONARY:
+        case OperationObject::GEO_KNOWLEDGE: {
+            return MediaLibraryLocationOperations::UpdateOperation(cmd);
         }
         default:
             break;
@@ -953,6 +966,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
         queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
     } else if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::VISION_SHIELD) {
         queryResultSet = MediaLibraryVisionOperations::QueryOperation(cmd, columns);
+    } else if (oprnObject >= OperationObject::GEO_DICTIONARY && oprnObject <= OperationObject::GEO_KNOWLEDGE) {
+        queryResultSet = MediaLibraryLocationOperations::QueryOperation(cmd, columns);
     } else {
         tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);

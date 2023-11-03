@@ -20,6 +20,7 @@
 
 #include "cloud_sync_helper.h"
 #include "ipc_skeleton.h"
+#include "location_column.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -1170,6 +1171,16 @@ void MediaLibraryRdbStore::UpdateAPI10Tables()
     UpdateAPI10Table(*rdbStore_);
 }
 
+static void AddLocationTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_GEO_DICTIONARY_TABLE,
+        CREATE_GEO_KNOWLEDGE_TABLE,
+    };
+    MEDIA_INFO_LOG("start init location db");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void AddAnalysisTables(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -1625,6 +1636,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     if (oldVersion < VERSION_ADD_FACE_TABLE) {
         AddFaceTables(store);
     }
+     
+    if (oldVersion < VERSION_ADD_LOCATION_TABLE) {
+        AddLocationTables(store);
+    } 
     return NativeRdb::E_OK;
 }
 
