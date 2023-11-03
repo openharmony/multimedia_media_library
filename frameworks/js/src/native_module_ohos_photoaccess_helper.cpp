@@ -31,6 +31,8 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     FileAssetNapi::PhotoAccessHelperInit(env, exports);
     AlbumNapi::PhotoAccessHelperInit(env, exports);
     PhotoAlbumNapi::PhotoAccessInit(env, exports);
+    MediaAssetChangeRequestNapi::Init(env, exports);
+    MediaAlbumChangeRequestNapi::Init(env, exports);
     return exports;
 }
 

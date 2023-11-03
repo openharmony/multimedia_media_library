@@ -2428,6 +2428,11 @@ void FileAssetNapi::UpdateFileAssetInfo()
     fileAssetPtr = std::shared_ptr<FileAsset>(sFileAsset_);
 }
 
+shared_ptr<FileAsset> FileAssetNapi::GetFileAssetInstance() const
+{
+    return fileAssetPtr;
+}
+
 static int32_t CheckSystemApiKeys(napi_env env, const string &key)
 {
     static const set<string> SYSTEM_API_KEYS = {

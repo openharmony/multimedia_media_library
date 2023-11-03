@@ -383,4 +383,6 @@ export default {
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,
   PhotoViewPicker: PhotoViewPicker,
+  MediaAssetChangeRequest: photoAccessHelper.MediaAssetChangeRequest,
+  MediaAlbumChangeRequest: photoAccessHelper.MediaAlbumChangeRequest,
 };
