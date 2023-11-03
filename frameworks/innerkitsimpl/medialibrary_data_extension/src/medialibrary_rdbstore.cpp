@@ -911,6 +911,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_VISION_DELETE_TRIGGER,
     CREATE_NEW_INSERT_VISION_TRIGGER,
     CREATE_IMAGE_FACE_INDEX,
+    CREATE_GEO_KNOWLEDGE_TABLE,
+    CREATE_GEO_DICTIONARY_TABLE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)

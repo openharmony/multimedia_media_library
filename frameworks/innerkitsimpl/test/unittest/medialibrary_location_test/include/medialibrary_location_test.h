@@ -25,7 +25,7 @@ public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
     void SetUp();
-    void TearDown(); 
+    void TearDown();
 };
 } // namespace Media
 } // namespace OHOS
