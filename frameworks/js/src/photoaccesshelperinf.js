@@ -280,8 +280,8 @@ function parsePhotoPickerSelectOption(args) {
     if (option.MIMEType && PHOTO_VIEW_MIME_TYPE_MAP.has(option.MIMEType)) {
       config.parameters.filterMediaType = PHOTO_VIEW_MIME_TYPE_MAP.get(option.MIMEType);
     }
-    config.parameters.isSupportPhotoTaken = option.isSupportPhotoTaken === undefined || option.isSupportPhotoTaken;
-    config.parameters.isSupportEdit = option.isSupportEdit === undefined || option.isSupportEdit;
+    config.parameters.isPhotoTakingSupported = option.isPhotoTakingSupported === undefined || option.isPhotoTakingSupported;
+    config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
   }
 
   return config;
@@ -354,8 +354,8 @@ async function photoPickerSelect(...args) {
 function PhotoSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
-  this.isSupportPhotoTaken = true;
-  this.isSupportEdit = true;
+  this.isPhotoTakingSupported = true;
+  this.isEditSupported = true;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto) {
