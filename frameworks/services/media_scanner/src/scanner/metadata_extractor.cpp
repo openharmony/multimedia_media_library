@@ -25,6 +25,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
 #include "nlohmann/json.hpp"
+#include "sandbox_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -94,6 +95,8 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
         err = imageSource->GetImagePropertyString(0, exifKey, propertyStr);
         exifJson[exifKey] = (err == 0) ? propertyStr: "";
     }
+    exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
+        AppFileService::SandboxHelper::Encode(exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
     data->SetAllExif(exifJson.dump());
 
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, propertyStr);
