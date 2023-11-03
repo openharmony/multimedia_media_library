@@ -3002,7 +3002,7 @@ static void UserFileMgrSetPendingExecute(napi_env env, void *data)
     } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
         uri += UFM_AUDIO + "/" + OPRN_PENDING;
     } else {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
 
@@ -4017,7 +4017,7 @@ static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, EDIT_DATA_REQUEST);
@@ -4126,7 +4126,7 @@ static void PhotoAccessHelperRequestSourceExecute(napi_env env, void *data)
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
@@ -4223,7 +4223,7 @@ static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, COMMIT_REQUEST);

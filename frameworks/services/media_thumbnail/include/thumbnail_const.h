@@ -67,6 +67,8 @@ const std::string CLOSE_CREATE_THUMB_STATUS = "create_thumbnail_sync_status";
 const int32_t CREATE_THUMB_SYNC_STATUS = 1;
 const int32_t CREATE_THUMB_ASYNC_STATUS = 0;
 
+constexpr float FLOAT_EPSILON = 1e-6;
+
 // request photo type
 const std::string REQUEST_PHOTO_TYPE = "request_photo_type";
 
