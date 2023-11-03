@@ -4743,10 +4743,12 @@ static void GetPhotoIndexAsyncCallbackComplete(napi_env env, napi_status status,
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
     } else {
-        auto fileAsset = context->fetchFileResult->GetFirstObject();
         int32_t count = -1;
-        if (fileAsset != nullptr) {
-            count = fileAsset->GetPhotoIndex();
+        if (context->fetchFileResult != nullptr) {
+            auto fileAsset = context->fetchFileResult->GetFirstObject();
+            if (fileAsset != nullptr) {
+                count = fileAsset->GetPhotoIndex();
+            }
         }
         jsContext->status = true;
         napi_create_int32(env, count, &jsContext->data);

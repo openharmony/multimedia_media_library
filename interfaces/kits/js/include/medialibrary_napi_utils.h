@@ -43,7 +43,7 @@
 #define CHECK_COND_WITH_MESSAGE(env, cond, msg)                 \
     do {                                                            \
         if (!(cond)) {                                    \
-            NapiError::ThrowError(env, -OHOS_INVALID_PARAM_CODE, __FUNCTION__, __LINE__, msg); \
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, __FUNCTION__, __LINE__, msg); \
             return nullptr;                                          \
         }                                                           \
     } while (0)
@@ -152,7 +152,7 @@
 
 #define CHECK_ARGS(env, cond, err) CHECK_ARGS_BASE(env, cond, err, nullptr)
 
-#define CHECK_ARGS_THROW_INVALID_PARAM(env, cond) CHECK_ARGS(env, cond, -OHOS_INVALID_PARAM_CODE)
+#define CHECK_ARGS_THROW_INVALID_PARAM(env, cond) CHECK_ARGS(env, cond, OHOS_INVALID_PARAM_CODE)
 
 #define CHECK_ARGS_RET_VOID(env, cond, err) CHECK_ARGS_BASE(env, cond, err, NAPI_RETVAL_NOTHING)
 
