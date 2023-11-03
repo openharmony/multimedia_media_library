@@ -423,7 +423,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level
     valuesBucket.Put(IMAGE_FACE_VERSION, "1.01");
     valuesBucket.Put(PROB, 2.344);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    EXPECT_EQ((retVal > 0), true); MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
+    EXPECT_EQ((retVal > 0), true);
+    MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
     DataShare::DataShareValuesBucket valuesBucket1;
     valuesBucket1.Put(FILE_ID, 1);
     valuesBucket1.Put(FACE_ID, 1);
