@@ -22,7 +22,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   async onRestore(bundleVersion : BundleVersion) : Promise<void> {
     console.log(TAG, `onRestore ok ${JSON.stringify(bundleVersion)}`);
     console.time(TAG + ' RESTORE');
-    var path:string;
+    let path:string;
     if (bundleVersion.name === '0.0.0.0' && bundleVersion.code === 0) {
       await mediabackup.startRestore(UPDATE_RESTORE, galleryAppName, mediaAppName);
       path = backupPath;
