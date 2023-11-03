@@ -134,8 +134,8 @@ public:
     static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
         int &err);
-    static bool ResizeTHUMB(int& width, int& height);
-    static bool ResizeLCD(int& width, int& height);
+    static bool ResizeThumb(int& width, int& height);
+    static bool ResizeLcd(int& width, int& height);
     static int32_t GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo);
 private:
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
@@ -147,7 +147,7 @@ private:
 
     static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
-    static Size ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail);
+    static Size ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize);
     static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,

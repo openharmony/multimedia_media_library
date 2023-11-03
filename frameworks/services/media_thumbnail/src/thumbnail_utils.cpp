@@ -189,7 +189,7 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
     }
 
     DecodeOptions decOpts;
-    decOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
+    decOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize);
     decOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     data.source = audioImageSource->CreatePixelMap(decOpts, errCode);
     if ((errCode != E_OK) || (data.source == nullptr)) {
@@ -309,7 +309,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     }
 
     DecodeOptions decodeOpts;
-    decodeOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
+    decodeOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize);
     decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     data.source = imageSource->CreatePixelMap(decodeOpts, err);
     if ((err != E_OK) || (data.source == nullptr)) {
@@ -1166,22 +1166,9 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
     return true;
 }
 
-Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail)
+Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize)
 {
-    float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
-    float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
-    float scale = 1.0f;
-    if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
-        scale = (float)desiredSize.height / sourceSize.height;
-    } else {
-        scale = (float)desiredSize.width / sourceSize.width;
-    }
-    scale = scale < 1.0f ? scale : 1.0f;
-    Size decodeSize = {
-        static_cast<int32_t> (scale * sourceSize.width),
-        static_cast<int32_t> (scale * sourceSize.height),
-    };
-    return decodeSize;
+    return desiredSize.width != 0 && desiredSize.height != 0 ? desiredSize : sourceSize;
 }
 
 bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail)
@@ -1687,7 +1674,7 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
     }
 }
 
-bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
+bool ThumbnailUtils::ResizeThumb(int &width, int &height)
 {
     int maxLen = max(width, height);
     int minLen = min(width, height);
@@ -1709,12 +1696,8 @@ bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
             width = maxLen;
             height = minLen;
         }
-    } else if (maxLen <= SHORT_SIDE_THRESHOLD) {
-        // do nothing,reuse original image
     } else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD) {
-        if (ratio <= ASPECT_RATIO_THRESHOLD) {
-            // do nothing,reuse original image
-        } else {
+        if (ratio > ASPECT_RATIO_THRESHOLD) {
             int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
             if (height > width) {
                 width = minLen;
@@ -1725,10 +1708,10 @@ bool ThumbnailUtils::ResizeTHUMB(int &width, int &height)
             }
         }
     }
-        return true;
+    return true;
 }
 
-bool ThumbnailUtils::ResizeLCD(int &width, int &height)
+bool ThumbnailUtils::ResizeLcd(int &width, int &height)
 {
     int maxLen = max(width, height);
     int minLen = min(width, height);
@@ -1737,11 +1720,13 @@ bool ThumbnailUtils::ResizeLCD(int &width, int &height)
         return false;
     }
     double ratio = (double)maxLen / minLen;
+    if (std::abs(ratio) < EPSILON) {
+        MEDIA_ERR_LOG("ratio is 0");
+        return false;
+    }
     int newMaxLen = maxLen;
     int newMinLen = minLen;
-    if (maxLen <= LCD_LONG_SIDE_THRESHOLD) {
-        // do nothing,reuse original image
-    } else {
+    if (maxLen > LCD_LONG_SIDE_THRESHOLD) {
         newMaxLen = LCD_LONG_SIDE_THRESHOLD;
         newMinLen = static_cast<int>(newMaxLen / ratio);
     }

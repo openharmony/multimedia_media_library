@@ -159,8 +159,8 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
         .uri = uri,
     };
     bool isThumbnail = IsThumbnail(size.width, size.height);
-    shared_ptr<IThumbnailHelper> thumbnailHelper
-        = ThumbnailHelperFactory::GetThumbnailHelper(isThumbnail
+    shared_ptr<IThumbnailHelper> thumbnailHelper =
+        ThumbnailHelperFactory::GetThumbnailHelper(isThumbnail
             ? ThumbnailHelperType::DEFAULT : ThumbnailHelperType::LCD);
     if (thumbnailHelper == nullptr) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_NO_MEMORY},
@@ -243,22 +243,23 @@ int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &
         return E_ERR;
     }
     
-    if (CreateDefaultThumbnail(imageInfo, path, tableName, fileId, isSync) != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
+    int32_t err = CreateDefaultThumbnail(imageInfo, path, tableName, fileId, isSync);
+    if (err != E_OK) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("CreateDefaultThumbnail failed");
-        return E_ERR;
+        return err;
     }
 
-    if (CreateLCDThumbnail(imageInfo, path, tableName, fileId, isSync) != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
+    err = CreateLcdThumbnail(imageInfo, path, tableName, fileId, isSync);
+    if (err != E_OK) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        MEDIA_ERR_LOG("CreateLCDThumbnail failed");
-        return E_ERR;
+        MEDIA_ERR_LOG("CreateLcdThumbnail failed");
+        return err;
     }
-    
     return E_OK;
 }
 
@@ -291,12 +292,12 @@ int32_t ThumbnailService::CreateDefaultThumbnail(ImageInfo& imageInfo,
 {
     int width = imageInfo.size.width;
     int height = imageInfo.size.height;
-    if (!ThumbnailUtils::ResizeTHUMB(width, height)) {
-        MEDIA_ERR_LOG("ResizeTHUMB failed");
+    if (!ThumbnailUtils::ResizeThumb(width, height)) {
+        MEDIA_ERR_LOG("ResizeThumb failed");
         return E_ERR;
     }
-    shared_ptr<IThumbnailHelper> thumbnailHelper
-        = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::DEFAULT);
+    shared_ptr<IThumbnailHelper> thumbnailHelper =
+        ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::DEFAULT);
     if (thumbnailHelper == nullptr) {
         MEDIA_ERR_LOG("thumbnailHelper nullptr");
         return E_ERR;
@@ -318,7 +319,7 @@ int32_t ThumbnailService::CreateDefaultThumbnail(ImageInfo& imageInfo,
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateLCDThumbnail(ImageInfo& imageInfo,
+int32_t ThumbnailService::CreateLcdThumbnail(ImageInfo& imageInfo,
     const std::string &path, const std::string &tableName, const std::string &fileId, const bool &isSync)
 {
     shared_ptr<IThumbnailHelper> lcdHelper = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::LCD);
@@ -326,20 +327,20 @@ int32_t ThumbnailService::CreateLCDThumbnail(ImageInfo& imageInfo,
         MEDIA_ERR_LOG("lcdHelper nullptr");
         return E_ERR;
     }
-    int widthLCD = imageInfo.size.width;
-    int heightLCD = imageInfo.size.height;
-    if (!ThumbnailUtils::ResizeLCD(widthLCD, heightLCD)) {
-        MEDIA_ERR_LOG("ResizeLCD failed");
+    int widthLcd = imageInfo.size.width;
+    int heightLcd = imageInfo.size.height;
+    if (!ThumbnailUtils::ResizeLcd(widthLcd, heightLcd)) {
+        MEDIA_ERR_LOG("ResizeLcd failed");
         return E_ERR;
     }
-    Size imageSizeLCD = {widthLCD, heightLCD};
+    Size imageSizeLcd = {widthLcd, heightLcd};
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .path = path,
         .table = tableName,
         .row = fileId,
         .screenSize = screenSize_,
-        .imageSize = imageSizeLCD
+        .imageSize = imageSizeLcd
     };
     int32_t err = lcdHelper->CreateThumbnail(opts, isSync);
     if (err != E_OK) {
