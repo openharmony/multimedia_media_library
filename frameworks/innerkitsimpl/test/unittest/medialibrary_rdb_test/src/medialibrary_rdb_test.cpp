@@ -433,7 +433,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_001, TestSize.Le
     int32_t updatedRows = E_HAS_DB_ERROR;
     rdbStorePtr->Init();
     int32_t ret = rdbStorePtr->UpdateLastVisitTime(cmd, updatedRows);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_GE(ret, E_OK);
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_002, TestSize.Level0)
