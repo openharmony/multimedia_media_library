@@ -47,7 +47,6 @@ constexpr int32_t USER_COMMENT_MAX_LEN = 140;
 
 napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
 {
-    NAPI_DEBUG_LOG("MediaAssetChangeRequestNapi::Init");
     NapiClassInfo info = { .name = MEDIA_ASSET_CHANGE_REQUEST_CLASS,
         .ref = &constructor_,
         .constructor = Constructor,
@@ -62,7 +61,6 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
 
 napi_value MediaAssetChangeRequestNapi::Constructor(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("enter MediaAssetChangeRequestNapi::Constructor");
     napi_value newTarget = nullptr;
     CHECK_ARGS(env, napi_get_new_target(env, info, &newTarget), JS_INNER_FAIL);
     bool isConstructor = newTarget != nullptr;
@@ -74,14 +72,14 @@ napi_value MediaAssetChangeRequestNapi::Constructor(napi_env env, napi_callback_
         napi_valuetype valueType;
         FileAssetNapi* fileAssetNapi;
         CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_INNER_FAIL);
-        CHECK_ARGS_WITH_MESSAGE(env, argc == ARGS_ONE, "Number of args is invalid");
+        CHECK_COND_WITH_MESSAGE(env, argc == ARGS_ONE, "Number of args is invalid");
         CHECK_ARGS(env, napi_typeof(env, argv[PARAM0], &valueType), JS_INNER_FAIL);
-        CHECK_ARGS_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
+        CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
         CHECK_ARGS(env, napi_unwrap(env, argv[PARAM0], reinterpret_cast<void**>(&fileAssetNapi)), JS_INNER_FAIL);
-        CHECK_ARGS_WITH_MESSAGE(env, fileAssetNapi != nullptr, "Failed to get FileAssetNapi object");
+        CHECK_COND_WITH_MESSAGE(env, fileAssetNapi != nullptr, "Failed to get FileAssetNapi object");
 
         unique_ptr<MediaAssetChangeRequestNapi> obj = make_unique<MediaAssetChangeRequestNapi>();
-        CHECK_ARGS_WITH_MESSAGE(env, obj != nullptr, "Create MediaAssetChangeRequestNapi failed");
+        CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Create MediaAssetChangeRequestNapi failed");
         obj->fileAsset_ = fileAssetNapi->GetFileAssetInstance();
         CHECK_ARGS(env,
             napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()), MediaAssetChangeRequestNapi::Destructor,
@@ -122,7 +120,7 @@ static napi_value ParseArgsDeleteAssets(
 
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_THREE;
-    CHECK_ARGS_WITH_MESSAGE(env,
+    CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
     CHECK_COND(env, MediaAssetChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
@@ -131,8 +129,8 @@ static napi_value ParseArgsDeleteAssets(
     vector<napi_value> napiValues;
     napi_valuetype valueType = napi_undefined;
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
-    CHECK_ARGS_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
-    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_ERR_PARAMETER_INVALID);
+    CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
+    CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     if (valueType == napi_string) { // array of asset uri
         CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetStringArray(env, napiValues, uris));
     } else if (valueType == napi_object) { // array of asset object
@@ -142,9 +140,9 @@ static napi_value ParseArgsDeleteAssets(
         return nullptr;
     }
 
-    CHECK_ARGS_WITH_MESSAGE(env, !uris.empty(), "Failed to check empty uri");
+    CHECK_COND_WITH_MESSAGE(env, !uris.empty(), "Failed to check empty uri");
     for (const auto& uri : uris) {
-        CHECK_ARGS_WITH_MESSAGE(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos,
+        CHECK_COND_WITH_MESSAGE(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos,
             "Failed to check uri format, not a photo uri");
     }
 
@@ -158,7 +156,6 @@ static napi_value ParseArgsDeleteAssets(
 
 static void DeleteAssetsExecute(napi_env env, void* data)
 {
-    NAPI_DEBUG_LOG("enter DeleteAssetsExecute");
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
     string trashUri = PAH_TRASH_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
@@ -172,7 +169,6 @@ static void DeleteAssetsExecute(napi_env env, void* data)
 
 static void DeleteAssetsCompleteCallback(napi_env env, napi_status status, void* data)
 {
-    NAPI_DEBUG_LOG("enter DeleteAssetsCompleteCallback");
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();
@@ -193,16 +189,14 @@ static void DeleteAssetsCompleteCallback(napi_env env, napi_status status, void*
 
 napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("enter MediaAssetChangeRequestNapi::JSDeleteAssets");
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
-    CHECK_ARGS_WITH_MESSAGE(env, ParseArgsDeleteAssets(env, info, asyncContext), "Failed to parse args");
+    CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAssets(env, info, asyncContext), "Failed to parse args");
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(
         env, asyncContext, "ChangeRequestDeleteAssets", DeleteAssetsExecute, DeleteAssetsCompleteCallback);
 }
 
 napi_value MediaAssetChangeRequestNapi::JSSetFavorite(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("enter MediaAssetChangeRequestNapi::JSSetFavorite");
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -210,11 +204,11 @@ napi_value MediaAssetChangeRequestNapi::JSSetFavorite(napi_env env, napi_callbac
 
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     bool isFavorite;
-    CHECK_ARGS_WITH_MESSAGE(env,
+    CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, isFavorite) == napi_ok,
         "Failed to parse args");
-    CHECK_ARGS_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
-    CHECK_ARGS_WITH_MESSAGE(env, asyncContext->objectInfo->fileAsset_ != nullptr, "FileAsset is nullptr");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->objectInfo->fileAsset_ != nullptr, "FileAsset is nullptr");
     asyncContext->objectInfo->fileAsset_->SetFavorite(isFavorite);
     asyncContext->objectInfo->assetChangeOperations_.push_back(AssetChangeOperation::SET_FAVORITE);
 
@@ -225,7 +219,6 @@ napi_value MediaAssetChangeRequestNapi::JSSetFavorite(napi_env env, napi_callbac
 
 napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("enter MediaAssetChangeRequestNapi::JSSetUserComment");
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -233,12 +226,12 @@ napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_call
 
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     string userComment;
-    CHECK_ARGS_WITH_MESSAGE(env,
+    CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, userComment) == napi_ok,
         "Failed to parse args");
-    CHECK_ARGS_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
-    CHECK_ARGS_WITH_MESSAGE(env, userComment.length() <= USER_COMMENT_MAX_LEN, "user comment too long");
-    CHECK_ARGS_WITH_MESSAGE(env, asyncContext->objectInfo->fileAsset_ != nullptr, "FileAsset is nullptr");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, userComment.length() <= USER_COMMENT_MAX_LEN, "user comment too long");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->objectInfo->fileAsset_ != nullptr, "FileAsset is nullptr");
     asyncContext->objectInfo->fileAsset_->SetUserComment(userComment);
     asyncContext->objectInfo->assetChangeOperations_.push_back(AssetChangeOperation::SET_USER_COMMENT);
 
@@ -250,7 +243,6 @@ napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_call
 static bool SetAssetPropertyExecute(
     MediaAssetChangeRequestAsyncContext& context, const AssetChangeOperation& changeOperation)
 {
-    NAPI_DEBUG_LOG("enter SetAssetPropertyExecute");
     string uri;
     string property;
     DataShare::DataSharePredicates predicates;
@@ -288,7 +280,6 @@ static bool SetAssetPropertyExecute(
 
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
 {
-    NAPI_DEBUG_LOG("enter ApplyAssetChangeRequestExecute");
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
     unordered_set<AssetChangeOperation> appliedOperations;
     for (auto& changeOperation : context->assetChangeOperations) {
@@ -319,7 +310,6 @@ static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
 
 static void ApplyAssetChangeRequestCompleteCallback(napi_env env, napi_status status, void* data)
 {
-    NAPI_DEBUG_LOG("enter ApplyAssetChangeRequestCompleteCallback");
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();
@@ -340,15 +330,14 @@ static void ApplyAssetChangeRequestCompleteCallback(napi_env env, napi_status st
 
 napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("enter MediaAssetChangeRequestNapi::ApplyChanges");
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
-    CHECK_ARGS_WITH_MESSAGE(env,
+    CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, asyncContext, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
     asyncContext->objectInfo = this;
-    CHECK_ARGS_WITH_MESSAGE(env, !assetChangeOperations_.empty(), "None request to apply");
+    CHECK_COND_WITH_MESSAGE(env, !assetChangeOperations_.empty(), "None request to apply");
     asyncContext->assetChangeOperations = assetChangeOperations_;
     assetChangeOperations_.clear();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ApplyMediaAssetChangeRequest",

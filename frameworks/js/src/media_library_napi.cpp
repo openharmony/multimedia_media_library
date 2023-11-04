@@ -5940,17 +5940,14 @@ napi_value MediaLibraryNapi::PahGetHiddenAlbums(napi_env env, napi_callback_info
 
 napi_value MediaLibraryNapi::JSApplyChanges(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("enter MediaLibraryNapi::JSApplyChanges");
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = { 0 };
-    napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), JS_INNER_FAIL);
-    CHECK_COND_RET(argc >= ARGS_ONE && argc <= ARGS_TWO, result, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, argc >= ARGS_ONE && argc <= ARGS_TWO, "Number of args is invalid");
 
     MediaChangeRequestNapi* obj;
     CHECK_ARGS(env, napi_unwrap(env, argv[PARAM0], reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
-    CHECK_COND_RET(obj != nullptr, result, "MediaChangeRequestNapi object is null");
+    CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "MediaChangeRequestNapi object is null");
     return obj->ApplyChanges(env, info);
 }
 } // namespace Media
