@@ -107,6 +107,7 @@ napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callba
     CHECK_ARGS_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, albumName) == napi_ok,
         "Failed to parse args");
+    CHECK_ARGS_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
     CHECK_ARGS_WITH_MESSAGE(env, MediaFileUtils::CheckAlbumName(albumName) == E_OK, "Invalid album name");
 
     auto photoAlbum = asyncContext->objectInfo->photoAlbum_;
@@ -135,6 +136,7 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
     CHECK_ARGS_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, coverUri) == napi_ok,
         "Failed to parse args");
+    CHECK_ARGS_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
 
     auto photoAlbum = asyncContext->objectInfo->photoAlbum_;
     CHECK_ARGS_WITH_MESSAGE(env, photoAlbum != nullptr, "PhotoAlbum is nullptr");

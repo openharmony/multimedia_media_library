@@ -213,6 +213,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetFavorite(napi_env env, napi_callbac
     CHECK_ARGS_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsBoolCallBack(env, info, asyncContext, isFavorite) == napi_ok,
         "Failed to parse args");
+    CHECK_ARGS_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
     CHECK_ARGS_WITH_MESSAGE(env, asyncContext->objectInfo->fileAsset_ != nullptr, "FileAsset is nullptr");
     asyncContext->objectInfo->fileAsset_->SetFavorite(isFavorite);
     asyncContext->objectInfo->assetChangeOperations_.push_back(AssetChangeOperation::SET_FAVORITE);
@@ -235,6 +236,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_call
     CHECK_ARGS_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, userComment) == napi_ok,
         "Failed to parse args");
+    CHECK_ARGS_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
     CHECK_ARGS_WITH_MESSAGE(env, userComment.length() <= USER_COMMENT_MAX_LEN, "user comment too long");
     CHECK_ARGS_WITH_MESSAGE(env, asyncContext->objectInfo->fileAsset_ != nullptr, "FileAsset is nullptr");
     asyncContext->objectInfo->fileAsset_->SetUserComment(userComment);
