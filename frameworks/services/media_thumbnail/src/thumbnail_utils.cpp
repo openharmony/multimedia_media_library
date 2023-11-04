@@ -189,7 +189,7 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
     }
 
     DecodeOptions decOpts;
-    decOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize);
+    decOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
     decOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     data.source = audioImageSource->CreatePixelMap(decOpts, errCode);
     if ((errCode != E_OK) || (data.source == nullptr)) {
@@ -309,7 +309,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     }
 
     DecodeOptions decodeOpts;
-    decodeOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize);
+    decodeOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
     decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     data.source = imageSource->CreatePixelMap(decodeOpts, err);
     if ((err != E_OK) || (data.source == nullptr)) {
@@ -1166,9 +1166,26 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
     return true;
 }
 
-Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize)
+Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail)
 {
-    return desiredSize.width != 0 && desiredSize.height != 0 ? desiredSize : sourceSize;
+    if (isThumbnail) {
+        float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
+        float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
+        float scale = 1.0f;
+        if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
+            scale = (float)desiredSize.height / sourceSize.height;
+        } else {
+            scale = (float)desiredSize.width / sourceSize.width;
+        }
+        scale = scale < 1.0f ? scale : 1.0f;
+        Size decodeSize = {
+            static_cast<int32_t> (scale * sourceSize.width),
+            static_cast<int32_t> (scale * sourceSize.height),
+        };
+        return decodeSize;
+    } else {
+        return desiredSize.width != 0 && desiredSize.height != 0 ? desiredSize : sourceSize;
+    }
 }
 
 bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail)
@@ -1703,8 +1720,8 @@ bool ThumbnailUtils::ResizeThumb(int &width, int &height)
                 width = minLen;
                 height = newMaxLen;
             } else {
-                width = maxLen;
-                height = newMaxLen;
+                width = newMaxLen;
+                height = minLen;
             }
         }
     }
