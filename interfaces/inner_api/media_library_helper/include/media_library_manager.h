@@ -146,6 +146,7 @@ private:
     static unique_ptr<PixelMap> GetPixelMapWithoutDecode(UniqueFd &uniqueFd, const Size& size);
 
     static shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
+    sptr<IRemoteObject> token_;
 };
 } // namespace Media
 } // namespace OHOS
