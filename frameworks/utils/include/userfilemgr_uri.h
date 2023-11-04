@@ -82,6 +82,7 @@ const std::string MEDIA_ALBUMOPRN_CREATEALBUM = "create_album";
 const std::string MEDIA_ALBUMOPRN_MODIFYALBUM = "modify_album";
 const std::string MEDIA_ALBUMOPRN_DELETEALBUM = "delete_album";
 const std::string MEDIA_ALBUMOPRN_QUERYALBUM = "query_album";
+const std::string MEDIA_FILEOPRN_ORDERALBUM = "order_album";
 const std::string MEDIA_FILEOPRN_GETALBUMCAPACITY = "get_album_capacity";
 
 // Photo album operations constants
@@ -90,6 +91,8 @@ const std::string URI_QUERY_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_AL
 const std::string URI_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_DELETE_PHOTOS;
 const std::string URI_COMPAT_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" +
         OPRN_COMPAT_DELETE_PHOTOS;
+const std::string URI_COMPAT_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" +
+        MEDIA_FILEOPRN_ORDERALBUM;
 
 // Photo map operations constants
 const std::string PHOTO_MAP_OPRN = "photo_map_v10_operation";

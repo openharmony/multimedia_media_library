@@ -186,9 +186,8 @@ static std::string ExtractVideoShootingMode(const std::string &genreJson)
             end = genreJson.find("}", pos);
         }
         return genreJson.substr(start + 1, end - start - 1); // 1: length offset
-    } else {
-        return "";
     }
+    return "";
 }
 
 void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,

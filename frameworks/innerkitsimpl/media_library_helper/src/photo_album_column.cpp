@@ -43,6 +43,10 @@ const string PhotoAlbumColumns::CONTAINS_HIDDEN = "contains_hidden";
 const string PhotoAlbumColumns::HIDDEN_COUNT = "hidden_count";
 const string PhotoAlbumColumns::HIDDEN_COVER = "hidden_cover";
 
+// For sorting albums
+const string PhotoAlbumColumns::ALBUM_ORDER = "album_order";
+const string PhotoAlbumColumns::REFERENCE_ALBUM_ID = "reference_album_id";
+
 // default fetch columns
 const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
     ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED
@@ -69,8 +73,8 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_RELATIVE_PATH + " TEXT, " +
     CONTAINS_HIDDEN + " INT DEFAULT 0, " +
     HIDDEN_COUNT + " INT DEFAULT 0, " +
-    HIDDEN_COVER + " TEXT DEFAULT '' " +
-    ")";
+    HIDDEN_COVER + " TEXT DEFAULT '', " +
+    ALBUM_ORDER + " INT )";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
@@ -98,6 +102,21 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
     " BEGIN UPDATE " + TABLE + " SET dirty = " +
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
     " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
+
+const std::string PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER =
+        " CREATE TRIGGER update_order_trigger AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
+        " FOR EACH ROW " +
+        " BEGIN " +
+        " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = album_order - 1" +
+        " WHERE album_order > old.album_order; " +
+        " END";
+
+const std::string PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER =
+        " CREATE TRIGGER insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
+        " BEGIN " +
+        " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = (" +
+        " SELECT Max(album_order) FROM " + PhotoAlbumColumns::TABLE + ") + 1 WHERE rowid = new.rowid;"
+        " END";
 
 bool PhotoAlbumColumns::IsPhotoAlbumColumn(const string &columnName)
 {
