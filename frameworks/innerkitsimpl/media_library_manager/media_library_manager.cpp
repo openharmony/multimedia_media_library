@@ -59,6 +59,7 @@ MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 
 void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
 {
+    token_ = token;
     if (sDataShareHelper_ == nullptr) {
         sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     }
@@ -88,14 +89,15 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
 
 int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 {
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("sDataShareHelper_ is null");
+    auto dataShareHelper = DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("dataShareHelper is null");
         return E_FAIL;
     }
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYVOLUME + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
     DataSharePredicates predicates;
-    auto queryResultSet = sDataShareHelper_->Query(uri, predicates, columns);
+    auto queryResultSet = dataShareHelper->Query(uri, predicates, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("queryResultSet is null!");
         return E_FAIL;
