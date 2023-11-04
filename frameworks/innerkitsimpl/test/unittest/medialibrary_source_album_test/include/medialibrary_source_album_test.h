@@ -30,4 +30,4 @@ public:
 } // namespace Media
 } // namespace OHOS
 
-#endif // MEDIALIBRARY_PHOTO_OPERATIONS_TEST_H
+#endif // MEDIALIBRARY_SOURCE_OPERATIONS_TEST_H

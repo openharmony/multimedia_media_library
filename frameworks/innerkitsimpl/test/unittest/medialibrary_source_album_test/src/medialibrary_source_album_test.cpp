@@ -17,8 +17,8 @@
 
 #include "medialibrary_source_album_test.h"
 
-#include <iostream>  
-#include <chrono>  
+#include <chrono>
+#include <mutex>
 
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_photo_operations.h"
@@ -55,10 +55,12 @@ using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
 using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
-
+const long ERROR_PEDING = -2;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
+static std::atomic<int> fileNumber(0);
 
-void ClearData() {
+void ClearData()
+{
     string clearPhotoSql = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
     string clearSourceAlbumSql = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
         PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SYSTEM) + " AND " +
@@ -80,24 +82,26 @@ void ClearData() {
         }
         MEDIA_DEBUG_LOG("Execute sql %{private}s success", sql.c_str());
     }
-
 }
 
-int64_t GetTimestamp() {
+int64_t GetTimestamp()
+{
     auto now = std::chrono::system_clock::now();
     auto duration = now.time_since_epoch();
     auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
     return seconds.count();
 }
 
-string GetQuerySourceAlbumSql(string &packageName) {
+string GetQuerySourceAlbumSql(string &packageName)
+{
     return "SELECT * FROM " + PhotoAlbumColumns::TABLE + "WHERE " +
         PhotoAlbumColumns::ALBUM_NAME + " = " + packageName + " AND " +
         PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SYSTEM) + " AND " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::SOURCE);
 }
 
-string GetCoverUri(int64_t &outRowId, string &title, string &disPlayName) {
+string GetCoverUri(int64_t &outRowId, string &title, string &disPlayName)
+{
     return PhotoColumn::PHOTO_URI_PREFIX + to_string(outRowId) + "/" + title + "/" + disPlayName;
 }
 
@@ -107,18 +111,19 @@ inline void CheckColumn(shared_ptr<OHOS::NativeRdb::ResultSet> &resultSet, const
     EXPECT_EQ(ResultSetUtils::GetValFromColumn(column, resultSet, type), expected);
 }
 
-string GetTitle(int64_t &timestamp) {
-    srand(time(0));
-    int random_number = rand() % 900 + 100; 
-    return "IMG_" + to_string(timestamp) + "_" + to_string(random_number);
+string GetTitle(int64_t &timestamp)
+{
+    return "IMG_" + to_string(timestamp) + "_" + to_string(++fileNumber);
 }
 
-string GetDisPlayName(string &title) {
+string GetDisPlayName(string &title)
+{
     return title + ".png";
 }
 
 void InsertPhoto(string &packageName, int64_t &outRowId, string &title,
-    string &displayName, bool isNormnal) {
+    string &displayName, bool isNormnal)
+{
     auto store = g_rdbStore->GetRaw();
     if (store == nullptr) {
         MEDIA_ERR_LOG("can not get store");
@@ -132,7 +137,6 @@ void InsertPhoto(string &packageName, int64_t &outRowId, string &title,
     string data = "/storage/cloud/files/photo/1/" +GetDisPlayName(title);
     ValuesBucket valuesBucket;
     valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, data);
-    valuesBucket.PutLong(MediaColumn::MEDIA_SIZE, 12345);
     valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
     valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
     valuesBucket.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
@@ -141,7 +145,7 @@ void InsertPhoto(string &packageName, int64_t &outRowId, string &title,
     if (isNormnal) {
         valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     } else {
-        valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, -2);
+        valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, ERROR_PEDING);
     }
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
@@ -150,7 +154,8 @@ void InsertPhoto(string &packageName, int64_t &outRowId, string &title,
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to insert photo! err: %{public}d", ret);
 }
 
-void UpdatePhotoTrashed(int64_t fileId, bool isDelete) {
+void UpdatePhotoTrashed(int64_t fileId, bool isDelete)
+{
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -165,7 +170,8 @@ void UpdatePhotoTrashed(int64_t fileId, bool isDelete) {
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to update photo! err: %{public}d", ret);
 }
 
-void HidePhoto(int64_t fileId, int value) {
+void HidePhoto(int64_t fileId, int value)
+{
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -176,7 +182,8 @@ void HidePhoto(int64_t fileId, int value) {
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to update photo! err: %{public}d", ret);
 }
 
-void UpdateDisPlayname(int64_t fileId, string disPlayname) {
+void UpdateDisPlayname(int64_t fileId, string disPlayname)
+{
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -188,7 +195,8 @@ void UpdateDisPlayname(int64_t fileId, string disPlayname) {
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to update photo! err: %{public}d", ret);
 }
 
-void ValidPhotoAlbumCount(string packageName, int exceptResultCount) {
+void ValidPhotoAlbumCount(string packageName, int exceptResultCount)
+{
     MEDIA_INFO_LOG("ValidPhotoAlbumCount exceptResultCount is: %{public}d",
         exceptResultCount);
     string querySql = GetQuerySourceAlbumSql(packageName);
@@ -200,9 +208,12 @@ void ValidPhotoAlbumCount(string packageName, int exceptResultCount) {
     EXPECT_EQ(count, exceptResultCount);
 }
 
-void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptCount, string exceptCoverUri) {
-    MEDIA_INFO_LOG("validPhotoAlbumValue exceptResultCount is: %{public}d, exceptCount is: %{public}d, exceptCoverUri is: %{public}s",
-        exceptResultCount, exceptCount, exceptCoverUri.c_str());
+void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptCount, string exceptCoverUri)
+{
+    MEDIA_INFO_LOG("validPhotoAlbumValue packageName is: %{public}s ", packageName.c_str());
+    MEDIA_INFO_LOG("validPhotoAlbumValue exceptResultCount is: %{public}d ", exceptResultCount);
+    MEDIA_INFO_LOG("validPhotoAlbumValue exceptResultCount is: %{public}d ", exceptResultCount);
+    MEDIA_INFO_LOG("validPhotoAlbumValue exceptCoverUri is: %{public}s ", exceptCoverUri.c_str());
     string querySql = GetQuerySourceAlbumSql(packageName);
     auto resultSet = g_rdbStore->QuerySql(querySql);
     CHECK_AND_RETURN_LOG(resultSet == nullptr, "get source album resultSet is null");
@@ -216,7 +227,8 @@ void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptC
     CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_COVER_URI, TYPE_STRING, exceptCoverUri);
 }
 
-void DeletePhoto(int64_t &fileId) {
+void DeletePhoto(int64_t &fileId)
+{
     int32_t deletedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::DELETE);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
@@ -230,6 +242,7 @@ void MediaLibrarySourceAlbumTest::SetUpTestCase()
     ClearData();
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    fileNumber = 0;
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibrarySourceAlbumTest failed, can not get rdbstore");
         exit(1);
@@ -397,8 +410,6 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_002,
     ValidPhotoAlbumValue(packageName, 1, 0, "");
     MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_002");
 }
-
-
 
 /**
  * @tc.name: update_photo_update_source_album_test_003

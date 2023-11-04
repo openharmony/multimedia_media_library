@@ -22,7 +22,6 @@
 
 namespace OHOS {
 namespace Media {
-
 const std::string COVER_URI_VALUE_INSERT =
     " (SELECT '" + PhotoColumn::PHOTO_URI_PREFIX + "'||NEW." + MediaColumn::MEDIA_ID + "||" +
     "(SELECT SUBSTR(NEW." + MediaColumn::MEDIA_FILE_PATH +
@@ -72,7 +71,7 @@ const std::string COUNT_VALUE_UPDATE =
     MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
     MediaColumn::MEDIA_HIDDEN + " = 0 )";
 
-const std::string INSERT_PHOTO_MAP = 
+const std::string INSERT_PHOTO_MAP =
     " INSERT INTO " + PhotoMap::TABLE +
     " (" + PhotoMap::ALBUM_ID + " , " + PhotoMap::ASSET_ID + " )" +
     " VALUES " +
@@ -87,7 +86,7 @@ const std::string SOURCE_ALBUM_WHERE =
     " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SYSTEM) +
     " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE);
 
-const std::string SOURCE_ALBUM_WHERE_UPDATE = 
+const std::string SOURCE_ALBUM_WHERE_UPDATE =
     " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = OLD." + MediaColumn::MEDIA_PACKAGE_NAME +
     " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SYSTEM) +
     " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE);
@@ -124,7 +123,7 @@ const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
     PhotoAlbumColumns::ALBUM_COUNT +
     " ) VALUES ( " +
     std::to_string(OHOS::Media::PhotoAlbumType::SYSTEM) + " , " +
-    std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE) + 
+    std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE) +
     " , NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " , " +
     COVER_URI_VALUE_INSERT + " , " +
     COUNT_VALUE_INSERT +
@@ -146,7 +145,6 @@ const std::string UPDATE_PHOTO_UPDATE_SOURCE_ALBUM =
 const std::string DELETE_PHOTO_UPDATE_SOURCE_ALBUM =
     "CREATE TRIGGER delete_photo_update_source_album AFTER DELETE ON " +
     PhotoColumn::PHOTOS_TABLE + TRIGGER_CODE_UPDATE_AND_DELETE;
-
 } // namespace Media
 } // namespace OHOS
 #endif // SOURCE_ALBUM_H
