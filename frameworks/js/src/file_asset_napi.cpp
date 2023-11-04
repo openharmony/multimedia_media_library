@@ -48,6 +48,7 @@
 #include "permission_utils.h"
 #include "post_proc.h"
 #include "rdb_errno.h"
+#include "sandbox_helper.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
 #include "thumbnail_utils.h"
@@ -3093,6 +3094,8 @@ static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *d
             allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF);
         }
         allExifJson[PHOTO_DATA_IMAGE_USER_COMMENT] = obj->GetUserComment();
+        allExifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
+            AppFileService::SandboxHelper::Decode(allExifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
         napi_create_string_utf8(env, allExifJson.dump().c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
