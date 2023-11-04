@@ -1315,7 +1315,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photosy.jpg");
     EXPECT_GE(fileId, E_OK);
     int64_t lastVisitTime = GetPhotoLastVisitTime(fileId);
-    EXPECT_EQ(lastVisitTime, 0L);
+    EXPECT_GT(lastVisitTime, 0L);
 
     MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
     Uri uri(fileUri.ToString());
