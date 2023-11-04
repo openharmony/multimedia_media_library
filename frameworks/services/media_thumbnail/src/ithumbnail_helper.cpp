@@ -214,7 +214,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
         return true;
     }
 
-    if (!TryLoadSource(opts, data, opts.screenSize, THUMBNAIL_LCD_SUFFIX)) {
+    if (!TryLoadSource(opts, data, opts.imageSize, THUMBNAIL_LCD_SUFFIX)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -266,7 +266,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
     }
     Size size;
     if (isThumb) {
-        size = { DEFAULT_THUMB_SIZE, DEFAULT_THUMB_SIZE };
+        size = { opts.imageSize.width, opts.imageSize.height };
         if (!TryLoadSource(opts, data, size, THUMBNAIL_THUMB_SUFFIX)) {
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
                 {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
