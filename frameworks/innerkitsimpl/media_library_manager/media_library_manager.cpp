@@ -50,6 +50,7 @@ namespace OHOS {
 namespace Media {
 shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sDataShareHelper_ = nullptr;
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
+constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
 
 MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 {
@@ -278,22 +279,24 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
+    int min = std::min(size.width, size.height);
+    int max = std::max(size.width, size.height);
     std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + "/";
     if (isAudio) {
-        if (size.width > DEFAULT_THUMBNAIL_SIZE || size.height > DEFAULT_THUMBNAIL_SIZE) {
-            suffixStr += "LCD.jpg";
-        } else {
+        if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
             suffixStr += "THM.jpg";
+        } else {
+            suffixStr += "LCD.jpg";
         }
     } else {
-        if (size.width > DEFAULT_THUMBNAIL_SIZE || size.height > DEFAULT_THUMBNAIL_SIZE) {
-            suffixStr += "LCD.jpg";
-        } else if (size.width == DEFAULT_MTH_SIZE && size.height == DEFAULT_MTH_SIZE) {
+        if (size.width == DEFAULT_MTH_SIZE && size.height == DEFAULT_MTH_SIZE) {
             suffixStr += "MTH.jpg";
         } else if (size.width == DEFAULT_YEAR_SIZE && size.height == DEFAULT_YEAR_SIZE) {
             suffixStr += "YEAR.jpg";
-        } else {
+        } else if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
             suffixStr += "THM.jpg";
+        } else {
+            suffixStr += "LCD.jpg";
         }
     }
 

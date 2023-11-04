@@ -41,6 +41,7 @@ struct ThumbRdbOpt {
     std::string row;
     std::string uri;
     Size screenSize;
+    Size imageSize;
 };
 
 struct ThumbnailData {
@@ -51,8 +52,9 @@ struct ThumbnailData {
         thumbnail.clear();
         lcd.clear();
     }
-    int mediaType{-1};
-    int64_t dateModified{0};
+
+    int mediaType {-1};
+    int64_t dateModified {0};
     float degrees;
     std::shared_ptr<PixelMap> source;
     std::vector<uint8_t> thumbnail;
@@ -132,6 +134,9 @@ public:
     static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
         int &err);
+    static bool ResizeThumb(int& width, int& height);
+    static bool ResizeLcd(int& width, int& height);
+    static int32_t GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo);
 private:
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     static int64_t UTCTimeMilliSeconds();
