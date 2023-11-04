@@ -35,7 +35,6 @@ thread_local napi_ref MediaAlbumChangeRequestNapi::constructor_ = nullptr;
 
 napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
 {
-    NAPI_DEBUG_LOG("MediaAlbumChangeRequestNapi::Init");
     NapiClassInfo info = { .name = MEDIA_ALBUM_CHANGE_REQUEST_CLASS,
         .ref = &constructor_,
         .constructor = Constructor,
@@ -49,7 +48,6 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
 
 napi_value MediaAlbumChangeRequestNapi::Constructor(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("enter MediaAlbumChangeRequestNapi::Constructor");
     napi_value newTarget = nullptr;
     CHECK_ARGS(env, napi_get_new_target(env, info, &newTarget), JS_INNER_FAIL);
     bool isConstructor = newTarget != nullptr;
@@ -61,14 +59,14 @@ napi_value MediaAlbumChangeRequestNapi::Constructor(napi_env env, napi_callback_
         napi_valuetype valueType;
         PhotoAlbumNapi* photoAlbumNapi;
         CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_INNER_FAIL);
-        CHECK_ARGS_WITH_MESSAGE(env, argc == ARGS_ONE, "Number of args is invalid");
+        CHECK_COND_WITH_MESSAGE(env, argc == ARGS_ONE, "Number of args is invalid");
         CHECK_ARGS(env, napi_typeof(env, argv[PARAM0], &valueType), JS_INNER_FAIL);
-        CHECK_ARGS_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
+        CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
         CHECK_ARGS(env, napi_unwrap(env, argv[PARAM0], reinterpret_cast<void**>(&photoAlbumNapi)), JS_INNER_FAIL);
-        CHECK_ARGS_WITH_MESSAGE(env, photoAlbumNapi != nullptr, "Failed to get PhotoAlbumNapi object");
+        CHECK_COND_WITH_MESSAGE(env, photoAlbumNapi != nullptr, "Failed to get PhotoAlbumNapi object");
 
         unique_ptr<MediaAlbumChangeRequestNapi> obj = make_unique<MediaAlbumChangeRequestNapi>();
-        CHECK_ARGS_WITH_MESSAGE(env, obj != nullptr, "Create MediaAlbumChangeRequestNapi failed");
+        CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "Create MediaAlbumChangeRequestNapi failed");
         obj->photoAlbum_ = photoAlbumNapi->GetPhotoAlbumInstance();
         CHECK_ARGS(env,
             napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()), MediaAlbumChangeRequestNapi::Destructor,
@@ -101,18 +99,17 @@ shared_ptr<PhotoAlbum> MediaAlbumChangeRequestNapi::GetPhotoAlbumInstance() cons
 
 napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("enter MediaAlbumChangeRequestNapi::JSSetAlbumName");
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
     string albumName;
-    CHECK_ARGS_WITH_MESSAGE(env,
+    CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, albumName) == napi_ok,
         "Failed to parse args");
-    CHECK_ARGS_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
-    CHECK_ARGS_WITH_MESSAGE(env, MediaFileUtils::CheckAlbumName(albumName) == E_OK, "Invalid album name");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckAlbumName(albumName) == E_OK, "Invalid album name");
 
     auto photoAlbum = asyncContext->objectInfo->photoAlbum_;
-    CHECK_ARGS_WITH_MESSAGE(env, photoAlbum != nullptr, "PhotoAlbum is nullptr");
-    CHECK_ARGS_WITH_MESSAGE(env,
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "PhotoAlbum is nullptr");
+    CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "Only user album can set album name");
     photoAlbum->SetAlbumName(albumName);
@@ -125,7 +122,6 @@ napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callba
 
 napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("enter MediaAlbumChangeRequestNapi::JSSetCoverUri");
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -133,14 +129,14 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
 
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
     string coverUri;
-    CHECK_ARGS_WITH_MESSAGE(env,
+    CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, coverUri) == napi_ok,
         "Failed to parse args");
-    CHECK_ARGS_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
 
     auto photoAlbum = asyncContext->objectInfo->photoAlbum_;
-    CHECK_ARGS_WITH_MESSAGE(env, photoAlbum != nullptr, "PhotoAlbum is nullptr");
-    CHECK_ARGS_WITH_MESSAGE(env,
+    CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "PhotoAlbum is nullptr");
+    CHECK_COND_WITH_MESSAGE(env,
         PhotoAlbum::IsUserPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
         "Only user album can set cover uri");
     photoAlbum->SetCoverUri(coverUri);
@@ -154,7 +150,6 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
 static bool SetAlbumPropertyExecute(
     MediaAlbumChangeRequestAsyncContext& context, const AlbumChangeOperation& changeOperation)
 {
-    NAPI_DEBUG_LOG("enter SetAlbumPropertyExecute");
     string property;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
@@ -189,7 +184,6 @@ static bool SetAlbumPropertyExecute(
 
 static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
 {
-    NAPI_DEBUG_LOG("enter ApplyAlbumChangeRequestExecute");
     auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
     unordered_set<AlbumChangeOperation> appliedOperations;
     for (auto& changeOperation : context->albumChangeOperations) {
@@ -220,7 +214,6 @@ static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
 
 static void ApplyAlbumChangeRequestCompleteCallback(napi_env env, napi_status status, void* data)
 {
-    NAPI_DEBUG_LOG("enter ApplyAlbumChangeRequestCompleteCallback");
     auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();
@@ -241,15 +234,14 @@ static void ApplyAlbumChangeRequestCompleteCallback(napi_env env, napi_status st
 
 napi_value MediaAlbumChangeRequestNapi::ApplyChanges(napi_env env, napi_callback_info info)
 {
-    NAPI_DEBUG_LOG("enter MediaAlbumChangeRequestNapi::ApplyChanges");
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
-    CHECK_ARGS_WITH_MESSAGE(env,
+    CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, asyncContext, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
     asyncContext->objectInfo = this;
-    CHECK_ARGS_WITH_MESSAGE(env, !albumChangeOperations_.empty(), "None request to apply");
+    CHECK_COND_WITH_MESSAGE(env, !albumChangeOperations_.empty(), "None request to apply");
     asyncContext->albumChangeOperations = albumChangeOperations_;
     albumChangeOperations_.clear();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ApplyMediaAlbumChangeRequest",
