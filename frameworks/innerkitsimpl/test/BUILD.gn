@@ -31,6 +31,7 @@ group("test") {
     "unittest/medialibrary_scanner_test:unittest",
     "unittest/medialibrary_smartalbum_map_operations_test:unittest",
     "unittest/medialibrary_smartalbum_operations_test:unittest",
+    "unittest/medialibrary_source_album_test:unittest",
     "unittest/medialibrary_thumbnail_service_test:unittest",
     "unittest/medialibrary_uri_test:unittest",
     "unittest/medialibrary_utils_test:unittest",

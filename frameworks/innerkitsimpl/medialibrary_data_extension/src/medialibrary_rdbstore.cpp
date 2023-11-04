@@ -1186,10 +1186,14 @@ static void AddFaceTables(RdbStore &store)
 static void AddSourceAlbumTrigger(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
-        DROP_INSERT_SOURCE_ALBUM_TRIGGER,
-        DROP_UPDATE_SOURCE_ALBUM_TRIGGER,
-        INSERT_SOURCE_ALBUM,
-        UPDATE_SOURCE_ALBUM
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DELETE_PHOTO_UPDATE_SOURCE_ALBUM
     };
     MEDIA_INFO_LOG("start add source album trigger");
     ExecSqls(executeSqlStrs, store);
