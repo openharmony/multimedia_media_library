@@ -110,7 +110,7 @@ void UpdateRestore::RestorePhoto(void)
     InitGarbageAlbum();
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<FileInfo> infos = QueryFileInfos(offset);
-        InsertPhoto(infos);
+        InsertPhoto(UPDATE_RESTORE_ID, infos);
     }
     (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
 }
@@ -225,7 +225,7 @@ NativeRdb::ValuesBucket UpdateRestore::GetInsertValue(const FileInfo &fileInfo, 
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, fileInfo.height);
     values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
-    values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
+    values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation);
     std::string package_name = "";
     std::string findPath = fileInfo.relativePath;

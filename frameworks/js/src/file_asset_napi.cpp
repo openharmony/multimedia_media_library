@@ -48,6 +48,7 @@
 #include "permission_utils.h"
 #include "post_proc.h"
 #include "rdb_errno.h"
+#include "sandbox_helper.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
 #include "thumbnail_utils.h"
@@ -3002,7 +3003,7 @@ static void UserFileMgrSetPendingExecute(napi_env env, void *data)
     } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
         uri += UFM_AUDIO + "/" + OPRN_PENDING;
     } else {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
 
@@ -3093,6 +3094,8 @@ static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *d
             allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF);
         }
         allExifJson[PHOTO_DATA_IMAGE_USER_COMMENT] = obj->GetUserComment();
+        allExifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
+            AppFileService::SandboxHelper::Decode(allExifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
         napi_create_string_utf8(env, allExifJson.dump().c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
@@ -4017,7 +4020,7 @@ static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, EDIT_DATA_REQUEST);
@@ -4126,7 +4129,7 @@ static void PhotoAccessHelperRequestSourceExecute(napi_env env, void *data)
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
@@ -4223,7 +4226,7 @@ static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, COMMIT_REQUEST);

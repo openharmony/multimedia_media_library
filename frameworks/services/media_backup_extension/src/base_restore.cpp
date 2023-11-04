@@ -138,11 +138,49 @@ int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dst
     return E_OK;
 }
 
-void BaseRestore::InsertPhoto(const std::vector<FileInfo> &fileInfos) const
+bool BaseRestore::IsSameFile(const FileInfo &fileInfo) const
+{
+    std::string originPath = ORIGIN_PATH + RESTORE_CLOUD_DIR;
+    std::string srcPath = fileInfo.filePath;
+    std::string tmpPath = fileInfo.filePath;
+    std::string dstPath =  tmpPath.replace(0, originPath.length(), RESTORE_LOCAL_DIR);
+    struct stat srcStatInfo {};
+    struct stat dstStatInfo {};
+
+    if (access(srcPath.c_str(), F_OK) || access(dstPath.c_str(), F_OK)) {
+        return false;
+    }
+    if (stat(srcPath.c_str(), &srcStatInfo) != 0) {
+        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", srcPath.c_str(), errno);
+        return false;
+    }
+    if (stat(dstPath.c_str(), &dstStatInfo) != 0) {
+        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", dstPath.c_str(), errno);
+        return false;
+    }
+    if (fileInfo.fileSize != srcStatInfo.st_size) {
+        MEDIA_ERR_LOG("Internal error");
+        return false;
+    }
+    if (srcStatInfo.st_size != dstStatInfo.st_size) { /* file size */
+        return false;
+    }
+    if (srcStatInfo.st_mtime != dstStatInfo.st_mtime) { /* last motify time */
+        return false;
+    }
+    return true;
+}
+
+void BaseRestore::InsertPhoto(int32_t sceneCode, const std::vector<FileInfo> &fileInfos) const
 {
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
             MEDIA_WARN_LOG("File is not exist, filePath = %{private}s.", fileInfos[i].filePath.c_str());
+            continue;
+        }
+        if ((sceneCode != UPDATE_RESTORE_ID) && (IsSameFile(fileInfos[i]) == true)) {
+            (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
+            MEDIA_WARN_LOG("File %{private}s already exists.", fileInfos[i].filePath.c_str());
             continue;
         }
         std::string cloudPath;

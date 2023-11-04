@@ -35,6 +35,8 @@ const int EXPECTED_NUM = 5;
 const int EXPECTED_OREINTATION = 270;
 const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "fake_wechat";
+const int64_t EXPECTED_DATE_ADDED = 1432973383;
+const int64_t EXPECTED_DATE_TAKEN = 1432973383;
 
 class GalleryMediaOpenCall : public NativeRdb::RdbOpenCallback {
 public:
@@ -73,9 +75,9 @@ public:
 
 const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS Photos ") +
     " (file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, title TEXT, display_name TEXT, size BIGINT," +
-    " media_type INT, date_add BIGINT, duration INT, is_favorite INT default 0, date_trashed BIGINT DEFAULT 0," +
-    " hidden INT DEFAULT 0, height INT, width INT, user_comment TEXT, orientation INT DEFAULT 0, " +
-    " package_name TEXT);";
+    " media_type INT, date_added BIGINT, date_taken BIGINT, duration INT, is_favorite INT default 0, " +
+    " date_trashed BIGINT DEFAULT 0, hidden INT DEFAULT 0, height INT, width INT, user_comment TEXT, " +
+    " orientation INT DEFAULT 0, package_name TEXT);";
 
 int PhotosOpenCall::OnCreate(RdbStore &store)
 {
@@ -185,14 +187,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_trashed, TestSize.Le
     MEDIA_INFO_LOG("medialib_backup_test_valid_trashed start");
     std::string queryTrashed = "SELECT file_id, date_trashed from Photos where display_name ='trashed.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryTrashed);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultsql is null.");
-        return;
-    }
-    if (resultSet -> GoToNextRow() == NativeRdb::E_OK) {
-        int64_t trashedTime = GetInt64Val("data_trashed", resultSet);
-        EXPECT_GT(trashedTime, 0);
-    }
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    int64_t trashedTime = GetInt64Val("date_trashed", resultSet);
+    EXPECT_GT(trashedTime, 0);
     MEDIA_INFO_LOG("medialib_backup_test_valid_trashed end");
 }
 
@@ -201,14 +199,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_favorite, TestSize.L
     MEDIA_INFO_LOG("medialib_backup_test_valid_favorite start");
     std::string queryFavorite = "SELECT file_id, is_favorite from Photos where display_name ='favorite.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryFavorite);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultsql is null.");
-        return;
-    }
-    if (resultSet -> GoToNextRow() == NativeRdb::E_OK) {
-        int32_t isFavorite = GetInt32Val("is_favorite", resultSet);
-        EXPECT_EQ(isFavorite, 1);
-    }
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    int32_t isFavorite = GetInt32Val("is_favorite", resultSet);
+    EXPECT_EQ(isFavorite, 1);
     MEDIA_INFO_LOG("medialib_backup_test_valid_favorite end");
 }
 
@@ -217,14 +211,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_hidden, TestSize.Lev
     MEDIA_INFO_LOG("medialib_backup_test_valid_hidden start");
     std::string queryHidden = "SELECT file_id, hidden from Photos where display_name ='hidden.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryHidden);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultsql is null.");
-        return;
-    }
-    if (resultSet -> GoToNextRow() == NativeRdb::E_OK) {
-        int32_t isHidden = GetInt32Val("hidden", resultSet);
-        EXPECT_EQ(isHidden, 1);
-    }
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    int32_t isHidden = GetInt32Val("hidden", resultSet);
+    EXPECT_EQ(isHidden, 1);
     MEDIA_INFO_LOG("medialib_backup_test_valid_hidden end");
 }
 
@@ -233,14 +223,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_orientation, TestSiz
     MEDIA_INFO_LOG("medialib_backup_test_valid_orientation start");
     std::string queryOrientation = "SELECT file_id, orientation from Photos where display_name ='orientation.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryOrientation);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultsql is null.");
-        return;
-    }
-    if (resultSet -> GoToNextRow() == NativeRdb::E_OK) {
-        int32_t orientation = GetInt32Val("orientation", resultSet);
-        EXPECT_EQ(orientation, EXPECTED_OREINTATION);
-    }
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    int32_t orientation = GetInt32Val("orientation", resultSet);
+    EXPECT_EQ(orientation, EXPECTED_OREINTATION);
     MEDIA_INFO_LOG("medialib_backup_test_valid_orientation end");
 }
 
@@ -249,14 +235,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_package_name, TestSi
     MEDIA_INFO_LOG("medialib_backup_test_valid_package_name start");
     std::string queryPackageName = "SELECT file_id, package_name from Photos where display_name ='fake_wechat.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryPackageName);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultsql is null.");
-        return;
-    }
-    if (resultSet -> GoToNextRow() == NativeRdb::E_OK) {
-        std::string packageName = GetStringVal("package_name", resultSet);
-        EXPECT_EQ(packageName, EXPECTED_PACKAGE_NAME);
-    }
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    std::string packageName = GetStringVal("package_name", resultSet);
+    EXPECT_EQ(packageName, EXPECTED_PACKAGE_NAME);
     MEDIA_INFO_LOG("medialib_backup_test_valid_package_name end");
 }
 
@@ -265,15 +247,35 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_user_comment, TestSi
     MEDIA_INFO_LOG("medialib_backup_test_valid_user_comment start");
     std::string queryUserComment = "SELECT file_id, user_comment from Photos where display_name ='fake_wechat.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryUserComment);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Query resultsql is null.");
-        return;
-    }
-    if (resultSet -> GoToNextRow() == NativeRdb::E_OK) {
-        std::string userComment = GetStringVal("user_comment", resultSet);
-        EXPECT_EQ(userComment, EXPECTED_USER_COMMENT);
-    }
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    std::string userComment = GetStringVal("user_comment", resultSet);
+    EXPECT_EQ(userComment, EXPECTED_USER_COMMENT);
     MEDIA_INFO_LOG("medialib_backup_test_valid_user_comment end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_date_added, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_valid_date_added start");
+    std::string queryDateAdded = "SELECT file_id, date_added from Photos where display_name ='fake_wechat.jpg'";
+    auto resultSet = photosStorePtr -> QuerySql(queryDateAdded);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    int64_t dateAdded = GetInt64Val("date_added", resultSet);
+    EXPECT_EQ(dateAdded, EXPECTED_DATE_ADDED);
+    MEDIA_INFO_LOG("medialib_backup_test_valid_date_added end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_date_taken, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_valid_date_taken start");
+    std::string queryDateTaken = "SELECT file_id, date_taken from Photos where display_name ='fake_wechat.jpg'";
+    auto resultSet = photosStorePtr -> QuerySql(queryDateTaken);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    int64_t dateTaken = GetInt64Val("date_taken", resultSet);
+    EXPECT_EQ(dateTaken, EXPECTED_DATE_TAKEN);
+    MEDIA_INFO_LOG("medialib_backup_test_valid_date_taken end");
 }
 } // namespace Media
 } // namespace OHOS

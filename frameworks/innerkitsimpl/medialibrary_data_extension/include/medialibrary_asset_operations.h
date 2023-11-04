@@ -50,7 +50,6 @@ const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_DATE_MODIFIED, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_DATE_TAKEN, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_DATE_DELETED, MEMBER_TYPE_INT64 },
-    { MediaColumn::MEDIA_TIME_VISIT, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_DURATION, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_TIME_PENDING, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_IS_FAV, MEMBER_TYPE_INT32 },

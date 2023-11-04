@@ -15,6 +15,38 @@
     {
       "name": "description_serviceability",
       "value": "description_serviceability"
+    },
+    {
+      "name": "permission_distributed_datasync",
+      "value": "Allows data exchange between different devices"
+    },
+    {
+      "name": "permission_used_stats",
+      "value": "Allows the app to read media file information from the user's external storage"
+    },
+    {
+      "name": "permission_read_media",
+      "value": "Allows the app to read media file information from the user's external storage"
+    },
+    {
+      "name": "permission_write_media",
+      "value": "Allows the app to read and write media file information from the user's external storage"
+    },
+    {
+      "name": "permission_start_abilites_from_background",
+      "value": "Allows the app to launch in the background or access other components"
+    },
+    {
+      "name": "permission_cloudfile_sync",
+      "value": "Allows applications to obtain device-cloud synchronization capabilitiess"
+    },
+    {
+      "name": "permission_proxy_authorization_uri",
+      "value": "Allow the application proxy to grant URIs"
+    },
+    {
+      "name": "permission_get_bundle_info_privileged",
+      "value": "Allows querying of the app's basic information and other sensitive information"
     }
   ]
 }
