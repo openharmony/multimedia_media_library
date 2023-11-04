@@ -44,6 +44,9 @@ public:
     static const std::string HIDDEN_COUNT;
     static const std::string HIDDEN_COVER;
 
+    // For sorting albums
+    static const std::string ALBUM_ORDER;
+    static const std::string REFERENCE_ALBUM_ID;
     // default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS;
 
@@ -59,6 +62,8 @@ public:
     static const std::string CREATE_ALBUM_INSERT_TRIGGER;
     static const std::string CREATE_ALBUM_MDIRTY_TRIGGER;
     static const std::string CREATE_ALBUM_DELETE_TRIGGER;
+    static const std::string ALBUM_DELETE_ORDER_TRIGGER;
+    static const std::string ALBUM_INSERT_ORDER_TRIGGER;
 
     // util constants
     static const std::string ALBUM_URI_PREFIX;

@@ -41,6 +41,7 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
         .props = {
             DECLARE_NAPI_FUNCTION("setAlbumName", JSSetAlbumName),
             DECLARE_NAPI_FUNCTION("setCoverUri", JSSetCoverUri),
+            DECLARE_NAPI_FUNCTION("placeToFrontOf", JSPlaceToFrontOf)
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -97,6 +98,11 @@ shared_ptr<PhotoAlbum> MediaAlbumChangeRequestNapi::GetPhotoAlbumInstance() cons
     return photoAlbum_;
 }
 
+shared_ptr<PhotoAlbum> MediaAlbumChangeRequestNapi::GetReferencePhotoAlbumInstance() const
+{
+    return referencePhotoAlbum_;
+}
+
 napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
@@ -145,6 +151,54 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
     return result;
+}
+
+napi_value MediaAlbumChangeRequestNapi::JSPlaceToFrontOf(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    napi_valuetype valueType;
+    auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
+
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(
+        env, info, asyncContext, ARGS_ONE, ARGS_ONE) == napi_ok, "Failed to get object info");
+    CHECK_ARGS(env, napi_typeof(env, asyncContext->argv[PARAM0], &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object || valueType == napi_null, "Invalid argument type");
+    if (valueType == napi_object) {
+        PhotoAlbumNapi* photoAlbumNapi;
+        CHECK_ARGS(env, napi_unwrap(env, asyncContext->argv[PARAM0],
+            reinterpret_cast<void**>(&photoAlbumNapi)), JS_INNER_FAIL);
+        CHECK_COND_WITH_MESSAGE(env, photoAlbumNapi != nullptr, "Failed to get PhotoAlbumNapi object");
+        asyncContext->objectInfo->referencePhotoAlbum_ = photoAlbumNapi->GetPhotoAlbumInstance();
+    }
+    asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::ORDER_ALBUM);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static bool OrderAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
+{
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
+    auto referenceAlum = context.objectInfo->GetReferencePhotoAlbumInstance();
+    Uri updateAlbumUri(URI_COMPAT_ORDER_ALBUM);
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_ID, photoAlbum->GetAlbumId());
+    int32_t referenceAlbumId = -1;
+    if (referenceAlum != nullptr) {
+        referenceAlbumId = referenceAlum->GetAlbumId();
+    }
+    valuesBucket.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, referenceAlbumId);
+    int32_t result = UserFileClient::Update(updateAlbumUri, predicates, valuesBucket);
+    if (result < 0) {
+        context.SaveError(result);
+        NAPI_ERR_LOG("Failed to order albums err: %{public}d", result);
+        return false;
+    }
+    return true;
 }
 
 static bool SetAlbumPropertyExecute(
@@ -197,6 +251,9 @@ static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
             case AlbumChangeOperation::SET_ALBUM_NAME:
             case AlbumChangeOperation::SET_COVER_URI:
                 valid = SetAlbumPropertyExecute(*context, changeOperation);
+                break;
+            case AlbumChangeOperation::ORDER_ALBUM:
+                valid = OrderAlbumExecute(*context);
                 break;
             default:
                 NAPI_ERR_LOG("Invalid album change operation: %{public}d", changeOperation);
