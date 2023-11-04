@@ -1319,7 +1319,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
 
     MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
     Uri uri(fileUri.ToString());
-    MediaLibraryCommand openCmd(uri,Media::OperationType::OPEN);
+    MediaLibraryCommand openCmd(uri, Media::OperationType::OPEN);
     
     // Open file
     openCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
