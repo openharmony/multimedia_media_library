@@ -147,7 +147,7 @@ private:
 
     static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
-    static Size ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize);
+    static Size ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail);
     static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
     static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
