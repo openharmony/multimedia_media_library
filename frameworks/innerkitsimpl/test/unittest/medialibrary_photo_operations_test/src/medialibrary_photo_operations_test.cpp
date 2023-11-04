@@ -1333,7 +1333,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
     openCmd.SetOprnObject(OperationObject::THUMBNAIL);
     MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
     int64_t openThumbnailTime = GetPhotoLastVisitTime(fileId);
-    MEDIA_INFO_LOG(" lastVisitTime3 = %{publc}lld", openThumbnailTime);
     EXPECT_EQ(openTime, openThumbnailTime);
 
     // Update
