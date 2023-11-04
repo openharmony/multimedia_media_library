@@ -761,6 +761,24 @@ int32_t SetPhotoPendingStatus(int32_t pendingStatus, int32_t fileId)
     return MediaLibraryPhotoOperations::Update(setPendingCloseCmd);
 }
 
+int64_t GetPhotoLastVisitTime(int32_t fileId)
+{
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    queryCmd.SetDataSharePred(predicates);
+    vector<string> columns = { PhotoColumn::PHOTO_LAST_VISIT_TIME };
+    auto resultSet = g_rdbStore->Query(queryCmd, columns);
+    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
+        int64_t lastVisitTime = GetInt64Val(PhotoColumn::PHOTO_LAST_VISIT_TIME, resultSet);
+        return lastVisitTime;
+    } else {
+        MEDIA_ERR_LOG("Test getPhotoLastVisitTime tdd Query failed");
+        return 0L;
+    }
+}
+
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
 {
     SetTables();
@@ -1287,6 +1305,53 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestS
     }
 
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_004");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestSize.Level0)
+{
+    // Last visit time test
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_005");
+    
+
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photosy.jpg");
+    EXPECT_GE(fileId, E_OK);
+    int64_t lastVisitTime = GetPhotoLastVisitTime(fileId);
+    EXPECT_GT(lastVisitTime, 0L);
+
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    Uri uri(fileUri.ToString());
+    MediaLibraryCommand openCmd(uri, Media::OperationType::OPEN);
+    
+    // Open file
+    openCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
+    EXPECT_GE(fd, 0);
+    int64_t openTime = GetPhotoLastVisitTime(fileId);
+    EXPECT_GT(openTime, lastVisitTime);
+
+
+    // Open thumbnail
+    openCmd.SetOprnObject(OperationObject::THUMBNAIL);
+    MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
+    int64_t openThumbnailTime = GetPhotoLastVisitTime(fileId);
+    EXPECT_EQ(openTime, openThumbnailTime);
+
+    // Update
+    MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    SetValuesBucketInUpdate(PhotoColumn::MEDIA_NAME, "photosy1.jpg", values);
+    cmd_u.SetValueBucket(values);
+    cmd_u.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    MediaLibraryPhotoOperations::Update(cmd_u);
+
+    // Query again
+    int64_t upLastVisitTime = GetPhotoLastVisitTime(fileId);
+    EXPECT_GT(upLastVisitTime, openThumbnailTime);
+
+    TestPhotoDeleteParamsApi10(OperationObject::FILESYSTEM_PHOTO, fileId,
+        [] (int32_t result) { EXPECT_GT(result, 0); });
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_005");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, TestSize.Level0)
