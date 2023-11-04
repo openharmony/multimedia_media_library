@@ -183,10 +183,6 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
-    errCode = DoTrashAging();
-    if (errCode != E_OK) {
-        MEDIA_WARN_LOG("Ignore trash aging failures, just continue");
-    }
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
     refCnt_++;
     return E_OK;

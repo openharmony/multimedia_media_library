@@ -1966,7 +1966,7 @@ napi_value MediaLibraryNapi::JSCreateAsset(napi_env env, napi_callback_info info
 static void HandleCompatTrashAudio(MediaLibraryAsyncContext *context, const string &deleteId)
 {
     DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MEDIA_DATA_DB_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
     predicates.SetWhereArgs({ deleteId });
@@ -2379,50 +2379,55 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
     }
     work->data = reinterpret_cast<void *>(msg);
 
-    int ret = uv_queue_work(loop, work, [](uv_work_t *w) {}, [](uv_work_t *w, int s) {
-            // js thread
-            if (w == nullptr) {
-                return;
-            }
-
-            UvChangeMsg *msg = reinterpret_cast<UvChangeMsg *>(w->data);
-            do {
-                if (msg == nullptr) {
-                    NAPI_ERR_LOG("UvChangeMsg is null");
-                    break;
-                }
-                napi_env env = msg->env_;
-                NapiScopeHandler scopeHandler(env);
-                if (!scopeHandler.IsValid()) {
-                    break;
-                }
-
-                napi_value jsCallback = nullptr;
-                napi_status status = napi_get_reference_value(env, msg->ref_, &jsCallback);
-                if (status != napi_ok) {
-                    NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
-                    break;
-                }
-                napi_value retVal = nullptr;
-                napi_value result[ARGS_ONE];
-                result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, msg);
-                if (result[PARAM0] == nullptr) {
-                    break;
-                }
-                napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
-                if (status != napi_ok) {
-                    NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
-                    break;
-                }
-            } while (0);
-            delete msg;
-            delete w;
-    });
+    int ret = UvQueueWork(loop, work);
     if (ret != 0) {
         NAPI_ERR_LOG("Failed to execute libuv work queue, ret: %{public}d", ret);
         delete msg;
         delete work;
     }
+}
+
+int ChangeListenerNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
+{
+    return uv_queue_work(loop, work, [](uv_work_t *w) {}, [](uv_work_t *w, int s) {
+        // js thread
+        if (w == nullptr) {
+            return;
+        }
+
+        UvChangeMsg *msg = reinterpret_cast<UvChangeMsg *>(w->data);
+        do {
+            if (msg == nullptr) {
+                NAPI_ERR_LOG("UvChangeMsg is null");
+                break;
+            }
+            napi_env env = msg->env_;
+            NapiScopeHandler scopeHandler(env);
+            if (!scopeHandler.IsValid()) {
+                break;
+            }
+
+            napi_value jsCallback = nullptr;
+            napi_status status = napi_get_reference_value(env, msg->ref_, &jsCallback);
+            if (status != napi_ok) {
+                NAPI_ERR_LOG("Create reference fail, status: %{public}d", status);
+                break;
+            }
+            napi_value retVal = nullptr;
+            napi_value result[ARGS_ONE];
+            result[PARAM0] = ChangeListenerNapi::SolveOnChange(env, msg);
+            if (result[PARAM0] == nullptr) {
+                break;
+            }
+            napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
+            if (status != napi_ok) {
+                NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
+                break;
+            }
+        } while (0);
+        delete msg;
+        delete w;
+    });
 }
 
 int32_t MediaLibraryNapi::GetListenerType(const string &str) const
@@ -4742,10 +4747,12 @@ static void GetPhotoIndexAsyncCallbackComplete(napi_env env, napi_status status,
     if (context->error != ERR_DEFAULT) {
         context->HandleError(env, jsContext->error);
     } else {
-        auto fileAsset = context->fetchFileResult->GetFirstObject();
         int32_t count = -1;
-        if (fileAsset != nullptr) {
-            count = fileAsset->GetPhotoIndex();
+        if (context->fetchFileResult != nullptr) {
+            auto fileAsset = context->fetchFileResult->GetFirstObject();
+            if (fileAsset != nullptr) {
+                count = fileAsset->GetPhotoIndex();
+            }
         }
         jsContext->status = true;
         napi_create_int32(env, count, &jsContext->data);

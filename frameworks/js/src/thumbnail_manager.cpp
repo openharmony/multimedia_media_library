@@ -291,7 +291,13 @@ static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
         return false;
     }
 
-    return imageSize.width / imageSize.height == targetSize.width / targetSize.height;
+    float imageSizeScale = static_cast<float>(imageSize.width) / static_cast<float>(imageSize.height);
+    float targetSizeScale = static_cast<float>(targetSize.width) / static_cast<float>(targetSize.height);
+    if (imageSizeScale - targetSizeScale > FLOAT_EPSILON || targetSizeScale - imageSizeScale > FLOAT_EPSILON) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 static bool GetAshmemPtr(int32_t memSize, void **sharedPtr, int32_t &fd)

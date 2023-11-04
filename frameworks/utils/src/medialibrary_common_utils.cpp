@@ -22,6 +22,7 @@
 #include "medialibrary_tracer.h"
 #include "media_log.h"
 #include "openssl/sha.h"
+#include "vision_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -108,56 +109,69 @@ void MediaLibraryCommonUtils::ExtractKeyWord(std::string &str)
     }
 }
 
+static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
+    // Files table columns
+    MEDIA_DATA_DB_ID,
+    MEDIA_DATA_DB_RELATIVE_PATH,
+    MEDIA_DATA_DB_NAME,
+    MEDIA_DATA_DB_PARENT_ID,
+    MEDIA_DATA_DB_MIME_TYPE,
+    MEDIA_DATA_DB_MEDIA_TYPE,
+    MEDIA_DATA_DB_SIZE,
+    MEDIA_DATA_DB_DATE_ADDED,
+    MEDIA_DATA_DB_DATE_ADDED_S,
+    MEDIA_DATA_DB_DATE_MODIFIED,
+    MEDIA_DATA_DB_DATE_MODIFIED_S,
+    MEDIA_DATA_DB_DATE_TAKEN,
+    MEDIA_DATA_DB_TITLE,
+    MEDIA_DATA_DB_ARTIST,
+    MEDIA_DATA_DB_AUDIO_ALBUM,
+    MEDIA_DATA_DB_DURATION,
+    MEDIA_DATA_DB_WIDTH,
+    MEDIA_DATA_DB_HEIGHT,
+    MEDIA_DATA_DB_ORIENTATION,
+    MEDIA_DATA_DB_BUCKET_ID,
+    MEDIA_DATA_DB_BUCKET_NAME,
+    DIRECTORY_DB_DIRECTORY_TYPE,
+    MEDIA_DATA_DB_DATE_TRASHED,
+    MEDIA_DATA_DB_DATE_TRASHED_S,
+    MEDIA_DATA_DB_BUCKET_ID,
+    MEDIA_DATA_DB_ALBUM_ID,
+    DEVICE_DB_NETWORK_ID,
+    SMARTABLUMASSETS_PARENTID,
+    SMARTALBUM_DB_ID,
+    MEDIA_DATA_DB_FILE_PATH,
+    MEDIA_DATA_DB_IS_TRASH,
+    MEDIA_DATA_DB_RECYCLE_PATH,
+    MEDIA_DATA_DB_OWNER_PACKAGE,
+    MediaColumn::MEDIA_PACKAGE_NAME,
+    MEDIA_DATA_DB_IS_FAV,
+    MEDIA_DATA_DB_TIME_PENDING,
+
+    // Photos table columns
+    COMPAT_HIDDEN,
+    COMPAT_PHOTO_SYNC_STATUS,
+    COMPAT_FILE_SUBTYPE,
+    COMPAT_CAMERA_SHOT_KEY,
+
+    // PhotoAlbum table columns
+    COMPAT_ALBUM_SUBTYPE,
+
+    // Analysis table columns
+    TAG_ID,
+    FACE_ID,
+    LANDMARKS,
+    FEATURE,
+    CENTER_FEATURES,
+    STATUS,
+    OCR,
+    LABEL,
+    AESTHETICS_SCORE,
+    FACE,
+};
+
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
 {
-    static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
-        // Files table columns
-        MEDIA_DATA_DB_ID,
-        MEDIA_DATA_DB_RELATIVE_PATH,
-        MEDIA_DATA_DB_NAME,
-        MEDIA_DATA_DB_PARENT_ID,
-        MEDIA_DATA_DB_MIME_TYPE,
-        MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_SIZE,
-        MEDIA_DATA_DB_DATE_ADDED,
-        MEDIA_DATA_DB_DATE_ADDED_S,
-        MEDIA_DATA_DB_DATE_MODIFIED,
-        MEDIA_DATA_DB_DATE_MODIFIED_S,
-        MEDIA_DATA_DB_DATE_TAKEN,
-        MEDIA_DATA_DB_TITLE,
-        MEDIA_DATA_DB_ARTIST,
-        MEDIA_DATA_DB_AUDIO_ALBUM,
-        MEDIA_DATA_DB_DURATION,
-        MEDIA_DATA_DB_WIDTH,
-        MEDIA_DATA_DB_HEIGHT,
-        MEDIA_DATA_DB_ORIENTATION,
-        MEDIA_DATA_DB_BUCKET_ID,
-        MEDIA_DATA_DB_BUCKET_NAME,
-        DIRECTORY_DB_DIRECTORY_TYPE,
-        MEDIA_DATA_DB_DATE_TRASHED,
-        MEDIA_DATA_DB_DATE_TRASHED_S,
-        MEDIA_DATA_DB_BUCKET_ID,
-        MEDIA_DATA_DB_ALBUM_ID,
-        DEVICE_DB_NETWORK_ID,
-        SMARTABLUMASSETS_PARENTID,
-        SMARTALBUM_DB_ID,
-        MEDIA_DATA_DB_FILE_PATH,
-        MEDIA_DATA_DB_IS_TRASH,
-        MEDIA_DATA_DB_RECYCLE_PATH,
-        MEDIA_DATA_DB_OWNER_PACKAGE,
-        MediaColumn::MEDIA_PACKAGE_NAME,
-        MEDIA_DATA_DB_IS_FAV,
-        MEDIA_DATA_DB_TIME_PENDING,
-
-        // Photos table columns
-        COMPAT_HIDDEN,
-        COMPAT_PHOTO_SYNC_STATUS,
-        COMPAT_FILE_SUBTYPE,
-        COMPAT_CAMERA_SHOT_KEY,
-
-        // PhotoAlbum table columns
-        COMPAT_ALBUM_SUBTYPE,
-    };
     return FILE_KEY_WHITE_LIST.find(express) != FILE_KEY_WHITE_LIST.end();
 }
 

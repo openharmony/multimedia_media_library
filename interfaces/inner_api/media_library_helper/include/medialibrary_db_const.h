@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 26;
+const int32_t MEDIA_RDB_VERSION = 28;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -53,6 +53,8 @@ enum {
     VERSION_ADD_FACE_TABLE = 24,
     VERSION_UPDATE_DATE_TO_MILLISECOND = 25,
     VERSION_ADD_HIDDEN_VIEW_COLUMNS = 26,
+    VERSION_ADD_HIDDEN_TIME = 27,
+    VERSION_ADD_LAST_VISIT_TIME = 28,
 };
 
 enum {
@@ -107,7 +109,7 @@ const std::string ALBUM_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_ALBU
 const std::string URI_TYPE_PHOTO = "Photo";
 const std::string URI_TYPE_AUDIO_V10 = "Audio";
 const std::string URI_TYPE_PHOTO_ALBUM = "PhotoAlbum";
-constexpr int64_t AGING_TIME = static_cast<const int64_t>(30 * 60 * 60 * 24);
+constexpr int64_t AGING_TIME = 30LL * 60 * 60 * 24 * 1000;
 
 const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_TABLE;
 const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_MAP_TABLE;
@@ -154,7 +156,6 @@ const std::string MEDIA_DATA_DB_META_DATE_MODIFIED = "meta_date_modified";
 const std::string MEDIA_DATA_DB_SYNC_STATUS = "sync_status";
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
-const std::string MEDIA_DATA_DB_TIME_VISIT = "time_visit";
 const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
 const std::string MEDIA_DATA_DB_BUCKET_NAME = "bucket_display_name";
 const std::string MEDIA_DATA_DB_DURATION = "duration";
@@ -234,7 +235,6 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        MEDIA_DATA_DB_DATE_TAKEN + " BIGINT DEFAULT 0, " +
                                        MEDIA_DATA_DB_THUMBNAIL + " TEXT, " +
                                        MEDIA_DATA_DB_LCD + " TEXT, " +
-                                       MEDIA_DATA_DB_TIME_VISIT + " BIGINT DEFAULT 0, " +
                                        MEDIA_DATA_DB_BUCKET_ID + " INT DEFAULT 0, " +
                                        MEDIA_DATA_DB_BUCKET_NAME + " TEXT, " +
                                        MEDIA_DATA_DB_DURATION + " INT, " +
@@ -345,8 +345,7 @@ const std::string CREATE_REMOTE_THUMBNAIL_TABLE = "CREATE TABLE IF NOT EXISTS " 
                                             REMOTE_THUMBNAIL_DB_FILE_ID + " INT, " +
                                             REMOTE_THUMBNAIL_DB_UDID + " TEXT, " +
                                             MEDIA_DATA_DB_THUMBNAIL + " TEXT, " +
-                                            MEDIA_DATA_DB_LCD + " TEXT, " +
-                                            MEDIA_DATA_DB_TIME_VISIT + " BIGINT DEFAULT 0) ";
+                                            MEDIA_DATA_DB_LCD + " TEXT) ";
 const std::string FILE_TABLE = "file";
 const std::string ALBUM_TABLE = "album";
 const std::string ALBUM_VIEW_NAME = "Album";
@@ -540,7 +539,6 @@ const std::string CREATE_FILES_FDIRTY_TRIGGER = "CREATE TRIGGER fdirty_trigger A
 
 const std::string CREATE_FILES_MDIRTY_TRIGGER = "CREATE TRIGGER mdirty_trigger AFTER UPDATE ON " +
                         MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
-                        " AND new.time_visit = old.time_visit " +
                         " AND new.date_modified = old.date_modified AND old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyType::TYPE_SYNCED)) +
                         " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +

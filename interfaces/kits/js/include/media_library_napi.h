@@ -35,6 +35,7 @@
 #include "napi_remote_object.h"
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
+#include "uv.h"
 
 namespace OHOS {
 namespace Media {
@@ -98,6 +99,7 @@ public:
     ~ChangeListenerNapi() {};
 
     void OnChange(MediaChangeListener &listener, const napi_ref cbRef);
+    int UvQueueWork(uv_loop_s *loop, uv_work_t *work);
     static napi_value SolveOnChange(napi_env env, UvChangeMsg *msg);
     static string GetTrashAlbumUri();
     static std::string trashAlbumUri_;
