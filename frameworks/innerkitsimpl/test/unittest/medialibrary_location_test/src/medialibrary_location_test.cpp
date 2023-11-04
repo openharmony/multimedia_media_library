@@ -40,7 +40,10 @@ void ClearLocationData()
     MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryCmd, predicates);
 }
 
-void MediaLibraryLocationTest::SetUpTestCase(void) {}
+void MediaLibraryLocationTest::SetUpTestCase(void) {
+    MEDIA_INFO_LOG("Location_Test::Start");
+    MediaLibraryUnitTestUtils::Init();
+}
 
 void MediaLibraryLocationTest::TearDownTestCase(void)
 {
@@ -48,12 +51,13 @@ void MediaLibraryLocationTest::TearDownTestCase(void)
     MEDIA_INFO_LOG("Location_Test::End");
 }
 
-void MediaLibraryLocationTest::SetUp(void)
+void MediaLibraryLocationTest::SetUp(void) 
 {
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
     MediaLibraryUnitTestUtils::Init();
+    ClearLocationData();
 }
 
 void MediaLibraryLocationTest::TearDown(void) {}
@@ -69,6 +73,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_001, TestSiz
     valuesBucket.Put(LOCATION_KEY, 141189990037);
     valuesBucket.Put(LANGUAGE, "zh");
     valuesBucket.Put(COUNTRY, "中国");
+    valuesBucket.Put(CIRT_ID, "123456789101232");
     valuesBucket.Put(ADMIN_AREA, "江苏省");
     valuesBucket.Put(LOCALITY, "苏州市");
     valuesBucket.Put(SUB_LOCALITY, "姑苏区");
@@ -92,6 +97,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_002, TestSiz
     valuesBucket.Put(LANGUAGE, "zh");
     valuesBucket.Put(COUNTRY, "中国");
     valuesBucket.Put(ADMIN_AREA, "江苏省");
+    valuesBucket.Put(CIRT_ID, "123456789101232");
     valuesBucket.Put(LOCALITY, "苏州市");
     valuesBucket.Put(SUB_LOCALITY, "姑苏区");
     valuesBucket.Put(THOROUGHFACE, "人民路");
@@ -118,6 +124,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoKnowledge_Test_001, TestSiz
     valuesBucket.Put(LANGUAGE, "en");
     valuesBucket.Put(COUNTRY, "China");
     valuesBucket.Put(ADMIN_AREA, "Jiangsu");
+    valuesBucket.Put(CIRT_ID, "123456789101232");
     valuesBucket.Put(LOCALITY, "Suzhou");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;

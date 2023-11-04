@@ -45,7 +45,7 @@ const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     LATITUDE + " DOUBLE, " +
     LONGITUDE + " DOUBLE, " +
     LOCATION_KEY + " INTEGER UNIQUE, " +
-    CITY_ID + "TEXT, " +
+    CITY_ID + " TEXT, " +
     LANGUAGE + " TEXT NOT NULL, " +
     COUNTRY + " TEXT, " +
     ADMIN_AREA + " TEXT, " +
