@@ -16,12 +16,15 @@
 #define MLOG_TAG "MediaLibraryNapi"
 
 #include "media_library_napi.h"
+
 #include <fcntl.h>
 #include <sys/sendfile.h>
 
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "hitrace_meter.h"
+#include "media_change_request_napi.h"
+#include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
@@ -31,7 +34,6 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_peer_info.h"
 #include "medialibrary_tracer.h"
-#include "media_column.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_album_napi.h"
@@ -237,6 +239,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getPhotoIndex", PhotoAccessGetPhotoIndex),
             DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
             DECLARE_NAPI_FUNCTION("getHiddenAlbums", PahGetHiddenAlbums),
+            DECLARE_NAPI_FUNCTION("applyChanges", JSApplyChanges),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -5933,6 +5936,19 @@ napi_value MediaLibraryNapi::PahGetHiddenAlbums(napi_env env, napi_callback_info
     CHECK_NULLPTR_RET(ParseArgsGetHiddenAlbums(env, info, asyncContext));
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PahGetHiddenAlbums",
         JSGetPhotoAlbumsExecute, JSGetPhotoAlbumsCompleteCallback);
+}
+
+napi_value MediaLibraryNapi::JSApplyChanges(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO] = { 0 };
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, argc >= ARGS_ONE && argc <= ARGS_TWO, "Number of args is invalid");
+
+    MediaChangeRequestNapi* obj;
+    CHECK_ARGS(env, napi_unwrap(env, argv[PARAM0], reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "MediaChangeRequestNapi object is null");
+    return obj->ApplyChanges(env, info);
 }
 } // namespace Media
 } // namespace OHOS

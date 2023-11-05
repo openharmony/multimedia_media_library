@@ -66,6 +66,7 @@ public:
     void SetHidden(bool isHidden);
     std::string GetAllExif() const;
     std::string GetUserComment() const;
+    std::shared_ptr<FileAsset> GetFileAssetInstance() const;
 
 private:
     static void FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
