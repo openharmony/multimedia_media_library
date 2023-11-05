@@ -379,6 +379,7 @@ export default {
   PhotoSubtype: photoAccessHelper.PhotoSubtype,
   NotifyType: photoAccessHelper.NotifyType,
   DefaultChangeUri: photoAccessHelper.DefaultChangeUri,
+  HiddenPhotosDisplayMode: photoAccessHelper.HiddenPhotosDisplayMode,
   PhotoViewMIMETypes: PhotoViewMIMETypes,
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,

@@ -93,7 +93,7 @@ thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPrivateAlbumEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPhotoSubType_ = nullptr;
-thread_local napi_ref MediaLibraryNapi::sHiddenAlbumFetchModeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sHiddenPhotosDisplayModeEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
 using Context = MediaLibraryAsyncContext* ;
 
@@ -151,7 +151,6 @@ napi_value MediaLibraryNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("FileKey", CreateFileKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("DirectoryType", CreateDirectoryTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PrivateAlbumType", CreatePrivateAlbumTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("HiddenAlbumFetchMode", CreatePrivateAlbumTypeEnum(env)),
     };
     napi_value ctorObj;
     napi_status status = napi_define_class(env, MEDIA_LIB_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
@@ -214,7 +213,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoSubType", CreatePhotoSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env))
+        DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
+        DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -255,7 +255,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoSubtype", CreatePhotoSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env))
+        DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
+        DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env))
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -5059,9 +5060,9 @@ napi_value MediaLibraryNapi::CreatePrivateAlbumTypeEnum(napi_env env)
     return CreateNumberEnumProperty(env, privateAlbumTypeNameEnum, sPrivateAlbumEnumRef_);
 }
 
-napi_value MediaLibraryNapi::CreateHiddenAlbumFetchModeEnum(napi_env env)
+napi_value MediaLibraryNapi::CreateHiddenPhotosDisplayModeEnum(napi_env env)
 {
-    return CreateNumberEnumProperty(env, HIDDEN_ALBUM_FETCH_MODE_ENUM, sHiddenAlbumFetchModeEnumRef_);
+    return CreateNumberEnumProperty(env, HIDDEN_PHOTOS_DISPLAY_MODE_ENUM, sHiddenPhotosDisplayModeEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreateFileKeyEnum(napi_env env)
@@ -5849,14 +5850,14 @@ napi_value MediaLibraryNapi::SetHidden(napi_env env, napi_callback_info info)
         SetHiddenExecute, SetHiddenCompleteCallback);
 }
 
-napi_value ParseHiddenAlbumFetchMode(napi_env env,
+napi_value ParseHiddenPhotosDisplayMode(napi_env env,
     const unique_ptr<MediaLibraryAsyncContext> &context, const int32_t fetchMode)
 {
     switch (fetchMode) {
-        case HIDDEN_ALBUM_SELF:
+        case ASSETS_MODE:
             context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::HIDDEN);
             break;
-        case ALBUMS_VIEW:
+        case ALBUMS_MODE:
             context->predicates.EqualTo(PhotoAlbumColumns::CONTAINS_HIDDEN, to_string(1));
             break;
         default:
@@ -5912,9 +5913,12 @@ napi_value ParseArgsGetHiddenAlbums(napi_env env, napi_callback_info info,
                 env, OHOS_INVALID_PARAM_CODE, "Invalid parameter count: " + to_string(context->argc));
             return nullptr;
     }
-    CHECK_NULLPTR_RET(ParseHiddenAlbumFetchMode(env, context, fetchMode));
-    context->hiddenOnly = true;
+    CHECK_NULLPTR_RET(ParseHiddenPhotosDisplayMode(env, context, fetchMode));
     CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
+    if (fetchMode == HiddenPhotosDisplayMode::ASSETS_MODE) {
+        return result;
+    }
+    context->hiddenOnly = true;
     context->fetchColumn.push_back(PhotoAlbumColumns::HIDDEN_COUNT);
     context->fetchColumn.push_back(PhotoAlbumColumns::HIDDEN_COVER);
     return result;

@@ -197,7 +197,7 @@ private:
     static napi_value CreateVirtualAlbumTypeEnum(napi_env env);
     static napi_value CreatePrivateAlbumTypeEnum(napi_env env);
     static napi_value CreatePhotoKeysEnum(napi_env env);
-    static napi_value CreateHiddenAlbumFetchModeEnum(napi_env env);
+    static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
 
     static napi_value CreateMediaTypeUserFileEnum(napi_env env);
 
@@ -285,7 +285,7 @@ private:
     static thread_local napi_ref sAlbumType_;
     static thread_local napi_ref sAlbumSubType_;
     static thread_local napi_ref sPositionTypeEnumRef_;
-    static thread_local napi_ref sHiddenAlbumFetchModeEnumRef_;
+    static thread_local napi_ref sHiddenPhotosDisplayModeEnumRef_;
     static thread_local napi_ref sPhotoSubType_;
     static thread_local napi_ref sNotifyType_;
     static thread_local napi_ref sDefaultChangeUriRef_;
