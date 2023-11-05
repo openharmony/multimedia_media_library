@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace Media {
+constexpr int32_t NULL_REFERENCE_ALBUM_ID = -1;
 class MediaLibraryAlbumOperations {
 public:
     static int32_t CreateAlbumOperation(MediaLibraryCommand &cmd);
