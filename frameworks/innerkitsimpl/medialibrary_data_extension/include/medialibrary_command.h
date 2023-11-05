@@ -97,6 +97,7 @@ enum class OperationType : uint32_t {
     REVERT_EDIT,
     HIDE,
     QUERY_HIDDEN,
+    ALBUM_ORDER,
 };
 
 class MediaLibraryCommand {

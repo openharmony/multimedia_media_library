@@ -27,16 +27,17 @@ namespace Media {
 enum class AlbumChangeOperation {
     SET_ALBUM_NAME,
     SET_COVER_URI,
+    ORDER_ALBUM,
 };
 
 class MediaAlbumChangeRequestNapi : public MediaChangeRequestNapi {
 public:
     MediaAlbumChangeRequestNapi() = default;
     ~MediaAlbumChangeRequestNapi() override = default;
-
     static napi_value Init(napi_env env, napi_value exports);
 
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
+    std::shared_ptr<PhotoAlbum> GetReferencePhotoAlbumInstance() const;
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
 
 private:
@@ -45,12 +46,13 @@ private:
 
     static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
     static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
+    static napi_value JSPlaceToFrontOf(napi_env env, napi_callback_info info);
 
     static thread_local napi_ref constructor_;
     std::shared_ptr<PhotoAlbum> photoAlbum_ = nullptr;
+    std::shared_ptr<PhotoAlbum> referencePhotoAlbum_ = nullptr;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
 };
-
 struct MediaAlbumChangeRequestAsyncContext : public NapiError {
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];

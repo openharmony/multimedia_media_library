@@ -583,6 +583,8 @@ int32_t PrepareSystemAlbums(RdbStore &store)
     for (int32_t i = PhotoAlbumSubType::SYSTEM_START; i <= PhotoAlbumSubType::SYSTEM_END; i++) {
         values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SYSTEM);
         values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, i);
+        // 1：order offset，skip 0 for first album
+        values.PutInt(PhotoAlbumColumns::ALBUM_ORDER, i - PhotoAlbumSubType::SYSTEM_START + 1);
 
         AbsRdbPredicates predicates(PhotoAlbumColumns::TABLE);
         predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
@@ -895,6 +897,8 @@ static const vector<string> onCreateSqlStrs = {
     PhotoAlbumColumns::CREATE_ALBUM_INSERT_TRIGGER,
     PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER,
     PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER,
+    PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER,
+    PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER,
     PhotoMap::CREATE_TABLE,
     PhotoMap::CREATE_NEW_TRIGGER,
     PhotoMap::CREATE_DELETE_TRIGGER,
@@ -1520,6 +1524,36 @@ void AddHiddenTimeColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddAlbumOrderColumn(RdbStore &store)
+{
+    const std::string addAlbumOrderColumn =
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::ALBUM_ORDER + " INT";
+    const std::string initOriginOrder =
+        "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
+        PhotoAlbumColumns::ALBUM_ORDER + " = rowid";
+    const std::string albumDeleteTrigger =
+        " CREATE TRIGGER update_order_trigger AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
+        " FOR EACH ROW " +
+        " BEGIN " +
+        " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = album_order - 1" +
+        " WHERE album_order > old.album_order; " +
+        " END";
+    const std::string albumInsertTrigger =
+        " CREATE TRIGGER insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
+        " BEGIN " +
+        " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = (" +
+        " SELECT Max(album_order) FROM " + PhotoAlbumColumns::TABLE + ") + 1 WHERE rowid = new.rowid;"
+        " END";
+
+    const vector<string> addAlbumOrder = { addAlbumOrderColumn, initOriginOrder,
+        albumDeleteTrigger, albumInsertTrigger};
+    int32_t result = ExecSqls(addAlbumOrder, store);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb album order error %{private}d", result);
+    }
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1569,7 +1603,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
         UpdateMillisecondDate(store);
     }
+}
 
+static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
+{
     if (oldVersion < VERSION_ADD_HIDDEN_VIEW_COLUMNS) {
         AddHiddenViewColumn(store);
     }
@@ -1585,6 +1622,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_LOCATION_TABLE) {
         AddLocationTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_ALBUM_ORDER) {
+        AddAlbumOrderColumn(store);
     }
 }
 
@@ -1629,6 +1670,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     }
 
     UpgradeOtherTable(store, oldVersion);
+    UpgradeGalleryFeatureTable(store, oldVersion);
 
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};

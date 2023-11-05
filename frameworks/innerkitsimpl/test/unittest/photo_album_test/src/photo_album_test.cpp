@@ -174,6 +174,13 @@ inline int32_t UpdatePhotoAlbum(const DataShareValuesBucket &values, const DataS
     return MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
 }
 
+inline int32_t OrderAlbums(const DataShareValuesBucket &values, const DataSharePredicates &predicates)
+{
+    Uri uri(URI_UPDATE_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(uri, OperationType::ALBUM_ORDER);
+    return MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
+}
+
 void CheckUpdatedAlbum(int32_t albumId, const string &expectedName, const string &expectedCover)
 {
     string coverUri;
@@ -494,5 +501,68 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_005, TestSize.Level0)
     EXPECT_EQ(UpdatePhotoAlbum(values, predicates), 0);
     CheckUpdatedSystemAlbum(PhotoAlbumSubType::FAVORITE, "", "");
     MEDIA_INFO_LOG("photoalbum_update_album_005 end");
+}
+
+/**
+ * @tc.name: photoalbum_order_album_006
+ * @tc.desc: order photo album.
+ *           move current album before reference album
+ * @tc.type: FUNC
+ * @tc.require: issueI6P7NG
+ */
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("photoalbum_order_album_006 enter");
+
+    // Build empty values
+    DataShareValuesBucket values;
+    values.Put(PhotoAlbumColumns::ALBUM_ID, 2);
+    values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, 5); // 2\5:album_id
+    // Try to update favorite system
+    DataSharePredicates predicates;
+    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    MEDIA_INFO_LOG("photoalbum_order_album_006 end");
+}
+
+/**
+ * @tc.name: photoalbum_order_album_007
+ * @tc.desc: order photo album.
+ *           move current album before reference album
+ * @tc.type: FUNC
+ * @tc.require: issueI6P7NG
+ */
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("photoalbum_order_album_007 enter");
+
+    // Build empty values
+    DataShareValuesBucket values;
+    values.Put(PhotoAlbumColumns::ALBUM_ID, 2); // 2\5:album_id
+    values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, 5);
+    // Try to update favorite system
+    DataSharePredicates predicates;
+    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    MEDIA_INFO_LOG("photoalbum_order_album_007 end");
+}
+
+/**
+ * @tc.name: photoalbum_order_album_007
+ * @tc.desc: order photo album.
+ *           move current album before reference album
+ * @tc.type: FUNC
+ * @tc.require: issueI6P7NG
+ */
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("photoalbum_order_album_008 enter");
+
+    // Build empty values
+    DataShareValuesBucket values;
+    values.Put(PhotoAlbumColumns::ALBUM_ID, 3); // 3:album_id
+    values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, -1);
+    // Try to update favorite system
+    DataSharePredicates predicates;
+    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    MEDIA_INFO_LOG("photoalbum_order_album_008 end");
 }
 } // namespace OHOS::Media

@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 29;
+const int32_t MEDIA_RDB_VERSION = 30;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -56,6 +56,7 @@ enum {
     VERSION_ADD_HIDDEN_TIME = 27,
     VERSION_ADD_LAST_VISIT_TIME = 28,
     VERSION_ADD_LOCATION_TABLE = 29,
+    VERSION_ADD_ALBUM_ORDER = 30,
 };
 
 enum {
@@ -185,6 +186,7 @@ const std::string MEDIA_DATA_DB_DEVICE_NAME = "device_name";
 
 const std::string MEDIA_DATA_DB_ALBUM = "album";
 const std::string MEDIA_DATA_DB_ALBUM_ID = "album_id";
+const std::string MEDIA_DATA_DB_REFERENCE_ALBUM_ID = "reference_album_id";
 const std::string MEDIA_DATA_DB_ALBUM_NAME = "album_name";
 const std::string MEDIA_DATA_DB_COUNT = "count";
 const std::string MEDIA_DATA_BUNDLENAME = "bundle_name";
