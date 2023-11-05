@@ -217,17 +217,17 @@ enum FetchOptionType {
     ALBUM_FETCH_OPT = 1
 };
 
-enum HiddenAlbumFetchMode {
-    HIDDEN_ALBUM_SELF = 0,
-    ALBUMS_VIEW = 1
+enum HiddenPhotosDisplayMode {
+    ASSETS_MODE = 0,
+    ALBUMS_MODE = 1
 };
 
 const std::vector<std::string> privateAlbumTypeNameEnum {
     "TYPE_FAVORITE", "TYPE_TRASH", "TYPE_HIDE", "TYPE_SMART", "TYPE_SEARCH"
 };
 
-const std::vector<std::string> HIDDEN_ALBUM_FETCH_MODE_ENUM {
-    "HIDDEN_ALBUM_SELF", "ALBUMS_VIEW"
+const std::vector<std::string> HIDDEN_PHOTOS_DISPLAY_MODE_ENUM {
+    "ASSETS_MODE", "ALBUMS_MODE"
 };
 
 const std::vector<std::string> mediaTypesEnum {
