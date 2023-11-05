@@ -5942,8 +5942,11 @@ napi_value MediaLibraryNapi::JSApplyChanges(napi_env env, napi_callback_info inf
 {
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = { 0 };
+    napi_valuetype valueType;
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, argc >= ARGS_ONE && argc <= ARGS_TWO, "Number of args is invalid");
+    CHECK_ARGS(env, napi_typeof(env, argv[PARAM0], &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
 
     MediaChangeRequestNapi* obj;
     CHECK_ARGS(env, napi_unwrap(env, argv[PARAM0], reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
