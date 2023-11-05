@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include "location_column.h"
 #include "medialibrary_command.h"
 
+#include "location_column.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
