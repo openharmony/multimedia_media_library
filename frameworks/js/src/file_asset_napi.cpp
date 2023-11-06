@@ -4310,10 +4310,11 @@ napi_value FileAssetNapi::PhotoAccessHelperCommitEditedAsset(napi_env env, napi_
     CHECK_ARGS_THROW_INVALID_PARAM(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_THREE));
     string editData;
+    const static int32_t EDIT_DATA_MAX_LENGTH = 65536;
     CHECK_ARGS_THROW_INVALID_PARAM(env,
-        MediaLibraryNapiUtils::GetParamString(env, asyncContext->argv[0], editData));
+        MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[0], EDIT_DATA_MAX_LENGTH, editData));
     CHECK_ARGS_THROW_INVALID_PARAM(env,
-        MediaLibraryNapiUtils::GetParamString(env, asyncContext->argv[1], asyncContext->uri));
+        MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[1], asyncContext->uri));
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
     napi_value ret = nullptr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "PhotoAsset is nullptr");

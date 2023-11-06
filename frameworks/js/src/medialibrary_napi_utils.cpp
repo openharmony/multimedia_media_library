@@ -118,9 +118,10 @@ static napi_status GetParamStr(napi_env env, napi_value arg, const size_t size, 
     return napi_ok;
 }
 
-napi_status MediaLibraryNapiUtils::GetParamString(napi_env env, napi_value arg, string &result)
+napi_status MediaLibraryNapiUtils::GetParamStringWithLength(napi_env env, napi_value arg, int32_t maxLen,
+    string &result)
 {
-    CHECK_STATUS_RET(GetParamStr(env, arg, PATH_MAX, result), "Failed to get string parameter");
+    CHECK_STATUS_RET(GetParamStr(env, arg, maxLen, result), "Failed to get string parameter");
     return napi_ok;
 }
 
