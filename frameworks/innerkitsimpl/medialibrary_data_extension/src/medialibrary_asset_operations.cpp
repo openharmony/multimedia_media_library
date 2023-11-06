@@ -1377,7 +1377,7 @@ int32_t MediaLibraryAssetOperations::GrantUriPermission(const string &uri, const
         return E_HAS_FS_ERROR;
     }
 
-    int32_t ret = uriPermissionClient.GrantUriPermission(Uri(uri), flag, bundleName, 1);
+    int32_t ret = uriPermissionClient.GrantUriPermission(Uri(uri), flag, bundleName);
     if (ret != 0) {
         MEDIA_ERR_LOG("Can not grant uri permission, uri: %{private}s, bundleName: %{private}s, ret: %{public}d",
             uri.c_str(), bundleName.c_str(), ret);
