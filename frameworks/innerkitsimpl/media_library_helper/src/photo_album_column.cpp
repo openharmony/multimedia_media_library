@@ -183,6 +183,16 @@ static void GetAllImagesPredicates(RdbPredicates &predicates)
     predicates.EndWrap();
 }
 
+static void GetAllSourcePredicates(RdbPredicates &predicates)
+{
+    predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EndWrap();
+}
+
 void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype, RdbPredicates &predicates)
 {
     switch (subtype) {
@@ -206,6 +216,9 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
         }
         case PhotoAlbumSubType::IMAGES: {
             return GetAllImagesPredicates(predicates);
+        }
+        case PhotoAlbumSubType::SOURCE: {
+            return GetAllSourcePredicates(predicates);
         }
         default: {
             predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(0));
