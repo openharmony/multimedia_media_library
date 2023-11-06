@@ -412,7 +412,8 @@ public:
     static napi_status GetParamBool(napi_env env, napi_value arg, bool &result);
     static napi_status GetUInt32Array(napi_env env, napi_value arg, std::vector<uint32_t> &param);
     static napi_status GetParamFunction(napi_env env, napi_value arg, napi_ref &callbackRef);
-    static napi_status GetParamString(napi_env env, napi_value arg, std::string &str);
+    static napi_status GetParamStringWithLength(napi_env env, napi_value arg, int32_t maxLen,
+        std::string &str);
     static napi_status GetParamStringPathMax(napi_env env, napi_value arg, std::string &str);
     static napi_status GetProperty(napi_env env, const napi_value arg, const std::string &propName,
         std::string &propValue);
