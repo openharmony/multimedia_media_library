@@ -542,7 +542,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     vector<string> notifyUris = rdbPredicate.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
     ValuesBucket values;
-    values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(values);
     int32_t updatedRows = rdbStore->Update(values, rdbPredicate);
     if (updatedRows < 0) {
