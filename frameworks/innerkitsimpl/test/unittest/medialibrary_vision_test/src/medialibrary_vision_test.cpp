@@ -420,10 +420,22 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(FILE_ID, 1);
     valuesBucket.Put(FACE_ID, 1);
+    valuesBucket.Put(TAG_ID, "11");
+    valuesBucket.Put(SCALE_X, 1.2);
+    valuesBucket.Put(SCALE_Y, 1.3);
+    valuesBucket.Put(SCALE_HEIGHT, 3.4);
+    valuesBucket.Put(SCALE_WIDTH, 2.3);
+    valuesBucket.Put(LANDMARKS, "{{222}}");
+    valuesBucket.Put(PITCH, 4.5);
+    valuesBucket.Put(YAW, 5.6);
+    valuesBucket.Put(ROLL, 90);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(TOTAL_FACES, 1);
     valuesBucket.Put(IMAGE_FACE_VERSION, "1.01");
-    valuesBucket.Put(PROB, 2.344);
+    valuesBucket.Put(IMAGE_FEATURES_VERSION, "3.0");
+    valuesBucket.Put(FEATURES, "xyijd");
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    EXPECT_EQ((retVal > 0), true);
+    EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
     DataShare::DataShareValuesBucket valuesBucket1;
     valuesBucket1.Put(FILE_ID, 1);
@@ -431,10 +443,10 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level
     valuesBucket1.Put(IMAGE_FACE_VERSION, "1.01");
     valuesBucket1.Put(PROB, 2.344);
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    EXPECT_LT(retVal1, 0);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(FILE_ID, 1);
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
-    EXPECT_EQ((retVal1 < 0), true);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_UpdateImageFace_Test_001, TestSize.Level0)
@@ -443,22 +455,36 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateImageFace_Test_001, TestSize.Level
     Uri imageFaceUri(URI_IMAGE_FACE);
     MediaLibraryCommand cmd(imageFaceUri);
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(FILE_ID, 3);
+    valuesBucket.Put(FILE_ID, 2);
     valuesBucket.Put(FACE_ID, 3);
-    valuesBucket.Put(TOTAL_FACES, 6);
+    valuesBucket.Put(TAG_ID, "22");
+    valuesBucket.Put(SCALE_X, 2.2);
+    valuesBucket.Put(SCALE_Y, 3.3);
+    valuesBucket.Put(SCALE_HEIGHT, 5.4);
+    valuesBucket.Put(SCALE_WIDTH, 6.3);
+    valuesBucket.Put(LANDMARKS, "{{25522}}");
+    valuesBucket.Put(PITCH, 6.5);
+    valuesBucket.Put(YAW, 7.6);
+    valuesBucket.Put(ROLL, 900);
+    valuesBucket.Put(PROB, 0.1);
+    valuesBucket.Put(TOTAL_FACES, 1);
     valuesBucket.Put(IMAGE_FACE_VERSION, "1.01");
-    valuesBucket.Put(PROB, 2.344);
+    valuesBucket.Put(IMAGE_FEATURES_VERSION, "3.0");
+    valuesBucket.Put(FEATURES, "vvvr");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;
     updateValues.Put(TOTAL_FACES, 8);
     updateValues.Put(IMAGE_FACE_VERSION, "2.01");
     DataShare::DataSharePredicates predicates;
     vector<string> inValues;
-    inValues.push_back("3");
+    inValues.push_back("2");
     predicates.In(FILE_ID, inValues);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
-    EXPECT_EQ((retVal == 1), true);
+    EXPECT_EQ(retVal, 1);
     MEDIA_INFO_LOG("Vision_UpdateImageFace_Test_001::retVal = %{public}d. End", retVal);
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(FILE_ID, 2);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_DeleteImageFace_Test_001, TestSize.Level0)
@@ -468,9 +494,21 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteImageFace_Test_001, TestSize.Level
     MediaLibraryCommand cmd(imageFaceUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(FILE_ID, 4);
-    valuesBucket.Put(FACE_ID, 1);
-    valuesBucket.Put(IMAGE_FACE_VERSION, "1.01");
-    valuesBucket.Put(PROB, 2.344);
+    valuesBucket.Put(FACE_ID, 3);
+    valuesBucket.Put(TAG_ID, "2442");
+    valuesBucket.Put(SCALE_X, 3.2);
+    valuesBucket.Put(SCALE_Y, 4.3);
+    valuesBucket.Put(SCALE_HEIGHT, 4.4);
+    valuesBucket.Put(SCALE_WIDTH, 4.3);
+    valuesBucket.Put(LANDMARKS, "{{254522}}");
+    valuesBucket.Put(PITCH, 64.54);
+    valuesBucket.Put(YAW, 75.64);
+    valuesBucket.Put(ROLL, 9004);
+    valuesBucket.Put(PROB, 0.14);
+    valuesBucket.Put(TOTAL_FACES, 1);
+    valuesBucket.Put(IMAGE_FACE_VERSION, "1.041");
+    valuesBucket.Put(IMAGE_FEATURES_VERSION, "34.0");
+    valuesBucket.Put(FEATURES, "bb4");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
@@ -482,8 +520,54 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteImageFace_Test_001, TestSize.Level
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(FILE_ID, 4);
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
-    EXPECT_EQ((retVal == 2), true);
+    EXPECT_EQ(retVal, 2);
     MEDIA_INFO_LOG("Vision_DeleteImageFace_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_QueryImageFace_Test_001::Start");
+    Uri imageFaceUri(URI_IMAGE_FACE);
+    MediaLibraryCommand cmd(imageFaceUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 5);
+    valuesBucket.Put(FACE_ID, 3);
+    valuesBucket.Put(TAG_ID, "24425");
+    valuesBucket.Put(SCALE_X, 2.25);
+    valuesBucket.Put(SCALE_Y, 3.36);
+    valuesBucket.Put(SCALE_HEIGHT, 5.46);
+    valuesBucket.Put(SCALE_WIDTH, 6.36);
+    valuesBucket.Put(LANDMARKS, "{{255226}}");
+    valuesBucket.Put(PITCH, 64.65);
+    valuesBucket.Put(YAW, 75.66);
+    valuesBucket.Put(ROLL, 9006);
+    valuesBucket.Put(PROB, 0.16);
+    valuesBucket.Put(TOTAL_FACES, 1);
+    valuesBucket.Put(IMAGE_FACE_VERSION, "1.016");
+    valuesBucket.Put(IMAGE_FEATURES_VERSION, "3.06");
+    valuesBucket.Put(FEATURES, "bb66");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 5);
+    valuesBucket1.Put(FACE_ID, 2);
+    valuesBucket1.Put(IMAGE_FACE_VERSION, "1.015");
+    valuesBucket1.Put(PROB, 2.344);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 5);
+    vector<string> columns;
+    columns.push_back(FACE_ID);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 2);
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(FILE_ID, 5);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+    EXPECT_EQ(retVal, 2);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_InsertFaceTag_Test_001, TestSize.Level0)
@@ -494,10 +578,21 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertFaceTag_Test_001, TestSize.Level0)
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(TAG_ID, "tag111");
     valuesBucket.Put(TAG_NAME, "me");
+    valuesBucket.Put(USER_OPERATION, 1);
+    valuesBucket.Put(GROUP_TAG, "tag111");
+    valuesBucket.Put(RENAME_OPERATION, 1);
+    valuesBucket.Put(CENTER_FEATURES, "dffd");
+    valuesBucket.Put(TAG_VERSION, "2.2");
+    valuesBucket.Put(USER_DISPLAY_LEVEL, 1);
+    valuesBucket.Put(TAG_ORDER, 0);
+    valuesBucket.Put(IS_ME, 1);
+    valuesBucket.Put(COVER_URI, "xssdsf");
+    valuesBucket.Put(COUNT, 1);
+    valuesBucket.Put(DATE_MODIFY, 3333);
+    valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
-    valuesBucket.Put(TAG_VERSION, "1.2");
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    EXPECT_EQ((retVal > 0), true);
+    EXPECT_GT(retVal, 1);
     MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
     DataShare::DataShareValuesBucket valuesBucket1;
     valuesBucket1.Put(TAG_ID, "tag111");
@@ -505,10 +600,10 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertFaceTag_Test_001, TestSize.Level0)
     valuesBucket1.Put(IS_REMOVED, 1);
     valuesBucket1.Put(TAG_VERSION, "33");
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    EXPECT_LT(retVal1, 0);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(TAG_ID, "tag111");
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
-    EXPECT_EQ((retVal1 < 0), true);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_UpdateFaceTag_Test_001, TestSize.Level0)
@@ -517,21 +612,35 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateFaceTag_Test_001, TestSize.Level0)
     Uri faceTagUri(URI_FACE_TAG);
     MediaLibraryCommand cmd(faceTagUri);
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(TAG_ID, "tag222");
-    valuesBucket.Put(TAG_NAME, "me");
+    valuesBucket.Put(TAG_ID, "tag333");
+    valuesBucket.Put(TAG_NAME, "you");
+    valuesBucket.Put(USER_OPERATION, 1);
+    valuesBucket.Put(GROUP_TAG, "tag333");
+    valuesBucket.Put(RENAME_OPERATION, 1);
+    valuesBucket.Put(CENTER_FEATURES, "dffd2");
+    valuesBucket.Put(TAG_VERSION, "2.22");
+    valuesBucket.Put(USER_DISPLAY_LEVEL, 1);
+    valuesBucket.Put(TAG_ORDER, 0);
+    valuesBucket.Put(IS_ME, 1);
+    valuesBucket.Put(COVER_URI, "xssdsf2");
+    valuesBucket.Put(COUNT, 1);
+    valuesBucket.Put(DATE_MODIFY, 2222);
+    valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
-    valuesBucket.Put(TAG_VERSION, "1.2");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;
-    updateValues.Put(TAG_NAME, "you");
+    updateValues.Put(TAG_NAME, "she");
     updateValues.Put(IS_REMOVED, 0);
     DataShare::DataSharePredicates predicates;
     vector<string> inValues;
-    inValues.push_back("tag222");
+    inValues.push_back("tag333");
     predicates.In(TAG_ID, inValues);
     auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
-    EXPECT_EQ((retVal == 1), true);
+    EXPECT_EQ(retVal, 1);
     MEDIA_INFO_LOG("Vision_UpdateFaceTag_Test_001::retVal = %{public}d. End", retVal);
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(TAG_ID, "tag333");
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_DeleteFaceTag_Test_001, TestSize.Level0)
@@ -540,17 +649,68 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteFaceTag_Test_001, TestSize.Level0)
     Uri faceTagUri(URI_FACE_TAG);
     MediaLibraryCommand cmd(faceTagUri);
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(TAG_ID, "tag333");
-    valuesBucket.Put(TAG_NAME, "me");
+    valuesBucket.Put(TAG_ID, "tag444");
+    valuesBucket.Put(TAG_NAME, "he");
+    valuesBucket.Put(USER_OPERATION, 1);
+    valuesBucket.Put(GROUP_TAG, "tag444");
+    valuesBucket.Put(RENAME_OPERATION, 1);
+    valuesBucket.Put(CENTER_FEATURES, "dffd");
+    valuesBucket.Put(TAG_VERSION, "2.24");
+    valuesBucket.Put(USER_DISPLAY_LEVEL, 1);
+    valuesBucket.Put(TAG_ORDER, 0);
+    valuesBucket.Put(IS_ME, 1);
+    valuesBucket.Put(COVER_URI, "xssdsf4");
+    valuesBucket.Put(COUNT, 1);
+    valuesBucket.Put(DATE_MODIFY, 444);
+    valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
-    valuesBucket.Put(TAG_VERSION, "1.2");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(TAG_ID, "tag333");
+    predicates.EqualTo(TAG_ID, "tag444");
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
-    EXPECT_EQ((retVal == 1), true);
+    EXPECT_EQ(retVal, 1);
     MEDIA_INFO_LOG("Vision_DeleteFaceTag_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryFaceTag_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_QueryFaceTag_Test_001::Start");
+    Uri faceTagUri(URI_FACE_TAG);
+    MediaLibraryCommand cmd(faceTagUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(TAG_ID, "tag555");
+    valuesBucket.Put(TAG_NAME, "he");
+    valuesBucket.Put(USER_OPERATION, 1);
+    valuesBucket.Put(GROUP_TAG, "tag555");
+    valuesBucket.Put(RENAME_OPERATION, 1);
+    valuesBucket.Put(CENTER_FEATURES, "dffd");
+    valuesBucket.Put(TAG_VERSION, "2.25");
+    valuesBucket.Put(USER_DISPLAY_LEVEL, 1);
+    valuesBucket.Put(TAG_ORDER, 0);
+    valuesBucket.Put(IS_ME, 1);
+    valuesBucket.Put(COVER_URI, "xssdsf5");
+    valuesBucket.Put(COUNT, 1);
+    valuesBucket.Put(DATE_MODIFY, 5555);
+    valuesBucket.Put(ALBUM_TYPE, 1);
+    valuesBucket.Put(IS_REMOVED, 1);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(TAG_ID, "tag555");
+    vector<string> columns;
+    columns.push_back(TAG_NAME);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_NE(resultSet, nullptr);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 1);
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(TAG_ID, "tag555");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+    EXPECT_EQ(retVal, 1);
 }
 } // namespace Media
 } // namespace OHOS
