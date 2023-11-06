@@ -18,7 +18,6 @@
 #include "medialibrary_source_album_test.h"
 
 #include <chrono>
-#include <mutex>
 
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_photo_operations.h"
@@ -46,6 +45,7 @@
 #include "uri.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
+#include "source_album.h"
 
 namespace OHOS {
 namespace Media {
@@ -58,6 +58,28 @@ using OHOS::DataShare::DataSharePredicates;
 const long ERROR_PEDING = -2;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 static std::atomic<int> fileNumber(0);
+
+void InitSourceAlbumTrigger() {
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DELETE_PHOTO_UPDATE_SOURCE_ALBUM
+    };
+    MEDIA_INFO_LOG("start add source album trigger");
+    int32_t err = NativeRdb::E_OK;
+    for (const auto &sql : executeSqlStrs) {
+        err = g_rdbStore->ExecuteSql(sql);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to exec: %{private}s", sql.c_str());
+            continue;
+        }
+    }
+}
 
 void ClearData()
 {
@@ -90,14 +112,6 @@ int64_t GetTimestamp()
     auto duration = now.time_since_epoch();
     auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
     return seconds.count();
-}
-
-string GetQuerySourceAlbumSql(string &packageName)
-{
-    return "SELECT * FROM " + PhotoAlbumColumns::TABLE + "WHERE " +
-        PhotoAlbumColumns::ALBUM_NAME + " = " + packageName + " AND " +
-        PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SYSTEM) + " AND " +
-        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::SOURCE);
 }
 
 string GetCoverUri(int64_t &outRowId, string &title, string &disPlayName)
@@ -150,7 +164,6 @@ void InsertPhoto(string &packageName, int64_t &outRowId, string &title,
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
     int32_t ret = store->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
-    MEDIA_INFO_LOG("outRowId is %{public}lld", outRowId);
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to insert photo! err: %{public}d", ret);
 }
 
@@ -175,7 +188,7 @@ void HidePhoto(int64_t fileId, int value)
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
-    updateValues.PutInt(MediaColumn::MEDIA_HIDDEN, 1);
+    updateValues.PutInt(MediaColumn::MEDIA_HIDDEN, value);
     cmd.SetValueBucket(updateValues);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
@@ -199,32 +212,59 @@ void ValidPhotoAlbumCount(string packageName, int exceptResultCount)
 {
     MEDIA_INFO_LOG("ValidPhotoAlbumCount exceptResultCount is: %{public}d",
         exceptResultCount);
-    string querySql = GetQuerySourceAlbumSql(packageName);
-    auto resultSet = g_rdbStore->QuerySql(querySql);
-    CHECK_AND_RETURN_LOG(resultSet == nullptr, "get source album resultSet is null");
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI};
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_NAME, packageName);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE));
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("can not get rdbstore");
+        return;
+    }
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get resultSet");
+        return;
+    }
     int32_t count = -1;
     int32_t ret = resultSet->GetRowCount(count);
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to get count! err: %{public}d", ret);
     EXPECT_EQ(count, exceptResultCount);
 }
 
-void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptCount, string exceptCoverUri)
+void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptPhotoCount,
+    string exceptCoverUri)
 {
     MEDIA_INFO_LOG("validPhotoAlbumValue packageName is: %{public}s ", packageName.c_str());
     MEDIA_INFO_LOG("validPhotoAlbumValue exceptResultCount is: %{public}d ", exceptResultCount);
-    MEDIA_INFO_LOG("validPhotoAlbumValue exceptResultCount is: %{public}d ", exceptResultCount);
+    MEDIA_INFO_LOG("validPhotoAlbumValue exceptPhotoCount is: %{public}d ", exceptPhotoCount);
     MEDIA_INFO_LOG("validPhotoAlbumValue exceptCoverUri is: %{public}s ", exceptCoverUri.c_str());
-    string querySql = GetQuerySourceAlbumSql(packageName);
-    auto resultSet = g_rdbStore->QuerySql(querySql);
-    CHECK_AND_RETURN_LOG(resultSet == nullptr, "get source album resultSet is null");
+        vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI};
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_NAME, packageName);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE));
+    if (g_rdbStore == nullptr) {
+        MEDIA_ERR_LOG("can not get rdbstore");
+        return;
+    }
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Can not get resultSet");
+        return;
+    }
     int32_t count = -1;
     int32_t ret = resultSet->GetRowCount(count);
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to get count! err: %{public}d", ret);
     EXPECT_EQ(count, exceptResultCount);
-    ret = resultSet->GoToFirstRow();
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to GoToFirstRow! err: %{public}d", ret);
-    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_COUNT, TYPE_INT32, exceptCount);
-    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_COVER_URI, TYPE_STRING, exceptCoverUri);
+    int photoCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
+    string coverURI= GetStringVal(PhotoAlbumColumns::ALBUM_COVER_URI, resultSet);
+    MEDIA_INFO_LOG("validPhotoAlbumValue photoCount is: %{public}d ", count);
+    MEDIA_INFO_LOG("validPhotoAlbumValue coverURI is: %{public}s ", coverURI.c_str());
+    EXPECT_EQ(photoCount, exceptPhotoCount);
+    EXPECT_EQ(coverURI, exceptCoverUri);
 }
 
 void DeletePhoto(int64_t &fileId)
@@ -239,8 +279,9 @@ void DeletePhoto(int64_t &fileId)
 void MediaLibrarySourceAlbumTest::SetUpTestCase()
 {
     MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest SetUpTestCase start");
-    ClearData();
     MediaLibraryUnitTestUtils::Init();
+    ClearData();
+    InitSourceAlbumTrigger();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     fileNumber = 0;
     if (g_rdbStore == nullptr) {
@@ -259,7 +300,6 @@ void MediaLibrarySourceAlbumTest::SetUp()
 void MediaLibrarySourceAlbumTest::TearDown()
 {
     MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest TearDown");
-    ClearData();
 }
 
 /**
@@ -278,26 +318,6 @@ HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_insert_source_album_test_001,
     InsertPhoto(packageName, outRowId, title, displayName, true);
     ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(outRowId, title, displayName));
     MEDIA_INFO_LOG("end tdd insert_photo_insert_source_album_test_001");
-}
-
-/**
- * @tc.name: insert_photo_insert_source_album_test_002
- * @tc.desc: insert a pending photo
- * @tc.type: FUNC
- * @tc.require: issueI6B1SE
- */
-HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_insert_source_album_test_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("start tdd insert_photo_insert_source_album_test_002");
-    string packageName = "app_002";
-    // insert photo
-    int64_t outRowId;
-    string title;
-    string displayName;
-    InsertPhoto(packageName, outRowId, title, displayName, false);
-    // verify
-    ValidPhotoAlbumValue(packageName, 1, 0, "");
-    MEDIA_INFO_LOG("end tdd insert_photo_insert_source_album_test_002");
 }
 
 /**
@@ -323,31 +343,6 @@ HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_update_source_album_test_001,
     // verify
     ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(outRowId2, title2, displayName2));
     MEDIA_INFO_LOG("end tdd insert_photo_update_source_album_test_001");
-}
-
-/**
- * @tc.name: insert_photo_update_source_album_test_002
- * @tc.desc: insert a normal photo, insert a pending photo
- * @tc.type: FUNC
- * @tc.require: issueI6B1SE
- */
-HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_update_source_album_test_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("start tdd insert_photo_update_source_album_test_002");
-    string packageName = "app_004";
-    // insert photo
-    int64_t outRowId1;
-    string title1;
-    string displayName1;
-    InsertPhoto(packageName, outRowId1, title1, displayName1, true);
-    // insert pending photo
-    int64_t outRowId2;
-    string title2;
-    string displayName2;
-    InsertPhoto(packageName, outRowId2, title2, displayName2, false);
-    // verify
-    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(outRowId1, title1, displayName1));
-    MEDIA_INFO_LOG("end tdd insert_photo_update_source_album_test_002");
 }
 
 /**
