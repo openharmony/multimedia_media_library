@@ -1453,11 +1453,11 @@ void UpdateMillisecondDate(RdbStore &store)
 {
     MEDIA_DEBUG_LOG("UpdateMillisecondDate start");
     const vector<string> updateSql = {
-        "UPDATE" + PhotoColumn::PHOTOS_TABLE + " SET " +
-        PhotoColumn::PHOTO_DATE_ADDED + " = " + PhotoColumn::PHOTO_DATE_ADDED + "*1000," +
-        PhotoColumn::PHOTO_DATE_MODIFIED + " = " + PhotoColumn::PHOTO_DATE_MODIFIED + "*1000," +
-        PhotoColumn::PHOTO_DATE_TRASHED + " = " + PhotoColumn::PHOTO_DATE_TRASHED + "*1000;"+
-        "UPDATE" + PhotoColumn::PHOTO_ALBUM_TABLE + " SET " +
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+        MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + "*1000," +
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " + MediaColumn::MEDIA_DATE_MODIFIED + "*1000," +
+        MediaColumn::MEDIA_DATE_TRASHED + " = " + MediaColumn::MEDIA_DATE_TRASHED + "*1000;"+
+        "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
         MediaColumn::MEDIA_DATE_MODIFIED + " = " +  MediaColumn::MEDIA_DATE_MODIFIED + "*1000;",
     };
     ExecSqls(updateSql, store);

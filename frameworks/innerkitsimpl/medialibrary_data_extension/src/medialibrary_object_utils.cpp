@@ -133,7 +133,7 @@ int32_t MediaLibraryObjectUtils::DeleteInvalidRowInDb(const string &path)
     return E_SUCCESS;
 }
 
-static int64_t Timespec2Milliseconds(struct timespec &time)
+static inline int64_t Timespec2Milliseconds(struct timespec &time)
 {
     return time.tv_sec * MSEC_TO_SEC + time.tv_nsec / MSEC_TO_NSEC;
 }
