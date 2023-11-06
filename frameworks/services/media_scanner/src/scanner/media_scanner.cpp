@@ -306,11 +306,6 @@ int32_t MediaScannerObj::GetParentDirInfo(const string &parent, int32_t parentId
     return E_OK;
 }
 
-static int64_t Timespec2Millisecond(const struct timespec &time)
-{
-    return time.tv_sec * MSEC_TO_SEC + time.tv_nsec / MSEC_TO_NSEC;
-}
-
 int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
 {
     data_ = make_unique<Metadata>();
@@ -342,8 +337,8 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     }
 
     // may need isPending here
-    if ((data_->GetFileDateModified() == Timespec2Millisecond(statInfo.st_mtim)) &&
-        (data_->GetFileSize() == statInfo.st_size) && (!isForceScan_)) {
+    if ((data_->GetFileDateModified() == statInfo.st_mtime) && (data_->GetFileSize() == statInfo.st_size) &&
+        (!isForceScan_)) {
         scannedIds_.insert(make_pair(data_->GetTableName(), data_->GetFileId()));
         return E_SCANNED;
     }
@@ -357,8 +352,8 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
 
     // statinfo
     data_->SetFileSize(statInfo.st_size);
-    data_->SetFileDateModified(static_cast<int64_t>(Timespec2Millisecond(statInfo.st_mtim)));
-    data_->SetFileDateAdded(static_cast<int64_t>(Timespec2Millisecond(statInfo.st_ctim)));
+    data_->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
+    data_->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
     int64_t cTime = static_cast<int64_t>(statInfo.st_ctime);
     data_->SetDateYear(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, cTime));
     data_->SetDateMonth(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, cTime));
@@ -550,7 +545,7 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
         Metadata albumInfo = albumMap_.at(albumPath);
         albumId = albumInfo.GetFileId();
 
-        if (albumInfo.GetFileDateModified() == Timespec2Millisecond(statInfo.st_mtim)) {
+        if (albumInfo.GetFileDateModified() == statInfo.st_mtime) {
             scannedIds_.insert(make_pair(MEDIALIBRARY_TABLE, albumId));
             return albumId;
         } else {
@@ -564,7 +559,7 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
     metadata.SetFileTitle(ScannerUtils::GetFileTitle(metadata.GetFileName()));
     metadata.SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_ALBUM));
     metadata.SetFileSize(statInfo.st_size);
-    metadata.SetFileDateModified(Timespec2Millisecond(statInfo.st_mtim));
+    metadata.SetFileDateModified(statInfo.st_mtime);
 
     string relativePath = ScannerUtils::GetParentPath(albumPath) + SLASH_CHAR;
     metadata.SetRelativePath(relativePath.erase(0, ROOT_MEDIA_DIR.length()));

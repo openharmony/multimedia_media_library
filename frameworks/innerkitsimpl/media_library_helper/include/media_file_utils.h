@@ -46,9 +46,6 @@ const int AUDIO_VIRTUAL_IDENTIFIER = 3;
 const int FILE_VIRTUAL_IDENTIFIER = 2;
 const int CAMERA_SHOT_KEY_SIZE = 30;
 
-constexpr int64_t MSEC_TO_SEC = 1e3;
-constexpr int64_t MSEC_TO_NSEC = 1e6;
-
 enum TrashType {
     NOT_TRASHED = 0,
     TRASHED_ASSET,
