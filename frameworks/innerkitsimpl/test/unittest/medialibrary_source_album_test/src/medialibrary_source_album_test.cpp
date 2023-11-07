@@ -61,10 +61,6 @@ static std::atomic<int> fileNumber(0);
 void InitSourceAlbumTrigger()
 {
     static const vector<string> executeSqlStrs = {
-        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
-        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
-        DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
-        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
         INSERT_PHOTO_INSERT_SOURCE_ALBUM,
         INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
@@ -95,7 +91,11 @@ void ClearData()
     vector<string> sqlList = {
         clearPhotoSql,
         clearSourceAlbumSql,
-        initSystemAlbumSql
+        initSystemAlbumSql,
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM
     };
     for (auto &sql : sqlList) {
         int32_t ret = g_rdbStore->ExecuteSql(sql);
@@ -272,7 +272,7 @@ void DeletePhoto(int64_t fileId)
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Delete(cmd, deletedRows);
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete photo! err: %{public}d", ret);
-    MEDIA_INFO_LOG("DeletePhoto deletedRows is %{public}s", deletedRows);
+    MEDIA_INFO_LOG("DeletePhoto deletedRows is %{public}d", deletedRows);
 }
 
 void MediaLibrarySourceAlbumTest::SetUpTestCase()
@@ -293,6 +293,7 @@ void MediaLibrarySourceAlbumTest::SetUpTestCase()
 void MediaLibrarySourceAlbumTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest SetUp");
+    ClearData();
 }
 
 void MediaLibrarySourceAlbumTest::SetUp()
