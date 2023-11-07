@@ -156,7 +156,7 @@ bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, ThumbnailType type)
 }
 
 bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
-    const bool isThumbnail, const Size &desiredSize, uint32_t &errCode)
+    const bool isThumbnail, Size &desiredSize, uint32_t &errCode)
 {
     auto audioPicMemory = avMetadataHelper->FetchArtPicture();
     if (audioPicMemory == nullptr) {
@@ -205,7 +205,7 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
     return true;
 }
 
-bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
+bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     string path = data.path;
@@ -228,7 +228,7 @@ bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, 
     return true;
 }
 
-bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
+bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     string path = data.path;
@@ -252,7 +252,14 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
         MEDIA_ERR_LOG("Av meta data helper fetch frame at time failed");
         return false;
     }
-
+    int width = data.source->GetWidth();
+    int height = data.source->GetHeight();
+    if (!isThumbnail && !ResizeLcd(width, height)) {
+        MEDIA_ERR_LOG("ResizeLcd failed");
+    } else if (isThumbnail && !ResizeThumb(width, height)) {
+        MEDIA_ERR_LOG("ResizeThumb failed");
+    }
+    desiredSize = {width, height};
     auto resultMap = avMetadataHelper->ResolveMetadata();
     string videoOrientation = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
     if (!videoOrientation.empty()) {
@@ -263,7 +270,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
 }
 
 // gen pixelmap from data.souce, should ensure source is not null
-bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize)
+bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, Size &desiredSize)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GenTargetPixelmap");
@@ -1146,9 +1153,16 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
     return true;
 }
 
-Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail)
+Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, Size &desiredSize, const bool isThumbnail)
 {
+    int width = sourceSize.width;
+    int height = sourceSize.height;
     if (isThumbnail) {
+        if (!ResizeThumb(width,height)) {
+            MEDIA_ERR_LOG("ResizeThumb failed");
+        }
+        ResizeThumb(width,height);
+        desiredSize = {width,height};
         float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
         float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
         float scale = 1.0f;
@@ -1164,11 +1178,15 @@ Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desir
         };
         return decodeSize;
     } else {
+        if (!ResizeLcd(width,height)) {
+            MEDIA_ERR_LOG("ResizeThumb failed");
+        }
+        desiredSize = {width, height};
         return desiredSize.width != 0 && desiredSize.height != 0 ? desiredSize : sourceSize;
     }
 }
 
-bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail)
+bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, Size &desiredSize, const bool isThumbnail)
 {
     if (data.source != nullptr) {
         return true;
@@ -1183,6 +1201,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSiz
 
     bool ret = false;
     data.degrees = 0.0;
+    Size desiredSize;
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
         ret = LoadVideoFile(data, isThumbnail, desiredSize);
     } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
