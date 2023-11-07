@@ -526,25 +526,22 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_compressImage_test_001, TestSize.Level0
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Level0)
 {
-    Size desiredSize;
-    desiredSize.width = 20;
-    desiredSize.height = 20;
     ThumbnailData data;
     data.source = nullptr;
     data.mediaType = MEDIA_TYPE_VIDEO;
     bool isThumbnail = true;
-    bool ret = ThumbnailUtils::LoadSourceImage(data, desiredSize, isThumbnail);
+    bool ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail);
     EXPECT_EQ(ret, false);
     data.mediaType = MEDIA_TYPE_AUDIO;
-    ret = ThumbnailUtils::LoadSourceImage(data, desiredSize, isThumbnail);
+    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail);
     EXPECT_EQ(ret, false);
     data.mediaType = MEDIA_TYPE_MEDIA;
     data.path = "Documents/";
-    ret = ThumbnailUtils::LoadSourceImage(data, desiredSize, isThumbnail);
+    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail);
     EXPECT_EQ(ret, false);
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     data.source = make_shared<PixelMap>();
-    ret = ThumbnailUtils::LoadSourceImage(data, desiredSize, isThumbnail);
+    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail);
     EXPECT_EQ(ret, true);
 }
 
