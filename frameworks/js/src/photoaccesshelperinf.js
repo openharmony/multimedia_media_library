@@ -282,6 +282,7 @@ function parsePhotoPickerSelectOption(args) {
     }
     config.parameters.isPhotoTakingSupported = option.isPhotoTakingSupported === undefined || option.isPhotoTakingSupported;
     config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
+	config.parameters.option = option;
   }
 
   return config;
