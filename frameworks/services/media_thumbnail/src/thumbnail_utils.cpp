@@ -270,7 +270,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
 }
 
 // gen pixelmap from data.souce, should ensure source is not null
-bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, Size &desiredSize)
+bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize)
 {
     MediaLibraryTracer tracer;
     tracer.Start("GenTargetPixelmap");
@@ -283,7 +283,7 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, Size &desiredSize)
     return true;
 }
 
-bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
+bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize)
 {
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
@@ -1158,15 +1158,14 @@ Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, Size &desiredSize
     int width = sourceSize.width;
     int height = sourceSize.height;
     if (isThumbnail) {
-        if (!ResizeThumb(width,height)) {
+        if (!ResizeThumb(width, height)) {
             MEDIA_ERR_LOG("ResizeThumb failed");
         }
-        ResizeThumb(width,height);
-        desiredSize = {width,height};
+        desiredSize = {width, height};
         float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
         float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
         float scale = 1.0f;
-        if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
+        if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) { 
             scale = (float)desiredSize.height / sourceSize.height;
         } else {
             scale = (float)desiredSize.width / sourceSize.width;
@@ -1178,15 +1177,15 @@ Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, Size &desiredSize
         };
         return decodeSize;
     } else {
-        if (!ResizeLcd(width,height)) {
+        if (!ResizeLcd(width, height)) {
             MEDIA_ERR_LOG("ResizeThumb failed");
         }
-        desiredSize = {width, height};
+        desiredSize = {width,height};
         return desiredSize.width != 0 && desiredSize.height != 0 ? desiredSize : sourceSize;
     }
 }
 
-bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, Size &desiredSize, const bool isThumbnail)
+bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail)
 {
     if (data.source != nullptr) {
         return true;
