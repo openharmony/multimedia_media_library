@@ -23,7 +23,6 @@ namespace Media {
 constexpr int32_t DEFAULT_YEAR_SIZE = 64;
 constexpr int32_t DEFAULT_MTH_SIZE = 128;
 constexpr int32_t DEFAULT_THUMB_SIZE = 256;
-constexpr int32_t MAX_DEFAULT_THUMB_SIZE = 768;
 constexpr int32_t DEFAULT_LCD_SIZE = 1080;
 
 enum class ThumbnailType : int32_t {
@@ -99,15 +98,14 @@ static std::string GetThumbSuffix(ThumbnailType type)
 
 static inline ThumbnailType GetThumbType(const int32_t width, const int32_t height)
 {
-    if (width == DEFAULT_MTH_SIZE && height == DEFAULT_MTH_SIZE) {
+    if (width > DEFAULT_THUMB_SIZE || height > DEFAULT_THUMB_SIZE) {
+        return ThumbnailType::LCD;
+    } else if (width == DEFAULT_MTH_SIZE && height == DEFAULT_MTH_SIZE) {
         return ThumbnailType::MTH;
     } else if (width == DEFAULT_YEAR_SIZE && height == DEFAULT_YEAR_SIZE) {
         return ThumbnailType::YEAR;
-    } else if (std::min(width, height) <= DEFAULT_THUMB_SIZE &&
-            std::max(width, height) <= MAX_DEFAULT_THUMB_SIZE) {
-        return ThumbnailType::THUMB;
     } else {
-        return ThumbnailType::LCD;
+        return ThumbnailType::THUMB;
     }
 }
 
@@ -122,9 +120,7 @@ static inline std::string GetSandboxPath(const std::string &path, ThumbnailType 
 
 static inline bool IsThumbnail(const int32_t width, const int32_t height)
 {
-    int min = std::min(width, height);
-    int max = std::max(width, height);
-    return min <= DEFAULT_THUMB_SIZE && max <= MAX_DEFAULT_THUMB_SIZE;
+    return (width <= DEFAULT_THUMB_SIZE) && (height <= DEFAULT_THUMB_SIZE);
 }
 
 } // namespace Media
