@@ -18,11 +18,6 @@
 
 #include "ithumbnail_helper.h"
 
-enum class ThumbnailHelperType : int32_t {
-    DEFAULT,
-    LCD,
-};
-
 namespace OHOS {
 namespace Media {
 class ThumbnailHelperFactory {
@@ -30,7 +25,7 @@ public:
     ThumbnailHelperFactory() = delete;
     virtual ~ThumbnailHelperFactory() = delete;
 
-    static std::shared_ptr<IThumbnailHelper> GetThumbnailHelper(const ThumbnailHelperType &type);
+    static std::shared_ptr<IThumbnailHelper> GetThumbnailHelper(const Size &size);
 };
 } // namespace Media
 } // namespace OHOS

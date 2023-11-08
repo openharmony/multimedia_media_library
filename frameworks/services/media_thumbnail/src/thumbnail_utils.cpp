@@ -54,13 +54,6 @@ namespace Media {
 constexpr int32_t KEY_INDEX = 0;
 constexpr int32_t VALUE_INDEX = 1;
 constexpr float EPSILON = 1e-6;
-constexpr int32_t SHORT_SIDE_THRESHOLD = 256;
-constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 768;
-constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 512;
-constexpr int32_t LCD_LONG_SIDE_THRESHOLD = 1920;
-constexpr int32_t MAXIMUM_LCD_LONG_SIDE = 4096;
-constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
-
 bool ThumbnailUtils::UpdateRemotePath(string &path, const string &networkId)
 {
     MEDIA_DEBUG_LOG("ThumbnailUtils::UpdateRemotePath IN path = %{private}s, networkId = %{private}s",
@@ -1148,24 +1141,20 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
 
 Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail)
 {
-    if (isThumbnail) {
-        float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
-        float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
-        float scale = 1.0f;
-        if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
-            scale = (float)desiredSize.height / sourceSize.height;
-        } else {
-            scale = (float)desiredSize.width / sourceSize.width;
-        }
-        scale = scale < 1.0f ? scale : 1.0f;
-        Size decodeSize = {
-            static_cast<int32_t> (scale * sourceSize.width),
-            static_cast<int32_t> (scale * sourceSize.height),
-        };
-        return decodeSize;
+    float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
+    float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
+    float scale = 1.0f;
+    if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
+        scale = (float)desiredSize.height / sourceSize.height;
     } else {
-        return desiredSize.width != 0 && desiredSize.height != 0 ? desiredSize : sourceSize;
+        scale = (float)desiredSize.width / sourceSize.width;
     }
+    scale = scale < 1.0f ? scale : 1.0f;
+    Size decodeSize = {
+        static_cast<int32_t> (scale * sourceSize.width),
+        static_cast<int32_t> (scale * sourceSize.height),
+    };
+    return decodeSize;
 }
 
 bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail)
@@ -1669,104 +1658,6 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         data.mediaType = MediaType::MEDIA_TYPE_ALL;
         err = resultSet->GetInt(index, data.mediaType);
     }
-}
-
-bool ThumbnailUtils::ResizeThumb(int &width, int &height)
-{
-    int maxLen = max(width, height);
-    int minLen = min(width, height);
-    if (minLen == 0) {
-        MEDIA_ERR_LOG("Divisor minLen is 0");
-        return false;
-    }
-    double ratio = (double)maxLen / minLen;
-    if (minLen > SHORT_SIDE_THRESHOLD) {
-        minLen = SHORT_SIDE_THRESHOLD;
-        maxLen = static_cast<int>(SHORT_SIDE_THRESHOLD * ratio);
-        if (maxLen > MAXIMUM_SHORT_SIDE_THRESHOLD) {
-            maxLen = MAXIMUM_SHORT_SIDE_THRESHOLD;
-        }
-        if (height > width) {
-            width = minLen;
-            height = maxLen;
-        } else {
-            width = maxLen;
-            height = minLen;
-        }
-    } else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD) {
-        if (ratio > ASPECT_RATIO_THRESHOLD) {
-            int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
-            if (height > width) {
-                width = minLen;
-                height = newMaxLen;
-            } else {
-                width = newMaxLen;
-                height = minLen;
-            }
-        }
-    }
-    return true;
-}
-
-bool ThumbnailUtils::ResizeLcd(int &width, int &height)
-{
-    int maxLen = max(width, height);
-    int minLen = min(width, height);
-    if (minLen == 0) {
-        MEDIA_ERR_LOG("Divisor minLen is 0");
-        return false;
-    }
-    double ratio = (double)maxLen / minLen;
-    if (std::abs(ratio) < EPSILON) {
-        MEDIA_ERR_LOG("ratio is 0");
-        return false;
-    }
-    int newMaxLen = maxLen;
-    int newMinLen = minLen;
-    if (maxLen > LCD_LONG_SIDE_THRESHOLD) {
-        newMaxLen = LCD_LONG_SIDE_THRESHOLD;
-        newMinLen = static_cast<int>(newMaxLen / ratio);
-    }
-    int lastMinLen = newMinLen;
-    int lastMaxLen = newMaxLen;
-    if (newMinLen < LCD_SHORT_SIDE_THRESHOLD && minLen >= LCD_SHORT_SIDE_THRESHOLD) {
-        lastMinLen = LCD_SHORT_SIDE_THRESHOLD;
-        lastMaxLen = static_cast<int>(lastMinLen * ratio);
-        if (lastMaxLen > MAXIMUM_LCD_LONG_SIDE) {
-            lastMaxLen = MAXIMUM_LCD_LONG_SIDE;
-            lastMinLen = static_cast<int>(lastMaxLen / ratio);
-        }
-    }
-    if (height > width) {
-        width = lastMinLen;
-        height = lastMaxLen;
-    } else {
-        width = lastMaxLen;
-        height = lastMinLen;
-    }
-    return true;
-}
-
-int32_t ThumbnailUtils::GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo)
-{
-    if (path.empty()) {
-        MEDIA_ERR_LOG("path is empty");
-        return E_ERR;
-    }
-    uint32_t err = 0;
-    SourceOptions opts;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to CreateImageSource %{public}d", err);
-        return E_ERR;
-    }
-    
-    err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GetImageInfo err %{public}d", err);
-        return E_ERR;
-    }
-    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS
