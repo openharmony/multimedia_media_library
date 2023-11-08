@@ -294,6 +294,10 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     uint32_t err = 0;
     SourceOptions opts;
     string path = data.path;
+    if (path.empty()) {
+        MEDIA_ERR_LOG("path is empty");
+        return false;
+    }
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to create image source, path: %{private}s err: %{public}d", path.c_str(), err);
@@ -1165,7 +1169,7 @@ Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, Size &desiredSize
         float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
         float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
         float scale = 1.0f;
-        if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) { 
+        if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
             scale = (float)desiredSize.height / sourceSize.height;
         } else {
             scale = (float)desiredSize.width / sourceSize.width;
@@ -1180,7 +1184,7 @@ Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, Size &desiredSize
         if (!ResizeLcd(width, height)) {
             MEDIA_ERR_LOG("ResizeThumb failed");
         }
-        desiredSize = {width,height};
+        desiredSize = {width, height};
         return desiredSize.width != 0 && desiredSize.height != 0 ? desiredSize : sourceSize;
     }
 }
