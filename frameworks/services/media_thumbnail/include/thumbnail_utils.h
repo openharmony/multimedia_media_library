@@ -149,7 +149,7 @@ private:
     static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
     static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
     static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
-        const bool isThumbnail, const Size &desiredSize, uint32_t &errCode);
+        const bool isThumbnail, Size &desiredSize, uint32_t &errCode);
     static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
     static std::string GetUdid();
     // KV Store
