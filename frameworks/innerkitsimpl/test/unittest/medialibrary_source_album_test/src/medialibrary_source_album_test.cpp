@@ -115,7 +115,8 @@ void ClearData()
     ExecSqls(executeSqlStrs);
 }
 
-int getNumber() {
+int getNumber()
+{
     return ++number;
 }
 
