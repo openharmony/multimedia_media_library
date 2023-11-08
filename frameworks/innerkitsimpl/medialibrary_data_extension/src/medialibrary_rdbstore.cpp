@@ -38,11 +38,11 @@
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
+#include "post_event_utils.h"
 #include "rdb_sql_utils.h"
 #include "result_set_utils.h"
-#include "post_event_utils.h"
-#include "vision_column.h"
 #include "source_album.h"
+#include "vision_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

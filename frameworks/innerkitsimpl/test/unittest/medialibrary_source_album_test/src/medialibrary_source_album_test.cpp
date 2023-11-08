@@ -25,7 +25,6 @@
 #include "fetch_result.h"
 #include "file_asset.h"
 #include "media_column.h"
-#include "photo_album_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_command.h"
@@ -36,16 +35,18 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_rdb_transaction.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "media_file_ext_ability.h"
 #include "media_file_extention_utils.h"
+#include "photo_album_column.h"
 #include "result_set_utils.h"
+#include "source_album.h"
 #include "uri.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
-#include "source_album.h"
 
 namespace OHOS {
 namespace Media {
@@ -56,7 +57,28 @@ using namespace OHOS::DataShare;
 using OHOS::DataShare::DataShareValuesBucket;
 using OHOS::DataShare::DataSharePredicates;
 static shared_ptr<MediaLibraryRdbStore> g_rdbStore;
-static std::atomic<int> fileNumber(0);
+static std::atomic<int> number(0);
+
+struct InsertResult {
+    int64_t fileId;
+    string title;
+    string displayName;
+};
+
+int32_t ExecSqls(const vector<string> &sqls)
+{
+    int32_t err = NativeRdb::E_OK;
+    for (const auto &sql : sqls) {
+        err = g_rdbStore->ExecuteSql(sql);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to exec: %{public}s", sql.c_str());
+            continue;
+        } else {
+            MEDIA_INFO_LOG("success to exec: %{public}s", sql.c_str());
+        }
+    }
+    return NativeRdb::E_OK;
+}
 
 void InitSourceAlbumTrigger()
 {
@@ -67,15 +89,7 @@ void InitSourceAlbumTrigger()
         DELETE_PHOTO_UPDATE_SOURCE_ALBUM
     };
     MEDIA_INFO_LOG("start add source album trigger");
-    int32_t err = NativeRdb::E_OK;
-    for (const auto &sql : executeSqlStrs) {
-        MEDIA_INFO_LOG("trigger sql is: %{public}s", sql.c_str());
-        err = g_rdbStore->ExecuteSql(sql);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to exec: %{public}s", sql.c_str());
-            continue;
-        }
-    }
+    ExecSqls(executeSqlStrs);
 }
 
 void ClearData()
@@ -88,7 +102,7 @@ void ClearData()
         " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = '', " +
         PhotoAlbumColumns::ALBUM_COUNT + " = 0" +
         " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SYSTEM);
-    vector<string> sqlList = {
+    vector<string> executeSqlStrs = {
         clearPhotoSql,
         clearSourceAlbumSql,
         initSystemAlbumSql,
@@ -97,14 +111,12 @@ void ClearData()
         DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM
     };
-    for (auto &sql : sqlList) {
-        int32_t ret = g_rdbStore->ExecuteSql(sql);
-        if (ret != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Execute sql %{private}s failed", sql.c_str());
-            return;
-        }
-        MEDIA_DEBUG_LOG("Execute sql %{private}s success", sql.c_str());
-    }
+    MEDIA_INFO_LOG("start clear data");
+    ExecSqls(executeSqlStrs);
+}
+
+int getNumber() {
+    return ++number;
 }
 
 int64_t GetTimestamp()
@@ -112,12 +124,13 @@ int64_t GetTimestamp()
     auto now = std::chrono::system_clock::now();
     auto duration = now.time_since_epoch();
     auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
-    return seconds.count();
+    return seconds.count() + getNumber();
 }
 
-string GetCoverUri(int64_t &outRowId, string &title, string &disPlayName)
+string GetCoverUri(InsertResult result)
 {
-    return PhotoColumn::PHOTO_URI_PREFIX + to_string(outRowId) + "/" + title + "/" + disPlayName;
+    return PhotoColumn::PHOTO_URI_PREFIX + to_string(result.fileId) + "/" +
+        result.title + "/" + result.displayName;
 }
 
 inline void CheckColumn(shared_ptr<OHOS::NativeRdb::ResultSet> &resultSet, const string &column,
@@ -128,7 +141,7 @@ inline void CheckColumn(shared_ptr<OHOS::NativeRdb::ResultSet> &resultSet, const
 
 string GetTitle(int64_t &timestamp)
 {
-    return "IMG_" + to_string(timestamp) + "_" + to_string(++fileNumber);
+    return "IMG_" + to_string(timestamp) + "_" + to_string(getNumber());
 }
 
 string GetDisPlayName(string &title)
@@ -136,19 +149,17 @@ string GetDisPlayName(string &title)
     return title + ".png";
 }
 
-void InsertPhoto(string &packageName, int64_t &outRowId, string &title,
-    string &displayName)
+InsertResult InsertPhoto(string &packageName)
 {
-    auto store = g_rdbStore->GetRaw();
-    if (store == nullptr) {
-        MEDIA_ERR_LOG("can not get store");
-        return;
-    }
+    MEDIA_INFO_LOG("InsertPhoto packageName is: %{public}s", packageName.c_str());
+    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
+    transactionOprn.Start();
+    int64_t fileId = -1;
     int64_t timestamp = GetTimestamp();
-    title = GetTitle(timestamp);
-    displayName = GetDisPlayName(title);
-    MEDIA_INFO_LOG("insertPhoto packageName is: %{public}s, title is: %{public}s",
-        packageName.c_str(), title.c_str());
+    string title = GetTitle(timestamp);
+    string displayName = GetDisPlayName(title);
+    MEDIA_INFO_LOG("title is: %{public}s, displayName is: %{public}s",
+        title.c_str(), displayName.c_str());
     string data = "/storage/cloud/files/photo/1/" +GetDisPlayName(title);
     ValuesBucket valuesBucket;
     valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, data);
@@ -160,12 +171,23 @@ void InsertPhoto(string &packageName, int64_t &outRowId, string &title,
     valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
-    int32_t ret = store->Insert(outRowId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to insert photo! err: %{public}d", ret);
+    int32_t ret = g_rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    transactionOprn.Finish();
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to insert photo! err: %{public}d", ret);
+    }
+    MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
+    InsertResult result;
+    result.fileId = fileId;
+    result.title = title;
+    result.displayName = displayName;
+    return result;
 }
 
-void UpdatePhotoTrashed(int64_t fileId, bool isDelete)
+void UpdatePhotoTrashed(int64_t &fileId, bool isDelete)
 {
+    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
+    transactionOprn.Start();
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -177,11 +199,14 @@ void UpdatePhotoTrashed(int64_t fileId, bool isDelete)
     cmd.SetValueBucket(updateValues);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
+    transactionOprn.Finish();
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to update photo! err: %{public}d", ret);
 }
 
 void HidePhoto(int64_t fileId, int value)
 {
+    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
+    transactionOprn.Start();
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -189,11 +214,14 @@ void HidePhoto(int64_t fileId, int value)
     cmd.SetValueBucket(updateValues);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
+    transactionOprn.Finish();
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to update photo! err: %{public}d", ret);
 }
 
-void UpdateDisPlayname(int64_t fileId, string disPlayname)
+void UpdateDisPlayname(int64_t &fileId, string &disPlayname)
 {
+    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
+    transactionOprn.Start();
     int32_t changedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     ValuesBucket updateValues;
@@ -202,32 +230,8 @@ void UpdateDisPlayname(int64_t fileId, string disPlayname)
     cmd.SetValueBucket(updateValues);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
+    transactionOprn.Finish();
     CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to update photo! err: %{public}d", ret);
-}
-
-void ValidPhotoAlbumCount(string packageName, int exceptResultCount)
-{
-    MEDIA_INFO_LOG("ValidPhotoAlbumCount exceptResultCount is: %{public}d",
-        exceptResultCount);
-    vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI};
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,
-        MediaLibraryApi::API_10);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_NAME, packageName);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE));
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("can not get rdbstore");
-        return;
-    }
-    auto resultSet = g_rdbStore->Query(cmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not get resultSet");
-        return;
-    }
-    int32_t count = -1;
-    int32_t ret = resultSet->GetRowCount(count);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to get count! err: %{public}d", ret);
-    EXPECT_EQ(count, exceptResultCount);
 }
 
 void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptPhotoCount,
@@ -264,14 +268,16 @@ void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptP
     EXPECT_EQ(coverURI, exceptCoverUri);
 }
 
-void DeletePhoto(int64_t fileId)
+void DeletePhoto(int64_t &fileId)
 {
     MEDIA_INFO_LOG("DeletePhoto fileId is %{public}s", to_string(fileId).c_str());
+    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
+    transactionOprn.Start();
     int32_t deletedRows = -1;
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::DELETE);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
-    int32_t ret = g_rdbStore->Delete(cmd, deletedRows);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to delete photo! err: %{public}d", ret);
+    g_rdbStore->Delete(cmd, deletedRows);
+    transactionOprn.Finish();
     MEDIA_INFO_LOG("DeletePhoto deletedRows is %{public}d", deletedRows);
 }
 
@@ -282,7 +288,7 @@ void MediaLibrarySourceAlbumTest::SetUpTestCase()
     ClearData();
     InitSourceAlbumTrigger();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    fileNumber = 0;
+    number = 0;
     if (g_rdbStore == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibrarySourceAlbumTest failed, can not get rdbstore");
         exit(1);
@@ -292,7 +298,7 @@ void MediaLibrarySourceAlbumTest::SetUpTestCase()
 
 void MediaLibrarySourceAlbumTest::TearDownTestCase()
 {
-    MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest SetUp");
+    MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest TearDownTestCase");
     ClearData();
 }
 
@@ -316,11 +322,8 @@ HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_insert_source_album_test_001,
 {
     MEDIA_INFO_LOG("start tdd insert_photo_insert_source_album_test_001");
     string packageName = "app_001";
-    int64_t outRowId;
-    string title;
-    string displayName;
-    InsertPhoto(packageName, outRowId, title, displayName);
-    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(outRowId, title, displayName));
+    InsertResult result = InsertPhoto(packageName);
+    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(result));
     MEDIA_INFO_LOG("end tdd insert_photo_insert_source_album_test_001");
 }
 
@@ -333,19 +336,13 @@ HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_insert_source_album_test_001,
 HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_update_source_album_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd insert_photo_update_source_album_test_001");
-    string packageName = "app_003";
+    string packageName = "app_002";
     // insert photo
-    int64_t outRowId1;
-    string title1;
-    string displayName1;
-    InsertPhoto(packageName, outRowId1, title1, displayName1);
+    InsertPhoto(packageName);
     // insert photo
-    int64_t outRowId2;
-    string title2;
-    string displayName2;
-    InsertPhoto(packageName, outRowId2, title2, displayName2);
+    InsertResult result = InsertPhoto(packageName);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(outRowId2, title2, displayName2));
+    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(result));
     MEDIA_INFO_LOG("end tdd insert_photo_update_source_album_test_001");
 }
 
@@ -358,22 +355,17 @@ HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_update_source_album_test_001,
 HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_001");
-    string packageName = "app_005";
+    string packageName = "app_003";
     // insert photo
-    int64_t outRowId1;
-    string title1;
-    string displayName1;
-    InsertPhoto(packageName, outRowId1, title1, displayName1);
+    InsertResult result = InsertPhoto(packageName);
     // insert photo
-    int64_t outRowId2;
-    string title2;
-    string displayName2;
-    InsertPhoto(packageName, outRowId2, title2, displayName2);
+    InsertPhoto(packageName);
     // update photo name
     string modifyDisPlayName = "testModify001.png";
-    UpdateDisPlayname(outRowId1, modifyDisPlayName);
+    UpdateDisPlayname(result.fileId, modifyDisPlayName);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(outRowId1, title1, modifyDisPlayName));
+    result.displayName = modifyDisPlayName;
+    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(result));
     MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_001");
 }
 
@@ -386,25 +378,19 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_001,
 HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_002");
-    string packageName = "app_006";
+    string packageName = "app_004";
     // insert photo
-    int64_t outRowId1 = -1;
-    string title1;
-    string displayName1;
-    InsertPhoto(packageName, outRowId1, title1, displayName1);
+    InsertResult result1 = InsertPhoto(packageName);
     // insert photo
-    int64_t outRowId2 = -1;
-    string title2;
-    string displayName2;
-    InsertPhoto(packageName, outRowId2, title2, displayName2);
+    InsertResult result2 = InsertPhoto(packageName);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(outRowId2, title2, displayName2));
+    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(result2));
     // logic delete photo
-    UpdatePhotoTrashed(outRowId2, true);
+    UpdatePhotoTrashed(result2.fileId, true);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(outRowId1, title1, displayName1));
+    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(result1));
     // logic delete photo
-    UpdatePhotoTrashed(outRowId1, true);
+    UpdatePhotoTrashed(result1.fileId, true);
     // verify
     ValidPhotoAlbumValue(packageName, 1, 0, "");
     MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_002");
@@ -419,25 +405,19 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_002,
 HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_003");
-    string packageName = "app_007";
+    string packageName = "app_005";
     // insert photo
-    int64_t outRowId1 = -1;
-    string title1;
-    string displayName1;
-    InsertPhoto(packageName, outRowId1, title1, displayName1);
+    InsertResult result1 = InsertPhoto(packageName);
     // insert photo
-    int64_t outRowId2 = -1;
-    string title2;
-    string displayName2;
-    InsertPhoto(packageName, outRowId2, title2, displayName2);
+    InsertResult result2 = InsertPhoto(packageName);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(outRowId2, title2, displayName2));
+    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(result2));
     // hide photo
-    HidePhoto(outRowId2, true);
+    HidePhoto(result2.fileId, true);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(outRowId1, title1, displayName1));
+    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(result1));
     // hide photo
-    HidePhoto(outRowId1, true);
+    HidePhoto(result1.fileId, true);
     // verify
     ValidPhotoAlbumValue(packageName, 1, 0, "");
     MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_003");
@@ -452,20 +432,17 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_003,
 HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_004");
-    string packageName = "app_008";
+    string packageName = "app_006";
     // insert photo
-    int64_t outRowId = -1;
-    string title;
-    string displayName;
-    InsertPhoto(packageName, outRowId, title, displayName);
+    InsertResult result = InsertPhoto(packageName);
     // hide photo
-    HidePhoto(outRowId, 1);
+    HidePhoto(result.fileId, 1);
     // verify
     ValidPhotoAlbumValue(packageName, 1, 0, "");
     // cancel hide photo
-    HidePhoto(outRowId, 0);
+    HidePhoto(result.fileId, 0);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(outRowId, title, displayName));
+    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(result));
     MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_004");
 }
 
@@ -478,20 +455,17 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_004,
 HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_005");
-    string packageName = "app_009";
+    string packageName = "app_007";
     // insert photo
-    int64_t outRowId = -1;
-    string title;
-    string displayName;
-    InsertPhoto(packageName, outRowId, title, displayName);
+    InsertResult result = InsertPhoto(packageName);
     // logic delete photo
-    UpdatePhotoTrashed(outRowId, true);
+    UpdatePhotoTrashed(result.fileId, true);
     // verify
     ValidPhotoAlbumValue(packageName, 1, 0, "");
     // cancel logic delete photo
-    UpdatePhotoTrashed(outRowId, false);
+    UpdatePhotoTrashed(result.fileId, false);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(outRowId, title, displayName));
+    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(result));
     MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_005");
 }
 
@@ -504,25 +478,19 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_005,
 HWTEST_F(MediaLibrarySourceAlbumTest, delete_photo_update_source_album_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd delete_photo_update_source_album_test_001");
-    string packageName = "app_010";
+    string packageName = "app_008";
     // insert photo
-    int64_t outRowId1 = -1;
-    string title1;
-    string displayName1;
-    InsertPhoto(packageName, outRowId1, title1, displayName1);
+    InsertResult result1 = InsertPhoto(packageName);
     // insert photo
-    int64_t outRowId2 = -1;
-    string title2;
-    string displayName2;
-    InsertPhoto(packageName, outRowId2, title2, displayName2);
+    InsertResult result2 = InsertPhoto(packageName);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(outRowId2, title2, displayName2));
+    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(result2));
     // delete photo
-    DeletePhoto(outRowId2);
+    DeletePhoto(result2.fileId);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(outRowId1, title1, displayName1));
+    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(result1));
     // delete photo
-    DeletePhoto(outRowId1);
+    DeletePhoto(result1.fileId);
     // verify
     ValidPhotoAlbumValue(packageName, 1, 0, "");
     MEDIA_INFO_LOG("end tdd delete_photo_update_source_album_test_001");
@@ -537,25 +505,19 @@ HWTEST_F(MediaLibrarySourceAlbumTest, delete_photo_update_source_album_test_001,
 HWTEST_F(MediaLibrarySourceAlbumTest, delete_photo_update_source_album_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd delete_photo_update_source_album_test_002");
-    string packageName = "app_011";
+    string packageName = "app_009";
     // insert photo
-    int64_t outRowId1 = -1;
-    string title1;
-    string displayName1;
-    InsertPhoto(packageName, outRowId1, title1, displayName1);
+    InsertResult result1 = InsertPhoto(packageName);
     // insert photo
-    int64_t outRowId2 = -1;
-    string title2;
-    string displayName2;
-    InsertPhoto(packageName, outRowId2, title2, displayName2);
+    InsertResult result2 = InsertPhoto(packageName);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(outRowId2, title2, displayName2));
+    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(result2));
     // hide photo
-    HidePhoto(outRowId2, 1);
+    HidePhoto(result2.fileId, 1);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(outRowId1, title1, displayName1));
+    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(result1));
     // delete photo
-    DeletePhoto(outRowId1);
+    DeletePhoto(result1.fileId);
     // verify
     ValidPhotoAlbumValue(packageName, 1, 0, "");
     MEDIA_INFO_LOG("end tdd delete_photo_update_source_album_test_002");
@@ -570,25 +532,19 @@ HWTEST_F(MediaLibrarySourceAlbumTest, delete_photo_update_source_album_test_002,
 HWTEST_F(MediaLibrarySourceAlbumTest, delete_photo_update_source_album_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd delete_photo_update_source_album_test_003");
-    string packageName = "app_012";
+    string packageName = "app_010";
     // insert photo
-    int64_t outRowId1 = -1;
-    string title1;
-    string displayName1;
-    InsertPhoto(packageName, outRowId1, title1, displayName1);
+    InsertResult result1 = InsertPhoto(packageName);
     // insert photo
-    int64_t outRowId2 = -1;
-    string title2;
-    string displayName2;
-    InsertPhoto(packageName, outRowId2, title2, displayName2);
+    InsertResult result2 = InsertPhoto(packageName);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(outRowId2, title2, displayName2));
+    ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(result2));
     // logic delete photo
-    UpdatePhotoTrashed(outRowId2, true);
+    UpdatePhotoTrashed(result2.fileId, true);
     // verify
-    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(outRowId1, title1, displayName1));
+    ValidPhotoAlbumValue(packageName, 1, 1, GetCoverUri(result1));
     // delete photo
-    DeletePhoto(outRowId1);
+    DeletePhoto(result1.fileId);
     // verify
     ValidPhotoAlbumValue(packageName, 1, 0, "");
     MEDIA_INFO_LOG("end tdd delete_photo_update_source_album_test_003");

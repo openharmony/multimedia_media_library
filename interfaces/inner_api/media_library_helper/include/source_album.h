@@ -56,7 +56,7 @@ const std::string COVER_URI_VALUE_UPDATE =
     MediaColumn::MEDIA_DATE_MODIFIED + " DESC LIMIT 1 ) ) )";
 
 const std::string COUNT_VALUE_INSERT =
-    " (SELECT COUNT(*) FROM " + PhotoColumn::PHOTOS_TABLE +
+    " (SELECT COUNT(1) FROM " + PhotoColumn::PHOTOS_TABLE +
     " WHERE " +
     MediaColumn::MEDIA_PACKAGE_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " AND " +
     MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
@@ -64,7 +64,7 @@ const std::string COUNT_VALUE_INSERT =
     MediaColumn::MEDIA_HIDDEN + " = 0 )";
 
 const std::string COUNT_VALUE_UPDATE =
-    " (SELECT COUNT(*) FROM " + PhotoColumn::PHOTOS_TABLE +
+    " (SELECT COUNT(1) FROM " + PhotoColumn::PHOTOS_TABLE +
     " WHERE " +
     MediaColumn::MEDIA_PACKAGE_NAME + " = OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " AND " +
     MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
@@ -92,7 +92,7 @@ const std::string SOURCE_ALBUM_WHERE_UPDATE =
     " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE);
 
 const std::string WNEH_SOURCE_PHOTO_COUNT =
-    " WHEN ( SELECT COUNT(*) FROM " + PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
+    " WHEN ( SELECT COUNT(1) FROM " + PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
 
 const std::string TRIGGER_CODE_UPDATE_AND_DELETE =
     " BEGIN UPDATE " + PhotoAlbumColumns::TABLE +
