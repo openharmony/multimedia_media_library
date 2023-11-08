@@ -278,7 +278,8 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateDefaultThumbnail(const std::string &path, const std::string &tableName, const std::string &fileId, const bool &isSync)
+int32_t ThumbnailService::CreateDefaultThumbnail(const std::string &path,
+    const std::string &tableName, const std::string &fileId, const bool &isSync)
 {
     shared_ptr<IThumbnailHelper> thumbnailHelper =
         ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::DEFAULT);
@@ -301,8 +302,8 @@ int32_t ThumbnailService::CreateDefaultThumbnail(const std::string &path, const 
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateLcdThumbnail(ImageInfo& imageInfo,
-    const std::string &path, const std::string &tableName, const std::string &fileId, const bool &isSync)
+int32_t ThumbnailService::CreateLcdThumbnail(const std::string &path,
+    const std::string &tableName, const std::string &fileId, const bool &isSync)
 {
     shared_ptr<IThumbnailHelper> lcdHelper = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::LCD);
     if (lcdHelper == nullptr) {
