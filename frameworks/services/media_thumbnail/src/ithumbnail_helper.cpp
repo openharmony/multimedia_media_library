@@ -178,9 +178,9 @@ void ThumbnailWait::Notify()
     }
 }
 
-bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const Size &size, const string &suffix)
+bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const string &suffix)
 {
-    if (!ThumbnailUtils::LoadSourceImage(data, size, suffix == THUMBNAIL_THUMB_SUFFIX)) {
+    if (!ThumbnailUtils::LoadSourceImage(data, suffix == THUMBNAIL_THUMB_SUFFIX)) {
         if (opts.path.empty()) {
             MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
@@ -194,7 +194,7 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, con
             if (access(fileName.c_str(), F_OK) == 0) {
                 return true;
             }
-            if (!ThumbnailUtils::LoadSourceImage(data, size, suffix == THUMBNAIL_THUMB_SUFFIX)) {
+            if (!ThumbnailUtils::LoadSourceImage(data, suffix == THUMBNAIL_THUMB_SUFFIX)) {
                 VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
                     {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
                 PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -214,7 +214,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
         return true;
     }
 
-    if (!TryLoadSource(opts, data, opts.imageSize, THUMBNAIL_LCD_SUFFIX)) {
+    if (!TryLoadSource(opts, data, THUMBNAIL_LCD_SUFFIX)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -264,10 +264,8 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
     if (type == ThumbnailType::THUMB) {
         isThumb = true;
     }
-    Size size;
     if (isThumb) {
-        size = { opts.imageSize.width, opts.imageSize.height };
-        if (!TryLoadSource(opts, data, size, THUMBNAIL_THUMB_SUFFIX)) {
+        if (!TryLoadSource(opts, data, THUMBNAIL_THUMB_SUFFIX)) {
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
                 {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
             PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -286,6 +284,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
             return false;
         }
     } else {
+        Size size;
         if (type == ThumbnailType::MTH) {
             size = {DEFAULT_MTH_SIZE, DEFAULT_MTH_SIZE };
         } else {

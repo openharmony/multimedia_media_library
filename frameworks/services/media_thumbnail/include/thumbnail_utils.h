@@ -41,7 +41,6 @@ struct ThumbRdbOpt {
     std::string row;
     std::string uri;
     Size screenSize;
-    Size imageSize;
 };
 
 struct ThumbnailData {
@@ -104,7 +103,7 @@ public:
     static bool DeleteOriginImage(ThumbRdbOpt &opts);
     static std::string GetThumbPath(const std::string &path, const std::string &key);
     // Steps
-    static bool LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail = true);
+    static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true);
     static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
     static DistributedKv::Status SaveThumbnailData(ThumbnailData &data, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
@@ -136,7 +135,6 @@ public:
         int &err);
     static bool ResizeThumb(int& width, int& height);
     static bool ResizeLcd(int& width, int& height);
-    static int32_t GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo);
 private:
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     static int64_t UTCTimeMilliSeconds();
@@ -147,12 +145,12 @@ private:
 
     static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
-    static Size ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail);
-    static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
-    static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
+    static Size ConvertDecodeSize(const Size &sourceSize, Size &desiredSize, const bool isThumbnail);
+    static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
+    static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
     static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
-        const bool isThumbnail, const Size &desiredSize, uint32_t &errCode);
-    static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize);
+        const bool isThumbnail, Size &desiredSize, uint32_t &errCode);
+    static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
     static std::string GetUdid();
     // KV Store
     static DistributedKv::Status SaveImage(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
