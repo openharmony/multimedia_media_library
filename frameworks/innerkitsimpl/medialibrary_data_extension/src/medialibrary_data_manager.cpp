@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "medialibrary_async_worker.h"
 #define MLOG_TAG "DataManager"
 
 #include "medialibrary_data_manager.h"
@@ -131,7 +132,7 @@ __attribute__((constructor)) void RegisterDataShareCreator()
     DataShare::DataShareExtAbility::SetCreator(MediaDataShareCreator);
 }
 
-static void MakeRootDirs()
+static void MakeRootDirs(AsyncTaskData *data)
 {
     for (auto &dir : PRESET_ROOT_DIRS) {
         Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
@@ -179,7 +180,17 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     errCode = MakeDirQuerySetMap(dirQuerySetMap_);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at MakeDirQuerySetMap");
 
-    MakeRootDirs();
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return E_ERR;
+    }
+    shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, nullptr);
+    if (makeRootDirTask != nullptr) {
+        asyncWorker->AddTask(makeRootDirTask, true);
+    } else {
+        MEDIA_WARN_LOG("Can not init make root dir task");
+    }
 
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
