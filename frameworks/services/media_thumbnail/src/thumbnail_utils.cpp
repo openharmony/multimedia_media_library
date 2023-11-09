@@ -156,7 +156,7 @@ bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, ThumbnailType type)
 }
 
 bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
-    const bool isThumbnail, const Size &desiredSize, uint32_t &errCode)
+    const bool isThumbnail, Size &desiredSize, uint32_t &errCode)
 {
     auto audioPicMemory = avMetadataHelper->FetchArtPicture();
     if (audioPicMemory == nullptr) {
@@ -205,7 +205,7 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
     return true;
 }
 
-bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
+bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     string path = data.path;
@@ -228,7 +228,7 @@ bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, 
     return true;
 }
 
-bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
+bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     string path = data.path;
@@ -252,7 +252,14 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
         MEDIA_ERR_LOG("Av meta data helper fetch frame at time failed");
         return false;
     }
-
+    int width = data.source->GetWidth();
+    int height = data.source->GetHeight();
+    if (!isThumbnail && !ResizeLcd(width, height)) {
+        MEDIA_ERR_LOG("ResizeLcd failed");
+    } else if (isThumbnail && !ResizeThumb(width, height)) {
+        MEDIA_ERR_LOG("ResizeThumb failed");
+    }
+    desiredSize = {width, height};
     auto resultMap = avMetadataHelper->ResolveMetadata();
     string videoOrientation = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
     if (!videoOrientation.empty()) {
@@ -276,7 +283,7 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
     return true;
 }
 
-bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
+bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize)
 {
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
@@ -288,7 +295,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     SourceOptions opts;
     string path = data.path;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
-    if (err != E_OK) {
+    if (err != E_OK || !imageSource) {
         MEDIA_ERR_LOG("Failed to create image source, path: %{private}s err: %{public}d", path.c_str(), err);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
             {KEY_ERR_CODE, static_cast<int32_t>(err)}, {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -1146,9 +1153,15 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
     return true;
 }
 
-Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail)
+Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, Size &desiredSize, const bool isThumbnail)
 {
+    int width = sourceSize.width;
+    int height = sourceSize.height;
     if (isThumbnail) {
+        if (!ResizeThumb(width, height)) {
+            MEDIA_ERR_LOG("ResizeThumb failed");
+        }
+        desiredSize = {width, height};
         float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
         float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
         float scale = 1.0f;
@@ -1164,11 +1177,15 @@ Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desir
         };
         return decodeSize;
     } else {
+        if (!ResizeLcd(width, height)) {
+            MEDIA_ERR_LOG("ResizeThumb failed");
+        }
+        desiredSize = {width, height};
         return desiredSize.width != 0 && desiredSize.height != 0 ? desiredSize : sourceSize;
     }
 }
 
-bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail)
+bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail)
 {
     if (data.source != nullptr) {
         return true;
@@ -1183,6 +1200,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSiz
 
     bool ret = false;
     data.degrees = 0.0;
+    Size desiredSize;
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
         ret = LoadVideoFile(data, isThumbnail, desiredSize);
     } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
@@ -1745,28 +1763,6 @@ bool ThumbnailUtils::ResizeLcd(int &width, int &height)
         height = lastMinLen;
     }
     return true;
-}
-
-int32_t ThumbnailUtils::GetImageSourceByPath(const std::string &path, ImageInfo& imageInfo)
-{
-    if (path.empty()) {
-        MEDIA_ERR_LOG("path is empty");
-        return E_ERR;
-    }
-    uint32_t err = 0;
-    SourceOptions opts;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to CreateImageSource %{public}d", err);
-        return E_ERR;
-    }
-    
-    err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GetImageInfo err %{public}d", err);
-        return E_ERR;
-    }
-    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS
