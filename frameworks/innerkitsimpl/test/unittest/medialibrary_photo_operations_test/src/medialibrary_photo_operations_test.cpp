@@ -1258,10 +1258,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestS
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_004");
 
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "hohoho.jpg");
-    if (fileId1 < E_OK) {
-        MEDIA_ERR_LOG("Set Default photo failed, ret = %{public}d", fileId1);
-        return;
-    }
+    ASSERT_FALSE(fileId1 < E_OK);
 
     // Query
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
@@ -1273,15 +1270,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestS
     columns.push_back(MediaColumn::MEDIA_NAME);
     columns.push_back(PhotoColumn::PHOTO_HIDDEN_TIME);
     auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
-    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-        EXPECT_EQ(name, "hohoho.jpg");
-        int64_t hidden_time = GetInt64Val(PhotoColumn::PHOTO_HIDDEN_TIME, resultSet);
-        EXPECT_EQ(hidden_time, 0L);
-    } else {
-        MEDIA_ERR_LOG("Test first tdd Query failed");
-        return;
-    }
+    ASSERT_TRUE(resultSet != nullptr);
+    ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "hohoho.jpg");
+    int64_t hidden_time = GetInt64Val(PhotoColumn::PHOTO_HIDDEN_TIME, resultSet);
+    EXPECT_EQ(hidden_time, 0L);
 
     // Update
     MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
@@ -1294,15 +1288,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_004, TestS
 
     // Query again
     resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
-    if (resultSet != nullptr && resultSet->GoToFirstRow() == NativeRdb::E_OK) {
-        string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-        EXPECT_EQ(name, "phophopho.jpg");
-        int64_t hidden_time = GetInt64Val(PhotoColumn::PHOTO_HIDDEN_TIME, resultSet);
-        EXPECT_EQ(hidden_time, 0L);
-    } else {
-        MEDIA_ERR_LOG("Test first tdd Query failed");
-        return;
-    }
+    ASSERT_TRUE(resultSet != nullptr);
+    ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+    name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "phophopho.jpg");
+    hidden_time = GetInt64Val(PhotoColumn::PHOTO_HIDDEN_TIME, resultSet);
+    EXPECT_EQ(hidden_time, 0L);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_004");
 }
@@ -1352,6 +1343,60 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
     TestPhotoDeleteParamsApi10(OperationObject::FILESYSTEM_PHOTO, fileId,
         [] (int32_t result) { EXPECT_GT(result, 0); });
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_005");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestSize.Level0)
+{
+    // Hidden time test 2
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_005");
+    int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "hoho.jpg");
+    ASSERT_FALSE(fileId1 < E_OK);
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+
+    MediaLibraryCommand cmd_hide(OperationObject::FILESYSTEM_PHOTO, OperationType::HIDE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    SetValuesBucketInUpdate(MediaColumn::MEDIA_HIDDEN, "1", values);
+    cmd_hide.SetValueBucket(values);
+    cmd_hide.SetDataSharePred(predicates);
+    MediaLibraryPhotoOperations::Update(cmd_hide);
+
+    MediaLibraryCommand cmd_q(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    predicates = DataSharePredicates {};
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    cmd_q.SetDataSharePred(predicates);
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_NAME);
+    columns.push_back(PhotoColumn::PHOTO_HIDDEN_TIME);
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd_q, columns);
+    ASSERT_TRUE(resultSet != nullptr);
+    ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "hoho.jpg");
+    int64_t hidden_time = GetInt64Val(PhotoColumn::PHOTO_HIDDEN_TIME, resultSet);
+    EXPECT_EQ(hidden_time > 0, true);
+
+    MediaLibraryCommand cmd_unhide(OperationObject::FILESYSTEM_PHOTO, OperationType::HIDE,
+        MediaLibraryApi::API_10);
+    values = ValuesBucket {};
+    SetValuesBucketInUpdate(MediaColumn::MEDIA_HIDDEN, "0", values);
+    cmd_unhide.SetValueBucket(values);
+    predicates = DataSharePredicates {};
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId1));
+    cmd_unhide.SetDataSharePred(predicates);
+    MediaLibraryPhotoOperations::Update(cmd_unhide);
+
+    resultSet = MediaLibraryPhotoOperations::Query(cmd_q, columns);
+    ASSERT_TRUE(resultSet != nullptr);
+    ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+    name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "hoho.jpg");
+    hidden_time = GetInt64Val(PhotoColumn::PHOTO_HIDDEN_TIME, resultSet);
+    EXPECT_EQ(hidden_time, 0L);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_006");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, TestSize.Level0)
