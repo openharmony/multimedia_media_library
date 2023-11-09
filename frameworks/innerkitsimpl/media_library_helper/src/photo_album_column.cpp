@@ -115,7 +115,8 @@ const std::string PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER =
         " CREATE TRIGGER insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = (" +
-        " SELECT Max(album_order) FROM " + PhotoAlbumColumns::TABLE + ") + 1 WHERE rowid = new.rowid;"
+        " SELECT COALESCE(MAX(album_order), 0) + 1 FROM " + PhotoAlbumColumns::TABLE +
+        ") WHERE rowid = new.rowid;" +
         " END";
 
 bool PhotoAlbumColumns::IsPhotoAlbumColumn(const string &columnName)
