@@ -45,7 +45,7 @@ const std::string URI_ARG_FIRST_DELIMITER = "?";
 const std::string URI_API_VERSION_STR = std::to_string(static_cast<uint32_t>(MediaLibraryApi::API_10));
 const std::string URI_API_VERSION = URI_PARAM_API_VERSION + "=" + URI_API_VERSION_STR;
 
-enum MediaToolOperation {
+enum class MediaToolOperation {
     INSERT,
     QUERY,
     CLOSE,
