@@ -185,7 +185,7 @@ static bool OrderAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     DataShare::DataShareValuesBucket valuesBucket;
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
     auto referenceAlum = context.objectInfo->GetReferencePhotoAlbumInstance();
-    Uri updateAlbumUri(URI_COMPAT_ORDER_ALBUM);
+    Uri updateAlbumUri(PAH_ORDER_ALBUM);
     valuesBucket.Put(PhotoAlbumColumns::ALBUM_ID, photoAlbum->GetAlbumId());
     int32_t referenceAlbumId = -1;
     if (referenceAlum != nullptr) {

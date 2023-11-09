@@ -583,8 +583,7 @@ int32_t PrepareSystemAlbums(RdbStore &store)
     for (int32_t i = PhotoAlbumSubType::SYSTEM_START; i <= PhotoAlbumSubType::SYSTEM_END; i++) {
         values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SYSTEM);
         values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, i);
-        // 1：order offset，skip 0 for first album
-        values.PutInt(PhotoAlbumColumns::ALBUM_ORDER, i - PhotoAlbumSubType::SYSTEM_START + 1);
+        values.PutInt(PhotoAlbumColumns::ALBUM_ORDER, i - PhotoAlbumSubType::SYSTEM_START);
 
         AbsRdbPredicates predicates(PhotoAlbumColumns::TABLE);
         predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
@@ -1543,7 +1542,8 @@ void AddAlbumOrderColumn(RdbStore &store)
         " CREATE TRIGGER insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = (" +
-        " SELECT Max(album_order) FROM " + PhotoAlbumColumns::TABLE + ") + 1 WHERE rowid = new.rowid;"
+        " SELECT COALESCE(MAX(album_order), 0) + 1 FROM " + PhotoAlbumColumns::TABLE +
+        ") WHERE rowid = new.rowid;" +
         " END";
 
     const vector<string> addAlbumOrder = { addAlbumOrderColumn, initOriginOrder,

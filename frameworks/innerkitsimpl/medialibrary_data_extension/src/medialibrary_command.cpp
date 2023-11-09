@@ -42,7 +42,6 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { MEDIA_ALBUMOPRN_CREATEALBUM, OperationType::CREATE },
     { MEDIA_FILEOPRN_DELETEASSET, OperationType::DELETE },
     { MEDIA_ALBUMOPRN_DELETEALBUM, OperationType::DELETE },
-    { MEDIA_FILEOPRN_ORDERALBUM, OperationType::ALBUM_ORDER},
     { MEDIA_FILEOPRN_MODIFYASSET, OperationType::UPDATE },
     { MEDIA_ALBUMOPRN_MODIFYALBUM, OperationType::UPDATE },
     { MEDIA_ALBUMOPRN_QUERYALBUM, OperationType::QUERY },
@@ -82,6 +81,7 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_REVERT_EDIT, OperationType::REVERT_EDIT },
     { OPRN_HIDE, OperationType::HIDE },
     { OPRN_QUERY_HIDDEN, OperationType::QUERY_HIDDEN },
+    { OPRN_ORDER_ALBUM, OperationType::ALBUM_ORDER},
 };
 }
 
