@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "media_column.h"
 #define MLOG_TAG "Thumbnail"
 
 #include "thumbnail_utils.h"
@@ -30,10 +29,12 @@
 #include "hitrace_meter.h"
 #include "image_packer.h"
 #include "ipc_skeleton.h"
+#include "media_column.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_xcollie_manager.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "mimetype_utils.h"
@@ -1219,6 +1220,7 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
     string tempFileName = fileName + ".tmp";
     const mode_t fileMode = 0664;
     mode_t mask = umask(0);
+    MediaLibraryXCollieManager xCollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
     UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
     umask(mask);
     if (fd.Get() < 0) {
@@ -1239,6 +1241,7 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
         return -errno;
     }
     close(fd.Release());
+    xCollieManager.Cancel();
 
     if (MediaFileUtils::IsFileExists(fileName)) {
         if (!MediaFileUtils::DeleteFile(fileName)) {
@@ -1359,6 +1362,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         return E_ERR;
     }
     MEDIA_DEBUG_LOG("path = %{private}s", path.c_str());
+    MediaLibraryXCollieManager xCollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     int32_t fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d", errno);
@@ -1377,6 +1381,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         (void)close(fd);
         return E_ERR;
     }
+    xCollieManager.Cancel();
     int64_t length = static_cast<int64_t>(st.st_size);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
     if (ret != 0) {
