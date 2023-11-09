@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef SOURCE_ALBUM_H
-#define SOURCE_ALBUM_H
+#ifndef INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_SOURCE_ALBUM_H
+#define INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_SOURCE_ALBUM_H
 
 #include "media_column.h"
 #include "photo_album_column.h"
@@ -147,4 +147,4 @@ const std::string DELETE_PHOTO_UPDATE_SOURCE_ALBUM =
     PhotoColumn::PHOTOS_TABLE + TRIGGER_CODE_UPDATE_AND_DELETE;
 } // namespace Media
 } // namespace OHOS
-#endif // SOURCE_ALBUM_H
+#endif // INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_SOURCE_ALBUM_H

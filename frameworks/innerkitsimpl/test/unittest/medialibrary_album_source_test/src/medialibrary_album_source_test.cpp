@@ -15,7 +15,7 @@
 
 #define MLOG_TAG "SourceAlbumTest"
 
-#include "medialibrary_source_album_test.h"
+#include "medialibrary_album_source_test.h"
 
 #include <chrono>
 
@@ -67,17 +67,14 @@ struct InsertResult {
 
 int32_t ExecSqls(const vector<string> &sqls)
 {
-    int32_t err = NativeRdb::E_OK;
+    EXPECT_NE((g_rdbStore == nullptr), true);
+    int32_t err = E_OK;
     for (const auto &sql : sqls) {
         err = g_rdbStore->ExecuteSql(sql);
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("Failed to exec: %{public}s", sql.c_str());
-            continue;
-        } else {
-            MEDIA_INFO_LOG("success to exec: %{public}s", sql.c_str());
-        }
+        MEDIA_INFO_LOG("exec sql: %{public}s result: %{public}d", sql.c_str(), err);
+        EXPECT_EQ(err, E_OK);
     }
-    return NativeRdb::E_OK;
+    return E_OK;
 }
 
 void InitSourceAlbumTrigger()
@@ -172,11 +169,10 @@ InsertResult InsertPhoto(string &packageName)
     valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, 0);
     valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, 0);
+    EXPECT_NE((g_rdbStore == nullptr), true);
     int32_t ret = g_rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
     transactionOprn.Finish();
-    if (ret != E_OK) {
-        MEDIA_ERR_LOG("Failed to insert photo! err: %{public}d", ret);
-    }
     MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
     InsertResult result;
     result.fileId = fileId;
@@ -187,6 +183,7 @@ InsertResult InsertPhoto(string &packageName)
 
 void UpdatePhotoTrashed(int64_t &fileId, bool isDelete)
 {
+    EXPECT_NE((g_rdbStore == nullptr), true);
     TransactionOperations transactionOprn(g_rdbStore->GetRaw());
     transactionOprn.Start();
     int32_t changedRows = -1;
@@ -200,12 +197,13 @@ void UpdatePhotoTrashed(int64_t &fileId, bool isDelete)
     cmd.SetValueBucket(updateValues);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
+    EXPECT_EQ(ret, E_OK);
     transactionOprn.Finish();
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to update photo! err: %{public}d", ret);
 }
 
 void HidePhoto(int64_t fileId, int value)
 {
+    EXPECT_NE((g_rdbStore == nullptr), true);
     TransactionOperations transactionOprn(g_rdbStore->GetRaw());
     transactionOprn.Start();
     int32_t changedRows = -1;
@@ -215,12 +213,13 @@ void HidePhoto(int64_t fileId, int value)
     cmd.SetValueBucket(updateValues);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
+    EXPECT_EQ(ret, E_OK);
     transactionOprn.Finish();
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to update photo! err: %{public}d", ret);
 }
 
 void UpdateDisPlayname(int64_t &fileId, string &disPlayname)
 {
+    EXPECT_NE((g_rdbStore == nullptr), true);
     TransactionOperations transactionOprn(g_rdbStore->GetRaw());
     transactionOprn.Start();
     int32_t changedRows = -1;
@@ -231,8 +230,8 @@ void UpdateDisPlayname(int64_t &fileId, string &disPlayname)
     cmd.SetValueBucket(updateValues);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
     int32_t ret = g_rdbStore->Update(cmd, changedRows);
+    EXPECT_EQ(ret, E_OK);
     transactionOprn.Finish();
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to update photo! err: %{public}d", ret);
 }
 
 void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptPhotoCount,
@@ -248,18 +247,13 @@ void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptP
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_NAME, packageName);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE));
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("can not get rdbstore");
-        return;
-    }
+    EXPECT_NE((g_rdbStore == nullptr), true);
     auto resultSet = g_rdbStore->Query(cmd, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not get resultSet");
-        return;
-    }
+    EXPECT_NE((resultSet == nullptr), true);
+    EXPECT_EQ(resultSet->GoToFirstRow(), E_OK);
     int32_t count = -1;
     int32_t ret = resultSet->GetRowCount(count);
-    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to get count! err: %{public}d", ret);
+    EXPECT_EQ(ret, E_OK);
     EXPECT_EQ(count, exceptResultCount);
     int photoCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
     string coverURI = GetStringVal(PhotoAlbumColumns::ALBUM_COVER_URI, resultSet);
@@ -272,6 +266,7 @@ void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptP
 void DeletePhoto(int64_t &fileId)
 {
     MEDIA_INFO_LOG("DeletePhoto fileId is %{public}s", to_string(fileId).c_str());
+    EXPECT_NE((g_rdbStore == nullptr), true);
     TransactionOperations transactionOprn(g_rdbStore->GetRaw());
     transactionOprn.Start();
     int32_t deletedRows = -1;
@@ -289,11 +284,8 @@ void MediaLibrarySourceAlbumTest::SetUpTestCase()
     ClearData();
     InitSourceAlbumTrigger();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    EXPECT_NE((g_rdbStore == nullptr), true);
     number = 0;
-    if (g_rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Start MediaLibrarySourceAlbumTest failed, can not get rdbstore");
-        exit(1);
-    }
     MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest SetUpTestCase end");
 }
 

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_SOURCE_OPERATIONS_TEST_H
-#define MEDIALIBRARY_SOURCE_OPERATIONS_TEST_H
+#ifndef MEDIALIBRARY_ALBUM_SOURCE_TEST_H
+#define MEDIALIBRARY_ALBUM_SOURCE_TEST_H
 
 #include <gtest/gtest.h>
 
@@ -30,4 +30,4 @@ public:
 } // namespace Media
 } // namespace OHOS
 
-#endif // MEDIALIBRARY_SOURCE_OPERATIONS_TEST_H
+#endif // MEDIALIBRARY_ALBUM_SOURCE_TEST_H
