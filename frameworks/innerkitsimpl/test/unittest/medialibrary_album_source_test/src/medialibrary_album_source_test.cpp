@@ -277,32 +277,32 @@ void DeletePhoto(int64_t &fileId)
     MEDIA_INFO_LOG("DeletePhoto deletedRows is %{public}d", deletedRows);
 }
 
-void MediaLibrarySourceAlbumTest::SetUpTestCase()
+void MediaLibraryAlbumSourceTest::SetUpTestCase()
 {
-    MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest SetUpTestCase start");
+    MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest SetUpTestCase start");
     MediaLibraryUnitTestUtils::Init();
     ClearData();
     InitSourceAlbumTrigger();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     EXPECT_NE((g_rdbStore == nullptr), true);
     number = 0;
-    MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest SetUpTestCase end");
+    MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest SetUpTestCase end");
 }
 
-void MediaLibrarySourceAlbumTest::TearDownTestCase()
+void MediaLibraryAlbumSourceTest::TearDownTestCase()
 {
-    MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest TearDownTestCase");
+    MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest TearDownTestCase");
     ClearData();
 }
 
-void MediaLibrarySourceAlbumTest::SetUp()
+void MediaLibraryAlbumSourceTest::SetUp()
 {
-    MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest SetUp");
+    MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest SetUp");
 }
 
-void MediaLibrarySourceAlbumTest::TearDown()
+void MediaLibraryAlbumSourceTest::TearDown()
 {
-    MEDIA_INFO_LOG("MediaLibrarySourceAlbumTest TearDown");
+    MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest TearDown");
 }
 
 /**
@@ -311,7 +311,7 @@ void MediaLibrarySourceAlbumTest::TearDown()
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_insert_source_album_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, insert_photo_insert_source_album_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd insert_photo_insert_source_album_test_001");
     string packageName = "app_001";
@@ -326,7 +326,7 @@ HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_insert_source_album_test_001,
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_update_source_album_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, insert_photo_update_source_album_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd insert_photo_update_source_album_test_001");
     string packageName = "app_002";
@@ -345,7 +345,7 @@ HWTEST_F(MediaLibrarySourceAlbumTest, insert_photo_update_source_album_test_001,
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_001");
     string packageName = "app_003";
@@ -368,7 +368,7 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_001,
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_002");
     string packageName = "app_004";
@@ -395,7 +395,7 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_002,
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_003");
     string packageName = "app_005";
@@ -422,7 +422,7 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_003,
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_004, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_004");
     string packageName = "app_006";
@@ -445,7 +445,7 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_004,
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_005, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_005");
     string packageName = "app_007";
@@ -468,7 +468,7 @@ HWTEST_F(MediaLibrarySourceAlbumTest, update_photo_update_source_album_test_005,
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(MediaLibrarySourceAlbumTest, delete_photo_update_source_album_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, delete_photo_update_source_album_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd delete_photo_update_source_album_test_001");
     string packageName = "app_008";
@@ -495,7 +495,7 @@ HWTEST_F(MediaLibrarySourceAlbumTest, delete_photo_update_source_album_test_001,
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(MediaLibrarySourceAlbumTest, delete_photo_update_source_album_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, delete_photo_update_source_album_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd delete_photo_update_source_album_test_002");
     string packageName = "app_009";
@@ -522,7 +522,7 @@ HWTEST_F(MediaLibrarySourceAlbumTest, delete_photo_update_source_album_test_002,
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
-HWTEST_F(MediaLibrarySourceAlbumTest, delete_photo_update_source_album_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, delete_photo_update_source_album_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd delete_photo_update_source_album_test_003");
     string packageName = "app_010";
