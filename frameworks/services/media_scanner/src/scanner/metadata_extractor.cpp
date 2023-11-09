@@ -24,6 +24,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
+#include "medialibrary_xcollie_manager.h"
 #include "nlohmann/json.hpp"
 #include "sandbox_helper.h"
 
@@ -284,18 +285,19 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data)
         return E_AVMETADATA;
     }
 
+    MediaLibraryXCollieManager xCollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     int32_t fd = open(filePath.c_str(), O_RDONLY);
     if (fd <= 0) {
         MEDIA_ERR_LOG("Open file descriptor failed, errno = %{public}d", errno);
         return E_SYSCALL;
     }
-
     struct stat64 st;
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed for the given fd");
         (void)close(fd);
         return E_SYSCALL;
     }
+    xCollieManager.Cancel();
 
     tracer.Start("avMetadataHelper->SetSource");
     int32_t err = avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(st.st_size), AV_META_USAGE_META_ONLY);

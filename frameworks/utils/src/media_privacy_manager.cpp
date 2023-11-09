@@ -30,6 +30,7 @@
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
+#include "medialibrary_xcollie_manager.h"
 #include "permission_utils.h"
 
 using namespace std;
@@ -283,6 +284,7 @@ static int32_t GetPrivacyRanges(const string &path, const string &mode, PrivacyR
 
 int32_t MediaPrivacyManager::Open()
 {
+    MediaLibraryXCollieManager xCollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     int err = GetPrivacyRanges(path_, mode_, ranges_);
     if (err < 0) {
         return err;

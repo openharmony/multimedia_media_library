@@ -25,6 +25,7 @@
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
+#include "medialibrary_xcollie_manager.h"
 #include "mimetype_utils.h"
 #include "post_event_utils.h"
 
@@ -382,6 +383,7 @@ int32_t MediaScannerObj::GetFileMetadata()
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_INVALID_ARGUMENTS;
     }
+    MediaLibraryXCollieManager xcollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat statInfo = { 0 };
     if (stat(path_.c_str(), &statInfo) != 0) {
         MEDIA_ERR_LOG("stat syscall err %{public}d", errno);
@@ -390,6 +392,7 @@ int32_t MediaScannerObj::GetFileMetadata()
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_SYSCALL;
     }
+    xcollieManager.Cancel();
     int errCode = BuildData(statInfo);
     if (errCode != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
@@ -536,6 +539,7 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
     int32_t albumId = UNKNOWN_ID;
     bool update = false;
 
+    MediaLibraryXCollieManager xcollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     if (stat(albumPath.c_str(), &statInfo)) {
         MEDIA_ERR_LOG("stat dir error %{public}d", errno);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
@@ -543,6 +547,7 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return UNKNOWN_ID;
     }
+    xcollieManager.Cancel();
     if (SkipBucket(albumPath)) {
         return FILE_ID_DEFAULT;
     }
@@ -650,6 +655,7 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
     }
     fName[len++] = '/';
 
+    MediaLibraryXCollieManager xcollieManager1 = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     if ((dirPath = opendir(path.c_str())) == nullptr) {
         MEDIA_ERR_LOG("Failed to opendir %{private}s, errno %{private}d", path.c_str(), errno);
         FREE_MEMORY_AND_SET_NULL(fName);
@@ -658,8 +664,11 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return ERR_NOT_ACCESSIBLE;
     }
+    xcollieManager1.Cancel();
 
+    MediaLibraryXCollieManager xcollieManager2 = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     while ((ent = readdir(dirPath)) != nullptr) {
+        xcollieManager2.Cancel();
         if (*stopFlag_) {
             err = E_STOP;
             break;
@@ -673,9 +682,11 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
             continue;
         }
 
+        MediaLibraryXCollieManager xcollieManager3 = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
         if (lstat(fName, &statInfo) == -1) {
             continue;
         }
+        xcollieManager3.Cancel();
 
         string currentPath = fName;
         if (S_ISDIR(statInfo.st_mode)) {
@@ -694,6 +705,7 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
         } else {
             (void)ScanFileInTraversal(currentPath, path, parentId);
         }
+        xcollieManager2 = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     }
 
     closedir(dirPath);

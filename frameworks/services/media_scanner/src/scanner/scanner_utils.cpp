@@ -23,6 +23,7 @@
 #include "media_column.h"
 #include "media_log.h"
 #include "medialibrary_type_const.h"
+#include "medialibrary_xcollie_manager.h"
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -32,6 +33,7 @@ std::vector<size_t> ScannerUtils::skipList_;
 // Check if file exists or not
 bool ScannerUtils::IsExists(const string &path)
 {
+    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat statInfo {};
 
     if (path.empty()) {
@@ -75,6 +77,7 @@ string ScannerUtils::GetFileExtension(const string &path)
 // Check if the given path is a directory path
 bool ScannerUtils::IsDirectory(const string &path)
 {
+    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat s;
 
     if (!path.empty()) {
@@ -91,6 +94,7 @@ bool ScannerUtils::IsDirectory(const string &path)
 
 bool ScannerUtils::IsRegularFile(const string &path)
 {
+    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat s;
     if (!path.empty()) {
         if (stat(path.c_str(), &s) == 0) {
@@ -196,6 +200,7 @@ void ScannerUtils::InitSkipList()
     size_t hashPath;
     string path;
 
+    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
     /*
      * 1. file path: in disk or hard code? path?
      * 2. call_once: no need to init again if it is really empty
