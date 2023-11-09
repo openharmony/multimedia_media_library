@@ -294,12 +294,8 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     uint32_t err = 0;
     SourceOptions opts;
     string path = data.path;
-    if (path.empty()) {
-        MEDIA_ERR_LOG("path is empty");
-        return false;
-    }
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
-    if (err != E_OK) {
+    if (err != E_OK || !imageSource) {
         MEDIA_ERR_LOG("Failed to create image source, path: %{private}s err: %{public}d", path.c_str(), err);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
             {KEY_ERR_CODE, static_cast<int32_t>(err)}, {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
