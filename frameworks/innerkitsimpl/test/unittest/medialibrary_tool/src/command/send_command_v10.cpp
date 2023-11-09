@@ -104,8 +104,6 @@ static void RemoveFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
 
 static std::string EncodeDisplayName(const std::string &displayName)
 {
-    std::string title = MediaFileUtils::GetTitleFromDisplayName(displayName);
-    std::string ext = MediaFileUtils::GetExtensionFromPath(displayName);
     std::set<char> CHAR_FILTERS = {
         '.', '\\', '/', ':',
         '*', '?', '"', '\'',
