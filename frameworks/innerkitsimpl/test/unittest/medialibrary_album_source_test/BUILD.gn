@@ -16,11 +16,11 @@ import("//foundation/multimedia/media_library/media_library.gni")
 
 group("unittest") {
   testonly = true
-  deps = [ ":medialibrary_source_album_test" ]
+  deps = [ ":medialibrary_album_source_test" ]
 }
 
-ohos_unittest("medialibrary_source_album_test") {
-  module_out_path = "media_library/medialibrary_source_album_test"
+ohos_unittest("medialibrary_album_source_test") {
+  module_out_path = "media_library/medialibrary_album_source_test"
   include_dirs = [
     "./include",
     "../medialibrary_unittest_utils/include",
@@ -32,7 +32,7 @@ ohos_unittest("medialibrary_source_album_test") {
 
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
-    "./src/medialibrary_source_album_test.cpp",
+    "./src/medialibrary_album_source_test.cpp",
   ]
 
   deps = [

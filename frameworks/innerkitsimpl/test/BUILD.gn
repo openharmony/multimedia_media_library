@@ -17,6 +17,7 @@ group("test") {
   deps = [
     "unittest/media_event_test:unittest",
     "unittest/medialib_statistic_test:unittest",
+    "unittest/medialibrary_album_source_test:unittest",
     "unittest/medialibrary_audio_operations_test:unittest",
     "unittest/medialibrary_common_utils_test:unittest",
     "unittest/medialibrary_datamanager_test:unittest",
@@ -31,7 +32,6 @@ group("test") {
     "unittest/medialibrary_scanner_test:unittest",
     "unittest/medialibrary_smartalbum_map_operations_test:unittest",
     "unittest/medialibrary_smartalbum_operations_test:unittest",
-    "unittest/medialibrary_source_album_test:unittest",
     "unittest/medialibrary_thumbnail_service_test:unittest",
     "unittest/medialibrary_uri_test:unittest",
     "unittest/medialibrary_utils_test:unittest",
