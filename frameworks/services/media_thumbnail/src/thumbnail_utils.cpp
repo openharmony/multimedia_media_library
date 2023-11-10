@@ -853,9 +853,6 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
 {
     ValuesBucket values;
     int changedRows;
-
-    int64_t timeNow = UTCTimeMilliSeconds();
-    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
     
     MediaLibraryTracer tracer;
     tracer.Start("UpdateLcdInfo opts.store->Update");
