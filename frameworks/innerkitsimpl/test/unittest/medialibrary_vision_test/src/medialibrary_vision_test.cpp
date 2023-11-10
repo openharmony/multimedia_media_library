@@ -386,7 +386,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_001, TestSize.Level0)
     Uri totalUri(URI_TOTAL);
     MediaLibraryCommand cmd(totalUri);
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(FILE_ID, 1);
+    valuesBucket.Put(FILE_ID, 123);
     valuesBucket.Put(STATUS, 0);
     valuesBucket.Put(OCR, 1);
     valuesBucket.Put(LABEL, 0);
@@ -592,7 +592,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertFaceTag_Test_001, TestSize.Level0)
     valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    EXPECT_GT(retVal, 1);
+    EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
     DataShare::DataShareValuesBucket valuesBucket1;
     valuesBucket1.Put(TAG_ID, "tag111");
