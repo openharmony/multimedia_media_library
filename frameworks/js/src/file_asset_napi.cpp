@@ -82,7 +82,7 @@ constexpr int32_t NOT_FAV = 0;
 constexpr int32_t IS_HIDDEN = 1;
 constexpr int32_t NOT_HIDDEN = 0;
 
-constexpr int32_t USER_COMMENT_MAX_LEN = 140;
+constexpr int32_t USER_COMMENT_MAX_LEN = 420;
 
 using CompleteCallback = napi_async_complete_callback;
 
