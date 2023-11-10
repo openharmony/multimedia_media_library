@@ -856,6 +856,8 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
 
     MediaLibraryTracer tracer;
     tracer.Start("UpdateLcdInfo opts.store->Update");
+    int64_t timeNow = UTCTimeMilliSeconds();
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
