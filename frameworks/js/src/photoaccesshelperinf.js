@@ -382,6 +382,7 @@ export default {
   DefaultChangeUri: photoAccessHelper.DefaultChangeUri,
   HiddenPhotosDisplayMode: photoAccessHelper.HiddenPhotosDisplayMode,
   AnalysisType: photoAccessHelper.AnalysisType,
+  RequestPhotoType: photoAccessHelper.RequestPhotoType,
   PhotoViewMIMETypes: PhotoViewMIMETypes,
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,

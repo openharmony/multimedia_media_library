@@ -92,12 +92,12 @@ static bool IsPhotoSizeThumb(const Size &size)
 
 static bool NeedFastThumb(const Size &size, RequestPhotoType type)
 {
-    return IsPhotoSizeThumb(size) && (type != RequestPhotoType::REQUEST_QUALITY_THUMB);
+    return IsPhotoSizeThumb(size) && (type != RequestPhotoType::REQUEST_QUALITY_THUMBNAIL);
 }
 
 static bool NeedQualityThumb(const Size &size, RequestPhotoType type)
 {
-    return IsPhotoSizeThumb(size) && (type != RequestPhotoType::REQUEST_FAST_THUMB);
+    return IsPhotoSizeThumb(size) && (type != RequestPhotoType::REQUEST_FAST_THUMBNAIL);
 }
 
 MMapFdPtr::MMapFdPtr(int32_t fd)
@@ -451,6 +451,9 @@ bool ThumbnailManager::RequestFastImage(const RequestSharedPtr &request)
     }
     
     PixelMapPtr pixelMap = CreateThumbnailByAshmem(uniqueFd, fastSize);
+    if (pixelMap == nullptr) {
+        request->error = E_FAIL;
+    }
     request->SetFastPixelMap(move(pixelMap));
     return true;
 }
@@ -515,13 +518,19 @@ void ThumbnailManager::QualityImageWorker(int num)
             });
         } else {
             RequestSharedPtr request;
-            if (qualityQueue_.Pop(request) && request->NeedContinue()) {
-                // request quality image
-                request->SetPixelMap(QueryThumbnail(request->GetUri(),
-                    request->GetRequestSize(), request->GetPath()));
-                // callback
-                NotifyImage(request, false);
+            if (!qualityQueue_.Pop(request) || !request->NeedContinue()) {
+                continue;
             }
+            // request quality image
+            auto pixelMapPtr = QueryThumbnail(request->GetUri(),
+                request->GetRequestSize(), request->GetPath());
+            if (pixelMapPtr == nullptr) {
+                request->error = E_FAIL;
+            }
+            request->SetPixelMap(move(pixelMapPtr));
+
+            // callback
+            NotifyImage(request, false);
         }
     }
 }
@@ -537,20 +546,27 @@ static void HandlePixelCallback(const RequestSharedPtr &request, bool isFastImag
     }
 
     napi_value retVal = nullptr;
-    napi_value result[ARGS_ONE];
+    napi_value result[ARGS_TWO];
     if (request->GetStatus() == ThumbnailStatus::THUMB_REMOVE) {
         return;
     }
-        
+
+    if (request->error == E_FAIL) {
+        int32_t errorNum = MediaLibraryNapiUtils::TransErrorCode("requestPhoto", request->error);
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, result[PARAM0], errorNum,
+            "Failed to request Photo");
+    } else {
+        result[PARAM0] = nullptr;
+    }
     if (isFastImage) {
-        result[PARAM0] = Media::PixelMapNapi::CreatePixelMap(env,
+        result[PARAM1] = Media::PixelMapNapi::CreatePixelMap(env,
             shared_ptr<PixelMap>(request->GetFastPixelMap()));
     } else {
-        result[PARAM0] = Media::PixelMapNapi::CreatePixelMap(env,
+        result[PARAM1] = Media::PixelMapNapi::CreatePixelMap(env,
             shared_ptr<PixelMap>(request->GetPixelMap()));
     }
 
-    napi_call_function(env, nullptr, jsCallback, ARGS_ONE, result, &retVal);
+    status = napi_call_function(env, nullptr, jsCallback, ARGS_TWO, result, &retVal);
     if (status != napi_ok) {
         NAPI_ERR_LOG("CallJs napi_call_function fail, status: %{public}d", status);
         return;

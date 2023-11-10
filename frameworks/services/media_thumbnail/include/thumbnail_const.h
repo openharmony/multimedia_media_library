@@ -71,7 +71,7 @@ const int32_t CREATE_THUMB_ASYNC_STATUS = 0;
 constexpr float FLOAT_EPSILON = 1e-6;
 
 // request photo type
-const std::string REQUEST_PHOTO_TYPE = "request_photo_type";
+const std::string REQUEST_PHOTO_TYPE = "requestPhotoType";
 
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
 {
