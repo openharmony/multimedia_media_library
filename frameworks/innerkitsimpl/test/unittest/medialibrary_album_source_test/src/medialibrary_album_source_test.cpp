@@ -237,11 +237,7 @@ void UpdateDisPlayname(int64_t &fileId, string &disPlayname)
 void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptPhotoCount,
     string exceptCoverUri)
 {
-    MEDIA_INFO_LOG("validPhotoAlbumValue packageName is: %{public}s ", packageName.c_str());
-    MEDIA_INFO_LOG("validPhotoAlbumValue exceptResultCount is: %{public}d ", exceptResultCount);
-    MEDIA_INFO_LOG("validPhotoAlbumValue exceptPhotoCount is: %{public}d ", exceptPhotoCount);
-    MEDIA_INFO_LOG("validPhotoAlbumValue exceptCoverUri is: %{public}s ", exceptCoverUri.c_str());
-        vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI};
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI};
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,
         MediaLibraryApi::API_10);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_NAME, packageName);
@@ -257,8 +253,8 @@ void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptP
     EXPECT_EQ(count, exceptResultCount);
     int photoCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
     string coverURI = GetStringVal(PhotoAlbumColumns::ALBUM_COVER_URI, resultSet);
-    MEDIA_INFO_LOG("validPhotoAlbumValue photoCount is: %{public}d ", photoCount);
-    MEDIA_INFO_LOG("validPhotoAlbumValue coverURI is: %{public}s ", coverURI.c_str());
+    MEDIA_INFO_LOG("validPhotoAlbumValue photoCount is: %{public}d, coverURI is %{public}s",
+        photoCount, coverURI.c_str());
     EXPECT_EQ(photoCount, exceptPhotoCount);
     EXPECT_EQ(coverURI, exceptCoverUri);
 }
