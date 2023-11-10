@@ -18,11 +18,14 @@
 
 #include "datashare_predicates_proxy.h"
 #include "ipc_skeleton.h"
+#include "media_asset_change_request_napi.h"
+#include "media_album_change_request_napi.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_napi.h"
@@ -115,9 +118,10 @@ static napi_status GetParamStr(napi_env env, napi_value arg, const size_t size, 
     return napi_ok;
 }
 
-napi_status MediaLibraryNapiUtils::GetParamString(napi_env env, napi_value arg, string &result)
+napi_status MediaLibraryNapiUtils::GetParamStringWithLength(napi_env env, napi_value arg, int32_t maxLen,
+    string &result)
 {
-    CHECK_STATUS_RET(GetParamStr(env, arg, PATH_MAX, result), "Failed to get string parameter");
+    CHECK_STATUS_RET(GetParamStr(env, arg, maxLen, result), "Failed to get string parameter");
     return napi_ok;
 }
 
@@ -234,6 +238,23 @@ MediaType MediaLibraryNapiUtils::GetMediaTypeFromUri(const string &uri)
     return MediaType::MEDIA_TYPE_ALL;
 }
 
+static bool HandleSpecialDateTypePredicate(const OperationItem &item,
+    vector<OperationItem> &operations, const FetchOptionType &fetchOptType)
+{
+    constexpr int32_t FIELD_IDX = 0;
+    constexpr int32_t VALUE_IDX = 1;
+    vector<std::string>dateTypes = {MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED};
+    string dateType = item.GetSingle(FIELD_IDX);
+    auto it = std::find(dateTypes.begin(), dateTypes.end(), dateType);
+    if (it != dateTypes.end() && item.operation != DataShare::ORDER_BY_ASC &&
+        item.operation != DataShare::ORDER_BY_DESC) {
+        dateType += "_s";
+        operations.push_back({ item.operation, { dateType, static_cast<double>(item.GetSingle(VALUE_IDX)) } });
+        return true;
+    }
+    return false;
+}
+
 template <class AsyncContext>
 bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
     shared_ptr<DataShareAbsPredicates> &predicate, const FetchOptionType &fetchOptType)
@@ -245,6 +266,9 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
     for (auto &item : items) {
         if (item.singleParams.empty()) {
             operations.push_back(item);
+            continue;
+        }
+        if (HandleSpecialDateTypePredicate(item, operations, fetchOptType)) {
             continue;
         }
         // change uri ->file id
@@ -383,6 +407,22 @@ napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo(napi_env env, napi_
         "Failed to unwrap thisVar");
     CHECK_COND_RET(asyncContext->objectInfo != nullptr, napi_invalid_arg, "Failed to get object info");
     CHECK_STATUS_RET(GetParamCallback(env, asyncContext), "Failed to get callback param!");
+    return napi_ok;
+}
+
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::AsyncContextGetArgs(napi_env env, napi_callback_info info,
+    AsyncContext &asyncContext, const size_t minArgs, const size_t maxArgs)
+{
+    asyncContext->argc = maxArgs;
+    CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]), nullptr,
+        nullptr), "Failed to get cb info");
+    CHECK_COND_RET(asyncContext->argc >= minArgs && asyncContext->argc <= maxArgs, napi_invalid_arg,
+        "Number of args is invalid");
+    if (minArgs > 0) {
+        CHECK_COND_RET(asyncContext->argv[ARGS_ZERO] != nullptr, napi_invalid_arg, "Argument list is empty");
+    }
+    CHECK_STATUS_RET(GetParamCallback(env, asyncContext), "Failed to get callback param");
     return napi_ok;
 }
 
@@ -738,35 +778,36 @@ napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<st
     return result;
 }
 
-int32_t MediaLibraryNapiUtils::GetUserAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates)
+int32_t MediaLibraryNapiUtils::GetUserAlbumPredicates(
+    const int32_t albumId, DataSharePredicates &predicates, const bool hiddenOnly)
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     return E_SUCCESS;
 }
 
-static int32_t GetFavoritePredicates(DataSharePredicates &predicates)
+static int32_t GetFavoritePredicates(DataSharePredicates &predicates, const bool hiddenOnly)
 {
     predicates.BeginWrap();
     constexpr int32_t IS_FAVORITE = 1;
     predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(IS_FAVORITE));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
 }
 
-static int32_t GetVideoPredicates(DataSharePredicates &predicates)
+static int32_t GetVideoPredicates(DataSharePredicates &predicates, const bool hiddenOnly)
 {
     predicates.BeginWrap();
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
@@ -775,9 +816,8 @@ static int32_t GetVideoPredicates(DataSharePredicates &predicates)
 static int32_t GetHiddenPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
-    constexpr int32_t IS_HIDDEN = 1;
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(IS_HIDDEN));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(1));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
@@ -791,35 +831,35 @@ static int32_t GetTrashPredicates(DataSharePredicates &predicates)
     return E_SUCCESS;
 }
 
-static int32_t GetScreenshotPredicates(DataSharePredicates &predicates)
+static int32_t GetScreenshotPredicates(DataSharePredicates &predicates, const bool hiddenOnly)
 {
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
 }
 
-static int32_t GetCameraPredicates(DataSharePredicates &predicates)
+static int32_t GetCameraPredicates(DataSharePredicates &predicates, const bool hiddenOnly)
 {
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::CAMERA)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
 }
 
-static int32_t GetAllImagesPredicates(DataSharePredicates &predicates)
+static int32_t GetAllImagesPredicates(DataSharePredicates &predicates, const bool hiddenOnly)
 {
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
@@ -837,14 +877,14 @@ static int32_t GetAllSourcePredicates(DataSharePredicates &predicates, const boo
 }
 
 int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType subType,
-    DataSharePredicates &predicates)
+    DataSharePredicates &predicates, const bool hiddenOnly)
 {
     switch (subType) {
         case PhotoAlbumSubType::FAVORITE: {
-            return GetFavoritePredicates(predicates);
+            return GetFavoritePredicates(predicates, hiddenOnly);
         }
         case PhotoAlbumSubType::VIDEO: {
-            return GetVideoPredicates(predicates);
+            return GetVideoPredicates(predicates, hiddenOnly);
         }
         case PhotoAlbumSubType::HIDDEN: {
             return GetHiddenPredicates(predicates);
@@ -853,13 +893,13 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
             return GetTrashPredicates(predicates);
         }
         case PhotoAlbumSubType::SCREENSHOT: {
-            return GetScreenshotPredicates(predicates);
+            return GetScreenshotPredicates(predicates, hiddenOnly);
         }
         case PhotoAlbumSubType::CAMERA: {
-            return GetCameraPredicates(predicates);
+            return GetCameraPredicates(predicates, hiddenOnly);
         }
         case PhotoAlbumSubType::IMAGES: {
-            return GetAllImagesPredicates(predicates);
+            return GetAllImagesPredicates(predicates, hiddenOnly);
         }
         case PhotoAlbumSubType::SOURCE: {
             return GetAllSourcePredicates(predicates, hiddenOnly);
@@ -1073,6 +1113,12 @@ template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<S
 template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<PhotoAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &context, string &param);
 
+template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext> &context, string &param);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<MediaAlbumChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext> &context, string &param);
+
 template napi_status MediaLibraryNapiUtils::ParseArgsStringArrayCallback<unique_ptr<MediaLibraryAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context, vector<string> &array);
 
@@ -1091,6 +1137,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<Med
 template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<FileAssetAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<FileAssetAsyncContext> &context, bool &param);
 
+template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext> &context, bool &param);
+
 template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<PhotoAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
     const size_t maxArgs);
@@ -1098,6 +1147,14 @@ template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr
 template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<SmartAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<SmartAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
     const size_t maxArgs);
+
+template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& asyncContext,
+    const size_t minArgs, const size_t maxArgs);
+
+template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<MediaAlbumChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext>& asyncContext,
+    const size_t minArgs, const size_t maxArgs);
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaLibraryAsyncContext>(napi_env env,
     unique_ptr<MediaLibraryAsyncContext> &asyncContext, const string &resourceName,
@@ -1121,6 +1178,14 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<SmartAlbumNapiAsy
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaLibraryInitContext>(napi_env env,
     unique_ptr<MediaLibraryInitContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetChangeRequestAsyncContext>(napi_env env,
+    unique_ptr<MediaAssetChangeRequestAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAlbumChangeRequestAsyncContext>(napi_env env,
+    unique_ptr<MediaAlbumChangeRequestAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,

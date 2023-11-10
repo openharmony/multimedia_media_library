@@ -119,7 +119,8 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
     bool isValid = false;
     int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
     if (!isValid || albumId <= 0) {
-        MEDIA_WARN_LOG("Ignore failure on get album id when add assets, album updating would be lost");
+        MEDIA_WARN_LOG("Ignore failure on get album id when add assets. isValid: %{public}d, albumId: %{public}d",
+            isValid, albumId);
         return changedRows;
     }
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });

@@ -27,8 +27,8 @@ constexpr int32_t FILEIO_MODULE_CODE = 139;
 constexpr int32_t UFM_MODULE_CODE = 140;
 constexpr int32_t UFM_SYSCAP_BASE = 202;
 
-constexpr int32_t OHOS_PERMISSION_DENIED_CODE = -201;
-constexpr int32_t OHOS_INVALID_PARAM_CODE = -401;
+constexpr int32_t OHOS_PERMISSION_DENIED_CODE = 201;
+constexpr int32_t OHOS_INVALID_PARAM_CODE = 401;
 
 #define MODULE_OFFSET  100000
 #define MODULE_CODE(code) (((code) * MODULE_OFFSET))
@@ -86,6 +86,7 @@ const std::unordered_map<int, std::string> jsErrMap = {
     { JS_E_FILE_KEY,            "member not exist" },
     { JS_ERR_NO_MEM,            "cannot allocate memory" },
     { JS_E_NAMETOOLONG,         "file name is too long" },
+    { OHOS_PERMISSION_DENIED_CODE, "Permission denied" },
 };
 
 const std::unordered_map<int32_t, int32_t> ClientErrTable {

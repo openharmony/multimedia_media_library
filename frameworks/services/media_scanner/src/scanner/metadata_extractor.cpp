@@ -19,11 +19,13 @@
 #include <fcntl.h>
 #include "hitrace_meter.h"
 #include "media_exif.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
 #include "nlohmann/json.hpp"
+#include "sandbox_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -93,6 +95,8 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
         err = imageSource->GetImagePropertyString(0, exifKey, propertyStr);
         exifJson[exifKey] = (err == 0) ? propertyStr: "";
     }
+    exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
+        AppFileService::SandboxHelper::Encode(exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
     data->SetAllExif(exifJson.dump());
 
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, propertyStr);
@@ -103,6 +107,10 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
     if (err == 0) {
         data->SetShootingMode(propertyStr);
     }
+
+    int64_t timeNow = MediaFileUtils::UTCTimeMilliSeconds();
+    data->SetLastVisitTime(timeNow);
+
     return E_OK;
 }
 
@@ -134,13 +142,13 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
     if (err == 0) {
         int64TempMeta = convertTimeStr2TimeStamp(propertyStr);
         if (int64TempMeta < 0) {
-            data->SetDateTaken(data->GetFileDateModified());
+            data->SetDateTaken(data->GetFileDateModified() / MSEC_TO_SEC);
         } else {
             data->SetDateTaken(int64TempMeta);
         }
     } else {
         // use modified time as date taken time when date taken not set
-        data->SetDateTaken(data->GetFileDateModified());
+        data->SetDateTaken(data->GetFileDateModified() / MSEC_TO_SEC);
     }
 
     int32_t intTempMeta = 0;
@@ -178,9 +186,8 @@ static std::string ExtractVideoShootingMode(const std::string &genreJson)
             end = genreJson.find("}", pos);
         }
         return genreJson.substr(start + 1, end - start - 1); // 1: length offset
-    } else {
-        return "";
     }
+    return "";
 }
 
 void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,
@@ -227,13 +234,13 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     if (strTemp != "") {
         int64TempMeta = convertTimeStr2TimeStamp(strTemp);
         if (int64TempMeta < 0) {
-            data->SetDateTaken(data->GetFileDateModified());
+            data->SetDateTaken(data->GetFileDateModified() / MSEC_TO_SEC);
         } else {
             data->SetDateTaken(int64TempMeta);
         }
     } else {
         // use modified time as date taken time when date taken not set
-        data->SetDateTaken(data->GetFileDateModified());
+        data->SetDateTaken(data->GetFileDateModified() / MSEC_TO_SEC);
     }
 
     strTemp = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
@@ -253,6 +260,9 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
         std::string videoShootingMode = ExtractVideoShootingMode(strTemp);
         data->SetShootingMode(videoShootingMode);
     }
+
+    int64_t timeNow = MediaFileUtils::UTCTimeMilliSeconds();
+    data->SetLastVisitTime(timeNow);
 }
 
 int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data)

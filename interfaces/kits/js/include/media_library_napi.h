@@ -35,6 +35,7 @@
 #include "napi_remote_object.h"
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
+#include "uv.h"
 
 namespace OHOS {
 namespace Media {
@@ -98,6 +99,7 @@ public:
     ~ChangeListenerNapi() {};
 
     void OnChange(MediaChangeListener &listener, const napi_ref cbRef);
+    int UvQueueWork(uv_loop_s *loop, uv_work_t *work);
     static napi_value SolveOnChange(napi_env env, UvChangeMsg *msg);
     static string GetTrashAlbumUri();
     static std::string trashAlbumUri_;
@@ -195,6 +197,7 @@ private:
     static napi_value CreateVirtualAlbumTypeEnum(napi_env env);
     static napi_value CreatePrivateAlbumTypeEnum(napi_env env);
     static napi_value CreatePhotoKeysEnum(napi_env env);
+    static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
 
     static napi_value CreateMediaTypeUserFileEnum(napi_env env);
 
@@ -238,6 +241,10 @@ private:
     static napi_value PhotoAccessDeletePhotoAlbums(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
 
+    static napi_value SetHidden(napi_env env, napi_callback_info info);
+    static napi_value UfmGetHiddenAlbums(napi_env env, napi_callback_info info);
+    static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
+
     static napi_value CreateAlbumTypeEnum(napi_env env);
     static napi_value CreateAlbumSubTypeEnum(napi_env env);
     static napi_value CreateNotifyTypeEnum(napi_env env);
@@ -248,6 +255,9 @@ private:
     static napi_value GetPhotoAlbums(napi_env env, napi_callback_info info);
     static napi_value JSGetPhotoIndex(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessGetPhotoIndex(napi_env env, napi_callback_info info);
+
+    static napi_value JSApplyChanges(napi_env env, napi_callback_info info);
+
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
     void UnregisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);
@@ -275,6 +285,7 @@ private:
     static thread_local napi_ref sAlbumType_;
     static thread_local napi_ref sAlbumSubType_;
     static thread_local napi_ref sPositionTypeEnumRef_;
+    static thread_local napi_ref sHiddenPhotosDisplayModeEnumRef_;
     static thread_local napi_ref sPhotoSubType_;
     static thread_local napi_ref sNotifyType_;
     static thread_local napi_ref sDefaultChangeUriRef_;
@@ -327,6 +338,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     OHOS::DataShare::DataSharePredicates predicates;
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
+    bool hiddenOnly = false;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

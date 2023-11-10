@@ -177,6 +177,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutString(PhotoColumn::PHOTO_DATE_MONTH, metadata.getDateMonth());
         values.PutString(PhotoColumn::PHOTO_DATE_DAY, metadata.getDateDay());
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, metadata.GetShootingMode());
+        values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, metadata.GetLastVisitTime());
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
         if (metadata.GetPhotoSubType() != 0) {
@@ -447,29 +448,26 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
         if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
-                MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION
+                MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
-                MediaColumn::MEDIA_NAME
+                MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_TIME_PENDING
             };
         }
     } else {
-#ifndef MEDIALIBRARY_COMPATIBILITY
-        oprnObject = OperationObject::FILESYSTEM_ASSET;
-#endif
         if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
             whereClause = MediaColumn::MEDIA_FILE_PATH + " = ?";
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
-                MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION
+                MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             whereClause = MediaColumn::MEDIA_FILE_PATH + " = ?";
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
-                MediaColumn::MEDIA_NAME
+                MediaColumn::MEDIA_NAME, MediaColumn::MEDIA_TIME_PENDING
             };
         } else {
             whereClause = MEDIA_DATA_DB_FILE_PATH + " = ? And " + MEDIA_DATA_DB_IS_TRASH + " = ? ";

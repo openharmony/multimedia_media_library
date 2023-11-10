@@ -45,7 +45,7 @@ const std::string URI_ARG_FIRST_DELIMITER = "?";
 const std::string URI_API_VERSION_STR = std::to_string(static_cast<uint32_t>(MediaLibraryApi::API_10));
 const std::string URI_API_VERSION = URI_PARAM_API_VERSION + "=" + URI_API_VERSION_STR;
 
-enum MediaToolOperation {
+enum class MediaToolOperation {
     INSERT,
     QUERY,
     CLOSE,
@@ -311,7 +311,7 @@ int32_t UserFileClientEx::Trash(const std::string &uri)
     }
 
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
+    valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ fileUri.GetFileId() });

@@ -41,7 +41,7 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
         MEDIA_ERR_LOG("Create media restore service failed.");
         return;
     }
-    restoreService->StartRestore();
+    restoreService->StartRestore(ORIGIN_PATH, UPDATE_FILE_DIR);
 }
 } // namespace Media
 } // namespace OHOS

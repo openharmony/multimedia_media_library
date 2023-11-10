@@ -28,7 +28,7 @@ namespace OHOS {
 namespace Media {
 const std::string MEDIA_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 
-int32_t CloneRestore::Init(void)
+int32_t CloneRestore::Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate)
 {
     dbPath_ = ORIGIN_PATH + MEDIA_DB_PATH;
     filePath_ = ORIGIN_PATH + "/storage/cloud/files";
@@ -36,7 +36,7 @@ int32_t CloneRestore::Init(void)
         MEDIA_ERR_LOG("Media db is not exist.");
         return E_FAIL;
     }
-    if (BaseRestore::Init() != E_OK) {
+    if (isUpdate && BaseRestore::Init() != E_OK) {
         return E_FAIL;
     }
 
@@ -65,7 +65,7 @@ void CloneRestore::RestorePhoto(void)
     MEDIA_INFO_LOG("QueryTotalNumber, totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<FileInfo> infos = QueryFileInfos(offset);
-        InsertPhoto(infos);
+        InsertPhoto(CLONE_RESTORE_ID, infos);
     }
     (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
 }
@@ -121,7 +121,7 @@ bool CloneRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &r
 {
     // only parse image and video
     std::string oldPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    if (!ConvertPathToRealPath(oldPath, filePath_, info.filePath)) {
+    if (!ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
         return false;
     }
 

@@ -54,6 +54,13 @@ namespace Media {
 constexpr int32_t KEY_INDEX = 0;
 constexpr int32_t VALUE_INDEX = 1;
 constexpr float EPSILON = 1e-6;
+constexpr int32_t SHORT_SIDE_THRESHOLD = 256;
+constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 768;
+constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 512;
+constexpr int32_t LCD_LONG_SIDE_THRESHOLD = 1920;
+constexpr int32_t MAXIMUM_LCD_LONG_SIDE = 4096;
+constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
+
 bool ThumbnailUtils::UpdateRemotePath(string &path, const string &networkId)
 {
     MEDIA_DEBUG_LOG("ThumbnailUtils::UpdateRemotePath IN path = %{private}s, networkId = %{private}s",
@@ -149,7 +156,7 @@ bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, ThumbnailType type)
 }
 
 bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
-    const bool isThumbnail, const Size &desiredSize, uint32_t &errCode)
+    const bool isThumbnail, Size &desiredSize, uint32_t &errCode)
 {
     auto audioPicMemory = avMetadataHelper->FetchArtPicture();
     if (audioPicMemory == nullptr) {
@@ -198,7 +205,7 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
     return true;
 }
 
-bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
+bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     string path = data.path;
@@ -221,7 +228,7 @@ bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, 
     return true;
 }
 
-bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
+bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize)
 {
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     string path = data.path;
@@ -245,7 +252,14 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
         MEDIA_ERR_LOG("Av meta data helper fetch frame at time failed");
         return false;
     }
-
+    int width = data.source->GetWidth();
+    int height = data.source->GetHeight();
+    if (!isThumbnail && !ResizeLcd(width, height)) {
+        MEDIA_ERR_LOG("ResizeLcd failed");
+    } else if (isThumbnail && !ResizeThumb(width, height)) {
+        MEDIA_ERR_LOG("ResizeThumb failed");
+    }
+    desiredSize = {width, height};
     auto resultMap = avMetadataHelper->ResolveMetadata();
     string videoOrientation = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
     if (!videoOrientation.empty()) {
@@ -269,7 +283,7 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
     return true;
 }
 
-bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, const Size &desiredSize)
+bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize)
 {
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
@@ -281,7 +295,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     SourceOptions opts;
     string path = data.path;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
-    if (err != E_OK) {
+    if (err != E_OK || !imageSource) {
         MEDIA_ERR_LOG("Failed to create image source, path: %{private}s err: %{public}d", path.c_str(), err);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
             {KEY_ERR_CODE, static_cast<int32_t>(err)}, {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -468,7 +482,6 @@ bool ThumbnailUtils::QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err
         MEDIA_DATA_DB_ID,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.NotEqualTo(MEDIA_DATA_DB_TIME_VISIT, "0");
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
@@ -505,11 +518,6 @@ bool ThumbnailUtils::QueryLcdCountByTime(const int64_t &time, const bool &before
         MEDIA_DATA_DB_ID,
     };
     RdbPredicates rdbPredicates(opts.table);
-    if (before) {
-        rdbPredicates.LessThanOrEqualTo(MEDIA_DATA_DB_TIME_VISIT, to_string(time));
-    } else {
-        rdbPredicates.GreaterThan(MEDIA_DATA_DB_TIME_VISIT, to_string(time));
-    }
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
@@ -647,7 +655,6 @@ bool ThumbnailUtils::QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimi
     rdbPredicates.EqualTo(REMOTE_THUMBNAIL_DB_UDID, opts.udid);
 
     rdbPredicates.Limit(LcdLimit);
-    rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -683,7 +690,6 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     rdbPredicates.Limit(LcdLimit);
-    rdbPredicates.OrderByAsc(MEDIA_DATA_DB_TIME_VISIT);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -714,7 +720,6 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
         MEDIA_DATA_DB_MEDIA_TYPE,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_VISIT, "0");
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     if ((opts.table == PhotoColumn::PHOTOS_TABLE) || (opts.table == AudioColumn::AUDIOS_TABLE)) {
@@ -759,7 +764,6 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
         MEDIA_DATA_DB_MEDIA_TYPE,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_VISIT, "0");
     if ((opts.table == PhotoColumn::PHOTOS_TABLE) || (opts.table == AudioColumn::AUDIOS_TABLE)) {
         rdbPredicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
     } else {
@@ -807,7 +811,6 @@ bool ThumbnailUtils::QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &ti
         MEDIA_DATA_DB_ID,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.GreaterThan(MEDIA_DATA_DB_TIME_VISIT, to_string(time));
     if (opts.table == MEDIALIBRARY_TABLE) {
         rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
     } else {
@@ -851,9 +854,6 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
     ValuesBucket values;
     int changedRows;
 
-    int64_t timeNow = UTCTimeMilliSeconds();
-    values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
-
     MediaLibraryTracer tracer;
     tracer.Start("UpdateLcdInfo opts.store->Update");
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
@@ -877,7 +877,7 @@ bool ThumbnailUtils::UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int
     ValuesBucket values;
     int changedRows;
     int64_t timeNow = UTCTimeMilliSeconds();
-    values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
@@ -1059,8 +1059,6 @@ bool ThumbnailUtils::UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData 
 
     if (!data.lcdKey.empty()) {
         values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
-        int64_t timeNow = UTCTimeMilliSeconds();
-        values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
     }
 
     int changedRows;
@@ -1084,8 +1082,6 @@ bool ThumbnailUtils::InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData 
 
     if (!data.lcdKey.empty()) {
         values.PutString(MEDIA_DATA_DB_LCD, data.lcdKey);
-        int64_t timeNow = UTCTimeMilliSeconds();
-        values.PutLong(MEDIA_DATA_DB_TIME_VISIT, timeNow);
     }
 
     int64_t outRowId = -1;
@@ -1105,7 +1101,6 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
     }
     if (withLcd) {
         values.PutNull(MEDIA_DATA_DB_LCD);
-        values.PutLong(MEDIA_DATA_DB_TIME_VISIT, 0);
         values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
     }
     int changedRows;
@@ -1132,7 +1127,6 @@ bool ThumbnailUtils::CleanDistributeLcdInfo(ThumbRdbOpt &opts)
 
     ValuesBucket values;
     values.PutNull(MEDIA_DATA_DB_LCD);
-    values.PutLong(MEDIA_DATA_DB_TIME_VISIT, 0);
     int changedRows;
     vector<string> whereArgs = { udid, opts.row };
     string deleteCondition = REMOTE_THUMBNAIL_DB_UDID + " = ? AND " +
@@ -1159,25 +1153,39 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
     return true;
 }
 
-Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, const Size &desiredSize, const bool isThumbnail)
+Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, Size &desiredSize, const bool isThumbnail)
 {
-    float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
-    float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
-    float scale = 1.0f;
-    if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
-        scale = (float)desiredSize.height / sourceSize.height;
+    int width = sourceSize.width;
+    int height = sourceSize.height;
+    if (isThumbnail) {
+        if (!ResizeThumb(width, height)) {
+            MEDIA_ERR_LOG("ResizeThumb failed");
+        }
+        desiredSize = {width, height};
+        float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
+        float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
+        float scale = 1.0f;
+        if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
+            scale = (float)desiredSize.height / sourceSize.height;
+        } else {
+            scale = (float)desiredSize.width / sourceSize.width;
+        }
+        scale = scale < 1.0f ? scale : 1.0f;
+        Size decodeSize = {
+            static_cast<int32_t> (scale * sourceSize.width),
+            static_cast<int32_t> (scale * sourceSize.height),
+        };
+        return decodeSize;
     } else {
-        scale = (float)desiredSize.width / sourceSize.width;
+        if (!ResizeLcd(width, height)) {
+            MEDIA_ERR_LOG("ResizeThumb failed");
+        }
+        desiredSize = {width, height};
+        return desiredSize.width != 0 && desiredSize.height != 0 ? desiredSize : sourceSize;
     }
-    scale = scale < 1.0f ? scale : 1.0f;
-    Size decodeSize = {
-        static_cast<int32_t> (scale * sourceSize.width),
-        static_cast<int32_t> (scale * sourceSize.height),
-    };
-    return decodeSize;
 }
 
-bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSize, const bool isThumbnail)
+bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail)
 {
     if (data.source != nullptr) {
         return true;
@@ -1192,6 +1200,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const Size &desiredSiz
 
     bool ret = false;
     data.degrees = 0.0;
+    Size desiredSize;
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
         ret = LoadVideoFile(data, isThumbnail, desiredSize);
     } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
@@ -1678,6 +1687,82 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         data.mediaType = MediaType::MEDIA_TYPE_ALL;
         err = resultSet->GetInt(index, data.mediaType);
     }
+}
+
+bool ThumbnailUtils::ResizeThumb(int &width, int &height)
+{
+    int maxLen = max(width, height);
+    int minLen = min(width, height);
+    if (minLen == 0) {
+        MEDIA_ERR_LOG("Divisor minLen is 0");
+        return false;
+    }
+    double ratio = (double)maxLen / minLen;
+    if (minLen > SHORT_SIDE_THRESHOLD) {
+        minLen = SHORT_SIDE_THRESHOLD;
+        maxLen = static_cast<int>(SHORT_SIDE_THRESHOLD * ratio);
+        if (maxLen > MAXIMUM_SHORT_SIDE_THRESHOLD) {
+            maxLen = MAXIMUM_SHORT_SIDE_THRESHOLD;
+        }
+        if (height > width) {
+            width = minLen;
+            height = maxLen;
+        } else {
+            width = maxLen;
+            height = minLen;
+        }
+    } else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD) {
+        if (ratio > ASPECT_RATIO_THRESHOLD) {
+            int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
+            if (height > width) {
+                width = minLen;
+                height = newMaxLen;
+            } else {
+                width = newMaxLen;
+                height = minLen;
+            }
+        }
+    }
+    return true;
+}
+
+bool ThumbnailUtils::ResizeLcd(int &width, int &height)
+{
+    int maxLen = max(width, height);
+    int minLen = min(width, height);
+    if (minLen == 0) {
+        MEDIA_ERR_LOG("Divisor minLen is 0");
+        return false;
+    }
+    double ratio = (double)maxLen / minLen;
+    if (std::abs(ratio) < EPSILON) {
+        MEDIA_ERR_LOG("ratio is 0");
+        return false;
+    }
+    int newMaxLen = maxLen;
+    int newMinLen = minLen;
+    if (maxLen > LCD_LONG_SIDE_THRESHOLD) {
+        newMaxLen = LCD_LONG_SIDE_THRESHOLD;
+        newMinLen = static_cast<int>(newMaxLen / ratio);
+    }
+    int lastMinLen = newMinLen;
+    int lastMaxLen = newMaxLen;
+    if (newMinLen < LCD_SHORT_SIDE_THRESHOLD && minLen >= LCD_SHORT_SIDE_THRESHOLD) {
+        lastMinLen = LCD_SHORT_SIDE_THRESHOLD;
+        lastMaxLen = static_cast<int>(lastMinLen * ratio);
+        if (lastMaxLen > MAXIMUM_LCD_LONG_SIDE) {
+            lastMaxLen = MAXIMUM_LCD_LONG_SIDE;
+            lastMinLen = static_cast<int>(lastMaxLen / ratio);
+        }
+    }
+    if (height > width) {
+        width = lastMinLen;
+        height = lastMaxLen;
+    } else {
+        width = lastMaxLen;
+        height = lastMinLen;
+    }
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

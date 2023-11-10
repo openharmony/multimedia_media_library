@@ -28,16 +28,13 @@
 #include "file_asset.h"
 #include "imedia_scanner_callback.h"
 #include "media_column.h"
+#include "medialibrary_async_worker.h"
 #include "medialibrary_command.h"
 #include "value_object.h"
 #include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
-static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
-static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
-static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
-
 const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_ID, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_FILE_PATH, MEMBER_TYPE_STRING },
@@ -53,7 +50,6 @@ const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_DATE_MODIFIED, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_DATE_TAKEN, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_DATE_DELETED, MEMBER_TYPE_INT64 },
-    { MediaColumn::MEDIA_TIME_VISIT, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_DURATION, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_TIME_PENDING, MEMBER_TYPE_INT64 },
     { MediaColumn::MEDIA_IS_FAV, MEMBER_TYPE_INT32 },
@@ -125,7 +121,6 @@ protected:
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
-    static int32_t SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
     static int32_t SendModifyUserCommentNotify(MediaLibraryCommand &cmd, int32_t rowId,
         const std::string &extraUri = "");
     static int32_t SetPendingStatus(MediaLibraryCommand &cmd);
@@ -174,6 +169,16 @@ private:
         bool isCreateThumbSync = false;
         bool isInvalidateThumb = true;
     };
+};
+
+class DeleteNotifyAsyncTaskData : public AsyncTaskData {
+public:
+    DeleteNotifyAsyncTaskData() = default;
+    virtual ~DeleteNotifyAsyncTaskData() override = default;
+    int32_t updateRows = 0;
+    std::vector<std::string> notifyUris;
+    std::string notifyUri;
+    int64_t trashDate = 0;
 };
 
 using VerifyFunction = bool (*) (NativeRdb::ValueObject&, MediaLibraryCommand&);

@@ -21,6 +21,7 @@
 #include "thumbnail_const.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_errno.h"
+#include "uri.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -523,6 +524,15 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetPhotoId_Test_001, TestSiz
 
     uri = "file://media/Photo/test";
     EXPECT_EQ(MediaFileUri::GetPhotoId(uri), "test");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetPathFirstDentry_Test_001, TestSize.Level0)
+{
+    Uri uri("file://data/test/testCase/");
+    EXPECT_EQ(MediaFileUri::GetPathFirstDentry(uri), "");
+
+    Uri uri1("file://media/photo_operation/query");
+    EXPECT_EQ(MediaFileUri::GetPathFirstDentry(uri1), "photo_operation");
 }
 } // namespace Media
 } // namespace OHOS

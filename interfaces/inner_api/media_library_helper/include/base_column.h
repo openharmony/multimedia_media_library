@@ -25,6 +25,8 @@ public:
     static const std::string &CreateIndex();
     static const std::string &CreateTrigger();
     static const std::string &DropTrigger();
+    static std::string AlterTableAddIntColumn(const std::string &table, const std::string &column);
+    static std::string AlterTableAddTextColumn(const std::string &table, const std::string &column);
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_BASE_COLUMN_H

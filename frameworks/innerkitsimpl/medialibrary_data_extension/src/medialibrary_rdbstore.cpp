@@ -20,6 +20,7 @@
 
 #include "cloud_sync_helper.h"
 #include "ipc_skeleton.h"
+#include "location_column.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -218,6 +219,8 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED,
             MediaFileUtils::UTCTimeMilliSeconds());
+        cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME,
+            MediaFileUtils::UTCTimeMilliSeconds());
     }
 
     MediaLibraryTracer tracer;
@@ -249,6 +252,24 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUri(const AbsRd
         MEDIA_DEBUG_LOG("arg = %{private}s", arg.c_str());
     }
     return rdbStore_->QuerySql(sql, predicates.GetWhereArgs());
+}
+
+int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return E_HAS_DB_ERROR;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateLastVisitTime");
+    cmd.GetValueBucket().PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
+        cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
+    if (ret != NativeRdb::E_OK || changedRows <= 0) {
+        MEDIA_ERR_LOG("rdbStore_->UpdateLastVisitTime failed, changedRows = %{public}d, ret = %{public}d",
+            changedRows, ret);
+    }
+    return changedRows;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand &cmd,
@@ -411,6 +432,7 @@ int32_t MediaLibraryRdbStore::Update(ValuesBucket &values,
 
     if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         values.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+        values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     }
 
     MediaLibraryTracer tracer;
@@ -562,6 +584,7 @@ int32_t PrepareSystemAlbums(RdbStore &store)
     for (int32_t i = PhotoAlbumSubType::SYSTEM_START; i <= PhotoAlbumSubType::SYSTEM_END; i++) {
         values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SYSTEM);
         values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, i);
+        values.PutInt(PhotoAlbumColumns::ALBUM_ORDER, i - PhotoAlbumSubType::SYSTEM_START);
 
         AbsRdbPredicates predicates(PhotoAlbumColumns::TABLE);
         predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
@@ -843,6 +866,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_DAY_INDEX,
     PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
     PhotoColumn::CREATE_SHPT_DAY_INDEX,
+    PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -873,6 +897,8 @@ static const vector<string> onCreateSqlStrs = {
     PhotoAlbumColumns::CREATE_ALBUM_INSERT_TRIGGER,
     PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER,
     PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER,
+    PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER,
+    PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER,
     PhotoMap::CREATE_TABLE,
     PhotoMap::CREATE_NEW_TRIGGER,
     PhotoMap::CREATE_DELETE_TRIGGER,
@@ -889,6 +915,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_VISION_DELETE_TRIGGER,
     CREATE_NEW_INSERT_VISION_TRIGGER,
     CREATE_IMAGE_FACE_INDEX,
+    CREATE_GEO_KNOWLEDGE_TABLE,
+    CREATE_GEO_DICTIONARY_TABLE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -1147,6 +1175,16 @@ void MediaLibraryRdbStore::UpdateAPI10Tables()
     }
 
     UpdateAPI10Table(*rdbStore_);
+}
+
+static void AddLocationTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_GEO_DICTIONARY_TABLE,
+        CREATE_GEO_KNOWLEDGE_TABLE,
+    };
+    MEDIA_INFO_LOG("start init location db");
+    ExecSqls(executeSqlStrs, store);
 }
 
 static void AddAnalysisTables(RdbStore &store)
@@ -1427,6 +1465,112 @@ void AddShootingModeColumn(RdbStore &store)
     }
 }
 
+void UpdateMillisecondDate(RdbStore &store)
+{
+    MEDIA_DEBUG_LOG("UpdateMillisecondDate start");
+    const vector<string> updateSql = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
+        MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + "*1000," +
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " + MediaColumn::MEDIA_DATE_MODIFIED + "*1000," +
+        MediaColumn::MEDIA_DATE_TRASHED + " = " + MediaColumn::MEDIA_DATE_TRASHED + "*1000;"+
+        "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " +  MediaColumn::MEDIA_DATE_MODIFIED + "*1000;",
+    };
+    ExecSqls(updateSql, store);
+    MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
+}
+
+static void AddHiddenViewColumn(RdbStore &store)
+{
+    vector<string> upgradeSqls = {
+        BaseColumn::AlterTableAddIntColumn(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::CONTAINS_HIDDEN),
+        BaseColumn::AlterTableAddIntColumn(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::HIDDEN_COUNT),
+        BaseColumn::AlterTableAddTextColumn(PhotoAlbumColumns::TABLE, PhotoAlbumColumns::HIDDEN_COVER),
+    };
+    ExecSqls(upgradeSqls, store);
+}
+
+static void ModifyMdirtyTriggers(RdbStore &store)
+{
+    /* drop old mdirty trigger */
+    const vector<string> dropMdirtyTriggers = {
+        "DROP TRIGGER IF EXISTS photos_mdirty_trigger",
+        "DROP TRIGGER IF EXISTS mdirty_trigger",
+    };
+    if (ExecSqls(dropMdirtyTriggers, store) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("upgrade fail: drop old mdirty trigger");
+    }
+
+    /* create new mdirty trigger */
+    if (store.ExecuteSql(PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("upgrade fail: create new photos mdirty trigger");
+    }
+
+    if (store.ExecuteSql(CREATE_FILES_MDIRTY_TRIGGER) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("upgrade fail: create new mdirty trigger");
+    }
+}
+
+static void AddLastVisitTimeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + AudioColumn::AUDIOS_TABLE + " DROP time_visit ",
+        "ALTER TABLE " + REMOTE_THUMBNAIL_TABLE + " DROP time_visit ",
+        "ALTER TABLE " + MEDIALIBRARY_TABLE + " DROP time_visit ",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " DROP time_visit ",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_LAST_VISIT_TIME + " BIGINT DEFAULT 0",
+    };
+    int32_t result = ExecSqls(sqls, store);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb last_visit_time error %{private}d", result);
+    }
+}
+
+void AddHiddenTimeColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
+            " ADD COLUMN " + PhotoColumn::PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0",
+        PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
+    };
+    ExecSqls(sqls, store);
+}
+
+void AddAlbumOrderColumn(RdbStore &store)
+{
+    const std::string addAlbumOrderColumn =
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+        PhotoAlbumColumns::ALBUM_ORDER + " INT";
+    const std::string initOriginOrder =
+        "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
+        PhotoAlbumColumns::ALBUM_ORDER + " = rowid";
+    const std::string albumDeleteTrigger =
+        " CREATE TRIGGER update_order_trigger AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
+        " FOR EACH ROW " +
+        " BEGIN " +
+        " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = album_order - 1" +
+        " WHERE album_order > old.album_order; " +
+        " END";
+    const std::string albumInsertTrigger =
+        " CREATE TRIGGER insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
+        " BEGIN " +
+        " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = (" +
+        " SELECT COALESCE(MAX(album_order), 0) + 1 FROM " + PhotoAlbumColumns::TABLE +
+        ") WHERE rowid = new.rowid;" +
+        " END";
+
+    const vector<string> addAlbumOrder = { addAlbumOrderColumn, initOriginOrder,
+        albumDeleteTrigger, albumInsertTrigger};
+    int32_t result = ExecSqls(addAlbumOrder, store);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb album order error %{private}d", result);
+    }
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1472,6 +1616,34 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_FIX_INDEX_ORDER) {
         FixIndexOrder(store);
     }
+
+    if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
+        UpdateMillisecondDate(store);
+    }
+}
+
+static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_HIDDEN_VIEW_COLUMNS) {
+        AddHiddenViewColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_LAST_VISIT_TIME) {
+        ModifyMdirtyTriggers(store);
+        AddLastVisitTimeColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HIDDEN_TIME) {
+        AddHiddenTimeColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_LOCATION_TABLE) {
+        AddLocationTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_ALBUM_ORDER) {
+        AddAlbumOrderColumn(store);
+    }
 }
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
@@ -1515,6 +1687,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     }
 
     UpgradeOtherTable(store, oldVersion);
+    UpgradeGalleryFeatureTable(store, oldVersion);
 
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "medialibrary_async_worker.h"
 #define MLOG_TAG "DataManager"
 
 #include "medialibrary_data_manager.h"
@@ -49,6 +50,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_location_operations.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
@@ -130,7 +132,7 @@ __attribute__((constructor)) void RegisterDataShareCreator()
     DataShare::DataShareExtAbility::SetCreator(MediaDataShareCreator);
 }
 
-static void MakeRootDirs()
+static void MakeRootDirs(AsyncTaskData *data)
 {
     for (auto &dir : PRESET_ROOT_DIRS) {
         Uri createAlbumUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_ALBUMOPRN + "/" + MEDIA_ALBUMOPRN_CREATEALBUM);
@@ -178,15 +180,21 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     errCode = MakeDirQuerySetMap(dirQuerySetMap_);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at MakeDirQuerySetMap");
 
-    MakeRootDirs();
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return E_ERR;
+    }
+    shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, nullptr);
+    if (makeRootDirTask != nullptr) {
+        asyncWorker->AddTask(makeRootDirTask, true);
+    } else {
+        MEDIA_WARN_LOG("Can not init make root dir task");
+    }
 
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
-    errCode = DoTrashAging();
-    if (errCode != E_OK) {
-        MEDIA_WARN_LOG("Ignore trash aging failures, just continue");
-    }
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
     refCnt_++;
     return E_OK;
@@ -411,6 +419,10 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::VISION_SHIELD: {
             return MediaLibraryVisionOperations::InsertOperation(cmd);
         }
+        case OperationObject::GEO_DICTIONARY:
+        case OperationObject::GEO_KNOWLEDGE: {
+            return MediaLibraryLocationOperations::InsertOperation(cmd);
+        }
         default: {
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
@@ -574,6 +586,10 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::VISION_SHIELD: {
             return MediaLibraryVisionOperations::DeleteOperation(cmd);
         }
+        case OperationObject::GEO_DICTIONARY:
+        case OperationObject::GEO_KNOWLEDGE: {
+            return MediaLibraryLocationOperations::DeleteOperation(cmd);
+        }
         default:
             break;
     }
@@ -631,6 +647,10 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
         }
         case OperationObject::PHOTO_ALBUM: {
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
+        }
+        case OperationObject::GEO_DICTIONARY:
+        case OperationObject::GEO_KNOWLEDGE: {
+            return MediaLibraryLocationOperations::UpdateOperation(cmd);
         }
         default:
             break;
@@ -902,6 +922,19 @@ static const map<OperationObject, string> QUERY_CONDITION_MAP {
     { OperationObject::BUNDLE_PERMISSION, "" },
 };
 
+static void AddVirtualColumnsOfDateType(vector<string> &columns)
+{
+    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
+    vector<string> dateTypeSeconds = {MEDIA_DATA_DB_DATE_ADDED_TO_SECOND,
+            MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND, MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND};
+    for (int i = 0; i < dateTypes.size(); i++) {
+        auto it = find(columns.begin(), columns.end(), dateTypes[i]);
+        if (it != columns.end()) {
+            columns.push_back(dateTypeSeconds[i]);
+        }
+    }
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
@@ -926,6 +959,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
+    AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
 
     shared_ptr<NativeRdb::ResultSet> queryResultSet;
     OperationObject oprnObject = cmd.GetOprnObject();
@@ -943,6 +977,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
         queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
     } else if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::VISION_SHIELD) {
         queryResultSet = MediaLibraryVisionOperations::QueryOperation(cmd, columns);
+    } else if (oprnObject >= OperationObject::GEO_DICTIONARY && oprnObject <= OperationObject::GEO_KNOWLEDGE) {
+        queryResultSet = MediaLibraryLocationOperations::QueryOperation(cmd, columns);
     } else {
         tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);

@@ -179,28 +179,55 @@ static void AddNotify(const string &srcUri, const string &keyUri, NotifyTaskData
     }
 }
 
-static int32_t GetAlbumUrisById(const string &fileId, list<string> &albumUriList)
+static int32_t GetAlbumsById(const string &fileId, list<string> &albumIdList)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     MediaLibraryCommand queryAlbumMapCmd(OperationObject::PHOTO_MAP, OperationType::QUERY);
     queryAlbumMapCmd.GetAbsRdbPredicates()->EqualTo(PhotoMap::ASSET_ID, fileId);
     auto resultSet = uniStore->Query(queryAlbumMapCmd, {PhotoMap::ALBUM_ID});
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("GetAlbumUrisById failed");
+        MEDIA_ERR_LOG("GetAlbumsById failed");
         return E_INVALID_FILEID;
     }
     int32_t count = -1;
     int32_t ret = resultSet->GetRowCount(count);
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to get count");
+    if (count <= 0) {
+        return E_OK;
+    }
     ret = resultSet->GoToFirstRow();
     CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to GoToFirstRow");
     do {
         int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoMap::ALBUM_ID, resultSet,
             TYPE_INT32));
-        string albumUri = PhotoAlbumColumns::ALBUM_URI_PREFIX  + to_string(albumId);
-        albumUriList.emplace_back(albumUri);
+        albumIdList.emplace_back(to_string(albumId));
     } while (!resultSet->GoToNextRow());
     return E_OK;
+}
+
+static void HandleAlbumNotify(NotifyTaskData *taskData)
+{
+    list<string> albumIdList;
+    string id = MediaLibraryDataManagerUtils::GetIdFromUri(taskData->uri_);
+    int err = GetAlbumsById(id, albumIdList);
+    CHECK_AND_RETURN_LOG(err == E_OK, "Fail to get albumId");
+    for (const string &id : albumIdList) {
+        AddNotify(taskData->uri_, PhotoAlbumColumns::ALBUM_URI_PREFIX + id, taskData);
+    }
+
+    if (!taskData->hiddenOnly_) {
+        return;
+    }
+    NotifyType hiddenAlbumsNotifyType = taskData->notifyType_;
+    if (taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) {
+        hiddenAlbumsNotifyType = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+    } else if (taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET) {
+        hiddenAlbumsNotifyType = NotifyType::NOTIFY_ALBUM_ADD_ASSERT;
+    }
+    taskData->notifyType_ = hiddenAlbumsNotifyType;
+    for (const string &id : albumIdList) {
+        AddNotify(taskData->uri_, PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX + id, taskData);
+    }
 }
 
 static void AddNfListMap(AsyncTaskData *data)
@@ -215,13 +242,7 @@ static void AddNfListMap(AsyncTaskData *data)
             AddNotify(taskData->uri_,
                 PhotoAlbumColumns::ALBUM_URI_PREFIX  + to_string(taskData->albumId_), taskData);
         } else {
-            list<string> albumUriList;
-            string id = MediaLibraryDataManagerUtils::GetIdFromUri(taskData->uri_);
-            int err = GetAlbumUrisById(id, albumUriList);
-            CHECK_AND_RETURN_LOG(err == E_OK, "Fail to get albumId");
-            for (string uri : albumUriList) {
-                AddNotify(taskData->uri_, uri, taskData);
-            }
+            HandleAlbumNotify(taskData);
         }
     } else {
         string typeUri = MediaLibraryDataManagerUtils::GetTypeUriByUri(taskData->uri_);
@@ -236,7 +257,8 @@ int32_t MediaLibraryNotify::Init()
     return E_OK;
 }
 
-int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyType, const int albumId)
+int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyType, const int albumId,
+    const bool hiddenOnly)
 {
     if (MediaLibraryNotify::nfListMap_.size() > MAX_NOTIFY_LIST_SIZE) {
         MediaLibraryNotify::timer_.Shutdown();
@@ -246,7 +268,7 @@ int32_t MediaLibraryNotify::Notify(const string &uri, const NotifyType notifyTyp
     }
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     CHECK_AND_RETURN_RET_LOG(asyncWorker != nullptr, E_ASYNC_WORKER_IS_NULL, "AsyncWorker is null");
-    auto *taskData = new (nothrow) NotifyTaskData(uri, notifyType, albumId);
+    auto *taskData = new (nothrow) NotifyTaskData(uri, notifyType, albumId, hiddenOnly);
     CHECK_AND_RETURN_RET_LOG(taskData != nullptr, E_NOTIFY_TASK_DATA_IS_NULL, "taskData is null");
     MEDIA_DEBUG_LOG("Notify ,uri = %{private}s, notifyType = %{private}d, albumId = %{private}d",
         uri.c_str(), notifyType, albumId);
