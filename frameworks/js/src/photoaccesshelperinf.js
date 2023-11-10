@@ -280,6 +280,9 @@ function parsePhotoPickerSelectOption(args) {
     if (option.MIMEType && PHOTO_VIEW_MIME_TYPE_MAP.has(option.MIMEType)) {
       config.parameters.filterMediaType = PHOTO_VIEW_MIME_TYPE_MAP.get(option.MIMEType);
     }
+    config.parameters.isPhotoTakingSupported = option.isPhotoTakingSupported === undefined || option.isPhotoTakingSupported;
+    config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
+    config.parameters.option = option;
   }
 
   return config;
@@ -352,6 +355,8 @@ async function photoPickerSelect(...args) {
 function PhotoSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
+  this.isPhotoTakingSupported = true;
+  this.isEditSupported = true;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto) {
@@ -375,8 +380,11 @@ export default {
   PhotoSubtype: photoAccessHelper.PhotoSubtype,
   NotifyType: photoAccessHelper.NotifyType,
   DefaultChangeUri: photoAccessHelper.DefaultChangeUri,
+  HiddenPhotosDisplayMode: photoAccessHelper.HiddenPhotosDisplayMode,
   PhotoViewMIMETypes: PhotoViewMIMETypes,
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,
   PhotoViewPicker: PhotoViewPicker,
+  MediaAssetChangeRequest: photoAccessHelper.MediaAssetChangeRequest,
+  MediaAlbumChangeRequest: photoAccessHelper.MediaAlbumChangeRequest,
 };

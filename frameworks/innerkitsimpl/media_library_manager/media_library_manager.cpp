@@ -50,6 +50,7 @@ namespace OHOS {
 namespace Media {
 shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sDataShareHelper_ = nullptr;
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
+constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
 
 MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 {
@@ -59,6 +60,7 @@ MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 
 void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
 {
+    token_ = token;
     if (sDataShareHelper_ == nullptr) {
         sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     }
@@ -88,14 +90,15 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
 
 int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
 {
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("sDataShareHelper_ is null");
+    auto dataShareHelper = DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("dataShareHelper is null");
         return E_FAIL;
     }
     vector<string> columns;
     Uri uri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_QUERYOPRN_QUERYVOLUME + "/" + MEDIA_QUERYOPRN_QUERYVOLUME);
     DataSharePredicates predicates;
-    auto queryResultSet = sDataShareHelper_->Query(uri, predicates, columns);
+    auto queryResultSet = dataShareHelper->Query(uri, predicates, columns);
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("queryResultSet is null!");
         return E_FAIL;
@@ -278,22 +281,24 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
+    int min = std::min(size.width, size.height);
+    int max = std::max(size.width, size.height);
     std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + "/";
     if (isAudio) {
-        if (size.width > DEFAULT_THUMBNAIL_SIZE || size.height > DEFAULT_THUMBNAIL_SIZE) {
-            suffixStr += "LCD.jpg";
-        } else {
+        if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
             suffixStr += "THM.jpg";
+        } else {
+            suffixStr += "LCD.jpg";
         }
     } else {
-        if (size.width > DEFAULT_THUMBNAIL_SIZE || size.height > DEFAULT_THUMBNAIL_SIZE) {
-            suffixStr += "LCD.jpg";
-        } else if (size.width == DEFAULT_MTH_SIZE && size.height == DEFAULT_MTH_SIZE) {
+        if (size.width == DEFAULT_MTH_SIZE && size.height == DEFAULT_MTH_SIZE) {
             suffixStr += "MTH.jpg";
         } else if (size.width == DEFAULT_YEAR_SIZE && size.height == DEFAULT_YEAR_SIZE) {
             suffixStr += "YEAR.jpg";
-        } else {
+        } else if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
             suffixStr += "THM.jpg";
+        } else {
+            suffixStr += "LCD.jpg";
         }
     }
 
@@ -403,7 +408,13 @@ static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
         return false;
     }
 
-    return imageSize.width / imageSize.height == targetSize.width / targetSize.height;
+    float imageSizeScale = static_cast<float>(imageSize.width) / static_cast<float>(imageSize.height);
+    float targetSizeScale = static_cast<float>(targetSize.width) / static_cast<float>(targetSize.height);
+    if (imageSizeScale - targetSizeScale > FLOAT_EPSILON || targetSizeScale - imageSizeScale > FLOAT_EPSILON) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, const Size& size)

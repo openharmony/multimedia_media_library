@@ -15,6 +15,7 @@
 
 #include "medialibrary_command.h"
 
+#include "location_column.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -78,6 +79,9 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_INDEX, OperationType::INDEX },
     { OPRN_COMMIT_EDIT, OperationType::COMMIT_EDIT },
     { OPRN_REVERT_EDIT, OperationType::REVERT_EDIT },
+    { OPRN_HIDE, OperationType::HIDE },
+    { OPRN_QUERY_HIDDEN, OperationType::QUERY_HIDDEN },
+    { OPRN_ORDER_ALBUM, OperationType::ALBUM_ORDER},
 };
 }
 
@@ -309,6 +313,10 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
         { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
         { VISION_SHIELD_TABLE, OperationObject::VISION_SHIELD },
+
+        // use in Location Analyse
+        { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
+        { GEO_KNOWLEDGE_TABLE, OperationObject::GEO_KNOWLEDGE },
     };
 
     const string opObject = MediaFileUri::GetPathFirstDentry(uri_);
@@ -384,6 +392,8 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::VISION_IMAGE_FACE, { { OperationType::UNKNOWN_TYPE, VISION_IMAGE_FACE_TABLE } } },
     { OperationObject::VISION_FACE_TAG, { { OperationType::UNKNOWN_TYPE, VISION_FACE_TAG_TABLE } } },
     { OperationObject::VISION_SHIELD, { { OperationType::UNKNOWN_TYPE, VISION_SHIELD_TABLE } } },
+    { OperationObject::GEO_DICTIONARY, { { OperationType::UNKNOWN_TYPE, GEO_DICTIONARY_TABLE } } },
+    { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
 };
 
 void MediaLibraryCommand::ParseTableName()

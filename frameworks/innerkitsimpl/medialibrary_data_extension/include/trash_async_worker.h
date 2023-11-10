@@ -13,22 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_SERVICE_MEDIA_ASYNC_WORKER_INCLUDE_MEDIALIBRARY_ASYNC_WORKER_H_
-#define FRAMEWORKS_SERVICE_MEDIA_ASYNC_WORKER_INCLUDE_MEDIALIBRARY_ASYNC_WORKER_H_
+#ifndef MEDIA_LIBRARY_TRACE_ASYNC_TASK_WORKER_H_
+#define MEDIA_LIBRARY_TRACE_ASYNC_TASK_WORKER_H_
 
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 
-#define ASYNC_WORKER_API_EXPORT __attribute__ ((visibility ("default")))
+#define TRACE_ASYNC_WORKER_API_EXPORT __attribute__ ((visibility ("default")))
 namespace OHOS {
 namespace Media {
 class TrashAsyncTaskWorker {
 public:
     virtual ~TrashAsyncTaskWorker();
-    ASYNC_WORKER_API_EXPORT static std::shared_ptr<TrashAsyncTaskWorker> GetInstance();
-    ASYNC_WORKER_API_EXPORT void Interrupt();
-    ASYNC_WORKER_API_EXPORT void Init();
+    TRACE_ASYNC_WORKER_API_EXPORT static std::shared_ptr<TrashAsyncTaskWorker> GetInstance();
+    TRACE_ASYNC_WORKER_API_EXPORT void Interrupt();
+    TRACE_ASYNC_WORKER_API_EXPORT void Init();
 private:
     TrashAsyncTaskWorker();
     void StartWorker();
@@ -38,4 +38,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif  // FRAMEWORKS_SERVICE_MEDIA_ASYNC_WORKER_INCLUDE_MEDIALIBRARY_ASYNC_WORKER_H_
+#endif  // MEDIA_LIBRARY_TRACE_ASYNC_TASK_WORKER_H_

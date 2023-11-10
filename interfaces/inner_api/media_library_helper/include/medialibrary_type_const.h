@@ -282,6 +282,9 @@ const int FAVOURITE_ALBUM_TYPE_VALUES = 1;
 const std::string TRASH_ALBUM_NAME_VALUES = "TrashAlbum";
 const std::string FAVOURTIE_ALBUM_NAME_VALUES = "FavoritAlbum";
 
+static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
+static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
+static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
 
 // Unordered set contains list supported audio formats
 const std::unordered_set<std::string> SUPPORTED_AUDIO_FORMATS_SET {

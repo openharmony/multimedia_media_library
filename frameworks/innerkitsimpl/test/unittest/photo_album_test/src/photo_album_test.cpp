@@ -42,7 +42,7 @@ using OHOS::DataShare::DataSharePredicates;
 static shared_ptr<RdbStore> g_rdbStore;
 const std::string URI_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_CREATE;
 const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_UPDATE;
-
+const std::string URI_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM;
 int32_t ClearTable(const string &table)
 {
     RdbPredicates predicates(table);
@@ -174,6 +174,13 @@ inline int32_t UpdatePhotoAlbum(const DataShareValuesBucket &values, const DataS
     return MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
 }
 
+inline int32_t OrderAlbums(const DataShareValuesBucket &values, const DataSharePredicates &predicates)
+{
+    Uri uri(URI_ORDER_ALBUM);
+    MediaLibraryCommand cmd(uri, OperationType::ALBUM_ORDER);
+    return MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
+}
+
 void CheckUpdatedAlbum(int32_t albumId, const string &expectedName, const string &expectedCover)
 {
     string coverUri;
@@ -209,6 +216,35 @@ void CheckUpdatedSystemAlbum(PhotoAlbumSubType subType, const string &expectedNa
         TYPE_STRING));
     EXPECT_EQ(albumName, expectedName);
     EXPECT_EQ(cover, expectedCover);
+}
+
+int32_t GetAlbumOrder(int32_t albumId)
+{
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    auto resultSet = g_rdbStore->Query(predicates, { });
+    EXPECT_NE(resultSet, nullptr);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t count = -1;
+    CHECK_AND_RETURN_RET(resultSet->GetRowCount(count) == E_OK, E_HAS_DB_ERROR);
+    MEDIA_INFO_LOG("Query count: %{public}d", count);
+    CHECK_AND_RETURN_RET(resultSet->GoToFirstRow() == E_OK, E_HAS_DB_ERROR);
+    int32_t albumOrder = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ORDER,
+        resultSet, TYPE_INT32));
+    EXPECT_GT(albumOrder, 0);
+    return albumOrder;
+}
+
+void GetMaxAlbumOrder(int32_t &maxAlbumOrder)
+{
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    auto resultSet = g_rdbStore->Query(predicates, { "Max(album_order)" });
+    int32_t ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to GoToFirstRow! err: %{public}d", ret);
+    resultSet->GetInt(0, maxAlbumOrder);
 }
 
 void PhotoAlbumTest::SetUpTestCase()
@@ -494,5 +530,102 @@ HWTEST_F(PhotoAlbumTest, photoalbum_update_album_005, TestSize.Level0)
     EXPECT_EQ(UpdatePhotoAlbum(values, predicates), 0);
     CheckUpdatedSystemAlbum(PhotoAlbumSubType::FAVORITE, "", "");
     MEDIA_INFO_LOG("photoalbum_update_album_005 end");
+}
+
+/**
+ * @tc.name: photoalbum_order_album_006
+ * @tc.desc: order photo album.
+ *           move current album before reference album
+ * @tc.type: FUNC
+ * @tc.require: issueI6P7NG
+ */
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("photoalbum_order_album_006 enter");
+
+    // Build empty values
+    DataShareValuesBucket values;
+    values.Put(PhotoAlbumColumns::ALBUM_ID, 2);
+    values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, 5); // 2\5:album_id
+    // Try to update favorite system
+    DataSharePredicates predicates;
+    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    int32_t currentOrder = GetAlbumOrder(2);
+    int32_t referenceOrder = GetAlbumOrder(5);
+    EXPECT_LT(currentOrder, referenceOrder);
+    MEDIA_INFO_LOG("photoalbum_order_album_006 end");
+}
+
+/**
+ * @tc.name: photoalbum_order_album_007
+ * @tc.desc: repeat order same photo album, to see if order deranged.
+ *           move current album before reference album
+ * @tc.type: FUNC
+ * @tc.require: issueI6P7NG
+ */
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("photoalbum_order_album_007 enter");
+
+    // Build empty values
+    DataShareValuesBucket values;
+    values.Put(PhotoAlbumColumns::ALBUM_ID, 2); // 2\5:album_id
+    values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, 5);
+    // Try to update favorite system
+    DataSharePredicates predicates;
+    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    int32_t currentOrder = GetAlbumOrder(2);
+    int32_t referenceOrder = GetAlbumOrder(5);
+    EXPECT_LT(currentOrder, referenceOrder);
+    MEDIA_INFO_LOG("photoalbum_order_album_007 end");
+}
+
+/**
+ * @tc.name: photoalbum_order_album_007
+ * @tc.desc: order photo album, move the album to the end.
+ *           move current album before reference album
+ * @tc.type: FUNC
+ * @tc.require: issueI6P7NG
+ */
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("photoalbum_order_album_008 enter");
+
+    // Build empty values
+    DataShareValuesBucket values;
+    values.Put(PhotoAlbumColumns::ALBUM_ID, 3); // 3:album_id
+    values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, -1);
+    // Try to update favorite system
+    DataSharePredicates predicates;
+    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    int32_t currentOrder = GetAlbumOrder(3);
+    int32_t maxAlbumOrder = -1;
+    GetMaxAlbumOrder(maxAlbumOrder);
+    EXPECT_EQ(currentOrder, maxAlbumOrder);
+    MEDIA_INFO_LOG("photoalbum_order_album_008 end");
+}
+
+/**
+ * @tc.name: photoalbum_order_album_009
+ * @tc.desc: order photo album, move the album to the end.
+ *           move current album before reference album
+ * @tc.type: FUNC
+ * @tc.require: issueI6P7NG
+ */
+HWTEST_F(PhotoAlbumTest, photoalbum_order_album_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("photoalbum_order_album_009 enter");
+
+    // Build empty values
+    DataShareValuesBucket values;
+    values.Put(PhotoAlbumColumns::ALBUM_ID, 5); // 5\2:  album_id
+    values.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, 2);
+    // Try to update favorite system
+    DataSharePredicates predicates;
+    EXPECT_EQ(OrderAlbums(values, predicates), 0);
+    int32_t currentOrder = GetAlbumOrder(2);
+    int32_t referenceOrder = GetAlbumOrder(5);
+    EXPECT_GT(currentOrder, referenceOrder);
+    MEDIA_INFO_LOG("photoalbum_order_album_009 end");
 }
 } // namespace OHOS::Media

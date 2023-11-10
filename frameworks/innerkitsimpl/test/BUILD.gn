@@ -15,13 +15,16 @@ group("test") {
   testonly = true
 
   deps = [
+    "unittest/album_count_cover_test:AlbumCountCoverTest",
     "unittest/media_event_test:unittest",
     "unittest/medialib_statistic_test:unittest",
     "unittest/medialibrary_album_source_test:unittest",
     "unittest/medialibrary_audio_operations_test:unittest",
+    "unittest/medialibrary_backup_test:unittest",
     "unittest/medialibrary_common_utils_test:unittest",
     "unittest/medialibrary_datamanager_test:unittest",
     "unittest/medialibrary_helper_test:unittest",
+    "unittest/medialibrary_location_test:unittest",
     "unittest/medialibrary_manager_utils_test:unittest",
     "unittest/medialibrary_mimetype_test:unittest",
     "unittest/medialibrary_object_test:unittest",

@@ -315,7 +315,7 @@ inline void PrepareUserAlbum(const string &albumName, const string &relativePath
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
     values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
-    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
 
     if (!relativePath.empty()) {
         values.PutString(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, relativePath);
@@ -417,6 +417,46 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TransactionOperations_test_003, TestSize.
     EXPECT_EQ(endSignal, 1);
     rdbStorePtr->Stop();
     MEDIA_INFO_LOG("medialib_TransactionOperations_test_003 finish");
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_001, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    ValuesBucket valuesBucket;
+    string title = "medialib_UpdateLastVisitTime_test_001";
+    valuesBucket.PutString(MEDIA_DATA_DB_TITLE, title);
+    valuesBucket.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    cmd.SetValueBucket(valuesBucket);
+    int32_t updatedRows = E_HAS_DB_ERROR;
+    rdbStorePtr->Init();
+    int32_t ret = rdbStorePtr->UpdateLastVisitTime(cmd, updatedRows);
+    EXPECT_GE(ret, E_OK);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_002, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    int32_t updatedRows = 0;
+    int32_t ret = rdbStorePtr->UpdateLastVisitTime(cmd, updatedRows);
+    EXPECT_EQ(ret, updatedRows);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_003, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    rdbStorePtr->Stop();
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    int32_t updatedRows = E_HAS_DB_ERROR;
+    int32_t ret = rdbStorePtr->UpdateLastVisitTime(cmd, updatedRows);
+    EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 } // namespace Media
 } // namespace OHOS

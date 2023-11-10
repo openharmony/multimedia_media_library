@@ -29,6 +29,7 @@
 #include "media_log.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
@@ -482,7 +483,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // Fill basic file information into DB
     const string& displayName = fileAsset.GetDisplayName();
-    int64_t nowTime = MediaFileUtils::UTCTimeSeconds();
+    int64_t nowTime = MediaFileUtils::UTCTimeMilliSeconds();
     ValuesBucket assetInfo;
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, fileAsset.GetMediaType());
     string extension = ScannerUtils::GetFileExtension(displayName);
@@ -504,11 +505,11 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, nowTime));
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, nowTime / MSEC_TO_SEC));
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, nowTime));
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, nowTime / MSEC_TO_SEC));
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_DAY,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, nowTime));
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, nowTime / MSEC_TO_SEC));
     }
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
     if (!cmd.GetBundleName().empty()) {
@@ -1139,6 +1140,44 @@ string MediaLibraryAssetOperations::GetEditDataPath(const string &path)
     return parentPath + "/editdata";
 }
 
+static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    DeleteNotifyAsyncTaskData* notifyData = static_cast<DeleteNotifyAsyncTaskData*>(data);
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Can not get rdbstore");
+        return;
+    }
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore);
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Can not get MediaLibraryNotify");
+        return;
+    }
+    if (notifyData->trashDate > 0) {
+        watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_REMOVE);
+        watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+    } else {
+        watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_ADD);
+        watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+    }
+
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    if (trashAlbumId <= 0) {
+        return;
+    }
+    NotifyType type = (notifyData->trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT :
+        NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+    watch->Notify(notifyData->notifyUri, type, trashAlbumId);
+}
+
 int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
 {
     ValueObject value;
@@ -1146,9 +1185,6 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
     if (!cmd.GetValueBucket().GetObject(PhotoColumn::MEDIA_DATE_TRASHED, value)) {
         return E_DO_NOT_NEDD_SEND_NOTIFY;
     }
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
 
     value.GetLong(trashDate);
 
@@ -1162,21 +1198,21 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
     }
 
     string notifyUri = MediaFileUtils::GetUriByExtrConditions(prefix, to_string(rowId), extraUri);
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (trashDate > 0) {
-        watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return E_ERR;
+    }
+    DeleteNotifyAsyncTaskData* taskData = new (std::nothrow) DeleteNotifyAsyncTaskData();
+    taskData->notifyUri = notifyUri;
+    taskData->trashDate = trashDate;
+    shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(
+        UpdateAlbumsAndSendNotifyInTrash, taskData);
+    if (notifyAsyncTask != nullptr) {
+        asyncWorker->AddTask(notifyAsyncTask, true);
     } else {
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+        MEDIA_ERR_LOG("Start UpdateAlbumsAndSendNotifyInTrash failed");
     }
-
-    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-    if (trashAlbumId <= 0) {
-        return E_OK;
-    }
-    NotifyType type = (trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
-    watch->Notify(notifyUri, type, trashAlbumId);
     return E_OK;
 }
 
@@ -1203,46 +1239,6 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, i
     NotifyType type = (isFavorite) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(rowId), extraUri),
         type, favAlbumId);
-}
-
-int32_t MediaLibraryAssetOperations::SendHideNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
-{
-    ValueObject value;
-    int32_t hiddenState = 0;
-    if (!cmd.GetValueBucket().GetObject(MediaColumn::MEDIA_HIDDEN, value)) {
-        return E_DO_NOT_NEDD_SEND_NOTIFY;
-    }
-    value.GetInt(hiddenState);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
-
-    string prefix;
-    if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
-        prefix = PhotoColumn::PHOTO_URI_PREFIX;
-    } else if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_AUDIO) {
-        prefix = AudioColumn::AUDIO_URI_PREFIX;
-    } else {
-        return E_OK;
-    }
-
-    string notifyUri = MediaFileUtils::GetUriByExtrConditions(prefix, to_string(rowId), extraUri);
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (hiddenState > 0) {
-        watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
-    } else {
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
-    }
-
-    int hiddenAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::HIDDEN);
-    if (hiddenAlbumId <= 0) {
-        return E_OK;
-    }
-    NotifyType type = (hiddenState > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
-    watch->Notify(notifyUri, type, hiddenAlbumId);
-    return E_OK;
 }
 
 int32_t MediaLibraryAssetOperations::SendModifyUserCommentNotify(MediaLibraryCommand &cmd, int32_t rowId,
@@ -1381,7 +1377,7 @@ int32_t MediaLibraryAssetOperations::GrantUriPermission(const string &uri, const
         return E_HAS_FS_ERROR;
     }
 
-    int32_t ret = uriPermissionClient.GrantUriPermission(Uri(uri), flag, bundleName, 1);
+    int32_t ret = uriPermissionClient.GrantUriPermission(Uri(uri), flag, bundleName);
     if (ret != 0) {
         MEDIA_ERR_LOG("Can not grant uri permission, uri: %{private}s, bundleName: %{private}s, ret: %{public}d",
             uri.c_str(), bundleName.c_str(), ret);
@@ -1591,7 +1587,6 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_DATE_MODIFIED, { Forbidden } },
     { MediaColumn::MEDIA_DATE_ADDED, { Forbidden } },
     { MediaColumn::MEDIA_DATE_TAKEN, { Forbidden } },
-    { MediaColumn::MEDIA_TIME_VISIT, { IsInt64 } },
     { MediaColumn::MEDIA_DURATION, { Forbidden } },
     { MediaColumn::MEDIA_TIME_PENDING, { IsInt64, IsUniqueValue } },
     { MediaColumn::MEDIA_IS_FAV, { IsBool, IsUniqueValue } },

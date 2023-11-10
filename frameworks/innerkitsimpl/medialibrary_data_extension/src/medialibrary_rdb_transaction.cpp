@@ -71,6 +71,7 @@ int32_t TransactionOperations::BeginTransaction()
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
+    MEDIA_INFO_LOG("Start transaction");
 
     unique_lock<mutex> cvLock(transactionMutex_);
     int curTryTime = 0;
@@ -112,6 +113,7 @@ int32_t TransactionOperations::TransactionCommit()
     if (rdbStore_ == nullptr) {
         return E_HAS_DB_ERROR;
     }
+    MEDIA_INFO_LOG("Try commit transaction");
 
     if (!(isInTransaction_.load()) || !(rdbStore_->IsInTransaction())) {
         MEDIA_ERR_LOG("no transaction now");
@@ -134,6 +136,7 @@ int32_t TransactionOperations::TransactionRollback()
     if (rdbStore_ == nullptr) {
         return E_HAS_DB_ERROR;
     }
+    MEDIA_INFO_LOG("Try rollback transaction");
 
     if (!(isInTransaction_.load()) || !(rdbStore_->IsInTransaction())) {
         MEDIA_ERR_LOG("no transaction now");

@@ -133,6 +133,11 @@ int32_t MediaLibraryObjectUtils::DeleteInvalidRowInDb(const string &path)
     return E_SUCCESS;
 }
 
+static inline int64_t Timespec2Milliseconds(struct timespec &time)
+{
+    return time.tv_sec * MSEC_TO_SEC + time.tv_nsec / MSEC_TO_NSEC;
+}
+
 int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     const FileAsset &fileAsset, const NativeAlbumAsset &dirAsset)
 {
@@ -155,8 +160,8 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     struct stat statInfo {};
     if (stat(fileAsset.GetPath().c_str(), &statInfo) == 0) {
         assetInfo.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
-        assetInfo.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
-        assetInfo.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
+        assetInfo.PutLong(MEDIA_DATA_DB_DATE_ADDED, Timespec2Milliseconds(statInfo.st_ctim));
+        assetInfo.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, Timespec2Milliseconds(statInfo.st_mtim));
     }
     assetInfo.PutString(MEDIA_DATA_DB_FILE_PATH, fileAsset.GetPath());
     assetInfo.PutInt(MEDIA_DATA_DB_BUCKET_ID, dirAsset.GetAlbumId());
@@ -354,20 +359,18 @@ int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t par
     values.PutString(MEDIA_DATA_DB_NAME, title);
     values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MediaType::MEDIA_TYPE_ALBUM);
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
-    values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeSeconds());
 
     struct stat statInfo {};
     if (stat(path.c_str(), &statInfo) == 0) {
         values.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
-#ifdef MEDIALIBRARY_COMPATIBILITY
+        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, Timespec2Milliseconds(statInfo.st_ctim));
         if (statInfo.st_mtime == 0) {
-            values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+            values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
         } else {
-            values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
+            values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, Timespec2Milliseconds(statInfo.st_mtim));
         }
-#else
-        values.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, statInfo.st_mtime);
-#endif
+    } else {
+        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
     }
     return E_SUCCESS;
 }
@@ -749,8 +752,7 @@ static int32_t OpenDocument(const string &uri, const string &mode)
     static constexpr uint32_t BASE_USER_RANGE = 200000;
     uid_t uid = getuid() / BASE_USER_RANGE;
     string realPath;
-    int32_t ret = AppFileService::SandboxHelper::GetPhysicalPath(uri,
-        to_string(uid), realPath);
+    int32_t ret = AppFileService::SandboxHelper::GetPhysicalPath(uri, to_string(uid), realPath);
     if (ret != E_OK || !AppFileService::SandboxHelper::CheckValidPath(realPath)) {
         MEDIA_ERR_LOG("file not exist, uri=%{private}s, realPath=%{private}s",
                       uri.c_str(), realPath.c_str());

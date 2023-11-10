@@ -34,12 +34,12 @@
 #include "js_native_api.h"
 #include "js_native_api_types.h"
 #include "media_exif.h"
-#include "medialibrary_asset_operations.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
@@ -48,6 +48,7 @@
 #include "permission_utils.h"
 #include "post_proc.h"
 #include "rdb_errno.h"
+#include "sandbox_helper.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
 #include "thumbnail_utils.h"
@@ -81,7 +82,7 @@ constexpr int32_t NOT_FAV = 0;
 constexpr int32_t IS_HIDDEN = 1;
 constexpr int32_t NOT_HIDDEN = 0;
 
-constexpr int32_t USER_COMMENT_MAX_LEN = 140;
+constexpr int32_t USER_COMMENT_MAX_LEN = 420;
 
 using CompleteCallback = napi_async_complete_callback;
 
@@ -723,7 +724,7 @@ napi_value FileAssetNapi::JSGetDateAdded(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateAdded = obj->fileAssetPtr->GetDateAdded();
+        dateAdded = obj->fileAssetPtr->GetDateAdded() / MSEC_TO_SEC;
         napi_create_int64(env, dateAdded, &jsResult);
     }
 
@@ -747,7 +748,7 @@ napi_value FileAssetNapi::JSGetDateTrashed(napi_env env, napi_callback_info info
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateTrashed = obj->fileAssetPtr->GetDateTrashed();
+        dateTrashed = obj->fileAssetPtr->GetDateTrashed() / MSEC_TO_SEC;
         napi_create_int64(env, dateTrashed, &jsResult);
     }
 
@@ -771,7 +772,7 @@ napi_value FileAssetNapi::JSGetDateModified(napi_env env, napi_callback_info inf
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateModified = obj->fileAssetPtr->GetDateModified();
+        dateModified = obj->fileAssetPtr->GetDateModified() / MSEC_TO_SEC;
         napi_create_int64(env, dateModified, &jsResult);
     }
 
@@ -2171,7 +2172,6 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
     return result;
 }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
 static void TrashByUpdate(FileAssetAsyncContext *context)
 {
     DataShareValuesBucket valuesBucket;
@@ -2182,7 +2182,8 @@ static void TrashByUpdate(FileAssetAsyncContext *context)
     } else {
         uriString = URI_UPDATE_AUDIO;
     }
-    valuesBucket.Put(MEDIA_DATA_DB_DATE_TRASHED, (context->isTrash ? MediaFileUtils::UTCTimeSeconds() : NOT_TRASH));
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_TRASHED,
+        (context->isTrash ? MediaFileUtils::UTCTimeMilliSeconds() : NOT_TRASH));
     DataSharePredicates predicates;
     int32_t fileId = context->objectPtr->GetId();
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
@@ -2190,7 +2191,6 @@ static void TrashByUpdate(FileAssetAsyncContext *context)
     Uri uri(uriString);
     context->changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
 }
-#endif
 
 static void TrashByInsert(FileAssetAsyncContext *context)
 {
@@ -2429,6 +2429,11 @@ void FileAssetNapi::UpdateFileAssetInfo()
     fileAssetPtr = std::shared_ptr<FileAsset>(sFileAsset_);
 }
 
+shared_ptr<FileAsset> FileAssetNapi::GetFileAssetInstance() const
+{
+    return fileAssetPtr;
+}
+
 static int32_t CheckSystemApiKeys(napi_env env, const string &key)
 {
     static const set<string> SYSTEM_API_KEYS = {
@@ -2473,6 +2478,15 @@ static napi_value HandleGettingSpecialKey(napi_env env, const string &key, const
     return jsResult;
 }
 
+static inline int64_t GetCompatDate(const string inputKey, const int64_t date)
+{
+    if (inputKey == MEDIA_DATA_DB_DATE_ADDED || inputKey == MEDIA_DATA_DB_DATE_MODIFIED ||
+        inputKey == MEDIA_DATA_DB_DATE_TRASHED) {
+            return date / MSEC_TO_SEC;
+        }
+    return date;
+}
+
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -2508,7 +2522,7 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     } else if (m.index() == MEMBER_TYPE_INT32) {
         napi_create_int32(env, get<int32_t>(m), &jsResult);
     } else if (m.index() == MEMBER_TYPE_INT64) {
-        napi_create_int64(env, get<int64_t>(m), &jsResult);
+        napi_create_int64(env, GetCompatDate(inputKey, get<int64_t>(m)), &jsResult);
     } else {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return jsResult;
@@ -2923,17 +2937,15 @@ static void UserFileMgrSetHiddenExecute(napi_env env, void *data)
         return;
     }
 
-    string uri = UFM_UPDATE_PHOTO;
+    string uri = UFM_HIDE_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(uri);
     DataSharePredicates predicates;
+    predicates.In(MediaColumn::MEDIA_ID, vector<string>({ context->objectPtr->GetUri() }));
     DataShareValuesBucket valuesBucket;
-    int32_t changedRows;
     valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, context->isHidden ? IS_HIDDEN : NOT_HIDDEN);
-    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
-    changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Failed to modify hidden state, err: %{public}d", changedRows);
@@ -2996,7 +3008,7 @@ static void UserFileMgrSetPendingExecute(napi_env env, void *data)
     } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_AUDIO) {
         uri += UFM_AUDIO + "/" + OPRN_PENDING;
     } else {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
 
@@ -3087,6 +3099,8 @@ static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *d
             allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF);
         }
         allExifJson[PHOTO_DATA_IMAGE_USER_COMMENT] = obj->GetUserComment();
+        allExifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
+            AppFileService::SandboxHelper::Decode(allExifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
         napi_create_string_utf8(env, allExifJson.dump().c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
@@ -3604,17 +3618,15 @@ static void PhotoAccessHelperSetHiddenExecute(napi_env env, void *data)
         return;
     }
 
-    string uri = PAH_UPDATE_PHOTO;
+    string uri = PAH_HIDE_PHOTOS;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(uri);
     DataSharePredicates predicates;
+    predicates.In(MediaColumn::MEDIA_ID, vector<string>({ context->objectPtr->GetUri() }));
     DataShareValuesBucket valuesBucket;
-    int32_t changedRows = 0;
     valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, context->isHidden ? IS_HIDDEN : NOT_HIDDEN);
-    predicates.SetWhereClause(MediaColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ std::to_string(context->objectPtr->GetId()) });
 
-    changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         NAPI_ERR_LOG("Failed to modify hidden state, err: %{public}d", changedRows);
@@ -4013,7 +4025,7 @@ static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, EDIT_DATA_REQUEST);
@@ -4122,7 +4134,7 @@ static void PhotoAccessHelperRequestSourceExecute(napi_env env, void *data)
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
@@ -4219,7 +4231,7 @@ static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
     bool isValid = false;
     string fileUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
-        context->SaveError(OHOS_INVALID_PARAM_CODE);
+        context->error = OHOS_INVALID_PARAM_CODE;
         return;
     }
     MediaFileUtils::UriAppendKeyValue(fileUri, MEDIA_OPERN_KEYWORD, COMMIT_REQUEST);
@@ -4298,10 +4310,11 @@ napi_value FileAssetNapi::PhotoAccessHelperCommitEditedAsset(napi_env env, napi_
     CHECK_ARGS_THROW_INVALID_PARAM(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_THREE));
     string editData;
+    const static int32_t EDIT_DATA_MAX_LENGTH = 65536;
     CHECK_ARGS_THROW_INVALID_PARAM(env,
-        MediaLibraryNapiUtils::GetParamString(env, asyncContext->argv[0], editData));
+        MediaLibraryNapiUtils::GetParamStringWithLength(env, asyncContext->argv[0], EDIT_DATA_MAX_LENGTH, editData));
     CHECK_ARGS_THROW_INVALID_PARAM(env,
-        MediaLibraryNapiUtils::GetParamString(env, asyncContext->argv[1], asyncContext->uri));
+        MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[1], asyncContext->uri));
     asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
     napi_value ret = nullptr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "PhotoAsset is nullptr");

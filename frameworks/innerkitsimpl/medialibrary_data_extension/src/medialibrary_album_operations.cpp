@@ -297,12 +297,40 @@ inline int32_t GetStringObject(const ValuesBucket &values, const string &key, st
     return E_OK;
 }
 
-inline void PrepareUserAlbum(const string &albumName, const string &relativePath, ValuesBucket &values)
+inline int32_t GetIntVal(const ValuesBucket &values, const string &key, int32_t &value)
+{
+    value = 0;
+    ValueObject valueObject;
+    if (values.GetObject(key, valueObject)) {
+        valueObject.GetInt(value);
+    } else {
+        return -EINVAL;
+    }
+    return E_OK;
+}
+
+static int32_t ObtainMaxAlbumOrder(int32_t &maxAlbumOrder)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return -E_HAS_DB_ERROR;
+    }
+    std::string queryMaxOrderSql = "SELECT Max(album_order) FROM " + PhotoAlbumColumns::TABLE;
+    auto resultSet = uniStore->QuerySql(queryMaxOrderSql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query album!");
+        return -E_HAS_DB_ERROR;
+    }
+    return resultSet->GetInt(0, maxAlbumOrder);
+}
+
+static void PrepareUserAlbum(const string &albumName, const string &relativePath, ValuesBucket &values)
 {
     values.PutString(PhotoAlbumColumns::ALBUM_NAME, albumName);
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
     values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
-    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
 
     if (!relativePath.empty()) {
         values.PutString(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, relativePath);
@@ -390,6 +418,9 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
+    if (cmd.GetAbsRdbPredicates()->GetOrder().empty()) {
+        cmd.GetAbsRdbPredicates()->OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
+    }
     return MediaLibraryRdbStore::Query(*(cmd.GetAbsRdbPredicates()), columns);
 }
 
@@ -414,7 +445,7 @@ int32_t PrepareUpdateValues(const ValuesBucket &values, ValuesBucket &updateValu
     if (updateValues.IsEmpty()) {
         return -EINVAL;
     }
-    updateValues.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
+    updateValues.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
     return E_OK;
 }
 
@@ -460,6 +491,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore);
 
     auto watch = MediaLibraryNotify::GetInstance();
     size_t count = whereArgs.size() - THAN_AGR_SIZE;
@@ -528,7 +560,7 @@ static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates, b
 
 int32_t AgingPhotoAssets(shared_ptr<int> countPtr)
 {
-    auto time = MediaFileUtils::UTCTimeSeconds();
+    auto time = MediaFileUtils::UTCTimeMilliSeconds();
     DataSharePredicates predicates;
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));
@@ -538,6 +570,225 @@ int32_t AgingPhotoAssets(shared_ptr<int> countPtr)
     }
     if (countPtr != nullptr) {
         *countPtr = ret;
+    }
+    return E_OK;
+}
+
+static int32_t ObtainAlbumOrders(const int32_t &currentAlbumId, const int32_t referenceAlbumId,
+    int32_t &currentAlbumOrder, int32_t &referenceAlbumOrder)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_HAS_DB_ERROR;
+    }
+    const std::string queryCurrentAlbumOrder = "SELECT " + PhotoAlbumColumns::ALBUM_ORDER + " FROM " +
+        PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(currentAlbumId);
+    const std::string queryReferenceAlbumOrder = "SELECT " + PhotoAlbumColumns::ALBUM_ORDER + " FROM " +
+        PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(referenceAlbumId);
+    auto resultSet = uniStore->QuerySql(queryCurrentAlbumOrder);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    int colIndex = -1;
+    resultSet->GetColumnIndex(PhotoAlbumColumns::ALBUM_ORDER, colIndex);
+    if (resultSet->GetInt(colIndex, currentAlbumOrder) != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    resultSet = uniStore->QuerySql(queryReferenceAlbumOrder);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK
+        || resultSet->GetInt(colIndex, referenceAlbumOrder) != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
+static int32_t ExecSqls(const vector<string> &sqls, const shared_ptr<MediaLibraryUnistore> &store)
+{
+    int32_t err = NativeRdb::E_OK;
+    for (const auto &sql : sqls) {
+        err = store->ExecuteSql(sql);
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to exec: %{private}s", sql.c_str());
+            break;
+        }
+    }
+    return NativeRdb::E_OK;
+}
+
+static int32_t ObtainNotifyAlbumIds(int32_t &currentAlbumOrder, int32_t referenceAlbumOrder,
+    vector<int32_t> &changedAlbumIds)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_DB_FAIL;
+    }
+    std::string queryAlbumIds = "";
+    if (currentAlbumOrder < referenceAlbumOrder) {
+        queryAlbumIds = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " +
+            PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_ORDER + " >= " +
+            to_string(currentAlbumOrder) + " AND " + PhotoAlbumColumns::ALBUM_ORDER +
+            " < " + to_string(referenceAlbumOrder);
+    } else {
+        queryAlbumIds = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " +
+            PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_ORDER + " >= " +
+            to_string(referenceAlbumOrder) + " AND " + PhotoAlbumColumns::ALBUM_ORDER +
+            " <= " + to_string(currentAlbumOrder);
+    }
+    auto resultSet = uniStore->QuerySql(queryAlbumIds);
+    if (resultSet == nullptr) {
+        return E_DB_FAIL;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        changedAlbumIds.push_back(GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet));
+    }
+    return E_OK;
+}
+
+static void NotifyOrderChange(vector<int32_t> &changedAlbumIds)
+{
+    if (changedAlbumIds.size() <= 0) {
+        return;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    for (int32_t &albumId : changedAlbumIds) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+            PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
+    }
+}
+
+static int32_t UpdateSortedOrder(const int32_t &currentAlbumId, const int32_t referenceAlbumId,
+    int32_t &currentAlbumOrder, int32_t &referenceAlbumOrder)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_DB_FAIL;
+    }
+    std::string updateOtherAlbumOrder = "";
+    std::string updateCurrentAlbumOrder = "";
+    if (currentAlbumOrder < referenceAlbumOrder) {
+        updateOtherAlbumOrder = "UPDATE " + PhotoAlbumColumns::TABLE +
+            " SET " + PhotoAlbumColumns::ALBUM_ORDER + " = " +
+            PhotoAlbumColumns::ALBUM_ORDER + " -1 WHERE " + PhotoAlbumColumns::ALBUM_ORDER +
+            " > " + to_string(currentAlbumOrder) +
+            " and " + PhotoAlbumColumns::ALBUM_ORDER + " < " + to_string(referenceAlbumOrder);
+        updateCurrentAlbumOrder = "UPDATE " + PhotoAlbumColumns::TABLE + " SET " + PhotoAlbumColumns::ALBUM_ORDER +
+            " = " + to_string(referenceAlbumOrder) + " -1 WHERE " +
+            PhotoAlbumColumns::ALBUM_ID + " = " + to_string(currentAlbumId);
+    } else {
+        updateOtherAlbumOrder = "UPDATE " + PhotoAlbumColumns::TABLE +
+            " SET " + PhotoAlbumColumns::ALBUM_ORDER + " = " +
+            PhotoAlbumColumns::ALBUM_ORDER + " +1 WHERE " + PhotoAlbumColumns::ALBUM_ORDER + " >= " +
+            to_string(referenceAlbumOrder) + " AND " + PhotoAlbumColumns::ALBUM_ORDER +
+            " < " + to_string(currentAlbumOrder);
+        updateCurrentAlbumOrder = "UPDATE " + PhotoAlbumColumns::TABLE +
+            " SET " + PhotoAlbumColumns::ALBUM_ORDER + " = " +
+            to_string(referenceAlbumOrder) + " WHERE " +
+            PhotoAlbumColumns::ALBUM_ID + " = " + to_string(currentAlbumId);
+    }
+    vector<string> updateSortedAlbumsSqls = { updateOtherAlbumOrder, updateCurrentAlbumOrder};
+    return ExecSqls(updateSortedAlbumsSqls, uniStore);
+}
+
+static int32_t ObtainCurrentAlbumOrder(const int32_t &albumId, int32_t &albumOrder)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_HAS_DB_ERROR;
+    }
+    const std::string queryAlbumOrder = "SELECT " + PhotoAlbumColumns::ALBUM_ORDER + " FROM " +
+        PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId);
+    auto resultSet = uniStore->QuerySql(queryAlbumOrder);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    int colIndex = -1;
+    resultSet->GetColumnIndex(PhotoAlbumColumns::ALBUM_ORDER, colIndex);
+    if (resultSet->GetInt(colIndex, albumOrder) != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
+static int32_t UpdateNullReferenceOrder(const int32_t &currentAlbumId,
+    const int32_t &currentAlbumOrder, const int32_t &maxAlbumOrder)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_DB_FAIL;
+    }
+    std::string updateOtherAlbumOrder = "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
+        PhotoAlbumColumns::ALBUM_ORDER + " = " + PhotoAlbumColumns::ALBUM_ORDER + " -1 WHERE " +
+        PhotoAlbumColumns::ALBUM_ORDER + " > " + to_string(currentAlbumOrder) + " and " +
+        PhotoAlbumColumns::ALBUM_ORDER + " <= " + to_string(maxAlbumOrder);
+    std::string updateCurrentAlbumOrder = "UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::ALBUM_ORDER + " = " + to_string(maxAlbumOrder) +
+        " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = " + to_string(currentAlbumId);
+    vector<string> updateSortedAlbumsSqls = { updateOtherAlbumOrder, updateCurrentAlbumOrder};
+    return ExecSqls(updateSortedAlbumsSqls, uniStore);
+}
+
+static int32_t HandleNullReferenceCondition(const int32_t &currentAlbumId)
+{
+    int32_t maxAlbumOrder = 0;
+    int err = ObtainMaxAlbumOrder(maxAlbumOrder);
+    if (err != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t currentAlbumOrder = -1;
+    err = ObtainCurrentAlbumOrder(currentAlbumId, currentAlbumOrder);
+    if (err != E_OK) {
+        return err;
+    }
+    vector<int32_t> changedAlbumIds;
+    ObtainNotifyAlbumIds(currentAlbumOrder, maxAlbumOrder + 1, changedAlbumIds); // 1: move order curosr to the end
+    err = UpdateNullReferenceOrder(currentAlbumId, currentAlbumOrder, maxAlbumOrder);
+    if (err == E_OK) {
+        NotifyOrderChange(changedAlbumIds);
+    }
+    return err;
+}
+
+/**
+ * Place the current album before the reference album
+ * @param values contains current and reference album_id
+ */
+int32_t OrderSingleAlbum(const ValuesBucket &values)
+{
+    int32_t currentAlbumId;
+    int32_t referenceAlbumId;
+    int err = GetIntVal(values, PhotoAlbumColumns::ALBUM_ID, currentAlbumId);
+    if (err < 0 || currentAlbumId <= 0) {
+        MEDIA_ERR_LOG("invalid album id");
+        return E_INVALID_VALUES;
+    }
+    err = GetIntVal(values, PhotoAlbumColumns::REFERENCE_ALBUM_ID, referenceAlbumId);
+    if (err < 0 || referenceAlbumId == 0 || referenceAlbumId < NULL_REFERENCE_ALBUM_ID) {
+        MEDIA_ERR_LOG("invalid reference album id");
+        return E_INVALID_VALUES;
+    }
+    if (currentAlbumId == referenceAlbumId) { // same album, no need to order
+        return E_OK;
+    }
+    if (referenceAlbumId == NULL_REFERENCE_ALBUM_ID) {
+        return HandleNullReferenceCondition(currentAlbumId);
+    }
+    int32_t currentAlbumOrder = -1; // -1: default invalid value
+    int32_t referenceAlbumOrder = -1;
+    err = ObtainAlbumOrders(currentAlbumId, referenceAlbumId, currentAlbumOrder, referenceAlbumOrder);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("obtains album order error");
+        return err;
+    }
+    vector<int32_t> changedAlbumIds;
+    ObtainNotifyAlbumIds(currentAlbumOrder, referenceAlbumOrder, changedAlbumIds);
+    err = UpdateSortedOrder(currentAlbumId, referenceAlbumId, currentAlbumOrder, referenceAlbumOrder);
+    if (err == E_OK) {
+        NotifyOrderChange(changedAlbumIds);
     }
     return E_OK;
 }
@@ -556,6 +807,8 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
             return CompatDeletePhotoAssets(predicates, false);
         case OperationType::AGING:
             return AgingPhotoAssets(countPtr);
+        case OperationType::ALBUM_ORDER:
+            return OrderSingleAlbum(values);
         default:
             MEDIA_ERR_LOG("Unknown operation type: %{public}d", opType);
             return E_ERR;

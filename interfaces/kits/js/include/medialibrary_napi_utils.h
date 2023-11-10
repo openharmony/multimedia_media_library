@@ -43,7 +43,7 @@
 #define CHECK_COND_WITH_MESSAGE(env, cond, msg)                 \
     do {                                                            \
         if (!(cond)) {                                    \
-            NapiError::ThrowError(env, -OHOS_INVALID_PARAM_CODE, __FUNCTION__, __LINE__, msg); \
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, __FUNCTION__, __LINE__, msg); \
             return nullptr;                                          \
         }                                                           \
     } while (0)
@@ -152,7 +152,7 @@
 
 #define CHECK_ARGS(env, cond, err) CHECK_ARGS_BASE(env, cond, err, nullptr)
 
-#define CHECK_ARGS_THROW_INVALID_PARAM(env, cond) CHECK_ARGS(env, cond, -OHOS_INVALID_PARAM_CODE)
+#define CHECK_ARGS_THROW_INVALID_PARAM(env, cond) CHECK_ARGS(env, cond, OHOS_INVALID_PARAM_CODE)
 
 #define CHECK_ARGS_RET_VOID(env, cond, err) CHECK_ARGS_BASE(env, cond, err, NAPI_RETVAL_NOTHING)
 
@@ -171,6 +171,7 @@ const int32_t PARAM0 = 0;
 const int32_t PARAM1 = 1;
 const int32_t PARAM2 = 2;
 const int32_t PARAM3 = 3;
+const int32_t PARAM4 = 4;
 
 /* Constants for array size */
 const int32_t ARGS_ZERO = 0;
@@ -178,10 +179,11 @@ const int32_t ARGS_ONE = 1;
 const int32_t ARGS_TWO = 2;
 const int32_t ARGS_THREE = 3;
 const int32_t ARGS_FOUR = 4;
+const int32_t ARGS_FIVE = 5;
 const int32_t ARG_BUF_SIZE = 100;
 constexpr uint32_t NAPI_INIT_REF_COUNT = 1;
 
-constexpr size_t NAPI_ARGC_MAX = 4;
+constexpr size_t NAPI_ARGC_MAX = 5;
 
 // Error codes
 const int32_t ERR_DEFAULT = 0;
@@ -215,8 +217,17 @@ enum FetchOptionType {
     ALBUM_FETCH_OPT = 1
 };
 
+enum HiddenPhotosDisplayMode {
+    ASSETS_MODE = 0,
+    ALBUMS_MODE = 1
+};
+
 const std::vector<std::string> privateAlbumTypeNameEnum {
     "TYPE_FAVORITE", "TYPE_TRASH", "TYPE_HIDE", "TYPE_SMART", "TYPE_SEARCH"
+};
+
+const std::vector<std::string> HIDDEN_PHOTOS_DISPLAY_MODE_ENUM {
+    "ASSETS_MODE", "ALBUMS_MODE"
 };
 
 const std::vector<std::string> mediaTypesEnum {
@@ -372,7 +383,8 @@ const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES 
 const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTIES = {
     std::make_pair("DEFAULT_PHOTO_URI",         PhotoColumn::DEFAULT_PHOTO_URI),
     std::make_pair("DEFAULT_ALBUM_URI",         PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI),
-    std::make_pair("DEFAULT_AUDIO_URI",         AudioColumn::DEFAULT_AUDIO_URI)
+    std::make_pair("DEFAULT_AUDIO_URI",         AudioColumn::DEFAULT_AUDIO_URI),
+    std::make_pair("DEFAULT_HIDDEN_ALBUM_URI",  PhotoAlbumColumns::DEFAULT_HIDDEN_ALBUM_URI),
 };
 
 struct JSAsyncContextOutput {
@@ -400,7 +412,8 @@ public:
     static napi_status GetParamBool(napi_env env, napi_value arg, bool &result);
     static napi_status GetUInt32Array(napi_env env, napi_value arg, std::vector<uint32_t> &param);
     static napi_status GetParamFunction(napi_env env, napi_value arg, napi_ref &callbackRef);
-    static napi_status GetParamString(napi_env env, napi_value arg, std::string &str);
+    static napi_status GetParamStringWithLength(napi_env env, napi_value arg, int32_t maxLen,
+        std::string &str);
     static napi_status GetParamStringPathMax(napi_env env, napi_value arg, std::string &str);
     static napi_status GetProperty(napi_env env, const napi_value arg, const std::string &propName,
         std::string &propValue);
@@ -423,6 +436,10 @@ public:
 
     template <class AsyncContext>
     static napi_status AsyncContextSetObjectInfo(napi_env env, napi_callback_info info, AsyncContext &asyncContext,
+        const size_t minArgs, const size_t maxArgs);
+
+    template <class AsyncContext>
+    static napi_status AsyncContextGetArgs(napi_env env, napi_callback_info info, AsyncContext &asyncContext,
         const size_t minArgs, const size_t maxArgs);
 
     template <class AsyncContext>
@@ -500,8 +517,9 @@ public:
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
 
     static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType,
-        DataShare::DataSharePredicates &predicates);
-    static int32_t GetUserAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
+        DataShare::DataSharePredicates &predicates, const bool hiddenOnly);
+    static int32_t GetUserAlbumPredicates(const int32_t albumId,
+        DataShare::DataSharePredicates &predicates, const bool hiddenOnly);
     static bool IsSystemApp();
     static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
         const std::string &propertyName);
