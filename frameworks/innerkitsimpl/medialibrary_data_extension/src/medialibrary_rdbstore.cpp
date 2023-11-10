@@ -39,9 +39,10 @@
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
+#include "post_event_utils.h"
 #include "rdb_sql_utils.h"
 #include "result_set_utils.h"
-#include "post_event_utils.h"
+#include "source_album.h"
 #include "vision_column.h"
 
 using namespace std;
@@ -1220,6 +1221,22 @@ static void AddFaceTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddSourceAlbumTrigger(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DELETE_PHOTO_UPDATE_SOURCE_ALBUM
+    };
+    MEDIA_INFO_LOG("start add source album trigger");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void MediaLibraryRdbStore::ResetAnalysisTables()
 {
     if (rdbStore_ == nullptr) {
@@ -1683,6 +1700,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_FACE_TABLE) {
         AddFaceTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SOURCE_ALBUM_TRIGGER) {
+        AddSourceAlbumTrigger(store);
     }
     return NativeRdb::E_OK;
 }
