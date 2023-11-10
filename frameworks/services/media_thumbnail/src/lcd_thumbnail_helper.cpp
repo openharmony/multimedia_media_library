@@ -67,7 +67,9 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &
     }
     auto fd = open(fileName.c_str(), O_RDONLY);
     if (fd >= 0) {
-        ThumbnailUtils::UpdateVisitTime(opts, thumbnailData, err);
+        if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+            ThumbnailUtils::UpdateVisitTime(opts, thumbnailData, err);
+        }
         return fd;
     }
     return -errno;

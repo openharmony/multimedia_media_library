@@ -247,12 +247,14 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
     }
 
     data.lcd.clear();
-    if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
-        MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
-        return false;
+    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+        if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
+            MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+                {KEY_OPT_TYPE, OptType::THUMB}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+            return false;
+        }
     }
 
     return true;

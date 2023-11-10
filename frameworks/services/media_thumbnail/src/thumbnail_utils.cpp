@@ -851,23 +851,25 @@ bool ThumbnailUtils::QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &ti
 
 bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err)
 {
-    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
-        ValuesBucket values;
-        int changedRows;
-        
-        MediaLibraryTracer tracer;
-        tracer.Start("UpdateLcdInfo opts.store->Update");
-        int64_t timeNow = UTCTimeMilliSeconds();
-        values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
-        err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-            vector<string> { opts.row });
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-                {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
-            return false;
-        }
+    
+    ValuesBucket values;
+    int changedRows;
+
+    int64_t timeNow = UTCTimeMilliSeconds();
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
+    
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateLcdInfo opts.store->Update");
+    int64_t timeNow = UTCTimeMilliSeconds();
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
+    err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { opts.row });
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
     }
     return true;
 }
@@ -878,20 +880,18 @@ bool ThumbnailUtils::UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int
         return DoUpdateRemoteThumbnail(opts, data, err);
     }
 
-    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
-        ValuesBucket values;
-        int changedRows;
-        int64_t timeNow = UTCTimeMilliSeconds();
-        values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
-        err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-            vector<string> { opts.row });
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-                {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
-            return false;
-        }
+    ValuesBucket values;
+    int changedRows;
+    int64_t timeNow = UTCTimeMilliSeconds();
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
+    err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { opts.row });
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
     }
     return true;
 }
