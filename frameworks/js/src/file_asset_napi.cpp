@@ -1701,7 +1701,7 @@ napi_value GetPhotoRequestArgs(napi_env env, size_t argc, const napi_value argv[
     unique_ptr<FileAssetAsyncContext> &asyncContext, RequestPhotoType &type)
 {
     if (argc != ARGS_TWO) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid parameter number " + to_string(argc));
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter number " + to_string(argc));
         return nullptr;
     }
     asyncContext->size.width = DEFAULT_THUMB_SIZE;
@@ -1721,13 +1721,13 @@ napi_value GetPhotoRequestArgs(napi_env env, size_t argc, const napi_value argv[
             if (GetInt32InfoFromNapiObject(env, argv[i], REQUEST_PHOTO_TYPE, requestType)) {
                 type = static_cast<RequestPhotoType>(requestType);
             } else {
-                type = RequestPhotoType::REQUEST_ALL;
+                type = RequestPhotoType::REQUEST_ALL_THUMBNAIL;
             }
         } else if (i == PARAM1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
             break;
         } else {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Invalid parameter type");
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter type");
             return nullptr;
         }
     }
@@ -3607,6 +3607,16 @@ napi_value FileAssetNapi::PhotoAccessHelperRequestPhoto(napi_env env, napi_callb
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperRequestPhoto");
 
+    // request Photo function in API11 is system api, maybe public soon
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    if (!PermissionUtils::CheckNapiCallerPermission("ohos.permission.READ_IMAGEVIDEO")) {
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
@@ -3615,7 +3625,7 @@ napi_value FileAssetNapi::PhotoAccessHelperRequestPhoto(napi_env env, napi_callb
     CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) ==
         napi_ok, result, "Failed to get object info");
     // use current parse args function temporary
-    RequestPhotoType type = RequestPhotoType::REQUEST_ALL;
+    RequestPhotoType type = RequestPhotoType::REQUEST_ALL_THUMBNAIL;
     result = GetPhotoRequestArgs(env, asyncContext->argc, asyncContext->argv, asyncContext, type);
     ASSERT_NULLPTR_CHECK(env, result);
     auto obj = asyncContext->objectInfo;
@@ -3648,13 +3658,25 @@ napi_value FileAssetNapi::PhotoAccessHelperCancelPhotoRequest(napi_env env, napi
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperCancelPhotoRequest");
 
+    // request Photo function in API11 is system api, maybe public soon
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+    if (!PermissionUtils::CheckNapiCallerPermission("ohos.permission.READ_IMAGEVIDEO")) {
+        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");
 
     string requestKey;
-    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, requestKey),
-        JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE,
+        ARGS_ONE), OHOS_INVALID_PARAM_CODE);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, asyncContext->argv[ARGS_ZERO], requestKey),
+        OHOS_INVALID_PARAM_CODE);
     napi_value jsResult = nullptr;
     napi_get_undefined(env, &jsResult);
 
