@@ -825,11 +825,12 @@ static int32_t GetAllImagesPredicates(DataSharePredicates &predicates)
     return E_SUCCESS;
 }
 
-static int32_t GetAllSourcePredicates(DataSharePredicates &predicates)
+static int32_t GetAllSourcePredicates(DataSharePredicates &predicates, const bool hiddenOnly)
 {
     predicates.BeginWrap();
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.EndWrap();
     return E_SUCCESS;
@@ -861,7 +862,7 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
             return GetAllImagesPredicates(predicates);
         }
         case PhotoAlbumSubType::SOURCE: {
-            return GetAllSourcePredicates(predicates);
+            return GetAllSourcePredicates(predicates, hiddenOnly);
         }
         default: {
             NAPI_ERR_LOG("Unsupported photo album subtype: %{public}d", subType);
