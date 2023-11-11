@@ -46,7 +46,7 @@ public:
     int Query(const Uri &uri, std::vector<std::string> &columns, std::vector<std::string> &results) override;
     int GetRoots(std::vector<FileAccessFwk::RootInfo> &rootList) override;
     int Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri) override;
-    int Copy(const Uri &sourceUri, const Uri &destUri, std::vector<FileAccessFwk::CopyResult> &copyResult,
+    int Copy(const Uri &sourceUri, const Uri &destUri, std::vector<FileAccessFwk::Result> &copyResult,
         bool force = false) override;
     int Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri) override;
     int Access(const Uri &uri, bool &isExist) override;

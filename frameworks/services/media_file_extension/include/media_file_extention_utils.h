@@ -71,7 +71,7 @@ public:
     static int32_t Mkdir(const Uri &parentUri, const std::string &displayName, Uri &newFileUri);
     static int32_t Delete(const Uri &sourceFileUri);
     static int32_t Move(const Uri &sourceFileUri, const Uri &targetParentUri, Uri &newFileUri);
-    static int32_t Copy(const Uri &sourceUri, const Uri &destUri, std::vector<FileAccessFwk::CopyResult> &copyResult,
+    static int32_t Copy(const Uri &sourceUri, const Uri &destUri, std::vector<FileAccessFwk::Result> &copyResult,
         bool force = false);
     static int32_t Rename(const Uri &sourceFileUri, const std::string &displayName, Uri &newFileUri);
     static int32_t ListFile(const FileAccessFwk::FileInfo &parentInfo, const int64_t offset, const int64_t maxCount,
