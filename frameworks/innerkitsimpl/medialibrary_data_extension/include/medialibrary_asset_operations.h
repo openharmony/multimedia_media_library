@@ -93,6 +93,9 @@ protected:
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(NativeRdb::AbsPredicates &predicates,
         OperationObject oprnObject, const std::vector<std::string> &columns = {}, const std::string &networkId = "");
+    static int32_t GetFileAssetVectorFromDb(NativeRdb::AbsPredicates &predicates, OperationObject oprnObject,
+        std::vector<std::shared_ptr<FileAsset>> &fileAssetVector, const std::vector<std::string> &columns = {},
+        const std::string &networkId = "");
     static std::shared_ptr<FileAsset> GetFileAssetByUri(const std::string &fileUri, bool isPhoto,
         const std::vector<std::string> &columns, const std::string &pendingStatus = "");
 
@@ -140,6 +143,7 @@ protected:
     static std::string GetEditDataDirPath(const std::string &path);
     static std::string GetEditDataSourcePath(const std::string &path);
     static std::string GetEditDataPath(const std::string &path);
+    static std::string GetAssetCacheDir();
 
 private:
     static int32_t CreateAssetRealName(int32_t fileId, int32_t mediaType, const std::string &extension,

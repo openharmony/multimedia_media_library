@@ -165,6 +165,20 @@
         }                                                           \
     } while (0)
 
+#define RETURN_NAPI_TRUE(env)                 \
+    do {                                      \
+        napi_value result = nullptr;          \
+        napi_get_boolean(env, true, &result); \
+        return result;                        \
+    } while (0)
+
+#define RETURN_NAPI_UNDEFINED(env)        \
+    do {                                  \
+        napi_value result = nullptr;      \
+        napi_get_undefined(env, &result); \
+        return result;                    \
+    } while (0)
+
 namespace OHOS {
 namespace Media {
 /* Constants for array index */

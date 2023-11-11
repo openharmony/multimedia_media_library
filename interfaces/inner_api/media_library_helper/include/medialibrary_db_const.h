@@ -654,6 +654,11 @@ const std::string EDIT_DATA_REQUEST = "edit_data_request";  // MEDIA_OPERN_KEYWO
 const std::string SOURCE_REQUEST = "source_request";        // MEDIA_OPERN_KEYWORD=SOURCE_REQUEST
 const std::string COMMIT_REQUEST = "commit_request";        // MEDIA_OPERN_KEYWORD=COMMIT_REQUEST
 const std::string EDIT_DATA = "edit_data";
+const std::string COMPATIBLE_FORMAT = "compatible_format";
+const std::string FORMAT_VERSION = "format_version";
+
+// write cache
+const std::string CACHE_FILE_NAME = "cache_file_name";
 } // namespace Media
 } // namespace OHOS
 
