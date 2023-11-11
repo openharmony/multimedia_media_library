@@ -339,6 +339,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
     bool hiddenOnly = false;
+    int32_t hiddenAlbumFetchMode = -1;
 };
 
 struct MediaLibraryInitContext : public NapiError  {
