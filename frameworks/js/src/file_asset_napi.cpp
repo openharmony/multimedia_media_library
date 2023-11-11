@@ -297,6 +297,26 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &i
     return result;
 }
 
+napi_value FileAssetNapi::CreatePhotoAsset(napi_env env, shared_ptr<FileAsset> &fileAsset)
+{
+    if (fileAsset == nullptr || fileAsset->GetResultNapiType() != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        NAPI_ERR_LOG("Unsupported fileAsset");
+        return nullptr;
+    }
+
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_reference_value(env, photoAccessHelperConstructor_, &constructor));
+    NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
+    CHECK_COND(env, result != nullptr, JS_INNER_FAIL);
+
+    FileAssetNapi* fileAssetNapi = nullptr;
+    CHECK_ARGS(env, napi_unwrap(env, result, reinterpret_cast<void**>(&fileAssetNapi)), JS_INNER_FAIL);
+    CHECK_COND(env, fileAssetNapi != nullptr, JS_INNER_FAIL);
+    fileAssetNapi->fileAssetPtr = fileAsset;
+    return result;
+}
+
 std::string FileAssetNapi::GetFileDisplayName() const
 {
     return fileAssetPtr->GetDisplayName();

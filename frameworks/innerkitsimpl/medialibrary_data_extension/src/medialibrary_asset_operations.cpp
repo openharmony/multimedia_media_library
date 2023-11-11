@@ -31,6 +31,7 @@
 #include "medialibrary_album_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_data_manager.h"
@@ -87,6 +88,9 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
             break;
         case OperationType::REVERT_EDIT:
             errCode = MediaLibraryPhotoOperations::RevertToOrigin(cmd);
+            break;
+        case OperationType::SUBMIT_CACHE:
+            errCode = MediaLibraryPhotoOperations::SubmitCache(cmd);
             break;
         default:
             MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
@@ -312,16 +316,19 @@ static OperationObject GetOprnObjectByMediaType(int32_t type)
     }
 }
 
-shared_ptr<FileAsset> MediaLibraryAssetOperations::GetAssetFromResultSet(
+static shared_ptr<FileAsset> FetchFileAssetFromResultSet(
     const shared_ptr<NativeRdb::ResultSet> &resultSet, const vector<string> &columns)
 {
-    auto fileAsset = make_shared<FileAsset>();
-    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "resultSet is nullptr");
     int32_t count = 0;
-    CHECK_AND_RETURN_RET_LOG(resultSet->GetRowCount(count) == NativeRdb::E_OK, nullptr,
-        "can not get resultset row count");
-    CHECK_AND_RETURN_RET_LOG(count == 1, nullptr, "ResultSet count is %{public}d, not 1", count);
-    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, nullptr, "can not go to first row");
+    int32_t currentRowIndex = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "resultSet is nullptr");
+    CHECK_AND_RETURN_RET_LOG(
+        resultSet->GetRowCount(count) == NativeRdb::E_OK, nullptr, "Cannot get row count of resultset");
+    CHECK_AND_RETURN_RET_LOG(
+        resultSet->GetRowIndex(currentRowIndex) == NativeRdb::E_OK, nullptr, "Cannot get row index of resultset");
+    CHECK_AND_RETURN_RET_LOG(currentRowIndex >= 0 && currentRowIndex < count, nullptr, "Invalid row index");
+
+    auto fileAsset = make_shared<FileAsset>();
     for (const auto &column : columns) {
         int32_t columnIndex = 0;
         CHECK_AND_RETURN_RET_LOG(resultSet->GetColumnIndex(column, columnIndex) == NativeRdb::E_OK,
@@ -359,6 +366,38 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetAssetFromResultSet(
     return fileAsset;
 }
 
+shared_ptr<FileAsset> MediaLibraryAssetOperations::GetAssetFromResultSet(
+    const shared_ptr<NativeRdb::ResultSet> &resultSet, const vector<string> &columns)
+{
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, nullptr, "resultSet is nullptr");
+    int32_t count = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet->GetRowCount(count) == NativeRdb::E_OK, nullptr,
+        "Cannot get row count of resultset");
+    CHECK_AND_RETURN_RET_LOG(count == 1, nullptr, "ResultSet count is %{public}d, not 1", count);
+    CHECK_AND_RETURN_RET_LOG(resultSet->GoToFirstRow() == NativeRdb::E_OK, nullptr, "Cannot go to first row");
+    return FetchFileAssetFromResultSet(resultSet, columns);
+}
+
+static int32_t GetAssetVectorFromResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
+    const vector<string> &columns, vector<shared_ptr<FileAsset>> &fileAssetVector)
+{
+    CHECK_AND_RETURN_RET_LOG(resultSet != nullptr, E_HAS_DB_ERROR, "resultSet is nullptr");
+    int32_t count = 0;
+    CHECK_AND_RETURN_RET_LOG(resultSet->GetRowCount(count) == NativeRdb::E_OK, E_HAS_DB_ERROR,
+        "Cannot get row count of resultset");
+    CHECK_AND_RETURN_RET_LOG(count > 0, E_HAS_DB_ERROR, "ResultSet count is %{public}d", count);
+
+    fileAssetVector.reserve(count);
+    for (int32_t i = 0; i < count; i++) {
+        CHECK_AND_RETURN_RET_LOG(
+            resultSet->GoToNextRow() == NativeRdb::E_OK, E_HAS_DB_ERROR, "Failed to go to next row");
+        auto fileAsset = FetchFileAssetFromResultSet(resultSet, columns);
+        CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_HAS_DB_ERROR, "Failed to fetch fileAsset from resultSet");
+        fileAssetVector.push_back(fileAsset);
+    }
+    return E_OK;
+}
+
 shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const string &column,
     const string &value, OperationObject oprnObject, const vector<string> &columns, const string &networkId)
 {
@@ -384,7 +423,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(const stri
     return GetAssetFromResultSet(resultSet, columns);
 }
 
-shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredicates &predicates,
+static shared_ptr<NativeRdb::ResultSet> QueryByPredicates(AbsPredicates &predicates,
     OperationObject oprnObject, const vector<string> &columns, const string &networkId)
 {
     if (!CheckOprnObject(oprnObject)) {
@@ -400,12 +439,27 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredica
     cmd.GetAbsRdbPredicates()->SetWhereClause(predicates.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(predicates.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(predicates.GetOrder());
+    return rdbStore->Query(cmd, columns);
+}
 
-    auto resultSet = rdbStore->Query(cmd, columns);
+shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetFromDb(AbsPredicates &predicates,
+    OperationObject oprnObject, const vector<string> &columns, const string &networkId)
+{
+    auto resultSet = QueryByPredicates(predicates, oprnObject, columns, networkId);
     if (resultSet == nullptr) {
         return nullptr;
     }
     return GetAssetFromResultSet(resultSet, columns);
+}
+
+int32_t MediaLibraryAssetOperations::GetFileAssetVectorFromDb(AbsPredicates &predicates, OperationObject oprnObject,
+    vector<shared_ptr<FileAsset>> &fileAssetVector, const vector<string> &columns, const string &networkId)
+{
+    auto resultSet = QueryByPredicates(predicates, oprnObject, columns, networkId);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    return GetAssetVectorFromResultSet(resultSet, columns, fileAssetVector);
 }
 
 // temp function, delete after MediaFileUri::Getpath is finish
@@ -1165,6 +1219,15 @@ string MediaLibraryAssetOperations::GetEditDataPath(const string &path)
         return "";
     }
     return parentPath + "/editdata";
+}
+
+string MediaLibraryAssetOperations::GetAssetCacheDir()
+{
+    string cacheOwner = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    if (cacheOwner.empty()) {
+        cacheOwner = "common"; // Create cache file in common dir if there is no bundleName.
+    }
+    return MEDIA_CACHE_DIR + cacheOwner;
 }
 
 static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)

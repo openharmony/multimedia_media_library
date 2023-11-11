@@ -34,6 +34,7 @@ public:
     EXPORT static napi_value Init(napi_env env, napi_value exports);
     EXPORT static napi_value PhotoAccessInit(napi_env env, napi_value exports);
     EXPORT static napi_value CreatePhotoAlbumNapi(napi_env env, std::unique_ptr<PhotoAlbum> &albumData);
+    EXPORT static napi_value CreatePhotoAlbumNapi(napi_env env, std::shared_ptr<PhotoAlbum> &albumData);
 
     int32_t GetAlbumId() const;
     int32_t GetCount() const;
