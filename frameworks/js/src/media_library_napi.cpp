@@ -4907,7 +4907,7 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     string queryUri;
-    if (context->hiddenOnly) {
+    if (context->hiddenOnly || context->hiddenAlbumFetchMode == ASSETS_MODE) {
         queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
             UFM_QUERY_HIDDEN_ALBUM : PAH_QUERY_HIDDEN_ALBUM;
     } else {
@@ -5915,6 +5915,7 @@ napi_value ParseArgsGetHiddenAlbums(napi_env env, napi_callback_info info,
     }
     CHECK_NULLPTR_RET(ParseHiddenPhotosDisplayMode(env, context, fetchMode));
     CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
+    context->hiddenAlbumFetchMode = fetchMode;
     if (fetchMode == HiddenPhotosDisplayMode::ASSETS_MODE) {
         return result;
     }
