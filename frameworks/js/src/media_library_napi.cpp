@@ -108,6 +108,7 @@ thread_local napi_ref MediaLibraryNapi::sAlbumType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAlbumSubType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sNotifyType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDefaultChangeUriRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sAnalysisType_ = nullptr;
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
 MediaLibraryNapi::MediaLibraryNapi()
@@ -256,7 +257,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("PhotoSubtype", CreatePhotoSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
-        DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env))
+        DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("AnalysisType", CreateAnalysisTypeEnum(env))
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -4910,6 +4912,8 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     if (context->hiddenOnly) {
         queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
             UFM_QUERY_HIDDEN_ALBUM : PAH_QUERY_HIDDEN_ALBUM;
+    } else if (context->isAnalysisAlbum) {
+        queryUri = PAH_QUERY_ANA_PHOTO_ALBUM;
     } else {
         queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
             UFM_QUERY_PHOTO_ALBUM : PAH_QUERY_PHOTO_ALBUM;
@@ -5102,6 +5106,7 @@ napi_value MediaLibraryNapi::CreateAlbumTypeEnum(napi_env env)
 
     CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "USER", PhotoAlbumType::USER), JS_INNER_FAIL);
     CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "SYSTEM", PhotoAlbumType::SYSTEM), JS_INNER_FAIL);
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "SMART", PhotoAlbumType::SMART), JS_INNER_FAIL);
 
     CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAlbumType_), JS_INNER_FAIL);
     return result;
@@ -5118,11 +5123,32 @@ napi_value MediaLibraryNapi::CreateAlbumSubTypeEnum(napi_env env)
         CHECK_ARGS(env, AddIntegerNamedProperty(env, result, systemAlbumSubType[i],
             PhotoAlbumSubType::SYSTEM_START + i), JS_INNER_FAIL);
     }
+    for (size_t i = 0; i < analysisAlbumSubType.size(); i++) {
+        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, analysisAlbumSubType[i],
+            PhotoAlbumSubType::ANALYSIS_START + i), JS_INNER_FAIL);
+    }
     CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "ANY", PhotoAlbumSubType::ANY), JS_INNER_FAIL);
 
     CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAlbumSubType_), JS_INNER_FAIL);
     return result;
 }
+
+napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
+{
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
+
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "ANALYSIS_AETSTHETICS_SCORE",
+        AnalysisType::ANALYSIS_AETSTHETICS_SCORE), JS_INNER_FAIL);
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "ANALYSIS_LABEL",
+        AnalysisType::ANALYSIS_LABEL), JS_INNER_FAIL);
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "ANALYSIS_OCR",
+        AnalysisType::ANALYSIS_OCR), JS_INNER_FAIL);
+
+    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAnalysisType_), JS_INNER_FAIL);
+    return result;
+}
+
 napi_value MediaLibraryNapi::CreateDefaultChangeUriEnum(napi_env env)
 {
     return CreateStringEnumProperty(env, DEFAULT_URI_ENUM_PROPERTIES, sDefaultChangeUriRef_);
@@ -5453,6 +5479,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
+    context->isAnalysisAlbum = (albumType == PhotoAlbumType::SMART) ? 1 : 0;
     context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(albumType));
 
     /* Parse the second argument to photo album subType */

@@ -249,6 +249,7 @@ private:
     static napi_value CreateAlbumSubTypeEnum(napi_env env);
     static napi_value CreateNotifyTypeEnum(napi_env env);
     static napi_value CreateDefaultChangeUriEnum(napi_env env);
+    static napi_value CreateAnalysisTypeEnum(napi_env env);
 
     static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -289,6 +290,7 @@ private:
     static thread_local napi_ref sPhotoSubType_;
     static thread_local napi_ref sNotifyType_;
     static thread_local napi_ref sDefaultChangeUriRef_;
+    static thread_local napi_ref sAnalysisType_;
 
     static std::mutex sOnOffMutex_;
 };
@@ -330,6 +332,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t imagePreviewIndex;
     int32_t parentSmartAlbumId = 0;
     int32_t smartAlbumId = -1;
+    int32_t isAnalysisAlbum = 0;
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;

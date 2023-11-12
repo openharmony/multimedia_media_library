@@ -290,6 +290,8 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { PAH_PHOTO, OperationObject::PAH_PHOTO },
         { PAH_ALBUM, OperationObject::PAH_ALBUM },
         { PAH_MAP, OperationObject::PAH_MAP },
+        { PAH_ANA_ALBUM, OperationObject::ANALYSIS_PHOTO_ALBUM },
+        { PAH_ANA_MAP, OperationObject::ANALYSIS_PHOTO_MAP },
         { TOOL_PHOTO, OperationObject::TOOL_PHOTO },
         { TOOL_AUDIO, OperationObject::TOOL_AUDIO },
 
@@ -313,6 +315,8 @@ void MediaLibraryCommand::ParseOprnObjectFromUri()
         { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
         { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
         { VISION_SHIELD_TABLE, OperationObject::VISION_SHIELD },
+        { PAH_ANA_OCR, OperationObject::VISION_OCR },
+        { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
 
         // use in Location Analyse
         { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
@@ -394,6 +398,8 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::VISION_SHIELD, { { OperationType::UNKNOWN_TYPE, VISION_SHIELD_TABLE } } },
     { OperationObject::GEO_DICTIONARY, { { OperationType::UNKNOWN_TYPE, GEO_DICTIONARY_TABLE } } },
     { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
+    { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
+    { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
 };
 
 void MediaLibraryCommand::ParseTableName()

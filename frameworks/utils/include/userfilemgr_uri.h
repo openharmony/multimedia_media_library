@@ -173,6 +173,10 @@ const std::string UFM_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + UFM_ALBUM + 
 const std::string PAH_PHOTO = "phaccess_photo_operation";
 const std::string PAH_ALBUM = "phaccess_album_operation";
 const std::string PAH_MAP = "phaccess_map_operation";
+const std::string PAH_ANA_ALBUM = "phaccess_ana_album_operation";
+const std::string PAH_ANA_MAP = "phaccess_ana_map_operation";
+const std::string PAH_ANA_OCR = "phaccess_ana_ocr_operation";
+const std::string PAH_ANA_ATTS = "phaccess_ana_atts_operation";
 
 // UserFileManager photo operation constants
 const std::string PAH_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE;
@@ -200,6 +204,15 @@ const std::string PAH_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + 
 const std::string PAH_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_ORDER_ALBUM;
 const std::string PAH_COMMIT_EDIT_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_COMMIT_EDIT;
 const std::string PAH_REVERT_EDIT_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_REVERT_EDIT;
+
+const std::string PAH_QUERY_ANA_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" + OPRN_QUERY;
+const std::string PAH_QUERY_ANA_PHOTO_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MAP + "/" + OPRN_QUERY;
+const std::string PAH_INSERT_ANA_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" + OPRN_CREATE;
+const std::string PAH_UPDATE_ANA_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" + OPRN_UPDATE;
+const std::string PAH_INSERT_ANA_PHOTO_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MAP + "/" + OPRN_CREATE;
+
+const std::string PAH_QUERY_ANA_OCR = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_OCR + "/" + OPRN_QUERY;
+const std::string PAH_QUERY_ANA_ATTS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ATTS + "/" + OPRN_QUERY;
 
 // mediatool operation constants
 const std::string TOOL_PHOTO = "mediatool_photo_operation";

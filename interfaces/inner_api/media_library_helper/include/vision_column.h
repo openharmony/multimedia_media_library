@@ -29,6 +29,8 @@ const std::string VISION_TOTAL_TABLE = "tab_analysis_total";
 const std::string VISION_SHIELD_TABLE = "tab_application_shield";
 const std::string VISION_IMAGE_FACE_TABLE = "tab_analysis_image_face";
 const std::string VISION_FACE_TAG_TABLE = "tab_analysis_face_tag";
+const std::string ANALYSIS_ALBUM_TABLE = "AnalysisAlbum";
+const std::string ANALYSIS_PHOTO_MAP_TABLE = "AnalysisPhotoMap";
 
 // create vision table
 const std::string ID = "id";
@@ -36,12 +38,17 @@ const std::string FILE_ID = "file_id";
 const std::string OCR_TEXT = "ocr_text";
 const std::string OCR_VERSION = "ocr_version";
 const std::string OCR_TEXT_MSG = "ocr_text_msg";
+const std::string OCR_WIDTH = "width";
+const std::string OCR_HEIGHT = "height";
+const std::string OCR_PRE_MSG = "ocr_pre_msg";
 const std::string CREATE_TAB_ANALYSIS_OCR = "CREATE TABLE IF NOT EXISTS " + VISION_OCR_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     FILE_ID + " INT UNIQUE, " +
     OCR_TEXT + " TEXT, " +
     OCR_VERSION + " TEXT, " +
-    OCR_TEXT_MSG + " TEXT) ";
+    OCR_TEXT_MSG + " TEXT, " +
+    OCR_WIDTH + " INT, " +
+    OCR_HEIGHT + " INT)";
 
 const std::string CATEGORY_ID = "category_id";
 const std::string SUB_LABEL = "sub_label";
@@ -160,6 +167,30 @@ const std::string CREATE_TAB_FACE_TAG = "CREATE TABLE IF NOT EXISTS " + VISION_F
     DATE_MODIFY + " BIGINT, " +
     ALBUM_TYPE + " INTEGER, " +
     IS_REMOVED + " INTEGER) ";
+
+
+const std::string ALBUM_ID = "album_id";
+
+const std::string ALBUM_SUBTYPE = "album_subtype";
+const std::string ALBUM_NAME = "album_name";
+const std::string DATE_MODIFIED = "date_modified";
+const std::string RANK = "rank";
+const std::string CREATE_ANALYSIS_ALBUM = "CREATE TABLE IF NOT EXISTS " + ANALYSIS_ALBUM_TABLE + " (" +
+    ALBUM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    ALBUM_TYPE + " INT, " +
+    ALBUM_SUBTYPE + " INT, " +
+    ALBUM_NAME + " TEXT, " +
+    COVER_URI + " TEXT, " +
+    COUNT + " INT, " +
+    DATE_MODIFIED + " BIGINT, " +
+    RANK + " INT) ";
+
+const std::string MAP_ALBUM = "map_album";
+const std::string MAP_ASSET = "map_asset";
+const std::string CREATE_ANALYSIS_ALBUM_MAP = "CREATE TABLE IF NOT EXISTS " + ANALYSIS_PHOTO_MAP_TABLE + " (" +
+    MAP_ALBUM + " INT, " +
+    MAP_ASSET + " INT, " +
+    "PRIMARY KEY (" + MAP_ALBUM + "," + MAP_ASSET + ")) ";
 
 const std::string INIT_TAB_ANALYSIS_TOTAL = "INSERT INTO " + VISION_TOTAL_TABLE + " (" +
     FILE_ID + ", " + STATUS + ", " + OCR + ", " + AESTHETICS_SCORE + ", " + LABEL + ") " +

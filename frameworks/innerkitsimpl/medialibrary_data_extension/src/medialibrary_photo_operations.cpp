@@ -389,6 +389,7 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
         return E_HAS_DB_ERROR;
     }
     transactionOprn.Finish();
+    MediaLibraryObjectUtils::UpdateAnalysisProp("0");
     return outRow;
 }
 
@@ -474,6 +475,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET(ret == E_OK, ret);
     }
     cmd.SetResult(fileUri);
+    MediaLibraryObjectUtils::UpdateAnalysisProp("0");
     return outRow;
 }
 
@@ -553,6 +555,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore->GetRaw());
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw());
     MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore->GetRaw());
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw());
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
             notifyUris.size(), updatedRows);
@@ -639,6 +642,8 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
 
     MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
