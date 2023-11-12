@@ -55,6 +55,7 @@
 #include "unique_fd.h"
 #include "userfile_client.h"
 #include "userfilemgr_uri.h"
+#include "vision_column.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -219,6 +220,7 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("requestSource", PhotoAccessHelperRequestSource),
             DECLARE_NAPI_FUNCTION("commitEditedAsset", PhotoAccessHelperCommitEditedAsset),
             DECLARE_NAPI_FUNCTION("revertToOriginal", PhotoAccessHelperRevertToOriginal),
+            DECLARE_NAPI_FUNCTION("getAnalysisData", PhotoAccessHelperGetAnalysisData),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -1779,6 +1781,34 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
     return result;
 }
 
+static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetThumbnailExecute");
+    std::vector<std::string> fetchColumn;
+    string uriStr;
+    switch (context->analysisType) {
+        case ANALYSIS_OCR:
+            uriStr = PAH_QUERY_ANA_OCR;
+            fetchColumn = {OCR_TEXT, OCR_TEXT_MSG, OCR_PRE_MSG};
+            break;
+        case ANALYSIS_AETSTHETICS_SCORE:
+            uriStr = PAH_QUERY_ANA_ATTS;
+            fetchColumn = {AESTHETICS_SCORE, PROB};
+            break;
+        default:
+            NAPI_ERR_LOG("Invalid analysisType");
+            return;
+    }
+    int fileId = context->objectInfo->GetFileId();
+    Uri uri (uriStr);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
+}
+
 static void JSFavoriteCallbackComplete(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
@@ -2786,6 +2816,35 @@ static void UserFileMgrOpenCallbackComplete(napi_env env, napi_status status, vo
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
     if (context->error == ERR_DEFAULT) {
         CHECK_ARGS_RET_VOID(env, napi_create_int32(env, context->fd, &jsContext->data), JS_INNER_FAIL);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void JSGetAnalysisDataCompleteCallback(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAnalysisDataCompleteCallback");
+
+    auto *context = static_cast<FileAssetAsyncContext *>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, context->analysisData.c_str(),
+            NAPI_AUTO_LENGTH, &jsContext->data), JS_INNER_FAIL);
         jsContext->status = true;
     } else {
         context->HandleError(env, jsContext->error);
@@ -3875,6 +3934,28 @@ napi_value FileAssetNapi::PhotoAccessHelperSetUserComment(napi_env env, napi_cal
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperSetUserComment",
         PhotoAccessHelperSetUserCommentExecute, PhotoAccessHelperSetUserCommentComplete);
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetAnalysisData");
+    
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, asyncContext->analysisType),
+        JS_ERR_PARAMETER_INVALID);
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, result, "FileAsset is nullptr");
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperGetAnalysisData",
+        [](napi_env env, void *data) {
+            auto context = static_cast<FileAssetAsyncContext*>(data);
+            JSGetAnalysisDataExecute(context);
+        },
+        reinterpret_cast<CompleteCallback>(JSGetAnalysisDataCompleteCallback));
 }
 
 static void UserFileMgrGetJsonExecute(napi_env env, void *data)

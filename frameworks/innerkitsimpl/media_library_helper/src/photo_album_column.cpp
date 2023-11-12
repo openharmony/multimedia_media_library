@@ -20,6 +20,7 @@
 #include "media_log.h"
 #include "medialibrary_type_const.h"
 #include "photo_map_column.h"
+#include "vision_column.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -133,6 +134,18 @@ void PhotoAlbumColumns::GetUserAlbumPredicates(const int32_t albumId, RdbPredica
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+}
+
+void PhotoAlbumColumns::GetAnalysisAlbumPredicates(const int32_t albumId,
+    RdbPredicates &predicates, const bool hiddenState)
+{
+    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
+    predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));

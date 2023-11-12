@@ -326,6 +326,7 @@ ohos_shared_library("photoaccesshelper") {
     "ability_runtime:abilitykit_native",
     "ability_runtime:napi_base_context",
     "c_utils:utils",
+    "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "napi:ace_napi",

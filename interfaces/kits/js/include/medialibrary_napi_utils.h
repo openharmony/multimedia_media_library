@@ -265,6 +265,10 @@ const std::vector<std::string> systemAlbumSubType {
     "FAVORITE", "VIDEO", "HIDDEN", "TRASH", "SCREENSHOT", "CAMERA", "IMAGES"
 };
 
+const std::vector<std::string> analysisAlbumSubType {
+    "CLASSIFY_CATEGORY", "CLASSIFY_SUBCATEGORY"
+};
+
 const std::vector<std::string> positionTypeEnum {
     "LOCAL", "CLOUD", "BOTH"
 };
@@ -520,9 +524,12 @@ public:
         DataShare::DataSharePredicates &predicates, const bool hiddenOnly);
     static int32_t GetUserAlbumPredicates(const int32_t albumId,
         DataShare::DataSharePredicates &predicates, const bool hiddenOnly);
+    static int32_t GetAnalysisAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
     static bool IsSystemApp();
     static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
         const std::string &propertyName);
+    static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
+        const std::vector<std::string> &cloumns);
 
     static napi_value GetNapiValueArray(napi_env env, napi_value arg, std::vector<napi_value> &values);
     static napi_value GetUriArrayFromAssets(

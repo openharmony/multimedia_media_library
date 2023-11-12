@@ -26,6 +26,8 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "result_set.h"
+#include "userfile_manager_types.h"
+#include "vision_column.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -87,6 +89,19 @@ static inline shared_ptr<ResultSet> GetUserAlbum(const shared_ptr<NativeRdb::Rdb
     return rdbStore->Query(predicates, columns);
 }
 
+static inline shared_ptr<ResultSet> GetAnalysisAlbum(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const vector<string> &analysisAlbumIds, const vector<string> &columns)
+{
+    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    if (!analysisAlbumIds.empty()) {
+        predicates.In(PhotoAlbumColumns::ALBUM_ID, analysisAlbumIds);
+    }
+    if (rdbStore == nullptr) {
+        return nullptr;
+    }
+    return rdbStore->Query(predicates, columns);
+}
+
 static string GetQueryFilter(const string &tableName)
 {
     if (tableName == MEDIALIBRARY_TABLE) {
@@ -118,6 +133,9 @@ void MediaLibraryRdbUtils::AddQueryFilter(AbsRdbPredicates &predicates)
     string filters;
     for (auto &t : joinTables) {
         string filter = GetQueryFilter(t);
+        if (filter.empty()) {
+            continue;
+        }
         if (filters.empty()) {
             filters += filter;
         } else {
@@ -320,10 +338,12 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     };
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    if (subtype) {
-        PhotoAlbumColumns::GetSystemAlbumPredicates(subtype, predicates, hiddenState);
-    } else {
+    if (!subtype) {
         PhotoAlbumColumns::GetUserAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
+    } else if (subtype >= PhotoAlbumSubType::ANALYSIS_START && subtype <= PhotoAlbumSubType::ANALYSIS_END) {
+        PhotoAlbumColumns::GetAnalysisAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
+    } else {
+        PhotoAlbumColumns::GetSystemAlbumPredicates(subtype, predicates, hiddenState);
     }
     predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_ADDED_INDEX);
     auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
@@ -358,6 +378,32 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, con
     err = rdbStore->Update(changedRows, values, predicates);
     if (err < 0) {
         MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
+    }
+    return E_SUCCESS;
+}
+
+static int32_t UpdateAnalysisAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
+    const shared_ptr<ResultSet> &albumResult, const bool hiddenState)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateAnalysisAlbumIfNeeded");
+    ValuesBucket values;
+    auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
+    int err = SetUpdateValues(rdbStore, albumResult, values, subtype, hiddenState);
+    if (err < 0) {
+        return err;
+    }
+    if (values.IsEmpty()) {
+        return E_SUCCESS;
+    }
+
+    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(GetAlbumId(albumResult)));
+    int32_t changedRows = 0;
+    err = rdbStore->Update(changedRows, values, predicates);
+    if (err < 0) {
+        MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
+        return err;
     }
     return E_SUCCESS;
 }
@@ -403,6 +449,24 @@ void MediaLibraryRdbUtils::UpdateUserAlbumInternal(const shared_ptr<RdbStore> &r
         return;
     }
     ForEachRow(rdbStore, albumResult, false, UpdateUserAlbumIfNeeded);
+}
+
+void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore> &rdbStore,
+    const vector<string> &anaAlbumAlbumIds)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateAnalysisAlbumInternal");
+    vector<string> columns = {
+        PhotoAlbumColumns::ALBUM_ID,
+        PhotoAlbumColumns::ALBUM_SUBTYPE,
+        PhotoAlbumColumns::ALBUM_COVER_URI,
+        PhotoAlbumColumns::ALBUM_COUNT,
+    };
+    auto albumResult = GetAnalysisAlbum(rdbStore, anaAlbumAlbumIds, columns);
+    if (albumResult == nullptr) {
+        return;
+    }
+    ForEachRow(rdbStore, albumResult, false, UpdateAnalysisAlbumIfNeeded);
 }
 
 static inline shared_ptr<ResultSet> GetSystemAlbum(const shared_ptr<RdbStore> &rdbStore,
