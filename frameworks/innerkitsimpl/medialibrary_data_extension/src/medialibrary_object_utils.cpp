@@ -45,6 +45,7 @@
 #include "medialibrary_smartalbum_map_operations.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
+#include "parameter.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
@@ -1591,6 +1592,16 @@ static int32_t GetRootDirAssetByRelativePath(const string &relativePath, DirAsse
     }
     dirAsset = dirMap.at(rootDir);
     return E_SUCCESS;
+}
+
+void MediaLibraryObjectUtils::UpdateAnalysisProp(const std::string value)
+{
+    int ret = SetParameter("persist.multimedia.media_analysis_service.hasdata", value.c_str());
+    if (ret == 0) {
+        MEDIA_INFO_LOG("UpdateAnalysisProp succ");
+    } else {
+        MEDIA_ERR_LOG("Failed to UpdateAnalysisProp, result:%{public}d", ret);
+    }
 }
 
 int32_t MediaLibraryObjectUtils::CheckDirExtension(const string &relativePath, const string &displayName)

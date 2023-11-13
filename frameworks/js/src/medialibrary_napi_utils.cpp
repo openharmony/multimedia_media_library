@@ -16,6 +16,7 @@
 
 #include "medialibrary_napi_utils.h"
 
+#include "basic/result_set.h"
 #include "datashare_predicates_proxy.h"
 #include "ipc_skeleton.h"
 #include "media_asset_change_request_napi.h"
@@ -32,12 +33,14 @@
 #include "photo_map_column.h"
 #include "smart_album_napi.h"
 #include "tokenid_kit.h"
+#include "vision_column.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
+using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
     napi_value ctorObj;
@@ -790,6 +793,17 @@ int32_t MediaLibraryNapiUtils::GetUserAlbumPredicates(
     return E_SUCCESS;
 }
 
+int32_t MediaLibraryNapiUtils::GetAnalysisAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates)
+{
+    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
+    predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    return E_SUCCESS;
+}
+
 static int32_t GetFavoritePredicates(DataSharePredicates &predicates, const bool hiddenOnly)
 {
     predicates.BeginWrap();
@@ -908,6 +922,55 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
             return E_INVALID_ARGUMENTS;
         }
     }
+}
+
+string MediaLibraryNapiUtils::ParseResultSet2JsonStr(shared_ptr<DataShare::DataShareResultSet> resultSet,
+    const std::vector<std::string> &cloumns)
+{
+    json jsonObject;
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("ParseResultSet2JsonStr resultSet is empty");
+        return jsonObject.dump();
+    }
+    for (uint32_t i = 0; i < cloumns.size(); i++) {
+        DataShare::DataType dataType;
+        resultSet->GetDataType(i, dataType);
+        switch (dataType) {
+            case DataShare::DataType::TYPE_INTEGER: {
+                int intValue = -1;
+                if (resultSet->GetInt(i, intValue) == NativeRdb::E_OK) {
+                    jsonObject[cloumns[i]] = to_string(intValue);
+                }
+                break;
+            }
+            case DataShare::DataType::TYPE_FLOAT: {
+                double douValue = 0.0;
+                if (resultSet->GetDouble(i, douValue) == NativeRdb::E_OK) {
+                    jsonObject[cloumns[i]] = to_string(douValue);
+                }
+                break;
+            }
+            case DataShare::DataType::TYPE_STRING: {
+                std::string strValue;
+                if (resultSet->GetString(i, strValue) == NativeRdb::E_OK) {
+                    jsonObject[cloumns[i]] = strValue;
+                }
+                break;
+            }
+            case DataShare::DataType::TYPE_BLOB: {
+                std::vector<uint8_t> blobValue;
+                if (resultSet->GetBlob(i, blobValue) == NativeRdb::E_OK) {
+                    std::string tempValue(blobValue.begin(), blobValue.end());
+                    jsonObject[cloumns[i]] = tempValue;
+                }
+                break;
+            }
+            default: {
+                NAPI_ERR_LOG("Unsupported dateType: %{public}d", dataType);
+            }
+        }
+    }
+    return jsonObject.dump();
 }
 
 string MediaLibraryNapiUtils::GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,

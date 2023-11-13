@@ -86,6 +86,7 @@ public:
     static void ScanFile(const std::string &srcPath, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     static void InvalidateThumbnail(const string &id, const string &tableName = MEDIALIBRARY_TABLE,
         const string &path = "");
+    static void UpdateAnalysisProp(const std::string str);
 
 private:
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);

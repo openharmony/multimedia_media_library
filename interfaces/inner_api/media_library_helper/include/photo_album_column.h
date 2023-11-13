@@ -77,6 +77,8 @@ public:
         const bool hiddenState);
     static void GetSystemAlbumPredicates(const PhotoAlbumSubType subType, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
+    static void GetAnalysisAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
+        const bool hiddenState);
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_ALBUM_COLUMN_H
