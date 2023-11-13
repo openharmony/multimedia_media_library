@@ -281,6 +281,10 @@ const std::vector<std::string> notifyTypeEnum {
     "NOTIFY_ADD", "NOTIFY_UPDATE", "NOTIFY_REMOVE", "NOTIFY_ALBUM_ADD_ASSET", "NOTIFY_ALBUM_REMOVE_ASSET"
 };
 
+const std::vector<std::string> requestPhotoTypeEnum {
+    "REQUEST_ALL_THUMBNAIL", "REQUEST_FAST_THUMBNAIL", "REQUEST_QUALITY_THUMBNAIL"
+};
+
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
     MEDIA_DATA_DB_RELATIVE_PATH,
