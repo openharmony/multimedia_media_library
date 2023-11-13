@@ -50,6 +50,8 @@
 #include "mimetype_utils.h"
 #include "permission_utils.h"
 #include "rdb_errno.h"
+#include "rdb_predicates.h"
+#include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "thumbnail_service.h"
@@ -201,15 +203,54 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
     }
 }
 
+int32_t DropAllTables(NativeRdb::RdbStore &rdbStore)
+{
+    string dropSqlRowName = "drop_table_and_view_sql";
+    string queryDropSql =
+        "SELECT 'DROP ' || type || ' IF EXISTS ' || name || ';' as " + dropSqlRowName +
+        " FROM sqlite_master" +
+        " WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%';";
+    auto dropSqlsResultSet = rdbStore.QuerySql(queryDropSql);
+    vector<string> dropSqlsVec;
+    while (dropSqlsResultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t columnIndex = 0;
+        if (dropSqlsResultSet->GetColumnIndex(dropSqlRowName, columnIndex) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Get drop_table_and_view_sql column failed");
+            return E_HAS_DB_ERROR;
+        }
+        string sql;
+        if (dropSqlsResultSet->GetString(columnIndex, sql) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Get drop_table_and_view_sql sql failed");
+            return E_HAS_DB_ERROR;
+        }
+        if (!sql.empty()) {
+            dropSqlsVec.push_back(sql);
+        }
+    }
+
+    for (const auto &dropSql : dropSqlsVec) {
+        rdbStore.ExecuteSql(dropSql);
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cmd)
 {
     auto valuesBucket = cmd.GetValueBucket();
-    int32_t isOnlyDeleteDb = 0;
-    if (!GetInt32FromValuesBucket(valuesBucket, DELETE_TOOL_ONLY_DATABASE, isOnlyDeleteDb)) {
-        MEDIA_ERR_LOG("Can not get delete tool value");
-        return E_INVALID_VALUES;
+    if (MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw() == nullptr ||
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw() == nullptr) {
+        MEDIA_ERR_LOG("Can not get rdb store");
+        return E_HAS_DB_ERROR;
     }
-    MediaLibraryRdbStore::UpdateAPI10Tables();
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    int32_t errCode = DropAllTables(*rdbStore);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Drop table failed, errCode=%{public}d", errCode);
+        return errCode;
+    }
+    MediaLibraryDataCallBack callback;
+    callback.OnCreate(*rdbStore);
     MediaLibraryRdbStore::ResetAnalysisTables();
     const static vector<string> DELETE_DIR_LIST = {
         ROOT_MEDIA_DIR + PHOTO_BUCKET,
@@ -218,19 +259,18 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
         ROOT_MEDIA_DIR + VIDEO_DIR_VALUES,
         ROOT_MEDIA_DIR + PIC_DIR_VALUES,
         ROOT_MEDIA_DIR + AUDIO_DIR_VALUES,
-        ROOT_MEDIA_DIR + ".thumbs"
+        ROOT_MEDIA_DIR + ".thumbs",
+        ROOT_MEDIA_DIR + ".editData"
     };
 
-    if (!isOnlyDeleteDb) {
-        for (const string &dir : DELETE_DIR_LIST) {
-            if (!MediaFileUtils::DeleteDir(dir)) {
-                MEDIA_ERR_LOG("Delete dir %{private}s failed", dir.c_str());
-            }
+    for (const string &dir : DELETE_DIR_LIST) {
+        if (!MediaFileUtils::DeleteDir(dir)) {
+            MEDIA_ERR_LOG("Delete dir %{private}s failed", dir.c_str());
         }
-        for (auto &dir : PRESET_ROOT_DIRS) {
-            string ditPath = ROOT_MEDIA_DIR + dir;
-            MediaFileUtils::CreateDirectory(ditPath);
-        }
+    }
+    for (auto &dir : PRESET_ROOT_DIRS) {
+        string ditPath = ROOT_MEDIA_DIR + dir;
+        MediaFileUtils::CreateDirectory(ditPath);
     }
 
     return E_OK;
