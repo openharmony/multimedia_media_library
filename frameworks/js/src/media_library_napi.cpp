@@ -109,6 +109,8 @@ thread_local napi_ref MediaLibraryNapi::sAlbumSubType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sNotifyType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDefaultChangeUriRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAnalysisType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sRequestPhotoTypeEnumRef_ = nullptr;
+
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
 MediaLibraryNapi::MediaLibraryNapi()
@@ -216,6 +218,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
         DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env))
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -258,7 +261,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
         DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
-        DECLARE_NAPI_PROPERTY("AnalysisType", CreateAnalysisTypeEnum(env))
+        DECLARE_NAPI_PROPERTY("AnalysisType", CreateAnalysisTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env))
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -5156,6 +5160,11 @@ napi_value MediaLibraryNapi::CreateDefaultChangeUriEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateNotifyTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, notifyTypeEnum, sNotifyType_);
+}
+
+napi_value MediaLibraryNapi::CreateRequestPhotoTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, requestPhotoTypeEnum, sRequestPhotoTypeEnumRef_);
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,

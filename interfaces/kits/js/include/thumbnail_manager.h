@@ -125,6 +125,7 @@ public:
 
     ThumbnailCallback callback_;
     RequestPhotoType requestPhotoType;
+    int32_t error = 0;
 private:
     std::string uri_;
     std::string path_;
