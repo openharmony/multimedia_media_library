@@ -23,10 +23,20 @@
 
 namespace OHOS {
 namespace Media {
+class GalleryOpenCall;
+
 class GallerySource {
 public:
     void Init(const std::string &path);
     std::shared_ptr<NativeRdb::RdbStore> galleryStorePtr_;
+};
+
+class GalleryOpenCall : public NativeRdb::RdbOpenCallback {
+public:
+    int OnCreate(NativeRdb::RdbStore &rdbStore) override;
+    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
+    static const string CREATE_GALLERY_MEDIA;
+    static const string CREATE_GARBAGE_ALBUM;
 };
 } // namespace Media
 } // namespace OHOS

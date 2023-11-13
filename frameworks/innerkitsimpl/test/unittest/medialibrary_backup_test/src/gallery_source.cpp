@@ -17,15 +17,6 @@
 
 namespace OHOS {
 namespace Media {
-
-class GalleryOpenCall : public NativeRdb::RdbOpenCallback {
-public:
-    int OnCreate(NativeRdb::RdbStore &rdbStore) override;
-    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
-    static const string CREATE_GALLERY_MEDIA;
-    static const string CREATE_GARBAGE_ALBUM;
-};
-
 const string GalleryOpenCall::CREATE_GALLERY_MEDIA = string("CREATE TABLE IF NOT EXISTS gallery_media ") +
     " (id INTEGER PRIMARY KEY AUTOINCREMENT, local_media_id INTEGER, _data TEXT COLLATE NOCASE," +
     " _display_name TEXT, description TEXT, is_hw_favorite INTEGER, _size INTEGER, recycledTime INTEGER," +

@@ -100,7 +100,7 @@ const std::string QUERY_FILE_COLUMN = "SELECT _id, " + GALLERY_FILE_DATA + ", " 
     ", " + DATE_ADDED + " FROM files WHERE ";
 
 const std::string IN_CAMERA = " bucket_id IN (-1739773001, 0, 1028075469, 0) AND \
-    ((is_pending = 0) OR (media_type = 1 AND owner_package_name = 'com.huawei.camera')) ";
+    ((is_pending = 0) OR (media_type = 1 AND owner_package_name = '";
 
 const std::string NOT_IN_CAMERA = " bucket_id NOT IN (-1739773001, 0, 1028075469, 0 ) AND is_pending = 0";
 
@@ -132,7 +132,7 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + " FROM gallery_media \
     WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
-    SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1 ) ORDER BY showDateToken ASC ";
+    SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) ORDER BY showDateToken ASC ";
 } // namespace Media
 } // namespace OHOS
 

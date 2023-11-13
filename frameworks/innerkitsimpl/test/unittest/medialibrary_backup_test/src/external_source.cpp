@@ -17,14 +17,6 @@
 
 namespace OHOS {
 namespace Media {
-
-class ExternalOpenCall : public NativeRdb::RdbOpenCallback {
-public:
-    int OnCreate(NativeRdb::RdbStore &rdbStore) override;
-    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
-    static const string CREATE_EXTERNAL_FILES;
-};
-
 const string ExternalOpenCall::CREATE_EXTERNAL_FILES = string("CREATE TABLE IF NOT EXISTS files ") +
     "(_id INTEGER PRIMARY KEY AUTOINCREMENT, _data TEXT COLLATE NOCASE, _display_name TEXT, is_favorite INTEGER, " +
     "_size INTEGER, duration INTEGER, media_type INTEGER, date_modified INTEGER, height INTEGER, width INTEGER, " +
@@ -49,14 +41,14 @@ void ExternalSource::Init(const string &dbPath)
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     galleryStorePtr_ = store;
     store->ExecuteSql(string("INSERT INTO files VALUES(7, '/storage/emulated/0/DCIM/Camera/fake_camera.jpg', ") +
-        "'fake_camera.jpg', 0, 2808831, null, 1, 1546937461, 2976, 3968, 'fake_camera.jpg', 0, 1699781505, -1739773001, " +
-        "0, 'com.huawei.camera')");
+        "'fake_camera.jpg', 0, 2808831, null, 1, 1546937461, 2976, 3968, 'fake_camera.jpg', 0, 1699781505, " +
+        "-1739773001, 0, 'camera')");
     store->ExecuteSql(string("INSERT INTO files VALUES(8, '/storage/emulated/0/CTRIP/avatar/not_sync_invalid.jpg', ") +
-        "'not_sync_invalid.jpg', 0, 27657543, null, 1, 1546937461, 2448, 3264, 'not_sync_invalid.jpg', 0, 1699781529, " +
-        "876554266, 0, 'com.huawei.camera')");
+        "'not_sync_invalid.jpg', 0, 27657543, null, 1, 1546937461, 2448, 3264, 'not_sync_invalid.jpg', 0, " +
+        "1699781529, 876554266, 0, 'camera')");
     store->ExecuteSql(string("INSERT INTO files VALUES(9, ") +
         "'/storage/emulated/0/MicroMsg/WeiXin/not_sync_valid.jpg', 'not_sync_valid.jpg', 0, 3503265, null, 1, " +
-        "1546937461, 2976, 3968, 'not_sync_valid.jpg', 0, 1699781529, 876554266, 0, 'com.huawei.camera')");
+        "1546937461, 2976, 3968, 'not_sync_valid.jpg', 0, 1699781529, 876554266, 0, 'camera')");
 }
 } // namespace Media
 } // namespace OHOS

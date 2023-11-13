@@ -22,7 +22,7 @@ namespace OHOS {
 namespace Media {
 class UpdateRestore : public BaseRestore {
 public:
-    UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName);
+    UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName, const std::string &cameraAppName);
     virtual ~UpdateRestore() = default;
     int32_t Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate) override;
     int32_t QueryTotalNumber(void) override;
@@ -52,6 +52,7 @@ private:
     std::string appDataPath_;
     std::string galleryAppName_;
     std::string mediaAppName_;
+    std::string cameraAppName_;
     std::set<std::string> cacheSet_;
     std::unordered_map<std::string, std::string> nickMap_;
 };
