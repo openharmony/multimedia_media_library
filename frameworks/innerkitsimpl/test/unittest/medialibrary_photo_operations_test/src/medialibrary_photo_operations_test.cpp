@@ -100,7 +100,7 @@ public:
 
     ~ArkJsRuntime() {};
 
-    void StartDebugMode(bool needBreakPoint)  {};
+    void StartDebugMode(bool needBreakPoint, bool isDebug)  {};
     void FinishPreload() {};
     bool LoadRepairPatch(const string& patchFile, const string& baseFile)
     {
