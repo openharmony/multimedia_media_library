@@ -20,7 +20,6 @@
 #include "gallery_source.h"
 #include "media_log.h"
 #include "update_restore.h"
-#include "result_set_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -42,13 +41,6 @@ const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "fake_wechat";
 const int64_t EXPECTED_DATE_ADDED = 1432973383;
 const int64_t EXPECTED_DATE_TAKEN = 1432973383;
-
-class PhotosOpenCall : public NativeRdb::RdbOpenCallback {
-public:
-    int OnCreate(NativeRdb::RdbStore &rdbStore) override;
-    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
-    static const string CREATE_PHOTOS;
-};
 
 const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS Photos ") +
     " (file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, title TEXT, display_name TEXT, size BIGINT," +
