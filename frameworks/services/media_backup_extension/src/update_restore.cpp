@@ -140,7 +140,7 @@ int32_t UpdateRestore::QueryTotalNumber(void)
         return 0;
     }
     std::string querySql = "SELECT count(1) as count FROM gallery_media \
-        WHERE (local_media_id >= 0 OR local_media_id == -4) AND (storage_id = 65537) AND relative_bucket_id NOT IN ( \
+        WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
         SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)";
     auto resultSet = galleryRdb_->QuerySql(querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -162,7 +162,7 @@ std::vector<FileInfo> UpdateRestore::QueryFileInfos(int32_t offset)
         "," + GALLERY_DESCRIPTION + "," + GALLERY_IS_FAVORITE + "," + GALLERY_RECYCLED_TIME + "," + GALLERY_FILE_SIZE +
         "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," + GALLERY_HEIGHT +
         "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + " FROM gallery_media \
-        WHERE (local_media_id>= 0 OR local_media_id == -4) AND (storage_id = 65537) AND relative_bucket_id NOT IN ( \
+        WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
         SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1 \
         ) ORDER BY showDateToken ASC limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = galleryRdb_->QuerySql(querySql);
