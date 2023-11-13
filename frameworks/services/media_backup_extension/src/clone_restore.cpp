@@ -65,7 +65,7 @@ void CloneRestore::RestorePhoto(void)
     MEDIA_INFO_LOG("QueryTotalNumber, totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<FileInfo> infos = QueryFileInfos(offset);
-        InsertPhoto(CLONE_RESTORE_ID, infos);
+        InsertPhoto(CLONE_RESTORE_ID, infos, SourceType::PHOTOS);
     }
     (void)NativeRdb::RdbHelper::DeleteRdbStore(dbPath_);
 }

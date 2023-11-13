@@ -13,29 +13,28 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
-#define OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
+#include "backup_database_utils.h"
 
-#include <mutex>
-#include <vector>
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
-#include "napi_error.h"
-#include "napi_remote_object.h"
+#include "backup_const.h"
+#include "media_log.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryBackupNapi {
-public:
-    static napi_value Init(napi_env env, napi_value exports);
 
-    MediaLibraryBackupNapi() = default;
-    ~MediaLibraryBackupNapi() = default;
-
-private:
-    static napi_value JSStartRestore(napi_env env, napi_callback_info info);
-};
+int32_t BackupDatabaseUtils::QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
+    const std::string &column)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdb_ is nullptr, Maybe init failed.");
+        return 0;
+    }
+    auto resultSet = rdbStore->QuerySql(sql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return 0;
+    }
+    int32_t result = GetInt32Val(column, resultSet);
+    return result;
+}
 } // namespace Media
 } // namespace OHOS
-
-#endif  // OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H

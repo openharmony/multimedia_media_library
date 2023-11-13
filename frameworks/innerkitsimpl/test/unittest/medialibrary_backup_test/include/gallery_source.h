@@ -13,29 +13,21 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
-#define OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
+#ifndef GALLERY_SROUCE_H
+#define GALLERY_SROUCE_H
 
-#include <mutex>
-#include <vector>
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
-#include "napi_error.h"
-#include "napi_remote_object.h"
+#include <string>
+
+#include "result_set_utils.h"
+#include "rdb_helper.h"
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryBackupNapi {
+class GallerySource {
 public:
-    static napi_value Init(napi_env env, napi_value exports);
-
-    MediaLibraryBackupNapi() = default;
-    ~MediaLibraryBackupNapi() = default;
-
-private:
-    static napi_value JSStartRestore(napi_env env, napi_callback_info info);
+    void Init(const std::string &path);
+    std::shared_ptr<NativeRdb::RdbStore> galleryStorePtr_;
 };
 } // namespace Media
 } // namespace OHOS
-
-#endif  // OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
+#endif // GALLERY_SROUCE_H
