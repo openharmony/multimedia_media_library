@@ -436,7 +436,6 @@ static void GetMediaLibraryAsyncExecute(napi_env env, void *data)
     MediaLibraryInitContext *asyncContext = static_cast<MediaLibraryInitContext *>(data);
     if (asyncContext == nullptr) {
         NAPI_ERR_LOG("Async context is null");
-        asyncContext->error = ERR_INVALID_OUTPUT;
         return;
     }
 
