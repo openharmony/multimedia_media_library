@@ -33,12 +33,12 @@ ohos_unittest("medialibrary_backup_test") {
   ]
 
   sources = [
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_database_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/base_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/update_restore.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_database_utils.cpp",
+    "./src/external_source.cpp",
     "./src/medialibrary_backup_test.cpp",
     "./src/gallery_source.cpp",
-    "./src/external_source.cpp",
   ]
 
   deps = [
