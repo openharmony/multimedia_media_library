@@ -171,7 +171,7 @@ bool BaseRestore::IsSameFile(const FileInfo &fileInfo) const
     return true;
 }
 
-void BaseRestore::InsertPhoto(int32_t sceneCode, const std::vector<FileInfo> &fileInfos) const
+void BaseRestore::InsertPhoto(int32_t sceneCode, const std::vector<FileInfo> &fileInfos, int32_t sourceType) const
 {
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
@@ -191,7 +191,7 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, const std::vector<FileInfo> &fi
             MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
             continue;
         }
-        NativeRdb::ValuesBucket values = GetInsertValue(fileInfos[i], cloudPath);
+        NativeRdb::ValuesBucket values = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         if (mediaLibraryRdb_ == nullptr) {
             MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
             return;
@@ -212,7 +212,8 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, const std::vector<FileInfo> &fi
     }
 }
 
-NativeRdb::ValuesBucket BaseRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath) const
+NativeRdb::ValuesBucket BaseRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
+    int32_t sourceType) const
 {
     NativeRdb::ValuesBucket values;
     values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);

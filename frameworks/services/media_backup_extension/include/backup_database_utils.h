@@ -13,29 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
-#define OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
+#ifndef BACKUP_DATABASE_UTILS_H
+#define BACKUP_DATABASE_UTILS_H
 
-#include <mutex>
-#include <vector>
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
-#include "napi_error.h"
-#include "napi_remote_object.h"
+#include <string>
+
+#include "rdb_helper.h"
+#include "result_set.h"
 
 namespace OHOS {
 namespace Media {
-class MediaLibraryBackupNapi {
+class BackupDatabaseUtils {
 public:
-    static napi_value Init(napi_env env, napi_value exports);
-
-    MediaLibraryBackupNapi() = default;
-    ~MediaLibraryBackupNapi() = default;
-
-private:
-    static napi_value JSStartRestore(napi_env env, napi_callback_info info);
+    static int32_t QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
+        const std::string &column);
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_MEDIALIBRARY_BACKUP_NAPI_H
+#endif  // BACKUP_DATABASE_UTILS_H
