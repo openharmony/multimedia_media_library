@@ -33,6 +33,7 @@ const std::string TEST_ORIGIN_PATH = "/data/test/backup/db";
 const std::string TEST_UPDATE_FILE_DIR = "/data/test/backup/file";
 const std::string GALLERY_APP_NAME = "gallery";
 const std::string MEDIA_APP_NAME = "external";
+const std::string CAMERA_APP_NAME = "camera";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 
 const int EXPECTED_NUM = 5;
@@ -84,7 +85,7 @@ void Init(GallerySource &gallerySource, ExternalSource &externalSource)
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     photosStorePtr = store;
-    restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME);
+    restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CAMERA_APP_NAME);
     restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
     restoreService -> InitGarbageAlbum();
 }
@@ -143,7 +144,8 @@ void MediaLibraryBackupTest::TearDown(void) {}
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_init start");
-    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME);
+    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        CAMERA_APP_NAME);
     int32_t result = restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
     EXPECT_EQ(result, 0);
     MEDIA_INFO_LOG("medialib_backup_test_init end");
@@ -152,7 +154,8 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level0)
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_total_number, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_query_total_number start");
-    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME);
+    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        CAMERA_APP_NAME);
     restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
     int32_t number = restoreService -> QueryTotalNumber();
     MEDIA_INFO_LOG("medialib_backup_test_query_total_number %{public}d", number);
@@ -269,7 +272,8 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.L
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_invalid, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_invalid start");
-    std::string queryNotSyncInvalid = "SELECT file_id, date_taken from Photos where display_name ='not_sync_invalid.jpg'";
+    std::string queryNotSyncInvalid =
+        "SELECT file_id, date_taken from Photos where display_name ='not_sync_invalid.jpg'";
     auto resultSet = photosStorePtr -> QuerySql(queryNotSyncInvalid);
     ASSERT_FALSE(resultSet == nullptr);
     ASSERT_FALSE(resultSet -> GoToNextRow() == NativeRdb::E_OK);

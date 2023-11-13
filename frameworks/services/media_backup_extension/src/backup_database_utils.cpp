@@ -21,7 +21,6 @@
 
 namespace OHOS {
 namespace Media {
-
 int32_t BackupDatabaseUtils::QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
     const std::string &column)
 {

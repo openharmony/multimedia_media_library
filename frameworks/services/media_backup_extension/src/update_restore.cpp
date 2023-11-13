@@ -35,10 +35,12 @@ const std::string CLONE_TAG = "cloneBackupData.json";
 constexpr int32_t GALLERY_IMAGE_TYPE = 1;
 constexpr int32_t GALLERY_VIDEO_TYPE = 3;
 
-UpdateRestore::UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName)
+UpdateRestore::UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName,
+    const std::string &cameraAppName)
 {
     galleryAppName_ = galleryAppName;
     mediaAppName_ = mediaAppName;
+    cameraAppName_ = cameraAppName;
 }
 
 int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate)
@@ -59,8 +61,8 @@ int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &upd
     } else {
         int32_t galleryErr = InitOldDb(UPDATE_GALLERY_DB_NAME, galleryDbPath_, galleryAppName_, galleryRdb_);
         if (galleryRdb_ == nullptr) {
-           MEDIA_ERR_LOG("gallyer data syncer init rdb fail, err = %{public}d", galleryErr);
-           return E_FAIL;
+            MEDIA_ERR_LOG("gallyer data syncer init rdb fail, err = %{public}d", galleryErr);
+            return E_FAIL;
         }
     }
     externalDbPath_ = orignPath + "/" + mediaAppName_ + "/ce/databases/external.db";
@@ -78,7 +80,7 @@ int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &upd
 }
 
 int32_t UpdateRestore::InitOldDb(const std::string &dbName, const std::string &dbPath, const std::string &bundleName,
-   std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+    std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
     NativeRdb::RdbStoreConfig config(dbName);
     config.SetPath(dbPath);
@@ -168,7 +170,13 @@ void UpdateRestore::RestoreFromExternal(bool isCamera)
 
 int32_t UpdateRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
 {
-    std::string queryNotSyncByCount = QUERY_COUNT_FROM_FILES + (isCamera ? IN_CAMERA : NOT_IN_CAMERA ) + " AND " +
+    std::string queryCamera;
+    if(isCamera) {
+        queryCamera = IN_CAMERA + "'" + cameraAppName_ + "'))";
+    } else {
+        queryCamera = NOT_IN_CAMERA;
+    }
+    std::string queryNotSyncByCount = QUERY_COUNT_FROM_FILES + queryCamera + " AND " +
         COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
     return BackupDatabaseUtils::QueryInt(externalRdb_, queryNotSyncByCount, COUNT);
 }
@@ -228,7 +236,13 @@ std::vector<FileInfo> UpdateRestore::QueryFileInfosFromExternal(int32_t offset, 
         MEDIA_ERR_LOG("Pointer rdb_ is nullptr, Maybe init failed.");
         return result;
     }
-    std::string queryFilesByCount = QUERY_FILE_COLUMN + (isCamera ? IN_CAMERA : NOT_IN_CAMERA) + " AND " +
+    std::string queryCamera;
+    if(isCamera) {
+        queryCamera = IN_CAMERA + "'" + cameraAppName_ + "'))";
+    } else {
+        queryCamera = NOT_IN_CAMERA;
+    }
+    std::string queryFilesByCount = QUERY_FILE_COLUMN + queryCamera + " AND " +
         COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC + " limit " + std::to_string(offset) + ", " +
         std::to_string(QUERY_COUNT);
     auto resultSet = externalRdb_->QuerySql(queryFilesByCount);

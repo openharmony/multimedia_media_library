@@ -29,11 +29,11 @@ BackupRestoreService &BackupRestoreService::GetInstance(void)
 }
 
 void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &galleryAppName,
-    const std::string &mediaAppName)
+    const std::string &mediaAppName, const std::string &cameraAppName)
 {
     std::unique_ptr<BaseRestore> restoreService;
     if (sceneCode == 0) {
-        restoreService = std::make_unique<UpdateRestore>(galleryAppName, mediaAppName);
+        restoreService = std::make_unique<UpdateRestore>(galleryAppName, mediaAppName, cameraAppName);
     } else {
         restoreService = std::make_unique<CloneRestore>();
     }
