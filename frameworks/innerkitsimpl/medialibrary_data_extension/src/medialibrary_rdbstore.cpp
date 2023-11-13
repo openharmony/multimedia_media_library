@@ -919,6 +919,10 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_GEO_DICTIONARY_TABLE,
     CREATE_ANALYSIS_ALBUM,
     CREATE_ANALYSIS_ALBUM_MAP,
+    INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+    INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+    UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+    DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -1233,7 +1237,7 @@ static void AddSourceAlbumTrigger(RdbStore &store)
         INSERT_PHOTO_INSERT_SOURCE_ALBUM,
         INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
-        DELETE_PHOTO_UPDATE_SOURCE_ALBUM
+        DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
     };
     MEDIA_INFO_LOG("start add source album trigger");
     ExecSqls(executeSqlStrs, store);
