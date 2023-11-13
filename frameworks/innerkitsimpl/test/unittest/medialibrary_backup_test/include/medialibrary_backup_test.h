@@ -17,15 +17,26 @@
 #define MEDIALIBRARY_BACKUP_TEST_H
 
 #include "gtest/gtest.h"
+#include "rdb_helper.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
+class PhotosOpenCall;
+
 class MediaLibraryBackupTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
+};
+
+class PhotosOpenCall : public NativeRdb::RdbOpenCallback {
+public:
+    int OnCreate(NativeRdb::RdbStore &rdbStore) override;
+    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
+    static const std::string CREATE_PHOTOS;
 };
 } // namespace Media
 } // namespace OHOS

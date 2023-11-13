@@ -171,7 +171,7 @@ void UpdateRestore::RestoreFromExternal(bool isCamera)
 int32_t UpdateRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
 {
     std::string queryCamera;
-    if(isCamera) {
+    if (isCamera) {
         queryCamera = IN_CAMERA + "'" + cameraAppName_ + "'))";
     } else {
         queryCamera = NOT_IN_CAMERA;
@@ -237,7 +237,7 @@ std::vector<FileInfo> UpdateRestore::QueryFileInfosFromExternal(int32_t offset, 
         return result;
     }
     std::string queryCamera;
-    if(isCamera) {
+    if (isCamera) {
         queryCamera = IN_CAMERA + "'" + cameraAppName_ + "'))";
     } else {
         queryCamera = NOT_IN_CAMERA;
