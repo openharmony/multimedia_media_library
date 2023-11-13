@@ -47,9 +47,17 @@ enum MediaType {
     MEDIA_TYPE_DEFAULT,
 };
 
+enum AnalysisType {
+    ANALYSIS_INVALID = -1,
+    ANALYSIS_AETSTHETICS_SCORE,
+    ANALYSIS_LABEL,
+    ANALYSIS_OCR,
+};
+
 enum PhotoAlbumType : int32_t {
     USER = 0,
-    SYSTEM = 1024
+    SYSTEM = 1024,
+    SMART = 4096
 };
 
 enum PhotoAlbumSubType : int32_t {
@@ -65,6 +73,10 @@ enum PhotoAlbumSubType : int32_t {
     IMAGES,
     SOURCE,
     SYSTEM_END = SOURCE,
+    ANALYSIS_START = 4097,
+    CLASSIFY_CATEGORY = ANALYSIS_START,
+    CLASSIFY_SUBCATEGORY,
+    ANALYSIS_END = CLASSIFY_SUBCATEGORY,
     ANY = std::numeric_limits<int32_t>::max()
 };
 

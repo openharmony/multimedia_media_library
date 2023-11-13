@@ -123,6 +123,7 @@ private:
     static napi_value UserFileMgrSetPending(napi_env env, napi_callback_info info);
     static napi_value JSGetExif(napi_env env, napi_callback_info info);
     static napi_value UserFileMgrSetUserComment(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info);
 
     static napi_value PhotoAccessHelperOpen(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessHelperClose(napi_env env, napi_callback_info info);
@@ -164,12 +165,14 @@ struct FileAssetAsyncContext : public NapiError {
     bool isDirectory;
     int32_t changedRows;
     int32_t fd;
+    int32_t analysisType = AnalysisType::ANALYSIS_INVALID;
     bool isFavorite = false;
     bool isTrash = false;
     bool isHidden = false;
     bool isPending = false;
     bool hasEdit = false;
     std::string networkId;
+    std::string analysisData;
     std::shared_ptr<PixelMap> pixelmap;
 
     size_t argc;

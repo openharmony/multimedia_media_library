@@ -388,7 +388,18 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     if (err < 0) {
         return err;
     }
-    int rowId = CreatePhotoAlbum(albumName);
+    int rowId;
+    if (OperationObject::ANALYSIS_PHOTO_ALBUM == cmd.GetOprnObject()) {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+        if (rdbStore == nullptr) {
+            return E_HAS_DB_ERROR;
+        }
+        int64_t outRowId;
+        rdbStore->Insert(cmd, outRowId);
+        rowId = outRowId;
+    } else {
+        rowId = CreatePhotoAlbum(albumName);
+    }
     auto watch = MediaLibraryNotify::GetInstance();
     if (rowId > 0) {
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX, to_string(rowId)),
@@ -461,6 +472,7 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     // Only user generic albums can be updated
     rdbPredicates.And()->BeginWrap()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
     rdbPredicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::USER_GENERIC));
+    rdbPredicates.Or()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SMART));
     rdbPredicates.EndWrap();
 
     int32_t changedRows = MediaLibraryRdbStore::Update(rdbValues, rdbPredicates);
@@ -492,6 +504,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
     MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
 
     auto watch = MediaLibraryNotify::GetInstance();
     size_t count = whereArgs.size() - THAN_AGR_SIZE;

@@ -917,6 +917,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_IMAGE_FACE_INDEX,
     CREATE_GEO_KNOWLEDGE_TABLE,
     CREATE_GEO_DICTIONARY_TABLE,
+    CREATE_ANALYSIS_ALBUM,
+    CREATE_ANALYSIS_ALBUM_MAP,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -1237,6 +1239,18 @@ static void AddSourceAlbumTrigger(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddAnalysisAlbum(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "ALTER TABLE tab_analysis_ocr ADD COLUMN width INT;",
+        "ALTER TABLE tab_analysis_ocr ADD COLUMN height INT;",
+        CREATE_ANALYSIS_ALBUM,
+        CREATE_ANALYSIS_ALBUM_MAP,
+    };
+    MEDIA_INFO_LOG("start init vision album");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void MediaLibraryRdbStore::ResetAnalysisTables()
 {
     if (rdbStore_ == nullptr) {
@@ -1255,7 +1269,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
         "DROP TABLE IF EXISTS tab_analysis_image_face",
         "DROP TABLE IF EXISTS tab_analysis_face_tag",
     };
-    MEDIA_INFO_LOG("start update analysis db");
+    MEDIA_INFO_LOG("start update analysis table");
     ExecSqls(executeSqlStrs, *rdbStore_);
     AddAnalysisTables(*rdbStore_);
     AddFaceTables(*rdbStore_);
@@ -1704,6 +1718,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_SOURCE_ALBUM_TRIGGER) {
         AddSourceAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_VISION_ALBUM) {
+        AddAnalysisAlbum(store);
     }
     return NativeRdb::E_OK;
 }

@@ -392,6 +392,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::FILESYSTEM_ALBUM: {
             return MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
         }
+        case OperationObject::ANALYSIS_PHOTO_ALBUM:
         case OperationObject::PHOTO_ALBUM: {
             return MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(cmd);
         }
@@ -410,6 +411,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::BUNDLE_PERMISSION: {
             return UriPermissionOperations::HandleUriPermOperations(cmd);
         }
+        case OperationObject::ANALYSIS_PHOTO_MAP:
         case OperationObject::VISION_OCR:
         case OperationObject::VISION_LABEL:
         case OperationObject::VISION_AESTHETICS:
@@ -970,15 +972,13 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
         queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
     } else if (oprnObject == OperationObject::PHOTO_ALBUM) {
         queryResultSet = MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
-    } else if (oprnObject == OperationObject::PHOTO_MAP) {
+    } else if (oprnObject == OperationObject::PHOTO_MAP || oprnObject == OperationObject::ANALYSIS_PHOTO_MAP) {
         queryResultSet = PhotoMapOperations::QueryPhotoAssets(
             RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
     } else if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
         queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
-    } else if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::VISION_SHIELD) {
-        queryResultSet = MediaLibraryVisionOperations::QueryOperation(cmd, columns);
-    } else if (oprnObject >= OperationObject::GEO_DICTIONARY && oprnObject <= OperationObject::GEO_KNOWLEDGE) {
-        queryResultSet = MediaLibraryLocationOperations::QueryOperation(cmd, columns);
+    } else if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::ANALYSIS_PHOTO_ALBUM) {
+        queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
     } else {
         tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
