@@ -269,60 +269,64 @@ string MediaLibraryCommand::GetQuerySetParam(const std::string &key)
     return querySetMap_[key];
 }
 
+static const map<string, OperationObject> OPRN_OBJ_MAP = {
+    // use in Insert...
+    { MEDIA_FILEOPRN, OperationObject::FILESYSTEM_ASSET },
+    { MEDIA_PHOTOOPRN, OperationObject::FILESYSTEM_PHOTO },
+    { MEDIA_AUDIOOPRN, OperationObject::FILESYSTEM_AUDIO },
+    { MEDIA_DIROPRN, OperationObject::FILESYSTEM_DIR },
+    { MEDIA_ALBUMOPRN, OperationObject::FILESYSTEM_ALBUM },
+    { MEDIA_SMARTALBUMOPRN, OperationObject::SMART_ALBUM },
+    { MEDIA_SMARTALBUMMAPOPRN, OperationObject::SMART_ALBUM_MAP },
+    { BUNDLE_PERMISSION_INSERT, OperationObject::BUNDLE_PERMISSION },
+    { PHOTO_ALBUM_OPRN, OperationObject::PHOTO_ALBUM },
+    { PHOTO_MAP_OPRN, OperationObject::PHOTO_MAP },
+    { UFM_PHOTO, OperationObject::UFM_PHOTO },
+    { UFM_AUDIO, OperationObject::UFM_AUDIO },
+    { UFM_ALBUM, OperationObject::UFM_ALBUM },
+    { UFM_MAP, OperationObject::UFM_MAP },
+    { PAH_PHOTO, OperationObject::PAH_PHOTO },
+    { PAH_ALBUM, OperationObject::PAH_ALBUM },
+    { PAH_MAP, OperationObject::PAH_MAP },
+    { PAH_ANA_ALBUM, OperationObject::ANALYSIS_PHOTO_ALBUM },
+    { PAH_ANA_MAP, OperationObject::ANALYSIS_PHOTO_MAP },
+    { TOOL_PHOTO, OperationObject::TOOL_PHOTO },
+    { TOOL_AUDIO, OperationObject::TOOL_AUDIO },
+
+    // use in Query...
+    { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
+    { MEDIA_DATA_DB_THUMBNAIL, OperationObject::THUMBNAIL },
+    { SMARTALBUMASSETS_VIEW_NAME, OperationObject::SMART_ALBUM_ASSETS },
+    { ASSETMAP_VIEW_NAME, OperationObject::ASSETMAP },
+    { MEDIA_DEVICE_QUERYALLDEVICE, OperationObject::ALL_DEVICE },
+    { MEDIA_DEVICE_QUERYACTIVEDEVICE, OperationObject::ACTIVE_DEVICE },
+    { MEDIA_ALBUMOPRN_QUERYALBUM, OperationObject::FILESYSTEM_ALBUM },
+    { SMARTALBUM_TABLE, OperationObject::SMART_ALBUM },
+    { SMARTALBUM_MAP_TABLE, OperationObject::SMART_ALBUM_MAP },
+    { MEDIA_QUERYOPRN_QUERYVOLUME, OperationObject::MEDIA_VOLUME },
+
+    // use in Vision
+    { VISION_OCR_TABLE, OperationObject::VISION_OCR },
+    { VISION_LABEL_TABLE, OperationObject::VISION_LABEL },
+    { VISION_AESTHETICS_TABLE, OperationObject::VISION_AESTHETICS },
+    { VISION_OBJECT_TABLE, OperationObject::VISION_OBJECT },
+    { VISION_RECOMMENDATION_TABLE, OperationObject::VISION_RECOMMENDATION},
+    { VISION_SEGMENTATION_TABLE, OperationObject::VISION_SEGMENTATION },
+    { VISION_COMPOSITION_TABLE, OperationObject::VISION_COMPOSITION },
+    { VISION_TOTAL_TABLE, OperationObject::VISION_TOTAL },
+    { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
+    { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
+    { VISION_SHIELD_TABLE, OperationObject::VISION_SHIELD },
+    { PAH_ANA_OCR, OperationObject::VISION_OCR },
+    { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
+
+    // use in Location Analyse
+    { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
+    { GEO_KNOWLEDGE_TABLE, OperationObject::GEO_KNOWLEDGE },
+};
+
 void MediaLibraryCommand::ParseOprnObjectFromUri()
 {
-    static const map<string, OperationObject> OPRN_OBJ_MAP = {
-        // use in Insert...
-        { MEDIA_FILEOPRN, OperationObject::FILESYSTEM_ASSET },
-        { MEDIA_PHOTOOPRN, OperationObject::FILESYSTEM_PHOTO },
-        { MEDIA_AUDIOOPRN, OperationObject::FILESYSTEM_AUDIO },
-        { MEDIA_DIROPRN, OperationObject::FILESYSTEM_DIR },
-        { MEDIA_ALBUMOPRN, OperationObject::FILESYSTEM_ALBUM },
-        { MEDIA_SMARTALBUMOPRN, OperationObject::SMART_ALBUM },
-        { MEDIA_SMARTALBUMMAPOPRN, OperationObject::SMART_ALBUM_MAP },
-        { BUNDLE_PERMISSION_INSERT, OperationObject::BUNDLE_PERMISSION },
-        { PHOTO_ALBUM_OPRN, OperationObject::PHOTO_ALBUM },
-        { PHOTO_MAP_OPRN, OperationObject::PHOTO_MAP },
-        { UFM_PHOTO, OperationObject::UFM_PHOTO },
-        { UFM_AUDIO, OperationObject::UFM_AUDIO },
-        { UFM_ALBUM, OperationObject::UFM_ALBUM },
-        { UFM_MAP, OperationObject::UFM_MAP },
-        { PAH_PHOTO, OperationObject::PAH_PHOTO },
-        { PAH_ALBUM, OperationObject::PAH_ALBUM },
-        { PAH_MAP, OperationObject::PAH_MAP },
-        { PAH_ANA_ALBUM, OperationObject::ANALYSIS_PHOTO_ALBUM },
-        { PAH_ANA_MAP, OperationObject::ANALYSIS_PHOTO_MAP },
-        { TOOL_PHOTO, OperationObject::TOOL_PHOTO },
-        { TOOL_AUDIO, OperationObject::TOOL_AUDIO },
-
-        // use in Query...
-        { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
-        { MEDIA_DATA_DB_THUMBNAIL, OperationObject::THUMBNAIL },
-        { SMARTALBUMASSETS_VIEW_NAME, OperationObject::SMART_ALBUM_ASSETS },
-        { ASSETMAP_VIEW_NAME, OperationObject::ASSETMAP },
-        { MEDIA_DEVICE_QUERYALLDEVICE, OperationObject::ALL_DEVICE },
-        { MEDIA_DEVICE_QUERYACTIVEDEVICE, OperationObject::ACTIVE_DEVICE },
-        { MEDIA_ALBUMOPRN_QUERYALBUM, OperationObject::FILESYSTEM_ALBUM },
-        { SMARTALBUM_TABLE, OperationObject::SMART_ALBUM },
-        { SMARTALBUM_MAP_TABLE, OperationObject::SMART_ALBUM_MAP },
-        { MEDIA_QUERYOPRN_QUERYVOLUME, OperationObject::MEDIA_VOLUME },
-
-        // use in Vision
-        { VISION_OCR_TABLE, OperationObject::VISION_OCR },
-        { VISION_LABEL_TABLE, OperationObject::VISION_LABEL },
-        { VISION_AESTHETICS_TABLE, OperationObject::VISION_AESTHETICS },
-        { VISION_TOTAL_TABLE, OperationObject::VISION_TOTAL },
-        { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
-        { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
-        { VISION_SHIELD_TABLE, OperationObject::VISION_SHIELD },
-        { PAH_ANA_OCR, OperationObject::VISION_OCR },
-        { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
-
-        // use in Location Analyse
-        { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
-        { GEO_KNOWLEDGE_TABLE, OperationObject::GEO_KNOWLEDGE },
-    };
-
     const string opObject = MediaFileUri::GetPathFirstDentry(uri_);
     if (OPRN_OBJ_MAP.find(opObject) != OPRN_OBJ_MAP.end()) {
         oprnObject_ = OPRN_OBJ_MAP.at(opObject);
@@ -392,6 +396,10 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::VISION_OCR, { { OperationType::UNKNOWN_TYPE, VISION_OCR_TABLE } } },
     { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
     { OperationObject::VISION_AESTHETICS, { { OperationType::UNKNOWN_TYPE, VISION_AESTHETICS_TABLE } } },
+    { OperationObject::VISION_OBJECT, { { OperationType::UNKNOWN_TYPE, VISION_OBJECT_TABLE } } },
+    { OperationObject::VISION_RECOMMENDATION, { { OperationType::UNKNOWN_TYPE, VISION_RECOMMENDATION_TABLE } } },
+    { OperationObject::VISION_SEGMENTATION, { { OperationType::UNKNOWN_TYPE, VISION_SEGMENTATION_TABLE } } },
+    { OperationObject::VISION_COMPOSITION, { { OperationType::UNKNOWN_TYPE, VISION_COMPOSITION_TABLE } } },
     { OperationObject::VISION_TOTAL, { { OperationType::UNKNOWN_TYPE, VISION_TOTAL_TABLE } } },
     { OperationObject::VISION_IMAGE_FACE, { { OperationType::UNKNOWN_TYPE, VISION_IMAGE_FACE_TABLE } } },
     { OperationObject::VISION_FACE_TAG, { { OperationType::UNKNOWN_TYPE, VISION_FACE_TAG_TABLE } } },
