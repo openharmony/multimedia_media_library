@@ -29,6 +29,7 @@ ohos_shared_library("mediabackup") {
   ]
 
   sources = [
+    "./src/backup_database_utils.cpp",
     "./src/backup_restore_service.cpp",
     "./src/base_restore.cpp",
     "./src/clone_restore.cpp",

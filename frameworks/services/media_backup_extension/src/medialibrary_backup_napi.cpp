@@ -87,22 +87,23 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
         return result;
     }
 
-    size_t argc = ARGS_THREE;
-    napi_value argv[ARGS_THREE] = {0};
+    size_t argc = ARGS_FOUR;
+    napi_value argv[ARGS_FOUR] = {0};
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_THREE), "requires 3 parameters");
+    NAPI_ASSERT(env, (argc == ARGS_FOUR), "requires 4 parameters");
     napi_get_undefined(env, &result);
     int32_t sceneCode = GetIntFromParams(env, argv, PARAM0);
     std::string galleryAppName = GetStringFromParams(env, argv, PARAM1);
     std::string mediaAppName = GetStringFromParams(env, argv, PARAM2);
+    std::string cameraAppName = GetStringFromParams(env, argv, PARAM3);
     NAPI_INFO_LOG("StartRestore, sceneCode = %{public}d", sceneCode);
     if (sceneCode < 0) {
         NAPI_INFO_LOG("Parameters error, sceneCode = %{public}d", sceneCode);
         return result;
     }
-    BackupRestoreService::GetInstance().StartRestore(sceneCode, galleryAppName, mediaAppName);
+    BackupRestoreService::GetInstance().StartRestore(sceneCode, galleryAppName, mediaAppName, cameraAppName);
     return result;
 }
 } // namespace Media

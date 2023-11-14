@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,9 +14,12 @@
  */
 
 #include "medialibrary_backup_test.h"
+
+#include "backup_database_utils.h"
+#include "external_source.h"
+#include "gallery_source.h"
 #include "media_log.h"
 #include "update_restore.h"
-#include "result_set_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -27,8 +30,9 @@ namespace OHOS {
 namespace Media {
 const std::string TEST_ORIGIN_PATH = "/data/test/backup/db";
 const std::string TEST_UPDATE_FILE_DIR = "/data/test/backup/file";
-const std::string GALLERY_APP_NAME = "photos";
-const std::string MEDIA_APP_NAME = "mediaprovider";
+const std::string GALLERY_APP_NAME = "gallery";
+const std::string MEDIA_APP_NAME = "external";
+const std::string CAMERA_APP_NAME = "camera";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 
 const int EXPECTED_NUM = 5;
@@ -37,41 +41,6 @@ const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "fake_wechat";
 const int64_t EXPECTED_DATE_ADDED = 1432973383;
 const int64_t EXPECTED_DATE_TAKEN = 1432973383;
-
-class GalleryMediaOpenCall : public NativeRdb::RdbOpenCallback {
-public:
-    int OnCreate(NativeRdb::RdbStore &rdbStore) override;
-    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
-    static const string CREATE_GALLERY_MEDIA;
-    static const string CREATE_GARBAGE_ALBUM;
-};
-
-const string GalleryMediaOpenCall::CREATE_GALLERY_MEDIA = string("CREATE TABLE IF NOT EXISTS gallery_media ") +
-    " (id INTEGER PRIMARY KEY AUTOINCREMENT, local_media_id INTEGER, _data TEXT COLLATE NOCASE," +
-    " _display_name TEXT, description TEXT, is_hw_favorite INTEGER, _size INTEGER, recycledTime INTEGER," +
-    " duration INTEGER, media_type INTEGER, showDateToken INTEGER, date_modified INTEGER, height INTEGER, " +
-    " width INTEGER, title TEXT, orientation INTEGER, storage_id INTEGER, relative_bucket_id TEXT);";
-
-const string GalleryMediaOpenCall::CREATE_GARBAGE_ALBUM = string("CREATE TABLE IF NOT EXISTS garbage_album") +
-    "(app_name TEXT, cache_dir TEXT, nick_name TEXT, nick_dir TEXT, type INTEGER, relative_bucket_id TEXT);";
-
-int GalleryMediaOpenCall::OnCreate(RdbStore &store)
-{
-    store.ExecuteSql(CREATE_GALLERY_MEDIA);
-    return store.ExecuteSql(CREATE_GARBAGE_ALBUM);
-}
-
-int GalleryMediaOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersion)
-{
-    return 0;
-}
-
-class PhotosOpenCall : public NativeRdb::RdbOpenCallback {
-public:
-    int OnCreate(NativeRdb::RdbStore &rdbStore) override;
-    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
-    static const string CREATE_PHOTOS;
-};
 
 const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS Photos ") +
     " (file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, title TEXT, display_name TEXT, size BIGINT," +
@@ -89,55 +58,53 @@ int PhotosOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersion)
     return 0;
 }
 
-shared_ptr<NativeRdb::RdbStore> galleryStorePtr = nullptr;
 shared_ptr<NativeRdb::RdbStore> photosStorePtr = nullptr;
+std::unique_ptr<UpdateRestore> restoreService = nullptr;
 
-void InitGalleryDB()
+void Init(GallerySource &gallerySource, ExternalSource &externalSource)
 {
-    const string dbPath = TEST_ORIGIN_PATH + "/" + GALLERY_APP_NAME + "/ce/databases/gallery.db";
-    NativeRdb::RdbStoreConfig config(dbPath);
-    GalleryMediaOpenCall helper;
-    int errCode = 0;
-    shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
-    galleryStorePtr = store;
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(1, 1, ") +
-        "'/storage/emulated/0/tencent/MicroMsg/WeiXin/fake_wechat.jpg', 'fake_wechat.jpg', 'fake_wechat', " +
-        " null, 2419880, 0, 0, 1, 1432973383179, 1432973383, 2976, 3968, 'fake_wechat', 0, 65537, -1803300197)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(2, 2, '/storage/emulated/0/Pictures/favorite.jpg', ") +
-        "'favorite.jpg', 'favorite', 1, 7440437, 0, 0, 1, 1495957457427, 15464937461, 3840, 5120, " +
-        "'favorite', 0, 65537, 218866788)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(3, -4, ") +
-        "'/storage/emulated/0/Pictures/hiddenAlbum/bins/0/xxx','hidden.jpg', 'hidden', null, 2716337, 0, 0, 1, " +
-        "1495961420646, 1546937461, 2976, 3968, 'hidden', 0, 65537, 218866788)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(4, 4, ") +
-        "'/storage/emulated/0/Pictures/.Gallery2/recycle/bins/0/xx', 'trashed.jpg', 'trashed', null, 2454477, " +
-        "1698397634260, 0, 1, 1495959683996, 1546937461, 2976, 3968, 'trashed', 0, 65537, 218866788)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(5, 5, ") +
-        "'/storage/emulated/0/Pictures/orientation.jpg', 'orientation.jpg', 'orientation', null, 2781577, 0, 0," +
-        " 1, 1495962070277, 1698397638, 2448, 3264, 'orientation', 270, 65537, 218866788)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(6, 6, ") +
-        "'/storage/emulated/0/BaiduMap/cache/fake_garbage_baidu.jpg', 'fake_garbage_baidu.jpg', " +
-        "'fake_garbage_baidu', null, 2160867, 0, 0, 1, 1495954569032, 1546937461, 2976, 3968, " +
-        "'fake_garbage_baidu', 0, 65537, 1151084355)");
-    store->ExecuteSql(string("INSERT INTO garbage_album VALUES('baidu', '/BaiduMap/cache', ") +
-        "null, null, 1, 1151084355);");
-    store->ExecuteSql("INSERT INTO garbage_album VALUES(null, null, 'wechat', '/tencent/MicroMsg/WeiXin', 0, null);");
-}
-
-void InitMediaDB()
-{
+    MEDIA_INFO_LOG("start init galleryDb");
+    const string galleryDbPath = TEST_ORIGIN_PATH + "/" + GALLERY_APP_NAME + "/ce/databases/gallery.db";
+    gallerySource.Init(galleryDbPath);
+    MEDIA_INFO_LOG("end init galleryDb");
+    MEDIA_INFO_LOG("start init externalDb");
+    const string externalDbPath = TEST_ORIGIN_PATH + "/" + MEDIA_APP_NAME + "/ce/databases/external.db";
+    externalSource.Init(externalDbPath);
+    MEDIA_INFO_LOG("end init externalDb");
     const string dbPath = TEST_ORIGIN_PATH + "/" + MEDIA_LIBRARY_APP_NAME + "/ce/databases/media_library.db";
     NativeRdb::RdbStoreConfig config(dbPath);
     PhotosOpenCall helper;
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     photosStorePtr = store;
-    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME);
+    restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CAMERA_APP_NAME);
     restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
-    std::vector<FileInfo> fileInfos = restoreService -> QueryFileInfos(0);
     restoreService -> InitGarbageAlbum();
+}
+
+void RestoreFromGallery()
+{
+    std::vector<FileInfo> fileInfos = restoreService -> QueryFileInfos(0);
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        const NativeRdb::ValuesBucket values = restoreService -> GetInsertValue(fileInfos[i], TEST_ORIGIN_PATH);
+        const NativeRdb::ValuesBucket values = restoreService -> GetInsertValue(fileInfos[i], TEST_ORIGIN_PATH,
+            SourceType::GALLERY);
+        int64_t rowNum = 0;
+        if (photosStorePtr -> Insert(rowNum, "Photos", values) != E_OK) {
+            MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s", fileInfos[i].filePath.c_str());
+        }
+    }
+}
+
+void RestoreFromExternal(GallerySource &gallerySource, bool isCamera)
+{
+    MEDIA_INFO_LOG("start restore from %{public}s", (isCamera ? "camera" : "others"));
+    int32_t maxId = BackupDatabaseUtils::QueryInt(gallerySource.galleryStorePtr_, isCamera ?
+        QUERY_MAX_ID_CAMERA_SCREENSHOT : QUERY_MAX_ID_OTHERS, MAX_ID);
+    int32_t type = isCamera ? SourceType::EXTERNAL_CAMERA : SourceType::EXTERNAL_OTHERS;
+    std::vector<FileInfo> fileInfos = restoreService -> QueryFileInfosFromExternal(0, maxId, isCamera);
+    for (size_t i = 0; i < fileInfos.size(); i++) {
+        const NativeRdb::ValuesBucket values = restoreService -> GetInsertValue(fileInfos[i], TEST_ORIGIN_PATH,
+            type);
         int64_t rowNum = 0;
         if (photosStorePtr -> Insert(rowNum, "Photos", values) != E_OK) {
             MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s", fileInfos[i].filePath.c_str());
@@ -148,8 +115,12 @@ void InitMediaDB()
 void MediaLibraryBackupTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("SetUpTestCase");
-    InitGalleryDB();
-    InitMediaDB();
+    GallerySource gallerySource;
+    ExternalSource externalSource;
+    Init(gallerySource, externalSource);
+    RestoreFromGallery();
+    RestoreFromExternal(gallerySource, true);
+    RestoreFromExternal(gallerySource, false);
 }
 
 void MediaLibraryBackupTest::TearDownTestCase(void)
@@ -165,7 +136,8 @@ void MediaLibraryBackupTest::TearDown(void) {}
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_init start");
-    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME);
+    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        CAMERA_APP_NAME);
     int32_t result = restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
     EXPECT_EQ(result, 0);
     MEDIA_INFO_LOG("medialib_backup_test_init end");
@@ -174,7 +146,8 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level0)
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_total_number, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_query_total_number start");
-    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME);
+    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        CAMERA_APP_NAME);
     restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
     int32_t number = restoreService -> QueryTotalNumber();
     MEDIA_INFO_LOG("medialib_backup_test_query_total_number %{public}d", number);
@@ -276,6 +249,27 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_date_taken, TestSize
     int64_t dateTaken = GetInt64Val("date_taken", resultSet);
     EXPECT_EQ(dateTaken, EXPECTED_DATE_TAKEN);
     MEDIA_INFO_LOG("medialib_backup_test_valid_date_taken end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid start");
+    std::string queryNotSyncValid = "SELECT file_id, date_taken from Photos where display_name ='not_sync_valid.jpg'";
+    auto resultSet = photosStorePtr -> QuerySql(queryNotSyncValid);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_invalid, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_not_sync_invalid start");
+    std::string queryNotSyncInvalid =
+        "SELECT file_id, date_taken from Photos where display_name ='not_sync_invalid.jpg'";
+    auto resultSet = photosStorePtr -> QuerySql(queryNotSyncInvalid);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_not_sync_invalid end");
 }
 } // namespace Media
 } // namespace OHOS
