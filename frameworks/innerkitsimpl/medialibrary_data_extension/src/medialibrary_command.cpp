@@ -49,7 +49,9 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { MEDIA_QUERYOPRN_QUERYVOLUME, OperationType::QUERY },
     { MEDIA_BOARDCASTOPRN, OperationType::SCAN },
     { OPRN_SCAN, OperationType::SCAN },
+#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
     { OPRN_DELETE_BY_TOOL, OperationType::DELETE_TOOL },
+#endif
     { MEDIA_FILEOPRN_COPYASSET, OperationType::COPY },
     { MEDIA_DIROPRN_DELETEDIR, OperationType::DELETE },
     { MEDIA_DIROPRN_FMS_CREATEDIR, OperationType::CREATE },
@@ -391,8 +393,10 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::PAH_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
     { OperationObject::PAH_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
     { OperationObject::PAH_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
+#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
     { OperationObject::TOOL_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
     { OperationObject::TOOL_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
+#endif
     { OperationObject::VISION_OCR, { { OperationType::UNKNOWN_TYPE, VISION_OCR_TABLE } } },
     { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
     { OperationObject::VISION_AESTHETICS, { { OperationType::UNKNOWN_TYPE, VISION_AESTHETICS_TABLE } } },
