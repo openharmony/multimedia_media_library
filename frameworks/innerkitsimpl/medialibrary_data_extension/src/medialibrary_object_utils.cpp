@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "medialibrary_db_const.h"
 #define MLOG_TAG "ObjectUtils"
 
 #include "medialibrary_object_utils.h"
@@ -37,12 +36,14 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_db_const.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_smartalbum_map_operations.h"
+#include "medialibrary_xcollie_manager.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
 #include "parameter.h"
@@ -158,12 +159,14 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     assetInfo.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset.GetRelativePath());
     assetInfo.PutString(MEDIA_DATA_DB_NAME, displayName);
     assetInfo.PutString(MEDIA_DATA_DB_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
+    MediaLibraryXCollieManager xcollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat statInfo {};
     if (stat(fileAsset.GetPath().c_str(), &statInfo) == 0) {
         assetInfo.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
         assetInfo.PutLong(MEDIA_DATA_DB_DATE_ADDED, Timespec2Milliseconds(statInfo.st_ctim));
         assetInfo.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, Timespec2Milliseconds(statInfo.st_mtim));
     }
+    xcollieManager.Cancel();
     assetInfo.PutString(MEDIA_DATA_DB_FILE_PATH, fileAsset.GetPath());
     assetInfo.PutInt(MEDIA_DATA_DB_BUCKET_ID, dirAsset.GetAlbumId());
     assetInfo.PutInt(MEDIA_DATA_DB_PARENT_ID, dirAsset.GetAlbumId());
@@ -361,6 +364,7 @@ int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t par
     values.PutInt(MEDIA_DATA_DB_MEDIA_TYPE, MediaType::MEDIA_TYPE_ALBUM);
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
 
+    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat statInfo {};
     if (stat(path.c_str(), &statInfo) == 0) {
         values.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
@@ -1060,11 +1064,13 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
         dispName = dstPath.substr(found + 1);
     }
 
+    MediaLibraryXCollieManager xcollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat statInfo;
     if (stat(dstPath.c_str(), &statInfo) != 0) {
         MEDIA_ERR_LOG("dstPath %{private}s is invalid. Modify failed!", dstPath.c_str());
         return E_HAS_FS_ERROR;
     }
+    xcollieManager.Cancel();
     string fileId = cmd.GetOprnFileId();
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(dstPath));
     MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
@@ -1464,6 +1470,7 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
 
 int32_t MediaLibraryObjectUtils::CopyAssetByFd(int32_t srcFd, int32_t srcId, int32_t destFd, int32_t destId)
 {
+    MediaLibraryXCollieManager xcollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
     struct stat statSrc;
     if (fstat(srcFd, &statSrc) == -1) {
         CloseFileById(srcId);
@@ -1477,6 +1484,7 @@ int32_t MediaLibraryObjectUtils::CopyAssetByFd(int32_t srcFd, int32_t srcId, int
         MEDIA_ERR_LOG("copy file fail %{public}d ", errno);
         return E_FILE_OPER_FAIL;
     }
+    xcollieManager.Cancel();
     CloseFileById(srcId);
     CloseFileById(destId);
     return destId;
