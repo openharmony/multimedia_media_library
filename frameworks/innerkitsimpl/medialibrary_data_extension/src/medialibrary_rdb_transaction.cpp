@@ -74,38 +74,40 @@ int32_t TransactionOperations::BeginTransaction()
     MEDIA_INFO_LOG("Start transaction");
 
     unique_lock<mutex> cvLock(transactionMutex_);
+    if (isInTransaction_.load()) {
+        transactionCV_.wait_for(cvLock, chrono::milliseconds(RDB_TRANSACTION_WAIT_MS),
+            [this] () { return !(isInTransaction_.load()); });
+    }
+
     int curTryTime = 0;
     while (curTryTime < MAX_TRY_TIMES) {
-        if (isInTransaction_.load()) {
-            transactionCV_.wait_for(cvLock, chrono::milliseconds(RDB_TRANSACTION_WAIT_MS),
-                [this] () { return !(isInTransaction_.load()); });
-        }
         if (rdbStore_->IsInTransaction()) {
             this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
+            if (isInTransaction_.load() || rdbStore_->IsInTransaction()) {
+                curTryTime++;
+                MEDIA_INFO_LOG("RdbStore is in transaction, try %{public}d times...", curTryTime);
+                continue;
+            }
         }
-        if (isInTransaction_.load() || rdbStore_->IsInTransaction()) {
+
+        int32_t errCode = rdbStore_->BeginTransaction();
+        if (errCode == SQLITE3_DATABASE_LOCKER) {
             curTryTime++;
-            MEDIA_INFO_LOG("RdbStore is in transaction, try %{public}d times...", curTryTime);
+            MEDIA_ERR_LOG("Sqlite database file is locked! try %{public}d times...", curTryTime);
             continue;
+        } else if (errCode != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Start Transaction failed, errCode=%{public}d", errCode);
+            isInTransaction_.store(false);
+            transactionCV_.notify_one();
+            return E_HAS_DB_ERROR;
+        } else {
+            isInTransaction_.store(true);
+            return E_OK;
         }
-        break;
     }
 
-    if (rdbStore_->IsInTransaction()) {
-        MEDIA_ERR_LOG("RdbStore is still in transaction after try %{public}d times, abort.", MAX_TRY_TIMES);
-        return E_HAS_DB_ERROR;
-    }
-
-    isInTransaction_.store(true);
-    int32_t errCode = rdbStore_->BeginTransaction();
-    if (errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Start Transaction failed, errCode=%{public}d", errCode);
-        isInTransaction_.store(false);
-        transactionCV_.notify_one();
-        return E_HAS_DB_ERROR;
-    }
-
-    return E_OK;
+    MEDIA_ERR_LOG("RdbStore is still in transaction after try %{public}d times, abort.", MAX_TRY_TIMES);
+    return E_HAS_DB_ERROR;
 }
 
 int32_t TransactionOperations::TransactionCommit()
