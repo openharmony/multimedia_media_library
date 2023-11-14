@@ -203,7 +203,8 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
     }
 }
 
-int32_t DropAllTables(NativeRdb::RdbStore &rdbStore)
+#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
+static int32_t DropAllTables(NativeRdb::RdbStore &rdbStore)
 {
     string dropSqlRowName = "drop_table_and_view_sql";
     string queryDropSql =
@@ -275,6 +276,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
 
     return E_OK;
 }
+#endif
 
 static bool CheckOprnObject(OperationObject object)
 {
