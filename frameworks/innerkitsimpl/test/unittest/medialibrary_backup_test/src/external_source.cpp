@@ -17,6 +17,7 @@
 
 namespace OHOS {
 namespace Media {
+// create external files
 const string ExternalOpenCall::CREATE_EXTERNAL_FILES = string("CREATE TABLE IF NOT EXISTS files ") +
     "(_id INTEGER PRIMARY KEY AUTOINCREMENT, _data TEXT COLLATE NOCASE, _display_name TEXT, is_favorite INTEGER, " +
     "_size INTEGER, duration INTEGER, media_type INTEGER, date_modified INTEGER, height INTEGER, width INTEGER, " +
