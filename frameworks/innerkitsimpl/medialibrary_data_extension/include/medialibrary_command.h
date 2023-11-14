@@ -59,6 +59,10 @@ enum class OperationObject : uint32_t {
     VISION_OCR,              // Vision start
     VISION_LABEL,
     VISION_AESTHETICS,
+    VISION_OBJECT,
+    VISION_RECOMMENDATION,
+    VISION_SEGMENTATION,
+    VISION_COMPOSITION,
     VISION_TOTAL,
     VISION_IMAGE_FACE,
     VISION_FACE_TAG,

@@ -907,14 +907,21 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_OCR,
     CREATE_TAB_ANALYSIS_LABEL,
     CREATE_TAB_ANALYSIS_AESTHETICS,
+    CREATE_TAB_ANALYSIS_OBJECT,
+    CREATE_TAB_ANALYSIS_RECOMMENDATION,
+    CREATE_TAB_ANALYSIS_SEGMENTATION,
+    CREATE_TAB_ANALYSIS_COMPOSITION,
     CREATE_TAB_IMAGE_FACE,
     CREATE_TAB_FACE_TAG,
-    CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
+    CREATE_TAB_ANALYSIS_TOTAL,
     CREATE_TAB_APPLICATION_SHIELD,
     CREATE_VISION_UPDATE_TRIGGER,
     CREATE_VISION_DELETE_TRIGGER,
-    CREATE_NEW_INSERT_VISION_TRIGGER,
+    CREATE_VISION_INSERT_TRIGGER,
     CREATE_IMAGE_FACE_INDEX,
+    CREATE_OBJECT_INDEX,
+    CREATE_RECOMMENDATION_INDEX,
+    CREATE_COMPOSITION_INDEX,
     CREATE_GEO_KNOWLEDGE_TABLE,
     CREATE_GEO_DICTIONARY_TABLE,
     CREATE_ANALYSIS_ALBUM,
@@ -1255,6 +1262,27 @@ static void AddAnalysisAlbum(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddAestheticCompositionTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_TAB_ANALYSIS_OBJECT,
+        CREATE_TAB_ANALYSIS_RECOMMENDATION,
+        CREATE_TAB_ANALYSIS_SEGMENTATION,
+        CREATE_TAB_ANALYSIS_COMPOSITION,
+        DROP_INSERT_VISION_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER,
+        AC_ADD_OBJECT_COLUMN_FOR_TOTAL,
+        AC_ADD_RECOMMENDATION_COLUMN_FOR_TOTAL,
+        AC_ADD_SEGMENTATION_COLUMN_FOR_TOTAL,
+        AC_ADD_COMPOSITION_COLUMN_FOR_TOTAL,
+        CREATE_OBJECT_INDEX,
+        CREATE_RECOMMENDATION_INDEX,
+        CREATE_COMPOSITION_INDEX
+    };
+    MEDIA_INFO_LOG("start add aesthetic composition tables");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void MediaLibraryRdbStore::ResetAnalysisTables()
 {
     if (rdbStore_ == nullptr) {
@@ -1268,6 +1296,10 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
         "DROP TABLE IF EXISTS tab_analysis_ocr",
         "DROP TABLE IF EXISTS tab_analysis_label",
         "DROP TABLE IF EXISTS tab_analysis_aesthetics_score",
+        "DROP TABLE IF EXISTS tab_analysis_object",
+        "DROP TABLE IF EXISTS tab_analysis_recommendation",
+        "DROP TABLE IF EXISTS tab_analysis_segmentation",
+        "DROP TABLE IF EXISTS tab_analysis_composition",
         "DROP TABLE IF EXISTS tab_analysis_total",
         "DROP TABLE IF EXISTS tab_application_shield",
         "DROP TABLE IF EXISTS tab_analysis_image_face",
@@ -1277,6 +1309,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     ExecSqls(executeSqlStrs, *rdbStore_);
     AddAnalysisTables(*rdbStore_);
     AddFaceTables(*rdbStore_);
+    AddAestheticCompositionTables(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -1664,6 +1697,29 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
+static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_VISION_TABLE) {
+        AddAnalysisTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_FACE_TABLE) {
+        AddFaceTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SOURCE_ALBUM_TRIGGER) {
+        AddSourceAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_VISION_ALBUM) {
+        AddAnalysisAlbum(store);
+    }
+
+    if (oldVersion < VERSION_ADD_AESTHETIC_COMPOSITION_TABLE) {
+        AddAestheticCompositionTables(store);
+    }
+}
+
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
     MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
@@ -1706,26 +1762,11 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     UpgradeOtherTable(store, oldVersion);
     UpgradeGalleryFeatureTable(store, oldVersion);
+    UpgradeVisionTable(store, oldVersion);
 
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);
-    }
-
-    if (oldVersion < VERSION_ADD_VISION_TABLE) {
-        AddAnalysisTables(store);
-    }
-
-    if (oldVersion < VERSION_ADD_FACE_TABLE) {
-        AddFaceTables(store);
-    }
-
-    if (oldVersion < VERSION_ADD_SOURCE_ALBUM_TRIGGER) {
-        AddSourceAlbumTrigger(store);
-    }
-
-    if (oldVersion < VERSION_ADD_VISION_ALBUM) {
-        AddAnalysisAlbum(store);
     }
     return NativeRdb::E_OK;
 }
