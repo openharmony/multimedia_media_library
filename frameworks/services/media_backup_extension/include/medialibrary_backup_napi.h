@@ -22,7 +22,6 @@
 #include "napi/native_node_api.h"
 #include "napi_error.h"
 #include "napi_remote_object.h"
-#include "backup_defines.h"
 
 namespace OHOS {
 namespace Media {

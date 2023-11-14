@@ -13,31 +13,27 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_BACKUP_TEST_H
-#define MEDIALIBRARY_BACKUP_TEST_H
+#include "backup_database_utils.h"
 
-#include "gtest/gtest.h"
-#include "rdb_helper.h"
+#include "backup_const.h"
+#include "media_log.h"
 #include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
-class PhotosOpenCall;
-
-class MediaLibraryBackupTest : public testing::Test {
-public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
-};
-
-class PhotosOpenCall : public NativeRdb::RdbOpenCallback {
-public:
-    int OnCreate(NativeRdb::RdbStore &rdbStore) override;
-    int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
-    static const std::string CREATE_PHOTOS;
-};
+int32_t BackupDatabaseUtils::QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
+    const std::string &column)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdb_ is nullptr, Maybe init failed.");
+        return 0;
+    }
+    auto resultSet = rdbStore->QuerySql(sql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return 0;
+    }
+    int32_t result = GetInt32Val(column, resultSet);
+    return result;
+}
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIALIBRARY_BACKUP_TEST_H

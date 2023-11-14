@@ -13,31 +13,32 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_BACKUP_TEST_H
-#define MEDIALIBRARY_BACKUP_TEST_H
+#ifndef EXTERNAL_SROUCE_H
+#define EXTERNAL_SROUCE_H
 
-#include "gtest/gtest.h"
-#include "rdb_helper.h"
+#include <string>
+
 #include "result_set_utils.h"
+#include "rdb_helper.h"
 
 namespace OHOS {
 namespace Media {
-class PhotosOpenCall;
+class ExternalOpenCall;
 
-class MediaLibraryBackupTest : public testing::Test {
+class ExternalSource {
 public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
+    void Init(const std::string &path);
+
+private:
+    std::shared_ptr<NativeRdb::RdbStore> galleryStorePtr_;
 };
 
-class PhotosOpenCall : public NativeRdb::RdbOpenCallback {
+class ExternalOpenCall : public NativeRdb::RdbOpenCallback {
 public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override;
     int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
-    static const std::string CREATE_PHOTOS;
+    static const string CREATE_EXTERNAL_FILES;
 };
 } // namespace Media
 } // namespace OHOS
-#endif // MEDIALIBRARY_BACKUP_TEST_H
+#endif // EXTERNAL_SROUCE_H
