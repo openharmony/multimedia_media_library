@@ -382,54 +382,57 @@ static void ChangeUriFromValuesBucket(ValuesBucket &values)
 int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 {
     switch (cmd.GetOprnObject()) {
-        case OperationObject::FILESYSTEM_ASSET: {
+        case OperationObject::FILESYSTEM_ASSET:
             return MediaLibraryFileOperations::HandleFileOperation(cmd);
-        }
+
         case OperationObject::FILESYSTEM_PHOTO:
-        case OperationObject::FILESYSTEM_AUDIO: {
+        case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAssetOperations::HandleInsertOperation(cmd);
-        }
-        case OperationObject::FILESYSTEM_ALBUM: {
+
+        case OperationObject::FILESYSTEM_ALBUM:
             return MediaLibraryAlbumOperations::CreateAlbumOperation(cmd);
-        }
+
         case OperationObject::ANALYSIS_PHOTO_ALBUM:
-        case OperationObject::PHOTO_ALBUM: {
+        case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::HandlePhotoAlbumOperations(cmd);
-        }
-        case OperationObject::FILESYSTEM_DIR: {
+
+        case OperationObject::FILESYSTEM_DIR:
             return MediaLibraryDirOperations::HandleDirOperation(cmd);
-        }
-        case OperationObject::SMART_ALBUM: {
+
+        case OperationObject::SMART_ALBUM:
             return MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperation(cmd);
-        }
-        case OperationObject::SMART_ALBUM_MAP: {
+
+        case OperationObject::SMART_ALBUM_MAP:
             return MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
-        }
-        case OperationObject::THUMBNAIL: {
+
+        case OperationObject::THUMBNAIL:
             return HandleThumbnailOperations(cmd);
-        }
-        case OperationObject::BUNDLE_PERMISSION: {
+
+        case OperationObject::BUNDLE_PERMISSION:
             return UriPermissionOperations::HandleUriPermOperations(cmd);
-        }
+
         case OperationObject::ANALYSIS_PHOTO_MAP:
         case OperationObject::VISION_OCR:
         case OperationObject::VISION_LABEL:
         case OperationObject::VISION_AESTHETICS:
+        case OperationObject::VISION_OBJECT:
+        case OperationObject::VISION_RECOMMENDATION:
+        case OperationObject::VISION_SEGMENTATION:
+        case OperationObject::VISION_COMPOSITION:
         case OperationObject::VISION_TOTAL:
         case OperationObject::VISION_IMAGE_FACE:
         case OperationObject::VISION_FACE_TAG:
-        case OperationObject::VISION_SHIELD: {
+        case OperationObject::VISION_SHIELD:
             return MediaLibraryVisionOperations::InsertOperation(cmd);
-        }
+
         case OperationObject::GEO_DICTIONARY:
-        case OperationObject::GEO_KNOWLEDGE: {
+        case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::InsertOperation(cmd);
-        }
-        default: {
+
+        default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
             return E_FAIL;
-        }
     }
 }
 
@@ -582,6 +585,10 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::VISION_OCR:
         case OperationObject::VISION_LABEL:
         case OperationObject::VISION_AESTHETICS:
+        case OperationObject::VISION_OBJECT:
+        case OperationObject::VISION_RECOMMENDATION:
+        case OperationObject::VISION_SEGMENTATION:
+        case OperationObject::VISION_COMPOSITION:
         case OperationObject::VISION_TOTAL:
         case OperationObject::VISION_IMAGE_FACE:
         case OperationObject::VISION_FACE_TAG:
@@ -998,7 +1005,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryC
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return nullptr;
     }
-  
+
     return QuerySet(cmd, columns, predicates, errCode);
 }
 
