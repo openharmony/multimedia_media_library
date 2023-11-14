@@ -250,12 +250,10 @@ std::vector<FileInfo> UpdateRestore::QueryFileInfosFromExternal(int32_t offset, 
         MEDIA_ERR_LOG("Query resultSql is null.");
         return result;
     }
-    MEDIA_ERR_LOG("Set %{public}d", (int)cacheSet_.size());
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
         if (ParseResultSet(resultSet, tmpInfo)) {
             std::string findPath = tmpInfo.relativePath;
-            MEDIA_ERR_LOG("findPath %{public}s", findPath.c_str());
             bool isValid = IsValidDir(findPath);
             if (isValid) {
                 result.emplace_back(tmpInfo);

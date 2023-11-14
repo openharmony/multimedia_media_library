@@ -124,7 +124,7 @@ const std::string QUERY_MAX_ID_OTHERS = "SELECT max(local_media_id) AS max_id FR
     (storage_id IN (0, 65537) or storage_id IS NULL)";
 
 const std::string QUERY_GALLERY_COUNT = "SELECT count(1) AS count FROM gallery_media \
-    WHERE (local_media_id >= 0 OR local_media_id == -4) AND (storage_id = 65537) AND relative_bucket_id NOT IN ( \
+    WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
     SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)";
 
 const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + GALLERY_FILE_DATA + "," +
