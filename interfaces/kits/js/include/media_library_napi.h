@@ -61,6 +61,12 @@ struct MediaChangeListener {
     OHOS::DataShare::DataShareObserver::ChangeInfo changeInfo;
     std::string strUri;
 };
+
+struct AnalysisProperty {
+    std::string enumName;
+    int32_t enumValue;
+};
+
 class MediaOnNotifyObserver;
 class ChangeListenerNapi {
 public:

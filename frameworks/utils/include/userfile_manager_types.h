@@ -47,11 +47,16 @@ enum MediaType {
     MEDIA_TYPE_DEFAULT,
 };
 
-enum AnalysisType {
+enum AnalysisType : int32_t {
     ANALYSIS_INVALID = -1,
     ANALYSIS_AETSTHETICS_SCORE,
     ANALYSIS_LABEL,
     ANALYSIS_OCR,
+    ANALYSIS_FACE,
+    ANALYSIS_OBJECT,
+    ANALYSIS_RECOMMENDATION,
+    ANALYSIS_SEGMENTATION,
+    ANALYSIS_COMPOSITION,
 };
 
 enum PhotoAlbumType : int32_t {

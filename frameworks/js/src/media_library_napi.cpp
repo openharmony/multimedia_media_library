@@ -5351,15 +5351,24 @@ napi_value MediaLibraryNapi::CreateAlbumSubTypeEnum(napi_env env)
 
 napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
 {
+    struct AnalysisProperty property[] = {
+        { "ANALYSIS_AETSTHETICS_SCORE", AnalysisType::ANALYSIS_AETSTHETICS_SCORE },
+        { "ANALYSIS_LABEL", AnalysisType::ANALYSIS_LABEL },
+        { "ANALYSIS_OCR", AnalysisType::ANALYSIS_OCR },
+        { "ANALYSIS_FACE", AnalysisType::ANALYSIS_FACE },
+        { "ANALYSIS_OBJECT", AnalysisType::ANALYSIS_OBJECT },
+        { "ANALYSIS_RECOMMENDATION", AnalysisType::ANALYSIS_RECOMMENDATION },
+        { "ANALYSIS_SEGMENTATION", AnalysisType::ANALYSIS_SEGMENTATION },
+        { "ANALYSIS_COMPOSITION", AnalysisType::ANALYSIS_COMPOSITION },
+    };
+
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
 
-    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "ANALYSIS_AETSTHETICS_SCORE",
-        AnalysisType::ANALYSIS_AETSTHETICS_SCORE), JS_INNER_FAIL);
-    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "ANALYSIS_LABEL",
-        AnalysisType::ANALYSIS_LABEL), JS_INNER_FAIL);
-    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "ANALYSIS_OCR",
-        AnalysisType::ANALYSIS_OCR), JS_INNER_FAIL);
+    for (int32_t i = 0; i < sizeof(property) / sizeof(property[0]); i++) {
+        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, property[i].enumName, property[i].enumValue),
+            JS_INNER_FAIL);
+    }
 
     CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAnalysisType_), JS_INNER_FAIL);
     return result;

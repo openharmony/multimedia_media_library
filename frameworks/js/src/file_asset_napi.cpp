@@ -1781,24 +1781,34 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
     return result;
 }
 
+static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = {
+    { ANALYSIS_AETSTHETICS_SCORE, { PAH_QUERY_ANA_ATTS, { AESTHETICS_SCORE, PROB } } },
+    { ANALYSIS_LABEL, { PAH_QUERY_ANA_LABEL, { CATEGORY_ID, SUB_LABEL, PROB, FEATURE, SIM_RESULT } } },
+    { ANALYSIS_OCR, { PAH_QUERY_ANA_OCR, { OCR_TEXT, OCR_TEXT_MSG, OCR_WIDTH, OCR_HEIGHT } } },
+    { ANALYSIS_FACE, { PAH_QUERY_ANA_FACE, { FACE_ID, TAG_ID, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT, LANDMARKS,
+        PITCH, YAW, ROLL, PROB, TOTAL_FACES, FEATURES } } },
+    { ANALYSIS_OBJECT, { PAH_QUERY_ANA_OBJECT, { OBJECT_ID, OBJECT_LABEL, OBJECT_SCALE_X, OBJECT_SCALE_Y,
+        OBJECT_SCALE_WIDTH, OBJECT_SCALE_HEIGHT } } },
+    { ANALYSIS_RECOMMENDATION, { PAH_QUERY_ANA_RECOMMENDATION, { RECOMMENDATION_ID, RECOMMENDATION_RESOLUTION,
+        RECOMMENDATION_SCALE_X, RECOMMENDATION_SCALE_Y, RECOMMENDATION_SCALE_WIDTH, RECOMMENDATION_SCALE_HEIGHT } } },
+    { ANALYSIS_SEGMENTATION, { PAH_QUERY_ANA_SEGMENTATION, { SEGMENTATION_AREA } } },
+    { ANALYSIS_COMPOSITION, { PAH_QUERY_ANA_COMPOSITION, { COMPOSITION_ID, COMPOSITION_RESOLUTION, CLOCK_STYLE,
+        CLOCK_LOCATION_X, CLOCK_LOCATION_Y, CLOCK_COLOUR, COMPOSITION_SCALE_X, COMPOSITION_SCALE_Y,
+        COMPOSITION_SCALE_WIDTH, COMPOSITION_SCALE_HEIGHT } } },
+};
+
 static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSGetThumbnailExecute");
-    std::vector<std::string> fetchColumn;
     string uriStr;
-    switch (context->analysisType) {
-        case ANALYSIS_OCR:
-            uriStr = PAH_QUERY_ANA_OCR;
-            fetchColumn = {OCR_TEXT, OCR_TEXT_MSG, OCR_PRE_MSG};
-            break;
-        case ANALYSIS_AETSTHETICS_SCORE:
-            uriStr = PAH_QUERY_ANA_ATTS;
-            fetchColumn = {AESTHETICS_SCORE, PROB};
-            break;
-        default:
-            NAPI_ERR_LOG("Invalid analysisType");
-            return;
+    std::vector<std::string> fetchColumn;
+    if (ANALYSIS_SOURCE_INFO_MAP.find(context->analysisType) != ANALYSIS_SOURCE_INFO_MAP.end()) {
+        uriStr = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).uriStr;
+        fetchColumn = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).fetchColumn;
+    } else {
+        NAPI_ERR_LOG("Invalid analysisType");
+        return;
     }
     int fileId = context->objectInfo->GetFileId();
     Uri uri (uriStr);
@@ -3962,7 +3972,7 @@ napi_value FileAssetNapi::PhotoAccessHelperGetAnalysisData(napi_env env, napi_ca
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperGetAnalysisData");
-    
+
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
