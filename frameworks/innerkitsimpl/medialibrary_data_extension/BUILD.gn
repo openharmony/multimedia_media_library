@@ -226,6 +226,9 @@ ohos_shared_library("medialibrary_data_extension") {
       blocklist = "./extension_blocklist.txt"
     }
   }
+  if (build_variant == "root") {
+    defines += [ "MEDIALIBRARY_MEDIATOOL_ENABLE=1" ]
+  }
 
   cflags_cc = [
     "-fvisibility-inlines-hidden",

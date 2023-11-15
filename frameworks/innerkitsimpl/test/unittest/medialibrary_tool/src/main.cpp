@@ -12,6 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#ifndef MEDIALIBRARY_MEDIATOOL_START
+int main(int argc, char *argv[])
+{
+    return 0;
+}
+#else
 #include <string>
 #include <vector>
 
@@ -29,3 +36,5 @@ int main(int argc, char *argv[])
     }
     return ControlMain::Main(args);
 }
+#endif // MEDIALIBRARY_MEDIATOOL_START
+
