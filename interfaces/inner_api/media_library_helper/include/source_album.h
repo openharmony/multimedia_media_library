@@ -92,9 +92,13 @@ const std::string SOURCE_ALBUM_WHERE_UPDATE =
     " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE);
 
 const std::string WNEH_SOURCE_PHOTO_COUNT =
-    " WHEN ( SELECT COUNT(1) FROM " + PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
+    " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND ( SELECT COUNT(1) FROM " +
+        PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
+
+const std::string WNEH_UPDATE_AND_DELETE = " WHEN OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL ";
 
 const std::string TRIGGER_CODE_UPDATE_AND_DELETE =
+    WNEH_UPDATE_AND_DELETE +
     " BEGIN UPDATE " + PhotoAlbumColumns::TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COUNT + " = " + COUNT_VALUE_UPDATE + SOURCE_ALBUM_WHERE_UPDATE + ";" +
     " UPDATE " + PhotoAlbumColumns::TABLE +
