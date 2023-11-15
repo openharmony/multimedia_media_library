@@ -199,6 +199,8 @@ static shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cm
     } else {
         predicates.And()->EqualTo(
             PhotoColumn::PHOTO_SYNC_STATUS, std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+        predicates.And()->EqualTo(
+            PhotoColumn::PHOTO_CLEAN_FLAG, std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
         return MediaLibraryRdbStore::GetIndexOfUri(predicates, columns, photoId);
     }
 }
@@ -1031,7 +1033,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
     }
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, editData), E_HAS_FS_ERROR,
         "Failed to write editdata path:%{private}s", editDataPath.c_str());
-    
+
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
         to_string(PhotoAlbumSubType::IMAGES),
@@ -1095,14 +1097,14 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     string sourcePath = GetEditDataSourcePath(path);
     CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Cannot get source path, id=%{public}d", fileId);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourcePath), E_NO_SUCH_FILE, "Can not get source file");
-    
+
     string editDataPath = GetEditDataPath(path);
     CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_URI, "Cannot get editdata path, id=%{public}d", fileId);
     if (MediaFileUtils::IsFileExists(editDataPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(editDataPath), E_HAS_FS_ERROR,
             "Failed to delete edit data, path:%{private}s", editDataPath.c_str());
     }
-    
+
     if (MediaFileUtils::IsFileExists(path)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(path), E_HAS_FS_ERROR,
             "Failed to delete asset, path:%{private}s", path.c_str());

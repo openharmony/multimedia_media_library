@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include/media_column.h"
 #define MLOG_TAG "RdbStore"
 
 #include "medialibrary_rdbstore.h"
@@ -866,6 +867,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_DAY_INDEX,
     PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
     PhotoColumn::CREATE_SHPT_DAY_INDEX,
+    PhotoColumn::CREATE_SHPT_ClEAN_FLAG_INDEX,
     PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
@@ -1495,11 +1497,25 @@ void AddYearMonthDayColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddNeedCleanAndThumbStatus(RdbStore &store) {
+    const std::string addSyncStatus = {
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SHPT_ADDED_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SHPT_MEDIA_TYPE_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SHPT_DAY_INDEX,
+        BaseColumn::AlterTableAddIntColumn(PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_CLEAN_FLAG),
+        BaseColumn::AlterTableAddIntColumn(PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_THUMB_STATUS),
+        PhotoColumn::CREATE_SHPT_ClEAN_FLAG_INDEX,
+    }
+    result = ExecSqls(addSyncStatus);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb need clean and thumb status error %{private}d", result);
+    }
+}
+
 static void AddPhotoEditTimeColumn(RdbStore &store)
 {
     const string addEditTimeOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::PHOTO_EDIT_TIME + " BIGINT DEFAULT 0";
-
     const vector<string> addEditTime = { addEditTimeOnPhotos };
     ExecSqls(addEditTime, store);
 }
@@ -1758,6 +1774,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_TABLE_TYPE) {
         AddTableType(store);
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_CLEAN_FLAG_AND_THUMB_STATUS) {
+        AddNeedCleanAndThumbStatus(store);
     }
 
     UpgradeOtherTable(store, oldVersion);
