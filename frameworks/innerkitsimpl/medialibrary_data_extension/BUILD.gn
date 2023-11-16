@@ -225,6 +225,10 @@ ohos_shared_library("medialibrary_data_extension") {
       cfi_cross_dso = true
       debug = false
       blocklist = "./extension_blocklist.txt"
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
   if (build_variant == "root") {
