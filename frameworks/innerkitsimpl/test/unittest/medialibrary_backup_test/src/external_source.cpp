@@ -51,11 +51,12 @@ void ExternalSource::Init(const string &dbPath)
         "'/storage/emulated/0/MicroMsg/WeiXin/not_sync_valid.jpg', 'not_sync_valid.jpg', 0, 3503265, null, 1, " +
         "1546937461, 2976, 3968, 'not_sync_valid.jpg', 0, 1699781529, -924335728, 0, 'weixin')");
     store->ExecuteSql(string("INSERT INTO files VALUES(10, ") +
-        "'/storage/emulated/0/DCIM/Camera/not_sync_pending_camera.jpg', 'not_sync_pending_camera.jpg', 0, 3503265, null, 1, " +
-        "1546937461, 2976, 3968, 'not_sync_pending_camera.jpg', 0, 1699781529, -1739773001, 1, 'camera')");
+        "'/storage/emulated/0/DCIM/Camera/not_sync_pending_camera.jpg', 'not_sync_pending_camera.jpg', 0, 3503265, " +
+        "null, 1, 1546937461, 2976, 3968, 'not_sync_pending_camera.jpg', 0, 1699781529, -1739773001, 1, 'camera')");
     store->ExecuteSql(string("INSERT INTO files VALUES(11, ") +
-        "'/storage/emulated/0/MicroMsg/WeiXin/not_sync_pending_others.jpg', 'not_sync_pending_others.jpg', 0, 3503265, null, 1, " +
-        "1546937461, 2976, 3968, 'not_sync_pending_others.jpg', 0, 1699781529, -924335728, 1, 'others')");
+        "'/storage/emulated/0/MicroMsg/WeiXin/not_sync_pending_others.jpg', 'not_sync_pending_others.jpg', 0, " +
+        "3503265, null, 1, 1546937461, 2976, 3968, 'not_sync_pending_others.jpg', 0, 1699781529, -924335728, 1, " +
+        "'others')");
 }
 } // namespace Media
 } // namespace OHOS
