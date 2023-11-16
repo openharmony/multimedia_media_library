@@ -87,7 +87,8 @@ bool ThumbnailRequest::NeedContinue()
 
 static bool IsPhotoSizeThumb(const Size &size)
 {
-    return (size.width >= DEFAULT_THUMB_SIZE || size.height >= DEFAULT_THUMB_SIZE);
+    return ((size.width >= DEFAULT_THUMB_SIZE || size.height >= DEFAULT_THUMB_SIZE) ||
+        (size.width == DEFAULT_MTH_SIZE || size.height == DEFAULT_MTH_SIZE));
 }
 
 static bool NeedFastThumb(const Size &size, RequestPhotoType type)
@@ -174,12 +175,8 @@ void ThumbnailManager::Init()
     }
     init_ = true;
     isThreadRunning_ = true;
-    for (auto i = 0; i < FAST_THREAD_NUM; i++) {
-        fastThreads_.emplace_back(bind(&ThumbnailManager::FastImageWorker, this, i));
-        fastThreads_[i].detach();
-    }
     for (auto i = 0; i < THREAD_NUM; i++) {
-        threads_.emplace_back(bind(&ThumbnailManager::QualityImageWorker, this, i));
+        threads_.emplace_back(bind(&ThumbnailManager::ImageWorker, this, i));
         threads_[i].detach();
     }
     return;
@@ -220,11 +217,6 @@ ThumbnailManager::~ThumbnailManager()
     isThreadRunning_ = false;
     fastCv_.notify_all();
     qualityCv_.notify_all();
-    for (auto &fastThread_ : fastThreads_) {
-        if (fastThread_.joinable()) {
-            fastThread_.join();
-        }
-    }
     for (auto &thread : threads_) {
         if (thread.joinable()) {
             thread.join();
@@ -253,22 +245,31 @@ void ThumbnailManager::AddQualityPhotoRequest(const RequestSharedPtr &request)
     qualityCv_.notify_one();
 }
 
-static void GetFastThumbNewSize(const Size &size, Size &newSize)
+static bool GetFastThumbNewSize(const Size &size, Size &newSize)
 {
-    if (size.width > DEFAULT_THUMB_SIZE || size.height > DEFAULT_THUMB_SIZE) {
-        newSize.height = DEFAULT_THUMB_SIZE;
-        newSize.width = DEFAULT_THUMB_SIZE;
-    } else if (size.width > DEFAULT_MTH_SIZE || size.height > DEFAULT_MTH_SIZE) {
-        newSize.height = DEFAULT_MTH_SIZE;
-        newSize.width = DEFAULT_MTH_SIZE;
-    } else if (size.width > DEFAULT_YEAR_SIZE || size.height > DEFAULT_YEAR_SIZE) {
+    // if thumbnail size is YEAR SIZE, do not need to request fast thumb
+    // if thumbnail size is MTH SIZE, return YEAR SIZE
+    // if thumbnail size is THUMB SIZE, return MTH SIZE
+    // else return THUMB SIZE
+    if (size.width == DEFAULT_YEAR_SIZE && size.height == DEFAULT_YEAR_SIZE) {
         newSize.height = DEFAULT_YEAR_SIZE;
         newSize.width = DEFAULT_YEAR_SIZE;
+        return false;
+    } else if (size.width == DEFAULT_MTH_SIZE && size.height == DEFAULT_MTH_SIZE) {
+        newSize.height = DEFAULT_YEAR_SIZE;
+        newSize.width = DEFAULT_YEAR_SIZE;
+        return true;
+    } else if (size.width <= DEFAULT_THUMB_SIZE && size.height <= DEFAULT_THUMB_SIZE) {
+        newSize.height = DEFAULT_MTH_SIZE;
+        newSize.width = DEFAULT_MTH_SIZE;
+        return true;
     } else {
-        // Size is small enough, do not need to smaller
-        return;
+        newSize.height = DEFAULT_THUMB_SIZE;
+        newSize.width = DEFAULT_THUMB_SIZE;
+        return true;
     }
 }
+
 
 static int OpenThumbnail(const string &path, ThumbnailType type)
 {
@@ -401,6 +402,18 @@ static PixelMapPtr DecodeThumbnail(UniqueFd &uniqueFd, const Size &size)
     return pixelMap;
 }
 
+static int32_t GetPixelMapFromServer(const string &uriStr, const Size &size, const string &path)
+{
+    string openUriStr = uriStr + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
+        MEDIA_DATA_DB_WIDTH + "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" +
+        to_string(size.height);
+    if (IsAsciiString(path)) {
+        openUriStr += "&" + THUMBNAIL_PATH + "=" + path;
+    }
+    Uri openUri(openUriStr);
+    return UserFileClient::OpenFile(openUri, "R");
+}
+
 unique_ptr<PixelMap> ThumbnailManager::QueryThumbnail(const string &uriStr, const Size &size, const string &path)
 {
     MediaLibraryTracer tracer;
@@ -413,14 +426,7 @@ unique_ptr<PixelMap> ThumbnailManager::QueryThumbnail(const string &uriStr, cons
     }
     UniqueFd uniqueFd(OpenThumbnail(path, thumbType));
     if (uniqueFd.Get() == E_ERR) {
-        string openUriStr = uriStr + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" +
-            MEDIA_DATA_DB_WIDTH + "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" +
-            to_string(size.height);
-        if (IsAsciiString(path)) {
-            openUriStr += "&" + THUMBNAIL_PATH + "=" + path;
-        }
-        Uri openUri(openUriStr);
-        uniqueFd = UniqueFd(UserFileClient::OpenFile(openUri, "R"));
+        uniqueFd = UniqueFd(GetPixelMapFromServer(uriStr, size, path));
     }
     if (uniqueFd.Get() < 0) {
         NAPI_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
@@ -444,15 +450,29 @@ bool ThumbnailManager::RequestFastImage(const RequestSharedPtr &request)
     MediaLibraryTracer tracer;
     tracer.Start("ThumbnailManager::RequestFastImage");
     Size fastSize;
-    GetFastThumbNewSize(request->GetRequestSize(), fastSize);
-    UniqueFd uniqueFd(OpenThumbnail(request->GetPath(), GetThumbType(fastSize.width, fastSize.height)));
-    if (uniqueFd.Get() < 0) {
+    if (!GetFastThumbNewSize(request->GetRequestSize(), fastSize)) {
         return false;
     }
-    
-    PixelMapPtr pixelMap = CreateThumbnailByAshmem(uniqueFd, fastSize);
+    UniqueFd uniqueFd(OpenThumbnail(request->GetPath(), GetThumbType(fastSize.width, fastSize.height)));
+    if (uniqueFd.Get() < 0) {
+        uniqueFd = UniqueFd(GetPixelMapFromServer(request->GetUri(), fastSize, request->GetPath()));
+    }
+    if (uniqueFd.Get() < 0) {
+        NAPI_ERR_LOG("Can not get pixelMap from uri %{public}s", request->GetUri().c_str());
+        request->error = E_FAIL;
+        return false;
+    }
+
+    ThumbnailType thumbType = GetThumbType(fastSize.width, fastSize.height);
+    PixelMapPtr pixelMap = nullptr;
+    if (thumbType == ThumbnailType::MTH || thumbType == ThumbnailType::YEAR) {
+        pixelMap = CreateThumbnailByAshmem(uniqueFd, fastSize);
+    } else {
+        pixelMap = DecodeThumbnail(uniqueFd, fastSize);
+    }
     if (pixelMap == nullptr) {
         request->error = E_FAIL;
+        return false;
     }
     request->SetFastPixelMap(move(pixelMap));
     return true;
@@ -483,54 +503,43 @@ void ThumbnailManager::DealWithFastRequest(const RequestSharedPtr &request)
     }
 }
 
-void ThumbnailManager::FastImageWorker(int num)
+void ThumbnailManager::DealWithQualityRequest(const RequestSharedPtr &request)
 {
-    SetThreadName("FastImageWorker", num);
+    MediaLibraryTracer tracer;
+    tracer.Start("ThumbnailManager::DealWithQualityRequest");
+
+    auto pixelMapPtr = QueryThumbnail(request->GetUri(), request->GetRequestSize(), request->GetPath());
+    if (pixelMapPtr == nullptr) {
+        request->error = E_FAIL;
+    }
+    request->SetPixelMap(move(pixelMapPtr));
+
+    // callback
+    NotifyImage(request, false);
+}
+
+void ThumbnailManager::ImageWorker(int num)
+{
+    SetThreadName("ImageWorker", num);
     while (true) {
         if (!isThreadRunning_) {
             return;
         }
-        if (fastQueue_.Empty()) {
-            std::unique_lock<std::mutex> lock(fastLock_);
-            fastCv_.wait(lock, [this]() {
-                return !isThreadRunning_ || !fastQueue_.Empty();
-            });
-        } else {
+        if (!fastQueue_.Empty()) {
             RequestSharedPtr request;
             if (fastQueue_.Pop(request) && request->NeedContinue()) {
                 DealWithFastRequest(request);
             }
-        }
-    }
-}
-
-void ThumbnailManager::QualityImageWorker(int num)
-{
-    SetThreadName("QualityImageWorker", num);
-    while (true) {
-        if (!isThreadRunning_) {
-            return;
-        }
-        if (qualityQueue_.Empty()) {
+        } else if (!qualityQueue_.Empty()) {
+            RequestSharedPtr request;
+            if (qualityQueue_.Pop(request) && request->NeedContinue()) {
+                DealWithQualityRequest(request);
+            }
+        } else {
             std::unique_lock<std::mutex> lock(qualityLock_);
             qualityCv_.wait(lock, [this]() {
                 return !isThreadRunning_ || !qualityQueue_.Empty();
             });
-        } else {
-            RequestSharedPtr request;
-            if (!qualityQueue_.Pop(request) || !request->NeedContinue()) {
-                continue;
-            }
-            // request quality image
-            auto pixelMapPtr = QueryThumbnail(request->GetUri(),
-                request->GetRequestSize(), request->GetPath());
-            if (pixelMapPtr == nullptr) {
-                request->error = E_FAIL;
-            }
-            request->SetPixelMap(move(pixelMapPtr));
-
-            // callback
-            NotifyImage(request, false);
         }
     }
 }

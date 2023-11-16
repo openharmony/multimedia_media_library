@@ -14,9 +14,11 @@
  */
 #include "command/send_command_v10.h"
 
+#include <chrono>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <thread>
 #include <unistd.h>
 
 #include "constant.h"
@@ -31,6 +33,10 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
+static constexpr int32_t SLEEP_TIME = 10000;
+static constexpr int32_t SLEEP_INTERVAL = 100;
+static constexpr int32_t SLEEP_NOTIFY_TIME = 1000;
+
 struct FileInfo {
     Media::MediaType mediaType {Media::MediaType::MEDIA_TYPE_DEFAULT};
     std::string displayName;
@@ -194,12 +200,24 @@ static int32_t SendFile(const ExecEnv &env, FileInfo &fileInfo)
     return Media::E_OK;
 }
 
+static void SleepInterval(int32_t count)
+{
+    for (int i = 1; i <= SLEEP_TIME / SLEEP_NOTIFY_TIME; i++) {
+        printf("[wait] send file count [%d], sleep for [%d] ms, already sleep [%d]\n",
+            count, SLEEP_TIME, (i - 1) * SLEEP_NOTIFY_TIME);
+        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_NOTIFY_TIME));
+    }
+}
+
 static int32_t SendFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
 {
     int count = 0;
     int correctCount = 0;
     for (auto &fileInfo : fileInfos) {
         ++count;
+        if (count % SLEEP_INTERVAL == 0) {
+            SleepInterval(count);
+        }
         int32_t ret = SendFile(env, fileInfo);
         if (ret != Media::E_OK) {
             printf("%s send uri [%s] failed.\n", STR_FAIL.c_str(), fileInfo.uri.c_str());
