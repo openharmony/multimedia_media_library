@@ -40,16 +40,22 @@ void ExternalSource::Init(const string &dbPath)
     ExternalOpenCall helper;
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
-    galleryStorePtr_ = store;
+    externalStorePtr_ = store;
     store->ExecuteSql(string("INSERT INTO files VALUES(7, '/storage/emulated/0/DCIM/Camera/fake_camera.jpg', ") +
         "'fake_camera.jpg', 0, 2808831, null, 1, 1546937461, 2976, 3968, 'fake_camera.jpg', 0, 1699781505, " +
         "-1739773001, 0, 'camera')");
     store->ExecuteSql(string("INSERT INTO files VALUES(8, '/storage/emulated/0/CTRIP/avatar/not_sync_invalid.jpg', ") +
         "'not_sync_invalid.jpg', 0, 27657543, null, 1, 1546937461, 2448, 3264, 'not_sync_invalid.jpg', 0, " +
-        "1699781529, 876554266, 0, 'camera')");
+        "1699781529, 876554266, 0, 'ctrip')");
     store->ExecuteSql(string("INSERT INTO files VALUES(9, ") +
         "'/storage/emulated/0/MicroMsg/WeiXin/not_sync_valid.jpg', 'not_sync_valid.jpg', 0, 3503265, null, 1, " +
-        "1546937461, 2976, 3968, 'not_sync_valid.jpg', 0, 1699781529, 876554266, 0, 'camera')");
+        "1546937461, 2976, 3968, 'not_sync_valid.jpg', 0, 1699781529, -924335728, 0, 'weixin')");
+    store->ExecuteSql(string("INSERT INTO files VALUES(10, ") +
+        "'/storage/emulated/0/DCIM/Camera/not_sync_pending_camera.jpg', 'not_sync_pending_camera.jpg', 0, 3503265, null, 1, " +
+        "1546937461, 2976, 3968, 'not_sync_pending_camera.jpg', 0, 1699781529, -1739773001, 1, 'camera')");
+    store->ExecuteSql(string("INSERT INTO files VALUES(11, ") +
+        "'/storage/emulated/0/MicroMsg/WeiXin/not_sync_pending_others.jpg', 'not_sync_pending_others.jpg', 0, 3503265, null, 1, " +
+        "1546937461, 2976, 3968, 'not_sync_pending_others.jpg', 0, 1699781529, -924335728, 1, 'others')");
 }
 } // namespace Media
 } // namespace OHOS
