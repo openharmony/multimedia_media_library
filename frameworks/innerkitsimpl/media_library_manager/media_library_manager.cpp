@@ -285,7 +285,9 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
     int max = std::max(size.width, size.height);
     std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + "/";
     if (isAudio) {
-        if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
+        if (min == DEFAULT_ORIGINAL && max == DEFAULT_ORIGINAL) {
+            suffixStr += "LCD.jpg";
+        } else if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
             suffixStr += "THM.jpg";
         } else {
             suffixStr += "LCD.jpg";
@@ -295,6 +297,8 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
             suffixStr += "MTH.jpg";
         } else if (size.width == DEFAULT_YEAR_SIZE && size.height == DEFAULT_YEAR_SIZE) {
             suffixStr += "YEAR.jpg";
+        } else if (size.width == DEFAULT_ORIGINAL && size.height == DEFAULT_ORIGINAL) {
+            suffixStr += "LCD.jpg";
         } else if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
             suffixStr += "THM.jpg";
         } else {
