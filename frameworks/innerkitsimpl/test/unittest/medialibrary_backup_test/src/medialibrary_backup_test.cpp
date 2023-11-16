@@ -288,7 +288,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_others, T
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_others start");
     std::string queryNotSyncPendingOthers =
-        "SELECT file_id from Photos where display_name ='queryNotSyncPendingOthers.jpg'";
+        "SELECT file_id from Photos where display_name ='not_sync_pending_others.jpg'";
     auto resultSet = photosStorePtr->QuerySql(queryNotSyncPendingOthers);
     ASSERT_FALSE(resultSet == nullptr);
     ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
