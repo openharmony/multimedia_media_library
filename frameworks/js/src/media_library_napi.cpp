@@ -57,6 +57,7 @@ thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 const int32_t NUM_2 = 2;
 const int32_t NUM_3 = 3;
 const string DATE_FUNCTION = "DATE(";
+const int32_t FORMID_MAX_LEN = 19;
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
@@ -4822,6 +4823,24 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoIndex(napi_env env, napi_callbac
         PhotoAccessGetPhotoIndexExec, GetPhotoIndexAsyncCallbackComplete);
 }
 
+static napi_status CheckFormId(MediaLibraryAsyncContext &context)
+{
+    bool isValid = false;
+    string formId = context.valuesBucket.Get(FormMap::FORMMAP_FORM_ID, isValid);
+    if (isValid == false) {
+        return napi_invalid_arg;
+    }
+    if (formId.empty() || formId.length() > FORMID_MAX_LEN) {
+        return napi_invalid_arg;
+    }
+    for (int i = 0; i < formId.length(); i++) {
+        if (!isdigit(formId[i])) {
+            return napi_invalid_arg;
+        }
+    }
+    return napi_ok;
+}
+
 static napi_status ParseSaveFormInfoOption(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
 {
     const std::string formId = "formId";
@@ -4845,17 +4864,9 @@ static napi_status ParseSaveFormInfoOption(napi_env env, napi_value arg, MediaLi
         size_t res = 0;
         result = napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res);
         CHECK_COND_RET(result == napi_ok, result, "failed to get string");
-        if (param.c_str() == formId) {
-            string tempFormId = string(buffer);
-            for (int i = 0; i < tempFormId.length(); i++) {
-                if (!isdigit(tempFormId[i])) {
-                    return napi_invalid_arg;
-                }
-            }
-        }
         context.valuesBucket.Put(iter.second, string(buffer));
     }
-    return napi_ok;
+    return CheckFormId(context);
 }
 
 static napi_value ParseArgsSaveFormInfo(napi_env env, napi_callback_info info,
@@ -4941,15 +4952,15 @@ static napi_value ParseArgsRemoveFormInfo(napi_env env, napi_callback_info info,
     CHECK_COND_WITH_MESSAGE(env, napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res) == napi_ok,
         "failed to get string param");
     formId = string(buffer);
+    if (formId.empty() || formId.length() > FORMID_MAX_LEN) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check empty formId!");
+        return nullptr;
+    }
     for (int i = 0; i < formId.length(); i++) {
         if (!isdigit(formId[i])) {
             NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check empty formId!");
             return nullptr;
         }
-    }
-    if (formId.empty()) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check empty formId!");
-        return nullptr;
     }
     context->formId = formId;
     napi_value result = nullptr;

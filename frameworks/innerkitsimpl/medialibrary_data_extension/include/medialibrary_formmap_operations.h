@@ -40,10 +40,11 @@ public:
     static void DoPublishedChange(const std::string &uri);
     static std::string GetUriByFileId(const int32_t &fileId, const std::string &path);
     static bool GetFormIdWithEmptyUriState();
+    static bool isHaveEmptyUri;
 
 private:
     static std::string CheckAndGetNewUri(const std::string &uri, bool &isNext);
-    static int ModifyFormMapMassage(const std::string &uri, int64_t &formId);
+    static void ModifyFormMapMassage(const std::string &uri, int64_t &formId);
     static bool CheckQueryIsInDb(const OperationObject &operationObject, const std::string &queryId);
     static std::mutex mutex_;
 };
