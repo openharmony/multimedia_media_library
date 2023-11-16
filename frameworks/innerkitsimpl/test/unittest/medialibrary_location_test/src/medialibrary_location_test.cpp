@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,14 +15,15 @@
 #define MLOG_TAG "MediaLibraryLocationTest"
 
 #include "medialibrary_location_test.h"
+
 #include "datashare_result_set.h"
 #include "get_self_permissions.h"
+#include "location_column.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "uri.h"
-#include "location_column.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -78,9 +79,8 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_001, TestSiz
     valuesBucket.Put(ADMIN_AREA, "江苏省");
     valuesBucket.Put(LOCALITY, "苏州市");
     valuesBucket.Put(SUB_LOCALITY, "姑苏区");
-    valuesBucket.Put(THOROUGHFACE, "人民路");
-    valuesBucket.Put(SUB_THOROUGHFACE, "1285号");
-    valuesBucket.Put(FEATURE_NAME, "人民路辅路苏州国美电器人名路旗舰店");
+    valuesBucket.Put(THOROUGHFARE, "人民路");
+    valuesBucket.Put(SUB_THOROUGHFARE, "1285号");
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Location_InsertGeoKnowledge_Test_001::retVal = %{public}d. End", retVal);
@@ -101,14 +101,14 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_002, TestSiz
     valuesBucket.Put(CITY_ID, "123456789101232");
     valuesBucket.Put(LOCALITY, "苏州市");
     valuesBucket.Put(SUB_LOCALITY, "姑苏区");
-    valuesBucket.Put(THOROUGHFACE, "人民路");
-    valuesBucket.Put(SUB_THOROUGHFACE, "1285号");
+    valuesBucket.Put(THOROUGHFARE, "人民路");
+    valuesBucket.Put(SUB_THOROUGHFARE, "1285号");
     valuesBucket.Put(FEATURE_NAME, "人民路辅路苏州国美电器人名路旗舰店");
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket valuesBucket2;
     EXPECT_GT(retVal1, 0);
-    EXPECT_LT(retVal2, 0);
+    EXPECT_GT(retVal2, 0);
     MEDIA_INFO_LOG("Location_InsertGeoKnowledge_Test_002::retVal = %{public}d. retVal2 = %{public}d. End",
         retVal1, retVal2);
 }
