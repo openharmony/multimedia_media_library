@@ -209,7 +209,7 @@ int32_t MediaLibraryObjectUtils::BuildFileAsset(MediaLibraryCommand &cmd, FileAs
 {
     string relativePath;
     string displayName;
-    
+
     ValueObject valueObject;
     ValuesBucket &values = cmd.GetValueBucket();
     if (!values.GetObject(MEDIA_DATA_DB_NAME, valueObject)) {

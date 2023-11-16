@@ -44,6 +44,7 @@
 #include "result_set_utils.h"
 #include "source_album.h"
 #include "vision_column.h"
+#include "form_map.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -930,6 +931,7 @@ static const vector<string> onCreateSqlStrs = {
     INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
     UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
     DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+    FormMap::CREATE_FORM_MAP_TABLE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -1048,6 +1050,7 @@ void API10TableCreate(RdbStore &store)
         PhotoAlbumColumns::CREATE_TABLE,
         PhotoAlbumColumns::INDEX_ALBUM_TYPES,
         PhotoMap::CREATE_TABLE,
+        FormMap::CREATE_FORM_MAP_TABLE,
         TriggerDeleteAlbumClearMap(),
         TriggerAddAssets(),
         TriggerRemoveAssets(),
@@ -1166,6 +1169,7 @@ void UpdateAPI10Table(RdbStore &store)
     store.ExecuteSql("DROP TABLE IF EXISTS UniqueNumber");
     store.ExecuteSql("DROP TABLE IF EXISTS PhotoAlbum");
     store.ExecuteSql("DROP TABLE IF EXISTS PhotoMap");
+    store.ExecuteSql("DROP TABLE IF EXISTS FormMap");
 
     API10TableCreate(store);
     if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
@@ -1622,6 +1626,15 @@ void AddAlbumOrderColumn(RdbStore &store)
     }
 }
 
+static void AddFormMap(RdbStore &store)
+{
+    int32_t result = store.ExecuteSql(FormMap::CREATE_FORM_MAP_TABLE);
+    if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("Failed to update PHOTOS");
+    }
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1694,6 +1707,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_ALBUM_ORDER) {
         AddAlbumOrderColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_FORM_MAP) {
+        AddFormMap(store);
     }
 }
 
