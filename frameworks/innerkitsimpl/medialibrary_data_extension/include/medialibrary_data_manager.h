@@ -126,6 +126,7 @@ private:
     int32_t SyncPullThumbnailKeys(const Uri &uri);
 #endif
     int32_t DeleteInRdbPredicates(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
+    int32_t DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
     std::shared_mutex mgrSharedMutex_;
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
     DistributedKv::DistributedKvDataManager dataManager_;
