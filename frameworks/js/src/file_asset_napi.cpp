@@ -39,7 +39,6 @@
 #include "media_file_uri.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
@@ -726,7 +725,7 @@ napi_value FileAssetNapi::JSGetDateAdded(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateAdded = obj->fileAssetPtr->GetDateAdded() / MSEC_TO_SEC;
+        dateAdded = obj->fileAssetPtr->GetDateAdded();
         napi_create_int64(env, dateAdded, &jsResult);
     }
 
@@ -750,7 +749,7 @@ napi_value FileAssetNapi::JSGetDateTrashed(napi_env env, napi_callback_info info
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateTrashed = obj->fileAssetPtr->GetDateTrashed() / MSEC_TO_SEC;
+        dateTrashed = obj->fileAssetPtr->GetDateTrashed();
         napi_create_int64(env, dateTrashed, &jsResult);
     }
 
@@ -774,7 +773,7 @@ napi_value FileAssetNapi::JSGetDateModified(napi_env env, napi_callback_info inf
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateModified = obj->fileAssetPtr->GetDateModified() / MSEC_TO_SEC;
+        dateModified = obj->fileAssetPtr->GetDateModified();
         napi_create_int64(env, dateModified, &jsResult);
     }
 
@@ -2202,6 +2201,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
     return result;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
 static void TrashByUpdate(FileAssetAsyncContext *context)
 {
     DataShareValuesBucket valuesBucket;
@@ -2212,8 +2212,7 @@ static void TrashByUpdate(FileAssetAsyncContext *context)
     } else {
         uriString = URI_UPDATE_AUDIO;
     }
-    valuesBucket.Put(MEDIA_DATA_DB_DATE_TRASHED,
-        (context->isTrash ? MediaFileUtils::UTCTimeMilliSeconds() : NOT_TRASH));
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_TRASHED, (context->isTrash ? MediaFileUtils::UTCTimeSeconds() : NOT_TRASH));
     DataSharePredicates predicates;
     int32_t fileId = context->objectPtr->GetId();
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
@@ -2221,6 +2220,7 @@ static void TrashByUpdate(FileAssetAsyncContext *context)
     Uri uri(uriString);
     context->changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
 }
+#endif
 
 static void TrashByInsert(FileAssetAsyncContext *context)
 {
@@ -2508,15 +2508,6 @@ static napi_value HandleGettingSpecialKey(napi_env env, const string &key, const
     return jsResult;
 }
 
-static inline int64_t GetCompatDate(const string inputKey, const int64_t date)
-{
-    if (inputKey == MEDIA_DATA_DB_DATE_ADDED || inputKey == MEDIA_DATA_DB_DATE_MODIFIED ||
-        inputKey == MEDIA_DATA_DB_DATE_TRASHED) {
-            return date / MSEC_TO_SEC;
-        }
-    return date;
-}
-
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -2552,7 +2543,7 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     } else if (m.index() == MEMBER_TYPE_INT32) {
         napi_create_int32(env, get<int32_t>(m), &jsResult);
     } else if (m.index() == MEMBER_TYPE_INT64) {
-        napi_create_int64(env, GetCompatDate(inputKey, get<int64_t>(m)), &jsResult);
+        napi_create_int64(env, get<int64_t>(m), &jsResult);
     } else {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return jsResult;

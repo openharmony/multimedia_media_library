@@ -1520,21 +1520,6 @@ void AddShootingModeColumn(RdbStore &store)
     }
 }
 
-void UpdateMillisecondDate(RdbStore &store)
-{
-    MEDIA_DEBUG_LOG("UpdateMillisecondDate start");
-    const vector<string> updateSql = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
-        MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + "*1000," +
-        MediaColumn::MEDIA_DATE_MODIFIED + " = " + MediaColumn::MEDIA_DATE_MODIFIED + "*1000," +
-        MediaColumn::MEDIA_DATE_TRASHED + " = " + MediaColumn::MEDIA_DATE_TRASHED + "*1000;"+
-        "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
-        MediaColumn::MEDIA_DATE_MODIFIED + " = " +  MediaColumn::MEDIA_DATE_MODIFIED + "*1000;",
-    };
-    ExecSqls(updateSql, store);
-    MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
-}
-
 static void AddHiddenViewColumn(RdbStore &store)
 {
     vector<string> upgradeSqls = {
@@ -1679,10 +1664,6 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_FIX_INDEX_ORDER) {
         FixIndexOrder(store);
-    }
-
-    if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
-        UpdateMillisecondDate(store);
     }
 }
 

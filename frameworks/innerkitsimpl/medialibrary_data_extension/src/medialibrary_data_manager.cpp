@@ -940,19 +940,6 @@ static const map<OperationObject, string> QUERY_CONDITION_MAP {
     { OperationObject::BUNDLE_PERMISSION, "" },
 };
 
-static void AddVirtualColumnsOfDateType(vector<string> &columns)
-{
-    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
-    vector<string> dateTypeSeconds = {MEDIA_DATA_DB_DATE_ADDED_TO_SECOND,
-            MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND, MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND};
-    for (int i = 0; i < dateTypes.size(); i++) {
-        auto it = find(columns.begin(), columns.end(), dateTypes[i]);
-        if (it != columns.end()) {
-            columns.push_back(dateTypeSeconds[i]);
-        }
-    }
-}
-
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
@@ -977,7 +964,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
-    AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
 
     shared_ptr<NativeRdb::ResultSet> queryResultSet;
     OperationObject oprnObject = cmd.GetOprnObject();
