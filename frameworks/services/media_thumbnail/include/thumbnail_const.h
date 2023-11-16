@@ -102,7 +102,7 @@ static inline ThumbnailType GetThumbType(const int32_t width, const int32_t heig
     return (width == DEFAULT_ORIGINAL && height == DEFAULT_ORIGINAL) ? ThumbnailType::LCD :
         (width == DEFAULT_MTH_SIZE && height == DEFAULT_MTH_SIZE) ? ThumbnailType::MTH :
         (width == DEFAULT_YEAR_SIZE && height == DEFAULT_YEAR_SIZE) ? ThumbnailType::YEAR :
-        (std::min(width, height) <= DEFAULT_THUMB_SIZE && std::max(width, height) <= MAX_DEFAULT_THUMB_SIZE) 
+        (std::min(width, height) <= DEFAULT_THUMB_SIZE && std::max(width, height) <= MAX_DEFAULT_THUMB_SIZE)
         ? ThumbnailType::THUMB : ThumbnailType::LCD;
 }
 
