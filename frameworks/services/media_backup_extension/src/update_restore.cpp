@@ -115,16 +115,16 @@ int32_t UpdateRestore::InitGarbageAlbum()
     MEDIA_INFO_LOG("garbageCount: %{public}d", count);
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t type;
-        resultSet -> GetInt(INDEX_TYPE, type);
+        resultSet->GetInt(INDEX_TYPE, type);
         if (type == NICK) {
             string nickName;
             string nickDir;
-            resultSet -> GetString(INDEX_NICK_DIR, nickDir);
-            resultSet -> GetString(INDEX_NICK_NAME, nickName);
+            resultSet->GetString(INDEX_NICK_DIR, nickDir);
+            resultSet->GetString(INDEX_NICK_NAME, nickName);
             nickMap_[nickDir] = nickName;
         } else {
             string cacheDir;
-            resultSet -> GetString(INDEX_CACHE_DIR, cacheDir);
+            resultSet->GetString(INDEX_CACHE_DIR, cacheDir);
             cacheSet_.insert(cacheDir);
         }
     }
@@ -146,8 +146,7 @@ void UpdateRestore::RestorePhoto(void)
 void UpdateRestore::RestoreFromGallery()
 {
     int32_t totalNumber = QueryTotalNumber();
-    MEDIA_INFO_LOG("QueryTotalNumber, totalNumber = %{public}d", totalNumber);
-    InitGarbageAlbum();
+    MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<FileInfo> infos = QueryFileInfos(offset);
         InsertPhoto(UPDATE_RESTORE_ID, infos, SourceType::GALLERY);
@@ -161,7 +160,7 @@ void UpdateRestore::RestoreFromExternal(bool isCamera)
         QUERY_MAX_ID_CAMERA_SCREENSHOT : QUERY_MAX_ID_OTHERS, MAX_ID);
     int32_t type = isCamera ? SourceType::EXTERNAL_CAMERA : SourceType::EXTERNAL_OTHERS;
     int32_t totalNumber = QueryNotSyncTotalNumber(maxId, isCamera);
-    MEDIA_INFO_LOG("QueryTotalNumber, totalNumber = %{public}d", totalNumber);
+    MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<FileInfo> infos = QueryFileInfosFromExternal(offset, maxId, isCamera);
         InsertPhoto(UPDATE_RESTORE_ID, infos, type);
