@@ -59,6 +59,7 @@
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
+#include "medialibrary_formmap_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1219,6 +1220,7 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
     NotifyType type = (notifyData->trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT :
         NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     watch->Notify(notifyData->notifyUri, type, trashAlbumId);
+    MediaLibraryFormMapOperations::DoPublishedChange(notifyData->notifyUri);
 }
 
 int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
@@ -1786,6 +1788,13 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
         InvalidateThumbnail(fileId, type);
     }
     CreateThumbnail(uri, path, this->isCreateThumbSync);
+    if ((type == MEDIA_TYPE_IMAGE) && MediaLibraryFormMapOperations::GetFormIdWithEmptyUriState() == true) {
+        vector<int64_t> formIds;
+        MediaLibraryFormMapOperations::GetFormMapFormId("", formIds);
+        if (!formIds.empty()) {
+            MediaLibraryFormMapOperations::PublishedChange(uri, formIds);
+        }
+    }
     return E_OK;
 }
 } // namespace Media

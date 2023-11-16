@@ -43,6 +43,7 @@
 #include "string_wrapper.h"
 #include "userfile_client.h"
 #include "uv.h"
+#include "form_map.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -244,6 +245,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
             DECLARE_NAPI_FUNCTION("getHiddenAlbums", PahGetHiddenAlbums),
             DECLARE_NAPI_FUNCTION("applyChanges", JSApplyChanges),
+            DECLARE_NAPI_FUNCTION("saveFormInfo", PhotoAccessSaveFormInfo),
+            DECLARE_NAPI_FUNCTION("removeFormInfo", PhotoAccessRemoveFormInfo),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -4817,6 +4820,216 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoIndex(napi_env env, napi_callbac
     CHECK_NULLPTR_RET(ParseArgsIndexof(env, info, asyncContext));
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoIndex",
         PhotoAccessGetPhotoIndexExec, GetPhotoIndexAsyncCallbackComplete);
+}
+
+static napi_status ParseSaveFormInfoOption(napi_env env, napi_value arg, MediaLibraryAsyncContext &context)
+{
+    const std::string formId = "formId";
+    const std::string uri = "uri";
+    const std::map<std::string, std::string> storeFormOptionsParam = {
+        { formId, FormMap::FORMMAP_FORM_ID },
+        { uri, FormMap::FORMMAP_URI }
+    };
+    for (const auto &iter : storeFormOptionsParam) {
+        string param = iter.first;
+        bool present = false;
+        napi_status result = napi_has_named_property(env, arg, param.c_str(), &present);
+        CHECK_COND_RET(result == napi_ok, result, "failed to check named property");
+        if (!present) {
+            return napi_invalid_arg;
+        }
+        napi_value value;
+        result = napi_get_named_property(env, arg, param.c_str(), &value);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get named property");
+        char buffer[ARG_BUF_SIZE];
+        size_t res = 0;
+        result = napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get string");
+        if (param.c_str() == formId) {
+            string tempFormId = string(buffer);
+            for (int i = 0; i < tempFormId.length(); i++) {
+                if (!isdigit(tempFormId[i])) {
+                    return napi_invalid_arg;
+                }
+            }
+        }
+        context.valuesBucket.Put(iter.second, string(buffer));
+    }
+    return napi_ok;
+}
+
+static napi_value ParseArgsSaveFormInfo(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
+        maxArgs) == napi_ok, "Failed to get object info");
+
+    CHECK_COND_WITH_MESSAGE(env, ParseSaveFormInfoOption(env, context->argv[ARGS_ZERO], *context) == napi_ok,
+        "Parse asset create option failed");
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void SaveFormInfoExec(napi_env env, void *data, ResultNapiType type)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    context->resultNapiType = type;
+    string uri = PAH_STORE_FORM_MAP;
+    Uri createFormIdUri(uri);
+    auto ret = UserFileClient::Insert(createFormIdUri, context->valuesBucket);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else if (ret == E_GET_PRAMS_FAIL) {
+            context->error = OHOS_INVALID_PARAM_CODE;
+        } else {
+            context->SaveError(ret);
+        }
+        NAPI_ERR_LOG("store formInfo failed, ret: %{public}d", ret);
+    }
+}
+
+static void StoreFormIdAsyncCallbackComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("StoreFormIdAsyncCallbackComplete");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        jsContext->status = true;
+    }
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+static napi_value ParseArgsRemoveFormInfo(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    string formId;
+    napi_value value;
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_TWO;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
+        maxArgs) == napi_ok, "Failed to get object info");
+
+    bool present = false;
+    CHECK_COND_WITH_MESSAGE(env, napi_has_named_property(env, context->argv[ARGS_ZERO], "formId", &present) == napi_ok,
+        "Failed to get object info");
+    if (!present) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check empty formId!");
+        return nullptr;
+    }
+
+    CHECK_COND_WITH_MESSAGE(env, napi_get_named_property(env, context->argv[ARGS_ZERO], "formId", &value) == napi_ok,
+        "failed to get named property");
+    char buffer[ARG_BUF_SIZE];
+    size_t res = 0;
+    CHECK_COND_WITH_MESSAGE(env, napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res) == napi_ok,
+        "failed to get string param");
+    formId = string(buffer);
+    for (int i = 0; i < formId.length(); i++) {
+        if (!isdigit(formId[i])) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check empty formId!");
+            return nullptr;
+        }
+    }
+    if (formId.empty()) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check empty formId!");
+        return nullptr;
+    }
+    context->formId = formId;
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void RemoveFormInfoExec(napi_env env, void *data, ResultNapiType type)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("RemoveFormInfoExec");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    context->resultNapiType = type;
+    string formId = context->formId;
+    if (formId.empty()) {
+        context->error = OHOS_INVALID_PARAM_CODE;
+        return;
+    }
+    context->predicates.EqualTo(FormMap::FORMMAP_FORM_ID, formId);
+    string deleteUri = PAH_REMOVE_FORM_MAP;
+    Uri uri(deleteUri);
+    int ret = UserFileClient::Delete(uri, context->predicates);
+    if (ret < 0) {
+        if (ret == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(ret);
+        }
+        NAPI_ERR_LOG("remove formInfo failed, ret: %{public}d", ret);
+    }
+}
+
+static void RemoveFormInfoAsyncCallbackComplete(napi_env env, napi_status status, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("RemoveFormInfoAsyncCallbackComplete");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        jsContext->status = true;
+    }
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+                                                   context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void PhotoAccessSaveFormInfoExec(napi_env env, void *data)
+{
+    SaveFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsSaveFormInfo(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessSaveFormInfo",
+        PhotoAccessSaveFormInfoExec, StoreFormIdAsyncCallbackComplete);
+}
+
+static void PhotoAccessRemoveFormInfoExec(napi_env env, void *data)
+{
+    RemoveFormInfoExec(env, data, ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsRemoveFormInfo(env, info, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessRemoveFormInfo",
+        PhotoAccessRemoveFormInfoExec, RemoveFormInfoAsyncCallbackComplete);
 }
 
 napi_value MediaLibraryNapi::JSGetPhotoAssets(napi_env env, napi_callback_info info)
