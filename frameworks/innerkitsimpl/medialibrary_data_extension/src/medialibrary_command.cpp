@@ -323,8 +323,14 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
     { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
     { VISION_SHIELD_TABLE, OperationObject::VISION_SHIELD },
-    { PAH_ANA_OCR, OperationObject::VISION_OCR },
     { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
+    { PAH_ANA_LABEL, OperationObject::VISION_LABEL },
+    { PAH_ANA_OCR, OperationObject::VISION_OCR },
+    { PAH_ANA_FACE, OperationObject::VISION_IMAGE_FACE },
+    { PAH_ANA_OBJECT, OperationObject::VISION_OBJECT },
+    { PAH_ANA_RECOMMENDATION, OperationObject::VISION_RECOMMENDATION },
+    { PAH_ANA_SEGMENTATION, OperationObject::VISION_SEGMENTATION },
+    { PAH_ANA_COMPOSITION, OperationObject::VISION_COMPOSITION },
 
     // use in Location Analyse
     { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
