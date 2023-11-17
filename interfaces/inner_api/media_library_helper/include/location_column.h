@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,8 +35,8 @@ const std::string ADMIN_AREA = "admin_area";
 const std::string SUB_ADMIN_AREA = "sub_admin_area";
 const std::string LOCALITY = "locality";
 const std::string SUB_LOCALITY = "sub_locality";
-const std::string THOROUGHFACE = "thoroughface";
-const std::string SUB_THOROUGHFACE = "sub_thoroughface";
+const std::string THOROUGHFARE = "thoroughfare";
+const std::string SUB_THOROUGHFARE = "sub_thoroughfare";
 const std::string FEATURE_NAME = "feature_name";
 const std::string CITY_ID = "city_id";
 const std::string CITY_NAME = "city_name";
@@ -44,7 +45,7 @@ const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     "CREATE TABLE IF NOT EXISTS " + GEO_KNOWLEDGE_TABLE + " ( " +
     LATITUDE + " DOUBLE, " +
     LONGITUDE + " DOUBLE, " +
-    LOCATION_KEY + " INTEGER UNIQUE, " +
+    LOCATION_KEY + " INTEGER, " +
     CITY_ID + " TEXT, " +
     LANGUAGE + " TEXT NOT NULL, " +
     COUNTRY + " TEXT, " +
@@ -52,8 +53,8 @@ const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     SUB_ADMIN_AREA + " TEXT, " +
     LOCALITY + " TEXT, " +
     SUB_LOCALITY + " TEXT, " +
-    THOROUGHFACE + " TEXT, " +
-    SUB_THOROUGHFACE + " TEXT, " +
+    THOROUGHFARE + " TEXT, " +
+    SUB_THOROUGHFARE + " TEXT, " +
     FEATURE_NAME + " TEXT) ";
 
 const std::string CREATE_GEO_DICTIONARY_TABLE =

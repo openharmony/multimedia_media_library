@@ -1204,6 +1204,18 @@ static void AddLocationTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpdateLocationTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_geo_dictionary",
+        "DROP TABLE IF EXISTS tab_geo_knowledge",
+        CREATE_GEO_DICTIONARY_TABLE,
+        CREATE_GEO_KNOWLEDGE_TABLE,
+    };
+    MEDIA_INFO_LOG("fix location db");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void AddAnalysisTables(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -1692,6 +1704,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_FORM_MAP) {
         AddFormMap(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_LOCATION_TABLE) {
+        UpdateLocationTables(store);
     }
 }
 
