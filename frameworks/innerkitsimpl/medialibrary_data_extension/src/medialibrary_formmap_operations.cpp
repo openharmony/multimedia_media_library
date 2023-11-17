@@ -55,8 +55,9 @@ using namespace OHOS::RdbDataShareAdapter;
 namespace OHOS {
 namespace Media {
 std::mutex MediaLibraryFormMapOperations::mutex_;
-static bool isHaveEmptyUri = false;
-static string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_data";
+bool MediaLibraryFormMapOperations::isHaveEmptyUri = false;
+const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_data";
+const string NO_PICTURES = "";
 
 bool MediaLibraryFormMapOperations::GetFormIdWithEmptyUriState()
 {
@@ -207,7 +208,7 @@ static string GetFilePathById(const string &fileId)
     return GetStringVal(MEDIA_DATA_DB_FILE_PATH, queryResult);
 }
 
-int MediaLibraryFormMapOperations::ModifyFormMapMassage(const string &uri, int64_t &formId)
+void MediaLibraryFormMapOperations::ModifyFormMapMassage(const string &uri, int64_t &formId)
 {
     lock_guard<mutex> lock(mutex_);
     string NewUri = uri;
@@ -222,7 +223,12 @@ int MediaLibraryFormMapOperations::ModifyFormMapMassage(const string &uri, int64
 
     RdbPredicates predicates(FormMap::FORM_MAP_TABLE);
     predicates.And()->EqualTo(FormMap::FORMMAP_FORM_ID, std::to_string(formId));
-    return MediaLibraryRdbStore::Update(value, predicates);
+    int32_t updateRow = MediaLibraryRdbStore::Update(value, predicates);
+    if (updateRow < 0) {
+        MEDIA_ERR_LOG("Modify FormMap massage err!, uri is %{private}s, formId is %{private}s",
+            uri.c_str(), to_string(formId).c_str());
+    }
+    return;
 }
 
 void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<int64_t> &formIds)
@@ -236,22 +242,20 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<
         return;
     }
     Data data;
-    vector<uint8_t> buffer;
     PublishedDataItem::DataType tempData;
     if (newUri.empty()) {
+        tempData = NO_PICTURES;
         for (auto &formId : formIds) {
             data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_URI, formId, tempData));
             std::vector<OperationResult> results = dataShareHelper->Publish(data, BUNDLE_NAME);
             MEDIA_INFO_LOG("Published uri is %{private}s!", MEDIA_LIBRARY_PROXY_URI.c_str());
-            MEDIA_INFO_LOG("Published formId is %{private}lld!", formId);
-            MEDIA_INFO_LOG("Published size of value is %{private}d!", buffer.size());
-            if (MediaLibraryFormMapOperations::ModifyFormMapMassage(newUri, formId) < 0) {
-                MEDIA_ERR_LOG("Modify FormMap massage err!, uri is %{private}s, formId is %{private}lld",
-                    newUri.c_str(), formId);
-            }
+            MEDIA_INFO_LOG("Published formId is %{private}s!", to_string(formId).c_str());
+            MEDIA_INFO_LOG("Published size of value is %{private}zu!", NO_PICTURES.size());
+            MediaLibraryFormMapOperations::ModifyFormMapMassage(newUri, formId);
             isHaveEmptyUri = true;
         }
     } else {
+        vector<uint8_t> buffer;
         MediaFileUri fileUri = MediaFileUri(newUri);
         ThumbnailWait thumbnailWait(false);
         thumbnailWait.CheckAndWait(fileUri.GetFileId(), true);
@@ -264,12 +268,9 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<
                 data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_URI, formId, tempData));
                 std::vector<OperationResult> results = dataShareHelper->Publish(data, BUNDLE_NAME);
                 MEDIA_INFO_LOG("Published uri is %{private}s!", MEDIA_LIBRARY_PROXY_URI.c_str());
-                MEDIA_INFO_LOG("Published formId is %{private}lld!", formId);
-                MEDIA_INFO_LOG("Published size of value is %{private}d!", buffer.size());
-                if (MediaLibraryFormMapOperations::ModifyFormMapMassage(newUri, formId) < 0) {
-                    MEDIA_ERR_LOG("Modify FormMap massage err!, uri is %{private}s, formId is %{private}lld",
-                        newUri.c_str(), formId);
-                }
+                MEDIA_INFO_LOG("Published formId is %{private}s!", to_string(formId).c_str());
+                MEDIA_INFO_LOG("Published size of value is %{private}zu!", buffer.size());
+                MediaLibraryFormMapOperations::ModifyFormMapMassage(newUri, formId);
                 isHaveEmptyUri = false;
             }
         }
