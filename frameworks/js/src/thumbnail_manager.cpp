@@ -33,6 +33,7 @@
 #include "pixel_map.h"
 #include "pixel_map_napi.h"
 #include "post_proc.h"
+#include "securec.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
 #include "unique_fd.h"
