@@ -259,14 +259,14 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
     string fileId;
     string networkId;
     string tableName;
-    
+
     int err = ParseThumbnailParam(uri, fileId, networkId, tableName);
     if (err != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
     }
-    
+
     err = CreateThumbnailInfo(path, tableName, fileId, uri, isSync);
     if (err != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
@@ -274,7 +274,7 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return err;
     }
-   
+
     return E_OK;
 }
 

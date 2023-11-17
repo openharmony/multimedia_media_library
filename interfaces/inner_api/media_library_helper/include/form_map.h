@@ -13,28 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_MEDIATOOL_START
-int main(int argc, char *argv[])
-{
-    return 0;
-}
-#else
+#ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_FORM_MAP_H
+#define INTERFACES_INNERKITS_NATIVE_INCLUDE_FORM_MAP_H
+
 #include <string>
-#include <vector>
 
-#include "control_main.h"
+#include "base_column.h"
 
-using namespace OHOS;
-using namespace OHOS::Media;
-using namespace OHOS::Media::MediaTool;
+namespace OHOS::Media {
+class FormMap : BaseColumn {
+public:
+    // Sql to create the table
+    static const std::string CREATE_FORM_MAP_TABLE;
 
-int main(int argc, char *argv[])
-{
-    std::vector<std::string> args;
-    for (int i = 0; i < argc; i++) {
-        args.push_back(std::string(argv[i]));
-    }
-    return ControlMain::Main(args);
-}
-#endif // MEDIALIBRARY_MEDIATOOL_START
-
+    static const std::string FORM_MAP_TABLE;
+    static const std::string FORMMAP_FORM_ID;
+    static const std::string FORMMAP_URI;
+};
+} // namespace OHOS::Media
+#endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_FORM_MAP_H

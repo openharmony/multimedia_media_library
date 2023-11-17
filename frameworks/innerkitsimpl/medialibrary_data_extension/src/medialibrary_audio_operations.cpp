@@ -388,7 +388,7 @@ int32_t MediaLibraryAudioOperations::UpdateV9(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryAudioOperations::TrashAging(shared_ptr<int> countPtr)
 {
-    auto time = MediaFileUtils::UTCTimeMilliSeconds();
+    auto time = MediaFileUtils::UTCTimeSeconds();
     RdbPredicates predicates(AudioColumn::AUDIOS_TABLE);
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));

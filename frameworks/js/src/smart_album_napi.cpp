@@ -1134,19 +1134,6 @@ static void UpdateSelection(SmartAlbumNapiAsyncContext *context)
     }
 }
 
-static void FixSpecialDateType(string &selections)
-{
-    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
-    for (string dateType : dateTypes) {
-        string date2Second = dateType + "_s";
-        auto pos = selections.find(dateType);
-        while (pos != string::npos) {
-            selections.replace(pos, dateType.length(), date2Second);
-            pos = selections.find(dateType, pos + date2Second.length());
-        }
-    }
-}
-
 static void GetFileAssetsNative(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1156,7 +1143,6 @@ static void GetFileAssetsNative(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     UpdateSelection(context);
-    FixSpecialDateType(context->selection);
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
     context->predicates.SetOrder(context->order);

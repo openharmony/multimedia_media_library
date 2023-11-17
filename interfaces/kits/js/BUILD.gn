@@ -138,6 +138,10 @@ ohos_shared_library("medialibrary_nutils") {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
 
@@ -191,6 +195,10 @@ ohos_shared_library("medialibrary") {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
 
@@ -242,6 +250,10 @@ ohos_shared_library("userfilemanager") {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
 
@@ -339,6 +351,10 @@ ohos_shared_library("photoaccesshelper") {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
 

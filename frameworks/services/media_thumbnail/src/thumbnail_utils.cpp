@@ -215,7 +215,7 @@ bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, 
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-       
+
         MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", err);
         return false;
     }

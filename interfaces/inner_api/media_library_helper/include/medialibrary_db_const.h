@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 34;
+const int32_t MEDIA_RDB_VERSION = 35;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -51,7 +51,6 @@ enum {
     VERSION_ADD_SHOOTING_MODE = 22,
     VERSION_FIX_INDEX_ORDER = 23,
     VERSION_ADD_FACE_TABLE = 24,
-    VERSION_UPDATE_DATE_TO_MILLISECOND = 25,
     VERSION_ADD_HIDDEN_VIEW_COLUMNS = 26,
     VERSION_ADD_HIDDEN_TIME = 27,
     VERSION_ADD_LAST_VISIT_TIME = 28,
@@ -60,7 +59,8 @@ enum {
     VERSION_ADD_SOURCE_ALBUM_TRIGGER = 31,
     VERSION_ADD_VISION_ALBUM = 32,
     VERSION_ADD_AESTHETIC_COMPOSITION_TABLE = 33,
-    VERSION_ADD_PHOTO_CLEAN_FLAG_AND_THUMB_STATUS = 34,
+    VERSION_ADD_FORM_MAP = 34,
+    VERSION_ADD_PHOTO_CLEAN_FLAG_AND_THUMB_STATUS = 35,
 };
 
 enum {
@@ -115,7 +115,7 @@ const std::string ALBUM_URI_PREFIX = ML_FILE_URI_PREFIX + MEDIALIBRARY_TYPE_ALBU
 const std::string URI_TYPE_PHOTO = "Photo";
 const std::string URI_TYPE_AUDIO_V10 = "Audio";
 const std::string URI_TYPE_PHOTO_ALBUM = "PhotoAlbum";
-constexpr int64_t AGING_TIME = 30LL * 60 * 60 * 24 * 1000;
+constexpr int64_t AGING_TIME = static_cast<const int64_t>(30 * 60 * 60 * 24);
 
 const std::string MEDIALIBRARY_SMARTALBUM_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_TABLE;
 const std::string MEDIALIBRARY_SMARTALBUM_MAP_URI = MEDIALIBRARY_DATA_URI + "/" + SMARTALBUM_MAP_TABLE;
@@ -140,11 +140,7 @@ const std::string MEDIA_DATA_DB_FILE_PATH = "data";
 const std::string MEDIA_DATA_DB_SIZE = "size";
 const std::string MEDIA_DATA_DB_PARENT_ID = "parent";
 const std::string MEDIA_DATA_DB_DATE_MODIFIED = "date_modified";
-const std::string MEDIA_DATA_DB_DATE_MODIFIED_S = "date_modified_s";
-const std::string MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND = "CAST(date_modified / 1000 AS BIGINT) AS date_modified_s";
 const std::string MEDIA_DATA_DB_DATE_ADDED = "date_added";
-const std::string MEDIA_DATA_DB_DATE_ADDED_S = "date_added_s";
-const std::string MEDIA_DATA_DB_DATE_ADDED_TO_SECOND = "CAST(date_added / 1000 AS BIGINT) AS date_added_s";
 const std::string MEDIA_DATA_DB_MIME_TYPE = "mime_type";
 const std::string MEDIA_DATA_DB_TITLE = "title";
 const std::string MEDIA_DATA_DB_DESCRIPTION = "description";
@@ -179,8 +175,6 @@ const std::string MEDIA_DATA_DB_IS_FAV = "is_favorite";
 const std::string MEDIA_DATA_DB_IS_TRASH = "is_trash";
 const std::string MEDIA_DATA_DB_RECYCLE_PATH = "recycle_path";
 const std::string MEDIA_DATA_DB_DATE_TRASHED = "date_trashed";
-const std::string MEDIA_DATA_DB_DATE_TRASHED_S = "date_trashed_s";
-const std::string MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND = "CAST(date_trashed / 1000 AS BIGINT) AS date_trashed_s";
 const std::string MEDIA_DATA_DB_IS_PENDING = "is_pending";
 const std::string MEDIA_DATA_DB_TIME_PENDING = "time_pending";
 const std::string MEDIA_DATA_DB_RELATIVE_PATH = "relative_path";

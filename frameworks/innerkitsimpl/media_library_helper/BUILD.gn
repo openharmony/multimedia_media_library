@@ -39,6 +39,7 @@ ohos_shared_library("media_library") {
     "src/dir_asset.cpp",
     "src/fetch_result.cpp",
     "src/file_asset.cpp",
+    "src/form_map.cpp",
     "src/media_column.cpp",
     "src/media_file_uri.cpp",
     "src/media_file_utils.cpp",
@@ -81,6 +82,10 @@ ohos_shared_library("media_library") {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
   if (medialibrary_hicollie_enable) {

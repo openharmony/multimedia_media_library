@@ -35,6 +35,10 @@ ohos_static_library("medialibrary_common_utils") {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
   subsystem_name = "multimedia"
@@ -68,6 +72,10 @@ ohos_static_library("permission_utils") {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
   subsystem_name = "multimedia"
@@ -92,6 +100,10 @@ ohos_static_library("post_event_utils") {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
   subsystem_name = "multimedia"
