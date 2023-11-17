@@ -354,11 +354,6 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     // statinfo
     data_->SetFileSize(statInfo.st_size);
     data_->SetFileDateModified(static_cast<int64_t>(statInfo.st_mtime));
-    data_->SetFileDateAdded(static_cast<int64_t>(statInfo.st_ctime));
-    int64_t cTime = static_cast<int64_t>(statInfo.st_ctime);
-    data_->SetDateYear(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, cTime));
-    data_->SetDateMonth(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, cTime));
-    data_->SetDateDay(MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, cTime));
 
     // extension and type
     string extension = ScannerUtils::GetFileExtension(path_);
