@@ -269,9 +269,9 @@ void ValidNullPackageNameSourceAlbum()
     cmd.GetAbsRdbPredicates()->IsNull(PhotoAlbumColumns::ALBUM_NAME);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE));
-    EXPECT_NE((g_rdbStore == nullptr), true);
+    ASSERT_NE(g_rdbStore, nullptr);
     auto resultSet = g_rdbStore->Query(cmd, columns);
-    EXPECT_NE((resultSet == nullptr), true);
+    ASSERT_NE(resultSet, nullptr);
     int32_t count = -1;
     int32_t ret = resultSet->GetRowCount(count);
     MEDIA_INFO_LOG("ValidNullPackageNameSourceAlbum count is: %{public}d", count);
