@@ -58,6 +58,7 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+static const string ANALYSIS_HAS_DATA = "1";
 shared_ptr<PhotoEditingRecord> PhotoEditingRecord::instance_ = nullptr;
 mutex PhotoEditingRecord::mutex_;
 
@@ -390,7 +391,7 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
         return E_HAS_DB_ERROR;
     }
     transactionOprn.Finish();
-    MediaLibraryObjectUtils::UpdateAnalysisProp("0");
+    MediaLibraryObjectUtils::UpdateAnalysisProp(ANALYSIS_HAS_DATA);
     return outRow;
 }
 
@@ -476,7 +477,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET(ret == E_OK, ret);
     }
     cmd.SetResult(fileUri);
-    MediaLibraryObjectUtils::UpdateAnalysisProp("0");
+    MediaLibraryObjectUtils::UpdateAnalysisProp(ANALYSIS_HAS_DATA);
     return outRow;
 }
 

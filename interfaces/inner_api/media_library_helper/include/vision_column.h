@@ -44,7 +44,6 @@ const std::string OCR_VERSION = "ocr_version";
 const std::string OCR_TEXT_MSG = "ocr_text_msg";
 const std::string OCR_WIDTH = "width";
 const std::string OCR_HEIGHT = "height";
-const std::string OCR_PRE_MSG = "ocr_pre_msg";
 const std::string CREATE_TAB_ANALYSIS_OCR = "CREATE TABLE IF NOT EXISTS " + VISION_OCR_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     FILE_ID + " INT UNIQUE, " +
