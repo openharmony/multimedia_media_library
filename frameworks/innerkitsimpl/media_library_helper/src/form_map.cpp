@@ -13,28 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_MEDIATOOL_START
-int main(int argc, char *argv[])
-{
-    return 0;
-}
-#else
-#include <string>
-#include <vector>
+#include "form_map.h"
 
-#include "control_main.h"
+#include "medialibrary_db_const.h"
+#include "photo_album_column.h"
 
-using namespace OHOS;
-using namespace OHOS::Media;
-using namespace OHOS::Media::MediaTool;
+using namespace std;
 
-int main(int argc, char *argv[])
-{
-    std::vector<std::string> args;
-    for (int i = 0; i < argc; i++) {
-        args.push_back(std::string(argv[i]));
-    }
-    return ControlMain::Main(args);
-}
-#endif // MEDIALIBRARY_MEDIATOOL_START
+namespace OHOS::Media {
+// PhotoMap table
+const string FormMap::FORM_MAP_TABLE  = "FormMap";
+const string FormMap::FORMMAP_FORM_ID = "form_id";
+const string FormMap::FORMMAP_URI = "uri";
 
+const string FormMap::CREATE_FORM_MAP_TABLE = "CREATE TABLE IF NOT EXISTS " + FORM_MAP_TABLE + " (" +
+    FORMMAP_FORM_ID + " TEXT PRIMARY KEY, " +MEDIA_DATA_DB_URI + " TEXT) ";
+} // namespace OHOS::Media

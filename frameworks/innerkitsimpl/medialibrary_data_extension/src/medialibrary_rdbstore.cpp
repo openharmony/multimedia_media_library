@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include/media_column.h"
 #define MLOG_TAG "RdbStore"
 
 #include "medialibrary_rdbstore.h"
@@ -45,6 +44,7 @@
 #include "result_set_utils.h"
 #include "source_album.h"
 #include "vision_column.h"
+#include "form_map.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -932,6 +932,7 @@ static const vector<string> onCreateSqlStrs = {
     INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
     UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
     DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+    FormMap::CREATE_FORM_MAP_TABLE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -1050,6 +1051,7 @@ void API10TableCreate(RdbStore &store)
         PhotoAlbumColumns::CREATE_TABLE,
         PhotoAlbumColumns::INDEX_ALBUM_TYPES,
         PhotoMap::CREATE_TABLE,
+        FormMap::CREATE_FORM_MAP_TABLE,
         TriggerDeleteAlbumClearMap(),
         TriggerAddAssets(),
         TriggerRemoveAssets(),
@@ -1168,6 +1170,7 @@ void UpdateAPI10Table(RdbStore &store)
     store.ExecuteSql("DROP TABLE IF EXISTS UniqueNumber");
     store.ExecuteSql("DROP TABLE IF EXISTS PhotoAlbum");
     store.ExecuteSql("DROP TABLE IF EXISTS PhotoMap");
+    store.ExecuteSql("DROP TABLE IF EXISTS FormMap");
 
     API10TableCreate(store);
     if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
@@ -1497,16 +1500,16 @@ void AddYearMonthDayColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void AddNeedCleanAndThumbStatus(RdbStore &store) {
-    const std::string addSyncStatus = {
+void AddCleanFlagAndThumbStatus(RdbStore &store) {
+    const vector<string> addSyncStatus = {
         "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SHPT_ADDED_INDEX,
         "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SHPT_MEDIA_TYPE_INDEX,
         "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SHPT_DAY_INDEX,
         BaseColumn::AlterTableAddIntColumn(PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_CLEAN_FLAG),
         BaseColumn::AlterTableAddIntColumn(PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_THUMB_STATUS),
         PhotoColumn::CREATE_SHPT_ClEAN_FLAG_INDEX,
-    }
-    result = ExecSqls(addSyncStatus);
+    };
+    int32_t result = ExecSqls(addSyncStatus, store);
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb need clean and thumb status error %{private}d", result);
     }
@@ -1530,21 +1533,6 @@ void AddShootingModeColumn(RdbStore &store)
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb shooting_mode error %{private}d", result);
     }
-}
-
-void UpdateMillisecondDate(RdbStore &store)
-{
-    MEDIA_DEBUG_LOG("UpdateMillisecondDate start");
-    const vector<string> updateSql = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
-        MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + "*1000," +
-        MediaColumn::MEDIA_DATE_MODIFIED + " = " + MediaColumn::MEDIA_DATE_MODIFIED + "*1000," +
-        MediaColumn::MEDIA_DATE_TRASHED + " = " + MediaColumn::MEDIA_DATE_TRASHED + "*1000;"+
-        "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
-        MediaColumn::MEDIA_DATE_MODIFIED + " = " +  MediaColumn::MEDIA_DATE_MODIFIED + "*1000;",
-    };
-    ExecSqls(updateSql, store);
-    MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
 }
 
 static void AddHiddenViewColumn(RdbStore &store)
@@ -1638,6 +1626,15 @@ void AddAlbumOrderColumn(RdbStore &store)
     }
 }
 
+static void AddFormMap(RdbStore &store)
+{
+    int32_t result = store.ExecuteSql(FormMap::CREATE_FORM_MAP_TABLE);
+    if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("Failed to update PHOTOS");
+    }
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1683,10 +1680,6 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_FIX_INDEX_ORDER) {
         FixIndexOrder(store);
     }
-
-    if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
-        UpdateMillisecondDate(store);
-    }
 }
 
 static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
@@ -1710,6 +1703,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_ALBUM_ORDER) {
         AddAlbumOrderColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_FORM_MAP) {
+        AddFormMap(store);
     }
 }
 
@@ -1777,7 +1774,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     }
 
     if (oldVersion < VERSION_ADD_PHOTO_CLEAN_FLAG_AND_THUMB_STATUS) {
-        AddNeedCleanAndThumbStatus(store);
+        AddCleanFlagAndThumbStatus(store);
     }
 
     UpgradeOtherTable(store, oldVersion);

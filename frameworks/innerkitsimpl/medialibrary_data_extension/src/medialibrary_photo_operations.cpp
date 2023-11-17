@@ -49,6 +49,7 @@
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
+#include "medialibrary_formmap_operations.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -101,15 +102,15 @@ static void AddQueryIndex(AbsPredicates &predicates, const vector<string> &colum
     const string &group = predicates.GetGroup();
     if (group.empty()) {
         predicates.GroupBy({ PhotoColumn::PHOTO_DATE_DAY });
-        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_DAY_INDEX);
+        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_ClEAN_FLAG_INDEX);
         return;
     }
     if (group == PhotoColumn::MEDIA_TYPE) {
-        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_MEDIA_TYPE_INDEX);
+        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_ClEAN_FLAG_INDEX);
         return;
     }
     if (group == PhotoColumn::PHOTO_DATE_DAY) {
-        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_DAY_INDEX);
+        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_ClEAN_FLAG_INDEX);
         return;
     }
 }
@@ -531,6 +532,7 @@ static void TrashPhotosSendNotify(vector<string> &notifyUris)
         watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
         watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
         watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT, trashAlbumId);
+        MediaLibraryFormMapOperations::DoPublishedChange(notifyUri);
     }
 }
 
@@ -546,7 +548,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     vector<string> notifyUris = rdbPredicate.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
     ValuesBucket values;
-    values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
     cmd.SetValueBucket(values);
     int32_t updatedRows = rdbStore->Update(values, rdbPredicate);
     if (updatedRows < 0) {
@@ -689,7 +691,6 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
         return rowId;
     }
     transactionOprn.Finish();
-
     string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
     errCode = SendTrashNotify(cmd, fileAsset->GetId(), extraUri);
     if (errCode == E_OK) {
@@ -1046,6 +1047,14 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
     int32_t errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
         fileAsset->GetId());
+    string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileAsset->GetId(), fileAsset->GetFilePath());
+    if (!uri.empty()) {
+        vector<int64_t> formIds;
+        MediaLibraryFormMapOperations::GetFormMapFormId(uri.c_str(), formIds);
+        if (!formIds.empty()) {
+            MediaLibraryFormMapOperations::PublishedChange(uri, formIds);
+        }
+    }
     return E_OK;
 }
 
@@ -1116,6 +1125,15 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
         fileId);
     ScanFile(path, true, true, true);
+
+    string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileAsset->GetId(), fileAsset->GetFilePath());
+    if (!uri.empty()) {
+        vector<int64_t> formIds;
+        MediaLibraryFormMapOperations::GetFormMapFormId(uri.c_str(), formIds);
+        if (!formIds.empty()) {
+            MediaLibraryFormMapOperations::PublishedChange(uri, formIds);
+        }
+    }
     return E_OK;
 }
 
