@@ -1603,9 +1603,7 @@ static int32_t GetRootDirAssetByRelativePath(const string &relativePath, DirAsse
 void MediaLibraryObjectUtils::UpdateAnalysisProp(const std::string value)
 {
     int ret = SetParameter("persist.multimedia.media_analysis_service.hasdata", value.c_str());
-    if (ret == 0) {
-        MEDIA_INFO_LOG("UpdateAnalysisProp succ");
-    } else {
+    if (ret != 0) {
         MEDIA_ERR_LOG("Failed to UpdateAnalysisProp, result:%{public}d", ret);
     }
 }
