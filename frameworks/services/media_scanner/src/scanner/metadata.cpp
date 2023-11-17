@@ -396,7 +396,7 @@ void Metadata::SetDateDay(const VariantData &dateDay)
     dateDay_ = get<string>(dateDay);
 }
 
-const string &Metadata::getDateDay() const
+const string &Metadata::GetDateDay() const
 {
     return dateDay_;
 }
