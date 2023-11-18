@@ -14,12 +14,13 @@
  */
 #define MLOG_TAG "LocationOperation"
 
+#include "medialibrary_location_operations.h"
+
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
-#include "medialibrary_location_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

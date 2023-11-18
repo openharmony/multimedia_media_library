@@ -860,14 +860,13 @@ static const string &TriggerUpdateUserAlbumCount()
 static const vector<string> onCreateSqlStrs = {
     CREATE_MEDIA_TABLE,
     PhotoColumn::CREATE_PHOTO_TABLE,
-    PhotoColumn::INDEX_STHP_ADDTIME,
+    PhotoColumn::INDEX_SCTHP_ADDTIME,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::CREATE_YEAR_INDEX,
     PhotoColumn::CREATE_MONTH_INDEX,
     PhotoColumn::CREATE_DAY_INDEX,
-    PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
-    PhotoColumn::CREATE_SHPT_DAY_INDEX,
-    PhotoColumn::CREATE_SHPT_ClEAN_FLAG_INDEX,
+    PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+    PhotoColumn::CREATE_SCHPT_DAY_INDEX,
     PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
@@ -1036,7 +1035,7 @@ void API10TableCreate(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         PhotoColumn::CREATE_PHOTO_TABLE,
-        PhotoColumn::INDEX_STHP_ADDTIME,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
         PhotoColumn::INDEX_CAMERA_SHOT_KEY,
         PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
@@ -1202,6 +1201,18 @@ static void AddLocationTables(RdbStore &store)
         CREATE_GEO_KNOWLEDGE_TABLE,
     };
     MEDIA_INFO_LOG("start init location db");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void UpdateLocationTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_geo_dictionary",
+        "DROP TABLE IF EXISTS tab_geo_knowledge",
+        CREATE_GEO_DICTIONARY_TABLE,
+        CREATE_GEO_KNOWLEDGE_TABLE,
+    };
+    MEDIA_INFO_LOG("fix location db");
     ExecSqls(executeSqlStrs, store);
 }
 
@@ -1466,7 +1477,7 @@ void UpdateYearMonthDayData(RdbStore &store)
         PhotoColumn::CREATE_YEAR_INDEX,
         PhotoColumn::CREATE_MONTH_INDEX,
         PhotoColumn::CREATE_DAY_INDEX,
-        PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
     };
     ExecSqls(updateSql, store);
     MEDIA_DEBUG_LOG("UpdateYearMonthDayData end");
@@ -1483,9 +1494,9 @@ void FixIndexOrder(RdbStore &store)
         PhotoColumn::CREATE_YEAR_INDEX,
         PhotoColumn::CREATE_MONTH_INDEX,
         PhotoColumn::CREATE_DAY_INDEX,
-        PhotoColumn::INDEX_STHP_ADDTIME,
-        PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
-        PhotoColumn::CREATE_SHPT_DAY_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
     };
     ExecSqls(updateSql, store);
 }
@@ -1500,14 +1511,17 @@ void AddYearMonthDayColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void AddCleanFlagAndThumbStatus(RdbStore &store) {
+void AddCleanFlagAndThumbStatus(RdbStore &store)
+{
     const vector<string> addSyncStatus = {
-        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SHPT_ADDED_INDEX,
-        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SHPT_MEDIA_TYPE_INDEX,
-        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SHPT_DAY_INDEX,
+        "DROP INDEX IF EXISTS idx_shpt_date_added",
+        "DROP INDEX IF EXISTS idx_shpt_media_type",
+        "DROP INDEX IF EXISTS idx_shpt_date_day",
         BaseColumn::AlterTableAddIntColumn(PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_CLEAN_FLAG),
         BaseColumn::AlterTableAddIntColumn(PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_THUMB_STATUS),
-        PhotoColumn::CREATE_SHPT_ClEAN_FLAG_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
     };
     int32_t result = ExecSqls(addSyncStatus, store);
     if (result != NativeRdb::E_OK) {
@@ -1707,6 +1721,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_FORM_MAP) {
         AddFormMap(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_LOCATION_TABLE) {
+        UpdateLocationTables(store);
     }
 }
 

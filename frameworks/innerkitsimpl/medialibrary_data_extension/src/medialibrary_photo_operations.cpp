@@ -58,6 +58,7 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+static const string ANALYSIS_HAS_DATA = "1";
 shared_ptr<PhotoEditingRecord> PhotoEditingRecord::instance_ = nullptr;
 mutex PhotoEditingRecord::mutex_;
 
@@ -102,15 +103,15 @@ static void AddQueryIndex(AbsPredicates &predicates, const vector<string> &colum
     const string &group = predicates.GetGroup();
     if (group.empty()) {
         predicates.GroupBy({ PhotoColumn::PHOTO_DATE_DAY });
-        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_ClEAN_FLAG_INDEX);
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
         return;
     }
     if (group == PhotoColumn::MEDIA_TYPE) {
-        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_ClEAN_FLAG_INDEX);
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
         return;
     }
     if (group == PhotoColumn::PHOTO_DATE_DAY) {
-        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_ClEAN_FLAG_INDEX);
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
         return;
     }
 }
@@ -392,7 +393,7 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
         return E_HAS_DB_ERROR;
     }
     transactionOprn.Finish();
-    MediaLibraryObjectUtils::UpdateAnalysisProp("0");
+    MediaLibraryObjectUtils::UpdateAnalysisProp(ANALYSIS_HAS_DATA);
     return outRow;
 }
 
@@ -478,7 +479,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET(ret == E_OK, ret);
     }
     cmd.SetResult(fileUri);
-    MediaLibraryObjectUtils::UpdateAnalysisProp("0");
+    MediaLibraryObjectUtils::UpdateAnalysisProp(ANALYSIS_HAS_DATA);
     return outRow;
 }
 
