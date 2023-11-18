@@ -504,10 +504,11 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
 {
     // uri is dataability:///media/image/<id>/thumbnail/<width>/<height>
     string uriStr = uri.ToString();
-    auto thumbLatIdx = uriStr.find("thumbnail") + strlen("thumbnail");
+    auto thumbLatIdx = uriStr.find("thumbnail");
     if (thumbLatIdx == string::npos || thumbLatIdx > uriStr.length()) {
         return nullptr;
     }
+    thumbLatIdx += strlen("thumbnail");
     bool isOldVersion = uriStr[thumbLatIdx] == '/';
     string path;
     string fileUri;
