@@ -22,6 +22,7 @@
 #include "js_runtime.h"
 #include "photo_album_column.h"
 #include "media_file_utils.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_rdb_test.h"
@@ -339,7 +340,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_BuildValuesSql_test_001, TestSize.Level0)
     int32_t ret = MediaLibraryRdbStore::ExecuteForLastInsertedRowId(sql, bindArgs);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     rdbStorePtr->Init();
-    ret = MediaLibraryRdbStore::DeleteFromDisk(predicates, false);
+    ret = MediaLibraryAssetOperations::DeleteFromDisk(predicates, false);
     EXPECT_EQ(ret, E_SUCCESS);
     string retTest = MediaLibraryRdbStore::CloudSyncTriggerFunc(columns);
     EXPECT_EQ(retTest, "");

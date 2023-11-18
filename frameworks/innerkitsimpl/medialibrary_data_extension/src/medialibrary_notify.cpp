@@ -22,6 +22,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -351,8 +352,10 @@ static void GetNotifyUri(shared_ptr<NativeRdb::ResultSet> &resultSet, vector<str
     notifyUris.push_back(notifyUri);
 }
 
-void MediaLibraryNotify::GetNotifyUris(const RdbPredicates &predicates, vector<string> &notifyUris)
+void MediaLibraryNotify::GetNotifyUris(const AbsRdbPredicates &predicates, vector<string> &notifyUris)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetNotifyUris");
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         return;

@@ -16,11 +16,13 @@
 #ifndef OHOS_MEDIALIBRARY_RDBSTORE_H
 #define OHOS_MEDIALIBRARY_RDBSTORE_H
 
-#include "medialibrary_unistore.h"
+#include <memory>
+
+#include "medialibrary_async_worker.h"
 #include "medialibrary_sync_operation.h"
+#include "medialibrary_unistore.h"
 #include "timer.h"
 #include "value_object.h"
-#include <memory>
 
 namespace OHOS {
 namespace Media {
@@ -60,7 +62,6 @@ public:
         const std::vector<std::string> &columns);
     static int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates);
     static int32_t Update(NativeRdb::ValuesBucket &values, const NativeRdb::AbsRdbPredicates &predicates);
-    static int32_t DeleteFromDisk(const NativeRdb::AbsRdbPredicates &predicates, const bool compatible);
     static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
     static void UpdateAPI10Tables();
     static std::shared_ptr<NativeRdb::ResultSet> GetIndexOfUri(const NativeRdb::AbsRdbPredicates &predicates,
@@ -106,6 +107,19 @@ private:
 
     int32_t InsertDirValues(const DirValuesBucket &dirValuesBucket, NativeRdb::RdbStore &store);
     int32_t InsertSmartAlbumValues(const SmartAlbumValuesBucket &smartAlbum, NativeRdb::RdbStore &store);
+};
+
+class DeleteFilesTask : public AsyncTaskData {
+public:
+    DeleteFilesTask(const std::vector<std::string> &ids, const std::vector<std::string> &paths,
+        const std::vector<std::string> &notifyUris, const std::string &table) : ids_(ids), paths_(paths),
+        notifyUris_(notifyUris), table_(table) {}
+    virtual ~DeleteFilesTask() override = default;
+
+    std::vector<std::string> ids_;
+    std::vector<std::string> paths_;
+    std::vector<std::string> notifyUris_;
+    std::string table_;
 };
 
 #ifdef DISTRIBUTED
