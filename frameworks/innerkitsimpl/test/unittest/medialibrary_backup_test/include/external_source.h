@@ -30,7 +30,7 @@ public:
     void Init(const std::string &path);
 
 private:
-    std::shared_ptr<NativeRdb::RdbStore> galleryStorePtr_;
+    std::shared_ptr<NativeRdb::RdbStore> externalStorePtr_;
 };
 
 class ExternalOpenCall : public NativeRdb::RdbOpenCallback {

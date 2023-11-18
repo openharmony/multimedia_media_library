@@ -103,11 +103,10 @@ public:
     static const std::string PHOTO_DATE_YEAR_INDEX;
     static const std::string PHOTO_DATE_MONTH_INDEX;
     static const std::string PHOTO_DATE_DAY_INDEX;
-    static const std::string PHOTO_SHPT_ADDED_INDEX;
-    static const std::string PHOTO_SHPT_MEDIA_TYPE_INDEX;
-    static const std::string PHOTO_SHPT_DAY_INDEX;
+    static const std::string PHOTO_SCHPT_ADDED_INDEX;
+    static const std::string PHOTO_SCHPT_MEDIA_TYPE_INDEX;
+    static const std::string PHOTO_SCHPT_DAY_INDEX;
     static const std::string PHOTO_HIDDEN_TIME_INDEX;
-    static const std::string PHOTO_SHPT_ClEAN_FLAG_INDEX;
     // format in PhotoTable year month day
     static const std::string PHOTO_DATE_YEAR_FORMAT;
     static const std::string PHOTO_DATE_MONTH_FORMAT;
@@ -120,13 +119,12 @@ public:
     static const std::string CREATE_YEAR_INDEX;
     static const std::string CREATE_MONTH_INDEX;
     static const std::string CREATE_DAY_INDEX;
-    static const std::string CREATE_SHPT_MEDIA_TYPE_INDEX;
-    static const std::string CREATE_SHPT_DAY_INDEX;
+    static const std::string CREATE_SCHPT_MEDIA_TYPE_INDEX;
+    static const std::string CREATE_SCHPT_DAY_INDEX;
     static const std::string CREATE_HIDDEN_TIME_INDEX;
-    static const std::string CREATE_SHPT_ClEAN_FLAG_INDEX;
 
     // create indexes for Photo
-    static const std::string INDEX_STHP_ADDTIME;
+    static const std::string INDEX_SCTHP_ADDTIME;
     static const std::string INDEX_CAMERA_SHOT_KEY;
 
     // create Photo cloud sync trigger
