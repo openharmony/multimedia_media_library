@@ -19,6 +19,7 @@
 #include "directory_ex.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -522,53 +523,11 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     return changedRows;
 }
 
-int32_t DoDeletePhotoAssets(RdbPredicates &rdbPredicates, bool isAging, const bool compatible)
-{
-    vector<string> whereArgs = rdbPredicates.GetWhereArgs();
-    MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicates);
-    vector<string> agingNotifyUris;
-
-    // Query asset uris for notify before delete.
-    if (isAging) {
-        MediaLibraryNotify::GetNotifyUris(rdbPredicates, agingNotifyUris);
-    }
-    int32_t deletedRows = MediaLibraryRdbStore::DeleteFromDisk(rdbPredicates, compatible);
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
-        { to_string(PhotoAlbumSubType::TRASH) });
-
-    auto watch = MediaLibraryNotify::GetInstance();
-    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
-    if (trashAlbumId <= 0) {
-        return deletedRows;
-    }
-
-    // Send notify of trash album in aging case.
-    if (isAging) {
-        for (const auto &notifyUri : agingNotifyUris) {
-            watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
-        }
-        return deletedRows;
-    }
-
-    size_t count = whereArgs.size() - THAN_AGR_SIZE;
-    for (size_t i = 0; i < count; i++) {
-        watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
-    }
-    return deletedRows;
-}
-
-static inline int32_t CompatDeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
+static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates,
+    const bool isAging, const bool compatible)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
-    return DoDeletePhotoAssets(rdbPredicates, isAging, true);
-}
-
-static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates, bool isAging)
-{
-    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
-    rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    return DoDeletePhotoAssets(rdbPredicates, isAging, false);
+    return MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicates, isAging, compatible);
 }
 
 int32_t AgingPhotoAssets(shared_ptr<int> countPtr)
@@ -577,7 +536,7 @@ int32_t AgingPhotoAssets(shared_ptr<int> countPtr)
     DataSharePredicates predicates;
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->LessThanOrEqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(time - AGING_TIME));
-    int32_t ret = DeletePhotoAssets(predicates, true);
+    int32_t ret = DeletePhotoAssets(predicates, true, false);
     if (ret < 0) {
         return ret;
     }
@@ -815,9 +774,9 @@ int32_t MediaLibraryAlbumOperations::HandlePhotoAlbum(const OperationType &opTyp
         case OperationType::ALBUM_RECOVER_ASSETS:
             return RecoverPhotoAssets(predicates);
         case OperationType::ALBUM_DELETE_ASSETS:
-            return DeletePhotoAssets(predicates, false);
+            return DeletePhotoAssets(predicates, false, false);
         case OperationType::COMPAT_ALBUM_DELETE_ASSETS:
-            return CompatDeletePhotoAssets(predicates, false);
+            return DeletePhotoAssets(predicates, false, true);
         case OperationType::AGING:
             return AgingPhotoAssets(countPtr);
         case OperationType::ALBUM_ORDER:
