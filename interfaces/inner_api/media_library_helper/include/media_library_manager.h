@@ -91,6 +91,27 @@ public:
     int32_t CloseAsset(const string &uri, const int32_t fd);
 
     /**
+     * @brief create an photo or video asset
+     *
+     * @param displayName file displayName
+     * @return asset uri for success and <""> for fail
+     * @since 1.0
+     * @version 1.0
+     */
+    string CreateAsset(const string &displayName);
+
+    /**
+     * @brief open photo or video
+     *
+     * @param displayName file displayName
+     * @param openMode openMode "rw", "w", "r"
+     * @return fileDescriptor for success and <-1> for fail
+     * @since 1.0
+     * @version 1.0
+     */
+    int32_t OpenAsset(string &uri, const string openMode);
+
+    /**
      * @brief Obtain a mediaVolume object from MediaAssets can be obtained
      *
      * @param MediaVolume MediaVolume for outValue
