@@ -103,15 +103,15 @@ static void AddQueryIndex(AbsPredicates &predicates, const vector<string> &colum
     const string &group = predicates.GetGroup();
     if (group.empty()) {
         predicates.GroupBy({ PhotoColumn::PHOTO_DATE_DAY });
-        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_DAY_INDEX);
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
         return;
     }
     if (group == PhotoColumn::MEDIA_TYPE) {
-        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_MEDIA_TYPE_INDEX);
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
         return;
     }
     if (group == PhotoColumn::PHOTO_DATE_DAY) {
-        predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_DAY_INDEX);
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
         return;
     }
 }
@@ -201,6 +201,8 @@ static shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cm
     } else {
         predicates.And()->EqualTo(
             PhotoColumn::PHOTO_SYNC_STATUS, std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+        predicates.And()->EqualTo(
+            PhotoColumn::PHOTO_CLEAN_FLAG, std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
         return MediaLibraryRdbStore::GetIndexOfUri(predicates, columns, photoId);
     }
 }
