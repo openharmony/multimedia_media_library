@@ -1417,8 +1417,8 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
 #ifdef MEDIALIBRARY_COMPATIBILITY
     string closeUri;
     if (MediaFileUtils::IsFileTablePath(context->objectPtr->GetPath()) ||
-        MediaFileUtils::StartsWith(context->objectPtr->GetRelativePath(), DOC_DIR_VALUES) ||
-        MediaFileUtils::StartsWith(context->objectPtr->GetRelativePath(), DOWNLOAD_DIR_VALUES)) {
+        MediaFileUtils::StartsWith(context->objectPtr->GetRelativePath(), DOCS_PATH + DOC_DIR_VALUES) ||
+        MediaFileUtils::StartsWith(context->objectPtr->GetRelativePath(), DOCS_PATH + DOWNLOAD_DIR_VALUES)) {
         closeUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
     } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
