@@ -169,12 +169,7 @@ void UpdateRestore::RestoreFromExternal(bool isCamera)
 
 int32_t UpdateRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
 {
-    std::string queryCamera;
-    if (isCamera) {
-        queryCamera = IN_CAMERA + "'" + cameraAppName_ + "'))";
-    } else {
-        queryCamera = NOT_IN_CAMERA;
-    }
+    std::string queryCamera = isCamera ? IN_CAMERA : NOT_IN_CAMERA;
     std::string queryNotSyncByCount = QUERY_COUNT_FROM_FILES + queryCamera + " AND " +
         COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
     return BackupDatabaseUtils::QueryInt(externalRdb_, queryNotSyncByCount, COUNT);
@@ -235,12 +230,7 @@ std::vector<FileInfo> UpdateRestore::QueryFileInfosFromExternal(int32_t offset, 
         MEDIA_ERR_LOG("Pointer rdb_ is nullptr, Maybe init failed.");
         return result;
     }
-    std::string queryCamera;
-    if (isCamera) {
-        queryCamera = IN_CAMERA + "'" + cameraAppName_ + "'))";
-    } else {
-        queryCamera = NOT_IN_CAMERA;
-    }
+    std::string queryCamera = isCamera ? IN_CAMERA : NOT_IN_CAMERA;
     std::string queryFilesByCount = QUERY_FILE_COLUMN + queryCamera + " AND " +
         COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC + " limit " + std::to_string(offset) + ", " +
         std::to_string(QUERY_COUNT);
