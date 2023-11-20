@@ -280,7 +280,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_camera, T
         "SELECT file_id from Photos where display_name ='not_sync_pending_camera.jpg'";
     auto resultSet = photosStorePtr->QuerySql(queryNotSyncPendingCamera);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_camera end");
 }
 
