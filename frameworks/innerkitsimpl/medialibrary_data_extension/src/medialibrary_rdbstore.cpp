@@ -1707,16 +1707,16 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
         AddFaceTables(store);
     }
 
-    if (oldVersion < VERSION_ADD_SOURCE_ALBUM_TRIGGER) {
-        AddSourceAlbumTrigger(store);
-    }
-
     if (oldVersion < VERSION_ADD_VISION_ALBUM) {
         AddAnalysisAlbum(store);
     }
 
     if (oldVersion < VERSION_ADD_AESTHETIC_COMPOSITION_TABLE) {
         AddAestheticCompositionTables(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_TRIGGER) {
+        AddSourceAlbumTrigger(store);
     }
 }
 
