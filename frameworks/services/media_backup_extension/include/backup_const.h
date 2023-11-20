@@ -99,8 +99,7 @@ const std::string QUERY_FILE_COLUMN = "SELECT _id, " + GALLERY_FILE_DATA + ", " 
     DATE_MODIFIED + ", " + GALLERY_HEIGHT + ", " + GALLERY_WIDTH + ", " + GALLERY_TITLE + ", " + GALLERY_ORIENTATION +
     ", " + DATE_ADDED + " FROM files WHERE ";
 
-const std::string IN_CAMERA = " bucket_id IN (-1739773001, 0, 1028075469, 0) AND \
-    ((is_pending = 0) OR (media_type = 1 AND owner_package_name = ";
+const std::string IN_CAMERA = " bucket_id IN (-1739773001, 0, 1028075469, 0) AND (is_pending = 0)";
 
 const std::string NOT_IN_CAMERA = " bucket_id NOT IN (-1739773001, 0, 1028075469, 0 ) AND is_pending = 0";
 

@@ -59,6 +59,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
 #include "medialibrary_vision_operations.h"
+#include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
 #include "permission_utils.h"
 #include "photo_map_operations.h"
@@ -433,6 +434,9 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
         case OperationObject::PAH_FORM_MAP:
             return MediaLibraryFormMapOperations::HandleStoreFormIdOperation(cmd);
+        case OperationObject::SEARCH_TOTAL: {
+            return MediaLibrarySearchOperations::InsertOperation(cmd);
+        }
 
         default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
@@ -589,6 +593,20 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::DeleteOperation(cmd);
         }
+        case OperationObject::PAH_FORM_MAP: {
+            return MediaLibraryFormMapOperations::RemoveFormIdOperations(rdbPredicate);
+        }
+        default:
+            break;
+    }
+
+    return DeleteInRdbPredicatesAnalysis(cmd, rdbPredicate);
+}
+
+int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd,
+    NativeRdb::RdbPredicates &rdbPredicate)
+{
+    switch (cmd.GetOprnObject()) {
         case OperationObject::VISION_OCR:
         case OperationObject::VISION_LABEL:
         case OperationObject::VISION_AESTHETICS:
@@ -607,8 +625,8 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::GEO_KNOWLEDGE: {
             return MediaLibraryLocationOperations::DeleteOperation(cmd);
         }
-        case OperationObject::PAH_FORM_MAP: {
-            return MediaLibraryFormMapOperations::RemoveFormIdOperations(rdbPredicate);
+        case OperationObject::SEARCH_TOTAL: {
+            return MediaLibrarySearchOperations::DeleteOperation(cmd);
         }
         default:
             break;
@@ -983,6 +1001,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
         queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
     } else if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::ANALYSIS_PHOTO_ALBUM) {
         queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+    } else if (oprnObject == OperationObject::SEARCH_TOTAL) {
+        queryResultSet = MediaLibrarySearchOperations::QueryOperation(cmd, columns);
     } else {
         tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);

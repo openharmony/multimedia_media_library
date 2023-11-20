@@ -45,6 +45,7 @@
 #include "source_album.h"
 #include "vision_column.h"
 #include "form_map.h"
+#include "search_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -933,6 +934,17 @@ static const vector<string> onCreateSqlStrs = {
     UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
     DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
     FormMap::CREATE_FORM_MAP_TABLE,
+
+    // search
+    CREATE_SEARCH_TOTAL_TABLE,
+    CREATE_SEARCH_INSERT_TRIGGER,
+    CREATE_SEARCH_UPDATE_TRIGGER,
+    CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
+    CREATE_SEARCH_DELETE_TRIGGER,
+    CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
+    CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
+    CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
+    CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -1313,6 +1325,54 @@ static void AddAestheticCompositionTables(RdbStore &store)
     };
     MEDIA_INFO_LOG("start add aesthetic composition tables");
     ExecSqls(executeSqlStrs, store);
+}
+
+static void AddSearchTable(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS " + SEARCH_TOTAL_TABLE,
+        "DROP TRIGGER IF EXISTS " + INSERT_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_STATUS_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + DELETE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_MAP_INSERT_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_MAP_DELETE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_UPDATE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ANALYSIS_UPDATE_SEARCH_TRIGGER,
+        CREATE_SEARCH_TOTAL_TABLE,
+        CREATE_SEARCH_INSERT_TRIGGER,
+        CREATE_SEARCH_UPDATE_TRIGGER,
+        CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
+        CREATE_SEARCH_DELETE_TRIGGER,
+        CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
+        CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
+        CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
+        CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start init search db");
+    ExecSqls(executeSqlStrs, store);
+}
+
+void MediaLibraryRdbStore::ResetSearchTables()
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return;
+    }
+    static const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS " + SEARCH_TOTAL_TABLE,
+        "DROP TRIGGER IF EXISTS " + INSERT_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_STATUS_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + DELETE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_MAP_INSERT_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_MAP_DELETE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_UPDATE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ANALYSIS_UPDATE_SEARCH_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start update search db");
+    ExecSqls(executeSqlStrs, *rdbStore_);
+    AddSearchTable(*rdbStore_);
 }
 
 void MediaLibraryRdbStore::ResetAnalysisTables()
@@ -1770,6 +1830,8 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_SALIENCY_TABLE) {
         AddSaliencyTables(store);
+    if (oldVersion < VERSION_ADD_SEARCH_TABLE) {
+        AddSearchTable(store);
     }
 }
 

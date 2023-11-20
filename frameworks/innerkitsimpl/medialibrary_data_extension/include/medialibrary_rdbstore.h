@@ -68,6 +68,7 @@ public:
     static int32_t GetInt(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &column);
     static std::string GetString(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &column);
     static void ResetAnalysisTables();
+    static void ResetSearchTables();
     static int32_t UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows);
 
 private:
