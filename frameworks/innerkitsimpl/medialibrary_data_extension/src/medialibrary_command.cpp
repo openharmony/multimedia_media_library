@@ -29,6 +29,7 @@
 #include "userfilemgr_uri.h"
 #include "vision_column.h"
 #include "form_map.h"
+#include "search_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -335,6 +336,9 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     // use in Location Analyse
     { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
     { GEO_KNOWLEDGE_TABLE, OperationObject::GEO_KNOWLEDGE },
+
+    // use in search
+    { SEARCH_TOTAL_TABLE, OperationObject::SEARCH_TOTAL },
 };
 
 void MediaLibraryCommand::ParseOprnObjectFromUri()
@@ -423,6 +427,9 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
     { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
     { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
+
+    // search
+    { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
 };
 
 void MediaLibraryCommand::ParseTableName()
