@@ -254,6 +254,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     MediaLibraryDataCallBack callback;
     callback.OnCreate(*rdbStore);
     MediaLibraryRdbStore::ResetAnalysisTables();
+    MediaLibraryRdbStore::ResetSearchTables();
     const static vector<string> DELETE_DIR_LIST = {
         ROOT_MEDIA_DIR + PHOTO_BUCKET,
         ROOT_MEDIA_DIR + AUDIO_BUCKET,
