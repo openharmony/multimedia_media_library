@@ -811,6 +811,11 @@ static void GetPublicDirectoryExecute(napi_env env, void *data)
             context->directoryRelativePath = get<string>(
                 ResultSetUtils::GetValFromColumn(DIRECTORY_DB_DIRECTORY, resultSet, TYPE_STRING));
         }
+        if (context->dirType == DirType::DIR_DOCUMENTS) {
+            context->directoryRelativePath = DOC_DIR_VALUES;
+        } else if (context->dirType == DirType::DIR_DOWNLOAD) {
+            context->directoryRelativePath = DOWNLOAD_DIR_VALUES;
+        }
         return;
     } else {
         context->SaveError(errCode);
@@ -1535,8 +1540,8 @@ static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibrary
     fileAsset->SetId(id);
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
     string uri;
-    if (MediaFileUtils::StartsWith(relativePath, DOC_DIR_VALUES) ||
-        MediaFileUtils::StartsWith(relativePath, DOWNLOAD_DIR_VALUES)) {
+    if (MediaFileUtils::StartsWith(relativePath, DOCS_PATH + DOC_DIR_VALUES) ||
+        MediaFileUtils::StartsWith(relativePath, DOCS_PATH + DOWNLOAD_DIR_VALUES)) {
         uri = MediaFileUtils::GetVirtualUriFromRealUri(MediaFileUri(MediaType::MEDIA_TYPE_FILE,
             to_string(id), networkId, MEDIA_API_VERSION_V9).ToString());
     } else {
@@ -1790,8 +1795,11 @@ static bool CheckRelativePathParams(MediaLibraryAsyncContext *context)
             if (!strcmp(firstDirName.c_str(), directoryEnumValues[i].c_str())) {
                 return CheckTypeOfType(firstDirName, fileMediaType);
             }
+            if (!strcmp(firstDirName.c_str(), DOCS_PATH.c_str())) {
+                return true;
+            }
         }
-        NAPI_DEBUG_LOG("firstDirName = %{private}s", firstDirName.c_str());
+        NAPI_ERR_LOG("Failed to check relative path, firstDirName = %{private}s", firstDirName.c_str());
     }
     return false;
 }
@@ -1867,8 +1875,8 @@ static void GetCreateUri(MediaLibraryAsyncContext *context, string &uri)
 #ifdef MEDIALIBRARY_COMPATIBILITY
         bool isValid = false;
         string relativePath = context->valuesBucket.Get(MEDIA_DATA_DB_RELATIVE_PATH, isValid);
-        if (MediaFileUtils::StartsWith(relativePath, DOC_DIR_VALUES) ||
-            MediaFileUtils::StartsWith(relativePath, DOWNLOAD_DIR_VALUES)) {
+        if (MediaFileUtils::StartsWith(relativePath, DOCS_PATH + DOC_DIR_VALUES) ||
+            MediaFileUtils::StartsWith(relativePath, DOCS_PATH + DOWNLOAD_DIR_VALUES)) {
             uri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CREATEASSET;
             MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V9));
             return;
@@ -1907,6 +1915,15 @@ static void JSCreateAssetExecute(napi_env env, void *data)
     if ((context->resultNapiType != ResultNapiType::TYPE_USERFILE_MGR) && (!CheckRelativePathParams(context))) {
         context->error = JS_E_RELATIVEPATH;
         return;
+    }
+    bool isValid = false;
+    string relativePath = context->valuesBucket.Get(MEDIA_DATA_DB_RELATIVE_PATH, isValid);
+    if (isValid) {
+        if (MediaFileUtils::StartsWith(relativePath, DOC_DIR_VALUES) ||
+            MediaFileUtils::StartsWith(relativePath, DOWNLOAD_DIR_VALUES)) {
+            context->valuesBucket.valuesMap.erase(MEDIA_DATA_DB_RELATIVE_PATH);
+            context->valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, DOCS_PATH + relativePath);
+        }
     }
 
     string uri;
@@ -4095,7 +4112,7 @@ static string GetDefaultDirectory(int mediaType)
     } else if (mediaType == MediaType::MEDIA_TYPE_AUDIO) {
         relativePath = "Audios/";
     } else {
-        relativePath = "Documents/";
+        relativePath = DOCS_PATH + DOC_DIR_VALUES;
     }
     return relativePath;
 }
