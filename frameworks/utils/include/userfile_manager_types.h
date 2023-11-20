@@ -17,8 +17,6 @@
 
 #include <limits>
 #include <string>
-#include <tuple>
-#include <vector>
 
 namespace OHOS {
 namespace Media {
