@@ -99,6 +99,11 @@ enum class SyncStatusType : int32_t {
     TYPE_UPLOAD,
 };
 
+enum class ThumbStatus : int32_t {
+    DOWNLOADED,
+    TO_DOWNLOAD,
+};
+
 enum class TableType : int32_t {
     TYPE_FILES = 0,
     TYPE_PHOTOS,
@@ -111,6 +116,11 @@ enum ResultSetDataType {
     TYPE_INT32,
     TYPE_INT64,
     TYPE_DOUBLE
+};
+
+enum class CleanType : int32_t {
+    TYPE_NOT_CLEAN = 0,
+    TYPE_NEED_CLEAN
 };
 
 const int32_t SUCCESS = 0;
