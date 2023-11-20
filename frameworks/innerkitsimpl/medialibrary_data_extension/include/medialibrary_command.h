@@ -73,6 +73,7 @@ enum class OperationObject : uint32_t {
     ANALYSIS_PHOTO_ALBUM,
     ANALYSIS_PHOTO_MAP,
     PAH_FORM_MAP,
+    SEARCH_TOTAL,  // search
 };
 
 enum class OperationType : uint32_t {

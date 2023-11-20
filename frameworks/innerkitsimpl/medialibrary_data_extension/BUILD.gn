@@ -147,6 +147,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_object_utils.cpp",
     "src/medialibrary_photo_operations.cpp",
     "src/medialibrary_rdbstore.cpp",
+    "src/medialibrary_search_operations.cpp",
     "src/medialibrary_smartalbum_map_operations.cpp",
     "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_subscriber.cpp",

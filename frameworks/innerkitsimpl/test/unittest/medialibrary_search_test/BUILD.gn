@@ -16,23 +16,22 @@ import("//foundation/multimedia/media_library/media_library.gni")
 
 group("unittest") {
   testonly = true
-  deps = [ ":medialibrary_vision_unittest" ]
+  deps = [ ":medialibrary_search_unittest" ]
 }
 
-ohos_unittest("medialibrary_vision_unittest") {
+ohos_unittest("medialibrary_search_unittest") {
   module_out_path = "media_library/medialibraryextention"
   include_dirs = [
     "./include",
     "../get_self_permissions/include",
     "../medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-    "${MEDIALIB_UTILS_PATH}/include",
   ]
 
   sources = [
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
-    "./src/medialibrary_vision_test.cpp",
+    "./src/medialibrary_search_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",

@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "accesstoken_kit.h"
 #include "album_asset.h"
 #include "datashare_abs_result_set.h"
 #include "datashare_predicates.h"
@@ -34,6 +35,7 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "post_proc.h"
+#include "permission_utils.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
 #include "thumbnail_const.h"
@@ -64,6 +66,97 @@ void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &tok
     if (sDataShareHelper_ == nullptr) {
         sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
     }
+}
+
+static void UriAppendKeyValue(string &uri, const string &key, const string &value)
+{
+    string uriKey = key + '=';
+    if (uri.find(uriKey) != string::npos) {
+        return;
+    }
+    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
+    string append = queryMark + key + '=' + value;
+    size_t posJ = uri.find('#');
+    if (posJ == string::npos) {
+        uri += append;
+    } else {
+        uri.insert(posJ, append);
+    }
+}
+
+static void GetCreateUri(string &uri)
+{
+    uri = PAH_CREATE_PHOTO;
+    const std::string API_VERSION = "api_version";
+    UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+}
+
+static int32_t parseCreateArguments(const string &displayName, DataShareValuesBucket &valuesBucket)
+{
+    MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
+    if (mediaType != MEDIA_TYPE_IMAGE && mediaType != MEDIA_TYPE_VIDEO) {
+        MEDIA_ERR_LOG("Failed to create Asset, invalid file type");
+        return E_ERR;
+    }
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayName);
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, static_cast<int32_t>(mediaType));
+    return E_OK;
+}
+
+string MediaLibraryManager::CreateAsset(const string &displayName)
+{
+    if (sDataShareHelper_ == nullptr || displayName.empty()) {
+        MEDIA_ERR_LOG("Failed to create Asset, datashareHelper is nullptr");
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    }
+    DataShareValuesBucket valuesBucket;
+    auto ret = parseCreateArguments(displayName, valuesBucket);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to create Asset, parse create argument fails");
+        return "";
+    }
+    string createFileUri;
+    GetCreateUri(createFileUri);
+    Uri createUri(createFileUri);
+    string outUri;
+    int index = sDataShareHelper_->InsertExt(createUri, valuesBucket, outUri);
+    if (index < 0) {
+        MEDIA_ERR_LOG("Failed to create Asset, insert database error!");
+        return "";
+    }
+    return outUri;
+}
+
+static bool CheckUri(string &uri)
+{
+    if (uri.find("..") != string::npos) {
+        return false;
+    }
+    string uriprex = "file://media";
+    return uri.substr(0, uriprex.size()) == uriprex;
+}
+
+int32_t MediaLibraryManager::OpenAsset(string &uri, const string openMode)
+{
+    if (openMode.empty()) {
+        return E_ERR;
+    }
+    if (!CheckUri(uri)) {
+        MEDIA_ERR_LOG("invalid uri");
+        return E_ERR;
+    }
+    string originOpenMode = openMode;
+    std::transform(originOpenMode.begin(), originOpenMode.end(),
+        originOpenMode.begin(), [](unsigned char c) {return std::tolower(c);});
+    if (!MEDIA_OPEN_MODES.count(originOpenMode)) {
+        return E_ERR;
+    }
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("Failed to open Asset, datashareHelper is nullptr");
+        return E_ERR;
+    }
+    Uri openUri(uri);
+    return sDataShareHelper_->OpenFile(openUri, openMode);
 }
 
 int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
