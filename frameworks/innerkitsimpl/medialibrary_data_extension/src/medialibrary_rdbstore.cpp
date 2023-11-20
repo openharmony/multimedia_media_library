@@ -1830,6 +1830,8 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_SALIENCY_TABLE) {
         AddSaliencyTables(store);
+    }
+    
     if (oldVersion < VERSION_ADD_SEARCH_TABLE) {
         AddSearchTable(store);
     }
