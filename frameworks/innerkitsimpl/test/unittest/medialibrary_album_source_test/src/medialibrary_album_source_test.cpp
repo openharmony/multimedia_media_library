@@ -163,7 +163,7 @@ InsertResult InsertPhoto(string &packageName)
     valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, data);
     valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
     valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
-    if (packageName != "") {
+    if (!packageName.empty()) {
         valuesBucket.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
     }
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_ADDED, timestamp);
