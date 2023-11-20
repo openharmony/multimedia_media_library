@@ -49,6 +49,17 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(totalCmd, predicates);
 }
 
+int32_t GetAnalysisAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates)
+{
+    string onClause = "file_id = map_asset";
+    predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
+    predicates.EqualTo("map_album", to_string(albumId));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    return 0;
+}
+
 void MediaLibraryVisionTest::SetUpTestCase(void)
 {
     MEDIA_INFO_LOG("Vision_Test::Start");
@@ -1275,6 +1286,82 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QuerySegmentation_Test_001, TestSize.Lev
     DataShare::DataSharePredicates predicates1;
     predicates1.EqualTo(FILE_ID, 4);
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_001::Start");
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY_CATEGORY);
+    valuesBucket.Put(ALBUM_NAME, "1");
+    valuesBucket.Put(DATE_MODIFIED, 0);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+
+    Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand queryCmd(queryAlbumUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_NAME, "1");
+    vector<string> columns;
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryCmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_GT(count, 0);
+    MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_001::count = %{public}d. End", count);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_002::Start");
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY_CATEGORY);
+    valuesBucket.Put(ALBUM_NAME, "2");
+    valuesBucket.Put(COUNT, 1);
+    valuesBucket.Put(DATE_MODIFIED, 0);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+
+    Uri updateAlbumUri(PAH_UPDATE_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand updateCmd(updateAlbumUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_NAME, "2");
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(COUNT, 2);
+    vector<string> columns;
+    auto retVal2 = MediaLibraryDataManager::GetInstance()->Update(updateCmd, updateValues, predicates);
+    EXPECT_GT(retVal2, 0);
+    MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_002::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_001::Start");
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY_CATEGORY);
+    valuesBucket.Put(ALBUM_NAME, "3");
+    valuesBucket.Put(COUNT, 1);
+    valuesBucket.Put(DATE_MODIFIED, 0);
+    int albumId = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    Uri insertMapUri(PAH_INSERT_ANA_PHOTO_MAP);
+    MediaLibraryCommand insertMapCmd(insertMapUri);
+    DataShare::DataShareValuesBucket mapValues;
+    mapValues.Put(MAP_ALBUM, albumId);
+    mapValues.Put(MAP_ASSET, 1);
+    int mapId = MediaLibraryDataManager::GetInstance()->Insert(insertMapCmd, mapValues);
+    EXPECT_GT(mapId, 0);
+    MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_001::mapId = %{public}d. End", mapId);
 }
 } // namespace Media
 } // namespace OHOS
