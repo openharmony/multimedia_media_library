@@ -164,6 +164,9 @@ private:
     static bool UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool CleanDistributeLcdInfo(ThumbRdbOpt &opts);
+
+    // scale
+    static bool ScaleFastThumb(ThumbnailData &data, const Size &size);
 };
 } // namespace Media
 } // namespace OHOS
