@@ -216,8 +216,7 @@ void ThumbnailManager::RemovePhotoRequest(const string &requestId)
 ThumbnailManager::~ThumbnailManager()
 {
     isThreadRunning_ = false;
-    fastCv_.notify_all();
-    qualityCv_.notify_all();
+    queueCv_.notify_all();
     for (auto &thread : threads_) {
         if (thread.joinable()) {
             thread.join();
@@ -236,14 +235,14 @@ void ThumbnailManager::AddFastPhotoRequest(const RequestSharedPtr &request)
 {
     request->UpdateStatus(ThumbnailStatus::THUMB_FAST);
     fastQueue_.Push(request);
-    fastCv_.notify_one();
+    queueCv_.notify_one();
 }
 
 void ThumbnailManager::AddQualityPhotoRequest(const RequestSharedPtr &request)
 {
     request->UpdateStatus(ThumbnailStatus::THUMB_QUALITY);
     qualityQueue_.Push(request);
-    qualityCv_.notify_one();
+    queueCv_.notify_one();
 }
 
 static bool GetFastThumbNewSize(const Size &size, Size &newSize)
@@ -538,8 +537,8 @@ void ThumbnailManager::ImageWorker(int num)
             }
         } else {
             std::unique_lock<std::mutex> lock(qualityLock_);
-            qualityCv_.wait(lock, [this]() {
-                return !isThreadRunning_ || !qualityQueue_.Empty();
+            queueCv_.wait(lock, [this]() {
+                return !isThreadRunning_ || !(qualityQueue_.Empty() && fastQueue_.Empty());
             });
         }
     }
