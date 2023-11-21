@@ -1373,6 +1373,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteSal_Test_001, TestSize.Level0)
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ((retVal == 2), true);
     MEDIA_INFO_LOG("Vision_DeleteSal_Test_001::retVal = %{public}d. End", retVal);
+}
+
 HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_001::Start");
