@@ -123,6 +123,7 @@ enum class RequestPhotoType : int32_t {
     REQUEST_ALL_THUMBNAIL = 0,
     REQUEST_FAST_THUMBNAIL = 1,
     REQUEST_QUALITY_THUMBNAIL = 2,
+    REQUEST_TYPE_END
 };
 } // namespace Media
 } // namespace OHOS

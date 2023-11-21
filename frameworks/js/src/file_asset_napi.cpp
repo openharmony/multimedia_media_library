@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "userfile_manager_types.h"
 #define MLOG_TAG "FileAssetNapi"
 
 #include "file_asset_napi.h"
@@ -1696,10 +1697,34 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
     return result;
 }
 
+static napi_value GetPhotoRequestOption(napi_env env, napi_value object,
+    unique_ptr<FileAssetAsyncContext> &asyncContext, RequestPhotoType &type)
+{
+    napi_value sizeObj;
+    if (GetNapiObjectFromNapiObject(env, object, "size", &sizeObj)) {
+        GetInt32InfoFromNapiObject(env, sizeObj, "width", asyncContext->size.width);
+        GetInt32InfoFromNapiObject(env, sizeObj, "height", asyncContext->size.height);
+    }
+    int32_t requestType = 0;
+    if (GetInt32InfoFromNapiObject(env, object, REQUEST_PHOTO_TYPE, requestType)) {
+        if (requestType >= static_cast<int>(RequestPhotoType::REQUEST_TYPE_END)) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter type");
+            return nullptr;
+        }
+        type = static_cast<RequestPhotoType>(requestType);
+    } else {
+        type = RequestPhotoType::REQUEST_ALL_THUMBNAIL;
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 napi_value GetPhotoRequestArgs(napi_env env, size_t argc, const napi_value argv[],
     unique_ptr<FileAssetAsyncContext> &asyncContext, RequestPhotoType &type)
 {
-    if (argc != ARGS_TWO) {
+    if (argc != ARGS_ONE && argc != ARGS_TWO) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter number " + to_string(argc));
         return nullptr;
     }
@@ -1710,18 +1735,18 @@ napi_value GetPhotoRequestArgs(napi_env env, size_t argc, const napi_value argv[
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
 
-        if (i == PARAM0 && valueType == napi_object) {
-            napi_value sizeObj;
-            if (GetNapiObjectFromNapiObject(env, argv[PARAM0], "size", &sizeObj)) {
-                GetInt32InfoFromNapiObject(env, sizeObj, "width", asyncContext->size.width);
-                GetInt32InfoFromNapiObject(env, sizeObj, "height", asyncContext->size.height);
-            }
-            int32_t requestType = 0;
-            if (GetInt32InfoFromNapiObject(env, argv[i], REQUEST_PHOTO_TYPE, requestType)) {
-                type = static_cast<RequestPhotoType>(requestType);
+        if (argc == PARAM1) {
+            if (valueType == napi_function) {
+                napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
+                break;
             } else {
-                type = RequestPhotoType::REQUEST_ALL_THUMBNAIL;
+                NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter type");
+                return nullptr;
             }
+        }
+        if (i == PARAM0 && valueType == napi_object) {
+            napi_value result = GetPhotoRequestOption(env, argv[i], asyncContext, type);
+            ASSERT_NULLPTR_CHECK(env, result);
         } else if (i == PARAM1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
             break;
@@ -3623,8 +3648,12 @@ napi_value FileAssetNapi::PhotoAccessHelperRequestPhoto(napi_env env, napi_callb
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
 
-    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) ==
+    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_TWO) ==
         napi_ok, result, "Failed to get object info");
+    if (asyncContext->callbackRef == nullptr) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Can not get callback function");
+        return nullptr;
+    }
     // use current parse args function temporary
     RequestPhotoType type = RequestPhotoType::REQUEST_ALL_THUMBNAIL;
     result = GetPhotoRequestArgs(env, asyncContext->argc, asyncContext->argv, asyncContext, type);
