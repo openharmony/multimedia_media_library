@@ -153,6 +153,7 @@ const std::string MEDIA_DATA_DB_LATITUDE = "latitude";
 const std::string MEDIA_DATA_DB_LONGITUDE = "longitude";
 const std::string MEDIA_DATA_DB_DATE_TAKEN = "date_taken";
 const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
+const std::string MEDIA_DATA_DB_THUMB_ASTC = "astc";
 const std::string MEDIA_DATA_DB_CONTENT_CREATE_TIME = "content_create_time";
 const std::string MEDIA_DATA_DB_POSITION = "position";
 const std::string MEDIA_DATA_DB_DIRTY = "dirty";

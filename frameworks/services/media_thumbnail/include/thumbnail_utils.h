@@ -57,6 +57,7 @@ struct ThumbnailData {
     float degrees;
     std::shared_ptr<PixelMap> source;
     std::vector<uint8_t> thumbnail;
+    std::vector<uint8_t> thumbAstc;
     std::vector<uint8_t> lcd;
     std::string id;
     std::string cloudId;
@@ -73,7 +74,7 @@ public:
     // utils
     static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
     static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
-        bool isHigh = false, std::shared_ptr<std::string> pathPtr = nullptr);
+        bool isHigh = false, std::shared_ptr<std::string> pathPtr = nullptr, bool isAstc = false);
     static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
     static int GetPixelMapFromResult(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, const Size &size,
         std::unique_ptr<PixelMap> &outPixelMap);
@@ -135,6 +136,7 @@ public:
         int &err);
     static bool ResizeThumb(int& width, int& height);
     static bool ResizeLcd(int& width, int& height);
+    static bool IsSupportGenAstc();
 private:
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     static int64_t UTCTimeMilliSeconds();

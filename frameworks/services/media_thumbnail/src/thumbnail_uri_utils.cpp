@@ -54,7 +54,8 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
     outFileId = uri.GetFileId();
     auto &queryKey = uri.GetQueryKeys();
     if (queryKey.count(THUMBNAIL_OPERN_KEYWORD) == 0 &&
-        queryKey[THUMBNAIL_OPERN_KEYWORD] != MEDIA_DATA_DB_THUMBNAIL) {
+        (queryKey[THUMBNAIL_OPERN_KEYWORD] != MEDIA_DATA_DB_THUMBNAIL ||
+         queryKey[THUMBNAIL_OPERN_KEYWORD] != MEDIA_DATA_DB_THUMB_ASTC)) {
         return false;
     }
 
