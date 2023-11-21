@@ -614,12 +614,8 @@ static bool CheckTypeFromRootDir(const std::string &rootDirName, int32_t type)
             return true;
         }
     }
-    // "Documents/"
-    if (!strcmp(rootDirName.c_str(), DOC_DIR_VALUES.c_str())) {
-        return true;
-    }
-    // "Download/"
-    if (!strcmp(rootDirName.c_str(), DOWNLOAD_DIR_VALUES.c_str())) {
+    // "Docs/Documents/" and "Docs/Download"
+    if (!strcmp(rootDirName.c_str(), DOCS_PATH.c_str())) {
         return true;
     }
     MEDIA_ERR_LOG("Cannot match rootDir %{private}s and mediaType %{public}d",

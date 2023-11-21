@@ -621,10 +621,10 @@ int32_t MediaLibraryDataCallBack::PrepareDir(RdbStore &store)
         AUDIO_DIRECTORY_TYPE_VALUES, AUDIO_DIR_VALUES, AUDIO_TYPE_VALUES, AUDIO_EXTENSION_VALUES
     };
     DirValuesBucket documentDir = {
-        DOC_DIRECTORY_TYPE_VALUES, DOC_DIR_VALUES, DOC_TYPE_VALUES, DOC_EXTENSION_VALUES
+        DOC_DIRECTORY_TYPE_VALUES, DOCS_PATH, DOC_TYPE_VALUES, DOC_EXTENSION_VALUES
     };
     DirValuesBucket downloadDir = {
-        DOWNLOAD_DIRECTORY_TYPE_VALUES, DOWNLOAD_DIR_VALUES, DOWNLOAD_TYPE_VALUES, DOWNLOAD_EXTENSION_VALUES
+        DOWNLOAD_DIRECTORY_TYPE_VALUES, DOCS_PATH, DOWNLOAD_TYPE_VALUES, DOWNLOAD_EXTENSION_VALUES
     };
 
     vector<DirValuesBucket> dirValuesBuckets = {
@@ -1727,6 +1727,22 @@ static void AddFormMap(RdbStore &store)
     }
 }
 
+static void FixDocsPath(RdbStore &store)
+{
+    ExecSqls({
+    "UPDATE Files SET "
+        " data = REPLACE(data, '/storage/cloud/files/Documents', '/storage/cloud/files/Docs/Documents'),"
+        " data = REPLACE(data, '/storage/cloud/files/Download', '/storage/cloud/files/Docs/Download'),"
+        " relative_path = REPLACE(relative_path, 'Documents/', 'Docs/Documents/'),"
+        " relative_path = REPLACE(relative_path, 'Download/', 'Docs/Download/')"
+    " WHERE data LIKE '/storage/cloud/files/Documents%' OR "
+        " data LIKE '/storage/cloud/files/Download%' OR"
+        " relative_path LIKE 'Documents/%' OR"
+        " relative_path LIKE 'Download/%';",
+    "UPDATE MediaTypeDirectory SET directory = 'Docs/' WHERE directory_type = 4 OR directory_type = 5",
+    }, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1771,6 +1787,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_FIX_INDEX_ORDER) {
         FixIndexOrder(store);
+    }
+
+    if (oldVersion < VERSION_FIX_DOCS_PATH) {
+        FixDocsPath(store);
     }
 }
 
