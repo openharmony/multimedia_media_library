@@ -249,7 +249,7 @@ const std::string DIR_ALL_IMAGE_CONTAINER_TYPE = "." + IMAGE_CONTAINER_TYPE_BMP 
                                                  "." + IMAGE_CONTAINER_TYPE_RAW + "?" +
                                                  "." + IMAGE_CONTAINER_TYPE_SVG + "?" +
                                                  "." + IMAGE_CONTAINER_TYPE_HEIF + "?";
-
+const std::string DOCS_PATH = "Docs/";
 const int CAMERA_DIRECTORY_TYPE_VALUES = DIR_CAMERA;
 const std::string CAMERA_DIR_VALUES = "Camera/";
 const std::string CAMERA_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE + DIR_ALL_VIDEO_CONTAINER_TYPE;
@@ -281,7 +281,7 @@ const std::string PRE_PATH_VALUES = "/storage/cloud/";
 const std::string DOCUMENT_URI_AUTHORITY = "docs";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
-    CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES, DOC_DIR_VALUES, DOWNLOAD_DIR_VALUES,
+    CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
     PHOTO_BUCKET + "/", AUDIO_BUCKET + "/"
 };
 

@@ -83,7 +83,7 @@ bool CheckDestRelativePath(const string destRelativePath)
         return false;
     }
     string path = destRelativePath.substr(0, size + 1);
-    if ((path != DOC_DIR_VALUES) && (path != DOWNLOAD_DIR_VALUES)) {
+    if (path != DOCS_PATH) {
         return false;
     }
     return true;

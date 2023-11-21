@@ -1283,7 +1283,7 @@ bool MediaFileUtils::IsFileTablePath(const string &path)
     }
 
     string relativePath = path.substr(ROOT_MEDIA_DIR.size());
-    if ((relativePath.find(DOWNLOAD_DIR_VALUES) == 0) || (relativePath.find(DOC_DIR_VALUES) == 0)) {
+    if ((relativePath.find(DOCS_PATH) == 0)) {
         return true;
     }
     return false;

@@ -147,9 +147,6 @@ static void MakeRootDirs(AsyncTaskData *data)
         } else if (ret <= 0) {
             MEDIA_ERR_LOG("Failed to preset root dir: %{private}s", dir.c_str());
         }
-        if (dir == DOC_DIR_VALUES || dir == DOWNLOAD_DIR_VALUES) {
-            continue;
-        }
         MediaFileUtils::CreateDirectory(ROOT_MEDIA_DIR + dir + ".recycle");
     }
 }
