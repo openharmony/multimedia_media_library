@@ -359,6 +359,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::ANALYSIS_PHOTO_MAP,
         OperationObject::VISION_OCR,
         OperationObject::VISION_AESTHETICS,
+        OperationObject::VISION_SALIENCY,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
