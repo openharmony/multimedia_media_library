@@ -356,7 +356,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER = "CREATE TRIGGER IF NOT EXISTS i
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
-    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " 0," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
