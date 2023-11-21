@@ -180,9 +180,8 @@ private:
     SafeQueue<RequestSharedPtr> qualityQueue_;
 
     std::mutex fastLock_;
-    std::condition_variable fastCv_;
     std::mutex qualityLock_;
-    std::condition_variable qualityCv_;
+    std::condition_variable queueCv_;
     std::vector<std::thread> threads_;
 
     static std::shared_ptr<ThumbnailManager> instance_;
