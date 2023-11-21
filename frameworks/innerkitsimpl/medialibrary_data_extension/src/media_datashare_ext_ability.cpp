@@ -359,6 +359,12 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::ANALYSIS_PHOTO_MAP,
         OperationObject::VISION_OCR,
         OperationObject::VISION_AESTHETICS,
+        OperationObject::VISION_LABEL,
+        OperationObject::VISION_IMAGE_FACE,
+        OperationObject::VISION_OBJECT,
+        OperationObject::VISION_RECOMMENDATION,
+        OperationObject::VISION_SEGMENTATION,
+        OperationObject::VISION_COMPOSITION,
         OperationObject::VISION_SALIENCY,
     };
 
