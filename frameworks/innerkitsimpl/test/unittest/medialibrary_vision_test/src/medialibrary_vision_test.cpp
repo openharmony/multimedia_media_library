@@ -38,17 +38,29 @@ void CleanVisionData()
     MediaLibraryCommand labelCmd(labelUri);
     Uri aesUri(URI_AESTHETICS);
     MediaLibraryCommand aesCmd(aesUri);
-    Uri shieldUri(URI_SHIELD);
-    MediaLibraryCommand shieldCmd(shieldUri);
+    Uri objectUri(URI_OBJECT);
+    MediaLibraryCommand objectCmd(objectUri);
+    Uri recommendationUri(URI_RECOMMENDATION);
+    MediaLibraryCommand recommendationCmd(recommendationUri);
+    Uri segmentationUri(URI_SEGMENTATION);
+    MediaLibraryCommand segmentationCmd(segmentationUri);
+    Uri compositionUri(URI_COMPOSITION);
+    MediaLibraryCommand compositionCmd(compositionUri);
     Uri salUri(URI_SALIENCY);
     MediaLibraryCommand salCmd(salUri);
+    Uri shieldUri(URI_SHIELD);
+    MediaLibraryCommand shieldCmd(shieldUri);
     Uri totalUri(URI_TOTAL);
     MediaLibraryCommand totalCmd(totalUri);
     MediaLibraryDataManager::GetInstance()->Delete(ocrCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(labelCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(aesCmd, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(shieldCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(objectCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(recommendationCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(segmentationCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(compositionCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(salCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(shieldCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(totalCmd, predicates);
 }
 
@@ -745,6 +757,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertObject_Test_001, TestSize.Level0)
     valuesBucket.Put(OBJECT_SCALE_Y, 200);
     valuesBucket.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket.Put(OBJECT_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 9);
     valuesBucket.Put(OBJECT_VERSION, "1.0");
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
@@ -757,6 +770,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertObject_Test_001, TestSize.Level0)
     valuesBucket1.Put(OBJECT_SCALE_Y, 600);
     valuesBucket1.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket1.Put(OBJECT_SCALE_HEIGHT, 1000);
+    valuesBucket1.Put(PROB, 9);
     valuesBucket1.Put(OBJECT_VERSION, "1.0");
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     EXPECT_LT(retVal1, 0);
@@ -780,6 +794,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateObject_Test_001, TestSize.Level0)
     valuesBucket.Put(OBJECT_SCALE_Y, 200);
     valuesBucket.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket.Put(OBJECT_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 9);
     valuesBucket.Put(OBJECT_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
@@ -813,6 +828,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteObject_Test_001, TestSize.Level0)
     valuesBucket.Put(OBJECT_SCALE_Y, 200);
     valuesBucket.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket.Put(OBJECT_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 9);
     valuesBucket.Put(OBJECT_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
@@ -824,6 +840,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteObject_Test_001, TestSize.Level0)
     valuesBucket1.Put(OBJECT_SCALE_Y, 600);
     valuesBucket1.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket1.Put(OBJECT_SCALE_HEIGHT, 1000);
+    valuesBucket1.Put(PROB, 9);
     valuesBucket1.Put(OBJECT_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     DataShare::DataSharePredicates predicates;
@@ -846,6 +863,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryObject_Test_001, TestSize.Level0)
     valuesBucket.Put(OBJECT_SCALE_Y, 200);
     valuesBucket.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket.Put(OBJECT_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 9);
     valuesBucket.Put(OBJECT_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
@@ -857,6 +875,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryObject_Test_001, TestSize.Level0)
     valuesBucket1.Put(OBJECT_SCALE_Y, 600);
     valuesBucket1.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket1.Put(OBJECT_SCALE_HEIGHT, 1000);
+    valuesBucket1.Put(PROB, 9);
     valuesBucket1.Put(OBJECT_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     DataShare::DataSharePredicates predicates;

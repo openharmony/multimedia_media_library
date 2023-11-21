@@ -916,11 +916,11 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_COMPOSITION,
     CREATE_TAB_IMAGE_FACE,
     CREATE_TAB_FACE_TAG,
-    CREATE_TAB_ANALYSIS_TOTAL,
+    CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
     CREATE_TAB_APPLICATION_SHIELD,
     CREATE_VISION_UPDATE_TRIGGER,
     CREATE_VISION_DELETE_TRIGGER,
-    CREATE_VISION_INSERT_TRIGGER,
+    CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
     CREATE_IMAGE_FACE_INDEX,
     CREATE_OBJECT_INDEX,
     CREATE_RECOMMENDATION_INDEX,
@@ -1236,7 +1236,6 @@ static void AddAnalysisTables(RdbStore &store)
         CREATE_TAB_ANALYSIS_OCR,
         CREATE_TAB_ANALYSIS_LABEL,
         CREATE_TAB_ANALYSIS_AESTHETICS,
-        CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
         CREATE_TAB_ANALYSIS_TOTAL,
         CREATE_TAB_APPLICATION_SHIELD,
         CREATE_VISION_UPDATE_TRIGGER,
@@ -1254,7 +1253,7 @@ static void AddFaceTables(RdbStore &store)
         CREATE_TAB_IMAGE_FACE,
         CREATE_TAB_FACE_TAG,
         DROP_INSERT_VISION_TRIGGER,
-        CREATE_NEW_INSERT_VISION_TRIGGER,
+        CREATE_INSERT_VISION_TRIGGER_FOR_ADD_FACE,
         ADD_FACE_STATUS_COLUMN,
         UPDATE_TOTAL_VALUE,
         UPDATE_NOT_SUPPORT_VALUE,
@@ -1269,7 +1268,7 @@ static void AddSaliencyTables(RdbStore &store)
     static const vector<string> executeSqlStrs = {
         CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
         DROP_INSERT_VISION_TRIGGER,
-        CREATE_VISION_INSERT_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_ADD_SALIENCY,
         ADD_SALIENCY_STATUS_COLUMN,
         UPDATE_SALIENCY_TOTAL_VALUE,
         UPDATE_SALIENCY_NOT_SUPPORT_VALUE
@@ -1314,14 +1313,22 @@ static void AddAestheticCompositionTables(RdbStore &store)
         CREATE_TAB_ANALYSIS_SEGMENTATION,
         CREATE_TAB_ANALYSIS_COMPOSITION,
         DROP_INSERT_VISION_TRIGGER,
-        CREATE_VISION_INSERT_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_ADD_AC,
         AC_ADD_OBJECT_COLUMN_FOR_TOTAL,
+        AC_UPDATE_OBJECT_TOTAL_VALUE,
+        AC_UPDATE_OBJECT_TOTAL_NOT_SUPPORT_VALUE,
         AC_ADD_RECOMMENDATION_COLUMN_FOR_TOTAL,
+        AC_UPDATE_RECOMMENDATION_TOTAL_VALUE,
+        AC_UPDATE_RECOMMENDATION_TOTAL_NOT_SUPPORT_VALUE,
         AC_ADD_SEGMENTATION_COLUMN_FOR_TOTAL,
+        AC_UPDATE_SEGMENTATION_TOTAL_VALUE,
+        AC_UPDATE_SEGMENTATION_TOTAL_NOT_SUPPORT_VALUE,
         AC_ADD_COMPOSITION_COLUMN_FOR_TOTAL,
+        AC_UPDATE_COMPOSITION_TOTAL_VALUE,
+        AC_UPDATE_COMPOSITION_TOTAL_NOT_SUPPORT_VALUE,
         CREATE_OBJECT_INDEX,
         CREATE_RECOMMENDATION_INDEX,
-        CREATE_COMPOSITION_INDEX
+        CREATE_COMPOSITION_INDEX,
     };
     MEDIA_INFO_LOG("start add aesthetic composition tables");
     ExecSqls(executeSqlStrs, store);
@@ -1402,8 +1409,8 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     ExecSqls(executeSqlStrs, *rdbStore_);
     AddAnalysisTables(*rdbStore_);
     AddFaceTables(*rdbStore_);
-    AddSaliencyTables(*rdbStore_);
     AddAestheticCompositionTables(*rdbStore_);
+    AddSaliencyTables(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -1848,12 +1855,12 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
         AddAestheticCompositionTables(store);
     }
 
-    if (oldVersion < VERSION_ADD_SALIENCY_TABLE) {
-        AddSaliencyTables(store);
-    }
-    
     if (oldVersion < VERSION_ADD_SEARCH_TABLE) {
         AddSearchTable(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SALIENCY_TABLE) {
+        AddSaliencyTables(store);
     }
 
     if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_TRIGGER) {
