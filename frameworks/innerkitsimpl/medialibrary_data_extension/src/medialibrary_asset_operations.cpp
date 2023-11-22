@@ -1217,7 +1217,11 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
     NotifyType type = (notifyData->trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT :
         NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     watch->Notify(notifyData->notifyUri, type, trashAlbumId);
-    MediaLibraryFormMapOperations::DoPublishedChange(notifyData->notifyUri);
+    vector<int64_t> formIds;
+    MediaLibraryFormMapOperations::GetFormMapFormId(notifyData->notifyUri, formIds);
+    if (!formIds.empty()) {
+        MediaLibraryFormMapOperations::PublishedChange("", formIds);
+    }
 }
 
 int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
