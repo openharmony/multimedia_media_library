@@ -5155,7 +5155,7 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
         if (errCode == E_PERMISSION_DENIED) {
-            if (context->hiddenOnly) {
+            if (context->hiddenOnly || context->hiddenAlbumFetchMode == ASSETS_MODE) {
                 context->error = OHOS_PERMISSION_DENIED_CODE;
             } else {
                 context->SaveError(E_HAS_DB_ERROR);
