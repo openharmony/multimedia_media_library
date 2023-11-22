@@ -14,6 +14,12 @@
  */
 #define MLOG_TAG "scan_demo"
 
+#ifndef MEDIALIBRARY_SCANNER_START
+int main()
+{
+    return 0;
+}
+#else
 #include <unistd.h>
 #include "accesstoken_kit.h"
 #include "datashare_helper.h"
@@ -89,3 +95,5 @@ int32_t main()
     sleep(estimatedScanTime);
     return 0;
 }
+
+#endif // MEDIALIBRARY_SCANNER_START
