@@ -186,6 +186,7 @@ const std::string PAH_ANA_RECOMMENDATION = "phaccess_ana_recommendation_operatio
 const std::string PAH_ANA_SEGMENTATION = "phaccess_ana_segmentation_operation";
 const std::string PAH_ANA_COMPOSITION = "phaccess_ana_composition_operation";
 const std::string PAH_FORM_MAP = "phaccess_store_form_operation";
+const std::string PAH_ANA_SALIENCY = "phaccess_ana_sal_operation";
 
 // UserFileManager photo operation constants
 const std::string PAH_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE;
@@ -231,6 +232,7 @@ const std::string PAH_QUERY_ANA_SEGMENTATION = MEDIALIBRARY_DATA_URI + "/" + PAH
 const std::string PAH_QUERY_ANA_COMPOSITION = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_COMPOSITION + "/" + OPRN_QUERY;
 const std::string PAH_STORE_FORM_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_FORM_MAP + "/" + OPRN_STORE_FORM_ID;
 const std::string PAH_REMOVE_FORM_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_FORM_MAP + "/" + OPRN_REMOVE_FORM_ID;
+const std::string PAH_QUERY_ANA_SAL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_SALIENCY + "/" + OPRN_QUERY;
 
 // mediatool operation constants
 const std::string TOOL_PHOTO = "mediatool_photo_operation";
