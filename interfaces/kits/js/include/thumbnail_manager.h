@@ -179,8 +179,7 @@ private:
     SafeQueue<RequestSharedPtr> fastQueue_;
     SafeQueue<RequestSharedPtr> qualityQueue_;
 
-    std::mutex fastLock_;
-    std::mutex qualityLock_;
+    std::mutex queueLock_;
     std::condition_variable queueCv_;
     std::vector<std::thread> threads_;
 

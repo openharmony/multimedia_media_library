@@ -1713,7 +1713,7 @@ static napi_value GetPhotoRequestOption(napi_env env, napi_value object,
         }
         type = static_cast<RequestPhotoType>(requestType);
     } else {
-        type = RequestPhotoType::REQUEST_ALL_THUMBNAIL;
+        type = RequestPhotoType::REQUEST_ALL_THUMBNAILS;
     }
 
     napi_value result = nullptr;
@@ -3639,24 +3639,19 @@ napi_value FileAssetNapi::PhotoAccessHelperRequestPhoto(napi_env env, napi_callb
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
     }
-    if (!PermissionUtils::CheckNapiCallerPermission("ohos.permission.READ_IMAGEVIDEO")) {
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "This interface can be called only by system apps");
-        return nullptr;
-    }
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
-    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
-
-    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_TWO) ==
-        napi_ok, result, "Failed to get object info");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext != nullptr, "asyncContext context is null");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext,
+        ARGS_ONE, ARGS_TWO) == napi_ok, "Failed to get object info");
     if (asyncContext->callbackRef == nullptr) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Can not get callback function");
         return nullptr;
     }
     // use current parse args function temporary
-    RequestPhotoType type = RequestPhotoType::REQUEST_ALL_THUMBNAIL;
+    RequestPhotoType type = RequestPhotoType::REQUEST_ALL_THUMBNAILS;
     result = GetPhotoRequestArgs(env, asyncContext->argc, asyncContext->argv, asyncContext, type);
     ASSERT_NULLPTR_CHECK(env, result);
     auto obj = asyncContext->objectInfo;

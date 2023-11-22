@@ -55,25 +55,6 @@ static int32_t InitPermission()
     return Media::E_OK;
 }
 
-static int32_t InitDataShareHelper()
-{
-    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (saManager == nullptr) {
-        printf("%s get system ability mgr failed.\n", STR_FAIL.c_str());
-        return Media::E_ERR;
-    }
-    auto remoteObj = saManager->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
-    if (remoteObj == nullptr) {
-        printf("%s GetSystemAbility Service failed.\n", STR_FAIL.c_str());
-        return Media::E_ERR;
-    }
-    if (!UserFileClientEx::Init(remoteObj)) {
-        printf("%s set DataShareHelper failed.\n", STR_FAIL.c_str());
-        return Media::E_ERR;
-    }
-    return Media::E_OK;
-}
-
 static void Finish()
 {
     UserFileClientEx::Clear();
@@ -101,7 +82,7 @@ int32_t ControlMain::Main(const std::vector<std::string> &args)
         return res;
     }
     do {
-        res = InitDataShareHelper();
+        res = UserFileClientEx::Init();
         if (res != Media::E_OK) {
             break;
         }

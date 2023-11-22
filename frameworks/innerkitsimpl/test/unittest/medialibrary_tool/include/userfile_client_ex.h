@@ -25,19 +25,18 @@ namespace Media {
 namespace MediaTool {
 class UserFileClientEx {
 public:
-    static bool Init(const sptr<IRemoteObject> &token);
+    static int32_t Init();
     static void Clear();
     static int32_t InsertExt(const std::string &tableName, const std::string &name,
-        std::string &outString);
+        std::string &outString, bool isRestart = false);
     static int32_t Query(const std::string &tableName, const std::string &uri,
-        std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
-    static int Open(const std::string &uri, const std::string &mode);
+        std::shared_ptr<DataShare::DataShareResultSet> &resultSet, bool isRestart = false);
+    static int Open(const std::string &uri, const std::string &mode, bool isRestart = false);
     static int Close(const std::string &uri, const int fileFd, const std::string &mode,
-        bool isCreateThumbSync = false);
-    static int Trash(const std::string &uri);
-    static int Delete(const std::string &uri);
-    static int Delete(bool isOnlyDeleteDb);
-    static int32_t CreateThumbnail(const std::string &uri);
+        bool isCreateThumbSync = false, bool isRestart = false);
+    static int Trash(const std::string &uri, bool isRestart = false);
+    static int Delete(const std::string &uri, bool isRestart = false);
+    static int Delete(bool isOnlyDeleteDb, bool isRestart = false);
     static std::string GetTableNameByMediaType(const MediaType mediaType);
     static std::string GetTableNameByUri(const std::string &uri);
     static const std::vector<MediaType> &GetSupportTypes();

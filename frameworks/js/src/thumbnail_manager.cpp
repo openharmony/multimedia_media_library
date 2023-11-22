@@ -536,7 +536,7 @@ void ThumbnailManager::ImageWorker(int num)
                 DealWithQualityRequest(request);
             }
         } else {
-            std::unique_lock<std::mutex> lock(qualityLock_);
+            std::unique_lock<std::mutex> lock(queueLock_);
             queueCv_.wait(lock, [this]() {
                 return !isThreadRunning_ || !(qualityQueue_.Empty() && fastQueue_.Empty());
             });
