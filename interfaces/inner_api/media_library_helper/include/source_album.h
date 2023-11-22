@@ -91,14 +91,14 @@ const std::string SOURCE_ALBUM_WHERE_UPDATE =
     " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SYSTEM) +
     " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE);
 
-const std::string WNEH_SOURCE_PHOTO_COUNT =
+const std::string WHEN_SOURCE_PHOTO_COUNT =
     " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND ( SELECT COUNT(1) FROM " +
         PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
 
-const std::string WNEH_UPDATE_AND_DELETE = " WHEN OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL ";
+const std::string WHEN_UPDATE_AND_DELETE = " WHEN OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL ";
 
 const std::string TRIGGER_CODE_UPDATE_AND_DELETE =
-    WNEH_UPDATE_AND_DELETE +
+    WHEN_UPDATE_AND_DELETE +
     " BEGIN UPDATE " + PhotoAlbumColumns::TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COUNT + " = " + COUNT_VALUE_UPDATE + SOURCE_ALBUM_WHERE_UPDATE + ";" +
     " UPDATE " + PhotoAlbumColumns::TABLE +
@@ -118,7 +118,7 @@ const std::string DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM = "DROP TRIGGER IF EXIST
 
 const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
     "CREATE TRIGGER insert_photo_insert_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
-    WNEH_SOURCE_PHOTO_COUNT + " = 0 " +
+    WHEN_SOURCE_PHOTO_COUNT + " = 0 " +
     " BEGIN INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_TYPE + " , " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " , " +
@@ -135,7 +135,7 @@ const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
 
 const std::string INSERT_PHOTO_UPDATE_SOURCE_ALBUM =
     "CREATE TRIGGER insert_photo_update_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
-    WNEH_SOURCE_PHOTO_COUNT + "> 0 " +
+    WHEN_SOURCE_PHOTO_COUNT + "> 0 " +
     " BEGIN UPDATE " + PhotoAlbumColumns::TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = " + COVER_URI_VALUE_INSERT + "," +
     PhotoAlbumColumns::ALBUM_COUNT + " = " + COUNT_VALUE_INSERT +
