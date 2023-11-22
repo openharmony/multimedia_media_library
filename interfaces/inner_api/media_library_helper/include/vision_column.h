@@ -306,7 +306,7 @@ const std::string INIT_TAB_ANALYSIS_TOTAL = "INSERT INTO " + VISION_TOTAL_TABLE 
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
-    " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
+    " 0," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
