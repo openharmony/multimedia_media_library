@@ -17,8 +17,6 @@
 
 #include <limits>
 #include <string>
-#include <tuple>
-#include <vector>
 
 namespace OHOS {
 namespace Media {
@@ -47,11 +45,17 @@ enum MediaType {
     MEDIA_TYPE_DEFAULT,
 };
 
-enum AnalysisType {
+enum AnalysisType : int32_t {
     ANALYSIS_INVALID = -1,
     ANALYSIS_AETSTHETICS_SCORE,
     ANALYSIS_LABEL,
     ANALYSIS_OCR,
+    ANALYSIS_FACE,
+    ANALYSIS_OBJECT,
+    ANALYSIS_RECOMMENDATION,
+    ANALYSIS_SEGMENTATION,
+    ANALYSIS_COMPOSITION,
+    ANALYSIS_SALIENCY,
 };
 
 enum PhotoAlbumType : int32_t {
@@ -117,6 +121,7 @@ enum class RequestPhotoType : int32_t {
     REQUEST_ALL_THUMBNAIL = 0,
     REQUEST_FAST_THUMBNAIL = 1,
     REQUEST_QUALITY_THUMBNAIL = 2,
+    REQUEST_TYPE_END
 };
 } // namespace Media
 } // namespace OHOS

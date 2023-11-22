@@ -28,6 +28,8 @@
 #include "medialibrary_errno.h"
 #include "userfilemgr_uri.h"
 #include "vision_column.h"
+#include "form_map.h"
+#include "search_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -49,7 +51,9 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { MEDIA_QUERYOPRN_QUERYVOLUME, OperationType::QUERY },
     { MEDIA_BOARDCASTOPRN, OperationType::SCAN },
     { OPRN_SCAN, OperationType::SCAN },
+#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
     { OPRN_DELETE_BY_TOOL, OperationType::DELETE_TOOL },
+#endif
     { MEDIA_FILEOPRN_COPYASSET, OperationType::COPY },
     { MEDIA_DIROPRN_DELETEDIR, OperationType::DELETE },
     { MEDIA_DIROPRN_FMS_CREATEDIR, OperationType::CREATE },
@@ -82,6 +86,8 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_HIDE, OperationType::HIDE },
     { OPRN_QUERY_HIDDEN, OperationType::QUERY_HIDDEN },
     { OPRN_ORDER_ALBUM, OperationType::ALBUM_ORDER},
+    { OPRN_STORE_FORM_ID, OperationType::OPRN_STORE_FORM_ID },
+    { OPRN_REMOVE_FORM_ID, OperationType::OPRN_REMOVE_FORM_ID },
 };
 }
 
@@ -292,6 +298,7 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     { PAH_ANA_MAP, OperationObject::ANALYSIS_PHOTO_MAP },
     { TOOL_PHOTO, OperationObject::TOOL_PHOTO },
     { TOOL_AUDIO, OperationObject::TOOL_AUDIO },
+    { PAH_FORM_MAP, OperationObject::PAH_FORM_MAP },
 
     // use in Query...
     { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -316,13 +323,24 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     { VISION_TOTAL_TABLE, OperationObject::VISION_TOTAL },
     { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
     { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
+    { VISION_SALIENCY_TABLE, OperationObject::VISION_SALIENCY },
     { VISION_SHIELD_TABLE, OperationObject::VISION_SHIELD },
-    { PAH_ANA_OCR, OperationObject::VISION_OCR },
     { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
+    { PAH_ANA_LABEL, OperationObject::VISION_LABEL },
+    { PAH_ANA_OCR, OperationObject::VISION_OCR },
+    { PAH_ANA_FACE, OperationObject::VISION_IMAGE_FACE },
+    { PAH_ANA_OBJECT, OperationObject::VISION_OBJECT },
+    { PAH_ANA_RECOMMENDATION, OperationObject::VISION_RECOMMENDATION },
+    { PAH_ANA_SEGMENTATION, OperationObject::VISION_SEGMENTATION },
+    { PAH_ANA_COMPOSITION, OperationObject::VISION_COMPOSITION },
+    { PAH_ANA_SALIENCY, OperationObject::VISION_SALIENCY },
 
     // use in Location Analyse
     { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
     { GEO_KNOWLEDGE_TABLE, OperationObject::GEO_KNOWLEDGE },
+
+    // use in search
+    { SEARCH_TOTAL_TABLE, OperationObject::SEARCH_TOTAL },
 };
 
 void MediaLibraryCommand::ParseOprnObjectFromUri()
@@ -391,11 +409,14 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::PAH_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
     { OperationObject::PAH_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
     { OperationObject::PAH_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
+#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
     { OperationObject::TOOL_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
     { OperationObject::TOOL_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
+#endif
     { OperationObject::VISION_OCR, { { OperationType::UNKNOWN_TYPE, VISION_OCR_TABLE } } },
     { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
     { OperationObject::VISION_AESTHETICS, { { OperationType::UNKNOWN_TYPE, VISION_AESTHETICS_TABLE } } },
+    { OperationObject::VISION_SALIENCY, { { OperationType::UNKNOWN_TYPE, VISION_SALIENCY_TABLE } } },
     { OperationObject::VISION_OBJECT, { { OperationType::UNKNOWN_TYPE, VISION_OBJECT_TABLE } } },
     { OperationObject::VISION_RECOMMENDATION, { { OperationType::UNKNOWN_TYPE, VISION_RECOMMENDATION_TABLE } } },
     { OperationObject::VISION_SEGMENTATION, { { OperationType::UNKNOWN_TYPE, VISION_SEGMENTATION_TABLE } } },
@@ -408,6 +429,11 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
     { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
     { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
+    { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
+    { OperationObject::VISION_SALIENCY, { { OperationType::UNKNOWN_TYPE, PAH_ANA_SALIENCY } } },
+
+    // search
+    { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
 };
 
 void MediaLibraryCommand::ParseTableName()

@@ -110,7 +110,9 @@ static string GetQueryFilter(const string &tableName)
     }
     if (tableName == PhotoColumn::PHOTOS_TABLE) {
         return PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS + " = " +
-            to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
+            to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
+            PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
+            to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
     }
     if (tableName == PhotoAlbumColumns::TABLE) {
         return PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_DIRTY + " != " +
@@ -345,7 +347,7 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     } else {
         PhotoAlbumColumns::GetSystemAlbumPredicates(subtype, predicates, hiddenState);
     }
-    predicates.IndexedBy(PhotoColumn::PHOTO_SHPT_ADDED_INDEX);
+    predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
     if (fileResult == nullptr) {
         return E_HAS_DB_ERROR;

@@ -41,7 +41,7 @@ public:
 
     ~ArkJsRuntime() {};
 
-    void StartDebugMode(bool needBreakPoint)  {};
+    void StartDebugMode(bool needBreakPoint, bool isDebug)  {};
     void FinishPreload() {};
     bool LoadRepairPatch(const string& patchFile, const string& baseFile)
     {
@@ -289,7 +289,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_UpdateFileAsset_Test_001, 
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("UpdateFileAsset_Test_001.jpg", g_pictures, fileAsset), true);
     DataShare::DataShareValuesBucket valuesBucketUpdate;
     valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     valuesBucketUpdate.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
     valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "UpdateAsset_Test_001.jpg");
     valuesBucketUpdate.Put(MEDIA_DATA_DB_TITLE, "UpdateAsset_Test_001");
@@ -386,7 +386,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Leve
 
     DataShare::DataShareValuesBucket valuesBucketUpdate;
     valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     valuesBucketUpdate.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
     valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "Revert_Package_Test_001.jpg");
     valuesBucketUpdate.Put(MEDIA_DATA_DB_TITLE, "Revert_Package_Test_001");
@@ -434,7 +434,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_BY_DAY_Test_001, TestSize.Level
     ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Revert_BY_DAY_Test_001.jpg", g_pictures, fileAsset), true);
     DataShare::DataShareValuesBucket valuesBucketUpdate;
     valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    valuesBucketUpdate.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeSeconds());
     valuesBucketUpdate.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
     valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "Revert_BY_DAY_Test_001.jpg");
     valuesBucketUpdate.Put(MEDIA_DATA_DB_TITLE, "Revert_BY_DAY_Test_001");

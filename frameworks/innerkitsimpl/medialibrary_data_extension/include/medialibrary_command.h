@@ -66,11 +66,14 @@ enum class OperationObject : uint32_t {
     VISION_TOTAL,
     VISION_IMAGE_FACE,
     VISION_FACE_TAG,
+    VISION_SALIENCY,
     VISION_SHIELD,           // Vision end
     GEO_DICTIONARY,
     GEO_KNOWLEDGE,
     ANALYSIS_PHOTO_ALBUM,
     ANALYSIS_PHOTO_MAP,
+    PAH_FORM_MAP,
+    SEARCH_TOTAL,  // search
 };
 
 enum class OperationType : uint32_t {
@@ -104,6 +107,8 @@ enum class OperationType : uint32_t {
     HIDE,
     QUERY_HIDDEN,
     ALBUM_ORDER,
+    OPRN_STORE_FORM_ID,
+    OPRN_REMOVE_FORM_ID,
 };
 
 class MediaLibraryCommand {

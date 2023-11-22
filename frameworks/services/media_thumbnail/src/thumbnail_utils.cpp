@@ -215,7 +215,7 @@ bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, const bool isThumbnail, 
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-       
+
         MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", err);
         return false;
     }
@@ -278,6 +278,11 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
     if (data.source == nullptr) {
         return false;
     }
+
+    if (!ScaleFastThumb(data, desiredSize)) {
+        return false;
+    }
+
     float widthScale = (1.0f * desiredSize.width) / data.source->GetWidth();
     float heightScale = (1.0f * desiredSize.height) / data.source->GetHeight();
     data.source->scale(widthScale, heightScale);
@@ -1232,6 +1237,22 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
     }
     data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     data.source->rotate(data.degrees);
+    return true;
+}
+
+bool ThumbnailUtils::ScaleFastThumb(ThumbnailData &data, const Size &size)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ScaleFastThumb");
+
+    PostProc postProc;
+    if (!postProc.CenterScale(size, *data.source)) {
+        MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
     return true;
 }
 

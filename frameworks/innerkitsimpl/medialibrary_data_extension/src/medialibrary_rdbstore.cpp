@@ -44,6 +44,8 @@
 #include "result_set_utils.h"
 #include "source_album.h"
 #include "vision_column.h"
+#include "form_map.h"
+#include "search_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -619,10 +621,10 @@ int32_t MediaLibraryDataCallBack::PrepareDir(RdbStore &store)
         AUDIO_DIRECTORY_TYPE_VALUES, AUDIO_DIR_VALUES, AUDIO_TYPE_VALUES, AUDIO_EXTENSION_VALUES
     };
     DirValuesBucket documentDir = {
-        DOC_DIRECTORY_TYPE_VALUES, DOC_DIR_VALUES, DOC_TYPE_VALUES, DOC_EXTENSION_VALUES
+        DOC_DIRECTORY_TYPE_VALUES, DOCS_PATH, DOC_TYPE_VALUES, DOC_EXTENSION_VALUES
     };
     DirValuesBucket downloadDir = {
-        DOWNLOAD_DIRECTORY_TYPE_VALUES, DOWNLOAD_DIR_VALUES, DOWNLOAD_TYPE_VALUES, DOWNLOAD_EXTENSION_VALUES
+        DOWNLOAD_DIRECTORY_TYPE_VALUES, DOCS_PATH, DOWNLOAD_TYPE_VALUES, DOWNLOAD_EXTENSION_VALUES
     };
 
     vector<DirValuesBucket> dirValuesBuckets = {
@@ -859,13 +861,13 @@ static const string &TriggerUpdateUserAlbumCount()
 static const vector<string> onCreateSqlStrs = {
     CREATE_MEDIA_TABLE,
     PhotoColumn::CREATE_PHOTO_TABLE,
-    PhotoColumn::INDEX_STHP_ADDTIME,
+    PhotoColumn::INDEX_SCTHP_ADDTIME,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::CREATE_YEAR_INDEX,
     PhotoColumn::CREATE_MONTH_INDEX,
     PhotoColumn::CREATE_DAY_INDEX,
-    PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
-    PhotoColumn::CREATE_SHPT_DAY_INDEX,
+    PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+    PhotoColumn::CREATE_SCHPT_DAY_INDEX,
     PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
@@ -907,6 +909,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_OCR,
     CREATE_TAB_ANALYSIS_LABEL,
     CREATE_TAB_ANALYSIS_AESTHETICS,
+    CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
     CREATE_TAB_ANALYSIS_OBJECT,
     CREATE_TAB_ANALYSIS_RECOMMENDATION,
     CREATE_TAB_ANALYSIS_SEGMENTATION,
@@ -930,6 +933,18 @@ static const vector<string> onCreateSqlStrs = {
     INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
     UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
     DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+    FormMap::CREATE_FORM_MAP_TABLE,
+
+    // search
+    CREATE_SEARCH_TOTAL_TABLE,
+    CREATE_SEARCH_INSERT_TRIGGER,
+    CREATE_SEARCH_UPDATE_TRIGGER,
+    CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
+    CREATE_SEARCH_DELETE_TRIGGER,
+    CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
+    CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
+    CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
+    CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -1033,7 +1048,7 @@ void API10TableCreate(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         PhotoColumn::CREATE_PHOTO_TABLE,
-        PhotoColumn::INDEX_STHP_ADDTIME,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
         PhotoColumn::INDEX_CAMERA_SHOT_KEY,
         PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
         PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
@@ -1048,6 +1063,7 @@ void API10TableCreate(RdbStore &store)
         PhotoAlbumColumns::CREATE_TABLE,
         PhotoAlbumColumns::INDEX_ALBUM_TYPES,
         PhotoMap::CREATE_TABLE,
+        FormMap::CREATE_FORM_MAP_TABLE,
         TriggerDeleteAlbumClearMap(),
         TriggerAddAssets(),
         TriggerRemoveAssets(),
@@ -1166,6 +1182,7 @@ void UpdateAPI10Table(RdbStore &store)
     store.ExecuteSql("DROP TABLE IF EXISTS UniqueNumber");
     store.ExecuteSql("DROP TABLE IF EXISTS PhotoAlbum");
     store.ExecuteSql("DROP TABLE IF EXISTS PhotoMap");
+    store.ExecuteSql("DROP TABLE IF EXISTS FormMap");
 
     API10TableCreate(store);
     if (PrepareSystemAlbums(store) != NativeRdb::E_OK) {
@@ -1200,6 +1217,18 @@ static void AddLocationTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpdateLocationTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_geo_dictionary",
+        "DROP TABLE IF EXISTS tab_geo_knowledge",
+        CREATE_GEO_DICTIONARY_TABLE,
+        CREATE_GEO_KNOWLEDGE_TABLE,
+    };
+    MEDIA_INFO_LOG("fix location db");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void AddAnalysisTables(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -1207,6 +1236,7 @@ static void AddAnalysisTables(RdbStore &store)
         CREATE_TAB_ANALYSIS_OCR,
         CREATE_TAB_ANALYSIS_LABEL,
         CREATE_TAB_ANALYSIS_AESTHETICS,
+        CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
         CREATE_TAB_ANALYSIS_TOTAL,
         CREATE_TAB_APPLICATION_SHIELD,
         CREATE_VISION_UPDATE_TRIGGER,
@@ -1231,6 +1261,20 @@ static void AddFaceTables(RdbStore &store)
         CREATE_IMAGE_FACE_INDEX
     };
     MEDIA_INFO_LOG("start add face tables");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void AddSaliencyTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
+        DROP_INSERT_VISION_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER,
+        ADD_SALIENCY_STATUS_COLUMN,
+        UPDATE_SALIENCY_TOTAL_VALUE,
+        UPDATE_SALIENCY_NOT_SUPPORT_VALUE
+    };
+    MEDIA_INFO_LOG("start add saliency tables");
     ExecSqls(executeSqlStrs, store);
 }
 
@@ -1283,6 +1327,54 @@ static void AddAestheticCompositionTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddSearchTable(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS " + SEARCH_TOTAL_TABLE,
+        "DROP TRIGGER IF EXISTS " + INSERT_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_STATUS_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + DELETE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_MAP_INSERT_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_MAP_DELETE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_UPDATE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ANALYSIS_UPDATE_SEARCH_TRIGGER,
+        CREATE_SEARCH_TOTAL_TABLE,
+        CREATE_SEARCH_INSERT_TRIGGER,
+        CREATE_SEARCH_UPDATE_TRIGGER,
+        CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
+        CREATE_SEARCH_DELETE_TRIGGER,
+        CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
+        CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
+        CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
+        CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start init search db");
+    ExecSqls(executeSqlStrs, store);
+}
+
+void MediaLibraryRdbStore::ResetSearchTables()
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return;
+    }
+    static const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS " + SEARCH_TOTAL_TABLE,
+        "DROP TRIGGER IF EXISTS " + INSERT_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + UPDATE_SEARCH_STATUS_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + DELETE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_MAP_INSERT_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_MAP_DELETE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ALBUM_UPDATE_SEARCH_TRIGGER,
+        "DROP TRIGGER IF EXISTS " + ANALYSIS_UPDATE_SEARCH_TRIGGER,
+    };
+    MEDIA_INFO_LOG("start update search db");
+    ExecSqls(executeSqlStrs, *rdbStore_);
+    AddSearchTable(*rdbStore_);
+}
+
 void MediaLibraryRdbStore::ResetAnalysisTables()
 {
     if (rdbStore_ == nullptr) {
@@ -1295,6 +1387,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
         "DROP TRIGGER IF EXISTS update_vision_trigger",
         "DROP TABLE IF EXISTS tab_analysis_ocr",
         "DROP TABLE IF EXISTS tab_analysis_label",
+        "DROP TABLE IF EXISTS tab_analysis_saliency_detect",
         "DROP TABLE IF EXISTS tab_analysis_aesthetics_score",
         "DROP TABLE IF EXISTS tab_analysis_object",
         "DROP TABLE IF EXISTS tab_analysis_recommendation",
@@ -1309,6 +1402,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     ExecSqls(executeSqlStrs, *rdbStore_);
     AddAnalysisTables(*rdbStore_);
     AddFaceTables(*rdbStore_);
+    AddSaliencyTables(*rdbStore_);
     AddAestheticCompositionTables(*rdbStore_);
 }
 
@@ -1461,7 +1555,7 @@ void UpdateYearMonthDayData(RdbStore &store)
         PhotoColumn::CREATE_YEAR_INDEX,
         PhotoColumn::CREATE_MONTH_INDEX,
         PhotoColumn::CREATE_DAY_INDEX,
-        PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
     };
     ExecSqls(updateSql, store);
     MEDIA_DEBUG_LOG("UpdateYearMonthDayData end");
@@ -1478,9 +1572,9 @@ void FixIndexOrder(RdbStore &store)
         PhotoColumn::CREATE_YEAR_INDEX,
         PhotoColumn::CREATE_MONTH_INDEX,
         PhotoColumn::CREATE_DAY_INDEX,
-        PhotoColumn::INDEX_STHP_ADDTIME,
-        PhotoColumn::CREATE_SHPT_MEDIA_TYPE_INDEX,
-        PhotoColumn::CREATE_SHPT_DAY_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
     };
     ExecSqls(updateSql, store);
 }
@@ -1495,11 +1589,28 @@ void AddYearMonthDayColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddCleanFlagAndThumbStatus(RdbStore &store)
+{
+    const vector<string> addSyncStatus = {
+        "DROP INDEX IF EXISTS idx_shpt_date_added",
+        "DROP INDEX IF EXISTS idx_shpt_media_type",
+        "DROP INDEX IF EXISTS idx_shpt_date_day",
+        BaseColumn::AlterTableAddIntColumn(PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_CLEAN_FLAG),
+        BaseColumn::AlterTableAddIntColumn(PhotoColumn::PHOTOS_TABLE, PhotoColumn::PHOTO_THUMB_STATUS),
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
+    };
+    int32_t result = ExecSqls(addSyncStatus, store);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb need clean and thumb status error %{private}d", result);
+    }
+}
+
 static void AddPhotoEditTimeColumn(RdbStore &store)
 {
     const string addEditTimeOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
         " ADD COLUMN " + PhotoColumn::PHOTO_EDIT_TIME + " BIGINT DEFAULT 0";
-
     const vector<string> addEditTime = { addEditTimeOnPhotos };
     ExecSqls(addEditTime, store);
 }
@@ -1514,21 +1625,6 @@ void AddShootingModeColumn(RdbStore &store)
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb shooting_mode error %{private}d", result);
     }
-}
-
-void UpdateMillisecondDate(RdbStore &store)
-{
-    MEDIA_DEBUG_LOG("UpdateMillisecondDate start");
-    const vector<string> updateSql = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
-        MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + "*1000," +
-        MediaColumn::MEDIA_DATE_MODIFIED + " = " + MediaColumn::MEDIA_DATE_MODIFIED + "*1000," +
-        MediaColumn::MEDIA_DATE_TRASHED + " = " + MediaColumn::MEDIA_DATE_TRASHED + "*1000;"+
-        "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
-        MediaColumn::MEDIA_DATE_MODIFIED + " = " +  MediaColumn::MEDIA_DATE_MODIFIED + "*1000;",
-    };
-    ExecSqls(updateSql, store);
-    MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
 }
 
 static void AddHiddenViewColumn(RdbStore &store)
@@ -1622,6 +1718,31 @@ void AddAlbumOrderColumn(RdbStore &store)
     }
 }
 
+static void AddFormMap(RdbStore &store)
+{
+    int32_t result = store.ExecuteSql(FormMap::CREATE_FORM_MAP_TABLE);
+    if (result != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("Failed to update PHOTOS");
+    }
+}
+
+static void FixDocsPath(RdbStore &store)
+{
+    ExecSqls({
+    "UPDATE Files SET "
+        " data = REPLACE(data, '/storage/cloud/files/Documents', '/storage/cloud/files/Docs/Documents'),"
+        " data = REPLACE(data, '/storage/cloud/files/Download', '/storage/cloud/files/Docs/Download'),"
+        " relative_path = REPLACE(relative_path, 'Documents/', 'Docs/Documents/'),"
+        " relative_path = REPLACE(relative_path, 'Download/', 'Docs/Download/')"
+    " WHERE data LIKE '/storage/cloud/files/Documents%' OR "
+        " data LIKE '/storage/cloud/files/Download%' OR"
+        " relative_path LIKE 'Documents/%' OR"
+        " relative_path LIKE 'Download/%';",
+    "UPDATE MediaTypeDirectory SET directory = 'Docs/' WHERE directory_type = 4 OR directory_type = 5",
+    }, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1668,8 +1789,8 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
         FixIndexOrder(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
-        UpdateMillisecondDate(store);
+    if (oldVersion < VERSION_FIX_DOCS_PATH) {
+        FixDocsPath(store);
     }
 }
 
@@ -1695,6 +1816,14 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_ALBUM_ORDER) {
         AddAlbumOrderColumn(store);
     }
+
+    if (oldVersion < VERSION_ADD_FORM_MAP) {
+        AddFormMap(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_LOCATION_TABLE) {
+        UpdateLocationTables(store);
+    }
 }
 
 static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
@@ -1713,6 +1842,14 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_AESTHETIC_COMPOSITION_TABLE) {
         AddAestheticCompositionTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SALIENCY_TABLE) {
+        AddSaliencyTables(store);
+    }
+    
+    if (oldVersion < VERSION_ADD_SEARCH_TABLE) {
+        AddSearchTable(store);
     }
 
     if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_TRIGGER) {
@@ -1758,6 +1895,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_TABLE_TYPE) {
         AddTableType(store);
+    }
+
+    if (oldVersion < VERSION_ADD_PHOTO_CLEAN_FLAG_AND_THUMB_STATUS) {
+        AddCleanFlagAndThumbStatus(store);
     }
 
     UpgradeOtherTable(store, oldVersion);

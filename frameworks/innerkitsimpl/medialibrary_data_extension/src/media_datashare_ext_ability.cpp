@@ -238,6 +238,7 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
 
         OperationObject::ALL_DEVICE,
         OperationObject::ACTIVE_DEVICE,
+        OperationObject::PAH_FORM_MAP,
     };
 
     static const set<string> SYSTEM_API_URIS = {
@@ -260,6 +261,7 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
     return E_SUCCESS;
 }
 
+#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
 static int32_t MediaToolNativeSACheck(MediaLibraryCommand &cmd)
 {
     static const set<OperationObject> MEDIATOOL_OBJECT = {
@@ -283,6 +285,7 @@ static int32_t MediaToolNativeSACheck(MediaLibraryCommand &cmd)
     }
     return E_SUCCESS;
 }
+#endif
 
 static inline int32_t HandleMediaVolumePerm()
 {
@@ -351,6 +354,12 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::PAH_PHOTO,
         OperationObject::PAH_ALBUM,
         OperationObject::PAH_MAP,
+        OperationObject::PAH_FORM_MAP,
+        OperationObject::ANALYSIS_PHOTO_ALBUM,
+        OperationObject::ANALYSIS_PHOTO_MAP,
+        OperationObject::VISION_OCR,
+        OperationObject::VISION_AESTHETICS,
+        OperationObject::VISION_SALIENCY,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
@@ -416,8 +425,10 @@ static void UnifyOprnObject(MediaLibraryCommand &cmd)
         { OperationObject::PAH_PHOTO, OperationObject::FILESYSTEM_PHOTO },
         { OperationObject::PAH_ALBUM, OperationObject::PHOTO_ALBUM },
         { OperationObject::PAH_MAP, OperationObject::PHOTO_MAP },
+#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
         { OperationObject::TOOL_PHOTO, OperationObject::FILESYSTEM_PHOTO },
         { OperationObject::TOOL_AUDIO, OperationObject::FILESYSTEM_AUDIO },
+#endif
     };
 
     OperationObject obj = cmd.GetOprnObject();
@@ -435,12 +446,13 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     if (err != E_SUCCESS) {
         return err;
     }
-
+#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
     err = MediaToolNativeSACheck(cmd);
     if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);
         return err;
     }
+#endif
     err = PhotoAccessHelperPermCheck(cmd, isWrite);
     if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);

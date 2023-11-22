@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "userfile_manager_types.h"
 #define MLOG_TAG "FileAssetNapi"
 
 #include "file_asset_napi.h"
@@ -39,7 +40,6 @@
 #include "media_file_uri.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager_utils.h"
-#include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
@@ -726,7 +726,7 @@ napi_value FileAssetNapi::JSGetDateAdded(napi_env env, napi_callback_info info)
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateAdded = obj->fileAssetPtr->GetDateAdded() / MSEC_TO_SEC;
+        dateAdded = obj->fileAssetPtr->GetDateAdded();
         napi_create_int64(env, dateAdded, &jsResult);
     }
 
@@ -750,7 +750,7 @@ napi_value FileAssetNapi::JSGetDateTrashed(napi_env env, napi_callback_info info
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateTrashed = obj->fileAssetPtr->GetDateTrashed() / MSEC_TO_SEC;
+        dateTrashed = obj->fileAssetPtr->GetDateTrashed();
         napi_create_int64(env, dateTrashed, &jsResult);
     }
 
@@ -774,7 +774,7 @@ napi_value FileAssetNapi::JSGetDateModified(napi_env env, napi_callback_info inf
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateModified = obj->fileAssetPtr->GetDateModified() / MSEC_TO_SEC;
+        dateModified = obj->fileAssetPtr->GetDateModified();
         napi_create_int64(env, dateModified, &jsResult);
     }
 
@@ -1418,8 +1418,8 @@ static void JSCloseExecute(FileAssetAsyncContext *context)
 #ifdef MEDIALIBRARY_COMPATIBILITY
     string closeUri;
     if (MediaFileUtils::IsFileTablePath(context->objectPtr->GetPath()) ||
-        MediaFileUtils::StartsWith(context->objectPtr->GetRelativePath(), DOC_DIR_VALUES) ||
-        MediaFileUtils::StartsWith(context->objectPtr->GetRelativePath(), DOWNLOAD_DIR_VALUES)) {
+        MediaFileUtils::StartsWith(context->objectPtr->GetRelativePath(), DOCS_PATH + DOC_DIR_VALUES) ||
+        MediaFileUtils::StartsWith(context->objectPtr->GetRelativePath(), DOCS_PATH + DOWNLOAD_DIR_VALUES)) {
         closeUri = MEDIALIBRARY_DATA_URI + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET;
     } else if (context->objectPtr->GetMediaType() == MEDIA_TYPE_IMAGE ||
         context->objectPtr->GetMediaType() == MEDIA_TYPE_VIDEO) {
@@ -1697,10 +1697,34 @@ napi_value GetJSArgsForGetThumbnail(napi_env env, size_t argc, const napi_value 
     return result;
 }
 
+static napi_value GetPhotoRequestOption(napi_env env, napi_value object,
+    unique_ptr<FileAssetAsyncContext> &asyncContext, RequestPhotoType &type)
+{
+    napi_value sizeObj;
+    if (GetNapiObjectFromNapiObject(env, object, "size", &sizeObj)) {
+        GetInt32InfoFromNapiObject(env, sizeObj, "width", asyncContext->size.width);
+        GetInt32InfoFromNapiObject(env, sizeObj, "height", asyncContext->size.height);
+    }
+    int32_t requestType = 0;
+    if (GetInt32InfoFromNapiObject(env, object, REQUEST_PHOTO_TYPE, requestType)) {
+        if (requestType >= static_cast<int>(RequestPhotoType::REQUEST_TYPE_END)) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter type");
+            return nullptr;
+        }
+        type = static_cast<RequestPhotoType>(requestType);
+    } else {
+        type = RequestPhotoType::REQUEST_ALL_THUMBNAIL;
+    }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
 napi_value GetPhotoRequestArgs(napi_env env, size_t argc, const napi_value argv[],
     unique_ptr<FileAssetAsyncContext> &asyncContext, RequestPhotoType &type)
 {
-    if (argc != ARGS_TWO) {
+    if (argc != ARGS_ONE && argc != ARGS_TWO) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter number " + to_string(argc));
         return nullptr;
     }
@@ -1711,18 +1735,18 @@ napi_value GetPhotoRequestArgs(napi_env env, size_t argc, const napi_value argv[
         napi_valuetype valueType = napi_undefined;
         napi_typeof(env, argv[i], &valueType);
 
-        if (i == PARAM0 && valueType == napi_object) {
-            napi_value sizeObj;
-            if (GetNapiObjectFromNapiObject(env, argv[PARAM0], "size", &sizeObj)) {
-                GetInt32InfoFromNapiObject(env, sizeObj, "width", asyncContext->size.width);
-                GetInt32InfoFromNapiObject(env, sizeObj, "height", asyncContext->size.height);
-            }
-            int32_t requestType = 0;
-            if (GetInt32InfoFromNapiObject(env, argv[i], REQUEST_PHOTO_TYPE, requestType)) {
-                type = static_cast<RequestPhotoType>(requestType);
+        if (argc == PARAM1) {
+            if (valueType == napi_function) {
+                napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
+                break;
             } else {
-                type = RequestPhotoType::REQUEST_ALL_THUMBNAIL;
+                NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid parameter type");
+                return nullptr;
             }
+        }
+        if (i == PARAM0 && valueType == napi_object) {
+            napi_value result = GetPhotoRequestOption(env, argv[i], asyncContext, type);
+            ASSERT_NULLPTR_CHECK(env, result);
         } else if (i == PARAM1 && valueType == napi_function) {
             napi_create_reference(env, argv[i], NAPI_INIT_REF_COUNT, &asyncContext->callbackRef);
             break;
@@ -1781,24 +1805,35 @@ napi_value FileAssetNapi::JSGetThumbnail(napi_env env, napi_callback_info info)
     return result;
 }
 
+static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = {
+    { ANALYSIS_AETSTHETICS_SCORE, { PAH_QUERY_ANA_ATTS, { AESTHETICS_SCORE, PROB } } },
+    { ANALYSIS_LABEL, { PAH_QUERY_ANA_LABEL, { CATEGORY_ID, SUB_LABEL, PROB, FEATURE, SIM_RESULT } } },
+    { ANALYSIS_OCR, { PAH_QUERY_ANA_OCR, { OCR_TEXT, OCR_TEXT_MSG, OCR_WIDTH, OCR_HEIGHT } } },
+    { ANALYSIS_FACE, { PAH_QUERY_ANA_FACE, { FACE_ID, TAG_ID, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT, LANDMARKS,
+        PITCH, YAW, ROLL, PROB, TOTAL_FACES, FEATURES } } },
+    { ANALYSIS_OBJECT, { PAH_QUERY_ANA_OBJECT, { OBJECT_ID, OBJECT_LABEL, OBJECT_SCALE_X, OBJECT_SCALE_Y,
+        OBJECT_SCALE_WIDTH, OBJECT_SCALE_HEIGHT } } },
+    { ANALYSIS_RECOMMENDATION, { PAH_QUERY_ANA_RECOMMENDATION, { RECOMMENDATION_ID, RECOMMENDATION_RESOLUTION,
+        RECOMMENDATION_SCALE_X, RECOMMENDATION_SCALE_Y, RECOMMENDATION_SCALE_WIDTH, RECOMMENDATION_SCALE_HEIGHT } } },
+    { ANALYSIS_SEGMENTATION, { PAH_QUERY_ANA_SEGMENTATION, { SEGMENTATION_AREA } } },
+    { ANALYSIS_COMPOSITION, { PAH_QUERY_ANA_COMPOSITION, { COMPOSITION_ID, COMPOSITION_RESOLUTION, CLOCK_STYLE,
+        CLOCK_LOCATION_X, CLOCK_LOCATION_Y, CLOCK_COLOUR, COMPOSITION_SCALE_X, COMPOSITION_SCALE_Y,
+        COMPOSITION_SCALE_WIDTH, COMPOSITION_SCALE_HEIGHT } } },
+    { ANALYSIS_SALIENCY, { PAH_QUERY_ANA_SAL, { SALIENCY_X, SALIENCY_Y } } },
+};
+
 static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSGetThumbnailExecute");
-    std::vector<std::string> fetchColumn;
     string uriStr;
-    switch (context->analysisType) {
-        case ANALYSIS_OCR:
-            uriStr = PAH_QUERY_ANA_OCR;
-            fetchColumn = {OCR_TEXT, OCR_TEXT_MSG, OCR_PRE_MSG};
-            break;
-        case ANALYSIS_AETSTHETICS_SCORE:
-            uriStr = PAH_QUERY_ANA_ATTS;
-            fetchColumn = {AESTHETICS_SCORE, PROB};
-            break;
-        default:
-            NAPI_ERR_LOG("Invalid analysisType");
-            return;
+    std::vector<std::string> fetchColumn;
+    if (ANALYSIS_SOURCE_INFO_MAP.find(context->analysisType) != ANALYSIS_SOURCE_INFO_MAP.end()) {
+        uriStr = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).uriStr;
+        fetchColumn = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).fetchColumn;
+    } else {
+        NAPI_ERR_LOG("Invalid analysisType");
+        return;
     }
     int fileId = context->objectInfo->GetFileId();
     Uri uri (uriStr);
@@ -2202,6 +2237,7 @@ napi_value FileAssetNapi::JSIsFavorite(napi_env env, napi_callback_info info)
     return result;
 }
 
+#ifdef MEDIALIBRARY_COMPATIBILITY
 static void TrashByUpdate(FileAssetAsyncContext *context)
 {
     DataShareValuesBucket valuesBucket;
@@ -2212,8 +2248,7 @@ static void TrashByUpdate(FileAssetAsyncContext *context)
     } else {
         uriString = URI_UPDATE_AUDIO;
     }
-    valuesBucket.Put(MEDIA_DATA_DB_DATE_TRASHED,
-        (context->isTrash ? MediaFileUtils::UTCTimeMilliSeconds() : NOT_TRASH));
+    valuesBucket.Put(MEDIA_DATA_DB_DATE_TRASHED, (context->isTrash ? MediaFileUtils::UTCTimeSeconds() : NOT_TRASH));
     DataSharePredicates predicates;
     int32_t fileId = context->objectPtr->GetId();
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
@@ -2221,6 +2256,7 @@ static void TrashByUpdate(FileAssetAsyncContext *context)
     Uri uri(uriString);
     context->changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
 }
+#endif
 
 static void TrashByInsert(FileAssetAsyncContext *context)
 {
@@ -2508,15 +2544,6 @@ static napi_value HandleGettingSpecialKey(napi_env env, const string &key, const
     return jsResult;
 }
 
-static inline int64_t GetCompatDate(const string inputKey, const int64_t date)
-{
-    if (inputKey == MEDIA_DATA_DB_DATE_ADDED || inputKey == MEDIA_DATA_DB_DATE_MODIFIED ||
-        inputKey == MEDIA_DATA_DB_DATE_TRASHED) {
-            return date / MSEC_TO_SEC;
-        }
-    return date;
-}
-
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 {
     MediaLibraryTracer tracer;
@@ -2552,7 +2579,7 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     } else if (m.index() == MEMBER_TYPE_INT32) {
         napi_create_int32(env, get<int32_t>(m), &jsResult);
     } else if (m.index() == MEMBER_TYPE_INT64) {
-        napi_create_int64(env, GetCompatDate(inputKey, get<int64_t>(m)), &jsResult);
+        napi_create_int64(env, get<int64_t>(m), &jsResult);
     } else {
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return jsResult;
@@ -3622,8 +3649,12 @@ napi_value FileAssetNapi::PhotoAccessHelperRequestPhoto(napi_env env, napi_callb
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
 
-    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) ==
+    CHECK_COND_RET(MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_TWO) ==
         napi_ok, result, "Failed to get object info");
+    if (asyncContext->callbackRef == nullptr) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Can not get callback function");
+        return nullptr;
+    }
     // use current parse args function temporary
     RequestPhotoType type = RequestPhotoType::REQUEST_ALL_THUMBNAIL;
     result = GetPhotoRequestArgs(env, asyncContext->argc, asyncContext->argv, asyncContext, type);
@@ -3962,7 +3993,7 @@ napi_value FileAssetNapi::PhotoAccessHelperGetAnalysisData(napi_env env, napi_ca
 {
     MediaLibraryTracer tracer;
     tracer.Start("PhotoAccessHelperGetAnalysisData");
-    
+
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &result));
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();

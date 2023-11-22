@@ -151,8 +151,7 @@ private:
     bool isValid_ = false;
 };
 
-constexpr int FAST_THREAD_NUM = 3;
-constexpr int THREAD_NUM = 2;
+constexpr int THREAD_NUM = 5;
 class ThumbnailManager : NoCopyable {
 public:
     virtual ~ThumbnailManager();
@@ -166,9 +165,10 @@ public:
     void DeleteRequestIdFromMap(const std::string &requestId);
 private:
     ThumbnailManager() = default;
-    void FastImageWorker(int num);
     void DealWithFastRequest(const RequestSharedPtr &request);
-    void QualityImageWorker(int num);
+    void DealWithQualityRequest(const RequestSharedPtr &request);
+
+    void ImageWorker(int num);
     void AddFastPhotoRequest(const RequestSharedPtr &request);
     void AddQualityPhotoRequest(const RequestSharedPtr &request);
     void AddNewQualityPhotoRequest(const RequestSharedPtr &request);
@@ -180,10 +180,8 @@ private:
     SafeQueue<RequestSharedPtr> qualityQueue_;
 
     std::mutex fastLock_;
-    std::condition_variable fastCv_;
     std::mutex qualityLock_;
-    std::condition_variable qualityCv_;
-    std::vector<std::thread> fastThreads_;
+    std::condition_variable queueCv_;
     std::vector<std::thread> threads_;
 
     static std::shared_ptr<ThumbnailManager> instance_;

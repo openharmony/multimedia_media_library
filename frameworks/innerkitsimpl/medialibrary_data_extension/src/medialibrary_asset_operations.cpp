@@ -59,6 +59,7 @@
 #include "userfile_manager_types.h"
 #include "value_object.h"
 #include "values_bucket.h"
+#include "medialibrary_formmap_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -203,7 +204,8 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
     }
 }
 
-int32_t DropAllTables(NativeRdb::RdbStore &rdbStore)
+#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
+static int32_t DropAllTables(NativeRdb::RdbStore &rdbStore)
 {
     string dropSqlRowName = "drop_table_and_view_sql";
     string queryDropSql =
@@ -252,6 +254,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
     MediaLibraryDataCallBack callback;
     callback.OnCreate(*rdbStore);
     MediaLibraryRdbStore::ResetAnalysisTables();
+    MediaLibraryRdbStore::ResetSearchTables();
     const static vector<string> DELETE_DIR_LIST = {
         ROOT_MEDIA_DIR + PHOTO_BUCKET,
         ROOT_MEDIA_DIR + AUDIO_BUCKET,
@@ -275,6 +278,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
 
     return E_OK;
 }
+#endif
 
 static bool CheckOprnObject(OperationObject object)
 {
@@ -523,7 +527,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // Fill basic file information into DB
     const string& displayName = fileAsset.GetDisplayName();
-    int64_t nowTime = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t nowTime = MediaFileUtils::UTCTimeSeconds();
     ValuesBucket assetInfo;
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, fileAsset.GetMediaType());
     string extension = ScannerUtils::GetFileExtension(displayName);
@@ -545,11 +549,11 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, nowTime / MSEC_TO_SEC));
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, nowTime));
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, nowTime / MSEC_TO_SEC));
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, nowTime));
         assetInfo.PutString(PhotoColumn::PHOTO_DATE_DAY,
-            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, nowTime / MSEC_TO_SEC));
+            MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, nowTime));
     }
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
     if (!cmd.GetBundleName().empty()) {
@@ -610,12 +614,8 @@ static bool CheckTypeFromRootDir(const std::string &rootDirName, int32_t type)
             return true;
         }
     }
-    // "Documents/"
-    if (!strcmp(rootDirName.c_str(), DOC_DIR_VALUES.c_str())) {
-        return true;
-    }
-    // "Download/"
-    if (!strcmp(rootDirName.c_str(), DOWNLOAD_DIR_VALUES.c_str())) {
+    // "Docs/Documents/" and "Docs/Download"
+    if (!strcmp(rootDirName.c_str(), DOCS_PATH.c_str())) {
         return true;
     }
     MEDIA_ERR_LOG("Cannot match rootDir %{private}s and mediaType %{public}d",
@@ -1217,6 +1217,7 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
     NotifyType type = (notifyData->trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT :
         NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     watch->Notify(notifyData->notifyUri, type, trashAlbumId);
+    MediaLibraryFormMapOperations::DoPublishedChange(notifyData->notifyUri);
 }
 
 int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
@@ -1784,6 +1785,13 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
         InvalidateThumbnail(fileId, type);
     }
     CreateThumbnail(uri, path, this->isCreateThumbSync);
+    if ((type == MEDIA_TYPE_IMAGE) && MediaLibraryFormMapOperations::GetFormIdWithEmptyUriState() == true) {
+        vector<int64_t> formIds;
+        MediaLibraryFormMapOperations::GetFormMapFormId("", formIds);
+        if (!formIds.empty()) {
+            MediaLibraryFormMapOperations::PublishedChange(uri, formIds);
+        }
+    }
     return E_OK;
 }
 } // namespace Media

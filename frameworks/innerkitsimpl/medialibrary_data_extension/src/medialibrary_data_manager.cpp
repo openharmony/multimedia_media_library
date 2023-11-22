@@ -59,6 +59,7 @@
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_uripermission_operations.h"
 #include "medialibrary_vision_operations.h"
+#include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
 #include "permission_utils.h"
 #include "photo_map_operations.h"
@@ -71,6 +72,7 @@
 #include "trash_async_worker.h"
 #include "value_object.h"
 #include "post_event_utils.h"
+#include "medialibrary_formmap_operations.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -144,9 +146,6 @@ static void MakeRootDirs(AsyncTaskData *data)
             MEDIA_INFO_LOG("Root dir: %{private}s is exist", dir.c_str());
         } else if (ret <= 0) {
             MEDIA_ERR_LOG("Failed to preset root dir: %{private}s", dir.c_str());
-        }
-        if (dir == DOC_DIR_VALUES || dir == DOWNLOAD_DIR_VALUES) {
-            continue;
         }
         MediaFileUtils::CreateDirectory(ROOT_MEDIA_DIR + dir + ".recycle");
     }
@@ -415,6 +414,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::VISION_OCR:
         case OperationObject::VISION_LABEL:
         case OperationObject::VISION_AESTHETICS:
+        case OperationObject::VISION_SALIENCY:
         case OperationObject::VISION_OBJECT:
         case OperationObject::VISION_RECOMMENDATION:
         case OperationObject::VISION_SEGMENTATION:
@@ -428,6 +428,12 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::InsertOperation(cmd);
+
+        case OperationObject::PAH_FORM_MAP:
+            return MediaLibraryFormMapOperations::HandleStoreFormIdOperation(cmd);
+        case OperationObject::SEARCH_TOTAL: {
+            return MediaLibrarySearchOperations::InsertOperation(cmd);
+        }
 
         default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
@@ -463,8 +469,10 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     // boardcast operation
     if (oprnType == OperationType::SCAN) {
         return MediaScannerManager::GetInstance()->ScanDir(ROOT_MEDIA_DIR, nullptr);
+#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
     } else if (oprnType == OperationType::DELETE_TOOL) {
         return MediaLibraryAssetOperations::DeleteToolOperation(cmd);
+#endif
     }
     return SolveInsertCmd(cmd);
 }
@@ -582,9 +590,24 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::DeleteOperation(cmd);
         }
+        case OperationObject::PAH_FORM_MAP: {
+            return MediaLibraryFormMapOperations::RemoveFormIdOperations(rdbPredicate);
+        }
+        default:
+            break;
+    }
+
+    return DeleteInRdbPredicatesAnalysis(cmd, rdbPredicate);
+}
+
+int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd,
+    NativeRdb::RdbPredicates &rdbPredicate)
+{
+    switch (cmd.GetOprnObject()) {
         case OperationObject::VISION_OCR:
         case OperationObject::VISION_LABEL:
         case OperationObject::VISION_AESTHETICS:
+        case OperationObject::VISION_SALIENCY:
         case OperationObject::VISION_OBJECT:
         case OperationObject::VISION_RECOMMENDATION:
         case OperationObject::VISION_SEGMENTATION:
@@ -598,6 +621,9 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE: {
             return MediaLibraryLocationOperations::DeleteOperation(cmd);
+        }
+        case OperationObject::SEARCH_TOTAL: {
+            return MediaLibrarySearchOperations::DeleteOperation(cmd);
         }
         default:
             break;
@@ -931,19 +957,6 @@ static const map<OperationObject, string> QUERY_CONDITION_MAP {
     { OperationObject::BUNDLE_PERMISSION, "" },
 };
 
-static void AddVirtualColumnsOfDateType(vector<string> &columns)
-{
-    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
-    vector<string> dateTypeSeconds = {MEDIA_DATA_DB_DATE_ADDED_TO_SECOND,
-            MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND, MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND};
-    for (int i = 0; i < dateTypes.size(); i++) {
-        auto it = find(columns.begin(), columns.end(), dateTypes[i]);
-        if (it != columns.end()) {
-            columns.push_back(dateTypeSeconds[i]);
-        }
-    }
-}
-
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
@@ -968,7 +981,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
-    AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
 
     shared_ptr<NativeRdb::ResultSet> queryResultSet;
     OperationObject oprnObject = cmd.GetOprnObject();
@@ -986,6 +998,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
         queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
     } else if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::ANALYSIS_PHOTO_ALBUM) {
         queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+    } else if (oprnObject == OperationObject::SEARCH_TOTAL) {
+        queryResultSet = MediaLibrarySearchOperations::QueryOperation(cmd, columns);
     } else {
         tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
