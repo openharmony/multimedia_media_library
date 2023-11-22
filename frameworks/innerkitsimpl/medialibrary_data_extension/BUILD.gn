@@ -140,12 +140,14 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_data_manager_utils.cpp",
     "src/medialibrary_dir_operations.cpp",
     "src/medialibrary_file_operations.cpp",
+    "src/medialibrary_formmap_operations.cpp",
     "src/medialibrary_inotify.cpp",
     "src/medialibrary_location_operations.cpp",
     "src/medialibrary_notify.cpp",
     "src/medialibrary_object_utils.cpp",
     "src/medialibrary_photo_operations.cpp",
     "src/medialibrary_rdbstore.cpp",
+    "src/medialibrary_search_operations.cpp",
     "src/medialibrary_smartalbum_map_operations.cpp",
     "src/medialibrary_smartalbum_operations.cpp",
     "src/medialibrary_subscriber.cpp",
@@ -224,7 +226,14 @@ ohos_shared_library("medialibrary_data_extension") {
       cfi_cross_dso = true
       debug = false
       blocklist = "./extension_blocklist.txt"
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
+  }
+  if (build_variant == "root") {
+    defines += [ "MEDIALIBRARY_MEDIATOOL_ENABLE=1" ]
   }
 
   cflags_cc = [

@@ -25,6 +25,7 @@ namespace Media {
 const std::string VISION_OCR_TABLE = "tab_analysis_ocr";
 const std::string VISION_LABEL_TABLE = "tab_analysis_label";
 const std::string VISION_AESTHETICS_TABLE = "tab_analysis_aesthetics_score";
+const std::string VISION_SALIENCY_TABLE = "tab_analysis_saliency_detect";
 const std::string VISION_OBJECT_TABLE = "tab_analysis_object";
 const std::string VISION_RECOMMENDATION_TABLE = "tab_analysis_recommendation";
 const std::string VISION_SEGMENTATION_TABLE = "tab_analysis_segmentation";
@@ -44,7 +45,6 @@ const std::string OCR_VERSION = "ocr_version";
 const std::string OCR_TEXT_MSG = "ocr_text_msg";
 const std::string OCR_WIDTH = "width";
 const std::string OCR_HEIGHT = "height";
-const std::string OCR_PRE_MSG = "ocr_pre_msg";
 const std::string CREATE_TAB_ANALYSIS_OCR = "CREATE TABLE IF NOT EXISTS " + VISION_OCR_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     FILE_ID + " INT UNIQUE, " +
@@ -78,6 +78,16 @@ const std::string CREATE_TAB_ANALYSIS_AESTHETICS = "CREATE TABLE IF NOT EXISTS "
     AESTHETICS_SCORE + " INT, " +
     AESTHETICS_VERSION + " TEXT, " +
     PROB + " REAL) ";
+
+const std::string SALIENCY_X = "saliency_x";
+const std::string SALIENCY_Y = "saliency_y";
+const std::string SALIENCY_VERSION = "saliency_version";
+const std::string CREATE_TAB_ANALYSIS_SALIENCY_DETECT = "CREATE TABLE IF NOT EXISTS " + VISION_SALIENCY_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INT UNIQUE, " +
+    SALIENCY_X + " REAL, " +
+    SALIENCY_Y + " REAL, " +
+    SALIENCY_VERSION + " TEXT) ";
 
 const std::string OBJECT_ID = "object_id";
 const std::string OBJECT_LABEL = "object_label";
@@ -153,6 +163,7 @@ const std::string CREATE_TAB_ANALYSIS_COMPOSITION = "CREATE TABLE IF NOT EXISTS 
 const std::string STATUS = "status";
 const std::string OCR = "ocr";
 const std::string LABEL = "label";
+const std::string SALIENCY = "saliency";
 const std::string OBJECT = "object";
 const std::string RECOMMENDATION = "recommendation";
 const std::string SEGMENTATION = "segmentation";
@@ -165,6 +176,7 @@ const std::string CREATE_TAB_ANALYSIS_TOTAL = "CREATE TABLE IF NOT EXISTS " + VI
     OCR + " INT, " +
     LABEL + " INT, " +
     AESTHETICS_SCORE + " INT, " +
+    SALIENCY + " INT, " +
     FACE + " INT, " +
     OBJECT + " INT, " +
     RECOMMENDATION + " INT, " +
@@ -283,6 +295,7 @@ const std::string INIT_TAB_ANALYSIS_TOTAL = "INSERT INTO " + VISION_TOTAL_TABLE 
     AESTHETICS_SCORE + ", " +
     LABEL + ", " +
     FACE + ", " +
+    SALIENCY + ", " +
     OBJECT + ", " +
     RECOMMENDATION + ", " +
     SEGMENTATION + ", " +
@@ -290,6 +303,7 @@ const std::string INIT_TAB_ANALYSIS_TOTAL = "INSERT INTO " + VISION_TOTAL_TABLE 
     "SELECT " + FILE_ID +
     ", CASE WHEN date_trashed > 0 THEN 2 ELSE 0 END," +
     " 0," +
+    " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
@@ -332,6 +346,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER = "CREATE TRIGGER IF NOT EXISTS i
     AESTHETICS_SCORE + ", " +
     LABEL + ", " +
     FACE + ", " +
+    SALIENCY + ", " +
     OBJECT + ", " +
     RECOMMENDATION + ", " +
     SEGMENTATION + ", " +
@@ -341,6 +356,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER = "CREATE TRIGGER IF NOT EXISTS i
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " 0," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
@@ -356,6 +372,7 @@ const std::string URI_SEGMENTATION = MEDIALIBRARY_DATA_URI + "/" + VISION_SEGMEN
 const std::string URI_COMPOSITION = MEDIALIBRARY_DATA_URI + "/" + VISION_COMPOSITION_TABLE;
 const std::string URI_TOTAL = MEDIALIBRARY_DATA_URI + "/" + VISION_TOTAL_TABLE;
 const std::string URI_SHIELD = MEDIALIBRARY_DATA_URI + "/" + VISION_SHIELD_TABLE;
+const std::string URI_SALIENCY = MEDIALIBRARY_DATA_URI + "/" + VISION_SALIENCY_TABLE;
 const std::string URI_IMAGE_FACE = MEDIALIBRARY_DATA_URI + "/" + VISION_IMAGE_FACE_TABLE;
 const std::string URI_FACE_TAG = MEDIALIBRARY_DATA_URI + "/" + VISION_FACE_TAG_TABLE;
 
@@ -381,6 +398,13 @@ const std::string CREATE_NEW_INSERT_VISION_TRIGGER = std::string("CREATE TRIGGER
 const std::string IMAGE_FACE_INDEX = "image_face_index";
 const std::string CREATE_IMAGE_FACE_INDEX = "CREATE UNIQUE INDEX " + IMAGE_FACE_INDEX + " ON " +
     VISION_IMAGE_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
+
+const std::string ADD_SALIENCY_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + SALIENCY + " INT";
+const std::string UPDATE_SALIENCY_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE +
+    " SET " + STATUS + " = 0, " + SALIENCY + " = 0 WHERE " +
+    FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE subtype != 1)";
+const std::string UPDATE_SALIENCY_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + SALIENCY +
+    " = -1 WHERE " + SALIENCY + " IS NULL";
 
 const std::string OBJECT_INDEX = "object_index";
 const std::string CREATE_OBJECT_INDEX = "CREATE UNIQUE INDEX " + OBJECT_INDEX + " ON " +

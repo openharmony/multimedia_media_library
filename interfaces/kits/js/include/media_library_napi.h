@@ -61,6 +61,12 @@ struct MediaChangeListener {
     OHOS::DataShare::DataShareObserver::ChangeInfo changeInfo;
     std::string strUri;
 };
+
+struct AnalysisProperty {
+    std::string enumName;
+    int32_t enumValue;
+};
+
 class MediaOnNotifyObserver;
 class ChangeListenerNapi {
 public:
@@ -240,6 +246,8 @@ private:
     static napi_value PhotoAccessCreatePhotoAlbum(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessDeletePhotoAlbums(napi_env env, napi_callback_info info);
     static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
+    static napi_value PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info);
 
     static napi_value SetHidden(napi_env env, napi_callback_info info);
     static napi_value UfmGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -345,6 +353,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> uris;
     bool hiddenOnly = false;
     int32_t hiddenAlbumFetchMode = -1;
+    std::string formId;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

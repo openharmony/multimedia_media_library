@@ -71,6 +71,10 @@ ohos_static_library("mediatoollib") {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
 
@@ -81,40 +85,51 @@ ohos_static_library("mediatoollib") {
 ohos_executable("mediatool") {
   install_enable = true
 
-  include_dirs = [ "./include" ]
-
+  include_dirs = []
   sources = [ "src/main.cpp" ]
+  deps = []
+  defines = []
 
-  deps = [
-    ":mediatoollib",
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-  ]
+  if (build_variant == "root") {
+    include_dirs += [ "./include" ]
+    defines += [ "MEDIALIBRARY_MEDIATOOL_START=1" ]
 
-  external_deps = [
-    "ability_base:want",
-    "ability_base:zuri",
-    "ability_runtime:ability_manager",
-    "ability_runtime:abilitykit_native",
-    "ability_runtime:dataobs_manager",
-    "ability_runtime:napi_base_context",
-    "access_token:libaccesstoken_sdk",
-    "access_token:libnativetoken",
-    "access_token:libtoken_setproc",
-    "c_utils:utils",
-    "data_share:datashare_common",
-    "data_share:datashare_consumer",
-    "data_share:datashare_provider",
-    "device_auth:deviceauth_sdk",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "samgr:samgr_proxy",
-  ]
+    deps += [
+      ":mediatoollib",
+      "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+      "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    ]
+
+    external_deps = [
+      "ability_base:want",
+      "ability_base:zuri",
+      "ability_runtime:ability_manager",
+      "ability_runtime:abilitykit_native",
+      "ability_runtime:dataobs_manager",
+      "ability_runtime:napi_base_context",
+      "access_token:libaccesstoken_sdk",
+      "access_token:libnativetoken",
+      "access_token:libtoken_setproc",
+      "c_utils:utils",
+      "data_share:datashare_common",
+      "data_share:datashare_consumer",
+      "data_share:datashare_provider",
+      "device_auth:deviceauth_sdk",
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+      "samgr:samgr_proxy",
+    ]
+  }
+
   if (!link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
       debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
     }
   }
 

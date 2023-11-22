@@ -79,17 +79,17 @@ void Init(GallerySource &gallerySource, ExternalSource &externalSource)
     photosStorePtr = store;
     restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CAMERA_APP_NAME);
     restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
-    restoreService -> InitGarbageAlbum();
+    restoreService->InitGarbageAlbum();
 }
 
 void RestoreFromGallery()
 {
-    std::vector<FileInfo> fileInfos = restoreService -> QueryFileInfos(0);
+    std::vector<FileInfo> fileInfos = restoreService->QueryFileInfos(0);
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        const NativeRdb::ValuesBucket values = restoreService -> GetInsertValue(fileInfos[i], TEST_ORIGIN_PATH,
+        const NativeRdb::ValuesBucket values = restoreService->GetInsertValue(fileInfos[i], TEST_ORIGIN_PATH,
             SourceType::GALLERY);
         int64_t rowNum = 0;
-        if (photosStorePtr -> Insert(rowNum, "Photos", values) != E_OK) {
+        if (photosStorePtr->Insert(rowNum, "Photos", values) != E_OK) {
             MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s", fileInfos[i].filePath.c_str());
         }
     }
@@ -101,12 +101,13 @@ void RestoreFromExternal(GallerySource &gallerySource, bool isCamera)
     int32_t maxId = BackupDatabaseUtils::QueryInt(gallerySource.galleryStorePtr_, isCamera ?
         QUERY_MAX_ID_CAMERA_SCREENSHOT : QUERY_MAX_ID_OTHERS, MAX_ID);
     int32_t type = isCamera ? SourceType::EXTERNAL_CAMERA : SourceType::EXTERNAL_OTHERS;
-    std::vector<FileInfo> fileInfos = restoreService -> QueryFileInfosFromExternal(0, maxId, isCamera);
+    std::vector<FileInfo> fileInfos = restoreService->QueryFileInfosFromExternal(0, maxId, isCamera);
+    MEDIA_INFO_LOG("%{public}d asset will restor", (int)fileInfos.size());
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        const NativeRdb::ValuesBucket values = restoreService -> GetInsertValue(fileInfos[i], TEST_ORIGIN_PATH,
+        const NativeRdb::ValuesBucket values = restoreService->GetInsertValue(fileInfos[i], TEST_ORIGIN_PATH,
             type);
         int64_t rowNum = 0;
-        if (photosStorePtr -> Insert(rowNum, "Photos", values) != E_OK) {
+        if (photosStorePtr->Insert(rowNum, "Photos", values) != E_OK) {
             MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s", fileInfos[i].filePath.c_str());
         }
     }
@@ -149,7 +150,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_total_number, TestSi
     std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
         CAMERA_APP_NAME);
     restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
-    int32_t number = restoreService -> QueryTotalNumber();
+    int32_t number = restoreService->QueryTotalNumber();
     MEDIA_INFO_LOG("medialib_backup_test_query_total_number %{public}d", number);
     EXPECT_EQ(number, EXPECTED_NUM);
     MEDIA_INFO_LOG("medialib_backup_test_query_total_number end");
@@ -159,9 +160,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_trashed, TestSize.Le
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_trashed start");
     std::string queryTrashed = "SELECT file_id, date_trashed from Photos where display_name ='trashed.jpg'";
-    auto resultSet = photosStorePtr -> QuerySql(queryTrashed);
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     int64_t trashedTime = GetInt64Val("date_trashed", resultSet);
     EXPECT_GT(trashedTime, 0);
     MEDIA_INFO_LOG("medialib_backup_test_valid_trashed end");
@@ -171,9 +172,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_favorite, TestSize.L
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_favorite start");
     std::string queryFavorite = "SELECT file_id, is_favorite from Photos where display_name ='favorite.jpg'";
-    auto resultSet = photosStorePtr -> QuerySql(queryFavorite);
+    auto resultSet = photosStorePtr->QuerySql(queryFavorite);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     int32_t isFavorite = GetInt32Val("is_favorite", resultSet);
     EXPECT_EQ(isFavorite, 1);
     MEDIA_INFO_LOG("medialib_backup_test_valid_favorite end");
@@ -183,9 +184,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_hidden, TestSize.Lev
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_hidden start");
     std::string queryHidden = "SELECT file_id, hidden from Photos where display_name ='hidden.jpg'";
-    auto resultSet = photosStorePtr -> QuerySql(queryHidden);
+    auto resultSet = photosStorePtr->QuerySql(queryHidden);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     int32_t isHidden = GetInt32Val("hidden", resultSet);
     EXPECT_EQ(isHidden, 1);
     MEDIA_INFO_LOG("medialib_backup_test_valid_hidden end");
@@ -195,9 +196,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_orientation, TestSiz
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_orientation start");
     std::string queryOrientation = "SELECT file_id, orientation from Photos where display_name ='orientation.jpg'";
-    auto resultSet = photosStorePtr -> QuerySql(queryOrientation);
+    auto resultSet = photosStorePtr->QuerySql(queryOrientation);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     int32_t orientation = GetInt32Val("orientation", resultSet);
     EXPECT_EQ(orientation, EXPECTED_OREINTATION);
     MEDIA_INFO_LOG("medialib_backup_test_valid_orientation end");
@@ -207,9 +208,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_package_name, TestSi
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_package_name start");
     std::string queryPackageName = "SELECT file_id, package_name from Photos where display_name ='fake_wechat.jpg'";
-    auto resultSet = photosStorePtr -> QuerySql(queryPackageName);
+    auto resultSet = photosStorePtr->QuerySql(queryPackageName);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     std::string packageName = GetStringVal("package_name", resultSet);
     EXPECT_EQ(packageName, EXPECTED_PACKAGE_NAME);
     MEDIA_INFO_LOG("medialib_backup_test_valid_package_name end");
@@ -219,9 +220,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_user_comment, TestSi
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_user_comment start");
     std::string queryUserComment = "SELECT file_id, user_comment from Photos where display_name ='fake_wechat.jpg'";
-    auto resultSet = photosStorePtr -> QuerySql(queryUserComment);
+    auto resultSet = photosStorePtr->QuerySql(queryUserComment);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     std::string userComment = GetStringVal("user_comment", resultSet);
     EXPECT_EQ(userComment, EXPECTED_USER_COMMENT);
     MEDIA_INFO_LOG("medialib_backup_test_valid_user_comment end");
@@ -231,9 +232,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_date_added, TestSize
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_date_added start");
     std::string queryDateAdded = "SELECT file_id, date_added from Photos where display_name ='fake_wechat.jpg'";
-    auto resultSet = photosStorePtr -> QuerySql(queryDateAdded);
+    auto resultSet = photosStorePtr->QuerySql(queryDateAdded);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     int64_t dateAdded = GetInt64Val("date_added", resultSet);
     EXPECT_EQ(dateAdded, EXPECTED_DATE_ADDED);
     MEDIA_INFO_LOG("medialib_backup_test_valid_date_added end");
@@ -243,9 +244,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_date_taken, TestSize
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_date_taken start");
     std::string queryDateTaken = "SELECT file_id, date_taken from Photos where display_name ='fake_wechat.jpg'";
-    auto resultSet = photosStorePtr -> QuerySql(queryDateTaken);
+    auto resultSet = photosStorePtr-> QuerySql(queryDateTaken);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     int64_t dateTaken = GetInt64Val("date_taken", resultSet);
     EXPECT_EQ(dateTaken, EXPECTED_DATE_TAKEN);
     MEDIA_INFO_LOG("medialib_backup_test_valid_date_taken end");
@@ -254,10 +255,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_date_taken, TestSize
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid start");
-    std::string queryNotSyncValid = "SELECT file_id, date_taken from Photos where display_name ='not_sync_valid.jpg'";
-    auto resultSet = photosStorePtr -> QuerySql(queryNotSyncValid);
+    std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='not_sync_valid.jpg'";
+    auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid end");
 }
 
@@ -265,11 +266,33 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_invalid, TestSize
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_invalid start");
     std::string queryNotSyncInvalid =
-        "SELECT file_id, date_taken from Photos where display_name ='not_sync_invalid.jpg'";
-    auto resultSet = photosStorePtr -> QuerySql(queryNotSyncInvalid);
+        "SELECT file_id from Photos where display_name ='not_sync_invalid.jpg'";
+    auto resultSet = photosStorePtr->QuerySql(queryNotSyncInvalid);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_FALSE(resultSet -> GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_invalid end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_camera, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_camera start");
+    std::string queryNotSyncPendingCamera =
+        "SELECT file_id from Photos where display_name ='not_sync_pending_camera.jpg'";
+    auto resultSet = photosStorePtr->QuerySql(queryNotSyncPendingCamera);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_camera end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_others, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_others start");
+    std::string queryNotSyncPendingOthers =
+        "SELECT file_id from Photos where display_name ='not_sync_pending_others.jpg'";
+    auto resultSet = photosStorePtr->QuerySql(queryNotSyncPendingOthers);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_others end");
 }
 } // namespace Media
 } // namespace OHOS

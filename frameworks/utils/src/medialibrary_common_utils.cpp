@@ -119,9 +119,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     MEDIA_DATA_DB_MEDIA_TYPE,
     MEDIA_DATA_DB_SIZE,
     MEDIA_DATA_DB_DATE_ADDED,
-    MEDIA_DATA_DB_DATE_ADDED_S,
     MEDIA_DATA_DB_DATE_MODIFIED,
-    MEDIA_DATA_DB_DATE_MODIFIED_S,
     MEDIA_DATA_DB_DATE_TAKEN,
     MEDIA_DATA_DB_TITLE,
     MEDIA_DATA_DB_ARTIST,
@@ -134,7 +132,6 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     MEDIA_DATA_DB_BUCKET_NAME,
     DIRECTORY_DB_DIRECTORY_TYPE,
     MEDIA_DATA_DB_DATE_TRASHED,
-    MEDIA_DATA_DB_DATE_TRASHED_S,
     MEDIA_DATA_DB_BUCKET_ID,
     MEDIA_DATA_DB_ALBUM_ID,
     DEVICE_DB_NETWORK_ID,
@@ -168,6 +165,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     LABEL,
     AESTHETICS_SCORE,
     FACE,
+    SALIENCY,
 };
 
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
