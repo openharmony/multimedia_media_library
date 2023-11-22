@@ -40,12 +40,15 @@ void CleanVisionData()
     MediaLibraryCommand aesCmd(aesUri);
     Uri shieldUri(URI_SHIELD);
     MediaLibraryCommand shieldCmd(shieldUri);
+    Uri salUri(URI_SALIENCY);
+    MediaLibraryCommand salCmd(salUri);
     Uri totalUri(URI_TOTAL);
     MediaLibraryCommand totalCmd(totalUri);
     MediaLibraryDataManager::GetInstance()->Delete(ocrCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(labelCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(aesCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(shieldCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(salCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(totalCmd, predicates);
 }
 
@@ -1286,6 +1289,90 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QuerySegmentation_Test_001, TestSize.Lev
     DataShare::DataSharePredicates predicates1;
     predicates1.EqualTo(FILE_ID, 4);
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertSal_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_InsertSal_Test_001::Start");
+    Uri salUri(URI_SALIENCY);
+    MediaLibraryCommand cmd(salUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 1);
+    valuesBucket.Put(SALIENCY_X, 0.5);
+    valuesBucket.Put(SALIENCY_Y, 0.5);
+    valuesBucket.Put(SALIENCY_VERSION, "1");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+    MEDIA_INFO_LOG("Vision_InsertSal_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertSal_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_InsertSal_Test_002::Start");
+    Uri salUri(URI_SALIENCY);
+    MediaLibraryCommand cmd(salUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 2);
+    valuesBucket.Put(SALIENCY_X, 0.5);
+    valuesBucket.Put(SALIENCY_Y, 0.5);
+    valuesBucket.Put(SALIENCY_VERSION, "1.01");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 2);
+    valuesBucket2.Put(SALIENCY_X, 0.5);
+    valuesBucket2.Put(SALIENCY_Y, 0.5);
+    valuesBucket2.Put(SALIENCY_VERSION, "1.01");
+    auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    EXPECT_GT(retVal, 0);
+    EXPECT_LT(retVal2, 0);
+    MEDIA_INFO_LOG("Vision_InsertSal_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateSal_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_UpdateSal_Test_001::Start");
+    Uri salUri(URI_SALIENCY);
+    MediaLibraryCommand cmd(salUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 3);
+    valuesBucket.Put(SALIENCY_X, 0.5);
+    valuesBucket.Put(SALIENCY_Y, 0.5);
+    valuesBucket.Put(SALIENCY_VERSION, "1.01");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(SALIENCY_X, 0.1);
+    updateValues.Put(SALIENCY_VERSION, "2.01");
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("123421");
+    inValues.push_back("3");
+    predicates.In(FILE_ID, inValues);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ((retVal == 1), true);
+    MEDIA_INFO_LOG("Vision_UpdateSal_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteSal_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_DeleteSal_Test_001::Start");
+    Uri salUri(URI_SALIENCY);
+    MediaLibraryCommand cmd(salUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 4);
+    valuesBucket.Put(SALIENCY_X, 0.5);
+    valuesBucket.Put(SALIENCY_Y, 0.5);
+    valuesBucket.Put(SALIENCY_VERSION, "1.01");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    DataShare::DataShareValuesBucket valuesBucket2;
+    valuesBucket2.Put(FILE_ID, 5);
+    valuesBucket2.Put(SALIENCY_X, 0.1);
+    valuesBucket2.Put(SALIENCY_Y, 0.2);
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
+    DataShare::DataSharePredicates predicates;
+    predicates.GreaterThan(FILE_ID, 3);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ((retVal == 2), true);
+    MEDIA_INFO_LOG("Vision_DeleteSal_Test_001::retVal = %{public}d. End", retVal);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_001, TestSize.Level0)

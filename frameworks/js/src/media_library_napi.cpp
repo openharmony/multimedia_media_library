@@ -5375,6 +5375,7 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_RECOMMENDATION", AnalysisType::ANALYSIS_RECOMMENDATION },
         { "ANALYSIS_SEGMENTATION", AnalysisType::ANALYSIS_SEGMENTATION },
         { "ANALYSIS_COMPOSITION", AnalysisType::ANALYSIS_COMPOSITION },
+        { "ANALYSIS_SALIENCY", AnalysisType::ANALYSIS_SALIENCY },
     };
 
     napi_value result = nullptr;

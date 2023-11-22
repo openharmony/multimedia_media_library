@@ -66,6 +66,7 @@ enum class OperationObject : uint32_t {
     VISION_TOTAL,
     VISION_IMAGE_FACE,
     VISION_FACE_TAG,
+    VISION_SALIENCY,
     VISION_SHIELD,           // Vision end
     GEO_DICTIONARY,
     GEO_KNOWLEDGE,

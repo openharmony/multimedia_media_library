@@ -17,8 +17,6 @@
 
 #include <limits>
 #include <string>
-#include <tuple>
-#include <vector>
 
 namespace OHOS {
 namespace Media {
@@ -57,6 +55,7 @@ enum AnalysisType : int32_t {
     ANALYSIS_RECOMMENDATION,
     ANALYSIS_SEGMENTATION,
     ANALYSIS_COMPOSITION,
+    ANALYSIS_SALIENCY,
 };
 
 enum PhotoAlbumType : int32_t {

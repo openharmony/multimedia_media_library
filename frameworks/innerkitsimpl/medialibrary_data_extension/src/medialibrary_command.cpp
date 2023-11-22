@@ -323,6 +323,7 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     { VISION_TOTAL_TABLE, OperationObject::VISION_TOTAL },
     { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
     { VISION_FACE_TAG_TABLE, OperationObject::VISION_FACE_TAG },
+    { VISION_SALIENCY_TABLE, OperationObject::VISION_SALIENCY },
     { VISION_SHIELD_TABLE, OperationObject::VISION_SHIELD },
     { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
     { PAH_ANA_LABEL, OperationObject::VISION_LABEL },
@@ -332,6 +333,7 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     { PAH_ANA_RECOMMENDATION, OperationObject::VISION_RECOMMENDATION },
     { PAH_ANA_SEGMENTATION, OperationObject::VISION_SEGMENTATION },
     { PAH_ANA_COMPOSITION, OperationObject::VISION_COMPOSITION },
+    { PAH_ANA_SALIENCY, OperationObject::VISION_SALIENCY },
 
     // use in Location Analyse
     { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
@@ -414,6 +416,7 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::VISION_OCR, { { OperationType::UNKNOWN_TYPE, VISION_OCR_TABLE } } },
     { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
     { OperationObject::VISION_AESTHETICS, { { OperationType::UNKNOWN_TYPE, VISION_AESTHETICS_TABLE } } },
+    { OperationObject::VISION_SALIENCY, { { OperationType::UNKNOWN_TYPE, VISION_SALIENCY_TABLE } } },
     { OperationObject::VISION_OBJECT, { { OperationType::UNKNOWN_TYPE, VISION_OBJECT_TABLE } } },
     { OperationObject::VISION_RECOMMENDATION, { { OperationType::UNKNOWN_TYPE, VISION_RECOMMENDATION_TABLE } } },
     { OperationObject::VISION_SEGMENTATION, { { OperationType::UNKNOWN_TYPE, VISION_SEGMENTATION_TABLE } } },
@@ -427,6 +430,7 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
     { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
     { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },
+    { OperationObject::VISION_SALIENCY, { { OperationType::UNKNOWN_TYPE, PAH_ANA_SALIENCY } } },
 
     // search
     { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },

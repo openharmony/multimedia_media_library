@@ -909,6 +909,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_OCR,
     CREATE_TAB_ANALYSIS_LABEL,
     CREATE_TAB_ANALYSIS_AESTHETICS,
+    CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
     CREATE_TAB_ANALYSIS_OBJECT,
     CREATE_TAB_ANALYSIS_RECOMMENDATION,
     CREATE_TAB_ANALYSIS_SEGMENTATION,
@@ -1235,6 +1236,7 @@ static void AddAnalysisTables(RdbStore &store)
         CREATE_TAB_ANALYSIS_OCR,
         CREATE_TAB_ANALYSIS_LABEL,
         CREATE_TAB_ANALYSIS_AESTHETICS,
+        CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
         CREATE_TAB_ANALYSIS_TOTAL,
         CREATE_TAB_APPLICATION_SHIELD,
         CREATE_VISION_UPDATE_TRIGGER,
@@ -1259,6 +1261,20 @@ static void AddFaceTables(RdbStore &store)
         CREATE_IMAGE_FACE_INDEX
     };
     MEDIA_INFO_LOG("start add face tables");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void AddSaliencyTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
+        DROP_INSERT_VISION_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER,
+        ADD_SALIENCY_STATUS_COLUMN,
+        UPDATE_SALIENCY_TOTAL_VALUE,
+        UPDATE_SALIENCY_NOT_SUPPORT_VALUE
+    };
+    MEDIA_INFO_LOG("start add saliency tables");
     ExecSqls(executeSqlStrs, store);
 }
 
@@ -1371,6 +1387,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
         "DROP TRIGGER IF EXISTS update_vision_trigger",
         "DROP TABLE IF EXISTS tab_analysis_ocr",
         "DROP TABLE IF EXISTS tab_analysis_label",
+        "DROP TABLE IF EXISTS tab_analysis_saliency_detect",
         "DROP TABLE IF EXISTS tab_analysis_aesthetics_score",
         "DROP TABLE IF EXISTS tab_analysis_object",
         "DROP TABLE IF EXISTS tab_analysis_recommendation",
@@ -1385,6 +1402,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     ExecSqls(executeSqlStrs, *rdbStore_);
     AddAnalysisTables(*rdbStore_);
     AddFaceTables(*rdbStore_);
+    AddSaliencyTables(*rdbStore_);
     AddAestheticCompositionTables(*rdbStore_);
 }
 
@@ -1830,6 +1848,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
         AddAestheticCompositionTables(store);
     }
 
+    if (oldVersion < VERSION_ADD_SALIENCY_TABLE) {
+        AddSaliencyTables(store);
+    }
+    
     if (oldVersion < VERSION_ADD_SEARCH_TABLE) {
         AddSearchTable(store);
     }

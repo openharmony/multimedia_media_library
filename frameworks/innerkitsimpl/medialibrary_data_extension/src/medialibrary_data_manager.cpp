@@ -414,6 +414,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::VISION_OCR:
         case OperationObject::VISION_LABEL:
         case OperationObject::VISION_AESTHETICS:
+        case OperationObject::VISION_SALIENCY:
         case OperationObject::VISION_OBJECT:
         case OperationObject::VISION_RECOMMENDATION:
         case OperationObject::VISION_SEGMENTATION:
@@ -606,6 +607,7 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
         case OperationObject::VISION_OCR:
         case OperationObject::VISION_LABEL:
         case OperationObject::VISION_AESTHETICS:
+        case OperationObject::VISION_SALIENCY:
         case OperationObject::VISION_OBJECT:
         case OperationObject::VISION_RECOMMENDATION:
         case OperationObject::VISION_SEGMENTATION:
