@@ -19,14 +19,13 @@
 
 #include <chrono>
 
-#include "medialibrary_asset_operations.h"
-#include "medialibrary_photo_operations.h"
 #include "abs_rdb_predicates.h"
 #include "fetch_result.h"
 #include "file_asset.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_data_manager.h"
@@ -34,6 +33,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_type_const.h"
@@ -158,7 +158,7 @@ InsertResult InsertPhoto(string &packageName)
     string displayName = GetDisPlayName(title);
     MEDIA_INFO_LOG("title is: %{public}s, displayName is: %{public}s",
         title.c_str(), displayName.c_str());
-    string data = "/storage/cloud/files/photo/1/" +GetDisPlayName(title);
+    string data = "/storage/cloud/files/photo/1/" + GetDisPlayName(title);
     ValuesBucket valuesBucket;
     valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, data);
     valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
@@ -185,7 +185,7 @@ InsertResult InsertPhoto(string &packageName)
 
 void UpdatePhotoTrashed(int64_t &fileId, bool isDelete)
 {
-    EXPECT_NE((g_rdbStore == nullptr), true);
+    ASSERT_NE(g_rdbStore, nullptr);
     TransactionOperations transactionOprn(g_rdbStore->GetRaw());
     transactionOprn.Start();
     int32_t changedRows = -1;
@@ -205,7 +205,7 @@ void UpdatePhotoTrashed(int64_t &fileId, bool isDelete)
 
 void HidePhoto(int64_t fileId, int value)
 {
-    EXPECT_NE((g_rdbStore == nullptr), true);
+    ASSERT_NE(g_rdbStore, nullptr);
     TransactionOperations transactionOprn(g_rdbStore->GetRaw());
     transactionOprn.Start();
     int32_t changedRows = -1;
@@ -219,9 +219,9 @@ void HidePhoto(int64_t fileId, int value)
     transactionOprn.Finish();
 }
 
-void UpdateDisPlayname(int64_t &fileId, string &disPlayname)
+void UpdateDisPlayName(int64_t &fileId, string &disPlayname)
 {
-    EXPECT_NE((g_rdbStore == nullptr), true);
+    ASSERT_NE(g_rdbStore, nullptr);
     TransactionOperations transactionOprn(g_rdbStore->GetRaw());
     transactionOprn.Start();
     int32_t changedRows = -1;
@@ -239,15 +239,15 @@ void UpdateDisPlayname(int64_t &fileId, string &disPlayname)
 void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptPhotoCount,
     string exceptCoverUri)
 {
-    vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI};
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI };
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,
         MediaLibraryApi::API_10);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_NAME, packageName);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SYSTEM));
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE));
-    EXPECT_NE((g_rdbStore == nullptr), true);
+    ASSERT_NE(g_rdbStore, nullptr);
     auto resultSet = g_rdbStore->Query(cmd, columns);
-    EXPECT_NE((resultSet == nullptr), true);
+    ASSERT_NE(resultSet, nullptr);
     EXPECT_EQ(resultSet->GoToFirstRow(), E_OK);
     int32_t count = -1;
     int32_t ret = resultSet->GetRowCount(count);
@@ -282,7 +282,7 @@ void ValidNullPackageNameSourceAlbum()
 void DeletePhoto(int64_t &fileId)
 {
     MEDIA_INFO_LOG("DeletePhoto fileId is %{public}s", to_string(fileId).c_str());
-    EXPECT_NE((g_rdbStore == nullptr), true);
+    ASSERT_NE(g_rdbStore, nullptr);
     TransactionOperations transactionOprn(g_rdbStore->GetRaw());
     transactionOprn.Start();
     int32_t deletedRows = -1;
@@ -298,9 +298,9 @@ void MediaLibraryAlbumSourceTest::SetUpTestCase()
     MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest SetUpTestCase start");
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    ASSERT_NE(g_rdbStore, nullptr);
     ClearData();
     InitSourceAlbumTrigger();
-    EXPECT_NE((g_rdbStore == nullptr), true);
     number = 0;
     MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest SetUpTestCase end");
 }
@@ -362,7 +362,7 @@ HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_001,
     InsertPhoto(packageName);
     // update photo name
     string modifyDisPlayName = "testModify001.png";
-    UpdateDisPlayname(result.fileId, modifyDisPlayName);
+    UpdateDisPlayName(result.fileId, modifyDisPlayName);
     // verify
     result.displayName = modifyDisPlayName;
     ValidPhotoAlbumValue(packageName, 1, 2, GetCoverUri(result));
