@@ -58,6 +58,7 @@ const int32_t NUM_2 = 2;
 const int32_t NUM_3 = 3;
 const string DATE_FUNCTION = "DATE(";
 const int32_t FORMID_MAX_LEN = 19;
+const int64_t MAX_INT64 = 9223372036854775807;
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
@@ -4827,13 +4828,8 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoIndex(napi_env env, napi_callbac
         PhotoAccessGetPhotoIndexExec, GetPhotoIndexAsyncCallbackComplete);
 }
 
-static napi_status CheckFormId(MediaLibraryAsyncContext &context)
+static napi_status CheckFormId(string &formId)
 {
-    bool isValid = false;
-    string formId = context.valuesBucket.Get(FormMap::FORMMAP_FORM_ID, isValid);
-    if (isValid == false) {
-        return napi_invalid_arg;
-    }
     if (formId.empty() || formId.length() > FORMID_MAX_LEN) {
         return napi_invalid_arg;
     }
@@ -4841,6 +4837,10 @@ static napi_status CheckFormId(MediaLibraryAsyncContext &context)
         if (!isdigit(formId[i])) {
             return napi_invalid_arg;
         }
+    }
+    unsigned long long num = stoull(formId);
+    if (num > MAX_INT64) {
+        return napi_invalid_arg;
     }
     return napi_ok;
 }
@@ -4870,7 +4870,12 @@ static napi_status ParseSaveFormInfoOption(napi_env env, napi_value arg, MediaLi
         CHECK_COND_RET(result == napi_ok, result, "failed to get string");
         context.valuesBucket.Put(iter.second, string(buffer));
     }
-    return CheckFormId(context);
+    bool isValid = false;
+    string tempFormId = context.valuesBucket.Get(FormMap::FORMMAP_FORM_ID, isValid);
+    if (isValid == false) {
+        return napi_invalid_arg;
+    }
+    return CheckFormId(tempFormId);
 }
 
 static napi_value ParseArgsSaveFormInfo(napi_env env, napi_callback_info info,
@@ -4882,7 +4887,7 @@ static napi_value ParseArgsSaveFormInfo(napi_env env, napi_callback_info info,
         maxArgs) == napi_ok, "Failed to get object info");
 
     CHECK_COND_WITH_MESSAGE(env, ParseSaveFormInfoOption(env, context->argv[ARGS_ZERO], *context) == napi_ok,
-        "Parse asset create option failed");
+        "Parse formInfo Option failed");
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -4956,16 +4961,7 @@ static napi_value ParseArgsRemoveFormInfo(napi_env env, napi_callback_info info,
     CHECK_COND_WITH_MESSAGE(env, napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res) == napi_ok,
         "failed to get string param");
     formId = string(buffer);
-    if (formId.empty() || formId.length() > FORMID_MAX_LEN) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check empty formId!");
-        return nullptr;
-    }
-    for (int i = 0; i < formId.length(); i++) {
-        if (!isdigit(formId[i])) {
-            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check empty formId!");
-            return nullptr;
-        }
-    }
+    CHECK_COND_WITH_MESSAGE(env, CheckFormId(formId) == napi_ok, "FormId is invalid");
     context->formId = formId;
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
