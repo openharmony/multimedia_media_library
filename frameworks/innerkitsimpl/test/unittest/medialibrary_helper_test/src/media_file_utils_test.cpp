@@ -469,9 +469,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileTablePath_Test_003, Te
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsFileTablePath_Test_004, TestSize.Level0)
 {
-    string filePath = ROOT_MEDIA_DIR + DOC_DIR_VALUES;
-    EXPECT_EQ(MediaFileUtils::IsFileTablePath(filePath), true);
-    filePath = ROOT_MEDIA_DIR + DOWNLOAD_DIR_VALUES;
+    string filePath = ROOT_MEDIA_DIR + DOCS_PATH;
     EXPECT_EQ(MediaFileUtils::IsFileTablePath(filePath), true);
     filePath = ROOT_MEDIA_DIR + AUDIO_DIR_VALUES;
     EXPECT_EQ(MediaFileUtils::IsFileTablePath(filePath), false);
