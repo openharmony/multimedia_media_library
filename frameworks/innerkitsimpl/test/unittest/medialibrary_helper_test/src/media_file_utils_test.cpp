@@ -24,6 +24,7 @@
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_type_const.h"
+#include "medialibrary_errno.h"
 #include "userfile_manager_types.h"
 
 using namespace std;
@@ -586,6 +587,183 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Tes
     const string virtualUri = "file://docs/storage/Share/12.txt";
     string realUri = MediaFileUtils::GetRealUriFromVirtualUri(virtualUri);
     EXPECT_EQ(realUri, virtualUri);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUriV10_Test_001, TestSize.Level0)
+{
+    int32_t mediaType = MEDIA_TYPE_FILE;
+    string networkId = "testNetWorkId";
+    string uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId);
+    EXPECT_EQ(uri, "datashare://testNetWorkId/media/file");
+
+    mediaType = MEDIA_TYPE_AUDIO;
+    uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId);
+    EXPECT_EQ(uri, "datashare://testNetWorkId/media/Audio");
+
+    mediaType = MEDIA_TYPE_VIDEO;
+    uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId);
+    EXPECT_EQ(uri, "datashare://testNetWorkId/media/Photo");
+
+    mediaType = MEDIA_TYPE_IMAGE;
+    uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId);
+    EXPECT_EQ(uri, "datashare://testNetWorkId/media/Photo");
+
+    mediaType = MEDIA_TYPE_FILE;
+    uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId);
+    EXPECT_EQ(uri, "datashare://testNetWorkId/media/file");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetLastDentry_Test_001, TestSize.Level0)
+{
+    string testPath;
+    string uri = MediaFileUtils::GetLastDentry(testPath);
+    EXPECT_EQ(uri, "");
+
+    testPath = "datashare://testpath/media/file";
+    uri = MediaFileUtils::GetLastDentry(testPath);
+    EXPECT_EQ(uri, "file");
+
+    testPath = "datashare://";
+    uri = MediaFileUtils::GetLastDentry(testPath);
+    EXPECT_EQ(uri, "");
+
+    testPath = "datashare://test/testdir";
+    uri = MediaFileUtils::GetLastDentry(testPath);
+    EXPECT_EQ(uri, "testdir");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ModifyAsset_Test_001, TestSize.Level0)
+{
+    string oldPath;
+    string newPath;
+    int32_t ret = MediaFileUtils::ModifyAsset(oldPath, newPath);
+    EXPECT_EQ(ret, E_MODIFY_DATA_FAIL);
+
+    oldPath = "";
+    newPath = "datashare://test";
+    ret = MediaFileUtils::ModifyAsset(oldPath, newPath);
+    EXPECT_EQ(ret, E_MODIFY_DATA_FAIL);
+
+    oldPath = "datashare://test";
+    newPath = "";
+    ret = MediaFileUtils::ModifyAsset(oldPath, newPath);
+    EXPECT_EQ(ret, E_MODIFY_DATA_FAIL);
+
+    oldPath = "datashare://test";
+    newPath = "datashare://test/Photo";
+    ret = MediaFileUtils::ModifyAsset(oldPath, newPath);
+    EXPECT_EQ(ret, E_NO_SUCH_FILE);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ModifyAsset_Test_002, TestSize.Level0)
+{
+    string oldPath = "datashare://test/Photo";
+    string newPath = "datashare://test/Download";
+    int32_t ret = MediaFileUtils::ModifyAsset(oldPath, newPath);
+    EXPECT_EQ(ret, E_NO_SUCH_FILE);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_StrCreateTime_Test_001, TestSize.Level0)
+{
+    string format = "test";
+    int64_t time = 1234567890;
+    string strTime = MediaFileUtils::StrCreateTime(format, time);
+    EXPECT_EQ(strTime, "test");
+
+    format = "";
+    time = 11111111111;
+    strTime = MediaFileUtils::StrCreateTime(format, time);
+    EXPECT_EQ(strTime, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateAsset_Test_001, TestSize.Level0)
+{
+    string filePath;
+    int32_t ret = MediaFileUtils::CreateAsset(filePath);
+    EXPECT_EQ(ret, E_VIOLATION_PARAMETERS);
+
+    filePath = "datashare://test";
+    MediaFileUtils::CreateAsset(filePath);
+    EXPECT_EQ(ret, E_VIOLATION_PARAMETERS);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DeleteAsset_Test_001, TestSize.Level0)
+{
+    string filePath;
+    int32_t ret = MediaFileUtils::DeleteAsset(filePath);
+    EXPECT_EQ(ret, E_ERR);
+
+    filePath = "datashare://test";
+    MediaFileUtils::DeleteAsset(filePath);
+    EXPECT_EQ(ret, E_ERR);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsUriV10_Test_001, TestSize.Level0)
+{
+    string mediaType = URI_TYPE_PHOTO;
+    bool ret = MediaFileUtils::IsUriV10(mediaType);
+    EXPECT_EQ(ret, true);
+
+    mediaType = URI_TYPE_PHOTO_ALBUM;
+    ret = MediaFileUtils::IsUriV10(mediaType);
+    EXPECT_EQ(ret, true);
+
+    mediaType = URI_TYPE_AUDIO_V10;
+    ret = MediaFileUtils::IsUriV10(mediaType);
+    EXPECT_EQ(ret, true);
+
+    mediaType = "";
+    ret = MediaFileUtils::IsUriV10(mediaType);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UriAppendKeyValue_Test_001, TestSize.Level0)
+{
+    string uri;
+    string key;
+    string value;
+    MediaFileUtils::UriAppendKeyValue(uri, key, value);
+    EXPECT_EQ((uri == ""), false);
+    EXPECT_EQ((key == ""), true);
+    EXPECT_EQ((value == ""), true);
+
+    uri = "datashare://test";
+    key = "test";
+    value = "testFile";
+    MediaFileUtils::UriAppendKeyValue(uri, key, value);
+    EXPECT_EQ((uri == ""), false);
+    EXPECT_EQ((key == ""), false);
+    EXPECT_EQ((value == ""), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Encode_Test_001, TestSize.Level0)
+{
+    string uri;
+    string str = MediaFileUtils::Encode(uri);
+    EXPECT_EQ((str == ""), true);
+
+    uri = "test";
+    str = MediaFileUtils::Encode(uri);
+    EXPECT_EQ((str == ""), false);
+
+    uri = "test/Photo";
+    str = MediaFileUtils::Encode(uri);
+    EXPECT_EQ((str == ""), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriByExtrConditions_Test_001, TestSize.Level0)
+{
+    string prefix;
+    string fileId;
+    string suffix;
+    string str = MediaFileUtils::GetUriByExtrConditions(prefix, fileId, suffix);
+    EXPECT_EQ(str, "");
+
+    prefix = "test";
+    fileId = "1234567890";
+    suffix = "file";
+    str = MediaFileUtils::GetUriByExtrConditions(prefix, fileId, suffix);
+    EXPECT_EQ(str, "test1234567890file");
 }
 } // namespace Media
 } // namespace OHOS
