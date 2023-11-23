@@ -249,7 +249,7 @@ static bool SetAssetPropertyExecute(
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
     predicates.SetWhereClause(PhotoColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({to_string(fileAsset->GetId())});
+    predicates.SetWhereArgs({ to_string(fileAsset->GetId()) });
     switch (changeOperation) {
         case AssetChangeOperation::SET_FAVORITE:
             uri = PAH_UPDATE_PHOTO;
