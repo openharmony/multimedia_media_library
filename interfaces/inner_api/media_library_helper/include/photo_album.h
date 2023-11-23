@@ -49,6 +49,12 @@ public:
     void SetCount(const int32_t count);
     int32_t GetCount() const;
 
+    void SetImageCount(const int32_t count);
+    int32_t GetImageCount() const;
+
+    void SetVideoCount(const int32_t count);
+    int32_t GetVideoCount() const;
+
     void SetRelativePath(const std::string &logicalRelativePath);
     const std::string& GetRelativePath() const;
 
@@ -72,6 +78,8 @@ private:
     std::string coverUri_;
     int64_t dateModified_;
     int32_t count_;
+    int32_t imageCount_;
+    int32_t videoCount_;
     std::string relativePath_;
 
     ResultNapiType resultNapiType_;

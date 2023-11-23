@@ -112,6 +112,26 @@ int32_t PhotoAlbum::GetCount() const
     return count_;
 }
 
+void PhotoAlbum::SetImageCount(const int32_t count)
+{
+    imageCount_ = count;
+}
+
+int32_t PhotoAlbum::GetImageCount() const
+{
+    return imageCount_;
+}
+
+void PhotoAlbum::SetVideoCount(const int32_t count)
+{
+    videoCount_ = count;
+}
+
+int32_t PhotoAlbum::GetVideoCount() const
+{
+    return videoCount_;
+}
+
 void PhotoAlbum::SetRelativePath(const string &relativePath)
 {
     relativePath_ = relativePath;

@@ -36,7 +36,11 @@ public:
 
     int32_t GetAlbumId() const;
     int32_t GetCount() const;
+    int32_t GetImageCount() const;
+    int32_t GetVideoCount() const;
     void SetCount(int32_t count);
+    void SetImageCount(int32_t count);
+    void SetVideoCount(int32_t count);
     const std::string& GetAlbumUri() const;
     const std::string& GetCoverUri() const;
     int64_t GetDateModified() const;
@@ -78,6 +82,8 @@ private:
     static napi_value JSPhotoAccessSetAlbumName(napi_env env, napi_callback_info info);
     static napi_value JSPhotoAccessGetAlbumUri(napi_env env, napi_callback_info info);
     static napi_value JSPhotoAccessGetAlbumCount(napi_env env, napi_callback_info info);
+    static napi_value JSPhotoAccessGetAlbumImageCount(napi_env env, napi_callback_info info);
+    static napi_value JSPhotoAccessGetAlbumVideoCount(napi_env env, napi_callback_info info);
     static napi_value JSPhoteAccessGetPhotoAssets(napi_env env, napi_callback_info info);
 
     static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
@@ -95,6 +101,9 @@ private:
 
 struct PhotoAlbumNapiAsyncContext : public NapiError {
     int32_t changedRows;
+    int32_t newCount;
+    int32_t newImageCount;
+    int32_t newVideoCount;
     std::vector<std::string> fetchColumn;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
