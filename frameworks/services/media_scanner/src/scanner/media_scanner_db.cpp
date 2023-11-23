@@ -115,6 +115,71 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
 #endif
 }
 
+static inline void SetDateDay(const int64_t dateAdded, ValuesBucket &outValues)
+{
+    outValues.PutString(PhotoColumn::PHOTO_DATE_YEAR,
+        MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
+    outValues.PutString(PhotoColumn::PHOTO_DATE_MONTH,
+        MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
+    outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
+        MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
+}
+
+static inline void SetDateAdded(const int64_t dateAdded, const Metadata &metadata, ValuesBucket &outValues)
+{
+    outValues.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
+    MediaType type = metadata.GetFileMediaType();
+    if ((type != MEDIA_TYPE_PHOTO) && (type != MEDIA_TYPE_IMAGE) && (type != MEDIA_TYPE_VIDEO)) {
+        return;
+    }
+    SetDateDay(dateAdded, outValues);
+}
+
+static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
+{
+    int64_t dateAdded = metadata.GetFileDateAdded();
+    if (dateAdded == 0) {
+        int64_t dateTaken = metadata.GetDateTaken();
+        if (dateTaken == 0) {
+            int64_t dateModified = metadata.GetFileDateModified();
+            if (dateModified == 0) {
+                dateAdded = MediaFileUtils::UTCTimeSeconds();
+                MEDIA_WARN_LOG("Invalid dateAdded time, use current time instead: %{public}lld", dateAdded);
+            } else {
+                MEDIA_WARN_LOG("Invalid dateAdded time, use dateModified instead: %{public}lld", dateAdded);
+            }
+        } else {
+            dateAdded = dateTaken;
+            MEDIA_WARN_LOG("Invalid dateAdded time, use dateTaken instead: %{public}lld", dateAdded);
+        }
+    }
+    SetDateAdded(dateAdded, metadata, outValues);
+}
+
+static inline void FixDateDayIfNeeded(const Metadata &metadata, ValuesBucket &outValues)
+{
+    MediaType type = metadata.GetFileMediaType();
+    if ((type != MEDIA_TYPE_PHOTO) && (type != MEDIA_TYPE_IMAGE) && (type != MEDIA_TYPE_VIDEO)) {
+        return;
+    }
+    int64_t dateAdded = metadata.GetFileDateAdded();
+    string dateDayOld = metadata.GetDateDay();
+    string dateDayNew = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded);
+    if (dateDayOld != dateDayNew) {
+        SetDateDay(dateAdded, outValues);
+    }
+}
+
+static inline void HandleDateAdded(const Metadata &metadata, const bool isInsert, ValuesBucket &outValues)
+{
+    if (isInsert) {
+        InsertDateAdded(metadata, outValues);
+        return;
+    }
+
+    FixDateDayIfNeeded(metadata, outValues);
+}
+
 static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &values, bool isInsert,
     const string &table)
 {
@@ -131,17 +196,8 @@ static void SetValuesFromMetaDataApi9(const Metadata &metadata, ValuesBucket &va
     values.PutLong(MEDIA_DATA_DB_DATE_TAKEN, metadata.GetDateTaken());
     values.PutLong(MEDIA_DATA_DB_TIME_PENDING, 0);
 
-    if (mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MEDIA_TYPE_VIDEO) {
-        values.PutString(PhotoColumn::PHOTO_DATE_YEAR, metadata.getDateYear());
-        values.PutString(PhotoColumn::PHOTO_DATE_MONTH, metadata.getDateMonth());
-        values.PutString(PhotoColumn::PHOTO_DATE_DAY, metadata.getDateDay());
-    }
-
     SetValuesFromMetaDataAndType(metadata, values, mediaType, table);
-
-    if (isInsert) {
-        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
-    }
+    HandleDateAdded(metadata, isInsert, values);
 }
 
 static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &values, bool isInsert,
@@ -173,9 +229,6 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
             values.PutString(PhotoColumn::PHOTO_USER_COMMENT, metadata.GetUserComment());
         }
         values.PutString(PhotoColumn::PHOTO_ALL_EXIF, metadata.GetAllExif());
-        values.PutString(PhotoColumn::PHOTO_DATE_YEAR, metadata.getDateYear());
-        values.PutString(PhotoColumn::PHOTO_DATE_MONTH, metadata.getDateMonth());
-        values.PutString(PhotoColumn::PHOTO_DATE_DAY, metadata.getDateDay());
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, metadata.GetShootingMode());
         values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, metadata.GetLastVisitTime());
 
@@ -189,9 +242,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         values.PutString(AudioColumn::AUDIO_ARTIST, metadata.GetFileArtist());
     }
 
-    if (isInsert) {
-        values.PutLong(MEDIA_DATA_DB_DATE_ADDED, metadata.GetFileDateAdded());
-    }
+    HandleDateAdded(metadata, isInsert, values);
 }
 
 static void GetTableNameByPath(int32_t mediaType, string &tableName, const string &path = "")
@@ -448,7 +499,8 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
         if (oprnObject == OperationObject::FILESYSTEM_PHOTO) {
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
-                MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING
+                MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING,
+                MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             columns = {
@@ -461,7 +513,8 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
             whereClause = MediaColumn::MEDIA_FILE_PATH + " = ?";
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
-                MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING
+                MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING,
+                MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             whereClause = MediaColumn::MEDIA_FILE_PATH + " = ?";

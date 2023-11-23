@@ -121,7 +121,7 @@ public:
     const std::string &getDateMonth() const;
 
     void SetDateDay(const VariantData &dateDay);
-    const std::string &getDateDay() const;
+    const std::string &GetDateDay() const;
 
     void SetShootingMode(const VariantData &shootingMode);
     const std::string &GetShootingMode() const;
