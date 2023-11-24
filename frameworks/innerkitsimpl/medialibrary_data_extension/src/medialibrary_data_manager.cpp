@@ -999,7 +999,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     } else if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::ANALYSIS_PHOTO_ALBUM) {
         queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
     } else if (oprnObject == OperationObject::SEARCH_TOTAL) {
-        queryResultSet = MediaLibrarySearchOperations::QueryOperation(cmd, columns);
+        queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
     } else {
         tracer.Start("QueryFile");
         queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
