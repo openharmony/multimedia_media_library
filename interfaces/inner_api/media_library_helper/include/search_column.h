@@ -25,7 +25,7 @@
 namespace OHOS {
 namespace Media {
 // table name
-const std::string SEARCH_TOTAL_TABLE = "tab_search_index";
+const std::string SEARCH_TOTAL_TABLE = "tab_analysis_search_index";
 
 // uri
 const std::string URI_SEARCH_INDEX = MEDIALIBRARY_DATA_URI + "/" + SEARCH_TOTAL_TABLE;
@@ -41,6 +41,7 @@ const std::string TBL_SEARCH_DATE_MODIFIED = "date_modified";
 const std::string TBL_SEARCH_PHOTO_STATUS = "photo_status";
 const std::string TBL_SEARCH_CV_STATUS = "cv_status";
 const std::string TBL_SEARCH_GEO_STATUS = "geo_status";
+const std::string TBL_SEARCH_VERSION = "version";
 const std::string TBL_SEARCH_SYSTEM_LANGUAGE = "system_language";
 
 // field status enum
@@ -64,6 +65,7 @@ const std::string CREATE_SEARCH_TOTAL_TABLE = "CREATE TABLE IF NOT EXISTS " + SE
     TBL_SEARCH_PHOTO_STATUS + " INT DEFAULT 0, " +
     TBL_SEARCH_CV_STATUS + " INT DEFAULT 0, " +
     TBL_SEARCH_GEO_STATUS + " INT DEFAULT 0, " +
+    TBL_SEARCH_VERSION + " INT DEFAULT 0, " +
     TBL_SEARCH_SYSTEM_LANGUAGE + " TEXT) ";
 
 // trigger
