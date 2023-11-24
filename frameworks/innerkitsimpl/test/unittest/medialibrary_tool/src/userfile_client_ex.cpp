@@ -22,6 +22,8 @@
 
 #include "datashare_abs_result_set.h"
 #include "datashare_predicates.h"
+#include "directory_ex.h"
+#include "iservice_registry.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -31,6 +33,7 @@
 #include "mimetype_utils.h"
 #include "scanner_utils.h"
 #include "string_ex.h"
+#include "system_ability_definition.h"
 #include "thumbnail_const.h"
 #include "uri.h"
 #include "userfile_client.h"
@@ -167,10 +170,29 @@ static inline std::string GetDeleteUri(const std::string &tableName)
     return uri;
 }
 
-bool UserFileClientEx::Init(const sptr<IRemoteObject> &token)
+static bool InitToken(const sptr<IRemoteObject> &token)
 {
     UserFileClient::Init(token);
     return UserFileClient::IsValid();
+}
+
+int32_t UserFileClientEx::Init()
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saManager == nullptr) {
+        MEDIA_ERR_LOG("get system ability mgr failed.");
+        return Media::E_ERR;
+    }
+    auto remoteObj = saManager->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
+    if (remoteObj == nullptr) {
+        MEDIA_ERR_LOG("GetSystemAbility Service failed.");
+        return Media::E_ERR;
+    }
+    if (!InitToken(remoteObj)) {
+        MEDIA_ERR_LOG("set DataShareHelper failed.");
+        return Media::E_ERR;
+    }
+    return Media::E_OK;
 }
 
 void UserFileClientEx::Clear()
@@ -179,8 +201,12 @@ void UserFileClientEx::Clear()
 }
 
 int32_t UserFileClientEx::InsertExt(const std::string &tableName, const std::string &name,
-    std::string &outString)
+    std::string &outString, bool isRestart)
 {
+    if (isRestart && Init() != Media::E_OK) {
+        MEDIA_ERR_LOG("Init failed");
+        return Media::E_ERR;
+    }
     std::string insertUriStr = GetInsertUri(tableName);
     if (insertUriStr.empty()) {
         MEDIA_ERR_LOG("insert failed. tableName:%{public}s, name:%{private}s", tableName.c_str(),
@@ -201,8 +227,12 @@ int32_t UserFileClientEx::InsertExt(const std::string &tableName, const std::str
 }
 
 int32_t UserFileClientEx::Query(const std::string &tableName, const std::string &uri,
-    std::shared_ptr<DataShare::DataShareResultSet> &resultSet)
+    std::shared_ptr<DataShare::DataShareResultSet> &resultSet, bool isRestart)
 {
+    if (isRestart && Init() != Media::E_OK) {
+        MEDIA_ERR_LOG("Init failed");
+        return Media::E_ERR;
+    }
     if (!CheckTableName(tableName)) {
         MEDIA_ERR_LOG("tableName %{public}s is Invalid", tableName.c_str());
         return Media::E_ERR;
@@ -241,8 +271,12 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
     return Media::E_OK;
 }
 
-int UserFileClientEx::Open(const std::string &uri, const std::string &mode)
+int UserFileClientEx::Open(const std::string &uri, const std::string &mode, bool isRestart)
 {
+    if (isRestart && Init() != Media::E_OK) {
+        MEDIA_ERR_LOG("Init failed");
+        return Media::E_ERR;
+    }
     if (uri.empty()) {
         return Media::E_FAIL;
     }
@@ -252,8 +286,12 @@ int UserFileClientEx::Open(const std::string &uri, const std::string &mode)
 }
 
 int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std::string &mode,
-    bool isCreateThumbSync)
+    bool isCreateThumbSync, bool isRestart)
 {
+    if (isRestart && Init() != Media::E_OK) {
+        MEDIA_ERR_LOG("Init failed");
+        return Media::E_ERR;
+    }
     if (!UserFileClient::IsValid()) {
         MEDIA_ERR_LOG("close failed. helper:null. uri:%{private}s, fileFd:%{public}d, mode:%{private}s",
             uri.c_str(), fileFd, mode.c_str());
@@ -292,8 +330,12 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
     return ret;
 }
 
-int32_t UserFileClientEx::Trash(const std::string &uri)
+int32_t UserFileClientEx::Trash(const std::string &uri, bool isRestart)
 {
+    if (isRestart && Init() != Media::E_OK) {
+        MEDIA_ERR_LOG("Init failed");
+        return Media::E_ERR;
+    }
     if (!UserFileClient::IsValid()) {
         MEDIA_ERR_LOG("close failed. helper:null.");
         return Media::E_FAIL;
@@ -325,8 +367,12 @@ int32_t UserFileClientEx::Trash(const std::string &uri)
     return ret;
 }
 
-int32_t UserFileClientEx::Delete(const std::string &uri)
+int32_t UserFileClientEx::Delete(const std::string &uri, bool isRestart)
 {
+    if (isRestart && Init() != Media::E_OK) {
+        MEDIA_ERR_LOG("Init failed");
+        return Media::E_ERR;
+    }
     if (!UserFileClient::IsValid()) {
         MEDIA_ERR_LOG("close failed. helper:null.");
         return Media::E_FAIL;
@@ -355,8 +401,12 @@ int32_t UserFileClientEx::Delete(const std::string &uri)
     return ret;
 }
 
-int32_t UserFileClientEx::Delete(bool isOnlyDeleteDb)
+int32_t UserFileClientEx::Delete(bool isOnlyDeleteDb, bool isRestart)
 {
+    if (isRestart && Init() != Media::E_OK) {
+        MEDIA_ERR_LOG("Init failed");
+        return Media::E_ERR;
+    }
     if (!UserFileClient::IsValid()) {
         MEDIA_ERR_LOG("close failed. helper:null.");
         return Media::E_FAIL;

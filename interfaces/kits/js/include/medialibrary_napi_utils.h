@@ -282,7 +282,7 @@ const std::vector<std::string> notifyTypeEnum {
 };
 
 const std::vector<std::string> requestPhotoTypeEnum {
-    "REQUEST_ALL_THUMBNAIL", "REQUEST_FAST_THUMBNAIL", "REQUEST_QUALITY_THUMBNAIL"
+    "REQUEST_ALL_THUMBNAILS", "REQUEST_FAST_THUMBNAIL", "REQUEST_QUALITY_THUMBNAIL"
 };
 
 const std::vector<std::string> fileKeyEnumValues {

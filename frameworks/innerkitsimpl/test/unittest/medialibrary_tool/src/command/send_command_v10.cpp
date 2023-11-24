@@ -33,9 +33,7 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
-static constexpr int32_t SLEEP_TIME = 10000;
-static constexpr int32_t SLEEP_INTERVAL = 100;
-static constexpr int32_t SLEEP_NOTIFY_TIME = 1000;
+static constexpr int32_t SLEEP_NOTIFY_TIME = 2000;
 
 struct FileInfo {
     Media::MediaType mediaType {Media::MediaType::MEDIA_TYPE_DEFAULT};
@@ -126,13 +124,13 @@ static std::string EncodeDisplayName(const std::string &displayName)
     return encodedStr;
 }
 
-static int32_t CreateRecord(const ExecEnv &env, FileInfo &fileInfo)
+static int32_t CreateRecord(const ExecEnv &env, FileInfo &fileInfo, bool isRestart)
 {
     const MediaType mediaType = fileInfo.mediaType;
     std::string tableName = UserFileClientEx::GetTableNameByMediaType(mediaType);
     const std::string displayName = EncodeDisplayName(fileInfo.displayName);
     string uri;
-    auto fileId = UserFileClientEx::InsertExt(tableName, displayName, uri);
+    auto fileId = UserFileClientEx::InsertExt(tableName, displayName, uri, isRestart);
     if (fileId <= 0) {
         printf("%s create record failed. fileId:%d, fileInfo:%s\n",
             STR_FAIL.c_str(), fileId, fileInfo.ToStr().c_str());
@@ -149,14 +147,14 @@ static int32_t CreateRecord(const ExecEnv &env, FileInfo &fileInfo)
     return Media::E_OK;
 }
 
-static int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo)
+static int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo, bool isRestart)
 {
     int32_t rfd = open(fileInfo.path.c_str(), O_RDONLY | O_CLOEXEC);
     if (rfd < 0) {
         printf("%s open file failed. rfd:%d, path:%s\n", STR_FAIL.c_str(), rfd, fileInfo.path.c_str());
         return Media::E_ERR;
     }
-    int32_t wfd = UserFileClientEx::Open(fileInfo.uri, Media::MEDIA_FILEMODE_WRITETRUNCATE);
+    int32_t wfd = UserFileClientEx::Open(fileInfo.uri, Media::MEDIA_FILEMODE_WRITETRUNCATE, isRestart);
     if (wfd <= 0) {
         printf("%s open failed. wfd:%d, uri:%s\n", STR_FAIL.c_str(), wfd, fileInfo.uri.c_str());
         close(rfd);
@@ -170,9 +168,9 @@ static int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo)
         return Media::E_ERR;
     }
     if (env.sendParam.isCreateThumbSyncInSend) {
-        ret = UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, true);
+        ret = UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, true, isRestart);
     } else {
-        ret = UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, false);
+        ret = UserFileClientEx::Close(fileInfo.uri, wfd, Media::MEDIA_FILEMODE_WRITETRUNCATE, false, isRestart);
     }
     if (ret != E_OK) {
         printf("close file has err [%d]\n", ret);
@@ -182,31 +180,52 @@ static int32_t WriteFile(const ExecEnv &env, const FileInfo &fileInfo)
     return ret;
 }
 
+static constexpr int MAX_RESTART_TIME = 5;
+static void RestartMediaLibraryServer(int32_t restartTime)
+{
+    printf("Run operations failed, restart Time %d\n", restartTime);
+    std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_NOTIFY_TIME));
+}
+
 static int32_t SendFile(const ExecEnv &env, FileInfo &fileInfo)
 {
-    if (CreateRecord(env, fileInfo) != Media::E_OK) {
+    int32_t restartTime = 0;
+
+    while (restartTime < MAX_RESTART_TIME) {
+        fileInfo.result = CreateRecord(env, fileInfo, (restartTime > 0) ? true : false);
+        if (fileInfo.result != Media::E_OK) {
+            restartTime++;
+            RestartMediaLibraryServer(restartTime);
+            continue;
+        } else {
+            break;
+        }
+    }
+    if (fileInfo.result != Media::E_OK) {
         return Media::E_ERR;
     }
+
     std::string tableName = UserFileClientEx::GetTableNameByUri(fileInfo.uri);
     if (tableName.empty()) {
         printf("%s uri issue. uri:%s\n", STR_FAIL.c_str(), fileInfo.uri.c_str());
         return Media::E_ERR;
     }
-    int32_t res = WriteFile(env, fileInfo);
-    if (res != Media::E_OK) {
-        return res;
+
+    while (restartTime < MAX_RESTART_TIME) {
+        fileInfo.result = WriteFile(env, fileInfo, (restartTime > 0) ? true : false);
+        if (fileInfo.result != Media::E_OK) {
+            restartTime++;
+            RestartMediaLibraryServer(restartTime);
+            continue;
+        } else {
+            break;
+        }
+    }
+    if (fileInfo.result != Media::E_OK) {
+        return Media::E_ERR;
     }
     fileInfo.result = Media::E_OK;
     return Media::E_OK;
-}
-
-static void SleepInterval(int32_t count)
-{
-    for (int i = 1; i <= SLEEP_TIME / SLEEP_NOTIFY_TIME; i++) {
-        printf("[wait] send file count [%d], sleep for [%d] ms, already sleep [%d]\n",
-            count, SLEEP_TIME, (i - 1) * SLEEP_NOTIFY_TIME);
-        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_NOTIFY_TIME));
-    }
 }
 
 static int32_t SendFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
@@ -215,9 +234,6 @@ static int32_t SendFiles(const ExecEnv &env, std::vector<FileInfo> &fileInfos)
     int correctCount = 0;
     for (auto &fileInfo : fileInfos) {
         ++count;
-        if (count % SLEEP_INTERVAL == 0) {
-            SleepInterval(count);
-        }
         int32_t ret = SendFile(env, fileInfo);
         if (ret != Media::E_OK) {
             printf("%s send uri [%s] failed.\n", STR_FAIL.c_str(), fileInfo.uri.c_str());
