@@ -37,13 +37,11 @@ public:
     static int32_t HandleStoreFormIdOperation(MediaLibraryCommand &cmd);
     static void PublishedChange(const std::string newUri, std::vector<int64_t> &formIds);
     static void GetFormMapFormId(const std::string &uri, std::vector<int64_t> &formIds);
-    static void DoPublishedChange(const std::string &uri);
     static std::string GetUriByFileId(const int32_t &fileId, const std::string &path);
     static bool GetFormIdWithEmptyUriState();
     static bool isHaveEmptyUri;
 
 private:
-    static std::string CheckAndGetNewUri(const std::string &uri, bool &isNext);
     static void ModifyFormMapMassage(const std::string &uri, int64_t &formId);
     static bool CheckQueryIsInDb(const OperationObject &operationObject, const std::string &queryId);
     static std::mutex mutex_;

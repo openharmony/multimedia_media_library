@@ -58,6 +58,7 @@ std::mutex MediaLibraryFormMapOperations::mutex_;
 bool MediaLibraryFormMapOperations::isHaveEmptyUri = false;
 const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_data";
 const string NO_PICTURES = "";
+const string IMAGE_DELETED = "-1";
 
 bool MediaLibraryFormMapOperations::GetFormIdWithEmptyUriState()
 {
@@ -106,56 +107,6 @@ string MediaLibraryFormMapOperations::GetUriByFileId(const int32_t &fileId, cons
     }
     string extraUri = MediaFileUtils::GetExtraUri(displayName, path, false);
     return MediaFileUri(MediaType(mediaType), ToString(fileId), "", MEDIA_API_VERSION_V10,  extraUri).ToString();
-}
-
-string MediaLibraryFormMapOperations::CheckAndGetNewUri(const string &uri, bool &isNext)
-{
-    if (uri.empty()) {
-        return "";
-    }
-    MediaFileUri fileUri = MediaFileUri(uri);
-    string tempFileId = fileUri.GetFileId();
-    int fileId = 0;
-    if (!StrToInt(tempFileId, fileId)) {
-        return "";
-    }
-
-    MediaLibraryCommand queryCmd(OperationObject::UFM_PHOTO, OperationType::QUERY);
-    if (isNext) {
-        queryCmd.GetAbsRdbPredicates()->GreaterThan(MEDIA_DATA_DB_ID, fileId);
-    } else {
-        queryCmd.GetAbsRdbPredicates()->LessThan(MEDIA_DATA_DB_ID, fileId);
-    }
-    queryCmd.GetAbsRdbPredicates()->And()->EqualTo(MEDIA_DATA_DB_DATE_TRASHED, 0);
-
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("UniStore is nullptr");
-        return "";
-    }
-    vector<string> columns = {
-        MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_MEDIA_TYPE,
-        MEDIA_DATA_DB_NAME
-    };
-    auto queryResult = uniStore->Query(queryCmd, columns);
-    if (queryResult == nullptr) {
-        MEDIA_ERR_LOG("Can not get next uri");
-        return "";
-    }
-    if (isNext) {
-        queryResult->GoToFirstRow();
-    } else {
-        queryResult->GoToLastRow();
-    }
-    string path = GetStringVal(MEDIA_DATA_DB_FILE_PATH, queryResult);
-    if (path.empty()) {
-        return "";
-    }
-    string displayName = GetStringVal(MEDIA_DATA_DB_NAME, queryResult);
-    int32_t mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, queryResult);
-    int32_t nextFileId = GetInt32Val(MEDIA_DATA_DB_ID, queryResult);
-    string extraUri = MediaFileUtils::GetExtraUri(displayName, path, false);
-    return MediaFileUri(MediaType(mediaType), ToString(nextFileId), "", MEDIA_API_VERSION_V10,  extraUri).ToString();
 }
 
 void MediaLibraryFormMapOperations::GetFormMapFormId(const string &uri, vector<int64_t> &formIds)
@@ -251,8 +202,7 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<
             MEDIA_INFO_LOG("Published uri is %{private}s!", MEDIA_LIBRARY_PROXY_URI.c_str());
             MEDIA_INFO_LOG("Published formId is %{private}s!", to_string(formId).c_str());
             MEDIA_INFO_LOG("Published size of value is %{private}zu!", NO_PICTURES.size());
-            MediaLibraryFormMapOperations::ModifyFormMapMassage(newUri, formId);
-            isHaveEmptyUri = true;
+            MediaLibraryFormMapOperations::ModifyFormMapMassage(IMAGE_DELETED, formId);
         }
     } else {
         vector<uint8_t> buffer;
@@ -274,22 +224,6 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<
                 isHaveEmptyUri = false;
             }
         }
-    }
-}
-
-void MediaLibraryFormMapOperations::DoPublishedChange(const string &uri)
-{
-    vector<int64_t> formIds;
-    string newUri;
-    bool isNext = true;
-    MediaLibraryFormMapOperations::GetFormMapFormId(uri, formIds);
-    if (!formIds.empty()) {
-        newUri = MediaLibraryFormMapOperations::CheckAndGetNewUri(uri, isNext);
-        if (newUri.empty()) {
-            isNext = false;
-            newUri = MediaLibraryFormMapOperations::CheckAndGetNewUri(uri, isNext);
-        }
-        MediaLibraryFormMapOperations::PublishedChange(newUri, formIds);
     }
 }
 
