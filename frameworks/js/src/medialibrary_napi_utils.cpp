@@ -904,48 +904,52 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
 }
 
 string MediaLibraryNapiUtils::ParseResultSet2JsonStr(shared_ptr<DataShare::DataShareResultSet> resultSet,
-    const std::vector<std::string> &cloumns)
+    const std::vector<std::string> &columns)
 {
-    json jsonObject;
     if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        NAPI_ERR_LOG("ParseResultSet2JsonStr resultSet is empty");
-        return jsonObject.dump();
+        return "";
     }
-    for (uint32_t i = 0; i < cloumns.size(); i++) {
+    json jsonObject;
+    for (uint32_t i = 0; i < columns.size(); i++) {
         DataShare::DataType dataType;
-        resultSet->GetDataType(i, dataType);
+        jsonObject[columns[i]] = "";
+        int index;
+        if (resultSet->GetColumnIndex(columns[i], index) != NativeRdb::E_OK ||
+            resultSet->GetDataType(index, dataType) != NativeRdb::E_OK) {
+            continue;
+        }
         switch (dataType) {
             case DataShare::DataType::TYPE_INTEGER: {
                 int intValue = -1;
-                if (resultSet->GetInt(i, intValue) == NativeRdb::E_OK) {
-                    jsonObject[cloumns[i]] = to_string(intValue);
+                if (resultSet->GetInt(index, intValue) == NativeRdb::E_OK) {
+                    jsonObject[columns[i]] = to_string(intValue);
                 }
                 break;
             }
             case DataShare::DataType::TYPE_FLOAT: {
                 double douValue = 0.0;
-                if (resultSet->GetDouble(i, douValue) == NativeRdb::E_OK) {
-                    jsonObject[cloumns[i]] = to_string(douValue);
+                if (resultSet->GetDouble(index, douValue) == NativeRdb::E_OK) {
+                    jsonObject[columns[i]] = to_string(douValue);
                 }
                 break;
             }
             case DataShare::DataType::TYPE_STRING: {
                 std::string strValue;
-                if (resultSet->GetString(i, strValue) == NativeRdb::E_OK) {
-                    jsonObject[cloumns[i]] = strValue;
+                if (resultSet->GetString(index, strValue) == NativeRdb::E_OK) {
+                    jsonObject[columns[i]] = strValue;
                 }
                 break;
             }
             case DataShare::DataType::TYPE_BLOB: {
                 std::vector<uint8_t> blobValue;
-                if (resultSet->GetBlob(i, blobValue) == NativeRdb::E_OK) {
+                if (resultSet->GetBlob(index, blobValue) == NativeRdb::E_OK) {
                     std::string tempValue(blobValue.begin(), blobValue.end());
-                    jsonObject[cloumns[i]] = tempValue;
+                    jsonObject[columns[i]] = tempValue;
                 }
                 break;
             }
             default: {
-                NAPI_ERR_LOG("Unsupported dateType: %{public}d", dataType);
+                NAPI_ERR_LOG("Unsupported dataType: %{public}d", dataType);
             }
         }
     }
