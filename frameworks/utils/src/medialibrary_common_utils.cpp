@@ -166,6 +166,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     AESTHETICS_SCORE,
     FACE,
     SALIENCY,
+    CATEGORY_ID
 };
 
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)

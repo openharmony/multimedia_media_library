@@ -306,7 +306,7 @@ const std::string INIT_TAB_ANALYSIS_TOTAL = "INSERT INTO " + VISION_TOTAL_TABLE 
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
-    " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
+    " 0," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
@@ -402,7 +402,7 @@ const std::string CREATE_IMAGE_FACE_INDEX = "CREATE UNIQUE INDEX " + IMAGE_FACE_
 const std::string ADD_SALIENCY_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + SALIENCY + " INT";
 const std::string UPDATE_SALIENCY_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE +
     " SET " + STATUS + " = 0, " + SALIENCY + " = 0 WHERE " +
-    FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE subtype != 1)";
+    FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE media_type = 1)";
 const std::string UPDATE_SALIENCY_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + SALIENCY +
     " = -1 WHERE " + SALIENCY + " IS NULL";
 
