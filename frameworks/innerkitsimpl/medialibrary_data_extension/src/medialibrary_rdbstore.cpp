@@ -1855,6 +1855,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_SEARCH_TABLE) {
         AddSearchTable(store);
     }
+
+    if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_TRIGGER) {
+        AddSourceAlbumTrigger(store);
+    }
 }
 
 static void CheckDateAdded(RdbStore &store)
