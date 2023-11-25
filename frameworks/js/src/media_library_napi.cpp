@@ -936,6 +936,8 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
     MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, MediaColumn::ASSETS_QUERY_FILTER);
+    MediaLibraryNapi::ReplaceSelection(context->selection, context->selectionArgs, MEDIA_DATA_DB_RELATIVE_PATH,
+        MEDIA_DATA_DB_RELATIVE_PATH, ReplaceSelectionMode::ADD_DOCS_TO_RELATIVE_PATH);
 #else
     string trashPrefix = MEDIA_DATA_DB_DATE_TRASHED + " = ? ";
     MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
@@ -1256,7 +1258,7 @@ static void ReplaceAlbumName(const string &arg, string &argInstead)
     }
 }
 
-static bool ReplaceRelativePath(const string &arg, string &argInstead)
+static bool DoReplaceRelativePath(const string &arg, string &argInstead)
 {
     if (arg == CAMERA_PATH) {
         argInstead = to_string(PhotoAlbumSubType::CAMERA);
@@ -1273,8 +1275,17 @@ static bool ReplaceRelativePath(const string &arg, string &argInstead)
     return true;
 }
 
-static void ReplaceSelection(string &selection, vector<string> &selectionArgs,
-    const string &key, const string &keyInstead)
+static inline void ReplaceRelativePath(string &selection, size_t pos, const string &keyInstead, const string &arg,
+    string &argInstead)
+{
+    bool shouldReplace = DoReplaceRelativePath(arg, argInstead);
+    if (shouldReplace) {
+        selection.replace(pos, MEDIA_DATA_DB_RELATIVE_PATH.length(), keyInstead);
+    }
+}
+
+void MediaLibraryNapi::ReplaceSelection(string &selection, vector<string> &selectionArgs,
+    const string &key, const string &keyInstead, const int32_t mode)
 {
     for (size_t pos = 0; pos != string::npos;) {
         pos = selection.find(key, pos);
@@ -1300,10 +1311,10 @@ static void ReplaceSelection(string &selection, vector<string> &selectionArgs,
         const string &arg = selectionArgs[argIndex];
         string argInstead = arg;
         if (key == MEDIA_DATA_DB_RELATIVE_PATH) {
-            bool shouldReplace = true;
-            shouldReplace = ReplaceRelativePath(arg, argInstead);
-            if (shouldReplace) {
-                selection.replace(pos, key.length(), keyInstead);
+            if (mode == ReplaceSelectionMode::ADD_DOCS_TO_RELATIVE_PATH) {
+                argInstead = MediaFileUtils::AddDocsToRelativePath(arg);
+            } else {
+                ReplaceRelativePath(selection, pos, keyInstead, arg, argInstead);
             }
         } else if (key == MEDIA_DATA_DB_BUCKET_NAME) {
             ReplaceAlbumName(arg, argInstead);
@@ -1322,10 +1333,11 @@ static void ReplaceSelection(string &selection, vector<string> &selectionArgs,
 
 static void UpdateCompatSelection(MediaLibraryAsyncContext *context)
 {
-    ReplaceSelection(context->selection, context->selectionArgs, MEDIA_DATA_DB_BUCKET_ID, PhotoAlbumColumns::ALBUM_ID);
-    ReplaceSelection(context->selection, context->selectionArgs,
+    MediaLibraryNapi::ReplaceSelection(context->selection, context->selectionArgs,
+        MEDIA_DATA_DB_BUCKET_ID, PhotoAlbumColumns::ALBUM_ID);
+    MediaLibraryNapi::ReplaceSelection(context->selection, context->selectionArgs,
         MEDIA_DATA_DB_BUCKET_NAME, PhotoAlbumColumns::ALBUM_SUBTYPE);
-    ReplaceSelection(context->selection, context->selectionArgs,
+    MediaLibraryNapi::ReplaceSelection(context->selection, context->selectionArgs,
         MEDIA_DATA_DB_RELATIVE_PATH, PhotoAlbumColumns::ALBUM_SUBTYPE);
     static const string COMPAT_QUERY_FILTER = PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
         to_string(PhotoAlbumSubType::SCREENSHOT) + "," +
@@ -1544,6 +1556,7 @@ static void SetFileAssetByIdV9(int32_t id, const string &networkId, MediaLibrary
         MediaFileUtils::StartsWith(relativePath, DOCS_PATH + DOWNLOAD_DIR_VALUES)) {
         uri = MediaFileUtils::GetVirtualUriFromRealUri(MediaFileUri(MediaType::MEDIA_TYPE_FILE,
             to_string(id), networkId, MEDIA_API_VERSION_V9).ToString());
+        relativePath = MediaFileUtils::RemoveDocsFromRelativePath(relativePath);
     } else {
         uri = MediaFileUtils::GetVirtualUriFromRealUri(MediaFileUri(mediaType,
             to_string(id), networkId, MEDIA_API_VERSION_V9).ToString());
