@@ -331,7 +331,7 @@ static PixelMapPtr CreateThumbnailByAshmem(UniqueFd &uniqueFd, const Size &size)
 
     Media::InitializationOptions option = {
         .size = size,
-        .pixelFormat = PixelFormat::RGBA_8888
+        .pixelFormat = PixelFormat::RGB_565
     };
     PixelMapPtr pixel = Media::PixelMap::Create(option);
     if (pixel == nullptr) {

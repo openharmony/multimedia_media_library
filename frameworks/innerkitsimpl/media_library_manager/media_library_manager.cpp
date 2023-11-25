@@ -563,9 +563,10 @@ unique_ptr<PixelMap> MediaLibraryManager::GetPixelMapWithoutDecode(UniqueFd &uni
         return nullptr;
     }
     read(uniqueFd.Get(), buffer, statInfo.st_size);
-    InitializationOptions option;
-    option.size = size;
-    
+    InitializationOptions option = {
+        .size = size,
+        .pixelFormat = PixelFormat::RGB_565
+    };
     unique_ptr<PixelMap> pixelMap = PixelMap::Create(buffer, statInfo.st_size, option);
     free(buffer);
     return pixelMap;
@@ -587,6 +588,7 @@ unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(const std::string &uri,
     tracer.Finish();
     if (IsSmallThumb(size.width, size.height) &&
         (MediaFileUri::GetMediaTypeFromUri(uri) != MediaType::MEDIA_TYPE_AUDIO)) {
+        // only get MTH and YEAR thumbnails
         return GetPixelMapWithoutDecode(uniqueFd, size);
     } else {
         return DecodeThumbnail(uniqueFd, size);
