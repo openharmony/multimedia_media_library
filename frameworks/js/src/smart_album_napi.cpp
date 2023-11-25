@@ -15,6 +15,8 @@
 #define MLOG_TAG "SmartAlbumNapi"
 
 #include "smart_album_napi.h"
+
+#include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
@@ -1131,6 +1133,8 @@ static void UpdateSelection(SmartAlbumNapiAsyncContext *context)
         MediaLibraryNapiUtils::AppendFetchOptionSelection(context->selection, trashPrefix);
         context->selectionArgs.emplace_back("0");
         context->selectionArgs.emplace_back(std::to_string(context->objectPtr->GetAlbumId()));
+        MediaLibraryNapi::ReplaceSelection(context->selection, context->selectionArgs,
+            MEDIA_DATA_DB_RELATIVE_PATH, MEDIA_DATA_DB_RELATIVE_PATH, ReplaceSelectionMode::ADD_DOCS_TO_RELATIVE_PATH);
     }
 }
 
@@ -1326,8 +1330,8 @@ napi_value SmartAlbumNapi::UserFileMgrRecoverAsset(napi_env env, napi_callback_i
     asyncContext->objectPtr = asyncContext->objectInfo->smartAlbumAssetPtr;
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "SmartAlbumAsset is nullptr");
 
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAssets", JSRecoverAssetExecute,
-        JSRecoverAssetCompleteCallback);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrRecoverAsset",
+        JSRecoverAssetExecute, JSRecoverAssetCompleteCallback);
 }
 
 static void JSDeleteAssetExecute(napi_env env, void *data)
@@ -1385,7 +1389,7 @@ napi_value SmartAlbumNapi::UserFileMgrDeleteAsset(napi_env env, napi_callback_in
         JS_ERR_PARAMETER_INVALID);
     asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
 
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrGetAssets", JSDeleteAssetExecute,
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UserFileMgrDeleteAsset", JSDeleteAssetExecute,
         JSDeleteAssetCompleteCallback);
 }
 } // namespace Media

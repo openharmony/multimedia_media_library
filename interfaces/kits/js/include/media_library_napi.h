@@ -56,6 +56,11 @@ enum ListenerType {
     ALBUM_LISTENER
 };
 
+enum ReplaceSelectionMode {
+    DEFAULT = 0,
+    ADD_DOCS_TO_RELATIVE_PATH,
+};
+
 struct MediaChangeListener {
     MediaType mediaType;
     OHOS::DataShare::DataShareObserver::ChangeInfo changeInfo;
@@ -170,6 +175,9 @@ public:
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
+
+    static void ReplaceSelection(std::string &selection, std::vector<std::string> &selectionArgs,
+        const std::string &key, const std::string &keyInstead, const int32_t mode = ReplaceSelectionMode::DEFAULT);
 
     MediaLibraryNapi();
     ~MediaLibraryNapi();

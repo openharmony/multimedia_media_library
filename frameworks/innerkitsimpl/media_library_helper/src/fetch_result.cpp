@@ -394,7 +394,12 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
         }
         auto memberType = GetResultTypeMap().at(name);
         fileAsset->SetResultTypeMap(name, memberType);
-        map.emplace(move(name), move(GetValByIndex(index, memberType, resultSet)));
+        if (name == MEDIA_DATA_DB_RELATIVE_PATH) {
+            map.emplace(move(name), MediaFileUtils::RemoveDocsFromRelativePath(
+                get<string>(GetValByIndex(index, memberType, resultSet))));
+        } else {
+            map.emplace(move(name), move(GetValByIndex(index, memberType, resultSet)));
+        }
     }
     fileAsset->SetResultNapiType(resultNapiType_);
     if (!columnNames.empty() && columnNames[0].find("count(") != string::npos) {
@@ -502,8 +507,8 @@ void FetchResult<T>::SetAlbumAsset(AlbumAsset *albumData, shared_ptr<NativeRdb::
     }
     albumData->SetAlbumUri(albumUri);
     // Get album relativePath index and value
-    albumData->SetAlbumRelativePath(get<string>(GetRowValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH,
-        TYPE_STRING, resultSet)));
+    albumData->SetAlbumRelativePath(MediaFileUtils::RemoveDocsFromRelativePath(
+        get<string>(GetRowValFromColumn(MEDIA_DATA_DB_RELATIVE_PATH, TYPE_STRING, resultSet))));
     albumData->SetAlbumDateModified(get<int64_t>(GetRowValFromColumn(MEDIA_DATA_DB_DATE_MODIFIED,
         TYPE_INT64, resultSet)));
 
