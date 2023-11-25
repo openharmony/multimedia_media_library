@@ -144,13 +144,16 @@ static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
             int64_t dateModified = metadata.GetFileDateModified();
             if (dateModified == 0) {
                 dateAdded = MediaFileUtils::UTCTimeSeconds();
-                MEDIA_WARN_LOG("Invalid dateAdded time, use current time instead: %{public}lld", dateAdded);
+                MEDIA_WARN_LOG("Invalid dateAdded time, use current time instead: %{public}lld",
+                    static_cast<long long>(dateAdded));
             } else {
-                MEDIA_WARN_LOG("Invalid dateAdded time, use dateModified instead: %{public}lld", dateAdded);
+                MEDIA_WARN_LOG("Invalid dateAdded time, use dateModified instead: %{public}lld",
+                    static_cast<long long>(dateAdded));
             }
         } else {
             dateAdded = dateTaken;
-            MEDIA_WARN_LOG("Invalid dateAdded time, use dateTaken instead: %{public}lld", dateAdded);
+            MEDIA_WARN_LOG("Invalid dateAdded time, use dateTaken instead: %{public}lld",
+                static_cast<long long>(dateAdded));
         }
     }
     SetDateAdded(dateAdded, metadata, outValues);
