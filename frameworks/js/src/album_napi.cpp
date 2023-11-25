@@ -15,10 +15,12 @@
 #define MLOG_TAG "AlbumNapi"
 
 #include "album_napi.h"
+
+#include "media_file_utils.h"
+#include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
-#include "media_file_utils.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
 
@@ -698,6 +700,8 @@ static void UpdateCompatAlbumSelection(AlbumNapiAsyncContext *context)
     } else {
         context->selection = filterClause;
     }
+    MediaLibraryNapi::ReplaceSelection(context->selection, context->selectionArgs,
+        MEDIA_DATA_DB_RELATIVE_PATH, MEDIA_DATA_DB_RELATIVE_PATH);
 }
 #endif
 
