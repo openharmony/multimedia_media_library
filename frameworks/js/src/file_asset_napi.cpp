@@ -1077,7 +1077,8 @@ void BuildCommitModifyValuesBucket(FileAssetAsyncContext* context, DataShareValu
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY
         valuesBucket.Put(MEDIA_DATA_DB_TITLE, fileAsset->GetTitle());
-        valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
+        valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH,
+            MediaFileUtils::AddDocsToRelativePath(fileAsset->GetRelativePath()));
         if (fileAsset->GetMediaType() != MediaType::MEDIA_TYPE_AUDIO) {
             // IMAGE, VIDEO AND FILES
             if (fileAsset->GetOrientation() >= 0) {

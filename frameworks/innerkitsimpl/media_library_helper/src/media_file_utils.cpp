@@ -1373,4 +1373,21 @@ string MediaFileUtils::Encode(const string &uri)
 
     return outPutStream.str();
 }
+
+string MediaFileUtils::AddDocsToRelativePath(const string &relativePath)
+{
+    if (MediaFileUtils::StartsWith(relativePath, DOC_DIR_VALUES) ||
+        MediaFileUtils::StartsWith(relativePath, DOWNLOAD_DIR_VALUES)) {
+        return DOCS_PATH + relativePath;
+    }
+    return relativePath;
+}
+
+string MediaFileUtils::RemoveDocsFromRelativePath(const string &relativePath)
+{
+    if (MediaFileUtils::StartsWith(relativePath, DOCS_PATH)) {
+        return relativePath.substr(DOCS_PATH.size());
+    }
+    return relativePath;
+}
 } // namespace OHOS::Media

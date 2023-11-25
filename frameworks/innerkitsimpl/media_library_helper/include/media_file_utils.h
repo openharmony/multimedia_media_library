@@ -129,6 +129,8 @@ public:
     static bool IsFileTablePath(const std::string &path);
     static bool IsPhotoTablePath(const std::string &path);
     static std::string StrCreateTime(const std::string &format, int64_t time);
+    static std::string AddDocsToRelativePath(const std::string &relativePath);
+    static std::string RemoveDocsFromRelativePath(const std::string &relativePath);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
