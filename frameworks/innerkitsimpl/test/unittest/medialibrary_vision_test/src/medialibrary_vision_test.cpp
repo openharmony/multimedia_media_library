@@ -1480,7 +1480,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_001, TestSize.Leve
     MediaLibraryCommand cmd(analysisAlbumUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
-    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::GEOGRAPHY_CITY);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY_CATEGORY);
     valuesBucket.Put(ALBUM_NAME, "3");
     valuesBucket.Put(COUNT, 1);
     valuesBucket.Put(DATE_MODIFIED, 0);
