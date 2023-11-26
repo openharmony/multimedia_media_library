@@ -5756,7 +5756,6 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
-
     context->isAnalysisAlbum = (albumType == PhotoAlbumType::SMART) ? 1 : 0;
 
     /* Parse the second argument to photo album subType */
@@ -5774,10 +5773,10 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     }
 
     context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(albumType));
-   
     if (albumSubType != ANY) {
         context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
     }
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         context->predicates.And()->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
             to_string(PhotoAlbumSubType::USER_GENERIC),
