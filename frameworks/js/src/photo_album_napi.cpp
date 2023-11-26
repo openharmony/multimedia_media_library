@@ -862,11 +862,12 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
     DataSharePredicates &predicates, const bool hiddenOnly)
 {
     auto albumId = photoAlbum->GetAlbumId();
-    if (albumId <= 0) {
+    auto subType = photoAlbum->GetPhotoAlbumSubType();
+    bool isLocationAlbum = subType == PhotoAlbumSubType::GEOGRAPHY_LOCATION;
+    if (albumId <= 0 && !isLocationAlbum) {
         return E_INVALID_ARGUMENTS;
     }
     auto type = photoAlbum->GetPhotoAlbumType();
-    auto subType = photoAlbum->GetPhotoAlbumSubType();
     if ((!PhotoAlbum::CheckPhotoAlbumType(type)) || (!PhotoAlbum::CheckPhotoAlbumSubType(subType))) {
         return E_INVALID_ARGUMENTS;
     }
@@ -876,6 +877,9 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
     }
 
     if (type == PhotoAlbumType::SMART) {
+        if (isLocationAlbum) {
+            return MediaLibraryNapiUtils::GetAllLocationPredicates(predicates);
+        }
         return MediaLibraryNapiUtils::GetAnalysisAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
     }
     

@@ -51,6 +51,8 @@ public:
     static const std::string REFERENCE_ALBUM_ID;
     // default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS;
+    static const std::vector<std::string> LOCATION_DEFAULT_FETCH_COLUMNS;
+    static const std::vector<std::string> CITY_DEFAULT_FETCH_COLUMNS;
 
     // table name
     static const std::string TABLE;
@@ -74,6 +76,7 @@ public:
     static const std::string DEFAULT_HIDDEN_ALBUM_URI;
 
     static bool IsPhotoAlbumColumn(const std::string &columnName);
+    static bool IsLocationAlbumColumn(const std::string &columnName);
 
     static void GetUserAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);

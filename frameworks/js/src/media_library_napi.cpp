@@ -23,6 +23,8 @@
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "hitrace_meter.h"
+#include "location_column.h"
+#include "locale_config.h"
 #include "media_change_request_napi.h"
 #include "media_column.h"
 #include "media_file_uri.h"
@@ -5153,7 +5155,8 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
         queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
             UFM_QUERY_HIDDEN_ALBUM : PAH_QUERY_HIDDEN_ALBUM;
     } else if (context->isAnalysisAlbum) {
-        queryUri = PAH_QUERY_ANA_PHOTO_ALBUM;
+        queryUri = context->isLocationAlbum == PhotoAlbumSubType::GEOGRAPHY_LOCATION ?
+            PAH_QUERY_GEO_PHOTOS : PAH_QUERY_ANA_PHOTO_ALBUM;
     } else {
         queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
             UFM_QUERY_PHOTO_ALBUM : PAH_QUERY_PHOTO_ALBUM;
@@ -5385,6 +5388,7 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_SEGMENTATION", AnalysisType::ANALYSIS_SEGMENTATION },
         { "ANALYSIS_COMPOSITION", AnalysisType::ANALYSIS_COMPOSITION },
         { "ANALYSIS_SALIENCY", AnalysisType::ANALYSIS_SALIENCY },
+        { "ANALYSIS_DETAIL_ADDRESS", AnalysisType::ANALYSIS_DETAIL_ADDRESS },
     };
 
     napi_value result = nullptr;
@@ -5720,6 +5724,24 @@ static napi_value GetAlbumFetchOption(napi_env env, unique_ptr<MediaLibraryAsync
     return result;
 }
 
+static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &context, const int32_t albumSubType)
+{
+    if (albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
+        context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_LOCATION;
+        context->fetchColumn = PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS;
+        MediaLibraryNapiUtils::GetAllLocationPredicates(context->predicates);
+        return false;
+    } else if (albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
+        context->fetchColumn = PhotoAlbumColumns::CITY_DEFAULT_FETCH_COLUMNS;
+        context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_CITY;
+        string onClause = PhotoAlbumColumns::ALBUM_NAME  + " = " + CITY_ID;
+        string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+        context->predicates.InnerJoin(GEO_DICTIONARY_TABLE)->On({ onClause });
+        context->predicates.And()->EqualTo(LANGUAGE, language);
+    }
+    return true;
+}
+
 static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     if (context->argc < ARGS_TWO) {
@@ -5735,7 +5757,6 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
         return nullptr;
     }
     context->isAnalysisAlbum = (albumType == PhotoAlbumType::SMART) ? 1 : 0;
-    context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(albumType));
 
     /* Parse the second argument to photo album subType */
     int32_t albumSubType;
@@ -5744,6 +5765,14 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
+
+    if (!ParseLocationAlbumTypes(context, albumSubType)) {
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
+    }
+
+    context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(albumType));
     if (albumSubType != ANY) {
         context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
     }
@@ -5795,8 +5824,10 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
         default:
             return nullptr;
     }
-    CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
-
+    if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
+        context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
+        CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
+    }
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;

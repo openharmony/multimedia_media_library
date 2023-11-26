@@ -427,6 +427,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
 
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
+        case OperationObject::GEO_PHOTO:
             return MediaLibraryLocationOperations::InsertOperation(cmd);
 
         case OperationObject::PAH_FORM_MAP:
@@ -619,7 +620,8 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
             return MediaLibraryVisionOperations::DeleteOperation(cmd);
         }
         case OperationObject::GEO_DICTIONARY:
-        case OperationObject::GEO_KNOWLEDGE: {
+        case OperationObject::GEO_KNOWLEDGE:
+        case OperationObject::GEO_PHOTO: {
             return MediaLibraryLocationOperations::DeleteOperation(cmd);
         }
         case OperationObject::SEARCH_TOTAL: {
