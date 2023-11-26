@@ -34,6 +34,8 @@
 #include "hilog/log.h"
 #include "js_native_api.h"
 #include "js_native_api_types.h"
+#include "location_column.h"
+#include "locale_config.h"
 #include "media_exif.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -1821,6 +1823,8 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
         CLOCK_LOCATION_X, CLOCK_LOCATION_Y, CLOCK_COLOUR, COMPOSITION_SCALE_X, COMPOSITION_SCALE_Y,
         COMPOSITION_SCALE_WIDTH, COMPOSITION_SCALE_HEIGHT } } },
     { ANALYSIS_SALIENCY, { PAH_QUERY_ANA_SAL, { SALIENCY_X, SALIENCY_Y } } },
+    { ANALYSIS_DETAIL_ADDRESS, { PAH_QUERY_ANA_ADDRESS, { LANGUAGE, COUNTRY, ADMIN_AREA, SUB_ADMIN_AREA, LOCALITY,
+        SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME} } },
 };
 
 static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
@@ -1829,16 +1833,24 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
     tracer.Start("JSGetThumbnailExecute");
     string uriStr;
     std::vector<std::string> fetchColumn;
+    DataShare::DataSharePredicates predicates;
     if (ANALYSIS_SOURCE_INFO_MAP.find(context->analysisType) != ANALYSIS_SOURCE_INFO_MAP.end()) {
         uriStr = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).uriStr;
         fetchColumn = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).fetchColumn;
+        if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
+            string onClause = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
+                GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
+                PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE;
+            string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+            predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ onClause });
+            predicates.EqualTo(LANGUAGE, language);
+        }
     } else {
         NAPI_ERR_LOG("Invalid analysisType");
         return;
     }
     int fileId = context->objectInfo->GetFileId();
     Uri uri (uriStr);
-    DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);

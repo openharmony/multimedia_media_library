@@ -18,6 +18,7 @@
 
 #include "basic/result_set.h"
 #include "datashare_predicates_proxy.h"
+#include "location_column.h"
 #include "ipc_skeleton.h"
 #include "media_asset_change_request_napi.h"
 #include "media_album_change_request_napi.h"
@@ -285,9 +286,68 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
             // do not query pending files below API11
             continue;
         }
+        if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(FIELD_IDX))) != LOCATION_PARAM_MAP.end()) {
+            continue;
+        }
         operations.push_back(item);
     }
     context->predicates = DataSharePredicates(move(operations));
+    NAPI_ERR_LOG("sssssss");
+    return true;
+}
+
+template <class AsyncContext>
+bool MediaLibraryNapiUtils::GetLocationPredicate(AsyncContext &context,
+    shared_ptr<DataShareAbsPredicates> &predicate)
+{
+    constexpr int32_t FIELD_IDX = 0;
+    constexpr int32_t VALUE_IDX = 1;
+    vector<OperationItem> operations;
+    map<string, string> locationMap;
+    auto &items = predicate->GetOperationList();
+    for (auto &item : items) {
+        if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(FIELD_IDX))) != LOCATION_PARAM_MAP.end()) {
+            if (item.operation != DataShare::EQUAL_TO) {
+                NAPI_ERR_LOG("location predicates not support %{public}d", item.operation);
+                return false;
+            }
+            string param = static_cast<string>(item.GetSingle(FIELD_IDX));
+            string value = static_cast<string>(item.GetSingle(VALUE_IDX));
+            locationMap.insert(make_pair(param, value));
+            if (static_cast<string>(item.GetSingle(FIELD_IDX)) == START_LATITUDE) {
+                context->predicates.GreaterThanOrEqualTo(LATITUDE, value);
+                continue;
+            }
+
+            if (static_cast<string>(item.GetSingle(FIELD_IDX)) == END_LATITUDE) {
+                context->predicates.LessThan(LATITUDE, value);
+                continue;
+            }
+
+            if (static_cast<string>(item.GetSingle(FIELD_IDX)) == START_LONGITUDE) {
+                context->predicates.GreaterThanOrEqualTo(LONGITUDE, value);
+                continue;
+            }
+
+            if (static_cast<string>(item.GetSingle(FIELD_IDX)) == END_LONGITUDE) {
+                context->predicates.LessThan(LONGITUDE, value);
+                continue;
+            }
+        }
+    }
+
+    if (locationMap.count(DIAMETER) == 1) {
+        if (locationMap.count(START_LATITUDE) == 1 && locationMap.count(START_LONGITUDE) == 1) {
+            string locationGroup = "round((latitude - " + locationMap.at(START_LATITUDE) + ") / " +
+            locationMap.at(DIAMETER) + " - 0.5) ," + "round((longitude - " +
+            locationMap.at(START_LONGITUDE) + ") / " + locationMap.at(DIAMETER) + " - 0.5)";
+            context->predicates.GroupBy({ locationGroup });
+        } else {
+            NAPI_ERR_LOG("location album predicates not exist");
+            return false;
+        }
+    }
+    NAPI_ERR_LOG("sssssss");
     return true;
 }
 
@@ -324,6 +384,7 @@ napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value a
         shared_ptr<DataShareAbsPredicates> predicate = DataSharePredicatesProxy::GetNativePredicates(env, property);
         CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE, napi_invalid_arg,
             "invalid predicate");
+        CHECK_COND_RET(GetLocationPredicate(context, predicate) == TRUE, napi_invalid_arg, "invalid predicate");    
     }
     return napi_ok;
 }
@@ -783,6 +844,14 @@ int32_t MediaLibraryNapiUtils::GetAnalysisAlbumPredicates(const int32_t albumId,
     return E_SUCCESS;
 }
 
+int32_t MediaLibraryNapiUtils::GetAllLocationPredicates(DataSharePredicates &predicates)
+{
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    return E_SUCCESS;
+}
+
 static int32_t GetFavoritePredicates(DataSharePredicates &predicates, const bool hiddenOnly)
 {
     predicates.BeginWrap();
@@ -1100,6 +1169,15 @@ template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<AlbumNapi
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<SmartAlbumNapiAsyncContext>>(
     unique_ptr<SmartAlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
     const FetchOptionType &fetchOptType);
+
+template bool MediaLibraryNapiUtils::GetLocationPredicate<unique_ptr<MediaLibraryAsyncContext>>(
+    unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate);
+
+template bool MediaLibraryNapiUtils::GetLocationPredicate<unique_ptr<AlbumNapiAsyncContext>>(
+    unique_ptr<AlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate);
+
+template bool MediaLibraryNapiUtils::GetLocationPredicate<unique_ptr<SmartAlbumNapiAsyncContext>>(
+    unique_ptr<SmartAlbumNapiAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate);
 
 template napi_status MediaLibraryNapiUtils::GetFetchOption<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     napi_value arg, const FetchOptionType &fetchOptType, unique_ptr<MediaLibraryAsyncContext> &context);

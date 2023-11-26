@@ -70,6 +70,7 @@ enum class OperationObject : uint32_t {
     VISION_SHIELD,           // Vision end
     GEO_DICTIONARY,
     GEO_KNOWLEDGE,
+    GEO_PHOTO,
     ANALYSIS_PHOTO_ALBUM,
     ANALYSIS_PHOTO_MAP,
     PAH_FORM_MAP,

@@ -47,6 +47,7 @@
           "hisysevent",
           "hitrace",
           "huks",
+          "i18n",
           "init",
           "ipc",
           "kv_store",

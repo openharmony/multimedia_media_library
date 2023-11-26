@@ -17,6 +17,7 @@
 #include "medialibrary_vision_test.h"
 #include "datashare_result_set.h"
 #include "get_self_permissions.h"
+#include "location_column.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_unittest_utils.h"
@@ -1428,6 +1429,50 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_002, TestSize.Level0)
     MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_002::retVal = %{public}d. End", retVal);
 }
 
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_003::Start");
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::GEOGRAPHY_CITY);
+    valuesBucket.Put(ALBUM_NAME, "shanghai");
+    valuesBucket.Put(DATE_MODIFIED, 0);
+    valuesBucket.Put(COUNT, 1);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+
+    
+    Uri geoKnowDictionaryUri(URI_GEO_DICTIONARY);
+    MediaLibraryCommand insertcmd(geoKnowDictionaryUri);
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(CITY_ID, "shanghai");
+    valuesBucket1.Put(LANGUAGE, "en");
+    valuesBucket1.Put(CITY_NAME, "shanghai");
+    auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(insertcmd, valuesBucket1);
+    EXPECT_GT(retVal1, 0);
+
+
+    Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand queryCmd(queryAlbumUri);
+    DataShare::DataSharePredicates predicates;
+
+    string onClause = "album_name = city_id";
+    predicates.And()->InnerJoin(GEO_DICTIONARY_TABLE)->On({ onClause });
+    predicates.EqualTo(ALBUM_NAME, "shanghai");
+    predicates.And()->EqualTo(LANGUAGE, "en");
+    vector<string> columns;
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryCmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_GT(count, 0);
+
+    MEDIA_INFO_LOG("Vision_AnalysisAlbum_Test_003::count = %{public}d. End", count);
+}
+
 HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_001::Start");
@@ -1435,7 +1480,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_001, TestSize.Leve
     MediaLibraryCommand cmd(analysisAlbumUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
-    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY_CATEGORY);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::GEOGRAPHY_CITY);
     valuesBucket.Put(ALBUM_NAME, "3");
     valuesBucket.Put(COUNT, 1);
     valuesBucket.Put(DATE_MODIFIED, 0);

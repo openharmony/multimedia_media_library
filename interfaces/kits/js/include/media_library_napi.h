@@ -351,6 +351,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t parentSmartAlbumId = 0;
     int32_t smartAlbumId = -1;
     int32_t isAnalysisAlbum = 0;
+    int32_t isLocationAlbum = 0;
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;
