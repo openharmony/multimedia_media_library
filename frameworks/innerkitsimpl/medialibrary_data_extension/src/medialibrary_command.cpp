@@ -338,6 +338,8 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     // use in Location Analyse
     { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
     { GEO_KNOWLEDGE_TABLE, OperationObject::GEO_KNOWLEDGE },
+    { PAH_ANA_ADDRESS, OperationObject::GEO_KNOWLEDGE },
+    { PAH_GEO_PHOTOS, OperationObject::GEO_PHOTO },
 
     // use in search
     { SEARCH_TOTAL_TABLE, OperationObject::SEARCH_TOTAL },
@@ -427,6 +429,7 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
     { OperationObject::VISION_SHIELD, { { OperationType::UNKNOWN_TYPE, VISION_SHIELD_TABLE } } },
     { OperationObject::GEO_DICTIONARY, { { OperationType::UNKNOWN_TYPE, GEO_DICTIONARY_TABLE } } },
     { OperationObject::GEO_KNOWLEDGE, { { OperationType::UNKNOWN_TYPE, GEO_KNOWLEDGE_TABLE } } },
+    { OperationObject::GEO_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
     { OperationObject::ANALYSIS_PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, ANALYSIS_ALBUM_TABLE } } },
     { OperationObject::ANALYSIS_PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, ANALYSIS_PHOTO_MAP_TABLE } } },
     { OperationObject::PAH_FORM_MAP, { { OperationType::UNKNOWN_TYPE, FormMap::FORM_MAP_TABLE } } },

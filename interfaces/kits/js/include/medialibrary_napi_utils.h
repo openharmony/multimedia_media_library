@@ -21,6 +21,7 @@
 
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
+#include "location_column.h"
 #include "media_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_napi_log.h"
@@ -266,7 +267,7 @@ const std::vector<std::string> systemAlbumSubType {
 };
 
 const std::vector<std::string> analysisAlbumSubType {
-    "CLASSIFY_CATEGORY", "CLASSIFY_SUBCATEGORY"
+    "CLASSIFY_CATEGORY", "CLASSIFY_SUBCATEGORY", "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY"
 };
 
 const std::vector<std::string> positionTypeEnum {
@@ -395,6 +396,14 @@ const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTI
     std::make_pair("DEFAULT_HIDDEN_ALBUM_URI",  PhotoAlbumColumns::DEFAULT_HIDDEN_ALBUM_URI),
 };
 
+const std::map<std::string, std::string> LOCATION_PARAM_MAP = {
+    { START_LATITUDE, LATITUDE },
+    { END_LATITUDE, LATITUDE },
+    { START_LONGITUDE, LONGITUDE },
+    { END_LONGITUDE, LONGITUDE },
+    { DIAMETER, DIAMETER },
+};
+
 struct JSAsyncContextOutput {
     napi_value error;
     napi_value data;
@@ -486,6 +495,10 @@ public:
 
     static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
 
+    template <class AsyncContext>
+    static bool GetLocationPredicate(AsyncContext &context,
+        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate);
+
     static int TransErrorCode(const std::string &Name, std::shared_ptr<DataShare::DataShareResultSet> resultSet);
 
     static int TransErrorCode(const std::string &Name, int error);
@@ -529,6 +542,7 @@ public:
     static int32_t GetUserAlbumPredicates(const int32_t albumId,
         DataShare::DataSharePredicates &predicates, const bool hiddenOnly);
     static int32_t GetAnalysisAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
+    static int32_t GetAllLocationPredicates(DataShare::DataSharePredicates &predicates);
     static bool IsSystemApp();
     static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
         const std::string &propertyName);

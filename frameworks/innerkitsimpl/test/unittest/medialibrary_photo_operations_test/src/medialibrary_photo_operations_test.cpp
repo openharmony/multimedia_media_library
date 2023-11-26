@@ -1399,6 +1399,51 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestS
     MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_006");
 }
 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_007, TestSize.Level0)
+{
+    // location album test
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_007");
+
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    EXPECT_GE(fileId, E_OK);
+
+    // Update
+    MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    SetValuesBucketInUpdate(PhotoColumn::PHOTO_LATITUDE, "29.589475631666667", values);
+    SetValuesBucketInUpdate(PhotoColumn::PHOTO_LONGITUDE, "106.31181335444444", values);
+    cmd_u.SetValueBucket(values);
+    cmd_u.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    MediaLibraryPhotoOperations::Update(cmd_u);
+
+    // Query
+    MediaLibraryCommand queryCmd(OperationObject::GEO_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+
+    predicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_LATITUDE, "-90.00000030559437");
+    predicates.LessThan(PhotoColumn::PHOTO_LONGITUDE, "90.00000030559437");
+    predicates.GreaterThanOrEqualTo(PhotoColumn::PHOTO_LATITUDE, "-180.00000061118874");
+    predicates.LessThan(PhotoColumn::PHOTO_LONGITUDE, "00000061118874");
+    string latitudeIndex = "round((latitude - -90.00000030559437) / 22.5 - 0.5)";
+    string longitudeIndex  = "round((longitude - -180.00000061118874) / 22.5 - 0.5)";
+    string group = latitudeIndex + "," + longitudeIndex;
+    predicates.GroupBy({ group });
+    queryCmd.SetDataSharePred(predicates);
+    vector<string> columns = { MediaColumn::MEDIA_NAME };
+    auto resultSet = g_rdbStore->Query(queryCmd, columns);
+    ASSERT_TRUE(resultSet != nullptr);
+    ASSERT_TRUE(resultSet->GoToFirstRow() == NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "photo.jpg");
+
+    TestPhotoDeleteParamsApi10(OperationObject::FILESYSTEM_PHOTO, fileId,
+        [] (int32_t result) { EXPECT_GT(result, 0); });
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_query_api10_test_007");
+}
+
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_001");
