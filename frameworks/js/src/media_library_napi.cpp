@@ -5726,7 +5726,7 @@ static napi_value GetAlbumFetchOption(napi_env env, unique_ptr<MediaLibraryAsync
 
 static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &context, const int32_t albumSubType)
 {
-    if(albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
+    if (albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
         context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_LOCATION;
         context->fetchColumn = PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS;
         MediaLibraryNapiUtils::GetAllLocationPredicates(context->predicates);
@@ -5766,7 +5766,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
         return nullptr;
     }
 
-    if(!ParseLocationAlbumTypes(context, albumSubType)) {
+    if (!ParseLocationAlbumTypes(context, albumSubType)) {
         napi_value result = nullptr;
         CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
         return result;
