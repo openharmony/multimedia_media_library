@@ -292,7 +292,6 @@ bool MediaLibraryNapiUtils::HandleSpecialPredicate(AsyncContext &context,
         operations.push_back(item);
     }
     context->predicates = DataSharePredicates(move(operations));
-    NAPI_ERR_LOG("sssssss");
     return true;
 }
 
@@ -347,7 +346,6 @@ bool MediaLibraryNapiUtils::GetLocationPredicate(AsyncContext &context,
             return false;
         }
     }
-    NAPI_ERR_LOG("sssssss");
     return true;
 }
 
@@ -384,7 +382,7 @@ napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value a
         shared_ptr<DataShareAbsPredicates> predicate = DataSharePredicatesProxy::GetNativePredicates(env, property);
         CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE, napi_invalid_arg,
             "invalid predicate");
-        CHECK_COND_RET(GetLocationPredicate(context, predicate) == TRUE, napi_invalid_arg, "invalid predicate");    
+        CHECK_COND_RET(GetLocationPredicate(context, predicate) == TRUE, napi_invalid_arg, "invalid predicate");
     }
     return napi_ok;
 }

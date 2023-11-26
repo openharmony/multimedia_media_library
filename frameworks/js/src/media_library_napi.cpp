@@ -5724,6 +5724,24 @@ static napi_value GetAlbumFetchOption(napi_env env, unique_ptr<MediaLibraryAsync
     return result;
 }
 
+static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &context, const int32_t albumSubType)
+{
+    if(albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
+        context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_LOCATION;
+        context->fetchColumn = PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS;
+        MediaLibraryNapiUtils::GetAllLocationPredicates(context->predicates);
+        return false;
+    } else if (albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
+        context->fetchColumn = PhotoAlbumColumns::CITY_DEFAULT_FETCH_COLUMNS;
+        context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_CITY;
+        string onClause = PhotoAlbumColumns::ALBUM_NAME  + " = " + CITY_ID;
+        string language = Global::I18n::LocaleConfig::GetSystemLanguage();
+        context->predicates.InnerJoin(GEO_DICTIONARY_TABLE)->On({ onClause });
+        context->predicates.And()->EqualTo(LANGUAGE, language);
+    }
+    return true;
+}
+
 static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncContext> &context)
 {
     if (context->argc < ARGS_TWO) {
@@ -5749,25 +5767,17 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
         return nullptr;
     }
 
-    if (albumSubType != PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
-        context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(albumType));
+    if(!ParseLocationAlbumTypes(context, albumSubType)) {
+        napi_value result = nullptr;
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+        return result;
     }
 
-    if (albumSubType != ANY && albumSubType != PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
+    context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(albumType));
+   
+    if (albumSubType != ANY) {
         context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
-    } else if(albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
-        context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_LOCATION;
-        context->fetchColumn = PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS;
-        MediaLibraryNapiUtils::GetAllLocationPredicates(context->predicates);
-    } else if (albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
-        context->fetchColumn = PhotoAlbumColumns::CITY_DEFAULT_FETCH_COLUMNS;
-        context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_CITY;
-        string onClause = PhotoAlbumColumns::ALBUM_NAME  + " = " + CITY_ID;
-        string language = Global::I18n::LocaleConfig::GetSystemLanguage();
-        context->predicates.InnerJoin(GEO_DICTIONARY_TABLE)->On({ onClause });
-        context->predicates.And()->EqualTo(LANGUAGE, language);
     }
-    
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         context->predicates.And()->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
             to_string(PhotoAlbumSubType::USER_GENERIC),

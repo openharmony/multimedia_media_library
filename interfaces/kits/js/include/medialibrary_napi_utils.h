@@ -496,7 +496,8 @@ public:
     static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
 
     template <class AsyncContext>
-    static bool GetLocationPredicate(AsyncContext &context, std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate);
+    static bool GetLocationPredicate(AsyncContext &context,
+        std::shared_ptr<DataShare::DataShareAbsPredicates> &predicate);
 
     static int TransErrorCode(const std::string &Name, std::shared_ptr<DataShare::DataShareResultSet> resultSet);
 
