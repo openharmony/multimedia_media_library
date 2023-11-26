@@ -25,7 +25,6 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_async_worker.h"
 #ifdef DISTRIBUTED
 #include "medialibrary_device.h"
 #endif
@@ -35,6 +34,7 @@
 #include "medialibrary_tracer.h"
 #include "media_scanner.h"
 #include "media_scanner_manager.h"
+#include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
@@ -474,71 +474,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const string &sq
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::GetRaw() const
 {
     return rdbStore_;
-}
-
-static inline int32_t DeleteDbByFileId(const string &table, int32_t fileId, const bool compatible)
-{
-    AbsRdbPredicates predicates(table);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
-    if (!compatible) {
-        predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    }
-    return MediaLibraryRdbStore::Delete(predicates);
-}
-
-int32_t MediaLibraryRdbStore::DeleteFromDisk(const AbsRdbPredicates &predicates, const bool compatible)
-{
-    vector<string> columns = {
-        MediaColumn::MEDIA_ID,
-        MediaColumn::MEDIA_FILE_PATH
-    };
-    auto resultSet = Query(predicates, columns);
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-    int32_t count = 0;
-    int32_t err = resultSet->GetRowCount(count);
-    if (err != E_OK) {
-        return E_HAS_DB_ERROR;
-    }
-    int32_t deletedRows = 0;
-    for (int32_t i = 0; i < count; i++) {
-        err = resultSet->GoToNextRow();
-        if (err != E_OK) {
-            return E_HAS_DB_ERROR;
-        }
-
-        // Delete file from db.
-        int32_t fileId = get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
-        if (fileId <= 0) {
-            return E_HAS_DB_ERROR;
-        }
-        int32_t deletedRow = DeleteDbByFileId(predicates.GetTableName(), fileId, compatible);
-        if (deletedRow < 0) {
-            return E_HAS_DB_ERROR;
-        }
-        // If deletedRow is 0, the file may be deleted already somewhere else, so just continue.
-        if (deletedRow == 0) {
-            continue;
-        }
-
-        // Delete file from file system.
-        string filePath = get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
-                                                                       TYPE_STRING));
-        if (filePath.empty()) {
-            return E_HAS_DB_ERROR;
-        }
-        if (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT)) {
-            MEDIA_ERR_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
-            return E_HAS_FS_ERROR;
-        }
-        MediaLibraryObjectUtils::InvalidateThumbnail(to_string(fileId), predicates.GetTableName(), filePath);
-        if (predicates.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
-            MediaLibraryPhotoOperations::DeleteRevertMessage(filePath);
-        }
-        deletedRows += deletedRow;
-    }
-    return deletedRows;
 }
 
 void MediaLibraryRdbStore::ReplacePredicatesUriToId(AbsRdbPredicates &predicates)

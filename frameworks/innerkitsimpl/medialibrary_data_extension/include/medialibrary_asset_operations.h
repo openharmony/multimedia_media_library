@@ -86,6 +86,8 @@ public:
     static int32_t CreateAssetUniqueId(int32_t type);
     static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &filePath);
+    static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
+        const bool compatible = false);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,

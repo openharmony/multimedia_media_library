@@ -1808,5 +1808,115 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     }
     return E_OK;
 }
+
+
+static void DeleteFiles(AsyncTaskData *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteFiles");
+    if (data == nullptr) {
+        return;
+    }
+    auto *taskData = static_cast<DeleteFilesTask *>(data);
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        { to_string(PhotoAlbumSubType::TRASH) });
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
+    if (trashAlbumId <= 0) {
+        MEDIA_WARN_LOG("Failed to get trash album id: %{public}d", trashAlbumId);
+        return;
+    }
+    for (const auto &notifyUri : taskData->notifyUris_) {
+        watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
+    }
+
+    for (const auto &path : taskData->paths_) {
+        if (!MediaFileUtils::DeleteFile(path) && (errno != ENOENT)) {
+            MEDIA_WARN_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, path.c_str());
+        }
+    }
+    for (size_t i = 0; i < taskData->ids_.size(); i++) {
+        ThumbnailService::GetInstance()->InvalidateThumbnail(taskData->ids_[i], taskData->table_, taskData->paths_[i]);
+    }
+    if (taskData->table_ == PhotoColumn::PHOTOS_TABLE) {
+        for (const auto &path : taskData->paths_) {
+            MediaLibraryPhotoOperations::DeleteRevertMessage(path);
+        }
+    }
+}
+
+int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates, vector<string> &outIds, vector<string> &outPaths)
+{
+    vector<string> columns = {
+        MediaColumn::MEDIA_ID,
+        MediaColumn::MEDIA_FILE_PATH
+    };
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        outIds.push_back(
+            to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))));
+        outPaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
+            TYPE_STRING)));
+    }
+    return E_OK;
+}
+
+/**
+ * @brief Delete files permanently from system.
+ *
+ * @param predicates Files to delete.
+ * @param isAging Whether in aging process.
+ * @param compatible API8 interfaces can delete files directly without trash.
+ *   true: Delete files, may including non-trashed files.
+ *   false: Only delete files that were already trashed.
+ * @return Return deleted rows
+ */
+int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates,
+    const bool isAging, const bool compatible)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteFromDisk");
+    vector<string> whereArgs = predicates.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+    vector<string> agingNotifyUris;
+
+    // Query asset uris for notify before delete.
+    if (isAging) {
+        MediaLibraryNotify::GetNotifyUris(predicates, agingNotifyUris);
+    }
+    vector<string> ids;
+    vector<string> paths;
+    GetIdsAndPaths(predicates, ids, paths);
+    if (!compatible) {
+        predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    }
+    int32_t deletedRows = MediaLibraryRdbStore::Delete(predicates);
+    if (deletedRows <= 0 || ids.empty()) {
+        MEDIA_ERR_LOG("Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
+            deletedRows, ids.size());
+        return deletedRows;
+    }
+
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return E_ERR;
+    }
+
+    const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
+    auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, predicates.GetTableName());
+    auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
+    if (deleteFilesTask == nullptr) {
+        MEDIA_ERR_LOG("Failed to create async task for deleting files.");
+        return E_ERR;
+    }
+    asyncWorker->AddTask(deleteFilesTask, true);
+    return deletedRows;
+}
 } // namespace Media
 } // namespace OHOS

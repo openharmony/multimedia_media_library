@@ -50,7 +50,7 @@ public:
         const std::string &uri, const NotifyType notifyType, const int albumId = 0, bool hiddenOnly = false);
     int32_t Notify(const std::shared_ptr<FileAsset> &closeAsset);
     int32_t GetAlbumIdBySubType(const PhotoAlbumSubType subType);
-    static void GetNotifyUris(const NativeRdb::RdbPredicates &predicates, std::vector<std::string> &notifyUris);
+    static void GetNotifyUris(const NativeRdb::AbsRdbPredicates &predicates, std::vector<std::string> &notifyUris);
 
     static Utils::Timer timer_;
     static uint32_t timerId_;
