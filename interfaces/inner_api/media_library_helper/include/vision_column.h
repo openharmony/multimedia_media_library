@@ -105,6 +105,7 @@ const std::string CREATE_TAB_ANALYSIS_OBJECT = "CREATE TABLE IF NOT EXISTS " + V
     OBJECT_SCALE_Y + " INT, " +
     OBJECT_SCALE_WIDTH + " INT, " +
     OBJECT_SCALE_HEIGHT + " INT, " +
+    PROB + " INT, " +
     OBJECT_VERSION + " TEXT) ";
 
 const std::string RECOMMENDATION_ID = "recommendation_id";
@@ -143,7 +144,7 @@ const std::string CLOCK_COLOUR = "clock_colour";
 const std::string COMPOSITION_SCALE_X = "composition_scale_x";
 const std::string COMPOSITION_SCALE_Y = "composition_scale_y";
 const std::string COMPOSITION_SCALE_WIDTH = "composition_scale_width";
-const std::string COMPOSITION_SCALE_HEIGHT = "composition_iscale_height";
+const std::string COMPOSITION_SCALE_HEIGHT = "composition_scale_height";
 const std::string COMPOSITION_VERSION = "composition_version";
 const std::string CREATE_TAB_ANALYSIS_COMPOSITION = "CREATE TABLE IF NOT EXISTS " + VISION_COMPOSITION_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -175,13 +176,7 @@ const std::string CREATE_TAB_ANALYSIS_TOTAL = "CREATE TABLE IF NOT EXISTS " + VI
     STATUS + " INT, " +
     OCR + " INT, " +
     LABEL + " INT, " +
-    AESTHETICS_SCORE + " INT, " +
-    SALIENCY + " INT, " +
-    FACE + " INT, " +
-    OBJECT + " INT, " +
-    RECOMMENDATION + " INT, " +
-    SEGMENTATION + " INT, " +
-    COMPOSITION + " INT) ";
+    AESTHETICS_SCORE + " INT) ";
 
 const std::string CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE = "CREATE TABLE IF NOT EXISTS " + VISION_TOTAL_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -190,7 +185,12 @@ const std::string CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE = "CREATE TABLE IF NOT 
     OCR + " INT, " +
     LABEL + " INT, " +
     AESTHETICS_SCORE + " INT, " +
-    FACE + " INT) ";
+    FACE + " INT, " +
+    OBJECT + " INT, " +
+    RECOMMENDATION + " INT, " +
+    SEGMENTATION + " INT, " +
+    COMPOSITION + " INT, " +
+    SALIENCY + " INT) ";
 
 const std::string SHIELD_KEY = "shield_key";
 const std::string SHIELD_VALUE = "shield_value";
@@ -293,24 +293,12 @@ const std::string INIT_TAB_ANALYSIS_TOTAL = "INSERT INTO " + VISION_TOTAL_TABLE 
     STATUS + ", " +
     OCR + ", " +
     AESTHETICS_SCORE + ", " +
-    LABEL + ", " +
-    FACE + ", " +
-    SALIENCY + ", " +
-    OBJECT + ", " +
-    RECOMMENDATION + ", " +
-    SEGMENTATION + ", " +
-    COMPOSITION + ") " +
+    LABEL + ") " +
     "SELECT " + FILE_ID +
     ", CASE WHEN date_trashed > 0 THEN 2 ELSE 0 END," +
     " 0," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
     " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
-    " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
-    " 0," +
-    " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
-    " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
-    " CASE WHEN subtype = 1 THEN -1 ELSE 0 END," +
-    " CASE WHEN subtype = 1 THEN -1 ELSE 0 END" +
     " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE MEDIA_TYPE = 1";
 
 // trigger
@@ -340,13 +328,71 @@ const std::string CREATE_VISION_INSERT_TRIGGER = "CREATE TRIGGER IF NOT EXISTS i
     " WHEN NEW.MEDIA_TYPE = 1" +
     " BEGIN " +
     " INSERT INTO " + VISION_TOTAL_TABLE +" (" +
-    FILE_ID + ", " +
-    STATUS + ", " +
-    OCR + ", " +
+    FILE_ID + ", " + STATUS + ", " + OCR + ", " +
+    AESTHETICS_SCORE + ", " +
+    LABEL + ") " +
+    " VALUES (" +
+    " NEW.file_id, 0, 0," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END));" +
+    " END;";
+
+const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE =
+    "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +
+    PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
+    " WHEN NEW.MEDIA_TYPE = 1" +
+    " BEGIN " +
+    " INSERT INTO " + VISION_TOTAL_TABLE +" (" +
+    FILE_ID + ", " + STATUS + ", " + OCR + ", " +
     AESTHETICS_SCORE + ", " +
     LABEL + ", " +
     FACE + ", " +
-    SALIENCY + ", " +
+    OBJECT + ", " +
+    RECOMMENDATION + ", " +
+    SEGMENTATION + ", " +
+    COMPOSITION + "," +
+    SALIENCY + ") " +
+    " VALUES (" +
+    " NEW.file_id, 0, 0," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " 0 );" +
+    " END;";
+
+const std::string DROP_INSERT_VISION_TRIGGER = "DROP TRIGGER IF EXISTS insert_vision_trigger";
+
+const std::string CREATE_INSERT_VISION_TRIGGER_FOR_ADD_FACE =
+    "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +
+    PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
+    " WHEN NEW.MEDIA_TYPE = 1" +
+    " BEGIN " +
+    " INSERT INTO " + VISION_TOTAL_TABLE +" (" +
+    FILE_ID + ", " + STATUS + ", " + OCR + ", " +
+    AESTHETICS_SCORE + ", " +
+    LABEL + ", " +
+    FACE + ") " +
+    " VALUES (" +
+    " NEW.file_id, 0, 0," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END));" +
+    " END;";
+
+const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_AC =
+    "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +
+    PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
+    " WHEN NEW.MEDIA_TYPE = 1" +
+    " BEGIN " +
+    " INSERT INTO " + VISION_TOTAL_TABLE +" (" +
+    FILE_ID + ", " + STATUS + ", " + OCR + ", " +
+    AESTHETICS_SCORE + ", " +
+    LABEL + ", " +
+    FACE + ", " +
     OBJECT + ", " +
     RECOMMENDATION + ", " +
     SEGMENTATION + ", " +
@@ -356,11 +402,37 @@ const std::string CREATE_VISION_INSERT_TRIGGER = "CREATE TRIGGER IF NOT EXISTS i
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
-    " 0," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
     " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END));" +
+    " END;";
+
+const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_SALIENCY =
+    "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +
+    PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
+    " WHEN NEW.MEDIA_TYPE = 1" +
+    " BEGIN " +
+    " INSERT INTO " + VISION_TOTAL_TABLE +" (" +
+    FILE_ID + ", " + STATUS + ", " + OCR + ", " +
+    AESTHETICS_SCORE + ", " +
+    LABEL + ", " +
+    FACE + ", " +
+    OBJECT + ", " +
+    RECOMMENDATION + ", " +
+    SEGMENTATION + ", " +
+    COMPOSITION + "," +
+    SALIENCY + ") " +
+    " VALUES (" +
+    " NEW.file_id, 0, 0," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
+    " 0 );" +
     " END;";
 
 const std::string URI_OCR = MEDIALIBRARY_DATA_URI + "/" + VISION_OCR_TABLE;
@@ -381,20 +453,6 @@ const std::string UPDATE_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " 
     " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE subtype != 1)";
 const std::string UPDATE_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + FACE +
     " = -1 WHERE " + FACE + " IS NULL";
-const std::string DROP_INSERT_VISION_TRIGGER = "DROP TRIGGER IF EXISTS insert_vision_trigger";
-const std::string CREATE_NEW_INSERT_VISION_TRIGGER = std::string("CREATE TRIGGER IF NOT EXISTS insert_vision_trigger") +
-    " AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
-    " WHEN NEW.MEDIA_TYPE = 1" +
-    " BEGIN " +
-    " INSERT INTO " + VISION_TOTAL_TABLE +
-    " (" + FILE_ID + ", " + STATUS + ", " + OCR + ", " + AESTHETICS_SCORE + ", " + LABEL + ", " + FACE + ") " +
-    " VALUES (" +
-    " NEW.file_id, 0, 0," +
-    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
-    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END)," +
-    " (CASE WHEN NEW.subtype = 1 THEN -1 ELSE 0 END));" +
-    " END;";
-
 const std::string IMAGE_FACE_INDEX = "image_face_index";
 const std::string CREATE_IMAGE_FACE_INDEX = "CREATE UNIQUE INDEX " + IMAGE_FACE_INDEX + " ON " +
     VISION_IMAGE_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
@@ -406,24 +464,45 @@ const std::string UPDATE_SALIENCY_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE +
 const std::string UPDATE_SALIENCY_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + SALIENCY +
     " = -1 WHERE " + SALIENCY + " IS NULL";
 
+const std::string AC_ADD_OBJECT_COLUMN_FOR_TOTAL = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " +
+    OBJECT + " INT";
+const std::string AC_UPDATE_OBJECT_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " + OBJECT +
+    " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE subtype != 1)";
+const std::string AC_UPDATE_OBJECT_TOTAL_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + OBJECT +
+    " = -1 WHERE " + OBJECT + " IS NULL";
 const std::string OBJECT_INDEX = "object_index";
 const std::string CREATE_OBJECT_INDEX = "CREATE UNIQUE INDEX " + OBJECT_INDEX + " ON " +
     VISION_OBJECT_TABLE + " (" + FILE_ID + "," + OBJECT_ID + ")";
+
+const std::string AC_ADD_RECOMMENDATION_COLUMN_FOR_TOTAL = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " +
+    RECOMMENDATION + " INT";
+const std::string AC_UPDATE_RECOMMENDATION_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
+    RECOMMENDATION + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
+    " WHERE subtype != 1)";
+const std::string AC_UPDATE_RECOMMENDATION_TOTAL_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " +
+    RECOMMENDATION + " = -1 WHERE " + RECOMMENDATION + " IS NULL";
 const std::string RECOMMENDATION_INDEX = "recommendation_index";
 const std::string CREATE_RECOMMENDATION_INDEX = "CREATE UNIQUE INDEX " + RECOMMENDATION_INDEX + " ON " +
     VISION_RECOMMENDATION_TABLE + " (" + FILE_ID + "," + RECOMMENDATION_ID + ")";
+
+const std::string AC_ADD_SEGMENTATION_COLUMN_FOR_TOTAL = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " +
+    SEGMENTATION + " INT";
+const std::string AC_UPDATE_SEGMENTATION_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
+    SEGMENTATION + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
+    " WHERE subtype != 1)";
+const std::string AC_UPDATE_SEGMENTATION_TOTAL_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " +
+    SEGMENTATION + " = -1 WHERE " + SEGMENTATION + " IS NULL";
+
+const std::string AC_ADD_COMPOSITION_COLUMN_FOR_TOTAL = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " +
+    COMPOSITION + " INT";
+const std::string AC_UPDATE_COMPOSITION_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
+    COMPOSITION + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
+    " WHERE subtype != 1)";
+const std::string AC_UPDATE_COMPOSITION_TOTAL_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " +
+    COMPOSITION + " = -1 WHERE " + COMPOSITION + " IS NULL";
 const std::string COMPOSITION_INDEX = "composition_index";
 const std::string CREATE_COMPOSITION_INDEX = "CREATE UNIQUE INDEX " + COMPOSITION_INDEX + " ON " +
     VISION_COMPOSITION_TABLE + " (" + FILE_ID + "," + COMPOSITION_ID + ")";
-
-const std::string AC_ADD_OBJECT_COLUMN_FOR_TOTAL = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " +
-    OBJECT + " INT";
-const std::string AC_ADD_RECOMMENDATION_COLUMN_FOR_TOTAL = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " +
-    RECOMMENDATION + " INT";
-const std::string AC_ADD_SEGMENTATION_COLUMN_FOR_TOTAL = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " +
-    SEGMENTATION + " INT";
-const std::string AC_ADD_COMPOSITION_COLUMN_FOR_TOTAL = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " +
-    COMPOSITION + " INT";
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIALIBRARY_VISION_COLUMN_H
