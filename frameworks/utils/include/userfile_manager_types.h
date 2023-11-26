@@ -56,6 +56,7 @@ enum AnalysisType : int32_t {
     ANALYSIS_SEGMENTATION,
     ANALYSIS_COMPOSITION,
     ANALYSIS_SALIENCY,
+    ANALYSIS_DETAIL_ADDRESS,
 };
 
 enum PhotoAlbumType : int32_t {
@@ -80,7 +81,9 @@ enum PhotoAlbumSubType : int32_t {
     ANALYSIS_START = 4097,
     CLASSIFY_CATEGORY = ANALYSIS_START,
     CLASSIFY_SUBCATEGORY,
-    ANALYSIS_END = CLASSIFY_SUBCATEGORY,
+    GEOGRAPHY_LOCATION,
+    GEOGRAPHY_CITY,
+    ANALYSIS_END = GEOGRAPHY_CITY,
     ANY = std::numeric_limits<int32_t>::max()
 };
 

@@ -17,7 +17,10 @@
 #ifndef LOCATION_COLUMN_H
 #define LOCATION_COLUMN_H
 
+#include "media_column.h"
 #include "userfilemgr_uri.h"
+#include "userfile_manager_types.h"
+#include "vision_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -65,6 +68,33 @@ const std::string CREATE_GEO_DICTIONARY_TABLE =
 
 const std::string URI_GEO_DICTIONARY = MEDIALIBRARY_DATA_URI + "/" + GEO_DICTIONARY_TABLE;
 const std::string URI_GEO_KEOWLEDGE = MEDIALIBRARY_DATA_URI + "/" + GEO_KNOWLEDGE_TABLE;
+
+// location album param
+const std::string START_LATITUDE = "startLatitude";
+const std::string END_LATITUDE = "endLatitude";
+const std::string START_LONGITUDE = "startLongitude";
+const std::string END_LONGITUDE = "endLongitude";
+const std::string DIAMETER = "diameter";
+
+// location album result
+const std::string LOCATION_ALBUM_TYPE = std::to_string(PhotoAlbumType::SMART) + " AS " + ALBUM_TYPE;
+const std::string LOCATION_ALBUM_SUBTYPE = std::to_string(PhotoAlbumSubType::GEOGRAPHY_LOCATION) +
+    " AS " + ALBUM_SUBTYPE;
+const std::string LOCATION_COUNT = "COUNT(*) AS " + COUNT;
+const std::string LOCATION_DATE_MODIFIED = "MAX(date_modified) AS " + DATE_MODIFIED;
+const std::string CITY_ALBUM_NAME =  CITY_NAME + " AS " + ALBUM_NAME;
+const std::string LOCATION_COVER_URI =
+    " (SELECT '" + PhotoColumn::PHOTO_URI_PREFIX + "'||" + MediaColumn::MEDIA_ID + "||" +
+    "(SELECT SUBSTR(" + MediaColumn::MEDIA_FILE_PATH +
+    ", (SELECT LENGTH(" + MediaColumn::MEDIA_FILE_PATH +
+    ") - INSTR(reverseStr, '/') + 1) , (SELECT (SELECT LENGTH(" +
+    MediaColumn::MEDIA_FILE_PATH + ") - INSTR(reverseStr, '.')) - (SELECT LENGTH(" +
+    MediaColumn::MEDIA_FILE_PATH + ") - INSTR(reverseStr, '/')))) from (select " +
+    " (WITH RECURSIVE reverse_string(str, revstr) AS ( SELECT " +
+    MediaColumn::MEDIA_FILE_PATH + ", '' UNION ALL SELECT SUBSTR(str, 1, LENGTH(str) - 1), " +
+    "revstr || SUBSTR(str, LENGTH(str), 1) FROM reverse_string WHERE LENGTH(str) > 1 ) " +
+    " SELECT revstr || str FROM reverse_string WHERE LENGTH(str) = 1) as reverseStr)) ||'/'||" +
+    MediaColumn::MEDIA_NAME + ") AS " + COVER_URI;
 } // namespace Media
 } // namespace OHOS
 #endif
