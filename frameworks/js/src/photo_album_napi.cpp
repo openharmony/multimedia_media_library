@@ -24,6 +24,7 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "photo_map_column.h"
+#include "result_set_utils.h"
 #include "userfile_client.h"
 
 using namespace std;
@@ -91,6 +92,8 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER_SETTER("albumName", JSPhotoAccessGetAlbumName, JSPhotoAccessSetAlbumName),
             DECLARE_NAPI_GETTER("albumUri", JSPhotoAccessGetAlbumUri),
             DECLARE_NAPI_GETTER("count", JSPhotoAccessGetAlbumCount),
+            DECLARE_NAPI_GETTER("imageCount", JSPhotoAccessGetAlbumImageCount),
+            DECLARE_NAPI_GETTER("videoCount", JSPhotoAccessGetAlbumVideoCount),
             DECLARE_NAPI_GETTER("albumType", JSGetPhotoAlbumType),
             DECLARE_NAPI_GETTER("albumSubtype", JSGetPhotoAlbumSubType),
             DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri),
@@ -143,6 +146,26 @@ int32_t PhotoAlbumNapi::GetCount() const
 void PhotoAlbumNapi::SetCount(int32_t count)
 {
     return photoAlbumPtr->SetCount(count);
+}
+
+int32_t PhotoAlbumNapi::GetImageCount() const
+{
+    return photoAlbumPtr->GetImageCount();
+}
+
+void PhotoAlbumNapi::SetImageCount(int32_t count)
+{
+    return photoAlbumPtr->SetImageCount(count);
+}
+
+int32_t PhotoAlbumNapi::GetVideoCount() const
+{
+    return photoAlbumPtr->GetVideoCount();
+}
+
+void PhotoAlbumNapi::SetVideoCount(int32_t count)
+{
+    return photoAlbumPtr->SetVideoCount(count);
 }
 
 const string& PhotoAlbumNapi::GetAlbumUri() const
@@ -313,6 +336,26 @@ napi_value PhotoAlbumNapi::JSPhotoAccessGetAlbumCount(napi_env env, napi_callbac
 
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_int32(env, obj->GetCount(), &jsResult), JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSPhotoAccessGetAlbumImageCount(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_int32(env, obj->GetImageCount(), &jsResult), JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSPhotoAccessGetAlbumVideoCount(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_int32(env, obj->GetVideoCount(), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 
@@ -605,25 +648,64 @@ static napi_value ParseArgsAddAssets(napi_env env, napi_callback_info info,
     return result;
 }
 
+static int32_t FetchNewCount(PhotoAlbumNapiAsyncContext *context)
+{
+    string queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+        UFM_QUERY_PHOTO_ALBUM : PAH_QUERY_PHOTO_ALBUM;
+    Uri qUri(queryUri);
+    int errCode = 0;
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, context->objectInfo->GetAlbumId());
+    vector<string> fetchColumn = {
+        PhotoAlbumColumns::ALBUM_ID,
+        PhotoAlbumColumns::ALBUM_COUNT,
+        PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
+        PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
+    };
+    auto resultSet = UserFileClient::Query(qUri, predicates, fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
+        return -1;
+    }
+    if (resultSet->GoToFirstRow() != 0) {
+        NAPI_ERR_LOG("go to first row failed");
+        return -1;
+    }
+    bool hiddenOnly = context->objectInfo->GetHiddenOnly();
+    int imageCount = hiddenOnly ? -1 :
+            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
+    int videoCount = hiddenOnly ? -1 :
+            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
+    context->newCount =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, resultSet, TYPE_INT32));
+    context->newImageCount = imageCount;
+    context->newVideoCount = videoCount;
+    return 0;
+}
+
 static void JSPhotoAlbumAddAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
     tracer.Start("JSPhotoAlbumAddAssetsExecute");
-
     auto *context = static_cast<PhotoAlbumNapiAsyncContext*>(data);
     if (context->valuesBuckets.empty()) {
         return;
     }
-
     string addAssetsUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
         UFM_PHOTO_ALBUM_ADD_ASSET : PAH_PHOTO_ALBUM_ADD_ASSET;
     Uri uri(addAssetsUri);
+    
     auto changedRows = UserFileClient::BatchInsert(uri, context->valuesBuckets);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         return;
     }
     context->changedRows = changedRows;
+    int32_t ret = FetchNewCount(context);
+    if (ret < 0) {
+        NAPI_ERR_LOG("Update count failed");
+        context->SaveError(E_HAS_DB_ERROR);
+    }
 }
 
 static void JSPhotoAlbumAddAssetsCompleteCallback(napi_env env, napi_status status, void *data)
@@ -638,7 +720,9 @@ static void JSPhotoAlbumAddAssetsCompleteCallback(napi_env env, napi_status stat
     if (context->error == ERR_DEFAULT) {
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
         jsContext->status = true;
-        context->objectInfo->SetCount(context->objectInfo->GetCount() + context->changedRows);
+        context->objectInfo->SetCount(context->newCount);
+        context->objectInfo->SetImageCount(context->newImageCount);
+        context->objectInfo->SetVideoCount(context->newVideoCount);
     } else {
         context->HandleError(env, jsContext->error);
     }
@@ -720,6 +804,11 @@ static void JSPhotoAlbumRemoveAssetsExecute(napi_env env, void *data)
         return;
     }
     context->changedRows = deletedRows;
+    int32_t ret = FetchNewCount(context);
+    if (ret < 0) {
+        NAPI_ERR_LOG("Update count failed");
+        context->SaveError(E_HAS_DB_ERROR);
+    }
 }
 
 static void JSPhotoAlbumRemoveAssetsCompleteCallback(napi_env env, napi_status status, void *data)
@@ -734,8 +823,9 @@ static void JSPhotoAlbumRemoveAssetsCompleteCallback(napi_env env, napi_status s
     if (context->error == ERR_DEFAULT) {
         CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
         jsContext->status = true;
-        int32_t count = context->objectInfo->GetCount() - context->changedRows;
-        context->objectInfo->SetCount((count > 0) ? count : 0);
+        context->objectInfo->SetCount(context->newCount);
+        context->objectInfo->SetImageCount(context->newImageCount);
+        context->objectInfo->SetVideoCount(context->newVideoCount);
     } else {
         context->HandleError(env, jsContext->error);
     }

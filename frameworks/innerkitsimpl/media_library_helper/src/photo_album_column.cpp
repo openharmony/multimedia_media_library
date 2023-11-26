@@ -37,6 +37,9 @@ const string PhotoAlbumColumns::ALBUM_COUNT = "count";
 const string PhotoAlbumColumns::ALBUM_DATE_MODIFIED = "date_modified";
 const string PhotoAlbumColumns::ALBUM_DIRTY = "dirty";
 const string PhotoAlbumColumns::ALBUM_CLOUD_ID = "cloud_id";
+const string PhotoAlbumColumns::ALBUM_IMAGE_COUNT = "image_count";
+const string PhotoAlbumColumns::ALBUM_VIDEO_COUNT = "video_count";
+
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
 
@@ -50,7 +53,8 @@ const string PhotoAlbumColumns::REFERENCE_ALBUM_ID = "reference_album_id";
 
 // default fetch columns
 const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
-    ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED
+    ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED,
+    ALBUM_IMAGE_COUNT, ALBUM_VIDEO_COUNT
 };
 
 const string PhotoAlbumColumns::ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
@@ -75,7 +79,9 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     CONTAINS_HIDDEN + " INT DEFAULT 0, " +
     HIDDEN_COUNT + " INT DEFAULT 0, " +
     HIDDEN_COVER + " TEXT DEFAULT '', " +
-    ALBUM_ORDER + " INT )";
+    ALBUM_ORDER + " INT," +
+    ALBUM_IMAGE_COUNT + " INT DEFAULT 0, " +
+    ALBUM_VIDEO_COUNT + " INT DEFAULT 0)";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +

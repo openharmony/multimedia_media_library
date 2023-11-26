@@ -295,7 +295,7 @@ static inline string GetCover(const shared_ptr<ResultSet> &resultSet)
     return GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileId), extrUri);
 }
 
-static void SetCount(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
+static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
     ValuesBucket &values, const bool hiddenState)
 {
     const string &targetColumn = hiddenState ? PhotoAlbumColumns::HIDDEN_COUNT : PhotoAlbumColumns::ALBUM_COUNT;
@@ -310,6 +310,7 @@ static void SetCount(const shared_ptr<ResultSet> &fileResult, const shared_ptr<R
             values.PutInt(PhotoAlbumColumns::CONTAINS_HIDDEN, newCount != 0);
         }
     }
+    return newCount;
 }
 
 static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
@@ -329,6 +330,38 @@ static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<R
     }
 }
 
+static void GetAlbumPredicates(PhotoAlbumSubType subtype, const shared_ptr<ResultSet> &albumResult,
+    NativeRdb::RdbPredicates &predicates, const bool hiddenState)
+{
+    if (!subtype) {
+        PhotoAlbumColumns::GetUserAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
+    } else if (subtype >= PhotoAlbumSubType::ANALYSIS_START && subtype <= PhotoAlbumSubType::ANALYSIS_END) {
+        PhotoAlbumColumns::GetAnalysisAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
+    } else {
+        PhotoAlbumColumns::GetSystemAlbumPredicates(subtype, predicates, hiddenState);
+    }
+}
+
+static void SetImageVideoCount(int32_t newTotalCount,
+    const shared_ptr<ResultSet> &fileResultVideo, const shared_ptr<ResultSet> &albumResult,
+    ValuesBucket &values)
+{
+    int32_t oldVideoCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+    int32_t newVideoCount = GetFileCount(fileResultVideo);
+    if (oldVideoCount != newVideoCount) {
+        MEDIA_INFO_LOG("Update album %{public}s, oldCount: %{public}d, newCount: %{public}d",
+            PhotoAlbumColumns::ALBUM_VIDEO_COUNT.c_str(), oldVideoCount, newVideoCount);
+        values.PutInt(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, newVideoCount);
+    }
+    int32_t oldImageCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+    int32_t newImageCount = newTotalCount - newVideoCount;
+    if (oldImageCount != newImageCount) {
+        MEDIA_INFO_LOG("Update album %{public}s, oldCount: %{public}d, newCount: %{public}d",
+            PhotoAlbumColumns::ALBUM_IMAGE_COUNT.c_str(), oldImageCount, newImageCount);
+        values.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, newImageCount);
+    }
+}
+
 static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const shared_ptr<ResultSet> &albumResult, ValuesBucket &values, PhotoAlbumSubType subtype, const bool hiddenState)
 {
@@ -340,24 +373,27 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     };
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    if (!subtype) {
-        PhotoAlbumColumns::GetUserAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
-    } else if (subtype >= PhotoAlbumSubType::ANALYSIS_START && subtype <= PhotoAlbumSubType::ANALYSIS_END) {
-        PhotoAlbumColumns::GetAnalysisAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
-    } else {
-        PhotoAlbumColumns::GetSystemAlbumPredicates(subtype, predicates, hiddenState);
-    }
+    GetAlbumPredicates(subtype, albumResult, predicates, hiddenState);
     predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
     if (fileResult == nullptr) {
         return E_HAS_DB_ERROR;
     }
-
-    SetCount(fileResult, albumResult, values, hiddenState);
+    int32_t newCount = SetCount(fileResult, albumResult, values, hiddenState);
     SetCover(fileResult, albumResult, values, hiddenState);
+    if (hiddenState == 0) {
+        predicates.Clear();
+        GetAlbumPredicates(subtype, albumResult, predicates, hiddenState);
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
+        predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
+        auto fileResultVideo = QueryGoToFirst(rdbStore, predicates, columns);
+        if (fileResultVideo == nullptr) {
+            return E_HAS_DB_ERROR;
+        }
+        SetImageVideoCount(newCount, fileResultVideo, albumResult, values);
+    }
     return E_SUCCESS;
 }
-
 
 static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, const shared_ptr<ResultSet> &albumResult,
     const bool hiddenState)
@@ -445,6 +481,8 @@ void MediaLibraryRdbUtils::UpdateUserAlbumInternal(const shared_ptr<RdbStore> &r
         PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_COVER_URI,
         PhotoAlbumColumns::ALBUM_COUNT,
+        PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
+        PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
     };
     auto albumResult = GetUserAlbum(rdbStore, userAlbumIds, columns);
     if (albumResult == nullptr) {
@@ -494,6 +532,8 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumInternal(const shared_ptr<RdbStore> 
         PhotoAlbumColumns::ALBUM_SUBTYPE,
         PhotoAlbumColumns::ALBUM_COVER_URI,
         PhotoAlbumColumns::ALBUM_COUNT,
+        PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
+        PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
     };
     auto albumResult = GetSystemAlbum(rdbStore, subtypes, columns);
     if (albumResult == nullptr) {

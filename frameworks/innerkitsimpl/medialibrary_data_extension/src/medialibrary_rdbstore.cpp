@@ -1743,6 +1743,18 @@ static void FixDocsPath(RdbStore &store)
     }, store);
 }
 
+static void AddImageVideoCount(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE +
+                " ADD COLUMN " + PhotoAlbumColumns::ALBUM_IMAGE_COUNT + " INT DEFAULT 0",
+        "ALTER TABLE " + PhotoAlbumColumns::TABLE +
+                " ADD COLUMN " + PhotoAlbumColumns::ALBUM_VIDEO_COUNT + " INT DEFAULT 0",
+    };
+
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1823,6 +1835,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_LOCATION_TABLE) {
         UpdateLocationTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_IMAGE_VIDEO_COUNT) {
+        AddImageVideoCount(store);
     }
 }
 

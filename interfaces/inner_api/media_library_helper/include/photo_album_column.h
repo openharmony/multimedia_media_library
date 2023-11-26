@@ -36,6 +36,8 @@ public:
     static const std::string ALBUM_DATE_MODIFIED;
     static const std::string ALBUM_DIRTY;
     static const std::string ALBUM_CLOUD_ID;
+    static const std::string ALBUM_IMAGE_COUNT;
+    static const std::string ALBUM_VIDEO_COUNT;
 
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH;
