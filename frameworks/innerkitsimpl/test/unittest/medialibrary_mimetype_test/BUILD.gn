@@ -36,5 +36,11 @@ ohos_unittest("medialibrary_mimetype_test") {
     "./src/medialibrary_mimetype_test.cpp",
   ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   external_deps = [ "hilog:libhilog" ]
 }

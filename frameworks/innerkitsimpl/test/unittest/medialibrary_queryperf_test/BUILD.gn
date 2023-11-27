@@ -72,6 +72,12 @@ ohos_unittest("medialibrary_queryperf_unittest") {
     "user_file_service:file_access_extension_ability_kit",
   ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   if (is_standard_system) {
     external_deps += [ "hilog:libhilog" ]
   } else {

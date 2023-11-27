@@ -58,6 +58,12 @@ ohos_unittest("medialibrary_manager_utils_test") {
     "relational_store:rdb_data_share_adapter",
   ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   resource_config_file =
       "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }
