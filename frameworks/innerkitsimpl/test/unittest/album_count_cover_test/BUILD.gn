@@ -58,4 +58,10 @@ ohos_unittest("AlbumCountCoverTest") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
   ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
 }

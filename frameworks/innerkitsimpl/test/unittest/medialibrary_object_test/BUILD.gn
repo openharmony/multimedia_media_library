@@ -43,6 +43,12 @@ ohos_unittest("medialibrary_object_test") {
     "relational_store:rdb_data_share_adapter",
   ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   if (is_standard_system) {
     external_deps += [ "hilog:libhilog" ]
   } else {

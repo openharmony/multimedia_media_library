@@ -128,6 +128,12 @@ ohos_shared_library("media_mtp") {
     "storage_service:storage_manager_sa_proxy",
   ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   if (defined(global_parts_info.powermgr_battery_manager)) {
     external_deps += [ "battery_manager:batterysrv_client" ]
     cflags_cc += [ "-DHAS_BATTERY_MANAGER_PART" ]
@@ -163,6 +169,12 @@ ohos_shared_library("mtpservice") {
     "ipc:ipc_js",
     "napi:ace_napi",
   ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
 
   relative_install_dir = "module/multimedia"
   subsystem_name = "multimedia"

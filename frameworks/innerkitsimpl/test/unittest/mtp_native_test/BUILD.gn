@@ -80,6 +80,12 @@ ohos_unittest("mtp_native_test") {
     "storage_service:storage_manager_sa_proxy",
   ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   if (defined(global_parts_info.powermgr_battery_manager)) {
     external_deps += [ "battery_manager:batterysrv_client" ]
     cflags_cc = [ "-DHAS_BATTERY_MANAGER_PART" ]
