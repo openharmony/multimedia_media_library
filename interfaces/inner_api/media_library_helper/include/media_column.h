@@ -107,6 +107,7 @@ public:
     static const std::string PHOTO_SCHPT_MEDIA_TYPE_INDEX;
     static const std::string PHOTO_SCHPT_DAY_INDEX;
     static const std::string PHOTO_HIDDEN_TIME_INDEX;
+    static const std::string PHOTO_SCHPT_HIDDEN_TIME_INDEX;
     // format in PhotoTable year month day
     static const std::string PHOTO_DATE_YEAR_FORMAT;
     static const std::string PHOTO_DATE_MONTH_FORMAT;
@@ -122,6 +123,7 @@ public:
     static const std::string CREATE_SCHPT_MEDIA_TYPE_INDEX;
     static const std::string CREATE_SCHPT_DAY_INDEX;
     static const std::string CREATE_HIDDEN_TIME_INDEX;
+    static const std::string CREATE_SCHPT_HIDDEN_TIME_INDEX;
 
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME;

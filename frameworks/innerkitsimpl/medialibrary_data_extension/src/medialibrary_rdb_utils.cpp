@@ -374,7 +374,11 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     GetAlbumPredicates(subtype, albumResult, predicates, hiddenState);
-    predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
+    if (subtype == PhotoAlbumSubType::HIDDEN || hiddenState) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
+    } else {
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
+    }
     auto fileResult = QueryGoToFirst(rdbStore, predicates, columns);
     if (fileResult == nullptr) {
         return E_HAS_DB_ERROR;
