@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "image_type.h"
 #define MLOG_TAG "Thumbnail"
 
 #include "ithumbnail_helper.h"
@@ -260,6 +261,26 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
     return true;
 }
 
+static bool RevertFastThumbnailPixelFormat(ThumbnailData &data, const Size &size)
+{
+    if (data.source->GetPixelFormat() != PixelFormat::RGB_565) {
+        Media::InitializationOptions option = {
+            .size = size,
+            .pixelFormat = PixelFormat::RGB_565
+        };
+        data.source = PixelMap::Create(*(data.source), option);
+        if (data.source == nullptr) {
+            MEDIA_ERR_LOG("Can not revert fastThumbnail from RGBA_8888 to RGB_565");
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+                {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+            return false;
+        }
+    }
+    
+    return true;
+}
+
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
     bool isThumb = false;
@@ -286,6 +307,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
             return false;
         }
     } else {
+        // generate MTH and YEAR pixelMap
         Size size;
         if (type == ThumbnailType::MTH) {
             size = {DEFAULT_MTH_SIZE, DEFAULT_MTH_SIZE };
@@ -293,6 +315,9 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
             size = { DEFAULT_YEAR_SIZE, DEFAULT_YEAR_SIZE };
         }
         ThumbnailUtils::GenTargetPixelmap(data, size);
+        if (!RevertFastThumbnailPixelFormat(data, size)) {
+            return false;
+        }
     }
 
     int err = ThumbnailUtils::TrySaveFile(data, type);
