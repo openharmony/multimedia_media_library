@@ -804,6 +804,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
     PhotoColumn::CREATE_SCHPT_DAY_INDEX,
     PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
+    PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -1693,7 +1694,13 @@ static void AddImageVideoCount(RdbStore &store)
         "ALTER TABLE " + PhotoAlbumColumns::TABLE +
                 " ADD COLUMN " + PhotoAlbumColumns::ALBUM_VIDEO_COUNT + " INT DEFAULT 0",
     };
+}
 
+static void AddSCHPTHiddenTimeIndex(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+    };
     ExecSqls(sqls, store);
 }
 
@@ -1781,6 +1788,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_IMAGE_VIDEO_COUNT) {
         AddImageVideoCount(store);
+    }
+    
+    if (oldVersion < VERSION_ADD_SCHPT_HIDDEN_TIME_INDEX) {
+        AddSCHPTHiddenTimeIndex(store);
     }
 }
 
