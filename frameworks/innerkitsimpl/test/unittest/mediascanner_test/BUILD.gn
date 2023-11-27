@@ -59,6 +59,12 @@ ohos_unittest("mediascanner_unittest") {
     "relational_store:native_rdb",
   ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   if (is_standard_system) {
     external_deps += [ "hilog:libhilog" ]
   } else {

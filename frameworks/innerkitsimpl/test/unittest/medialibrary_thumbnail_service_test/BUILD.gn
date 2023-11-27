@@ -42,6 +42,12 @@ ohos_unittest("medialibrary_thumbnail_service_test") {
     "relational_store:native_rdb",
   ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
   resource_config_file =
       "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }

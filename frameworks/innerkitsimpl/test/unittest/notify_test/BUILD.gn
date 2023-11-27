@@ -66,4 +66,10 @@ ohos_unittest("Notifytest") {
     "samgr:samgr_proxy",
     "user_file_service:file_access_extension_ability_kit",
   ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
 }

@@ -79,4 +79,10 @@ ohos_unittest("create_delete_directory_test") {
     "relational_store:rdb_data_share_adapter",
     "user_file_service:file_access_extension_ability_kit",
   ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
 }
