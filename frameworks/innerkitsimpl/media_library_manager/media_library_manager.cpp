@@ -575,7 +575,6 @@ unique_ptr<PixelMap> MediaLibraryManager::GetPixelMapWithoutDecode(UniqueFd &uni
     }
     read(uniqueFd.Get(), buffer, statInfo.st_size);
     pixel->SetPixelsAddr(buffer, nullptr, statInfo.st_size, AllocatorType::HEAP_ALLOC, nullptr);
-    free(buffer);
     return pixel;
 }
 
