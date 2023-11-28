@@ -5827,6 +5827,10 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
         CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
+        if (!context->isAnalysisAlbum) {
+            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+        }
     }
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
