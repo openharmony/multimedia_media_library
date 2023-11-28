@@ -186,6 +186,10 @@ void SetTables()
         // todo: album tables
     };
     for (auto &createTableSql : createTableSqlList) {
+        if (g_rdbStore == nullptr) {
+            MEDIA_ERR_LOG("can not get g_rdbstore");
+            return;
+        }
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
@@ -728,13 +732,13 @@ int32_t SetAudioPendingStatus(int32_t pendingStatus, int32_t fileId)
 
 void MediaLibraryAudioOperationsTest::SetUpTestCase()
 {
-    SetTables();
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryAudioOperationsTest failed, can not get rdbstore");
         exit(1);
     }
+    SetTables();
 }
 
 void MediaLibraryAudioOperationsTest::TearDownTestCase()
