@@ -659,9 +659,12 @@ static int32_t FetchNewCount(PhotoAlbumNapiAsyncContext *context)
     vector<string> fetchColumn = {
         PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_COUNT,
-        PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
-        PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
     };
+    bool isSmartAlbum = (context->objectInfo->GetPhotoAlbumType() == PhotoAlbumType::SMART);
+    if (!isSmartAlbum) {
+        fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+        fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+    }
     auto resultSet = UserFileClient::Query(qUri, predicates, fetchColumn, errCode);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
@@ -672,9 +675,9 @@ static int32_t FetchNewCount(PhotoAlbumNapiAsyncContext *context)
         return -1;
     }
     bool hiddenOnly = context->objectInfo->GetHiddenOnly();
-    int imageCount = hiddenOnly ? -1 :
+    int imageCount = (hiddenOnly || isSmartAlbum) ? -1 :
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
-    int videoCount = hiddenOnly ? -1 :
+    int videoCount = (hiddenOnly || isSmartAlbum) ? -1 :
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
     context->newCount =
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, resultSet, TYPE_INT32));
