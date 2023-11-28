@@ -187,6 +187,10 @@ void SetTables()
         // todo: album tables
     };
     for (auto &createTableSql : createTableSqlList) {
+        if (g_rdbStore == nullptr) {
+            MEDIA_ERR_LOG("can not get g_rdbstore");
+            return;
+        }
         int32_t ret = g_rdbStore->ExecuteSql(createTableSql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
@@ -781,13 +785,13 @@ int64_t GetPhotoLastVisitTime(int32_t fileId)
 
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
 {
-    SetTables();
     MediaLibraryUnitTestUtils::Init();
     g_rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (g_rdbStore == nullptr || g_rdbStore->GetRaw() == nullptr) {
         MEDIA_ERR_LOG("Start MediaLibraryPhotoOperationsTest failed, can not get rdbstore");
         exit(1);
     }
+    SetTables();
 }
 
 void MediaLibraryPhotoOperationsTest::TearDownTestCase()
@@ -1302,7 +1306,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
 {
     // Last visit time test
     MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_005");
-    
+
 
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photosy.jpg");
     EXPECT_GE(fileId, E_OK);
@@ -1312,7 +1316,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
     MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
     Uri uri(fileUri.ToString());
     MediaLibraryCommand openCmd(uri, Media::OperationType::OPEN);
-    
+
     // Open file
     openCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(openCmd, "rw");
@@ -2110,7 +2114,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_commit_edit_insert_test_001
 
     const static int LARGE_NUM = 1000;
     string editData = "123456";
-    
+
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::COMMIT_EDIT,
         MediaLibraryApi::API_10);
     ValuesBucket values1;
