@@ -305,7 +305,7 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
     if (tempPath.find(ROOT_MEDIA_DIR) != 0) {
         return E_CHECK_ROOT_DIR_FAIL;
     }
-    string relativePath = tempPath.substr(ROOT_MEDIA_DIR.length());
+    string relativePath = tempPath.substr((ROOT_MEDIA_DIR + DOCS_PATH).length());
     auto pos = relativePath.find('/');
     if (pos == string::npos) {
         return E_INVALID_ARGUMENTS;
@@ -333,7 +333,7 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     if (tempPath.find(ROOT_MEDIA_DIR) != 0) {
         return E_CHECK_ROOT_DIR_FAIL;
     }
-    string relativePath = tempPath.substr(ROOT_MEDIA_DIR.length());
+    string relativePath = tempPath.substr((ROOT_MEDIA_DIR + DOCS_PATH).length());
     auto pos = relativePath.find('/');
     if (pos == string::npos) {
         return E_INVALID_ARGUMENTS;
