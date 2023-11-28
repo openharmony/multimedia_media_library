@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "image_type.h"
 #define MLOG_TAG "MediaLibraryManager"
 
 #include "media_library_manager.h"
@@ -554,22 +555,28 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
 
 unique_ptr<PixelMap> MediaLibraryManager::GetPixelMapWithoutDecode(UniqueFd &uniqueFd, const Size &size)
 {
+    Media::InitializationOptions option = {
+        .size = size,
+        .pixelFormat = PixelFormat::RGB_565
+    };
+    unique_ptr<PixelMap> pixel = Media::PixelMap::Create(option);
+    if (pixel == nullptr) {
+        MEDIA_ERR_LOG("Can not create pixel");
+        return nullptr;
+    }
+
     struct stat statInfo;
     if (fstat(uniqueFd.Get(), &statInfo) == E_ERR) {
         return nullptr;
     }
-    uint32_t *buffer = static_cast<uint32_t*>(malloc(statInfo.st_size));
+    uint8_t *buffer = static_cast<uint8_t*>(malloc(statInfo.st_size));
     if (buffer == nullptr) {
         return nullptr;
     }
     read(uniqueFd.Get(), buffer, statInfo.st_size);
-    InitializationOptions option = {
-        .size = size,
-        .pixelFormat = PixelFormat::RGB_565
-    };
-    unique_ptr<PixelMap> pixelMap = PixelMap::Create(buffer, statInfo.st_size, option);
+    pixel->SetPixelsAddr(buffer, nullptr, statInfo.st_size, AllocatorType::HEAP_ALLOC, nullptr);
     free(buffer);
-    return pixelMap;
+    return pixel;
 }
 
 unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(const std::string &uri, Size &size, const string &path)
