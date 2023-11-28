@@ -542,7 +542,7 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
     photoAlbumData->SetCoverUri(get<string>(GetRowValFromColumn(coverColumn, TYPE_STRING,
         resultSet)));
 
-    // Albums of hidden types (except hidden album itself) do not support image count and video count,
+    // Albums of hidden types (except hidden album itself) don't support image count and video count,
     // return -1 instead
     int32_t imageCount = hiddenOnly_ ? -1 :
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, TYPE_INT32, resultSet));

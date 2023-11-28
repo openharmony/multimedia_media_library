@@ -1348,7 +1348,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_005, TestS
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_query_api10_test_006, TestSize.Level0)
 {
     // Hidden time test 2
-    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_005");
+    MEDIA_INFO_LOG("start tdd photo_oprn_query_api10_test_006");
     int32_t fileId1 = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "hoho.jpg");
     ASSERT_FALSE(fileId1 < E_OK);
     DataSharePredicates predicates;
