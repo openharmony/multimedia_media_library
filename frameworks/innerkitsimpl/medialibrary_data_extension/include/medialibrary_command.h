@@ -56,7 +56,8 @@ enum class OperationObject : uint32_t {
     PAH_MAP,
     TOOL_PHOTO,
     TOOL_AUDIO,
-    VISION_OCR,              // Vision start
+    VISION_START,
+    VISION_OCR = VISION_START,
     VISION_LABEL,
     VISION_AESTHETICS,
     VISION_OBJECT,
@@ -67,7 +68,7 @@ enum class OperationObject : uint32_t {
     VISION_IMAGE_FACE,
     VISION_FACE_TAG,
     VISION_SALIENCY,
-    VISION_SHIELD,           // Vision end
+    VISION_END = VISION_SALIENCY,
     GEO_DICTIONARY,
     GEO_KNOWLEDGE,
     GEO_PHOTO,

@@ -853,7 +853,6 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_IMAGE_FACE,
     CREATE_TAB_FACE_TAG,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
-    CREATE_TAB_APPLICATION_SHIELD,
     CREATE_VISION_UPDATE_TRIGGER,
     CREATE_VISION_DELETE_TRIGGER,
     CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE,
@@ -1173,7 +1172,6 @@ static void AddAnalysisTables(RdbStore &store)
         CREATE_TAB_ANALYSIS_LABEL,
         CREATE_TAB_ANALYSIS_AESTHETICS,
         CREATE_TAB_ANALYSIS_TOTAL,
-        CREATE_TAB_APPLICATION_SHIELD,
         CREATE_VISION_UPDATE_TRIGGER,
         CREATE_VISION_DELETE_TRIGGER,
         CREATE_VISION_INSERT_TRIGGER,
@@ -1337,7 +1335,6 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
         "DROP TABLE IF EXISTS tab_analysis_segmentation",
         "DROP TABLE IF EXISTS tab_analysis_composition",
         "DROP TABLE IF EXISTS tab_analysis_total",
-        "DROP TABLE IF EXISTS tab_application_shield",
         "DROP TABLE IF EXISTS tab_analysis_image_face",
         "DROP TABLE IF EXISTS tab_analysis_face_tag",
     };
@@ -1704,6 +1701,28 @@ static void AddSCHPTHiddenTimeIndex(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdateClassifyDirtyData(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_TABLE_ANALYSISALBUM,
+        DROP_TABLE_ANALYSISPHOTOMAP,
+        ALTER_WIDTH_COLUMN,
+        ALTER_HEIGHT_COLUMN,
+        CREATE_ANALYSIS_ALBUM,
+        CREATE_ANALYSIS_ALBUM_MAP,
+        CREATE_TAB_IMAGE_FACE,
+        CREATE_TAB_FACE_TAG,
+        DROP_INSERT_VISION_TRIGGER,
+        CREATE_INSERT_VISION_TRIGGER_FOR_ADD_FACE,
+        ADD_FACE_STATUS_COLUMN,
+        UPDATE_TOTAL_VALUE,
+        UPDATE_NOT_SUPPORT_VALUE,
+        CREATE_IMAGE_FACE_INDEX
+    };
+    MEDIA_INFO_LOG("start clear dirty data");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1827,6 +1846,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_TRIGGER) {
         AddSourceAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_CLEAR_LABEL_DATA) {
+        UpdateClassifyDirtyData(store);
     }
 }
 
