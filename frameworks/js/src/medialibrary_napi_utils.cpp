@@ -305,6 +305,9 @@ bool MediaLibraryNapiUtils::GetLocationPredicate(AsyncContext &context,
     map<string, string> locationMap;
     auto &items = predicate->GetOperationList();
     for (auto &item : items) {
+        if (item.singleParams.empty()) {
+            continue;
+        }
         if (LOCATION_PARAM_MAP.find(static_cast<string>(item.GetSingle(FIELD_IDX))) != LOCATION_PARAM_MAP.end()) {
             if (item.operation != DataShare::EQUAL_TO) {
                 NAPI_ERR_LOG("location predicates not support %{public}d", item.operation);
@@ -847,6 +850,8 @@ int32_t MediaLibraryNapiUtils::GetAllLocationPredicates(DataSharePredicates &pre
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.And()->NotEqualTo(PhotoColumn::PHOTO_LATITUDE, to_string(0));
+    predicates.And()->NotEqualTo(PhotoColumn::PHOTO_LONGITUDE, to_string(0));
     return E_SUCCESS;
 }
 
