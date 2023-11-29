@@ -1672,18 +1672,20 @@ static void AddFormMap(RdbStore &store)
 
 static void FixDocsPath(RdbStore &store)
 {
-    ExecSqls({
-    "UPDATE Files SET "
-        " data = REPLACE(data, '/storage/cloud/files/Documents', '/storage/cloud/files/Docs/Documents'),"
-        " data = REPLACE(data, '/storage/cloud/files/Download', '/storage/cloud/files/Docs/Download'),"
-        " relative_path = REPLACE(relative_path, 'Documents/', 'Docs/Documents/'),"
-        " relative_path = REPLACE(relative_path, 'Download/', 'Docs/Download/')"
-    " WHERE data LIKE '/storage/cloud/files/Documents%' OR "
-        " data LIKE '/storage/cloud/files/Download%' OR"
-        " relative_path LIKE 'Documents/%' OR"
-        " relative_path LIKE 'Download/%';",
-    "UPDATE MediaTypeDirectory SET directory = 'Docs/' WHERE directory_type = 4 OR directory_type = 5",
-    }, store);
+    vector<string> sqls = {
+        "UPDATE Files SET "
+            " data = REPLACE(data, '/storage/cloud/files/Documents', '/storage/cloud/files/Docs/Documents'),"
+            " data = REPLACE(data, '/storage/cloud/files/Download', '/storage/cloud/files/Docs/Download'),"
+            " relative_path = REPLACE(relative_path, 'Documents/', 'Docs/Documents/'),"
+            " relative_path = REPLACE(relative_path, 'Download/', 'Docs/Download/')"
+        " WHERE data LIKE '/storage/cloud/files/Documents%' OR "
+            " data LIKE '/storage/cloud/files/Download%' OR"
+            " relative_path LIKE 'Documents/%' OR"
+            " relative_path LIKE 'Download/%';",
+        "UPDATE MediaTypeDirectory SET directory = 'Docs/' WHERE directory_type = 4 OR directory_type = 5",
+    };
+
+    ExecSqls(sqls, store);
 }
 
 static void AddImageVideoCount(RdbStore &store)
