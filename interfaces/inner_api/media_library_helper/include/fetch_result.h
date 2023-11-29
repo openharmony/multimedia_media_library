@@ -51,12 +51,14 @@ public:
     void SetResultNapiType(const ResultNapiType napiType);
     void SetFetchResType(const FetchResType resType);
     void SetHiddenOnly(const bool hiddenOnly);
+    void SetLocationOnly(const bool locationOnly);
 
     std::string GetNetworkId();
     ResultNapiType GetResultNapiType();
     std::shared_ptr<DataShare::DataShareResultSet> &GetDataShareResultSet();
     FetchResType GetFetchResType();
     bool GetHiddenOnly();
+    bool GetLocationOnly();
 
     std::unique_ptr<T> GetObjectAtPosition(int32_t index);
     std::unique_ptr<T> GetFirstObject();
@@ -67,9 +69,9 @@ public:
 
 private:
     std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::ResultSet> &resultSet);
-    std::variant<int32_t, int64_t, std::string> GetRowValFromColumn(std::string columnName,
+    std::variant<int32_t, int64_t, std::string, double> GetRowValFromColumn(std::string columnName,
         ResultSetDataType dataType, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
-    std::variant<int32_t, int64_t, std::string> GetValByIndex(int32_t index, ResultSetDataType dataType,
+    std::variant<int32_t, int64_t, std::string, double> GetValByIndex(int32_t index, ResultSetDataType dataType,
         std::shared_ptr<NativeRdb::ResultSet> &resultSet);
 
     void SetFileAsset(FileAsset *fileAsset, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
@@ -88,6 +90,7 @@ private:
     std::shared_ptr<DataShare::DataShareResultSet> resultset_ = nullptr;
     FetchResType fetchResType_;
     bool hiddenOnly_ = false;
+    bool locationOnly_ = false;
 };
 } // namespace Media
 } // namespace OHOS

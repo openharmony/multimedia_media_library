@@ -38,6 +38,8 @@ public:
     static const std::string ALBUM_CLOUD_ID;
     static const std::string ALBUM_IMAGE_COUNT;
     static const std::string ALBUM_VIDEO_COUNT;
+    static const std::string ALBUM_LATITUDE;
+    static const std::string ALBUM_LONGITUDE;
 
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH;
