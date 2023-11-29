@@ -5379,7 +5379,7 @@ napi_value MediaLibraryNapi::CreateAlbumSubTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
 {
     struct AnalysisProperty property[] = {
-        { "ANALYSIS_AETSTHETICS_SCORE", AnalysisType::ANALYSIS_AETSTHETICS_SCORE },
+        { "ANALYSIS_AESTHETICS_SCORE", AnalysisType::ANALYSIS_AESTHETICS_SCORE },
         { "ANALYSIS_LABEL", AnalysisType::ANALYSIS_LABEL },
         { "ANALYSIS_OCR", AnalysisType::ANALYSIS_OCR },
         { "ANALYSIS_FACE", AnalysisType::ANALYSIS_FACE },
