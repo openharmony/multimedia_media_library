@@ -5181,6 +5181,7 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
     context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
     context->fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
+    context->fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum);
 }
 
 static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, void *data)

@@ -483,12 +483,12 @@ int32_t FileAsset::GetOpenStatus(int32_t fd)
     }
 }
 
-unordered_map<string, variant<int32_t, int64_t, string>> &FileAsset::GetMemberMap()
+unordered_map<string, variant<int32_t, int64_t, string, double>> &FileAsset::GetMemberMap()
 {
     return member_;
 }
 
-variant<int32_t, int64_t, string> &FileAsset::GetMemberValue(const string &name)
+variant<int32_t, int64_t, string, double> &FileAsset::GetMemberValue(const string &name)
 {
     return member_[name];
 }

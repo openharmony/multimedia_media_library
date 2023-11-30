@@ -156,7 +156,7 @@ private:
     static thread_local FileAsset *sFileAsset_;
     std::shared_ptr<FileAsset> fileAssetPtr = nullptr;
     static std::shared_ptr<ThumbnailManager> thumbnailManager_;
-    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;
+    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;
 };
 struct FileAssetAsyncContext : public NapiError {
     napi_async_work work;
