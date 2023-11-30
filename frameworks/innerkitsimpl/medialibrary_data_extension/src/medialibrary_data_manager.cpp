@@ -1069,7 +1069,7 @@ int32_t MediaLibraryDataManager::OpenFile(MediaLibraryCommand &cmd, const string
     }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    if (oprnObject != OperationObject::THUMBNAIL) {
+    if (oprnObject != OperationObject::THUMBNAIL && oprnObject != OperationObject::THUMBNAIL_ASTC) {
         string opObject = MediaFileUri::GetPathFirstDentry(const_cast<Uri &>(cmd.GetUri()));
         if (opObject == IMAGE_ASSET_TYPE || opObject == VIDEO_ASSET_TYPE || opObject == URI_TYPE_PHOTO) {
             cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);

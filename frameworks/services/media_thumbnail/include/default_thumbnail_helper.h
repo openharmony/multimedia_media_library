@@ -25,7 +25,7 @@ public:
     DefaultThumbnailHelper() = default;
     virtual ~DefaultThumbnailHelper() override = default;
     int32_t CreateThumbnail(ThumbRdbOpt &opts, bool isSync = false) override;
-    int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size) override;
+    int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size, bool isAstc = false) override;
 };
 } // namespace Media
 } // namespace OHOS
