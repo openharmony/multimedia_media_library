@@ -427,10 +427,12 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
 
     int deleteRow = MediaLibraryRdbStore::Delete(predicates);
     auto watch = MediaLibraryNotify::GetInstance();
-    for (size_t i = 0; i < predicates.GetWhereArgs().size() - AFTER_AGR_SIZE; i++) {
+    const vector<string> &notifyUris = predicates.GetWhereArgs();
+    size_t count = notifyUris.size() - AFTER_AGR_SIZE;
+    for (size_t i = 0; i < count; i++) {
         if (deleteRow > 0) {
             watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
-                predicates.GetWhereArgs()[i]), NotifyType::NOTIFY_REMOVE);
+                notifyUris[i]), NotifyType::NOTIFY_REMOVE);
         }
     }
     return deleteRow;
@@ -665,9 +667,12 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     int32_t changedRows = MediaLibraryRdbStore::Update(rdbValues, rdbPredicates);
     auto watch = MediaLibraryNotify::GetInstance();
     if (changedRows > 0) {
-        for (size_t i = 0; i < rdbPredicates.GetWhereArgs().size() - AFTER_AGR_SIZE; i++) {
+        const vector<string> &notifyIds = rdbPredicates.GetWhereArgs();
+        constexpr int32_t notIdArgs = 3;
+        size_t count = notifyIds.size() - notIdArgs;
+        for (size_t i = 0; i < count; i++) {
             watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
-                rdbPredicates.GetWhereArgs()[i]), NotifyType::NOTIFY_UPDATE);
+                notifyIds[i]), NotifyType::NOTIFY_UPDATE);
         }
     }
     return changedRows;
