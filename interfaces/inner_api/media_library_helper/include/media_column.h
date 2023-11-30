@@ -96,6 +96,7 @@ public:
     static const std::string PHOTO_DATE_MONTH;
     static const std::string PHOTO_DATE_DAY;
     static const std::string PHOTO_SHOOTING_MODE;
+    static const std::string PHOTO_SHOOTING_MODE_TAG;
     static const std::string PHOTO_LAST_VISIT_TIME;
     static const std::string PHOTO_HIDDEN_TIME;
     static const std::string PHOTO_THUMB_STATUS;
