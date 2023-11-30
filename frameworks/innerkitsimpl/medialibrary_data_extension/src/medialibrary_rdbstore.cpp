@@ -257,10 +257,11 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUri(const AbsRd
     sql.append(RdbSqlUtils::BuildQueryString(predicates, columns));
     sql.append(") where "+ MediaColumn::MEDIA_ID + " = ").append(id);
     MEDIA_DEBUG_LOG("sql = %{private}s", sql.c_str());
-    for (auto &arg : predicates.GetWhereArgs()) {
+    const vector<string> &args = predicates.GetWhereArgs();
+    for (const auto &arg : args) {
         MEDIA_DEBUG_LOG("arg = %{private}s", arg.c_str());
     }
-    return rdbStore_->QuerySql(sql, predicates.GetWhereArgs());
+    return rdbStore_->QuerySql(sql, args);
 }
 
 int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows)
@@ -301,7 +302,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(MediaLibraryCommand
         MEDIA_DEBUG_LOG("col = %{private}s", col.c_str());
     }
     MEDIA_DEBUG_LOG("whereClause = %{private}s", predicates->GetWhereClause().c_str());
-    for (auto &arg : predicates->GetWhereArgs()) {
+    const vector<string> &args = predicates->GetWhereArgs();
+    for (const auto &arg : args) {
         MEDIA_DEBUG_LOG("whereArgs = %{private}s", arg.c_str());
     }
     MEDIA_DEBUG_LOG("limit = %{public}d", predicates->GetLimit());
@@ -386,7 +388,8 @@ void MediaLibraryRdbStore::BuildQuerySql(const AbsRdbPredicates &predicates, con
     vector<ValueObject> &bindArgs, string &sql)
 {
     sql.append(RdbSqlUtils::BuildQueryString(predicates, columns));
-    for (auto &arg : predicates.GetWhereArgs()) {
+    const vector<string> &args = predicates.GetWhereArgs();
+    for (const auto &arg : args) {
         bindArgs.emplace_back(arg);
     }
 }
