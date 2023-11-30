@@ -233,6 +233,7 @@ static void SetValuesFromMetaDataApi10(const Metadata &metadata, ValuesBucket &v
         }
         values.PutString(PhotoColumn::PHOTO_ALL_EXIF, metadata.GetAllExif());
         values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, metadata.GetShootingMode());
+        values.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, metadata.GetShootingModeTag());
         values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, metadata.GetLastVisitTime());
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
