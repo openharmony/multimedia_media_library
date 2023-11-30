@@ -55,7 +55,6 @@ const string PhotoAlbumColumns::REFERENCE_ALBUM_ID = "reference_album_id";
 // default fetch columns
 const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
     ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED,
-    ALBUM_IMAGE_COUNT, ALBUM_VIDEO_COUNT
 };
 
 // location default fetch columns
