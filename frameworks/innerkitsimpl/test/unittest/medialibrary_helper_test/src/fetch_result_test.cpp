@@ -444,7 +444,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, FetchResult_GetRowValFromColumn_Test_001, T
     shared_ptr<NativeRdb::ResultSet> resultSet;
     string columnName = "GetRowValFromColumn";
     ResultSetDataType dataType = TYPE_STRING;
-    variant<int32_t, int64_t, string> ret = fetchResult->GetRowValFromColumn(columnName, dataType, resultSet);
+    variant<int32_t, int64_t, string, double> ret = fetchResult->GetRowValFromColumn(columnName, dataType, resultSet);
     EXPECT_EQ(get<string>(ret), "");
     fetchResult->Close();
     ret = fetchResult->GetRowValFromColumn(columnName, dataType, resultSet);

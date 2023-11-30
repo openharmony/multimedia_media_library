@@ -55,6 +55,12 @@ public:
     void SetVideoCount(const int32_t count);
     int32_t GetVideoCount() const;
 
+    void SetLatitude(const double latitude);
+    double GetLatitude() const;
+
+    void SetLongitude(const double longitude);
+    double GetLongitude() const;
+
     void SetRelativePath(const std::string &logicalRelativePath);
     const std::string& GetRelativePath() const;
 
@@ -63,6 +69,9 @@ public:
 
     void SetHiddenOnly(const bool hiddenOnly);
     bool GetHiddenOnly() const;
+
+    void SetLocationOnly(const bool locationOnly);
+    bool GetLocationOnly() const;
 
     static bool IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     static bool IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
@@ -80,10 +89,13 @@ private:
     int32_t count_;
     int32_t imageCount_;
     int32_t videoCount_;
+    double latitude_;
+    double longitude_;
     std::string relativePath_;
 
     ResultNapiType resultNapiType_;
     bool hiddenOnly_ = false;
+    bool locationOnly_ = false;
 };
 } // namespace Media
 } // namespace OHOS
