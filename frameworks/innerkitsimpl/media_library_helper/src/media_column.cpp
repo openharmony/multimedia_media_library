@@ -182,8 +182,9 @@ const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn:
     MediaColumn::MEDIA_SIZE + "," +
     MediaColumn::MEDIA_TYPE + " FROM " +
     PhotoColumn::PHOTOS_TABLE + " WHERE " +
-    MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " +
-    MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " GROUP BY " +
+    "(" + MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " +
+    MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + ") AND " +
+    PhotoColumn::PHOTO_POSITION + " != 2" + " GROUP BY " +
     MediaColumn::MEDIA_TYPE;
 
 // Create indexes
