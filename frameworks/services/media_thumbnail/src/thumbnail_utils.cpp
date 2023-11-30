@@ -134,6 +134,9 @@ static string GetThumbnailSuffix(ThumbnailType type)
         case ThumbnailType::THUMB:
             suffix = THUMBNAIL_THUMB_SUFFIX;
             break;
+        case ThumbnailType::THUMB_ASTC:
+            suffix = THUMBNAIL_THUMBASTC_SUFFIX;
+            break;
         case ThumbnailType::LCD:
             suffix = THUMBNAIL_LCD_SUFFIX;
             break;
@@ -374,14 +377,14 @@ string ThumbnailUtils::GetUdid()
 }
 
 bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isHigh,
-    shared_ptr<string> pathPtr)
+    shared_ptr<string> pathPtr, bool isAstc)
 {
     string path;
     if (pathPtr != nullptr) {
         path = *pathPtr;
     }
     PackOption option = {
-        .format = THUMBNAIL_FORMAT,
+        .format = isAstc ? THUMBASTC_FORMAT : THUMBNAIL_FORMAT,
         .quality = isHigh ? THUMBNAIL_HIGH : THUMBNAIL_MID,
         .numberHint = NUMBER_HINT_1
     };
@@ -1346,6 +1349,11 @@ int ThumbnailUtils::TrySaveFile(ThumbnailData &data, ThumbnailType type)
             output = data.thumbnail.data();
             writeSize = data.thumbnail.size();
             break;
+        case ThumbnailType::THUMB_ASTC:
+            suffix = THUMBNAIL_THUMBASTC_SUFFIX;
+            output = data.thumbAstc.data();
+            writeSize = data.thumbAstc.size();
+            break;
         case ThumbnailType::LCD:
             suffix = THUMBNAIL_LCD_SUFFIX;
             output = data.lcd.data();
@@ -1594,6 +1602,11 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
     if (DeleteThumbFile(tmpData, ThumbnailType::THUMB)) {
         isDelete = true;
     }
+    if (ThumbnailUtils::IsSupportGenAstc()) {
+        if (DeleteThumbFile(tmpData, ThumbnailType::THUMB_ASTC)) {
+            isDelete = true;
+        }
+    }
     if (DeleteThumbFile(tmpData, ThumbnailType::LCD)) {
         isDelete = true;
     }
@@ -1791,6 +1804,11 @@ bool ThumbnailUtils::ResizeLcd(int &width, int &height)
         height = lastMinLen;
     }
     return true;
+}
+
+bool ThumbnailUtils::IsSupportGenAstc()
+{
+    return ImageSource::IsSupportGenAstc();
 }
 } // namespace Media
 } // namespace OHOS

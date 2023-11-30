@@ -31,6 +31,7 @@ enum class ThumbnailType : int32_t {
     THUMB,
     MTH,
     YEAR,
+    THUMB_ASTC,
 };
 
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
@@ -42,12 +43,14 @@ constexpr int32_t WAIT_FOR_SECOND = 3;
 
 const std::string THUMBNAIL_LCD_SUFFIX = "LCD";     // The size fit to screen
 const std::string THUMBNAIL_THUMB_SUFFIX = "THM";   // The size which height is 256 and width is 256
+const std::string THUMBNAIL_THUMBASTC_SUFFIX = "THM_ASTC";
 const std::string THUMBNAIL_MTH_SUFFIX = "MTH";     // The size which height is 128 and width is 128
 const std::string THUMBNAIL_YEAR_SUFFIX = "YEAR";   // The size which height is 64 and width is 64
 
 const std::string FILE_URI_PREX = "file://";
 
 const std::string THUMBNAIL_FORMAT = "image/jpeg";
+const std::string THUMBASTC_FORMAT = "image/astc/4*4";
 constexpr uint8_t THUMBNAIL_MID = 90;
 constexpr uint8_t THUMBNAIL_HIGH = 100;
 
@@ -59,6 +62,7 @@ constexpr uint8_t NUMBER_HINT_1 = 1;
 constexpr int32_t DEFAULT_ORIGINAL = -1;
 
 const std::string THUMBNAIL_OPERN_KEYWORD = "operation";
+const std::string THUMBNAIL_OPER = "oper";
 const std::string THUMBNAIL_HEIGHT = "height";
 const std::string THUMBNAIL_WIDTH = "width";
 const std::string THUMBNAIL_PATH = "path";
@@ -78,7 +82,8 @@ static inline std::string GetThumbnailPath(const std::string &path, const std::s
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
-    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + "/" + key + ".jpg";
+    std::string suffix = (key == "THM_ASTC") ? ".astc" : ".jpg";
+    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + "/" + key + suffix;
 }
 
 static std::string GetThumbSuffix(ThumbnailType type)
@@ -90,6 +95,8 @@ static std::string GetThumbSuffix(ThumbnailType type)
             return THUMBNAIL_YEAR_SUFFIX;
         case ThumbnailType::THUMB:
             return THUMBNAIL_THUMB_SUFFIX;
+        case ThumbnailType::THUMB_ASTC:
+            return THUMBNAIL_THUMBASTC_SUFFIX;
         case ThumbnailType::LCD:
             return THUMBNAIL_LCD_SUFFIX;
         default:
@@ -97,7 +104,7 @@ static std::string GetThumbSuffix(ThumbnailType type)
     }
 }
 
-static inline ThumbnailType GetThumbType(const int32_t width, const int32_t height)
+static inline ThumbnailType GetThumbType(const int32_t width, const int32_t height, bool isAstc = false)
 {
     if (width == DEFAULT_ORIGINAL && height == DEFAULT_ORIGINAL) {
         return ThumbnailType::LCD;
@@ -113,7 +120,7 @@ static inline ThumbnailType GetThumbType(const int32_t width, const int32_t heig
 
     if (std::min(width, height) <= DEFAULT_THUMB_SIZE &&
         std::max(width, height) <= MAX_DEFAULT_THUMB_SIZE) {
-        return ThumbnailType::THUMB;
+        return isAstc ? ThumbnailType::THUMB_ASTC : ThumbnailType::THUMB;
     }
 
     return ThumbnailType::LCD;
@@ -124,7 +131,8 @@ static inline std::string GetSandboxPath(const std::string &path, ThumbnailType 
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
-    std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + "/" + GetThumbSuffix(type) + ".jpg";
+    std::string suffix = (type == ThumbnailType::THUMB_ASTC) ? ".astc" : ".jpg";
+    std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + "/" + GetThumbSuffix(type) + suffix;
     return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
 }
 
