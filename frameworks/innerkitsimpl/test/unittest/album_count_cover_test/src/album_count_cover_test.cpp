@@ -448,6 +448,25 @@ int32_t AlbumRemoveAssets(unique_ptr<PhotoAlbum> &album, unique_ptr<FileAsset> &
     return changedRows;
 }
 
+int32_t InitPhotoTrigger()
+{
+    MEDIA_INFO_LOG("start Init Photo Trigger");
+    static const vector<string> executeSqlStrs = {
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX
+    };
+    MEDIA_INFO_LOG("start Init Photo Trigger");
+    
+    int32_t err = E_OK;
+    for (const auto &sql : executeSqlStrs) {
+        err = g_rdbStore->ExecuteSql(sql);
+        MEDIA_INFO_LOG("exec sql: %{public}s result: %{public}d", sql.c_str(), err);
+        EXPECT_EQ(err, E_OK);
+    }
+    return E_OK;
+}
+
 void AlbumCountCoverTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
@@ -457,6 +476,7 @@ void AlbumCountCoverTest::SetUpTestCase()
         return;
     }
     ClearEnv();
+    InitPhotoTrigger();
 }
 
 void AlbumCountCoverTest::TearDownTestCase()
