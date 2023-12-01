@@ -632,6 +632,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_003, TestSize.Level0)
     AlbumInfo(2, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
     MEDIA_INFO_LOG("Step: delete a photo permanently");
     DeletePermanentlyFileAsset(fileAsset2->GetId());
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
     // 6. Un-trash all photos, the count & cover of trash album should be reset.

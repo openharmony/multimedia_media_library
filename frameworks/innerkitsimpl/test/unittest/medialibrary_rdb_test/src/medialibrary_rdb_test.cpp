@@ -330,11 +330,11 @@ HWTEST_F(MediaLibraryRdbTest, medialib_BuildValuesSql_test_001, TestSize.Level0)
     }
     string sql;
     vector<ValueObject> bindArgs;
-    sql.append("INSERT").append(" OR ROLLBACK").append(" INTO ").append(PhotoAlbumColumns::TABLE).append(" ");
+    sql.append("INSERT").append(" OR ROLLBACK").append(" INTO ").append(PhotoColumn::PHOTOS_TABLE).append(" ");
     ValuesBucket albumValues;
     PrepareUserAlbum("BuildValuesSql", "Documents/", albumValues);
     MediaLibraryRdbStore::BuildValuesSql(albumValues, bindArgs, sql);
-    AbsRdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     vector<std::string> columns;
     MediaLibraryRdbStore::BuildQuerySql(predicates, columns, bindArgs, sql);
     int32_t ret = MediaLibraryRdbStore::ExecuteForLastInsertedRowId(sql, bindArgs);
