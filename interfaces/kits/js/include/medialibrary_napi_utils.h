@@ -263,11 +263,11 @@ const std::vector<std::string> directoryEnumValues {
 };
 
 const std::vector<std::string> systemAlbumSubType {
-    "FAVORITE", "VIDEO", "HIDDEN", "TRASH", "SCREENSHOT", "CAMERA", "IMAGES", "SOURCE"
+    "FAVORITE", "VIDEO", "HIDDEN", "TRASH", "SCREENSHOT", "CAMERA", "IMAGES"
 };
 
 const std::vector<std::string> analysisAlbumSubType {
-    "CLASSIFY_CATEGORY", "CLASSIFY_SUBCATEGORY", "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY"
+    "CLASSIFY_CATEGORY", "CLASSIFY_SUBCATEGORY", "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY", "SOURCE"
 };
 
 const std::vector<std::string> positionTypeEnum {
