@@ -87,7 +87,8 @@ void InitSourceAlbumTrigger()
         INSERT_PHOTO_INSERT_SOURCE_ALBUM,
         INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
-        DELETE_PHOTO_UPDATE_SOURCE_ALBUM
+        DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER
     };
     MEDIA_INFO_LOG("start add source album trigger");
     ExecSqls(executeSqlStrs);
