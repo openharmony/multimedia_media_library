@@ -1229,6 +1229,24 @@ static void AddSourceAlbumTrigger(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void RemoveSourceAlbumToAnalysis(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        CLEAR_SOURCE_ALBUM_PHOTO_MAP,
+        CLEAR_SYSTEM_SOURCE_ALBUM,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+    };
+    MEDIA_INFO_LOG("start add source album trigger");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void AddAnalysisAlbum(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -1829,6 +1847,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_TRIGGER) {
         AddSourceAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_REOMOVE_SOURCE_ALBUM_TO_ANALYSIS) {
+        RemoveSourceAlbumToAnalysis(store)
     }
 }
 
