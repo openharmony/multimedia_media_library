@@ -1850,7 +1850,7 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     }
 
     if (oldVersion < VERSION_REOMOVE_SOURCE_ALBUM_TO_ANALYSIS) {
-        RemoveSourceAlbumToAnalysis(store)
+        RemoveSourceAlbumToAnalysis(store);
     }
 }
 
