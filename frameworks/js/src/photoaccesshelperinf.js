@@ -109,40 +109,30 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
     }
   }
   if (permissionIndex < 0 || permissionGrantStates[permissionIndex] === -1) {
+    console.info('photoAccessHelper permission error')
     return errorResult(new BusinessError(ERROR_MSG_WRITE_PERMISSION), asyncCallback);
   }
   const appName = await getAppName();
   if (appName.length === 0) {
     console.info(`photoAccessHelper appName not found`)
+    return errorResult(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_PARAMERTER_INVALID), asyncCallback);
   }
-  const startParameter = {
-    action: 'ohos.want.action.deleteDialog',
-    type: 'image/*',
-    parameters: {
-      uris: uriList,
-      appName: appName
-    },
-  };
   try {
-    const result = await gContext.requestDialogService(startParameter);
-    console.info(`photoAccessHelper result: ${JSON.stringify(result)}`);
-    if (result === null || result === undefined) {
-      console.log('photoAccessHelper createDeleteRequest return null');
-      return errorResult(Error('requestDialog return undefined'), asyncCallback);
-    }
-    if (asyncCallback) {
-      if (result.result === 0) {
-        return asyncCallback();
-      } else {
-        return asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
+    photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
+      if (asyncCallback) {
+        if (result.result === 0) {
+          return asyncCallback();
+        } else {
+          return asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
+        }
       }
-    }
-    return new Promise((resolve, reject) => {
-      if (result.result === 0) {
-        resolve();
-      } else {
-        reject(new BusinessError(ERROR_MSG_USER_DENY));
-      }
+      return new Promise((resolve, reject) => {
+        if (result.result === 0) {
+          resolve();
+        } else {
+          reject(new BusinessError(ERROR_MSG_USER_DENY));
+        }
+      });
     });
   } catch (error) {
     return errorResult(new BusinessError(error.message, error.code), asyncCallback);
