@@ -75,7 +75,10 @@ void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
     ASSERT_TRUE(tokenId != 0);
 }
 
-void MediaLibraryDataManagerUnitTest::TearDownTestCase(void) {}
+void MediaLibraryDataManagerUnitTest::TearDownTestCase(void)
+{
+    MediaLibraryUnitTestUtils::CleanTestFiles();
+}
 
 void MediaLibraryDataManagerUnitTest::SetUp(void)
 {

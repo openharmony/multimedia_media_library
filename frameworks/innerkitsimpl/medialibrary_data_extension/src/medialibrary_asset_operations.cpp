@@ -1866,6 +1866,16 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates, vector<string> &outId
     return E_OK;
 }
 
+static inline int32_t DeleteDbByIds(const string &table, vector<string> &ids, const bool compatible)
+{
+    AbsRdbPredicates predicates(table);
+    predicates.In(MediaColumn::MEDIA_ID, ids);
+    if (!compatible) {
+        predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    }
+    return MediaLibraryRdbStore::Delete(predicates);
+}
+
 /**
  * @brief Delete files permanently from system.
  *
@@ -1892,10 +1902,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     vector<string> ids;
     vector<string> paths;
     GetIdsAndPaths(predicates, ids, paths);
-    if (!compatible) {
-        predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    }
-    int32_t deletedRows = MediaLibraryRdbStore::Delete(predicates);
+    int32_t deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
     if (deletedRows <= 0 || ids.empty()) {
         MEDIA_ERR_LOG("Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
             deletedRows, ids.size());
