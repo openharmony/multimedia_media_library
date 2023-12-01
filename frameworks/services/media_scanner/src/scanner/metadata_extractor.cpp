@@ -73,6 +73,15 @@ static time_t convertTimeStr2TimeStamp(string &timeStr)
     return timeStamp;
 }
 
+static string GetCastShootingMode(string &shootingModeTag)
+{
+    auto it = SHOOTING_MODE_CAST_MAP.find(shootingModeTag);
+    if (it != SHOOTING_MODE_CAST_MAP.end()) {
+        return it->second;
+    }
+    return "";
+}
+
 int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageSource, std::unique_ptr<Metadata> &data)
 {
     if (imageSource == nullptr) {
@@ -105,8 +114,9 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
         data->SetUserComment(propertyStr);
     }
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_PHOTO_MODE, propertyStr);
-    if (err == 0) {
-        data->SetShootingMode(propertyStr);
+    if (err == 0 && !propertyStr.empty()) {
+        data->SetShootingModeTag(propertyStr);
+        data->SetShootingMode(GetCastShootingMode(propertyStr));
     }
 
     int64_t timeNow = MediaFileUtils::UTCTimeMilliSeconds();

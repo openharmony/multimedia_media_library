@@ -406,9 +406,19 @@ void Metadata::SetShootingMode(const VariantData &shootingMode)
     shootingMode_ = get<string>(shootingMode);
 }
 
+void Metadata::SetShootingModeTag(const VariantData &shootingModeTag)
+{
+    shootingModeTag_ = get<string>(shootingModeTag);
+}
+
 const string &Metadata::GetShootingMode() const
 {
     return shootingMode_;
+}
+
+const string &Metadata::GetShootingModeTag() const
+{
+    return shootingModeTag_;
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY

@@ -5777,7 +5777,9 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     if (albumSubType != ANY) {
         context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
     }
-
+    if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE) {
+        context->predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
+    }
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         context->predicates.And()->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
             to_string(PhotoAlbumSubType::USER_GENERIC),
