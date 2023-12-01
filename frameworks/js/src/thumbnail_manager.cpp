@@ -62,7 +62,15 @@ ThumbnailRequest::ThumbnailRequest(const RequestPhotoParams &params, napi_env en
 
 ThumbnailRequest::~ThumbnailRequest()
 {
-    napi_delete_reference(callback_.env_, callback_.callBackRef_);
+}
+
+void ThumbnailRequest::ReleaseCallbackRef()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (callback_.callBackRef_) {
+        napi_delete_reference(callback_.env_, callback_.callBackRef_);
+        callback_.callBackRef_ = nullptr;
+    }
 }
 
 bool ThumbnailRequest::UpdateStatus(ThumbnailStatus status)
@@ -209,6 +217,7 @@ void ThumbnailManager::RemovePhotoRequest(const string &requestId)
         }
         // do not need delete from queue, just update remove status.
         ptr->UpdateStatus(ThumbnailStatus::THUMB_REMOVE);
+        ptr->ReleaseCallbackRef();
     }
     thumbRequest_.Erase(requestId);
 }
@@ -608,7 +617,11 @@ static void UvJsExecute(uv_work_t *work)
         (uvMsg->request_->GetStatus() == ThumbnailStatus::THUMB_REMOVE)) {
         if (uvMsg->manager_ != nullptr) {
             uvMsg->manager_->DeleteRequestIdFromMap(uvMsg->request_->GetUUID());
+            uvMsg->request_->ReleaseCallbackRef();
         }
+    }
+    if (uvMsg->request_->requestPhotoType == RequestPhotoType::REQUEST_FAST_THUMBNAIL) {
+        uvMsg->request_->ReleaseCallbackRef();
     }
 
     delete uvMsg;
