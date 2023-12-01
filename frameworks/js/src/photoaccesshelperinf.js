@@ -280,6 +280,7 @@ function parsePhotoPickerSelectOption(args) {
     if (option.MIMEType && PHOTO_VIEW_MIME_TYPE_MAP.has(option.MIMEType)) {
       config.parameters.filterMediaType = PHOTO_VIEW_MIME_TYPE_MAP.get(option.MIMEType);
     }
+    config.parameters.isSearchSupported = option.isSearchSupported === undefined || option.isSearchSupported;
     config.parameters.isPhotoTakingSupported = option.isPhotoTakingSupported === undefined || option.isPhotoTakingSupported;
     config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
     config.parameters.option = option;
@@ -355,6 +356,7 @@ async function photoPickerSelect(...args) {
 function PhotoSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
+  this.isSearchSupported = true;
   this.isPhotoTakingSupported = true;
   this.isEditSupported = true;
 }
