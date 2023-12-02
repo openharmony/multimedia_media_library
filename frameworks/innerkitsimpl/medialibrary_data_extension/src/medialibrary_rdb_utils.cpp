@@ -385,7 +385,8 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     }
     int32_t newCount = SetCount(fileResult, albumResult, values, hiddenState);
     SetCover(fileResult, albumResult, values, hiddenState);
-    if (hiddenState == 0) {
+    if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
+        subtype > PhotoAlbumSubType::ANALYSIS_END)) {
         predicates.Clear();
         GetAlbumPredicates(subtype, albumResult, predicates, hiddenState);
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);

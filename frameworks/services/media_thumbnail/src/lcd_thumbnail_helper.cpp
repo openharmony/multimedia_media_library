@@ -50,7 +50,7 @@ int32_t LcdThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
     return E_OK;
 }
 
-int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size)
+int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size, bool isAstc)
 {
     int err;
     ThumbnailWait thumbnailWait(false);

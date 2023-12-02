@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 43;
+const int32_t MEDIA_RDB_VERSION = 44;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -68,7 +68,8 @@ enum {
     VERSION_UPDATE_SOURCE_ALBUM_TRIGGER = 40,
     VERSION_ADD_IMAGE_VIDEO_COUNT = 41,
     VERSION_ADD_SCHPT_HIDDEN_TIME_INDEX = 42,
-    VERSION_CLEAR_LABEL_DATA = 43,
+    VERSION_ADD_SHOOTING_MODE_TAG = 43,
+    VERSION_CLEAR_LABEL_DATA = 44,
 };
 
 enum {
@@ -158,6 +159,7 @@ const std::string MEDIA_DATA_DB_LATITUDE = "latitude";
 const std::string MEDIA_DATA_DB_LONGITUDE = "longitude";
 const std::string MEDIA_DATA_DB_DATE_TAKEN = "date_taken";
 const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
+const std::string MEDIA_DATA_DB_THUMB_ASTC = "astc";
 const std::string MEDIA_DATA_DB_CONTENT_CREATE_TIME = "content_create_time";
 const std::string MEDIA_DATA_DB_POSITION = "position";
 const std::string MEDIA_DATA_DB_DIRTY = "dirty";

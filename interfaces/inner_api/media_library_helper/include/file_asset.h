@@ -153,8 +153,8 @@ public:
     void RemoveOpenStatus(int32_t fd);
     int32_t GetOpenStatus(int32_t fd);
 
-    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> &GetMemberMap();
-    std::variant<int32_t, int64_t, std::string> &GetMemberValue(const std::string &name);
+    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> &GetMemberMap();
+    std::variant<int32_t, int64_t, std::string, double> &GetMemberValue(const std::string &name);
 
     std::string GetAssetJson();
     void SetResultTypeMap(const std::string &colName, ResultSetDataType type);
@@ -178,7 +178,7 @@ private:
 
     std::string albumUri_;
     ResultNapiType resultNapiType_;
-    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string>> member_;
+    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;
     std::mutex openStatusMapMutex_;
     std::shared_ptr<std::unordered_map<int32_t, int32_t>> openStatusMap_;
     std::unordered_map<std::string, ResultSetDataType> resultTypeMap_;

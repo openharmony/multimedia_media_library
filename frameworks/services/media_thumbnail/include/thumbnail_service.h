@@ -36,7 +36,7 @@ public:
     THUMBNAIL_API_EXPORT static std::shared_ptr<ThumbnailService> GetInstance();
     THUMBNAIL_API_EXPORT void ReleaseService();
 
-    THUMBNAIL_API_EXPORT int GetThumbnailFd(const std::string &uri);
+    THUMBNAIL_API_EXPORT int GetThumbnailFd(const std::string &uri, bool isAstc = false);
     THUMBNAIL_API_EXPORT int32_t LcdAging();
 #ifdef DISTRIBUTED
     THUMBNAIL_API_EXPORT int32_t LcdDistributeAging(const std::string &udid);
@@ -62,7 +62,7 @@ private:
     int32_t ParseThumbnailParam(const std::string &uri, std::string &fileId, std::string &networkId,
         std::string &tableName);
     int GetThumbFd(const std::string &path, const std::string &table, const std::string &id,
-        const std::string &uri, const Size &size);
+        const std::string &uri, const Size &size, bool isAstc = false);
     int32_t CreateThumbnailInfo(const std::string &path, const std::string &tableName, const std::string &fileId,
         const std::string &uri, const bool &isSync);
     int32_t CreateDefaultThumbnail(const std::string &path,

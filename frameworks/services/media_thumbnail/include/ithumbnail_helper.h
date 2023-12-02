@@ -69,7 +69,7 @@ public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
     virtual int32_t CreateThumbnail(ThumbRdbOpt &opts, bool isSync = false);
-    virtual int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size);
+    virtual int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size, bool isAstc = false);
     static void DeleteThumbnailKv(ThumbRdbOpt &opts);
     static void CreateLcd(AsyncTaskData *data);
     static void CreateThumbnail(AsyncTaskData *data);

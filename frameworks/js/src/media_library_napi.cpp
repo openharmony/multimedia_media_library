@@ -5181,6 +5181,7 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
     context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
     context->fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
+    context->fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum);
 }
 
 static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, void *data)
@@ -5776,7 +5777,9 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     if (albumSubType != ANY) {
         context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
     }
-
+    if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE) {
+        context->predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
+    }
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         context->predicates.And()->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
             to_string(PhotoAlbumSubType::USER_GENERIC),
@@ -5827,6 +5830,10 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
         CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
+        if (!context->isAnalysisAlbum) {
+            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+            context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+        }
     }
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);

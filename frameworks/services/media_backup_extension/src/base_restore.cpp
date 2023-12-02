@@ -40,8 +40,9 @@ void BaseRestore::StartRestore(const std::string &orignPath, const std::string &
     int32_t errorCode = Init(orignPath, updatePath, true);
     if (errorCode == E_OK) {
         RestorePhoto();
-        MediaScannerManager::GetInstance()->ScanDirSync(RESTORE_CLOUD_DIR, nullptr);
     }
+    // Re-scanning is required when the system is restarted
+    MediaScannerManager::GetInstance()->ScanDirSync(RESTORE_CLOUD_DIR, nullptr);
     HandleRestData();
 }
 

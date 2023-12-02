@@ -778,6 +778,8 @@ int32_t MediaLibraryObjectUtils::OpenFile(MediaLibraryCommand &cmd, const string
     string uriString = cmd.GetUri().ToString();
     if (cmd.GetOprnObject() == OperationObject::THUMBNAIL) {
         return ThumbnailService::GetInstance()->GetThumbnailFd(uriString);
+    } else if (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC) {
+        return ThumbnailService::GetInstance()->GetThumbnailFd(uriString, true);
     } else if (IsDocumentUri(uriString)) {
         return OpenDocument(uriString, mode);
     }

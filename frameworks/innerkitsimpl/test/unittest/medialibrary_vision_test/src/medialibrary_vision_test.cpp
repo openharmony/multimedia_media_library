@@ -1427,7 +1427,6 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_003, TestSize.Level0)
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
 
-    
     Uri geoKnowDictionaryUri(URI_GEO_DICTIONARY);
     MediaLibraryCommand insertcmd(geoKnowDictionaryUri);
     DataShare::DataShareValuesBucket valuesBucket1;
@@ -1436,7 +1435,6 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_003, TestSize.Level0)
     valuesBucket1.Put(CITY_NAME, "shanghai");
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(insertcmd, valuesBucket1);
     EXPECT_GT(retVal1, 0);
-
 
     Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
     MediaLibraryCommand queryCmd(queryAlbumUri);

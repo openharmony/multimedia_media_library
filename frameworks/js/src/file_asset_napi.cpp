@@ -3702,10 +3702,6 @@ napi_value FileAssetNapi::PhotoAccessHelperCancelPhotoRequest(napi_env env, napi
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
     }
-    if (!PermissionUtils::CheckNapiCallerPermission("ohos.permission.READ_IMAGEVIDEO")) {
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "This interface can be called only by system apps");
-        return nullptr;
-    }
 
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();

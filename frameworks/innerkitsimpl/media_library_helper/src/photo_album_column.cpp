@@ -40,6 +40,8 @@ const string PhotoAlbumColumns::ALBUM_DIRTY = "dirty";
 const string PhotoAlbumColumns::ALBUM_CLOUD_ID = "cloud_id";
 const string PhotoAlbumColumns::ALBUM_IMAGE_COUNT = "image_count";
 const string PhotoAlbumColumns::ALBUM_VIDEO_COUNT = "video_count";
+const string PhotoAlbumColumns::ALBUM_LATITUDE = "latitude";
+const string PhotoAlbumColumns::ALBUM_LONGITUDE = "longitude";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
@@ -55,7 +57,6 @@ const string PhotoAlbumColumns::REFERENCE_ALBUM_ID = "reference_album_id";
 // default fetch columns
 const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
     ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED,
-    ALBUM_IMAGE_COUNT, ALBUM_VIDEO_COUNT
 };
 
 // location default fetch columns

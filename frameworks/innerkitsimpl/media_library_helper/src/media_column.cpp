@@ -71,6 +71,7 @@ const std::string PhotoColumn::PHOTO_SUBTYPE = "subtype";
 const std::string PhotoColumn::CAMERA_SHOT_KEY = "camera_shot_key";
 const std::string PhotoColumn::PHOTO_USER_COMMENT = "user_comment";
 const std::string PhotoColumn::PHOTO_SHOOTING_MODE = "shooting_mode";
+const std::string PhotoColumn::PHOTO_SHOOTING_MODE_TAG = "shooting_mode_tag";
 const std::string PhotoColumn::PHOTO_ALL_EXIF = "all_exif";
 const std::string PhotoColumn::PHOTO_DATE_YEAR = "date_year";
 const std::string PhotoColumn::PHOTO_DATE_MONTH = "date_month";
@@ -145,6 +146,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DATE_MONTH + " TEXT, " +
     PHOTO_DATE_DAY + " TEXT, " +
     PHOTO_SHOOTING_MODE + " TEXT, " +
+    PHOTO_SHOOTING_MODE_TAG + " TEXT, " +
     PHOTO_LAST_VISIT_TIME + " BIGINT DEFAULT 0, " +
     PHOTO_HIDDEN_TIME + " BIGINT DEFAULT 0, " +
     PHOTO_THUMB_STATUS + " INT DEFAULT 0, " +
@@ -182,8 +184,9 @@ const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn:
     MediaColumn::MEDIA_SIZE + "," +
     MediaColumn::MEDIA_TYPE + " FROM " +
     PhotoColumn::PHOTOS_TABLE + " WHERE " +
-    MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " +
-    MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " GROUP BY " +
+    "(" + MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " +
+    MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + ") AND " +
+    PhotoColumn::PHOTO_POSITION + " != 2" + " GROUP BY " +
     MediaColumn::MEDIA_TYPE;
 
 // Create indexes
@@ -245,7 +248,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::CAMERA_SHOT_KEY, PhotoColumn::PHOTO_ALL_EXIF,
     PhotoColumn::PHOTO_USER_COMMENT, PhotoColumn::PHOTO_DATE_YEAR, PhotoColumn::PHOTO_DATE_MONTH,
     PhotoColumn::PHOTO_DATE_DAY, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_CLEAN_FLAG,
-    PHOTO_SHOOTING_MODE, PhotoColumn::PHOTO_THUMB_STATUS
+    PhotoColumn::PHOTO_SHOOTING_MODE, PhotoColumn::PHOTO_SHOOTING_MODE_TAG, PhotoColumn::PHOTO_THUMB_STATUS
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

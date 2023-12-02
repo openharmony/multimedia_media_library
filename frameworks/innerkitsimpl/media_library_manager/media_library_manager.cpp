@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "image_type.h"
 #define MLOG_TAG "MediaLibraryManager"
 
 #include "media_library_manager.h"
@@ -53,6 +54,13 @@ namespace Media {
 shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sDataShareHelper_ = nullptr;
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
+
+struct UriParams {
+    string path;
+    string fileUri;
+    Size size;
+    bool isAstc;
+};
 
 MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 {
@@ -304,7 +312,7 @@ int32_t MediaLibraryManager::GetFilePathFromUri(const Uri &fileUri, string &file
     if (tempPath.find(ROOT_MEDIA_DIR) != 0) {
         return E_CHECK_ROOT_DIR_FAIL;
     }
-    string relativePath = tempPath.substr(ROOT_MEDIA_DIR.length());
+    string relativePath = tempPath.substr((ROOT_MEDIA_DIR + DOCS_PATH).length());
     auto pos = relativePath.find('/');
     if (pos == string::npos) {
         return E_INVALID_ARGUMENTS;
@@ -332,7 +340,7 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     if (tempPath.find(ROOT_MEDIA_DIR) != 0) {
         return E_CHECK_ROOT_DIR_FAIL;
     }
-    string relativePath = tempPath.substr(ROOT_MEDIA_DIR.length());
+    string relativePath = tempPath.substr((ROOT_MEDIA_DIR + DOCS_PATH).length());
     auto pos = relativePath.find('/');
     if (pos == string::npos) {
         return E_INVALID_ARGUMENTS;
@@ -369,7 +377,7 @@ static inline bool IsSmallThumb(const int32_t width, const int32_t height)
     return false;
 }
 
-static std::string GetSandboxPath(const std::string &path, const Size &size, bool isAudio)
+static std::string GetSandboxPath(const std::string &path, const Size &size, bool isAudio, bool isAstc)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
@@ -393,7 +401,7 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
         } else if (size.width == DEFAULT_ORIGINAL && size.height == DEFAULT_ORIGINAL) {
             suffixStr += "LCD.jpg";
         } else if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
-            suffixStr += "THM.jpg";
+            suffixStr += isAstc ? "THM_ASTC.astc" : "THM.jpg";
         } else {
             suffixStr += "LCD.jpg";
         }
@@ -402,7 +410,7 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
     return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
 }
 
-int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size)
+int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
 {
     if (sDataShareHelper_ == nullptr) {
         MEDIA_ERR_LOG("Failed to open thumbnail, datashareHelper is nullptr");
@@ -410,7 +418,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     }
     if (!path.empty()) {
         string sandboxPath = GetSandboxPath(path, size,
-            (MediaFileUri::GetMediaTypeFromUri(uriStr) == MediaType::MEDIA_TYPE_AUDIO));
+            (MediaFileUri::GetMediaTypeFromUri(uriStr) == MediaType::MEDIA_TYPE_AUDIO), isAstc);
         int fd = -1;
         if (!sandboxPath.empty()) {
             fd = open(sandboxPath.c_str(), O_RDONLY);
@@ -449,7 +457,7 @@ static void GetUriIdPrefix(std::string &fileUri)
     fileUri = tmpUri.substr(0, slashIdx);
 }
 
-static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOldVer, Size &size, string &path)
+static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &uriParams)
 {
     MediaFileUri mediaUri(uri);
     if (!mediaUri.IsValid()) {
@@ -460,8 +468,8 @@ static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOl
         if (index == string::npos) {
             return false;
         }
-        fileUri = uri.substr(0, index - 1);
-        GetUriIdPrefix(fileUri);
+        uriParams.fileUri = uri.substr(0, index - 1);
+        GetUriIdPrefix(uriParams.fileUri);
         index += strlen("thumbnail");
         index = uri.find('/', index);
         if (index == string::npos) {
@@ -477,23 +485,26 @@ static bool GetParamsFromUri(const string &uri, string &fileUri, const bool isOl
         StrToInt(uri.substr(index, tmpIdx - index), width);
         int32_t height = 0;
         StrToInt(uri.substr(tmpIdx + 1), height);
-        size = { .width = width, .height = height };
+        uriParams.size = { .width = width, .height = height };
     } else {
         auto qIdx = uri.find('?');
         if (qIdx == string::npos) {
             return false;
         }
-        fileUri = uri.substr(0, qIdx);
-        GetUriIdPrefix(fileUri);
+        uriParams.fileUri = uri.substr(0, qIdx);
+        GetUriIdPrefix(uriParams.fileUri);
         auto &queryKey = mediaUri.GetQueryKeys();
         if (queryKey.count(THUMBNAIL_PATH) != 0) {
-            path = queryKey[THUMBNAIL_PATH];
+            uriParams.path = queryKey[THUMBNAIL_PATH];
         }
         if (queryKey.count(THUMBNAIL_WIDTH) != 0) {
-            size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
+            uriParams.size.width = stoi(queryKey[THUMBNAIL_WIDTH]);
         }
         if (queryKey.count(THUMBNAIL_HEIGHT) != 0) {
-            size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+            uriParams.size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
+        }
+        if (queryKey.count(THUMBNAIL_OPER) != 0) {
+            uriParams.isAstc = queryKey[THUMBNAIL_HEIGHT] == MEDIA_DATA_DB_THUMB_ASTC;
         }
     }
     return true;
@@ -554,33 +565,40 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
 
 unique_ptr<PixelMap> MediaLibraryManager::GetPixelMapWithoutDecode(UniqueFd &uniqueFd, const Size &size)
 {
+    Media::InitializationOptions option = {
+        .size = size,
+        .pixelFormat = PixelFormat::RGB_565
+    };
+    unique_ptr<PixelMap> pixel = Media::PixelMap::Create(option);
+    if (pixel == nullptr) {
+        MEDIA_ERR_LOG("Can not create pixel");
+        return nullptr;
+    }
+
     struct stat statInfo;
     if (fstat(uniqueFd.Get(), &statInfo) == E_ERR) {
         return nullptr;
     }
-    uint32_t *buffer = static_cast<uint32_t*>(malloc(statInfo.st_size));
+    uint8_t *buffer = static_cast<uint8_t*>(malloc(statInfo.st_size));
     if (buffer == nullptr) {
         return nullptr;
     }
     read(uniqueFd.Get(), buffer, statInfo.st_size);
-    InitializationOptions option = {
-        .size = size,
-        .pixelFormat = PixelFormat::RGB_565
-    };
-    unique_ptr<PixelMap> pixelMap = PixelMap::Create(buffer, statInfo.st_size, option);
-    free(buffer);
-    return pixelMap;
+    pixel->SetPixelsAddr(buffer, nullptr, statInfo.st_size, AllocatorType::HEAP_ALLOC, nullptr);
+    return pixel;
 }
 
-unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(const std::string &uri, Size &size, const string &path)
+unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(const std::string &uri, Size &size,
+                                                         const string &path, bool isAstc)
 {
     MediaLibraryTracer tracer;
     tracer.Start("QueryThumbnail uri:" + uri);
 
-    string openUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL + "&" + MEDIA_DATA_DB_WIDTH +
+    string oper = isAstc ? MEDIA_DATA_DB_THUMB_ASTC : MEDIA_DATA_DB_THUMBNAIL;
+    string openUriStr = uri + "?" + MEDIA_OPERN_KEYWORD + "=" + oper + "&" + MEDIA_DATA_DB_WIDTH +
         "=" + to_string(size.width) + "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(size.height);
     tracer.Start("DataShare::OpenThumbnail");
-    UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, path, size));
+    UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, path, size, isAstc));
     if (uniqueFd.Get() < 0) {
         MEDIA_ERR_LOG("queryThumb is null, errCode is %{public}d", uniqueFd.Get());
         return nullptr;
@@ -605,13 +623,12 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
     }
     thumbLatIdx += strlen("thumbnail");
     bool isOldVersion = uriStr[thumbLatIdx] == '/';
-    string path;
-    string fileUri;
-    Size size;
-    if (!GetParamsFromUri(uriStr, fileUri, isOldVersion, size, path)) {
+    UriParams uriParams;
+    if (!GetParamsFromUri(uriStr, isOldVersion, uriParams)) {
         return nullptr;
     }
-    return QueryThumbnail(fileUri, size, path);
+    auto pixelmap = QueryThumbnail(uriParams.fileUri, uriParams.size, uriParams.path, uriParams.isAstc);
+    return pixelmap;
 }
 } // namespace Media
 } // namespace OHOS

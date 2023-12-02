@@ -74,6 +74,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_DATE_MONTH, TYPE_STRING},
         { PhotoColumn::PHOTO_DATE_DAY, TYPE_STRING},
         { PhotoColumn::PHOTO_SHOOTING_MODE, TYPE_STRING},
+        { PhotoColumn::PHOTO_SHOOTING_MODE_TAG, TYPE_STRING},
         { PhotoColumn::PHOTO_LAST_VISIT_TIME, TYPE_INT64 },
     };
     return RESULT_TYPE_MAP;
@@ -137,6 +138,7 @@ void FetchResult<T>::SetInfo(unique_ptr<FetchResult<T>> &fetch)
     networkId_ = fetch->networkId_;
     resultNapiType_ = fetch->resultNapiType_;
     hiddenOnly_ = fetch->hiddenOnly_;
+    locationOnly_ = fetch->locationOnly_;
 }
 
 template <class T>
@@ -161,6 +163,12 @@ template<class T>
 void FetchResult<T>::SetHiddenOnly(const bool hiddenOnly)
 {
     hiddenOnly_ = hiddenOnly;
+}
+
+template<class T>
+void FetchResult<T>::SetLocationOnly(const bool locationOnly)
+{
+    locationOnly_ = locationOnly;
 }
 
 template<class T>
@@ -191,6 +199,12 @@ template<class T>
 bool FetchResult<T>::GetHiddenOnly()
 {
     return hiddenOnly_;
+}
+
+template<class T>
+bool FetchResult<T>::GetLocationOnly()
+{
+    return locationOnly_;
 }
 
 template <class T>
@@ -261,7 +275,7 @@ bool FetchResult<T>::IsAtLastRow()
     return retVal;
 }
 
-variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetDataType dataType)
+variant<int32_t, int64_t, string, double> ReturnDefaultOnError(string errMsg, ResultSetDataType dataType)
 {
     if (dataType == TYPE_STRING) {
         return "";
@@ -273,8 +287,8 @@ variant<int32_t, int64_t, string> ReturnDefaultOnError(string errMsg, ResultSetD
 }
 
 template <class T>
-variant<int32_t, int64_t, string> FetchResult<T>::GetRowValFromColumn(string columnName, ResultSetDataType dataType,
-    shared_ptr<NativeRdb::ResultSet> &resultSet)
+variant<int32_t, int64_t, string, double> FetchResult<T>::GetRowValFromColumn(string columnName,
+    ResultSetDataType dataType, shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if ((resultset_ == nullptr) && (resultSet == nullptr)) {
         return ReturnDefaultOnError("Resultset is null", dataType);
@@ -293,18 +307,19 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetRowValFromColumn(string col
 }
 
 template <class T>
-variant<int32_t, int64_t, string> FetchResult<T>::GetValByIndex(int32_t index, ResultSetDataType dataType,
+variant<int32_t, int64_t, string, double> FetchResult<T>::GetValByIndex(int32_t index, ResultSetDataType dataType,
     shared_ptr<NativeRdb::ResultSet> &resultSet)
 {
     if ((resultset_ == nullptr) && (resultSet == nullptr)) {
         return ReturnDefaultOnError("Resultset is null", dataType);
     }
 
-    variant<int32_t, int64_t, string> cellValue;
+    variant<int32_t, int64_t, string, double> cellValue;
     int integerVal = 0;
     string stringVal = "";
     int64_t longVal = 0;
     int status;
+    double doubleVal = 0.0;
     switch (dataType) {
         case TYPE_STRING:
             if (resultSet) {
@@ -329,6 +344,14 @@ variant<int32_t, int64_t, string> FetchResult<T>::GetValByIndex(int32_t index, R
                 status = resultset_->GetLong(index, longVal);
             }
             cellValue = longVal;
+            break;
+        case TYPE_DOUBLE:
+            if (resultSet) {
+                status = resultSet->GetDouble(index, doubleVal);
+            } else {
+                status = resultset_->GetDouble(index, doubleVal);
+            }
+            cellValue = doubleVal;
             break;
         default:
             MEDIA_ERR_LOG("not match  dataType %{public}d", dataType);
@@ -550,6 +573,16 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
         get<int32_t>(GetRowValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, TYPE_INT32, resultSet));
     photoAlbumData->SetImageCount(imageCount);
     photoAlbumData->SetVideoCount(videoCount);
+
+    // location album support latitude and longitude
+    double latitude = locationOnly_ ? get<double>(GetRowValFromColumn(
+        PhotoAlbumColumns::ALBUM_LATITUDE, TYPE_DOUBLE, resultSet)) : 0.0;
+        
+    double longitude = locationOnly_ ? get<double>(GetRowValFromColumn(
+        PhotoAlbumColumns::ALBUM_LONGITUDE, TYPE_DOUBLE, resultSet)) : 0.0;
+        
+    photoAlbumData->SetLatitude(latitude);
+    photoAlbumData->SetLongitude(longitude);
 }
 
 template<class T>

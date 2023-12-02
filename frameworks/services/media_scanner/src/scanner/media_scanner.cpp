@@ -21,13 +21,17 @@
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
 #include "media_file_utils.h"
+#include "media_file_uri.h"
 #include "media_log.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_unistore_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_xcollie_manager.h"
 #include "mimetype_utils.h"
 #include "post_event_utils.h"
+#include "photo_map_column.h"
+#include "vision_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -182,6 +186,64 @@ string GetUriWithoutSeg(const string &oldUri)
     return oldUri;
 }
 
+static std::string CreateExtUriForAsset(std::unique_ptr<Metadata> &data)
+{
+    const std::string &filePath = data->GetFilePath();
+    const std::string &displayName = data->GetFileName();
+    auto mediaType = data->GetFileMediaType();
+    if (filePath.empty() || displayName.empty() || mediaType < 0) {
+        MEDIA_ERR_LOG("param invalid, filePath %{private}s or displayName %{private}s invalid failed.",
+            filePath.c_str(), displayName.c_str());
+        return "";
+    }
+
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    return MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(mediaType,
+        MEDIA_API_VERSION_V10) + "/", to_string(data->GetFileId()), extrUri);
+}
+
+static int32_t MaintainAnanlysisTable(std::unique_ptr<Metadata> &data,
+    shared_ptr<NativeRdb::RdbStore> &rdbStorePtr)
+{
+    string updateCountAndCoverUriSql = "UPDATE " + ANALYSIS_ALBUM_TABLE +
+        " SET cover_uri = '" + CreateExtUriForAsset(data) +
+        "' , count = COALESCE(count, 0) + 1 WHERE album_name = " +
+        data->GetShootingMode() + " AND album_subtype = " + to_string(PhotoAlbumSubType::SHOOTING_MODE);
+    int32_t result = rdbStorePtr->ExecuteSql(updateCountAndCoverUriSql);
+    return result;
+}
+
+static int32_t MaintainShootingModeMap(std::unique_ptr<Metadata> &data,
+    shared_ptr<NativeRdb::RdbStore> &rdbStorePtr)
+{
+    string insertShootingModeSql = "INSERT OR IGNORE INTO " + ANALYSIS_PHOTO_MAP_TABLE +
+        "(" + PhotoMap::ALBUM_ID + "," + PhotoMap::ASSET_ID + ") SELECT AnalysisAlbum.album_id, " +
+        "Photos.file_id FROM " + PhotoColumn::PHOTOS_TABLE + " JOIN " +
+        ANALYSIS_ALBUM_TABLE + " ON Photos.shooting_mode=AnalysisAlbum.album_name WHERE file_id = " +
+        to_string(data->GetFileId()) + " AND AnalysisAlbum.album_subtype = " +
+        to_string(PhotoAlbumSubType::SHOOTING_MODE);
+    int32_t result = rdbStorePtr->ExecuteSql(insertShootingModeSql);
+    return result;
+}
+
+static int32_t MaintainAlbumRelationship(std::unique_ptr<Metadata> &data)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbstore is nullptr");
+        return E_HAS_DB_ERROR;
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("obtain raw rdbstore fails");
+        return E_HAS_DB_ERROR;
+    }
+    auto ret = MaintainShootingModeMap(data, rdbStorePtr);
+    if (ret != E_OK) {
+        return ret;
+    }
+    return MaintainAnanlysisTable(data, rdbStorePtr);
+}
 
 int32_t MediaScannerObj::Commit()
 {
@@ -202,6 +264,13 @@ int32_t MediaScannerObj::Commit()
         mediaScannerDb_->UpdateAlbumInfo();
         if (watch != nullptr) {
             watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
+        }
+    }
+
+    if (!data_->GetShootingModeTag().empty()) {
+        auto err = MaintainAlbumRelationship(data_);
+        if (err != E_OK) {
+            return err;
         }
     }
 
