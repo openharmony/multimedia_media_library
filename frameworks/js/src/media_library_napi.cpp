@@ -19,6 +19,7 @@
 
 #include <fcntl.h>
 #include <sys/sendfile.h>
+#include <functional>
 
 #include "directory_ex.h"
 #include "file_ex.h"
@@ -53,7 +54,7 @@
 #include "js_native_api.h"
 #include "js_native_api_types.h"
 #include "delete_callback.h"
-#include <functional>
+
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -6309,7 +6310,7 @@ static napi_value initRequest(OHOS::AAFwk::Want &request, shared_ptr<DeleteCallb
     for (uint32_t i = 0; i < len; i++) {
         napi_value uri = nullptr;
         CHECK_ARGS(env, napi_get_element(env, args[ARGS_TWO], i, &uri), JS_ERR_PARAMETER_INVALID);
-        if ( uri == nullptr) {
+        if (uri == nullptr) {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
@@ -6336,7 +6337,7 @@ napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_inf
     auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
     NAPI_ASSERT(env, context != nullptr, "context == nullptr");
 
-    std::shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext = 
+    std::shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
         OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
     NAPI_ASSERT(env, abilityContext != nullptr, "abilityContext == nullptr");
 

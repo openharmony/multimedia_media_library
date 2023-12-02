@@ -132,6 +132,12 @@ ohos_shared_library("medialibrary_nutils") {
     "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:app_context",
+    "ability_runtime:runtime",
+    "ability_runtime:service_extension",
+    "ability_runtime:ui_extension",
+    "ace_engine:ace_uicontent",
   ]
 
   defines = []
