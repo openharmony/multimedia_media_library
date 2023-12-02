@@ -20,6 +20,7 @@
 #include "ability_context_impl.h"
 #include "fetch_result.h"
 #include "media_log.h"
+#include "media_file_utils.h"
 #include "medialibrary_data_manager.h"
 #include "mimetype_utils.h"
 #include "result_set_utils.h"
@@ -63,7 +64,8 @@ void MediaLibraryUnitTestUtils::CleanTestFiles()
     system("rm -rf /storage/cloud/files/Audio/*");
     system("rm -rf /storage/cloud/files/Audios/*");
     system("rm -rf /storage/cloud/files/Camera/*");
-    system("rm -rf /storage/cloud/files/Documents/*");
+    system("rm -rf /storage/cloud/files/Docs/Documents/*");
+    system("rm -rf /storage/cloud/files/Docs/Download/*");
     system("rm -rf /storage/cloud/files/Photo/*");
     system("rm -rf /storage/cloud/files/Pictures/*");
     system("rm -rf /storage/cloud/files/Pictures/*");
@@ -175,7 +177,8 @@ bool MediaLibraryUnitTestUtils::CreateFile(string displayName, shared_ptr<FileAs
     }
     Uri createAssetUri(MEDIALIBRARY_DATA_URI + "/" + Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET);
     DataShareValuesBucket valuesBucket;
-    string relativePath = parentAlbumAsset->GetRelativePath() + parentAlbumAsset->GetDisplayName() + "/";
+    string relativePath = MediaFileUtils::AddDocsToRelativePath(parentAlbumAsset->GetRelativePath() +
+        parentAlbumAsset->GetDisplayName() + "/");
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(displayName));
     MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
     valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
