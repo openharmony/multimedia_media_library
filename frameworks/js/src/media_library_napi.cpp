@@ -6328,7 +6328,7 @@ static napi_value initRequest(OHOS::AAFwk::Want &request, shared_ptr<DeleteCallb
 napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_FOUR;
-    napi_value args[ARGS_FOUR] = {0};
+    napi_value args[ARGS_FOUR] = {nullptr};
     napi_value thisVar = nullptr;
     napi_value result = nullptr;
     napi_create_object(env, &result);
@@ -6358,7 +6358,7 @@ napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_inf
     NAPI_ASSERT(env, initRequestResult != nullptr, "initRequest fail");
 
     int32_t sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
-    NAPI_ASSERT(env, sessionId != 0, "CreateModalUIExtension fail");
+    NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
 
     callback->SetSessionId(sessionId);
     return result;
