@@ -45,7 +45,7 @@ void DeleteCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &resul
 {
     NAPI_INFO_LOG("OnResult enter. resultCode is %{public}d", resultCode);
     this->resultCode_ = resultCode;
-    if (resultCode == 0) {
+    if (resultCode == DELETE_CODE_SUCCESS) {
         string trashUri = PAH_TRASH_PHOTO;
         MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
         Uri updateAssetUri(trashUri);
@@ -54,10 +54,9 @@ void DeleteCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &resul
         DataShareValuesBucket valuesBucket;
         valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
         int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
-        if (changedRows < 0)
-        {
+        if (changedRows < 0) {
             NAPI_ERR_LOG("Media asset delete failed, err: %{public}d", changedRows);
-            this->resultCode_ = -1;
+            this->resultCode_ = DELETE_CODE_ERROR;
         }
         NAPI_ERR_LOG("Media asset delete end");
     }
@@ -91,7 +90,7 @@ void DeleteCallback::SetFunc(napi_value func)
     napi_valuetype valueType = napi_undefined;
     napi_typeof(this->env_, func, &valueType);
     if (valueType == napi_function) {
-        napi_create_reference(this->env_, func, 1, &this->callbackRef);
+        napi_create_reference(this->env_, func, ARGS_ONE, &this->callbackRef);
     }
 }
 

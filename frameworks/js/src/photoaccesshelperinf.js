@@ -22,12 +22,15 @@ const WRITE_PERMISSION = 'ohos.permission.WRITE_IMAGEVIDEO';
 
 const PERMISSION_DENIED = 13900012;
 const ERR_CODE_PARAMERTER_INVALID = 13900020;
+const REQUEST_CODE_SUCCESS = 0;
+const PERMISSION_STATE_ERROR = -1
 const ERROR_MSG_WRITE_PERMISSION = 'not have ohos.permission.WRITE_IMAGEVIDEO';
 const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
 
 const MAX_DELETE_NUMBER = 300;
 const MIN_DELETE_NUMBER = 1;
+
 
 let gContext = undefined;
 
@@ -108,7 +111,7 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
       permissionIndex = i;
     }
   }
-  if (permissionIndex < 0 || permissionGrantStates[permissionIndex] === -1) {
+  if (permissionIndex < 0 || permissionGrantStates[permissionIndex] === PERMISSION_STATE_ERROR) {
     console.info('photoAccessHelper permission error')
     return errorResult(new BusinessError(ERROR_MSG_WRITE_PERMISSION), asyncCallback);
   }
@@ -120,14 +123,14 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
   try {
     photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
       if (asyncCallback) {
-        if (result.result === 0) {
+        if (result.result === REQUEST_CODE_SUCCESS) {
           return asyncCallback();
         } else {
           return asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
         }
       }
       return new Promise((resolve, reject) => {
-        if (result.result === 0) {
+        if (result.result === REQUEST_CODE_SUCCESS) {
           resolve();
         } else {
           reject(new BusinessError(ERROR_MSG_USER_DENY));

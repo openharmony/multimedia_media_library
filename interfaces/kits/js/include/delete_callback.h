@@ -25,12 +25,15 @@
 
 namespace OHOS{
 namespace Media{
-static const std::string DELETE_UI_PACKAGE_NAME = "com.ohos.photos";
-static const std::string DELETE_UI_EXT_ABILITY_NAME = "DeleteUIExtensionAbility";
-static const std::string DELETE_UI_EXTENSION_TYPE = "ability.want.params.uiExtensionType";
-static const std::string DELETE_UI_REQUEST_TYPE = "sysDialog/common";
-static const std::string DELETE_UI_APPNAME = "appName";
-static const std::string DELETE_UI_URIS = "uris";
+const std::string DELETE_UI_PACKAGE_NAME = "com.ohos.photos";
+const std::string DELETE_UI_EXT_ABILITY_NAME = "DeleteUIExtensionAbility";
+const std::string DELETE_UI_EXTENSION_TYPE = "ability.want.params.uiExtensionType";
+const std::string DELETE_UI_REQUEST_TYPE = "sysDialog/common";
+const std::string DELETE_UI_APPNAME = "appName";
+const std::string DELETE_UI_URIS = "uris";
+const int32_t DELETE_CODE_SUCCESS = 0;
+const int32_t DELETE_CODE_ERROR = -1;
+const int32_t DEFAULT_SESSION_ID = 0;
 
 class DeleteCallback{
 public:
@@ -44,8 +47,8 @@ public:
     void SetFunc(napi_value func);
 
 private:
-    int32_t sessionId_  = 0;
-    int32_t resultCode_ = -1;
+    int32_t sessionId_  = DEFAULT_SESSION_ID;
+    int32_t resultCode_ = DELETE_CODE_ERROR;
     std::vector<std::string> uris_;
     napi_env env_ = nullptr;
     napi_ref callbackRef = nullptr;
