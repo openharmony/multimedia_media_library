@@ -30,6 +30,7 @@ public:
     static int32_t RemovePhotoAssets(NativeRdb::RdbPredicates &predicates);
     static std::shared_ptr<NativeRdb::ResultSet> QueryPhotoAssets(const NativeRdb::RdbPredicates &rdbPredicate,
         const std::vector<std::string> &columns);
+    static int32_t AddAnaLysisPhotoAssets(const std::vector<DataShare::DataShareValuesBucket> &values);
 };
 } // namespace OHOS::Media
 #endif // OHOS_PHOTO_MAP_OPERATIONS_H

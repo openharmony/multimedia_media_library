@@ -189,6 +189,7 @@ const std::string PAH_FORM_MAP = "phaccess_store_form_operation";
 const std::string PAH_ANA_SALIENCY = "phaccess_ana_sal_operation";
 const std::string PAH_ANA_ADDRESS = "phaccess_ana_address_operation";
 const std::string PAH_GEO_PHOTOS = "phaccess_geo_photos_operation";
+const std::string PAH_ANA_TOTAL = "phaccess_ana_total_operation";
 
 // UserFileManager photo operation constants
 const std::string PAH_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE;
