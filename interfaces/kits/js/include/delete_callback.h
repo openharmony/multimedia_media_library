@@ -16,26 +16,28 @@
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_DELETE_CALLBACK_H_
 
 #include <js_native_api.h>
-#include "want.h"
 #include <string>
 #include <uv.h>
 #include <napi/native_api.h>
 #include <node_api.h>
+
+#include "want.h"
 #include "ui_content.h"
 
-namespace OHOS{
-namespace Media{
+namespace OHOS {
+namespace Media {
 const std::string DELETE_UI_PACKAGE_NAME = "com.ohos.photos";
 const std::string DELETE_UI_EXT_ABILITY_NAME = "DeleteUIExtensionAbility";
 const std::string DELETE_UI_EXTENSION_TYPE = "ability.want.params.uiExtensionType";
 const std::string DELETE_UI_REQUEST_TYPE = "sysDialog/common";
 const std::string DELETE_UI_APPNAME = "appName";
 const std::string DELETE_UI_URIS = "uris";
+const std::string RESULT = "result";
 const int32_t DELETE_CODE_SUCCESS = 0;
 const int32_t DELETE_CODE_ERROR = -1;
 const int32_t DEFAULT_SESSION_ID = 0;
 
-class DeleteCallback{
+class DeleteCallback {
 public:
     explicit DeleteCallback(napi_env env, Ace::UIContent *uiContent);
     void OnRelease(int32_t releaseCode);

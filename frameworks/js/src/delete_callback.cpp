@@ -14,10 +14,11 @@
  */
 #include "delete_callback.h"
 
-#include "medialibrary_napi_log.h"
 #include <optional>
+
 #include "media_library_napi.h"
 #include "medialibrary_napi_utils.h"
+#include "medialibrary_napi_log.h"
 #include "media_file_utils.h"
 #include "userfile_client.h"
 #include "medialibrary_client_errno.h"
@@ -25,10 +26,8 @@
 using namespace std;
 using namespace OHOS::DataShare;
 
-const string RESULT = "result";
-
-namespace OHOS{
-namespace Media{
+namespace OHOS {
+namespace Media {
 DeleteCallback::DeleteCallback(napi_env env, Ace::UIContent *uiContent)
 {
     this->env_ = env;
@@ -98,18 +97,19 @@ void DeleteCallback::SendMessageBack()
 {
     CloseModalUIExtension();
     napi_value undefined, return_val;
-    CHECK_ARGS_RET_VOID(this->env_, napi_get_undefined(this->env_, &undefined),JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS_RET_VOID(this->env_, napi_get_undefined(this->env_, &undefined), JS_ERR_PARAMETER_INVALID);
 
     napi_value results[ARGS_ONE] = {nullptr};
-    CHECK_ARGS_RET_VOID(this->env_, napi_create_object(this->env_, &results[PARAM0]),JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS_RET_VOID(this->env_, napi_create_object(this->env_, &results[PARAM0]), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = 0;
-    CHECK_ARGS_RET_VOID(this->env_, napi_create_int32(this->env_, this->resultCode_, &result),JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS_RET_VOID(this->env_, napi_create_int32(this->env_, this->resultCode_, &result), JS_ERR_PARAMETER_INVALID);
     CHECK_ARGS_RET_VOID(this->env_, napi_set_named_property(this->env_, results[PARAM0], RESULT.c_str(), result),
                         JS_ERR_PARAMETER_INVALID);
 
     napi_value callback = nullptr;
-    CHECK_ARGS_RET_VOID(this->env_, napi_get_reference_value(this->env_, this->callbackRef, &callback),JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS_RET_VOID(this->env_, napi_get_reference_value(this->env_, this->callbackRef, &callback),
+                        JS_ERR_PARAMETER_INVALID);
     CHECK_ARGS_RET_VOID(this->env_, napi_call_function(this->env_, undefined, callback, ARGS_ONE, results, &return_val),
                         JS_ERR_PARAMETER_INVALID);
 }
@@ -120,5 +120,5 @@ void DeleteCallback::CloseModalUIExtension()
         uiContent->CloseModalUIExtension(this->sessionId_);
     }
 }
-}   
+}
 }
