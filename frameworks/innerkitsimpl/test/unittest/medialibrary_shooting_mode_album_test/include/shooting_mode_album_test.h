@@ -13,28 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_MEDIATOOL_START
-int main()
-{
-    return 0;
-}
-#else
-#include <string>
-#include <vector>
+#ifndef OHOS_MEDIA_LIBRARY_SHOOTING_MODE_ALBUM_UNITTEST_H
+#define OHOS_MEDIA_LIBRARY_SHOOTING_MODE_ALBUM_UNITTEST_H
 
-#include "control_main.h"
+#include <gtest/gtest.h>
 
-using namespace OHOS;
-using namespace OHOS::Media;
-using namespace OHOS::Media::MediaTool;
-
-int main(int argc, char *argv[])
-{
-    std::vector<std::string> args;
-    for (int i = 0; i < argc; i++) {
-        args.push_back(std::string(argv[i]));
-    }
-    return ControlMain::Main(args);
-}
-#endif // MEDIALIBRARY_MEDIATOOL_START
-
+namespace OHOS::Media {
+class ShootingModeAlbumTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
+};
+} // namespace OHOS::Media
+#endif // OHOS_MEDIA_LIBRARY_SHOOTING_MODE_ALBUM_UNITTEST_H

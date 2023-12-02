@@ -39,6 +39,7 @@ enum class OperationObject : uint32_t {
     SMART_ALBUM,
     SMART_ALBUM_MAP,
     THUMBNAIL,
+    THUMBNAIL_ASTC,
     SMART_ALBUM_ASSETS,
     ASSETMAP,
     ALL_DEVICE,

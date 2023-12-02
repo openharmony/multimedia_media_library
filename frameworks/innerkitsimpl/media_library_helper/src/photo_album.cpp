@@ -132,6 +132,26 @@ int32_t PhotoAlbum::GetVideoCount() const
     return videoCount_;
 }
 
+void PhotoAlbum::SetLatitude(const double latitude)
+{
+    latitude_ = latitude;
+}
+
+double PhotoAlbum::GetLatitude() const
+{
+    return latitude_;
+}
+
+void PhotoAlbum::SetLongitude(const double longitude)
+{
+    longitude_ = longitude;
+}
+
+double PhotoAlbum::GetLongitude() const
+{
+    return longitude_;
+}
+
 void PhotoAlbum::SetRelativePath(const string &relativePath)
 {
     relativePath_ = relativePath;
@@ -160,6 +180,16 @@ void PhotoAlbum::SetHiddenOnly(const bool hiddenOnly)
 bool PhotoAlbum::GetHiddenOnly() const
 {
     return hiddenOnly_;
+}
+
+void PhotoAlbum::SetLocationOnly(const bool locationOnly)
+{
+    locationOnly_ = locationOnly;
+}
+
+bool PhotoAlbum::GetLocationOnly() const
+{
+    return locationOnly_;
 }
 
 bool PhotoAlbum::IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)

@@ -97,6 +97,8 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_GETTER("albumType", JSGetPhotoAlbumType),
             DECLARE_NAPI_GETTER("albumSubtype", JSGetPhotoAlbumSubType),
             DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri),
+            DECLARE_NAPI_GETTER("latitude", JSGetLatitude),
+            DECLARE_NAPI_GETTER("longitude", JSGetLongitude),
             DECLARE_NAPI_FUNCTION("commitModify", PhotoAccessHelperCommitModify),
             DECLARE_NAPI_FUNCTION("addAssets", PhotoAccessHelperAddAssets),
             DECLARE_NAPI_FUNCTION("removeAssets", PhotoAccessHelperRemoveAssets),
@@ -196,6 +198,16 @@ PhotoAlbumType PhotoAlbumNapi::GetPhotoAlbumType() const
 PhotoAlbumSubType PhotoAlbumNapi::GetPhotoAlbumSubType() const
 {
     return photoAlbumPtr->GetPhotoAlbumSubType();
+}
+
+double PhotoAlbumNapi::GetLatitude() const
+{
+    return photoAlbumPtr->GetLatitude();
+}
+
+double PhotoAlbumNapi::GetLongitude() const
+{
+    return photoAlbumPtr->GetLongitude();
 }
 
 shared_ptr<PhotoAlbum> PhotoAlbumNapi::GetPhotoAlbumInstance() const
@@ -387,6 +399,26 @@ napi_value PhotoAlbumNapi::JSGetCoverUri(napi_env env, napi_callback_info info)
     napi_value jsResult = nullptr;
     CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetCoverUri().c_str(), NAPI_AUTO_LENGTH, &jsResult),
         JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSGetLatitude(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_double(env, obj->GetLatitude(), &jsResult), JS_INNER_FAIL);
+    return jsResult;
+}
+
+napi_value PhotoAlbumNapi::JSGetLongitude(napi_env env, napi_callback_info info)
+{
+    PhotoAlbumNapi *obj = nullptr;
+    CHECK_NULLPTR_RET(UnwrapPhotoAlbumObject(env, info, &obj));
+
+    napi_value jsResult = nullptr;
+    CHECK_ARGS(env, napi_create_double(env, obj->GetLongitude(), &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
 
@@ -659,9 +691,12 @@ static int32_t FetchNewCount(PhotoAlbumNapiAsyncContext *context)
     vector<string> fetchColumn = {
         PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_COUNT,
-        PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
-        PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
     };
+    bool isSmartAlbum = (context->objectInfo->GetPhotoAlbumType() == PhotoAlbumType::SMART);
+    if (!isSmartAlbum) {
+        fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
+        fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+    }
     auto resultSet = UserFileClient::Query(qUri, predicates, fetchColumn, errCode);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
@@ -672,9 +707,9 @@ static int32_t FetchNewCount(PhotoAlbumNapiAsyncContext *context)
         return -1;
     }
     bool hiddenOnly = context->objectInfo->GetHiddenOnly();
-    int imageCount = hiddenOnly ? -1 :
+    int imageCount = (hiddenOnly || isSmartAlbum) ? -1 :
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
-    int videoCount = hiddenOnly ? -1 :
+    int videoCount = (hiddenOnly || isSmartAlbum) ? -1 :
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
     context->newCount =
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, resultSet, TYPE_INT32));

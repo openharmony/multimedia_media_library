@@ -75,6 +75,7 @@ public:
     explicit ThumbnailRequest(const RequestPhotoParams &params, napi_env env, napi_ref callback);
     virtual ~ThumbnailRequest();
     bool UpdateStatus(ThumbnailStatus status);
+    void ReleaseCallbackRef();
     ThumbnailStatus GetStatus();
     bool NeedContinue();
 
@@ -133,7 +134,7 @@ private:
     ThumbnailStatus status_ = ThumbnailStatus::THUMB_INITIAL;
     std::mutex mutex_;
     std::string uuid_;
-    
+
     PixelMapPtr fastPixelMap;
     PixelMapPtr pixelMap;
 };

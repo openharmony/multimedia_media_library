@@ -126,6 +126,9 @@ public:
     void SetShootingMode(const VariantData &shootingMode);
     const std::string &GetShootingMode() const;
 
+    void SetShootingModeTag(const VariantData &shootingMode);
+    const std::string &GetShootingModeTag() const;
+
     void SetLastVisitTime(const VariantData &lastVisitTime);
     int64_t GetLastVisitTime() const;
 
@@ -174,6 +177,7 @@ private:
     string dateMonth_;
     string dateDay_;
     string shootingMode_;
+    string shootingModeTag_;
     int64_t lastVisitTime_;
 
     // video, audio, image

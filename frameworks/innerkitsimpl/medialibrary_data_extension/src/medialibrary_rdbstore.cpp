@@ -56,6 +56,13 @@ struct UniqueMemberValuesBucket {
     int32_t startNumber;
 };
 
+
+struct ShootingModeValueBucket {
+    int32_t albumType;
+    int32_t albumSubType;
+    std::string albumName;
+};
+
 const std::string MediaLibraryRdbStore::CloudSyncTriggerFunc(const std::vector<std::string> &args)
 {
     CloudSyncHelper::GetInstance()->StartSync();
@@ -611,6 +618,61 @@ int32_t MediaLibraryDataCallBack::PrepareSmartAlbum(RdbStore &store)
     return NativeRdb::E_OK;
 }
 
+static int32_t InsertShootingModeAlbumValues(
+    const ShootingModeValueBucket &shootingModeAlbum, RdbStore &store)
+{
+    ValuesBucket valuesBucket;
+    valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, shootingModeAlbum.albumType);
+    valuesBucket.PutInt(COMPAT_ALBUM_SUBTYPE, shootingModeAlbum.albumSubType);
+    valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, shootingModeAlbum.albumName);
+    int64_t outRowId = -1;
+    int32_t insertResult = store.Insert(outRowId, ANALYSIS_ALBUM_TABLE, valuesBucket);
+    return insertResult;
+}
+
+static int32_t PrepareShootingModeAlbum(RdbStore &store)
+{
+    ShootingModeValueBucket portraitAlbum = {
+        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, PORTRAIT_ALBUM
+    };
+    ShootingModeValueBucket wideApertureAlbum = {
+        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, WIDE_APERTURE_ALBUM
+    };
+    ShootingModeValueBucket nightShotAlbum = {
+        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, NIGHT_SHOT_ALBUM
+    };
+    ShootingModeValueBucket movingPictureAlbum = {
+        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, MOVING_PICTURE_ALBUM
+    };
+    ShootingModeValueBucket proPhotoAlbum = {
+        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, PRO_PHOTO_ALBUM
+    };
+    ShootingModeValueBucket slowMotionAlbum = {
+        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, SLOW_MOTION_ALBUM
+    };
+    ShootingModeValueBucket lightPaintingAlbum = {
+        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, LIGHT_PAINTING_ALBUM
+    };
+    ShootingModeValueBucket highPixelAlbum = {
+        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, HIGH_PIXEL_ALBUM
+    };
+    ShootingModeValueBucket superMicroAlbum = {
+        SHOOTING_MODE_TYPE, SHOOTING_MODE_SUB_TYPE, SUPER_MACRO_ALBUM
+    };
+
+    vector<ShootingModeValueBucket> shootingModeValuesBucket = {
+        portraitAlbum, wideApertureAlbum, nightShotAlbum, movingPictureAlbum,
+        proPhotoAlbum, lightPaintingAlbum, highPixelAlbum, superMicroAlbum, slowMotionAlbum
+    };
+    for (const auto& shootingModeAlbum : shootingModeValuesBucket) {
+        if (InsertShootingModeAlbumValues(shootingModeAlbum, store) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Prepare shootingMode album failed");
+            return NativeRdb::E_ERROR;
+        }
+    }
+    return NativeRdb::E_OK;
+}
+
 int32_t MediaLibraryDataCallBack::InsertSmartAlbumValues(const SmartAlbumValuesBucket &smartAlbum, RdbStore &store)
 {
     ValuesBucket valuesBucket;
@@ -706,6 +768,8 @@ static const string &TriggerDeletePhotoClearMap()
     " AFTER DELETE ON " + PhotoColumn::PHOTOS_TABLE +
     " BEGIN " +
         "DELETE FROM " + PhotoMap::TABLE +
+        " WHERE " + PhotoMap::ASSET_ID + "=" + "OLD." + MediaColumn::MEDIA_ID + ";" +
+        "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE +
         " WHERE " + PhotoMap::ASSET_ID + "=" + "OLD." + MediaColumn::MEDIA_ID + ";" +
     " END;";
     return TRIGGER_DELETE_ASSETS;
@@ -913,6 +977,11 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     if (PrepareUniqueMemberTable(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
+    
+    if (PrepareShootingModeAlbum(store)!= NativeRdb::E_OK) {
+        return NativeRdb::E_ERROR;
+    }
+
     return NativeRdb::E_OK;
 }
 
@@ -1567,6 +1636,21 @@ void AddShootingModeColumn(RdbStore &store)
     }
 }
 
+void AddShootingModeTagColumn(RdbStore &store)
+{
+    const std::string addShootringModeTag =
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+        PhotoColumn::PHOTO_SHOOTING_MODE_TAG + " TEXT";
+    const std::string dropExpiredClearMapTrigger =
+        "DROP TRIGGER IF EXISTS delete_photo_clear_map";
+    const vector<string> addShootingModeTagColumn = {addShootringModeTag,
+        dropExpiredClearMapTrigger, TriggerDeletePhotoClearMap()};
+    int32_t result = ExecSqls(addShootingModeTagColumn, store);
+    if (result != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Upgrade rdb shooting_mode error %{private}d", result);
+    }
+}
+
 static void AddHiddenViewColumn(RdbStore &store)
 {
     vector<string> upgradeSqls = {
@@ -1669,18 +1753,20 @@ static void AddFormMap(RdbStore &store)
 
 static void FixDocsPath(RdbStore &store)
 {
-    ExecSqls({
-    "UPDATE Files SET "
-        " data = REPLACE(data, '/storage/cloud/files/Documents', '/storage/cloud/files/Docs/Documents'),"
-        " data = REPLACE(data, '/storage/cloud/files/Download', '/storage/cloud/files/Docs/Download'),"
-        " relative_path = REPLACE(relative_path, 'Documents/', 'Docs/Documents/'),"
-        " relative_path = REPLACE(relative_path, 'Download/', 'Docs/Download/')"
-    " WHERE data LIKE '/storage/cloud/files/Documents%' OR "
-        " data LIKE '/storage/cloud/files/Download%' OR"
-        " relative_path LIKE 'Documents/%' OR"
-        " relative_path LIKE 'Download/%';",
-    "UPDATE MediaTypeDirectory SET directory = 'Docs/' WHERE directory_type = 4 OR directory_type = 5",
-    }, store);
+    vector<string> sqls = {
+        "UPDATE Files SET "
+            " data = REPLACE(data, '/storage/cloud/files/Documents', '/storage/cloud/files/Docs/Documents'),"
+            " data = REPLACE(data, '/storage/cloud/files/Download', '/storage/cloud/files/Docs/Download'),"
+            " relative_path = REPLACE(relative_path, 'Documents/', 'Docs/Documents/'),"
+            " relative_path = REPLACE(relative_path, 'Download/', 'Docs/Download/')"
+        " WHERE data LIKE '/storage/cloud/files/Documents%' OR "
+            " data LIKE '/storage/cloud/files/Download%' OR"
+            " relative_path LIKE 'Documents/%' OR"
+            " relative_path LIKE 'Download/%';",
+        "UPDATE MediaTypeDirectory SET directory = 'Docs/' WHERE directory_type = 4 OR directory_type = 5",
+    };
+
+    ExecSqls(sqls, store);
 }
 
 static void AddImageVideoCount(RdbStore &store)
@@ -1771,6 +1857,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_FIX_DOCS_PATH) {
         FixDocsPath(store);
+    }
+    if (oldVersion < VERSION_ADD_SHOOTING_MODE_TAG) {
+        AddShootingModeTagColumn(store);
+        PrepareShootingModeAlbum(store);
     }
 }
 

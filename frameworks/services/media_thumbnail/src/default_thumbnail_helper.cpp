@@ -50,14 +50,14 @@ int32_t DefaultThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
     return E_OK;
 }
 
-int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size)
+int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size, bool isAstc)
 {
     ThumbnailWait thumbnailWait(false);
     thumbnailWait.CheckAndWait(opts.row, false);
     ThumbnailData thumbnailData;
     GetThumbnailInfo(opts, thumbnailData);
 
-    ThumbnailType type = GetThumbType(size.width, size.height);
+    ThumbnailType type = GetThumbType(size.width, size.height, isAstc);
     if (opts.table == AudioColumn::AUDIOS_TABLE) {
         type = ThumbnailType::THUMB;
     }

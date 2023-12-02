@@ -149,7 +149,7 @@ static int32_t GetPathFromDb(const shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
 #endif
 
 int ThumbnailService::GetThumbFd(const string &path, const string &table, const string &id, const string &uri,
-    const Size &size)
+    const Size &size, bool isAstc)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
@@ -171,7 +171,7 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     if (!isThumbnail) {
         opts.screenSize = screenSize_;
     }
-    int fd = thumbnailHelper->GetThumbnailPixelMap(opts, size);
+    int fd = thumbnailHelper->GetThumbnailPixelMap(opts, size, isAstc);
     if (fd < 0) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, fd},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -181,7 +181,7 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     return fd;
 }
 
-int ThumbnailService::GetThumbnailFd(const string &uri)
+int ThumbnailService::GetThumbnailFd(const string &uri, bool isAstc)
 {
     if (!CheckSizeValid()) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_INVALID_SIZE},
@@ -209,7 +209,7 @@ int ThumbnailService::GetThumbnailFd(const string &uri)
         }
     }
 #endif
-    return GetThumbFd(path, table, id, uri, size);
+    return GetThumbFd(path, table, id, uri, size, isAstc);
 }
 
 int32_t ThumbnailService::ParseThumbnailParam(const std::string &uri, string &fileId, string &networkId,

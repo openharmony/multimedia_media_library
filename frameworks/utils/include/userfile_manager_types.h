@@ -82,7 +82,8 @@ enum PhotoAlbumSubType : int32_t {
     CLASSIFY = ANALYSIS_START,
     GEOGRAPHY_LOCATION = 4099,
     GEOGRAPHY_CITY,
-    ANALYSIS_END = GEOGRAPHY_CITY,
+    SHOOTING_MODE,
+    ANALYSIS_END = SHOOTING_MODE,
     ANY = std::numeric_limits<int32_t>::max()
 };
 
