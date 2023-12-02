@@ -105,7 +105,7 @@ const std::string CREATE_TAB_ANALYSIS_OBJECT = "CREATE TABLE IF NOT EXISTS " + V
     OBJECT_SCALE_Y + " INT, " +
     OBJECT_SCALE_WIDTH + " INT, " +
     OBJECT_SCALE_HEIGHT + " INT, " +
-    PROB + " INT, " +
+    PROB + " REAL, " +
     OBJECT_VERSION + " TEXT) ";
 
 const std::string RECOMMENDATION_ID = "recommendation_id";
