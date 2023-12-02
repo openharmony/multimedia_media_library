@@ -14,8 +14,6 @@
  */
 #include "delete_callback.h"
 
-#include <optional>
-
 #include "media_library_napi.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_napi_log.h"
@@ -103,7 +101,8 @@ void DeleteCallback::SendMessageBack()
     CHECK_ARGS_RET_VOID(this->env_, napi_create_object(this->env_, &results[PARAM0]), JS_ERR_PARAMETER_INVALID);
 
     napi_value result = 0;
-    CHECK_ARGS_RET_VOID(this->env_, napi_create_int32(this->env_, this->resultCode_, &result), JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS_RET_VOID(this->env_, napi_create_int32(this->env_, this->resultCode_, &result),
+                        JS_ERR_PARAMETER_INVALID);
     CHECK_ARGS_RET_VOID(this->env_, napi_set_named_property(this->env_, results[PARAM0], RESULT.c_str(), result),
                         JS_ERR_PARAMETER_INVALID);
 
