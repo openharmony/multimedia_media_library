@@ -17,6 +17,7 @@
 #define MEDIALIBRARY_VISION_COLUMN_H
 
 #include "media_column.h"
+#include "userfile_manager_types.h"
 #include "userfilemgr_uri.h"
 
 namespace OHOS {
@@ -242,7 +243,7 @@ const std::string TAG_ORDER = "tag_order";
 const std::string IS_ME = "is_me";
 const std::string COVER_URI = "cover_uri";
 const std::string COUNT = "count";
-const std::string DATE_MODIFY = "date_modify";
+const std::string PORTRAIT_DATE_MODIFY = "date_modify";
 const std::string ALBUM_TYPE = "album_type";
 const std::string IS_REMOVED = "is_removed";
 const std::string USER_OPERATION = "user_operation";
@@ -260,7 +261,7 @@ const std::string CREATE_TAB_FACE_TAG = "CREATE TABLE IF NOT EXISTS " + VISION_F
     IS_ME + " INTEGER, " +
     COVER_URI +  " TEXT, " +
     COUNT + " INTEGER, " +
-    DATE_MODIFY + " BIGINT, " +
+    PORTRAIT_DATE_MODIFY + " BIGINT, " +
     ALBUM_TYPE + " INTEGER, " +
     IS_REMOVED + " INTEGER) ";
 
@@ -269,6 +270,8 @@ const std::string ALBUM_SUBTYPE = "album_subtype";
 const std::string ALBUM_NAME = "album_name";
 const std::string DATE_MODIFIED = "date_modified";
 const std::string RANK = "rank";
+// fake column for merge album
+const std::string TARGET_ALBUM_ID = "target_album_id";
 const std::string CREATE_ANALYSIS_ALBUM = "CREATE TABLE IF NOT EXISTS " + ANALYSIS_ALBUM_TABLE + " (" +
     ALBUM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     ALBUM_TYPE + " INT, " +
@@ -505,6 +508,51 @@ const std::string ALTER_WIDTH_COLUMN = "ALTER TABLE tab_analysis_ocr ADD COLUMN 
 const std::string ALTER_HEIGHT_COLUMN = "ALTER TABLE tab_analysis_ocr ADD COLUMN height INT;";
 const std::string DROP_TABLE_ANALYSISALBUM = "DROP TABLE AnalysisAlbum;";
 const std::string DROP_TABLE_ANALYSISPHOTOMAP = "DROP TABLE AnalysisPhotoMap;";
+
+const std::string ADD_TAG_ID_COLUMN_FOR_ALBUM = "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " +
+    TAG_ID + " TEXT";
+const std::string ADD_USER_OPERATION_COLUMN_FOR_ALBUM = "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " +
+    USER_OPERATION + " INT";
+const std::string ADD_GROUP_TAG_COLUMN_FOR_ALBUM = "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " +
+    GROUP_TAG + " TEXT";
+const std::string ADD_USER_DISPLAY_LEVEL_COLUMN_FOR_ALBUM = "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " +
+    USER_DISPLAY_LEVEL + " INT";
+const std::string ADD_IS_ME_COLUMN_FOR_ALBUM = "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " +
+    IS_ME + " INT";
+const std::string ADD_IS_REMOVED_COLUMN_FOR_ALBUM = "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " +
+    IS_REMOVED + " INT";
+const std::string ADD_RENAME_OPERATION_COLUMN_FOR_ALBUM = "ALTER TABLE " + ANALYSIS_ALBUM_TABLE + " ADD COLUMN " +
+    RENAME_OPERATION + " INT";
+const std::string CREATE_ANALYSIS_ALBUM_FOR_ONCREATE = "CREATE TABLE IF NOT EXISTS " + ANALYSIS_ALBUM_TABLE + " (" +
+    ALBUM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    ALBUM_TYPE + " INT, " +
+    ALBUM_SUBTYPE + " INT, " +
+    ALBUM_NAME + " TEXT, " +
+    COVER_URI + " TEXT, " +
+    COUNT + " INT, " +
+    DATE_MODIFIED + " BIGINT, " +
+    RANK + " INT, " +
+    TAG_ID + " TEXT, " +
+    USER_OPERATION + " INT, " +
+    GROUP_TAG + " TEXT, " +
+    USER_DISPLAY_LEVEL + " INT, " +
+    IS_ME + " INT, " +
+    IS_REMOVED + " INT, " +
+    RENAME_OPERATION + " INT) ";
+const std::string ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER = "analysis_album_update_search_trigger";
+const std::string CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER = "CREATE TRIGGER " +
+    ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER +
+    " AFTER UPDATE OF " + ALBUM_NAME +
+    " ON " + ANALYSIS_ALBUM_TABLE +
+    " FOR EACH ROW WHEN (NEW." + ALBUM_SUBTYPE + " = " + std::to_string(PORTRAIT) + ")" +
+    " BEGIN " +
+    " UPDATE " + "tab_analysis_search_index" +
+    " SET " + "cv_status" + " = 0 " +
+    " WHERE (" + FILE_ID + " IN( " +
+    " SELECT " + MAP_ASSET +
+    " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
+    " WHERE (old." + ALBUM_ID + " = " + ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM + ")" +
+    ")); END;";
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIALIBRARY_VISION_COLUMN_H

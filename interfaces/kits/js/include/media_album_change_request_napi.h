@@ -28,6 +28,10 @@ enum class AlbumChangeOperation {
     SET_ALBUM_NAME,
     SET_COVER_URI,
     ORDER_ALBUM,
+    SET_DISPLAY_LEVEL,
+    MERGE_ALBUM,
+    DISMISS_ASSET,
+    SET_IS_ME,
 };
 
 class MediaAlbumChangeRequestNapi : public MediaChangeRequestNapi {
@@ -39,6 +43,9 @@ public:
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
     std::shared_ptr<PhotoAlbum> GetReferencePhotoAlbumInstance() const;
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
+    std::shared_ptr<PhotoAlbum> GetTargetPhotoAlbumInstance() const;
+    std::vector<std::string> GetDismissAssets() const;
+    void ClearDismissAssetArray();
 
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -47,11 +54,20 @@ private:
     static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
     static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
     static napi_value JSPlaceToFrontOf(napi_env env, napi_callback_info info);
+    static napi_value JSSetDisplayLevel(napi_env env, napi_callback_info info);
+    static napi_value JSMergeAlbum(napi_env env, napi_callback_info info);
+    static napi_value JSDismissAsset(napi_env env, napi_callback_info info);
+    static napi_value JSSetIsMe(napi_env env, napi_callback_info info);
+    bool CheckPortraitMergeAlbum();
+    static bool CheckDismissAssetVaild(std::vector<std::string> &dismissAssets,
+        std::vector<std::string> &newAssetArray);
 
     static thread_local napi_ref constructor_;
     std::shared_ptr<PhotoAlbum> photoAlbum_ = nullptr;
     std::shared_ptr<PhotoAlbum> referencePhotoAlbum_ = nullptr;
     std::vector<AlbumChangeOperation> albumChangeOperations_;
+    std::shared_ptr<PhotoAlbum> targetAlbum_ = nullptr;
+    std::vector<std::string> dismissAssets_;
 };
 struct MediaAlbumChangeRequestAsyncContext : public NapiError {
     size_t argc;

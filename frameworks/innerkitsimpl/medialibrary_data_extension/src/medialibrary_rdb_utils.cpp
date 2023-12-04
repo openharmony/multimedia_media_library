@@ -203,6 +203,11 @@ static inline int32_t GetFileCount(const shared_ptr<ResultSet> &resultSet)
     return GetIntValFromColumn(resultSet, MEDIA_COLUMN_COUNT_1);
 }
 
+static inline int32_t GetPortraitFileCount(const shared_ptr<ResultSet> &resultSet)
+{
+    return GetIntValFromColumn(resultSet, MEDIA_COLUMN_COUNT_DISTINCT_FILE_ID);
+}
+
 static inline int32_t GetAlbumCount(const shared_ptr<ResultSet> &resultSet, const string &column)
 {
     return GetIntValFromColumn(resultSet, column);
@@ -296,11 +301,16 @@ static inline string GetCover(const shared_ptr<ResultSet> &resultSet)
 }
 
 static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
-    ValuesBucket &values, const bool hiddenState)
+    ValuesBucket &values, const bool hiddenState, PhotoAlbumSubType subtype)
 {
     const string &targetColumn = hiddenState ? PhotoAlbumColumns::HIDDEN_COUNT : PhotoAlbumColumns::ALBUM_COUNT;
     int32_t oldCount = GetAlbumCount(albumResult, targetColumn);
-    int32_t newCount = GetFileCount(fileResult);
+    int32_t newCount;
+    if (subtype == PORTRAIT) {
+        newCount = GetPortraitFileCount(fileResult);
+    } else {
+        newCount = GetFileCount(fileResult);
+    }
     if (oldCount != newCount) {
         MEDIA_INFO_LOG("Update album %{public}s, oldCount: %{public}d, newCount: %{public}d",
             targetColumn.c_str(), oldCount, newCount);
@@ -335,6 +345,8 @@ static void GetAlbumPredicates(PhotoAlbumSubType subtype, const shared_ptr<Resul
 {
     if (!subtype) {
         PhotoAlbumColumns::GetUserAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
+    } else if (subtype == PhotoAlbumSubType::PORTRAIT) {
+        PhotoAlbumColumns::GetPortraitAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
     } else if (subtype >= PhotoAlbumSubType::ANALYSIS_START && subtype <= PhotoAlbumSubType::ANALYSIS_END) {
         PhotoAlbumColumns::GetAnalysisAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
     } else {
@@ -365,8 +377,12 @@ static void SetImageVideoCount(int32_t newTotalCount,
 static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const shared_ptr<ResultSet> &albumResult, ValuesBucket &values, PhotoAlbumSubType subtype, const bool hiddenState)
 {
+    string countColumn = MEDIA_COLUMN_COUNT_1;
+    if (subtype == PORTRAIT) {
+        countColumn = MEDIA_COLUMN_COUNT_DISTINCT_FILE_ID;
+    }
     const vector<string> columns = {
-        MEDIA_COLUMN_COUNT_1,
+        countColumn,
         PhotoColumn::MEDIA_ID,
         PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_NAME
@@ -383,7 +399,7 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     if (fileResult == nullptr) {
         return E_HAS_DB_ERROR;
     }
-    int32_t newCount = SetCount(fileResult, albumResult, values, hiddenState);
+    int32_t newCount = SetCount(fileResult, albumResult, values, hiddenState, subtype);
     SetCover(fileResult, albumResult, values, hiddenState);
     if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
         subtype > PhotoAlbumSubType::ANALYSIS_END)) {

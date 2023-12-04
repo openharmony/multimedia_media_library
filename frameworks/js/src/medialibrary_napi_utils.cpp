@@ -834,6 +834,26 @@ int32_t MediaLibraryNapiUtils::GetUserAlbumPredicates(
     return E_SUCCESS;
 }
 
+int32_t MediaLibraryNapiUtils::GetPortraitAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates)
+{
+    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
+    vector<string> clauses = { onClause };
+    predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On(clauses);
+    onClause = ALBUM_ID + " = " + PhotoMap::ALBUM_ID;
+    clauses = { onClause };
+    predicates.InnerJoin(ANALYSIS_ALBUM_TABLE)->On(clauses);
+    string tempTable = "(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " +
+        to_string(albumId) + ") ag";
+    onClause = "ag." + GROUP_TAG + " = " + ANALYSIS_ALBUM_TABLE + "." + GROUP_TAG;
+    clauses = { onClause };
+    predicates.InnerJoin(tempTable)->On(clauses);
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.Distinct();
+    return E_SUCCESS;
+}
+
 int32_t MediaLibraryNapiUtils::GetAnalysisAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates)
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
@@ -1319,6 +1339,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<M
 
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<FileAssetAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<FileAssetAsyncContext> &context, int32_t &value);
+
+template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaAlbumChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext> &context, int32_t &value);
 
 template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context);

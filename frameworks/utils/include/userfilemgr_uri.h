@@ -48,6 +48,12 @@ const std::string OPRN_SET_USER_COMMENT = "set_user_comment";
 const std::string OPRN_COMMIT_EDIT = "operation_commit_edit";
 const std::string OPRN_REVERT_EDIT = "operation_revert_edit";
 const std::string OPRN_ORDER_ALBUM = "order_album";
+const std::string OPRN_PORTRAIT_DISPLAY_LEVEL = "display_level";
+const std::string OPRN_PORTRAIT_IS_ME = "is_me";
+const std::string OPRN_PORTRAIT_ALBUM_NAME = "album_name";
+const std::string OPRN_PORTRAIT_MERGE_ALBUM = "merge_album";
+const std::string OPRN_PORTRAIT_DISMISS_ASSET = "dismiss_asset";
+const std::string OPRN_PORTRAIT_COVER_URI = "cover_uri";
 
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -217,6 +223,17 @@ const std::string PAH_DELETE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + 
 const std::string PAH_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_ORDER_ALBUM;
 const std::string PAH_COMMIT_EDIT_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_COMMIT_EDIT;
 const std::string PAH_REVERT_EDIT_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_REVERT_EDIT;
+const std::string PAH_PORTRAIT_DISPLAY_LEVLE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
+    OPRN_PORTRAIT_DISPLAY_LEVEL;
+const std::string PAH_PORTRAIT_IS_ME = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" + OPRN_PORTRAIT_IS_ME;
+const std::string PAH_PORTRAIT_ANAALBUM_ALBUM_NAME = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
+    OPRN_PORTRAIT_ALBUM_NAME;
+const std::string PAH_PORTRAIT_MERGE_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
+    OPRN_PORTRAIT_MERGE_ALBUM;
+const std::string PAH_PORTRAIT_DISMISS_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MAP + "/" +
+    OPRN_PORTRAIT_DISMISS_ASSET;
+const std::string PAH_PORTRAIT_ANAALBUM_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
+    OPRN_PORTRAIT_COVER_URI;
 
 const std::string PAH_QUERY_ANA_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_PHOTO_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MAP + "/" + OPRN_QUERY;

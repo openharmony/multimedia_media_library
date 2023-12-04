@@ -57,6 +57,8 @@ constexpr int32_t JS_E_FILE_TYPE      = UFM_JS_ERR(UFM_MODULE_CODE, 12);
 constexpr int32_t JS_E_NO_MEMORY      = UFM_JS_ERR(UFM_MODULE_CODE, 13);    // no memory left
 constexpr int32_t JS_E_FILE_KEY       = UFM_JS_ERR(UFM_MODULE_CODE, 14);    // wrong member name
 constexpr int32_t JS_E_INPUT          = UFM_JS_ERR(UFM_MODULE_CODE, 15);
+// media change request error
+constexpr int32_t JS_E_OPERATION_NOT_SUPPORT = UFM_JS_ERR(UFM_MODULE_CODE, 16);
 
 constexpr int32_t JS_E_NAMETOOLONG    = UFM_JS_ERR(UFM_SYSCAP_BASE, 36);
 

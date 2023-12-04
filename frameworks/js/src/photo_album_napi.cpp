@@ -907,6 +907,10 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
         return E_INVALID_ARGUMENTS;
     }
 
+    if (type == PhotoAlbumType::SMART && subType == PhotoAlbumSubType::PORTRAIT) {
+        return MediaLibraryNapiUtils::GetPortraitAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
+    }
+
     if (PhotoAlbum::IsUserPhotoAlbum(type, subType)) {
         return MediaLibraryNapiUtils::GetUserAlbumPredicates(photoAlbum->GetAlbumId(), predicates, hiddenOnly);
     }

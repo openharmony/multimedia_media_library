@@ -27,10 +27,22 @@
 #include "native_album_asset.h"
 #include "rdb_predicates.h"
 #include "rdb_result_set_bridge.h"
+#include "vision_column.h"
 
 namespace OHOS {
 namespace Media {
 constexpr int32_t NULL_REFERENCE_ALBUM_ID = -1;
+struct MergeAlbumInfo {
+    int albumId;
+    std::string groupTag;
+    int count;
+    int isMe;
+    std::string coverUri;
+    int userDisplayLevel;
+    int userOperation;
+    int rank;
+    int renameOperation;
+};
 class MediaLibraryAlbumOperations {
 public:
     static int32_t CreateAlbumOperation(MediaLibraryCommand &cmd);

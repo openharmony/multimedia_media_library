@@ -585,7 +585,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertFaceTag_Test_001, TestSize.Level0)
     valuesBucket.Put(IS_ME, 1);
     valuesBucket.Put(COVER_URI, "xssdsf");
     valuesBucket.Put(COUNT, 1);
-    valuesBucket.Put(DATE_MODIFY, 3333);
+    valuesBucket.Put(PORTRAIT_DATE_MODIFY, 3333);
     valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
@@ -621,7 +621,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateFaceTag_Test_001, TestSize.Level0)
     valuesBucket.Put(IS_ME, 1);
     valuesBucket.Put(COVER_URI, "xssdsf2");
     valuesBucket.Put(COUNT, 1);
-    valuesBucket.Put(DATE_MODIFY, 2222);
+    valuesBucket.Put(PORTRAIT_DATE_MODIFY, 2222);
     valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
@@ -658,7 +658,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteFaceTag_Test_001, TestSize.Level0)
     valuesBucket.Put(IS_ME, 1);
     valuesBucket.Put(COVER_URI, "xssdsf4");
     valuesBucket.Put(COUNT, 1);
-    valuesBucket.Put(DATE_MODIFY, 444);
+    valuesBucket.Put(PORTRAIT_DATE_MODIFY, 444);
     valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
@@ -688,7 +688,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryFaceTag_Test_001, TestSize.Level0)
     valuesBucket.Put(IS_ME, 1);
     valuesBucket.Put(COVER_URI, "xssdsf5");
     valuesBucket.Put(COUNT, 1);
-    valuesBucket.Put(DATE_MODIFY, 5555);
+    valuesBucket.Put(PORTRAIT_DATE_MODIFY, 5555);
     valuesBucket.Put(ALBUM_TYPE, 1);
     valuesBucket.Put(IS_REMOVED, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
