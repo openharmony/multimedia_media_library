@@ -163,7 +163,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanTextFile_Test_001, TestSize.Leve
         exit(1);
     }
 
-    string path = ROOT_MEDIA_DIR + "Documents/Scanner_Text1.txt";
+    string path = ROOT_MEDIA_DIR + "Docs/Documents/Scanner_Text1.txt";
     EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
 
     auto scannerCallback = make_shared<TestScannerCallback>();
@@ -190,7 +190,7 @@ HWTEST_F(MediaScannerUnitTest, MediaScanner_ScanHiddenFile_Test_001, TestSize.Le
         exit(1);
     }
 
-    string path = ROOT_MEDIA_DIR + "Download/.HiddenFile";
+    string path = ROOT_MEDIA_DIR + "Docs/Download/.HiddenFile";
     EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
 
     auto scannerCallback = make_shared<TestScannerCallback>();
@@ -266,7 +266,7 @@ HWTEST_F(MediaScannerUnitTest,  MediaScanner_ScanFile_CanonicalPathtest_002, Tes
         exit(1);
     }
 
-    string path = ROOT_MEDIA_DIR + "../files/Documents/Canonical2.txt";
+    string path = ROOT_MEDIA_DIR + "../files/Docs/Documents/Canonical2.txt";
     EXPECT_EQ(MediaLibraryUnitTestUtils::CreateFileFS(path), true);
 
     auto scannerCallback = make_shared<TestScannerCallback>();
