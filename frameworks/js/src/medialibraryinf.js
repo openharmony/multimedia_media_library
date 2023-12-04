@@ -18,9 +18,7 @@ const featureAbility = requireNapi('ability.featureAbility');
 const ARGS_ONE = 1;
 const ARGS_TWO = 2;
 
-async function startMediaSelect (option, asyncCallback) {
-  console.log('MediaLibrary startMediaSelectInner param num ' + arguments.length);
-  console.log('MediaLibrary startMediaSelectInner param ' + JSON.stringify(option));
+function GetParameter () {
   const select = 'singleselect';
   const parameter = {
     want:
@@ -41,6 +39,15 @@ async function startMediaSelect (option, asyncCallback) {
       maxSelectCount: 1
     }
   };
+  return parameter;
+}
+
+async function startMediaSelect (option, asyncCallback) {
+  console.log('MediaLibrary startMediaSelectInner param num ' + arguments.length);
+  console.log('MediaLibrary startMediaSelectInner param ' + JSON.stringify(option));
+ 
+  const parameter = GetParameter();
+
   if (option !== undefined && typeof option === 'object') {
     if (option.count !== undefined && option.count > 1) {
       parameter.want.type = 'multipleselect';
