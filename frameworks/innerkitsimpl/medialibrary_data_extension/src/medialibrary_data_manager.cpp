@@ -640,7 +640,12 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
         cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    return UpdateInternal(cmd, value, predicates);
+}
 
+int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
+    const DataShare::DataSharePredicates &predicates)
+{
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
             auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
@@ -660,6 +665,13 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
+        }
+        case OperationObject::ANALYSIS_PHOTO_ALBUM: {
+            if (cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
+                cmd.GetOprnType() <= OperationType::PORTRAIT_COVER_URI) {
+                return MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(cmd.GetOprnType(), value, predicates);
+            }
+            break;
         }
         case OperationObject::PHOTO_ALBUM: {
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);

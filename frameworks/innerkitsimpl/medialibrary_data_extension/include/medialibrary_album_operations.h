@@ -45,6 +45,8 @@ public:
     static int32_t AddPhotoAssets(const vector<DataShare::DataShareValuesBucket> &values);
     static int32_t HandlePhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
+    static int32_t HandleAnalysisPhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
 
 private:
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
