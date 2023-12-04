@@ -49,8 +49,6 @@ void CleanVisionData()
     MediaLibraryCommand compositionCmd(compositionUri);
     Uri salUri(URI_SALIENCY);
     MediaLibraryCommand salCmd(salUri);
-    Uri shieldUri(URI_SHIELD);
-    MediaLibraryCommand shieldCmd(shieldUri);
     Uri totalUri(URI_TOTAL);
     MediaLibraryCommand totalCmd(totalUri);
     MediaLibraryDataManager::GetInstance()->Delete(ocrCmd, predicates);
@@ -61,7 +59,6 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(segmentationCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(compositionCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(salCmd, predicates);
-    MediaLibraryDataManager::GetInstance()->Delete(shieldCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(totalCmd, predicates);
 }
 
@@ -373,38 +370,6 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteAes_Test_001, TestSize.Level0)
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_EQ((retVal == 1), true);
     MEDIA_INFO_LOG("Vision_DeleteAes_Test_001::retVal = %{public}d. End", retVal);
-}
-
-HWTEST_F(MediaLibraryVisionTest, Vision_Shield_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("Vision_Shield_Test_001::Start");
-    Uri shieldUri(URI_SHIELD);
-    MediaLibraryCommand cmd(shieldUri);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(SHIELD_KEY, "testkey1");
-    valuesBucket.Put(SHIELD_VALUE, "testValue1");
-    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
-    DataShare::DataShareValuesBucket valuesBucket2;
-    valuesBucket2.Put(SHIELD_KEY, "testkey2");
-    valuesBucket2.Put(SHIELD_VALUE, "testValue2");
-    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo(SHIELD_KEY, "testkey2");
-    vector<string> columns;
-    columns.push_back(SHIELD_KEY);
-    columns.push_back(SHIELD_VALUE);
-    int errCode = 0;
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
-    int count;
-    resultSet->GetRowCount(count);
-    EXPECT_GT(count, 0);
-    resultSet->GoToFirstRow();
-    string key;
-    string value;
-    resultSet->GetString(0, key);
-    resultSet->GetString(1, value);
-    MEDIA_INFO_LOG("Vision_Shield_Test_001::key = %{public}s, value = %{public}s End", key.c_str(), value.c_str());
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_Total_Test_001, TestSize.Level0)
@@ -758,7 +723,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertObject_Test_001, TestSize.Level0)
     valuesBucket.Put(OBJECT_SCALE_Y, 200);
     valuesBucket.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket.Put(OBJECT_SCALE_HEIGHT, 1000);
-    valuesBucket.Put(PROB, 9);
+    valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(OBJECT_VERSION, "1.0");
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
@@ -771,7 +736,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertObject_Test_001, TestSize.Level0)
     valuesBucket1.Put(OBJECT_SCALE_Y, 600);
     valuesBucket1.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket1.Put(OBJECT_SCALE_HEIGHT, 1000);
-    valuesBucket1.Put(PROB, 9);
+    valuesBucket1.Put(PROB, 0.9);
     valuesBucket1.Put(OBJECT_VERSION, "1.0");
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     EXPECT_LT(retVal1, 0);
@@ -795,7 +760,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateObject_Test_001, TestSize.Level0)
     valuesBucket.Put(OBJECT_SCALE_Y, 200);
     valuesBucket.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket.Put(OBJECT_SCALE_HEIGHT, 1000);
-    valuesBucket.Put(PROB, 9);
+    valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(OBJECT_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
@@ -829,7 +794,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteObject_Test_001, TestSize.Level0)
     valuesBucket.Put(OBJECT_SCALE_Y, 200);
     valuesBucket.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket.Put(OBJECT_SCALE_HEIGHT, 1000);
-    valuesBucket.Put(PROB, 9);
+    valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(OBJECT_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
@@ -841,7 +806,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteObject_Test_001, TestSize.Level0)
     valuesBucket1.Put(OBJECT_SCALE_Y, 600);
     valuesBucket1.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket1.Put(OBJECT_SCALE_HEIGHT, 1000);
-    valuesBucket1.Put(PROB, 9);
+    valuesBucket1.Put(PROB, 0.9);
     valuesBucket1.Put(OBJECT_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     DataShare::DataSharePredicates predicates;
@@ -864,7 +829,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryObject_Test_001, TestSize.Level0)
     valuesBucket.Put(OBJECT_SCALE_Y, 200);
     valuesBucket.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket.Put(OBJECT_SCALE_HEIGHT, 1000);
-    valuesBucket.Put(PROB, 9);
+    valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(OBJECT_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
@@ -876,7 +841,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryObject_Test_001, TestSize.Level0)
     valuesBucket1.Put(OBJECT_SCALE_Y, 600);
     valuesBucket1.Put(OBJECT_SCALE_WIDTH, 500);
     valuesBucket1.Put(OBJECT_SCALE_HEIGHT, 1000);
-    valuesBucket1.Put(PROB, 9);
+    valuesBucket1.Put(PROB, 0.9);
     valuesBucket1.Put(OBJECT_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     DataShare::DataSharePredicates predicates;
@@ -1402,7 +1367,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_001, TestSize.Level0)
     MediaLibraryCommand cmd(analysisAlbumUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
-    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY_CATEGORY);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY);
     valuesBucket.Put(ALBUM_NAME, "1");
     valuesBucket.Put(DATE_MODIFIED, 0);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
@@ -1429,7 +1394,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbum_Test_002, TestSize.Level0)
     MediaLibraryCommand cmd(analysisAlbumUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
-    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY_CATEGORY);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY);
     valuesBucket.Put(ALBUM_NAME, "2");
     valuesBucket.Put(COUNT, 1);
     valuesBucket.Put(DATE_MODIFIED, 0);
@@ -1497,7 +1462,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_001, TestSize.Leve
     MediaLibraryCommand cmd(analysisAlbumUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
-    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY_CATEGORY);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY);
     valuesBucket.Put(ALBUM_NAME, "3");
     valuesBucket.Put(COUNT, 1);
     valuesBucket.Put(DATE_MODIFIED, 0);

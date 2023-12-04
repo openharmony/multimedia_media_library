@@ -31,6 +31,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "value_object.h"
+#include "vision_column.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -88,6 +89,39 @@ static int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<string>
     return errCode;
 }
 
+static int32_t InsertAnalysisAsset(const DataShareValuesBucket &value)
+{
+    /**
+     * Build insert sql:
+     * INSERT INTO AnalysisPhotoMap (map_album, map_asset) SELECT
+     * ?, ?
+     * WHERE
+     *     (NOT EXISTS (SELECT * FROM AnalysisPhotoMap WHERE map_album = ? AND map_asset = ?))
+     *     AND (EXISTS (SELECT file_id FROM Photos WHERE file_id = ?))
+     *     AND (EXISTS (SELECT album_id FROM AnalysisAlbum WHERE album_id = ?));
+     */
+    static const string INSERT_MAP_SQL = "INSERT INTO " + ANALYSIS_PHOTO_MAP_TABLE +
+        " (" + PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ") " +
+        "SELECT ?, ? WHERE " +
+        "(NOT EXISTS (SELECT * FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
+            PhotoMap::ALBUM_ID + " = ? AND " + PhotoMap::ASSET_ID + " = ?)) " +
+        "AND (EXISTS (SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+            MediaColumn::MEDIA_ID + " = ?)) " +
+        "AND (EXISTS (SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE +
+            " WHERE " + PhotoAlbumColumns::ALBUM_ID + " = ? ));";
+    bool isValid = false;
+    int32_t albumId = value.Get(PhotoMap::ALBUM_ID, isValid);
+    if (!isValid) {
+        return -EINVAL;
+    }
+    int32_t assetId = value.Get(PhotoMap::ASSET_ID, isValid);
+    if (!isValid) {
+        return -EINVAL;
+    }
+    vector<ValueObject> bindArgs = { albumId, assetId, albumId, assetId, assetId, albumId};
+    return  MediaLibraryRdbStore::ExecuteForLastInsertedRowId(INSERT_MAP_SQL, bindArgs);
+}
+
 int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &values)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -130,6 +164,42 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
         watch->Notify(MediaFileUtils::Encode(uri), NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
     }
 
+    return changedRows;
+}
+
+int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesBucket> &values)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    if (values.empty()) {
+        return 0;
+    }
+    TransactionOperations op(rdbStore->GetRaw());
+    int32_t changedRows = 0;
+    int32_t err = op.Start();
+    if (err != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    for (const auto &value : values) {
+        int ret =  InsertAnalysisAsset(value);
+        if (ret == E_HAS_DB_ERROR) {
+            return ret;
+        }
+        if (ret > 0) {
+            changedRows++;
+        }
+    }
+    op.Finish();
+    bool isValid = false;
+    int32_t albumId = values[0].Get(PhotoMap::ALBUM_ID, isValid);
+    if (!isValid || albumId <= 0) {
+        MEDIA_WARN_LOG("Ignore failure on get album id when add assets. isValid: %{public}d, albumId: %{public}d",
+            isValid, albumId);
+        return changedRows;
+    }
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });
     return changedRows;
 }
 

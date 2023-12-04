@@ -165,6 +165,10 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     LABEL,
     AESTHETICS_SCORE,
     FACE,
+    OBJECT,
+    RECOMMENDATION,
+    SEGMENTATION,
+    COMPOSITION,
     SALIENCY,
     CATEGORY_ID
 };
