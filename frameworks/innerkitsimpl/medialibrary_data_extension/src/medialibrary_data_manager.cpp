@@ -554,6 +554,15 @@ int32_t MediaLibraryDataManager::Delete(MediaLibraryCommand &cmd, const DataShar
     return DeleteInRdbPredicates(cmd, rdbPredicate);
 }
 
+bool CheckIsDismissAsset(NativeRdb::RdbPredicates &rdbPredicate)
+{
+    auto whereClause = rdbPredicate.GetWhereClause();
+    if (whereClause.find(MAP_ALBUM) != string::npos && whereClause.find(MAP_ASSET) != string::npos) {
+        return true;
+    }
+    return false;
+}
+
 int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate)
 {
     switch (cmd.GetOprnObject()) {
@@ -576,6 +585,12 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         }
         case OperationObject::PHOTO_MAP: {
             return PhotoMapOperations::RemovePhotoAssets(rdbPredicate);
+        }
+        case OperationObject::ANALYSIS_PHOTO_MAP: {
+            if (CheckIsDismissAsset(rdbPredicate)) {
+                return PhotoMapOperations::DismissAssets(rdbPredicate);
+            }
+            break;
         }
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {

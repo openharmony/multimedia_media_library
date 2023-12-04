@@ -385,8 +385,10 @@ inline int CreatePhotoAlbum(const string &albumName)
 int CreatePhotoAlbum(MediaLibraryCommand &cmd)
 {
     string albumName;
+    string subtype;
     int err = GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_NAME, albumName);
-    if (err < 0) {
+    GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_SUBTYPE, subtype);
+    if (err < 0 && subtype != to_string(PORTRAIT)) {
         return err;
     }
     int rowId;

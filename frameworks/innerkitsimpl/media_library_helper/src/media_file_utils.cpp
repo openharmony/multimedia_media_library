@@ -567,6 +567,15 @@ int32_t MediaFileUtils::CheckRelativePath(const std::string &relativePath)
     return E_OK;
 }
 
+bool MediaFileUtils::CheckDisplayLevel(const int32_t &displayLevel)
+{
+    if (PORTRAIT_PAGE_MODE.find(displayLevel) == PORTRAIT_PAGE_MODE.end()) {
+        MEDIA_ERR_LOG("display level %{private}d is invalid", displayLevel);
+        return false;
+    }
+    return true;
+}
+
 void MediaFileUtils::FormatRelativePath(string &relativePath)
 {
     if (relativePath.empty()) {

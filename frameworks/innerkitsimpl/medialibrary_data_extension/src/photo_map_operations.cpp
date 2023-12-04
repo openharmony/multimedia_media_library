@@ -32,6 +32,8 @@
 #include "photo_map_column.h"
 #include "value_object.h"
 #include "vision_column.h"
+#include "rdb_utils.h"
+#include "result_set_utils.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -203,6 +205,73 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
     return changedRows;
 }
 
+static int32_t GetPortraitAlbumIds(string albumId, vector<string> &portraitAlbumIds)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_HAS_DB_ERROR;
+    }
+    const std::string queryPortraitAlbumIds = "SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
+        GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " = " + albumId + ")";
+
+    auto resultSet = uniStore->QuerySql(queryPortraitAlbumIds);
+    if (resultSet == nullptr) {
+        return E_DB_FAIL;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        portraitAlbumIds.push_back(to_string(GetInt32Val(ALBUM_ID, resultSet)));
+    }
+    return E_OK;
+}
+
+int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
+{
+    vector<string> whereArgs = predicates.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+
+    if (predicates.GetWhereArgs().size() == 0) {
+        MEDIA_ERR_LOG("No fileAsset to delete");
+        return E_INVALID_ARGUMENTS;
+    }
+    string strAlbumId = predicates.GetWhereArgs()[0];
+    if (strAlbumId.empty()) {
+        MEDIA_ERR_LOG("Failed to get albumId");
+        return E_INVALID_ARGUMENTS;
+    }
+    int32_t albumId = atoi(strAlbumId.c_str());
+    if (albumId <= 0) {
+        MEDIA_WARN_LOG("Ignore failure on get album id when remove assets, album updating would be lost");
+        return E_INVALID_ARGUMENTS;
+    }
+
+    vector<string> assetsArray;
+    for (size_t i = 1; i < predicates.GetWhereArgs().size(); i++) {
+        assetsArray.push_back(predicates.GetWhereArgs()[i]);
+    }
+    vector<string> portraitAlbumIds;
+    GetPortraitAlbumIds(strAlbumId, portraitAlbumIds);
+    DataShare::DataSharePredicates dataSharePredicates;
+    dataSharePredicates.In(MAP_ALBUM, portraitAlbumIds);
+    dataSharePredicates.And()->In(MAP_ASSET, assetsArray);
+    NativeRdb::RdbPredicates rdbPredicate = OHOS::RdbDataShareAdapter::RdbUtils::ToPredicates(dataSharePredicates,
+        ANALYSIS_PHOTO_MAP_TABLE);
+    int deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
+    if (deleteRow <= 0) {
+        return deleteRow;
+    }
+
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), portraitAlbumIds);
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    for (size_t i = 1; i < whereArgs.size(); i++) {
+        watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_DISMISS_ASSET, albumId);
+    }
+    return deleteRow;
+}
+
 int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
 {
     vector<string> whereArgs = predicates.GetWhereArgs();
@@ -232,7 +301,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     return deleteRow;
 }
 
-shared_ptr<ResultSet> PhotoMapOperations::QueryPhotoAssets(const RdbPredicates &rdbPredicate,
+shared_ptr<OHOS::NativeRdb::ResultSet> PhotoMapOperations::QueryPhotoAssets(const RdbPredicates &rdbPredicate,
     const vector<string> &columns)
 {
     return MediaLibraryRdbStore::Query(rdbPredicate, columns);
