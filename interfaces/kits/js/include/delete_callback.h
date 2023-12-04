@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_DELETE_CALLBACK_H_
-#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_DELETE_CALLBACK_H_
+#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_DELETE_CALLBACK_H
+#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_DELETE_CALLBACK_H
 
 #include <js_native_api.h>
 #include <string>
