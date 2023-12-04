@@ -94,7 +94,7 @@ void DeleteCallback::SetFunc(napi_value func)
 void DeleteCallback::SendMessageBack()
 {
     CloseModalUIExtension();
-    napi_value undefined, return_val;
+    napi_value undefined;
     CHECK_ARGS_RET_VOID(this->env_, napi_get_undefined(this->env_, &undefined), JS_ERR_PARAMETER_INVALID);
 
     napi_value results[ARGS_ONE] = {nullptr};
@@ -109,7 +109,8 @@ void DeleteCallback::SendMessageBack()
     napi_value callback = nullptr;
     CHECK_ARGS_RET_VOID(this->env_, napi_get_reference_value(this->env_, this->callbackRef, &callback),
                         JS_ERR_PARAMETER_INVALID);
-    CHECK_ARGS_RET_VOID(this->env_, napi_call_function(this->env_, undefined, callback, ARGS_ONE, results, &return_val),
+    napi_value returnVal;
+    CHECK_ARGS_RET_VOID(this->env_, napi_call_function(this->env_, undefined, callback, ARGS_ONE, results, &returnVal),
                         JS_ERR_PARAMETER_INVALID);
 }
 
