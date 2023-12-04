@@ -558,8 +558,14 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
 
     string countColumn = hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_COUNT : PhotoAlbumColumns::ALBUM_COUNT;
     string coverColumn = hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_COVER : PhotoAlbumColumns::ALBUM_COVER_URI;
-    string albumUriPrefix =
-        hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX : PhotoAlbumColumns::ALBUM_URI_PREFIX;
+    string albumUriPrefix;
+    if (photoAlbumData->GetPhotoAlbumType() == PhotoAlbumType::SMART) {
+        albumUriPrefix =
+            hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX : PhotoAlbumColumns::ANAALBUM_URI_PREFIX;
+    } else {
+        string albumUriPrefix =
+            hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX : PhotoAlbumColumns::ALBUM_URI_PREFIX;
+    }
     photoAlbumData->SetAlbumUri(albumUriPrefix + to_string(albumId));
     photoAlbumData->SetCount(get<int32_t>(GetRowValFromColumn(countColumn, TYPE_INT32, resultSet)));
     photoAlbumData->SetCoverUri(get<string>(GetRowValFromColumn(coverColumn, TYPE_STRING,

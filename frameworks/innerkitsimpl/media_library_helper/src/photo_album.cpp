@@ -192,9 +192,24 @@ bool PhotoAlbum::GetLocationOnly() const
     return locationOnly_;
 }
 
+void PhotoAlbum::SetDisplayLevel(const int32_t displayLevel)
+{
+    displayLevel_ = displayLevel;
+}
+
+int32_t PhotoAlbum::GetDisplayLevel() const
+{
+    return displayLevel_;
+}
+
 bool PhotoAlbum::IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
 {
     return (albumType == PhotoAlbumType::USER) && (albumSubType == PhotoAlbumSubType::USER_GENERIC);
+}
+
+bool PhotoAlbum::IsSmartPortraitPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::SMART) && (albumSubType == PhotoAlbumSubType::PORTRAIT);
 }
 
 bool PhotoAlbum::IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
