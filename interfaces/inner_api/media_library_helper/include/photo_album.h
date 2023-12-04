@@ -73,10 +73,14 @@ public:
     void SetLocationOnly(const bool locationOnly);
     bool GetLocationOnly() const;
 
+    void SetDisplayLevel(const int32_t displayLevel);
+    int32_t GetDisplayLevel() const;
+
     static bool IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     static bool IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     static bool CheckPhotoAlbumType(const PhotoAlbumType albumType);
     static bool CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType);
+    static bool IsSmartPortraitPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
 
 private:
     int32_t albumId_;
@@ -92,6 +96,7 @@ private:
     double latitude_;
     double longitude_;
     std::string relativePath_;
+    int32_t displayLevel_;
 
     ResultNapiType resultNapiType_;
     bool hiddenOnly_ = false;
