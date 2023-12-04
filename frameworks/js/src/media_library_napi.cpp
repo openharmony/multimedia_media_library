@@ -5380,7 +5380,7 @@ napi_value MediaLibraryNapi::CreateAlbumSubTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
 {
     struct AnalysisProperty property[] = {
-        { "ANALYSIS_AETSTHETICS_SCORE", AnalysisType::ANALYSIS_AETSTHETICS_SCORE },
+        { "ANALYSIS_AESTHETICS_SCORE", AnalysisType::ANALYSIS_AESTHETICS_SCORE },
         { "ANALYSIS_LABEL", AnalysisType::ANALYSIS_LABEL },
         { "ANALYSIS_OCR", AnalysisType::ANALYSIS_OCR },
         { "ANALYSIS_FACE", AnalysisType::ANALYSIS_FACE },
@@ -5777,7 +5777,9 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     if (albumSubType != ANY) {
         context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
     }
-
+    if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE) {
+        context->predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
+    }
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         context->predicates.And()->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
             to_string(PhotoAlbumSubType::USER_GENERIC),

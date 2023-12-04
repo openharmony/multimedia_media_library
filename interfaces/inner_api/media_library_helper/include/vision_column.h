@@ -105,7 +105,7 @@ const std::string CREATE_TAB_ANALYSIS_OBJECT = "CREATE TABLE IF NOT EXISTS " + V
     OBJECT_SCALE_Y + " INT, " +
     OBJECT_SCALE_WIDTH + " INT, " +
     OBJECT_SCALE_HEIGHT + " INT, " +
-    PROB + " INT, " +
+    PROB + " REAL, " +
     OBJECT_VERSION + " TEXT) ";
 
 const std::string RECOMMENDATION_ID = "recommendation_id";
@@ -264,9 +264,7 @@ const std::string CREATE_TAB_FACE_TAG = "CREATE TABLE IF NOT EXISTS " + VISION_F
     ALBUM_TYPE + " INTEGER, " +
     IS_REMOVED + " INTEGER) ";
 
-
 const std::string ALBUM_ID = "album_id";
-
 const std::string ALBUM_SUBTYPE = "album_subtype";
 const std::string ALBUM_NAME = "album_name";
 const std::string DATE_MODIFIED = "date_modified";
@@ -277,7 +275,7 @@ const std::string CREATE_ANALYSIS_ALBUM = "CREATE TABLE IF NOT EXISTS " + ANALYS
     ALBUM_SUBTYPE + " INT, " +
     ALBUM_NAME + " TEXT, " +
     COVER_URI + " TEXT, " +
-    COUNT + " INT, " +
+    COUNT + " INT DEFAULT 0, " +
     DATE_MODIFIED + " BIGINT, " +
     RANK + " INT) ";
 
@@ -435,14 +433,14 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_SALIENCY =
     " 0 );" +
     " END;";
 
-const std::string URI_OCR = MEDIALIBRARY_DATA_URI + "/" + VISION_OCR_TABLE;
-const std::string URI_LABEL = MEDIALIBRARY_DATA_URI + "/" + VISION_LABEL_TABLE;
-const std::string URI_AESTHETICS = MEDIALIBRARY_DATA_URI + "/" + VISION_AESTHETICS_TABLE;
+const std::string URI_OCR = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_OCR;
+const std::string URI_LABEL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_LABEL;
+const std::string URI_AESTHETICS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ATTS;
 const std::string URI_OBJECT = MEDIALIBRARY_DATA_URI + "/" + VISION_OBJECT_TABLE;
 const std::string URI_RECOMMENDATION = MEDIALIBRARY_DATA_URI + "/" + VISION_RECOMMENDATION_TABLE;
 const std::string URI_SEGMENTATION = MEDIALIBRARY_DATA_URI + "/" + VISION_SEGMENTATION_TABLE;
 const std::string URI_COMPOSITION = MEDIALIBRARY_DATA_URI + "/" + VISION_COMPOSITION_TABLE;
-const std::string URI_TOTAL = MEDIALIBRARY_DATA_URI + "/" + VISION_TOTAL_TABLE;
+const std::string URI_TOTAL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TOTAL;
 const std::string URI_SHIELD = MEDIALIBRARY_DATA_URI + "/" + VISION_SHIELD_TABLE;
 const std::string URI_SALIENCY = MEDIALIBRARY_DATA_URI + "/" + VISION_SALIENCY_TABLE;
 const std::string URI_IMAGE_FACE = MEDIALIBRARY_DATA_URI + "/" + VISION_IMAGE_FACE_TABLE;
@@ -454,7 +452,7 @@ const std::string UPDATE_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " 
 const std::string UPDATE_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + FACE +
     " = -1 WHERE " + FACE + " IS NULL";
 const std::string IMAGE_FACE_INDEX = "image_face_index";
-const std::string CREATE_IMAGE_FACE_INDEX = "CREATE UNIQUE INDEX " + IMAGE_FACE_INDEX + " ON " +
+const std::string CREATE_IMAGE_FACE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + IMAGE_FACE_INDEX + " ON " +
     VISION_IMAGE_FACE_TABLE + " (" + FILE_ID + "," + FACE_ID + ")";
 
 const std::string ADD_SALIENCY_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + SALIENCY + " INT";
@@ -503,6 +501,10 @@ const std::string AC_UPDATE_COMPOSITION_TOTAL_NOT_SUPPORT_VALUE = "UPDATE " + VI
 const std::string COMPOSITION_INDEX = "composition_index";
 const std::string CREATE_COMPOSITION_INDEX = "CREATE UNIQUE INDEX " + COMPOSITION_INDEX + " ON " +
     VISION_COMPOSITION_TABLE + " (" + FILE_ID + "," + COMPOSITION_ID + ")";
+const std::string ALTER_WIDTH_COLUMN = "ALTER TABLE tab_analysis_ocr ADD COLUMN width INT;";
+const std::string ALTER_HEIGHT_COLUMN = "ALTER TABLE tab_analysis_ocr ADD COLUMN height INT;";
+const std::string DROP_TABLE_ANALYSISALBUM = "DROP TABLE AnalysisAlbum;";
+const std::string DROP_TABLE_ANALYSISPHOTOMAP = "DROP TABLE AnalysisPhotoMap;";
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIALIBRARY_VISION_COLUMN_H

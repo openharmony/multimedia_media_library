@@ -298,7 +298,8 @@ static int32_t RecycleDir(const shared_ptr<FileAsset> &fileAsset)
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "UniStore is nullptr");
 
     ValuesBucket values;
-    int32_t parentId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR + fileAsset->GetRelativePath());
+    int32_t parentId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR +
+        MediaFileUtils::AddDocsToRelativePath(fileAsset->GetRelativePath()));
     if (parentId != fileAsset->GetParent()) {
         values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
     }
@@ -375,7 +376,8 @@ static int32_t RecycleFile(const shared_ptr<FileAsset> &fileAsset)
     CHECK_AND_RETURN_RET_LOG(uniStore != nullptr, E_HAS_DB_ERROR, "UniStore is nullptr");
 
     ValuesBucket values;
-    int32_t parentId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR + fileAsset->GetRelativePath());
+    int32_t parentId = MediaLibraryObjectUtils::CreateDirWithPath(ROOT_MEDIA_DIR +
+        MediaFileUtils::AddDocsToRelativePath(fileAsset->GetRelativePath()));
     if (parentId != fileAsset->GetParent()) {
         values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
         values.PutInt(MEDIA_DATA_DB_BUCKET_ID, parentId);

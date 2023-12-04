@@ -410,19 +410,7 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::BUNDLE_PERMISSION:
             return UriPermissionOperations::HandleUriPermOperations(cmd);
 
-        case OperationObject::ANALYSIS_PHOTO_MAP:
-        case OperationObject::VISION_OCR:
-        case OperationObject::VISION_LABEL:
-        case OperationObject::VISION_AESTHETICS:
-        case OperationObject::VISION_SALIENCY:
-        case OperationObject::VISION_OBJECT:
-        case OperationObject::VISION_RECOMMENDATION:
-        case OperationObject::VISION_SEGMENTATION:
-        case OperationObject::VISION_COMPOSITION:
-        case OperationObject::VISION_TOTAL:
-        case OperationObject::VISION_IMAGE_FACE:
-        case OperationObject::VISION_FACE_TAG:
-        case OperationObject::VISION_SHIELD:
+        case OperationObject::VISION_START ... OperationObject::VISION_END:
             return MediaLibraryVisionOperations::InsertOperation(cmd);
 
         case OperationObject::GEO_DICTIONARY:
@@ -521,6 +509,8 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
     string uriString = cmd.GetUri().ToString();
     if (uriString == UFM_PHOTO_ALBUM_ADD_ASSET || uriString == PAH_PHOTO_ALBUM_ADD_ASSET) {
         return PhotoMapOperations::AddPhotoAssets(values);
+    } else if (cmd.GetOprnObject() == OperationObject::ANALYSIS_PHOTO_MAP) {
+        return PhotoMapOperations::AddAnaLysisPhotoAssets(values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
@@ -605,18 +595,7 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
     NativeRdb::RdbPredicates &rdbPredicate)
 {
     switch (cmd.GetOprnObject()) {
-        case OperationObject::VISION_OCR:
-        case OperationObject::VISION_LABEL:
-        case OperationObject::VISION_AESTHETICS:
-        case OperationObject::VISION_SALIENCY:
-        case OperationObject::VISION_OBJECT:
-        case OperationObject::VISION_RECOMMENDATION:
-        case OperationObject::VISION_SEGMENTATION:
-        case OperationObject::VISION_COMPOSITION:
-        case OperationObject::VISION_TOTAL:
-        case OperationObject::VISION_IMAGE_FACE:
-        case OperationObject::VISION_FACE_TAG:
-        case OperationObject::VISION_SHIELD: {
+        case OperationObject::VISION_START ... OperationObject::VISION_END: {
             return MediaLibraryVisionOperations::DeleteOperation(cmd);
         }
         case OperationObject::GEO_DICTIONARY:
