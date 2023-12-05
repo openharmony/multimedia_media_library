@@ -47,6 +47,11 @@ constexpr int32_t AFTER_AGR_SIZE = 2;
 constexpr int32_t THAN_AGR_SIZE = 1;
 constexpr int32_t MERGE_ALBUM_COUNT = 2;
 constexpr int32_t E_INDEX = -1;
+constexpr int32_t PORTRAIT_FIRST_PAGE_MIN_COUNT = 50;
+constexpr int32_t PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME = 20;
+constexpr int32_t PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT = 10;
+constexpr int32_t SUPPORT_QUERY_ISME_MIN_COUNT = 80;
+constexpr int32_t PERCENTAGE_FOR_SUPPORT_QUERY_ISME = 100;
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -431,6 +436,183 @@ int32_t MediaLibraryAlbumOperations::DeletePhotoAlbum(RdbPredicates &predicates)
     return deleteRow;
 }
 
+static void NotifyPortraitAlbum(const vector<int32_t> &changedAlbumIds)
+{
+    if (changedAlbumIds.size() <= 0) {
+        return;
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    for (int32_t albumId : changedAlbumIds) {
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
+            PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
+    }
+}
+
+int32_t GetIntValueFromResultSet(shared_ptr<ResultSet> resultSet, const string &column, int &value)
+{
+    int index = E_INDEX;
+    resultSet->GetColumnIndex(column, index);
+    if (index == E_INDEX) {
+        return E_HAS_DB_ERROR;
+    }
+    if (resultSet->GetInt(index, value) != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
+int32_t GetStringValueFromResultSet(shared_ptr<ResultSet> resultSet, const string &column, string &value)
+{
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    int index = E_INDEX;
+    resultSet->GetColumnIndex(column, index);
+    if (index == E_INDEX) {
+        return E_HAS_DB_ERROR;
+    }
+    if (resultSet->GetString(index, value) != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
+void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePredicates &predicates)
+{
+    string whereClause;
+    if (value == FIRST_PAGE) {
+        string whereClauseRelatedMe = ALBUM_ID + " IN (SELECT " + MAP_ALBUM + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
+            " WHERE " + MAP_ASSET + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
+            MAP_ASSET + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " + MAP_ALBUM +
+            " IN(SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + IS_ME + " = 1))" + " GROUP BY " +
+            MAP_ASSET + " HAVING count(" + MAP_ASSET + ") > 1)" + " AND " + MAP_ALBUM + " NOT IN (SELECT " + ALBUM_ID +
+            " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + IS_ME + " = 1)" + " GROUP BY " + MAP_ALBUM +
+            " HAVING count(" + MAP_ALBUM + ") > " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME) + ")";
+        string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
+        string whereClauseSatifyCount = COUNT + " > " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND (" +
+        USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
+        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND ((" + USER_DISPLAY_LEVEL + " != 3 OR " +
+            USER_DISPLAY_LEVEL + " IS NULL) AND (" + whereClauseDisplay + " OR " + whereClauseRelatedMe + " OR " +
+            whereClauseSatifyCount + ")) GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + ALBUM_NAME +
+            " IS NOT NULL THEN 0 ELSE 1 END, " + COUNT + " DESC";
+    } else if (value == SECOND_PAGE) {
+        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 2 OR (" +
+            COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND " + COUNT + " > " +
+            to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" + USER_DISPLAY_LEVEL + " != 1 OR " +
+            USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL + " != 3 OR " + USER_DISPLAY_LEVEL +
+            " IS NULL))) GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + ALBUM_NAME +
+            " IS NOT NULL THEN 0 ELSE 1 END, " + COUNT + " DESC";
+    } else if (value == FAVORITE_PAGE) {
+        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 3 )GROUP BY " +
+            GROUP_TAG + " ORDER BY " + RANK;
+    } else {
+        MEDIA_ERR_LOG("The display level is invalid");
+        whereClause = "";
+    }
+    predicates.SetWhereClause(whereClause);
+}
+
+int32_t GetPortraitSubtype(const string &subtypeName, const string &whereClause, const vector<string> &whereArgs)
+{
+    size_t pos = whereClause.find(subtypeName);
+    if (pos == string::npos) {
+        MEDIA_ERR_LOG("whereClause is invalid");
+        return E_INDEX;
+    }
+    size_t argsIndex = 0;
+    for (size_t i = 0; i < pos; i++) {
+        if (whereClause[i] == '?') {
+            argsIndex++;
+        }
+    }
+    if (argsIndex > whereArgs.size() - 1) {
+        MEDIA_ERR_LOG("whereArgs is invalid");
+        return E_INDEX;
+    }
+    return atoi(whereArgs[argsIndex].c_str());
+}
+
+bool IsSupportQueryIsMe()
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return false;
+    }
+    const std::string queryAnalyzedPic = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM " + VISION_TOTAL_TABLE + " WHERE " +
+        STATUS + " = 1";
+    auto resultSetAnalyzed = uniStore->QuerySql(queryAnalyzedPic);
+    if (resultSetAnalyzed == nullptr || resultSetAnalyzed->GoToFirstRow() != NativeRdb::E_OK) {
+        return false;
+    }
+    int analyzedCount;
+    if (GetIntValueFromResultSet(resultSetAnalyzed, MEDIA_COLUMN_COUNT_1, analyzedCount) != NativeRdb::E_OK) {
+        return false;
+    }
+    if (analyzedCount <= 0) {
+        return false;
+    }
+
+    const std::string queryAllPic = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM " + VISION_TOTAL_TABLE;
+    auto resultSetTotal = uniStore->QuerySql(queryAnalyzedPic);
+    if (resultSetTotal == nullptr || resultSetTotal->GoToFirstRow() != NativeRdb::E_OK) {
+        return false;
+    }
+    int totleCount;
+    if (GetIntValueFromResultSet(resultSetTotal, MEDIA_COLUMN_COUNT_1, totleCount) != NativeRdb::E_OK) {
+        return false;
+    }
+    if (totleCount == 0 ||
+        (analyzedCount * PERCENTAGE_FOR_SUPPORT_QUERY_ISME / totleCount <= SUPPORT_QUERY_ISME_MIN_COUNT)) {
+        MEDIA_INFO_LOG("Analyzed proportion less than 80");
+        return false;
+    }
+    return true;
+}
+
+void GetIsMeAlbumPredicates(DataShare::DataSharePredicates &predicates)
+{
+    if (!IsSupportQueryIsMe()) {
+        MEDIA_ERR_LOG("Not support to query isMe");
+        return;
+    }
+
+    string onClause = ANALYSIS_ALBUM_TABLE + "." + ALBUM_ID + " = " + ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM;
+    predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
+    string selection = "WHERE " + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + "AND EXISTS (SELECT 1 FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTOS_TABLE + "." + FILE_ID + " = " +
+        ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ASSET + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
+        PhotoColumn::PHOTO_SHOOTING_MODE + " = 0) GROUP BY " + ANALYSIS_ALBUM_TABLE + "." + GROUP_TAG +
+        " ORDER BY COUNT(*) DESC";
+    predicates.SetWhereClause(selection);
+}
+
+std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortraitAlbum(MediaLibraryCommand &cmd,
+    const std::vector<std::string> &columns)
+{
+    auto predicates = cmd.GetAbsRdbPredicates();
+    auto whereClause = predicates->GetWhereClause();
+    auto whereArgs = predicates->GetWhereArgs();
+    DataShare::DataSharePredicates predicatesPortrait;
+    if (whereClause.find(USER_DISPLAY_LEVEL) != string::npos) {
+        int32_t value = GetPortraitSubtype(USER_DISPLAY_LEVEL, whereClause, whereArgs);
+        if (value == E_INDEX) {
+            return nullptr;
+        }
+        GetDisplayLevelAlbumPredicates(value, predicatesPortrait);
+    } else if (whereClause.find(IS_ME) != string::npos) {
+        GetIsMeAlbumPredicates(predicatesPortrait);
+    } else {
+        MEDIA_INFO_LOG("QueryPortraitAlbum whereClause is error");
+        return nullptr;
+    }
+    if (predicatesPortrait.GetWhereClause().empty()) {
+        return nullptr;
+    }
+    auto rdbPredicates = RdbUtils::ToPredicates(predicatesPortrait, ANALYSIS_ALBUM_TABLE);
+    return MediaLibraryRdbStore::Query(rdbPredicates, columns);
+}
+
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
@@ -729,6 +911,186 @@ static int32_t HandleNullReferenceCondition(const int32_t &currentAlbumId)
     return err;
 }
 
+static int32_t UpdatePortraitNullReferenceOrder(const int32_t currentAlbumId,
+    const int32_t currentAlbumOrder, const int32_t maxAlbumOrder)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_DB_FAIL;
+    }
+    std::string updateOtherAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " +
+        RANK + " = " + RANK + " -1 WHERE " +
+        RANK + " > " + to_string(currentAlbumOrder) + " and " +
+        RANK + " <= " + to_string(maxAlbumOrder);
+    std::string updateCurrentAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE +
+        " SET " + RANK + " = " + to_string(maxAlbumOrder) +
+        " WHERE " + GROUP_TAG + " IN (SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) + ")";
+    vector<string> updateSortedAlbumsSqls = { updateOtherAlbumOrder, updateCurrentAlbumOrder };
+    return ExecSqls(updateSortedAlbumsSqls, uniStore);
+}
+
+static int32_t ObtainNotifyPortraitAlbumIds(const int32_t currentAlbumOrder, const int32_t referenceAlbumOrder,
+    vector<int32_t> &changedAlbumIds)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_DB_FAIL;
+    }
+    std::string queryAlbumIds = "";
+    if (currentAlbumOrder < referenceAlbumOrder) {
+        queryAlbumIds = "SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + RANK + " >= " +
+            to_string(currentAlbumOrder) + " AND " + RANK + " < " + to_string(referenceAlbumOrder);
+    } else {
+        queryAlbumIds = "SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + RANK + " >= " +
+            to_string(referenceAlbumOrder) + " AND " + RANK + " <= " + to_string(currentAlbumOrder);
+    }
+    auto resultSet = uniStore->QuerySql(queryAlbumIds);
+    if (resultSet == nullptr) {
+        return E_DB_FAIL;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        changedAlbumIds.push_back(GetInt32Val(ALBUM_ID, resultSet));
+    }
+    return E_OK;
+}
+
+static int32_t ObtainCurrentPortraitAlbumOrder(const int32_t albumId, int32_t &albumOrder)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_HAS_DB_ERROR;
+    }
+    const std::string queryAlbumOrder = "SELECT " + RANK + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
+        PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId);
+    auto resultSet = uniStore->QuerySql(queryAlbumOrder);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    return GetIntValueFromResultSet(resultSet, RANK, albumOrder);
+}
+
+static int32_t ObtainMaxPortraitAlbumOrder(int32_t &maxAlbumOrder)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return -E_HAS_DB_ERROR;
+    }
+    std::string queryMaxOrderSql = "SELECT Max(rank) FROM " + ANALYSIS_ALBUM_TABLE;
+    auto resultSet = uniStore->QuerySql(queryMaxOrderSql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query album!");
+        return -E_HAS_DB_ERROR;
+    }
+
+    return resultSet->GetInt(0, maxAlbumOrder);
+}
+
+static int32_t HandlePortraitNullReferenceCondition(const int32_t currentAlbumId)
+{
+    int32_t maxAlbumOrder = 0;
+    int err = ObtainMaxPortraitAlbumOrder(maxAlbumOrder);
+    if (err != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    int32_t currentAlbumOrder = -1;
+    err = ObtainCurrentPortraitAlbumOrder(currentAlbumId, currentAlbumOrder);
+    if (err != E_OK) {
+        return err;
+    }
+    vector<int32_t> changedAlbumIds;
+     // move order curosr to the end
+    ObtainNotifyPortraitAlbumIds(currentAlbumOrder, maxAlbumOrder + 1, changedAlbumIds);
+    err = UpdatePortraitNullReferenceOrder(currentAlbumId, currentAlbumOrder, maxAlbumOrder);
+    if (err == E_OK) {
+        NotifyPortraitAlbum(changedAlbumIds);
+    }
+    return err;
+}
+
+static int32_t ObtainPortraitAlbumOrders(const int32_t currentAlbumId, const int32_t referenceAlbumId,
+    int32_t &currentAlbumOrder, int32_t &referenceAlbumOrder)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_HAS_DB_ERROR;
+    }
+    const std::string queryCurrentAlbumOrder = "SELECT " + RANK + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId);
+    auto resultSet = uniStore->QuerySql(queryCurrentAlbumOrder);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    if (GetIntValueFromResultSet(resultSet, RANK, currentAlbumOrder) != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+
+    const std::string queryReferenceAlbumOrder = "SELECT " + RANK + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(referenceAlbumId);
+    resultSet = uniStore->QuerySql(queryReferenceAlbumOrder);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    if (GetIntValueFromResultSet(resultSet, RANK, referenceAlbumOrder) != NativeRdb::E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
+static int32_t UpdatePortraitSortedOrder(const int32_t currentAlbumId, const int32_t referenceAlbumId,
+    const int32_t currentAlbumOrder, const int32_t referenceAlbumOrder)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_DB_FAIL;
+    }
+    std::string updateOtherAlbumOrder = "";
+    std::string updateCurrentAlbumOrder = "";
+    if (currentAlbumOrder < referenceAlbumOrder) {
+        updateOtherAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RANK + " = " + RANK + " -1 WHERE " +
+            RANK + " > " + to_string(currentAlbumOrder) + " and " + RANK + " < " + to_string(referenceAlbumOrder);
+        updateCurrentAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RANK + " = " +
+            to_string(referenceAlbumOrder) + " -1 WHERE " + GROUP_TAG + " IN (SELECT " + GROUP_TAG + " FROM " +
+            ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) + ")";
+    } else {
+        updateOtherAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RANK + " = " + RANK + " +1 WHERE " +
+            RANK + " >= " + to_string(referenceAlbumOrder) + " AND " + RANK + " < " + to_string(currentAlbumOrder);
+        updateCurrentAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RANK + " = " +
+            to_string(referenceAlbumOrder) + " WHERE " + GROUP_TAG + " IN (SELECT " + GROUP_TAG + " FROM " +
+            ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) + ")";
+    }
+    vector<string> updateSortedAlbumsSqls = { updateOtherAlbumOrder, updateCurrentAlbumOrder};
+    return ExecSqls(updateSortedAlbumsSqls, uniStore);
+}
+
+int32_t OrderPortraitFavoriteAlbum(const int32_t currentAlbumId, const int32_t referenceAlbumId)
+{
+    if (referenceAlbumId == NULL_REFERENCE_ALBUM_ID) {
+        return HandlePortraitNullReferenceCondition(currentAlbumId);
+    }
+
+    int32_t currentAlbumOrder = -1; // -1: default invalid value
+    int32_t referenceAlbumOrder = -1; // -1: default invalid value
+    int err = ObtainPortraitAlbumOrders(currentAlbumId, referenceAlbumId, currentAlbumOrder, referenceAlbumOrder);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("obtains album order error");
+        return err;
+    }
+    vector<int32_t> changedAlbumIds;
+    ObtainNotifyPortraitAlbumIds(currentAlbumOrder, referenceAlbumOrder, changedAlbumIds);
+    err = UpdatePortraitSortedOrder(currentAlbumId, referenceAlbumId, currentAlbumOrder, referenceAlbumOrder);
+    if (err == E_OK) {
+        NotifyPortraitAlbum(changedAlbumIds);
+    }
+    return E_OK;
+}
+
 /**
  * Place the current album before the reference album
  * @param values contains current and reference album_id
@@ -750,6 +1112,14 @@ int32_t OrderSingleAlbum(const ValuesBucket &values)
     if (currentAlbumId == referenceAlbumId) { // same album, no need to order
         return E_OK;
     }
+
+    int32_t albumType;
+    int32_t albumSubtype;
+    err = GetIntVal(values, PhotoAlbumColumns::ALBUM_TYPE, albumType);
+    int errorSubtype = GetIntVal(values, PhotoAlbumColumns::ALBUM_SUBTYPE, albumSubtype);
+    if (err == E_OK && errorSubtype == E_OK && (albumType == PhotoAlbumType::SMART && albumSubtype == PORTRAIT)) {
+        return OrderPortraitFavoriteAlbum(currentAlbumId, referenceAlbumId);
+    }
     if (referenceAlbumId == NULL_REFERENCE_ALBUM_ID) {
         return HandleNullReferenceCondition(currentAlbumId);
     }
@@ -765,47 +1135,6 @@ int32_t OrderSingleAlbum(const ValuesBucket &values)
     err = UpdateSortedOrder(currentAlbumId, referenceAlbumId, currentAlbumOrder, referenceAlbumOrder);
     if (err == E_OK) {
         NotifyOrderChange(changedAlbumIds);
-    }
-    return E_OK;
-}
-
-static void NotifyPortraitAlbum(const vector<int32_t> &changedAlbumIds)
-{
-    if (changedAlbumIds.size() <= 0) {
-        return;
-    }
-    auto watch = MediaLibraryNotify::GetInstance();
-    for (int32_t albumId : changedAlbumIds) {
-        watch->Notify(MediaFileUtils::GetUriByExtrConditions(
-            PhotoAlbumColumns::ANAALBUM_URI_PREFIX, to_string(albumId)), NotifyType::NOTIFY_UPDATE);
-    }
-}
-
-int32_t GetIntValueFromResultSet(shared_ptr<ResultSet> resultSet, const string &column, int &value)
-{
-    int index = E_INDEX;
-    resultSet->GetColumnIndex(column, index);
-    if (index == E_INDEX) {
-        return E_HAS_DB_ERROR;
-    }
-    if (resultSet->GetInt(index, value) != NativeRdb::E_OK) {
-        return E_HAS_DB_ERROR;
-    }
-    return E_OK;
-}
-
-int32_t GetStringValueFromResultSet(shared_ptr<ResultSet> resultSet, const string &column, string &value)
-{
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-    int index = E_INDEX;
-    resultSet->GetColumnIndex(column, index);
-    if (index == E_INDEX) {
-        return E_HAS_DB_ERROR;
-    }
-    if (resultSet->GetString(index, value) != NativeRdb::E_OK) {
-        return E_HAS_DB_ERROR;
     }
     return E_OK;
 }
