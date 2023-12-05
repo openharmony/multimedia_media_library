@@ -51,7 +51,7 @@ void CreateDataHelper(int32_t systemAbilityId);
 constexpr int STORAGE_MANAGER_MANAGER_ID = 5003;
 int g_albumMediaType = MEDIA_TYPE_ALBUM;
 int64_t g_oneImageSize = 0;
-const int CLEAN_TIME = 5;
+const int CLEAN_TIME = 1;
 const int SCAN_WAIT_TIME = 10;
 
 static const unsigned char FILE_CONTENT_JPG[] = {
@@ -108,7 +108,10 @@ void MediaLibraryManagerTest::TearDownTestCase(void)
     MEDIA_INFO_LOG("TearDownTestCase end");
 }
 // SetUp:Execute before each test case
-void MediaLibraryManagerTest::SetUp(void) {}
+void MediaLibraryManagerTest::SetUp(void)
+{
+    system("rm -rf /storage/cloud/100/files/Photo/*");
+}
 
 void MediaLibraryManagerTest::TearDown(void) {}
 
@@ -140,10 +143,11 @@ void ClearAllFile()
     system("rm -rf /storage/cloud/100/files/Audio/*");
     system("rm -rf /storage/cloud/100/files/Audios/*");
     system("rm -rf /storage/cloud/100/files/Camera/*");
-    system("rm -rf /storage/cloud/100/files/Documents/*");
+    system("rm -rf /storage/cloud/100/files/Docs/Documents/*");
     system("rm -rf /storage/cloud/100/files/Photo/*");
     system("rm -rf /storage/cloud/100/files/Pictures/*");
-    system("rm -rf /storage/cloud/100/files/Download/*");
+    system("rm -rf /storage/cloud/100/files/Docs/Download/*");
+    system("rm -rf /storage/cloud/100/files/Docs/.*");
     system("rm -rf /storage/cloud/100/files/Videos/*");
     system("rm -rf /storage/cloud/100/files/.*");
     system("rm -rf /data/app/el2/100/database/com.ohos.medialibrary.medialibrarydata/*");
