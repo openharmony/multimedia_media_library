@@ -424,6 +424,10 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
 
+        case OperationObject::ANALYSIS_PHOTO_MAP: {
+            return MediaLibrarySearchOperations::InsertOperation(cmd);
+        }
+
         default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
