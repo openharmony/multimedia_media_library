@@ -1826,6 +1826,21 @@ static void UpdateClassifyDirtyData(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+void AddMultiStagesCaptureColumns(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start!");
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_ID + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_QUALITY + " INT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_FIRST_VISIT_TIME +
+            " BIGINT DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DEFERRED_PROC_TYPE +
+            " INT DEFAULT 0",
+    };
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("end");
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1882,6 +1897,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_PORTRAIT_IN_ALBUM) {
         AddPortraitInAnalysisAlbum(store);
+    }
+
+    if (oldVersion < VERSION_ADD_MULTISTAGES_CAPTURE) {
+        AddMultiStagesCaptureColumns(store);
     }
 }
 
