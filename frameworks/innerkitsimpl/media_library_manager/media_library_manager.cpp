@@ -504,7 +504,7 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
             uriParams.size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
         }
         if (queryKey.count(THUMBNAIL_OPER) != 0) {
-            uriParams.isAstc = queryKey[THUMBNAIL_HEIGHT] == MEDIA_DATA_DB_THUMB_ASTC;
+            uriParams.isAstc = queryKey[THUMBNAIL_OPER] == MEDIA_DATA_DB_THUMB_ASTC;
         }
     }
     return true;
@@ -618,10 +618,16 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
     // uri is dataability:///media/image/<id>/thumbnail/<width>/<height>
     string uriStr = uri.ToString();
     auto thumbLatIdx = uriStr.find("thumbnail");
+    bool isAstc = false;
     if (thumbLatIdx == string::npos || thumbLatIdx > uriStr.length()) {
-        return nullptr;
+        thumbLatIdx = uriStr.find("astc");
+        if (thumbLatIdx == string::npos || thumbLatIdx > uriStr.length()) {
+            MEDIA_ERR_LOG("GetThumbnail failed, oper is invalid");
+            return nullptr;
+        }
+        isAstc = true;
     }
-    thumbLatIdx += strlen("thumbnail");
+    thumbLatIdx += isAstc ? strlen("astc") : strlen("thumbnail");
     bool isOldVersion = uriStr[thumbLatIdx] == '/';
     UriParams uriParams;
     if (!GetParamsFromUri(uriStr, isOldVersion, uriParams)) {
