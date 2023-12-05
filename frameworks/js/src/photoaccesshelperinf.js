@@ -31,7 +31,6 @@ const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
 const MAX_DELETE_NUMBER = 300;
 const MIN_DELETE_NUMBER = 1;
 
-
 let gContext = undefined;
 
 class BusinessError extends Error {

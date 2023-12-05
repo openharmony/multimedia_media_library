@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -49,7 +49,7 @@ public:
     void SetFunc(napi_value func);
 
 private:
-    int32_t sessionId_  = DEFAULT_SESSION_ID;
+    int32_t sessionId_ = DEFAULT_SESSION_ID;
     int32_t resultCode_ = DELETE_CODE_ERROR;
     std::vector<std::string> uris_;
     napi_env env_ = nullptr;
