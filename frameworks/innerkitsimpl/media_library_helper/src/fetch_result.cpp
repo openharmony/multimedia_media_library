@@ -563,7 +563,7 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
         albumUriPrefix =
             hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX : PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX;
     } else {
-        string albumUriPrefix =
+        albumUriPrefix =
             hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX : PhotoAlbumColumns::ALBUM_URI_PREFIX;
     }
     photoAlbumData->SetAlbumUri(albumUriPrefix + to_string(albumId));
