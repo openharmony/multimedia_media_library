@@ -41,7 +41,7 @@ public:
 
     ~ArkJsRuntime() {};
 
-    void StartDebugMode(bool needBreakPoint, bool isDebug)  {};
+    void StartDebugMode(bool needBreakPoint, const std::string &processName, bool isDebug)  {};
     void FinishPreload() {};
     bool LoadRepairPatch(const string& patchFile, const string& baseFile)
     {
