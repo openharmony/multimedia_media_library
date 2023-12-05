@@ -561,7 +561,7 @@ void FetchResult<T>::SetPhotoAlbum(PhotoAlbum* photoAlbumData, shared_ptr<Native
     string albumUriPrefix;
     if (photoAlbumData->GetPhotoAlbumType() == PhotoAlbumType::SMART) {
         albumUriPrefix =
-            hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX : PhotoAlbumColumns::ANAALBUM_URI_PREFIX;
+            hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX : PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX;
     } else {
         string albumUriPrefix =
             hiddenOnly_ ? PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX : PhotoAlbumColumns::ALBUM_URI_PREFIX;
