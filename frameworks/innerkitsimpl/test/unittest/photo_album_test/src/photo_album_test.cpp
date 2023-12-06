@@ -113,6 +113,8 @@ void DoCheckAlbumData(const string &name, const bool isRelativePath)
         PhotoAlbumColumns::ALBUM_COVER_URI,
         PhotoAlbumColumns::ALBUM_COUNT,
         PhotoAlbumColumns::ALBUM_RELATIVE_PATH,
+        PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
+        PhotoAlbumColumns::ALBUM_VIDEO_COUNT,
     };
 
     shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, columns);
@@ -134,6 +136,8 @@ void DoCheckAlbumData(const string &name, const bool isRelativePath)
     CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_COVER_URI, TYPE_STRING, "");
     CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_COUNT, TYPE_INT32, 0);
     CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_RELATIVE_PATH, TYPE_STRING, relativePath);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_IMAGE_COUNT, TYPE_INT32, 0);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_VIDEO_COUNT, TYPE_INT32, 0);
 }
 
 inline void CheckAlbumData(const string &albumName)

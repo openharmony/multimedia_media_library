@@ -926,7 +926,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_COMPOSITION_INDEX,
     CREATE_GEO_KNOWLEDGE_TABLE,
     CREATE_GEO_DICTIONARY_TABLE,
-    CREATE_ANALYSIS_ALBUM,
+    CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
     CREATE_ANALYSIS_ALBUM_MAP,
     INSERT_PHOTO_INSERT_SOURCE_ALBUM,
     INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
@@ -943,7 +943,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_ALBUM_MAP_INSERT_SEARCH_TRIGGER,
     CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
     CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
-    CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER
+    CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
+    CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -1015,6 +1016,22 @@ void VersionAddCloud(RdbStore &store)
         UpdateFail(__FILE__, __LINE__);
         MEDIA_ERR_LOG("Upgrade rdb position error %{private}d", result);
     }
+}
+
+static void AddPortraitInAnalysisAlbum(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        ADD_TAG_ID_COLUMN_FOR_ALBUM,
+        ADD_USER_OPERATION_COLUMN_FOR_ALBUM,
+        ADD_GROUP_TAG_COLUMN_FOR_ALBUM,
+        ADD_USER_DISPLAY_LEVEL_COLUMN_FOR_ALBUM,
+        ADD_IS_ME_COLUMN_FOR_ALBUM,
+        ADD_IS_REMOVED_COLUMN_FOR_ALBUM,
+        ADD_RENAME_OPERATION_COLUMN_FOR_ALBUM,
+        CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER
+    };
+    MEDIA_INFO_LOG("start add aesthetic composition tables");
+    ExecSqls(executeSqlStrs, store);
 }
 
 void AddMetaModifiedColumn(RdbStore &store)
@@ -1879,6 +1896,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_SHOOTING_MODE_TAG) {
         AddShootingModeTagColumn(store);
         PrepareShootingModeAlbum(store);
+    }
+
+    if (oldVersion < VERSION_ADD_PORTRAIT_IN_ALBUM) {
+        AddPortraitInAnalysisAlbum(store);
     }
 }
 

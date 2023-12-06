@@ -27,10 +27,22 @@
 #include "native_album_asset.h"
 #include "rdb_predicates.h"
 #include "rdb_result_set_bridge.h"
+#include "vision_column.h"
 
 namespace OHOS {
 namespace Media {
 constexpr int32_t NULL_REFERENCE_ALBUM_ID = -1;
+struct MergeAlbumInfo {
+    int albumId;
+    std::string groupTag;
+    int count;
+    int isMe;
+    std::string coverUri;
+    int userDisplayLevel;
+    int userOperation;
+    int rank;
+    int renameOperation;
+};
 class MediaLibraryAlbumOperations {
 public:
     static int32_t CreateAlbumOperation(MediaLibraryCommand &cmd);
@@ -45,6 +57,10 @@ public:
     static int32_t AddPhotoAssets(const vector<DataShare::DataShareValuesBucket> &values);
     static int32_t HandlePhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
+    static int32_t HandleAnalysisPhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
+        const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbum(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns);
 
 private:
     static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
