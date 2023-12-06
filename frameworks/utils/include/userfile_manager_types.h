@@ -83,7 +83,8 @@ enum PhotoAlbumSubType : int32_t {
     GEOGRAPHY_LOCATION = 4099,
     GEOGRAPHY_CITY,
     SHOOTING_MODE,
-    ANALYSIS_END = SHOOTING_MODE,
+    PORTRAIT = 4102,
+    ANALYSIS_END = PORTRAIT,
     ANY = std::numeric_limits<int32_t>::max()
 };
 
@@ -117,7 +118,8 @@ enum NotifyType {
     NOTIFY_UPDATE,
     NOTIFY_REMOVE,
     NOTIFY_ALBUM_ADD_ASSERT,
-    NOTIFY_ALBUM_REMOVE_ASSET
+    NOTIFY_ALBUM_REMOVE_ASSET,
+    NOTIFY_ALBUM_DISMISS_ASSET
 };
 
 enum class RequestPhotoType : int32_t {

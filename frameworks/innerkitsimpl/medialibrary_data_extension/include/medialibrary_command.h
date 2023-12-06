@@ -112,6 +112,12 @@ enum class OperationType : uint32_t {
     ALBUM_ORDER,
     OPRN_STORE_FORM_ID,
     OPRN_REMOVE_FORM_ID,
+    PORTRAIT_DISPLAY_LEVEL,
+    PORTRAIT_IS_ME,
+    PORTRAIT_ALBUM_NAME,
+    PORTRAIT_MERGE_ALBUM,
+    PORTRAIT_DISMISS_ASSET,
+    PORTRAIT_COVER_URI,
 };
 
 class MediaLibraryCommand {

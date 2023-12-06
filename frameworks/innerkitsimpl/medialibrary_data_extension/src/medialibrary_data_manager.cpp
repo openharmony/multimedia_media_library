@@ -424,6 +424,10 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
 
+        case OperationObject::ANALYSIS_PHOTO_MAP: {
+            return MediaLibrarySearchOperations::InsertOperation(cmd);
+        }
+
         default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
@@ -554,6 +558,15 @@ int32_t MediaLibraryDataManager::Delete(MediaLibraryCommand &cmd, const DataShar
     return DeleteInRdbPredicates(cmd, rdbPredicate);
 }
 
+bool CheckIsDismissAsset(NativeRdb::RdbPredicates &rdbPredicate)
+{
+    auto whereClause = rdbPredicate.GetWhereClause();
+    if (whereClause.find(MAP_ALBUM) != string::npos && whereClause.find(MAP_ASSET) != string::npos) {
+        return true;
+    }
+    return false;
+}
+
 int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate)
 {
     switch (cmd.GetOprnObject()) {
@@ -576,6 +589,12 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
         }
         case OperationObject::PHOTO_MAP: {
             return PhotoMapOperations::RemovePhotoAssets(rdbPredicate);
+        }
+        case OperationObject::ANALYSIS_PHOTO_MAP: {
+            if (CheckIsDismissAsset(rdbPredicate)) {
+                return PhotoMapOperations::DismissAssets(rdbPredicate);
+            }
+            break;
         }
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {
@@ -640,7 +659,12 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
         cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+    return UpdateInternal(cmd, value, predicates);
+}
 
+int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
+    const DataShare::DataSharePredicates &predicates)
+{
     switch (cmd.GetOprnObject()) {
         case OperationObject::FILESYSTEM_ASSET: {
             auto ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
@@ -660,6 +684,13 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
+        }
+        case OperationObject::ANALYSIS_PHOTO_ALBUM: {
+            if (cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
+                cmd.GetOprnType() <= OperationType::PORTRAIT_COVER_URI) {
+                return MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(cmd.GetOprnType(), value, predicates);
+            }
+            break;
         }
         case OperationObject::PHOTO_ALBUM: {
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
@@ -938,6 +969,16 @@ static const map<OperationObject, string> QUERY_CONDITION_MAP {
     { OperationObject::BUNDLE_PERMISSION, "" },
 };
 
+bool CheckIsPortraitAlbum(MediaLibraryCommand &cmd)
+{
+    auto predicates = cmd.GetAbsRdbPredicates();
+    auto whereClause = predicates->GetWhereClause();
+    if (whereClause.find(USER_DISPLAY_LEVEL) != string::npos || whereClause.find(IS_ME) != string::npos) {
+        return true;
+    }
+    return false;
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
@@ -972,6 +1013,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
         queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
     } else if (oprnObject == OperationObject::PHOTO_ALBUM) {
         queryResultSet = MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
+    } else if (oprnObject == OperationObject::ANALYSIS_PHOTO_ALBUM && CheckIsPortraitAlbum(cmd)) {
+        queryResultSet = MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
     } else if (oprnObject == OperationObject::PHOTO_MAP || oprnObject == OperationObject::ANALYSIS_PHOTO_MAP) {
         queryResultSet = PhotoMapOperations::QueryPhotoAssets(
             RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);

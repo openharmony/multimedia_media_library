@@ -267,7 +267,7 @@ int32_t MediaScannerObj::Commit()
         }
     }
 
-    if (!data_->GetShootingModeTag().empty()) {
+    if (!data_->GetShootingMode().empty()) {
         auto err = MaintainAlbumRelationship(data_);
         if (err != E_OK) {
             return err;

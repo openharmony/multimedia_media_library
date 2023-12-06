@@ -53,6 +53,19 @@ enum TrashType {
     TRASHED_DIR_CHILD
 };
 
+enum PortraitPages : int32_t {
+    UNFAVORITE_PAGE = 0,
+    FIRST_PAGE,
+    SECOND_PAGE,
+    FAVORITE_PAGE
+};
+const std::unordered_set<int32_t> PORTRAIT_PAGE_MODE = {
+    PortraitPages::FIRST_PAGE,
+    PortraitPages::SECOND_PAGE,
+    PortraitPages::FAVORITE_PAGE,
+    PortraitPages::UNFAVORITE_PAGE
+};
+
 /**
  * @brief Utility class for file operations
  *
@@ -122,6 +135,7 @@ public:
     static std::string GetUriByExtrConditions(const std::string &prefix, const std::string &fileId,
         const std::string &suffix = "");
     static std::string Encode(const std::string &uri);
+    static bool CheckDisplayLevel(const int32_t &displayLevel);
 #ifdef MEDIALIBRARY_COMPATIBILITY
     static std::string GetTableFromVirtualUri(const std::string &uri);
 #endif

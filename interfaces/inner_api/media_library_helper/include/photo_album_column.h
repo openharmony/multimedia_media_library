@@ -76,6 +76,7 @@ public:
     static const std::string DEFAULT_PHOTO_ALBUM_URI;
     static const std::string HIDDEN_ALBUM_URI_PREFIX;
     static const std::string DEFAULT_HIDDEN_ALBUM_URI;
+    static const std::string ANALYSIS_ALBUM_URI_PREFIX;
 
     static bool IsPhotoAlbumColumn(const std::string &columnName);
     static bool IsLocationAlbumColumn(const std::string &columnName);
@@ -85,6 +86,8 @@ public:
     static void GetSystemAlbumPredicates(const PhotoAlbumSubType subType, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
     static void GetAnalysisAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
+        const bool hiddenState);
+    static void GetPortraitAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
 };
 } // namespace OHOS::Media
