@@ -17,6 +17,7 @@
 #ifndef LOCATION_COLUMN_H
 #define LOCATION_COLUMN_H
 
+#include "base_column.h"
 #include "media_column.h"
 #include "userfilemgr_uri.h"
 #include "userfile_manager_types.h"
@@ -25,8 +26,8 @@
 namespace OHOS {
 namespace Media {
 // location table name
-const std::string GEO_DICTIONARY_TABLE = "tab_geo_dictionary";
-const std::string GEO_KNOWLEDGE_TABLE = "tab_geo_knowledge";
+const std::string GEO_DICTIONARY_TABLE = "tab_analysis_geo_dictionary";
+const std::string GEO_KNOWLEDGE_TABLE = "tab_analysis_geo_knowledge";
 
 // create location table
 const std::string LATITUDE = "latitude";
@@ -43,6 +44,10 @@ const std::string SUB_THOROUGHFARE = "sub_thoroughfare";
 const std::string FEATURE_NAME = "feature_name";
 const std::string CITY_ID = "city_id";
 const std::string CITY_NAME = "city_name";
+const std::string DICTIONARY_INDEX = "dictionary_index";
+const std::string KNOWLEDG_INDEX = "knowledge_index";
+const std::string LOCATION_CITY_NAME_INDEX = "idx_city_name_index";
+const std::string LOCATION_LOCATION_KEY_INDEX = "idx_location_key_index";
 
 const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     "CREATE TABLE IF NOT EXISTS " + GEO_KNOWLEDGE_TABLE + " ( " +
@@ -69,6 +74,20 @@ const std::string CREATE_GEO_DICTIONARY_TABLE =
 const std::string URI_GEO_DICTIONARY = MEDIALIBRARY_DATA_URI + "/" + GEO_DICTIONARY_TABLE;
 const std::string URI_GEO_KEOWLEDGE = MEDIALIBRARY_DATA_URI + "/" + GEO_KNOWLEDGE_TABLE;
 
+const std::string CREATE_CITY_NAME_INDEX =
+    BaseColumn::CreateIndex() + LOCATION_CITY_NAME_INDEX + " ON " + GEO_DICTIONARY_TABLE +
+    " (" + LANGUAGE + " DESC," + CITY_NAME + " ASC)";
+
+const std::string CREATE_LOCATION_KEY_INDEX =
+    BaseColumn::CreateIndex() + LOCATION_LOCATION_KEY_INDEX + " ON " + GEO_KNOWLEDGE_TABLE +
+    " (" + LOCATION_KEY + " DESC," + LANGUAGE + " DESC)";
+
+const std::string CREATE_DICTIONARY_INDEX = "CREATE UNIQUE INDEX " + DICTIONARY_INDEX + " ON " +
+    GEO_DICTIONARY_TABLE + " (" + CITY_ID + "," + LANGUAGE + ")";
+
+const std::string CREATE_KNOWLEDGE_INDEX = "CREATE UNIQUE INDEX " + KNOWLEDG_INDEX + " ON " +
+    GEO_KNOWLEDGE_TABLE + " (" +  LATITUDE + "," + LONGITUDE + "," + LANGUAGE + ")";
+
 // location album param
 const std::string START_LATITUDE = "startLatitude";
 const std::string END_LATITUDE = "endLatitude";
@@ -77,6 +96,8 @@ const std::string END_LONGITUDE = "endLongitude";
 const std::string DIAMETER = "diameter";
 
 // location album result
+const std::string LOCATION_ALBUM_ID = MediaColumn::MEDIA_ID + " AS " + ALBUM_ID;
+const std::string LOCATION_ALBUM_NAME = LATITUDE + "||'_'||" + LONGITUDE + " AS " + ALBUM_NAME;
 const std::string LOCATION_ALBUM_TYPE = std::to_string(PhotoAlbumType::SMART) + " AS " + ALBUM_TYPE;
 const std::string LOCATION_ALBUM_SUBTYPE = std::to_string(PhotoAlbumSubType::GEOGRAPHY_LOCATION) +
     " AS " + ALBUM_SUBTYPE;

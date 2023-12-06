@@ -31,7 +31,7 @@ int32_t MediaLibraryLocationOperations::InsertOperation(MediaLibraryCommand &cmd
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_INFO_LOG("location insert operation, rdbStore is null.");
+        MEDIA_ERR_LOG("location insert operation, rdbStore is null.");
         return E_HAS_DB_ERROR;
     }
     int64_t outRowId = -1;
@@ -47,7 +47,7 @@ int32_t MediaLibraryLocationOperations::UpdateOperation(MediaLibraryCommand &cmd
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_INFO_LOG("location update operation, rdbStore is null.");
+        MEDIA_ERR_LOG("location update operation, rdbStore is null.");
         return E_HAS_DB_ERROR;
     }
     int32_t updateRows = -1;
@@ -63,7 +63,7 @@ int32_t MediaLibraryLocationOperations::DeleteOperation(MediaLibraryCommand &cmd
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_INFO_LOG("location delete operation, rdbStore is null.");
+        MEDIA_ERR_LOG("location delete operation, rdbStore is null.");
         return E_HAS_DB_ERROR;
     }
     int32_t deleteRows = -1;
@@ -80,7 +80,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryLocationOperations::QueryOperation(
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
-        MEDIA_INFO_LOG("location query operation, rdbStore is null.");
+        MEDIA_ERR_LOG("location query operation, rdbStore is null.");
         return nullptr;
     }
     return rdbStore->Query(cmd, columns);
