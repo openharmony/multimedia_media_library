@@ -111,12 +111,12 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
     }
   }
   if (permissionIndex < 0 || permissionGrantStates[permissionIndex] === PERMISSION_STATE_ERROR) {
-    console.info('photoAccessHelper permission error')
+    console.info('photoAccessHelper permission error');
     return errorResult(new BusinessError(ERROR_MSG_WRITE_PERMISSION), asyncCallback);
   }
   const appName = await getAppName();
   if (appName.length === 0) {
-    console.info(`photoAccessHelper appName not found`)
+    console.info(`photoAccessHelper appName not found`);
     return errorResult(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_PARAMERTER_INVALID), asyncCallback);
   }
   try {
