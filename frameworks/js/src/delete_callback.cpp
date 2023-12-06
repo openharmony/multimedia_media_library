@@ -34,13 +34,11 @@ DeleteCallback::DeleteCallback(napi_env env, Ace::UIContent *uiContent)
 
 void DeleteCallback::OnRelease(int32_t releaseCode)
 {
-    NAPI_INFO_LOG("OnRelease enter. release code is %{public}d", releaseCode);
     CloseModalUIExtension();
 }
 
 void DeleteCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &result)
 {
-    NAPI_INFO_LOG("OnResult enter. resultCode is %{public}d", resultCode);
     this->resultCode_ = resultCode;
     if (resultCode == DELETE_CODE_SUCCESS) {
         string trashUri = PAH_TRASH_PHOTO;
@@ -52,18 +50,14 @@ void DeleteCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &resul
         valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
         int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
         if (changedRows < 0) {
-            NAPI_ERR_LOG("Media asset delete failed, err: %{public}d", changedRows);
             this->resultCode_ = DELETE_CODE_ERROR;
         }
-        NAPI_ERR_LOG("Media asset delete end");
     }
     SendMessageBack();
 }
 
 void DeleteCallback::OnError(int32_t code, const string &name, const string &message)
 {
-    NAPI_ERR_LOG("OnError enter. errorCode=%{public}d, name=%{public}s, message=%{public}s",
-                 code, name.c_str(), message.c_str());
     SendMessageBack();
 }
 

@@ -55,7 +55,6 @@
 #include "js_native_api_types.h"
 #include "delete_callback.h"
 
-
 using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
@@ -6307,6 +6306,7 @@ static napi_value initRequest(OHOS::AAFwk::Want &request, shared_ptr<DeleteCallb
     vector<string> uris;
     uint32_t len = 0;
     CHECK_ARGS(env, napi_get_array_length(env, args[ARGS_TWO], &len), JS_ERR_PARAMETER_INVALID);
+    char uriBuffer[ARG_BUF_SIZE];
     for (uint32_t i = 0; i < len; i++) {
         napi_value uri = nullptr;
         CHECK_ARGS(env, napi_get_element(env, args[ARGS_TWO], i, &uri), JS_ERR_PARAMETER_INVALID);
@@ -6315,7 +6315,6 @@ static napi_value initRequest(OHOS::AAFwk::Want &request, shared_ptr<DeleteCallb
             return nullptr;
         }
         size_t uriRes = 0;
-        char uriBuffer[ARG_BUF_SIZE];
         CHECK_ARGS(env, napi_get_value_string_utf8(env, uri, uriBuffer, ARG_BUF_SIZE, &uriRes),
                    JS_ERR_PARAMETER_INVALID);
         uris.push_back(string(uriBuffer));
