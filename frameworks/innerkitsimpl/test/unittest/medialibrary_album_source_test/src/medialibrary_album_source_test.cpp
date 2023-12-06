@@ -100,14 +100,9 @@ void ClearData()
     string clearSourceAlbumSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
         PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SMART) + " AND " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::SOURCE);
-    string initSystemAlbumSql = "UPDATE " + ANALYSIS_ALBUM_TABLE +
-        " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = '', " +
-        PhotoAlbumColumns::ALBUM_COUNT + " = 0" +
-        " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SMART);
     vector<string> executeSqlStrs = {
         clearPhotoSql,
         clearSourceAlbumSql,
-        initSystemAlbumSql,
         DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
         DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
