@@ -21,6 +21,7 @@
 #include "location_column.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "uri.h"
@@ -92,14 +93,14 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_002, TestSiz
     Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
     MediaLibraryCommand cmd(geoKnowledgeUri);
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(LATITUDE, 31.3107738494873);
-    valuesBucket.Put(LONGITUDE, 120.6175308227539);
+    valuesBucket.Put(LATITUDE, 31.3211254555);
+    valuesBucket.Put(LONGITUDE, 120.12356458855);
     valuesBucket.Put(LOCATION_KEY, 141189990037);
     valuesBucket.Put(LANGUAGE, "zh");
     valuesBucket.Put(COUNTRY, "中国");
     valuesBucket.Put(ADMIN_AREA, "江苏省");
-    valuesBucket.Put(CITY_ID, "123456789101232");
-    valuesBucket.Put(LOCALITY, "苏州市");
+    valuesBucket.Put(CITY_ID, "12115546546521");
+    valuesBucket.Put(LOCALITY, "淮安市");
     valuesBucket.Put(SUB_LOCALITY, "姑苏区");
     valuesBucket.Put(THOROUGHFARE, "人民路");
     valuesBucket.Put(SUB_THOROUGHFARE, "1285号");
@@ -108,7 +109,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_002, TestSiz
     auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket valuesBucket2;
     EXPECT_GT(retVal1, 0);
-    EXPECT_GT(retVal2, 0);
+    EXPECT_EQ(retVal2, E_HAS_DB_ERROR);
     MEDIA_INFO_LOG("Location_InsertGeoKnowledge_Test_002::retVal = %{public}d. retVal2 = %{public}d. End",
         retVal1, retVal2);
 }
@@ -162,9 +163,9 @@ HWTEST_F(MediaLibraryLocationTest, Location_DeleteGeoKnowledge_Test_001, TestSiz
     Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
     MediaLibraryCommand cmd(geoKnowledgeUri);
     DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(LATITUDE, 31.3107738494873);
-    valuesBucket.Put(LONGITUDE, 120.6175308227539);
-    valuesBucket.Put(LOCATION_KEY, 141189990037);
+    valuesBucket.Put(LATITUDE, 31.123255565444);
+    valuesBucket.Put(LONGITUDE, 120.123454565544);
+    valuesBucket.Put(LOCATION_KEY, 12354648855);
     valuesBucket.Put(LANGUAGE, "en");
     valuesBucket.Put(COUNTRY, "China");
     valuesBucket.Put(ADMIN_AREA, "Jiangsu");
@@ -172,7 +173,7 @@ HWTEST_F(MediaLibraryLocationTest, Location_DeleteGeoKnowledge_Test_001, TestSiz
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataSharePredicates predicates;
     vector<string> inValues;
-    inValues.push_back("141189990037");
+    inValues.push_back("12354648855");
     inValues.push_back("140877099576");
     predicates.In(LOCATION_KEY, inValues);
     auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
@@ -192,6 +193,23 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoDictionary_Test_001, TestSi
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Location_InsertGeoDictionary_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoDictionary_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Location_InsertGeoDictionary_Test_002::Start");
+    Uri geoKnowDictionaryUri(URI_GEO_DICTIONARY);
+    MediaLibraryCommand cmd(geoKnowDictionaryUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(CITY_ID, "123456789123456789");
+    valuesBucket.Put(LANGUAGE, "zh");
+    valuesBucket.Put(CITY_NAME, "江苏");
+    auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal1, 0);
+    EXPECT_EQ(retVal2, E_HAS_DB_ERROR);
+    MEDIA_INFO_LOG("Location_InsertGeoDictionary_Test_002::retVal = %{public}d. retVal2 = %{public}d. End",
+        retVal1, retVal2);
 }
 
 HWTEST_F(MediaLibraryLocationTest, Location_UpdateGeoDictionary_Test_001, TestSize.Level0)

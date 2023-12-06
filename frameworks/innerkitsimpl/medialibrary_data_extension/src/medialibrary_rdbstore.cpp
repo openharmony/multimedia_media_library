@@ -933,6 +933,10 @@ static const vector<string> onCreateSqlStrs = {
     UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
     DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
     FormMap::CREATE_FORM_MAP_TABLE,
+    CREATE_DICTIONARY_INDEX,
+    CREATE_KNOWLEDGE_INDEX,
+    CREATE_CITY_NAME_INDEX,
+    CREATE_LOCATION_KEY_INDEX,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -1826,6 +1830,19 @@ static void UpdateClassifyDirtyData(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpdateGeoTables(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE tab_geo_dictionary RENAME TO " +  GEO_DICTIONARY_TABLE,
+        "ALTER TABLE tab_geo_knowledge RENAME TO " +  GEO_KNOWLEDGE_TABLE,
+        CREATE_DICTIONARY_INDEX,
+        CREATE_KNOWLEDGE_INDEX,
+        CREATE_CITY_NAME_INDEX,
+        CREATE_LOCATION_KEY_INDEX,
+    };
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1882,6 +1899,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_PORTRAIT_IN_ALBUM) {
         AddPortraitInAnalysisAlbum(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_GEO_TABLE) {
+        UpdateGeoTables(store);
     }
 }
 

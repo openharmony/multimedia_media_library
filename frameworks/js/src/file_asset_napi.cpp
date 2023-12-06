@@ -1823,8 +1823,9 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
         CLOCK_LOCATION_X, CLOCK_LOCATION_Y, CLOCK_COLOUR, COMPOSITION_SCALE_X, COMPOSITION_SCALE_Y,
         COMPOSITION_SCALE_WIDTH, COMPOSITION_SCALE_HEIGHT } } },
     { ANALYSIS_SALIENCY, { PAH_QUERY_ANA_SAL, { SALIENCY_X, SALIENCY_Y } } },
-    { ANALYSIS_DETAIL_ADDRESS, { PAH_QUERY_ANA_ADDRESS, { LANGUAGE, COUNTRY, ADMIN_AREA, SUB_ADMIN_AREA, LOCALITY,
-        SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME} } },
+    { ANALYSIS_DETAIL_ADDRESS, { PAH_QUERY_ANA_ADDRESS, { PhotoColumn::PHOTOS_TABLE + "." + LATITUDE,
+        PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, LANGUAGE, COUNTRY, ADMIN_AREA, SUB_ADMIN_AREA,
+        LOCALITY, SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME } } },
 };
 
 static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
@@ -1838,12 +1839,14 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
         uriStr = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).uriStr;
         fetchColumn = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).fetchColumn;
         if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
-            string onClause = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
-                GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
-                PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE;
             string language = Global::I18n::LocaleConfig::GetSystemLanguage();
-            predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ onClause });
-            predicates.EqualTo(LANGUAGE, language);
+            vector<string> onClause = {
+                PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
+                GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
+                PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE +
+                " AND " + GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \"" + language + "\""
+            };
+            predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(onClause);
         }
     } else {
         NAPI_ERR_LOG("Invalid analysisType");
