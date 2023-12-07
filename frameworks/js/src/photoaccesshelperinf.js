@@ -22,6 +22,8 @@ const WRITE_PERMISSION = 'ohos.permission.WRITE_IMAGEVIDEO';
 
 const PERMISSION_DENIED = 13900012;
 const ERR_CODE_PARAMERTER_INVALID = 13900020;
+const REQUEST_CODE_SUCCESS = 0;
+const PERMISSION_STATE_ERROR = -1;
 const ERROR_MSG_WRITE_PERMISSION = 'not have ohos.permission.WRITE_IMAGEVIDEO';
 const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
@@ -108,41 +110,31 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
       permissionIndex = i;
     }
   }
-  if (permissionIndex < 0 || permissionGrantStates[permissionIndex] === -1) {
+  if (permissionIndex < 0 || permissionGrantStates[permissionIndex] === PERMISSION_STATE_ERROR) {
+    console.info('photoAccessHelper permission error');
     return errorResult(new BusinessError(ERROR_MSG_WRITE_PERMISSION), asyncCallback);
   }
   const appName = await getAppName();
   if (appName.length === 0) {
-    console.info(`photoAccessHelper appName not found`)
+    console.info(`photoAccessHelper appName not found`);
+    return errorResult(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_PARAMERTER_INVALID), asyncCallback);
   }
-  const startParameter = {
-    action: 'ohos.want.action.deleteDialog',
-    type: 'image/*',
-    parameters: {
-      uris: uriList,
-      appName: appName
-    },
-  };
   try {
-    const result = await gContext.requestDialogService(startParameter);
-    console.info(`photoAccessHelper result: ${JSON.stringify(result)}`);
-    if (result === null || result === undefined) {
-      console.log('photoAccessHelper createDeleteRequest return null');
-      return errorResult(Error('requestDialog return undefined'), asyncCallback);
-    }
-    if (asyncCallback) {
-      if (result.result === 0) {
-        return asyncCallback();
-      } else {
-        return asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
+    photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
+      if (asyncCallback) {
+        if (result.result === REQUEST_CODE_SUCCESS) {
+          return asyncCallback();
+        } else {
+          return asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
+        }
       }
-    }
-    return new Promise((resolve, reject) => {
-      if (result.result === 0) {
-        resolve();
-      } else {
-        reject(new BusinessError(ERROR_MSG_USER_DENY));
-      }
+      return new Promise((resolve, reject) => {
+        if (result.result === REQUEST_CODE_SUCCESS) {
+          resolve();
+        } else {
+          reject(new BusinessError(ERROR_MSG_USER_DENY));
+        }
+      });
     });
   } catch (error) {
     return errorResult(new BusinessError(error.message, error.code), asyncCallback);
