@@ -61,7 +61,7 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Si
     if (opts.table == AudioColumn::AUDIOS_TABLE) {
         type = ThumbnailType::THUMB;
     }
-    string fileName = GetThumbnailPath(thumbnailData.path, GetThumbSuffix(type));
+    string fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_THUMB_SUFFIX);
     if (access(fileName.c_str(), F_OK) != 0) {
         if (!DoCreateThumbnail(opts, thumbnailData)) {
             return E_THUMBNAIL_LOCAL_CREATE_FAIL;
