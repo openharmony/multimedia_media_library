@@ -53,7 +53,7 @@ private:
 
     static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
     static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
-    static napi_value JSPlaceToFrontOf(napi_env env, napi_callback_info info);
+    static napi_value JSPlaceBefore(napi_env env, napi_callback_info info);
     static napi_value JSSetDisplayLevel(napi_env env, napi_callback_info info);
     static napi_value JSMergeAlbum(napi_env env, napi_callback_info info);
     static napi_value JSDismissAsset(napi_env env, napi_callback_info info);
