@@ -78,9 +78,9 @@ static shared_ptr<NativeRdb::ResultSet> QueryAgeingTrashFiles()
     auto recycleDays = GetInt32Val(SMARTALBUM_DB_EXPIRED_TIME, resultSet);
     resultSet.reset();
 
-    int64_t dateAgeing = MediaFileUtils::UTCTimeSeconds();
+    int64_t dateAgeing = MediaFileUtils::UTCTimeMilliSeconds();
     string strAgeingQueryCondition = MEDIA_DATA_DB_DATE_TRASHED + "> 0" + " AND " + to_string(dateAgeing) + " - " +
-        MEDIA_DATA_DB_DATE_TRASHED + " > " + to_string(recycleDays * ONEDAY_TO_SEC);
+        MEDIA_DATA_DB_DATE_TRASHED + " > " + to_string(recycleDays * ONEDAY_TO_SEC * MSEC_TO_SEC);
     MEDIA_INFO_LOG("StrAgeingQueryCondition = %{private}s", strAgeingQueryCondition.c_str());
 
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
@@ -539,7 +539,7 @@ static int32_t TrashDirAssetsInfoUtil(const int32_t assetId)
     if (!MediaFileUtils::RenameDir(oldPath, recyclePath)) {
         return E_MODIFY_DATA_FAIL;
     }
-    int64_t trashDate = MediaFileUtils::UTCTimeSeconds();
+    int64_t trashDate = MediaFileUtils::UTCTimeMilliSeconds();
     errorCode = TrashChildAssetsInfoUtil(assetId, trashDate);
     CHECK_AND_RETURN_RET_LOG(errorCode == E_SUCCESS, errorCode, "Failed to trashChildAssetsInfoUtil");
     return UpdateTrashInfoInDb(assetId, trashDate, recyclePath, oldPath, TRASHED_DIR);

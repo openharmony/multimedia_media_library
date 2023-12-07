@@ -46,6 +46,9 @@ const int AUDIO_VIRTUAL_IDENTIFIER = 3;
 const int FILE_VIRTUAL_IDENTIFIER = 2;
 const int CAMERA_SHOT_KEY_SIZE = 30;
 
+constexpr int64_t MSEC_TO_SEC = 1e3;
+constexpr int64_t MSEC_TO_NSEC = 1e6;
+
 enum TrashType {
     NOT_TRASHED = 0,
     TRASHED_ASSET,
@@ -143,8 +146,10 @@ public:
     static bool IsFileTablePath(const std::string &path);
     static bool IsPhotoTablePath(const std::string &path);
     static std::string StrCreateTime(const std::string &format, int64_t time);
+    static std::string StrCreateTimeByMilliseconds(const std::string &format, int64_t time);
     static std::string AddDocsToRelativePath(const std::string &relativePath);
     static std::string RemoveDocsFromRelativePath(const std::string &relativePath);
+    static int64_t Timespec2Millisecond(const struct timespec &time);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
