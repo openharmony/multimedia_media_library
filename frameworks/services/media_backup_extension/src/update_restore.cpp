@@ -283,11 +283,11 @@ bool UpdateRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
-    info.recycledTime = GetInt64Val(GALLERY_RECYCLED_TIME, resultSet) / MILLISECONDS;
+    info.recycledTime = GetInt64Val(GALLERY_RECYCLED_TIME, resultSet);
     info.hidden = (localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
     info.fileType = (mediaType == GALLERY_VIDEO_TYPE) ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
-    info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet) / MILLISECONDS;
+    info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet);
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
     info.dateAdded = GetInt64Val(DATE_ADDED, resultSet);
@@ -316,7 +316,7 @@ NativeRdb::ValuesBucket UpdateRestore::GetInsertValue(const FileInfo &fileInfo, 
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, fileInfo.height);
     values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
-    values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken);
+    values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken / MILLISECONDS);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation);
     std::string package_name = "";
     std::string findPath = fileInfo.relativePath;

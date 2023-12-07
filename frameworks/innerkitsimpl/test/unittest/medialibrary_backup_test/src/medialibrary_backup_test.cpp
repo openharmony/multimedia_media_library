@@ -39,7 +39,7 @@ const int EXPECTED_NUM = 5;
 const int EXPECTED_OREINTATION = 270;
 const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "fake_wechat";
-const int64_t EXPECTED_DATE_ADDED = 1432973383;
+const int64_t EXPECTED_DATE_ADDED = 1432973383179;
 const int64_t EXPECTED_DATE_TAKEN = 1432973383;
 
 const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS Photos ") +

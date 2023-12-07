@@ -1147,6 +1147,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
     UpdateSelection(context);
+    MediaLibraryNapiUtils::FixSpecialDateType(context->selection);
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
     context->predicates.SetOrder(context->order);

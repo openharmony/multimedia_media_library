@@ -530,18 +530,18 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
         return;
     }
     outValues.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
     outValues.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
     outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
 }
 
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // Fill basic file information into DB
     const string& displayName = fileAsset.GetDisplayName();
-    int64_t nowTime = MediaFileUtils::UTCTimeSeconds();
+    int64_t nowTime = MediaFileUtils::UTCTimeMilliSeconds();
     ValuesBucket assetInfo;
     assetInfo.PutInt(MediaColumn::MEDIA_TYPE, fileAsset.GetMediaType());
     string extension = ScannerUtils::GetFileExtension(displayName);

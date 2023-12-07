@@ -118,11 +118,11 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
 static inline void SetDateDay(const int64_t dateAdded, ValuesBucket &outValues)
 {
     outValues.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
     outValues.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
     outValues.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
 }
 
 static inline void SetDateAdded(const int64_t dateAdded, const Metadata &metadata, ValuesBucket &outValues)
@@ -143,7 +143,7 @@ static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
         if (dateTaken == 0) {
             int64_t dateModified = metadata.GetFileDateModified();
             if (dateModified == 0) {
-                dateAdded = MediaFileUtils::UTCTimeSeconds();
+                dateAdded = MediaFileUtils::UTCTimeMilliSeconds();
                 MEDIA_WARN_LOG("Invalid dateAdded time, use current time instead: %{public}lld",
                     static_cast<long long>(dateAdded));
             } else {
@@ -151,7 +151,7 @@ static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
                     static_cast<long long>(dateAdded));
             }
         } else {
-            dateAdded = dateTaken;
+            dateAdded = dateTaken * MSEC_TO_SEC;
             MEDIA_WARN_LOG("Invalid dateAdded time, use dateTaken instead: %{public}lld",
                 static_cast<long long>(dateAdded));
         }
@@ -167,7 +167,7 @@ static inline void FixDateDayIfNeeded(const Metadata &metadata, ValuesBucket &ou
     }
     int64_t dateAdded = metadata.GetFileDateAdded();
     string dateDayOld = metadata.GetDateDay();
-    string dateDayNew = MediaFileUtils::StrCreateTime(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded);
+    string dateDayNew = MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded);
     if (dateDayOld != dateDayNew) {
         SetDateDay(dateAdded, outValues);
     }
