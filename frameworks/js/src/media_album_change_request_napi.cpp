@@ -42,7 +42,7 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
         .props = {
             DECLARE_NAPI_FUNCTION("setAlbumName", JSSetAlbumName),
             DECLARE_NAPI_FUNCTION("setCoverUri", JSSetCoverUri),
-            DECLARE_NAPI_FUNCTION("placeToFrontOf", JSPlaceToFrontOf),
+            DECLARE_NAPI_FUNCTION("placeBefore", JSPlaceBefore),
             DECLARE_NAPI_FUNCTION("setDisplayLevel", JSSetDisplayLevel),
             DECLARE_NAPI_FUNCTION("mergeAlbum", JSMergeAlbum),
             DECLARE_NAPI_FUNCTION("dismissAsset", JSDismissAsset),
@@ -344,7 +344,7 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
     return result;
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSPlaceToFrontOf(napi_env env, napi_callback_info info)
+napi_value MediaAlbumChangeRequestNapi::JSPlaceBefore(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
