@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 46;
+const int32_t MEDIA_RDB_VERSION = 47;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -72,6 +72,7 @@ enum {
     VERSION_CLEAR_LABEL_DATA = 44,
     VERSION_ADD_PORTRAIT_IN_ALBUM = 45,
     VERSION_UPDATE_GEO_TABLE = 46,
+    VERSION_REOMOVE_SOURCE_ALBUM_TO_ANALYSIS = 47,
 };
 
 enum {
