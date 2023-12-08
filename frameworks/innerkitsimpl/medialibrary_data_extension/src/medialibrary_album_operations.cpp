@@ -1069,8 +1069,39 @@ static int32_t UpdatePortraitSortedOrder(const int32_t currentAlbumId, const int
     return ExecSqls(updateSortedAlbumsSqls, uniStore);
 }
 
+bool CheckIsFavoritePortraitAlbum(const int32_t currentAlbumId, const int32_t referenceAlbumId)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return false;
+    }
+    std::string queryDisplayLevel = "SELECT " + USER_DISPLAY_LEVEL + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
+        ALBUM_ID + " IN (" + to_string(currentAlbumId) + "," + to_string(referenceAlbumId) + ")";
+    auto resultSet = uniStore->QuerySql(queryDisplayLevel);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query display level!");
+        return false;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t displayLevel;
+        if (GetIntValueFromResultSet(resultSet, USER_DISPLAY_LEVEL, displayLevel) != E_OK) {
+            MEDIA_ERR_LOG("Get display level fail");
+            return false;
+        }
+        if (displayLevel != FAVORITE_PAGE) {
+            MEDIA_ERR_LOG("this album is not favorite portrait album");
+            return false;
+        }
+    }
+    return true;
+}
+
 int32_t OrderPortraitFavoriteAlbum(const int32_t currentAlbumId, const int32_t referenceAlbumId)
 {
+    if (!CheckIsFavoritePortraitAlbum(currentAlbumId, referenceAlbumId)) {
+        return E_INVALID_VALUES;
+    }
     if (referenceAlbumId == NULL_REFERENCE_ALBUM_ID) {
         return HandlePortraitNullReferenceCondition(currentAlbumId);
     }
@@ -1406,8 +1437,13 @@ static int32_t UpdateFavoritesOrder(const int32_t value, const int32_t currentAl
             " IN (SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
             " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) + ")";
     } else {
+        int rank;
+        int err = ObtainCurrentPortraitAlbumOrder(currentAlbumId, rank);
+        if (err != E_OK) {
+            return err;
+        }
         updateOtherAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RANK + " = " + RANK + " -1 WHERE " +
-            USER_DISPLAY_LEVEL + " = " + to_string(FAVORITE_PAGE) + " AND " + RANK + "<" + to_string(value);
+            USER_DISPLAY_LEVEL + " = " + to_string(FAVORITE_PAGE) + " AND " + RANK + ">" + to_string(rank);
         updateCurrentAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RANK + " = 0" +
             " WHERE " + GROUP_TAG + " IN (SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
             " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) + ")";

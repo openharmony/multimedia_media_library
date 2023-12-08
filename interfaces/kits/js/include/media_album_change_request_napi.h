@@ -56,7 +56,7 @@ private:
     static napi_value JSPlaceBefore(napi_env env, napi_callback_info info);
     static napi_value JSSetDisplayLevel(napi_env env, napi_callback_info info);
     static napi_value JSMergeAlbum(napi_env env, napi_callback_info info);
-    static napi_value JSDismissAsset(napi_env env, napi_callback_info info);
+    static napi_value JSDismissAssets(napi_env env, napi_callback_info info);
     static napi_value JSSetIsMe(napi_env env, napi_callback_info info);
     bool CheckPortraitMergeAlbum();
     static bool CheckDismissAssetVaild(std::vector<std::string> &dismissAssets,

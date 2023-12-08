@@ -169,6 +169,27 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
     return changedRows;
 }
 
+static int32_t GetPortraitAlbumIds(const string &albumId, vector<string> &portraitAlbumIds)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
+        return E_HAS_DB_ERROR;
+    }
+    const std::string queryPortraitAlbumIds = "SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
+        GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " = " + albumId + " AND " + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) +")";
+
+    auto resultSet = uniStore->QuerySql(queryPortraitAlbumIds);
+    if (resultSet == nullptr) {
+        return E_DB_FAIL;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        portraitAlbumIds.push_back(to_string(GetInt32Val(ALBUM_ID, resultSet)));
+    }
+    return E_OK;
+}
+
 int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesBucket> &values)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -201,29 +222,13 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
             isValid, albumId);
         return changedRows;
     }
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), { to_string(albumId) });
+    vector<string> albumIdList;
+    GetPortraitAlbumIds(to_string(albumId), albumIdList);
+    if (albumIdList.size() == 0) {
+        albumIdList.push_back(to_string(albumId));
+    }
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), albumIdList);
     return changedRows;
-}
-
-static int32_t GetPortraitAlbumIds(string albumId, vector<string> &portraitAlbumIds)
-{
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr! failed query album order");
-        return E_HAS_DB_ERROR;
-    }
-    const std::string queryPortraitAlbumIds = "SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
-        GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
-        " WHERE " + ALBUM_ID + " = " + albumId + ")";
-
-    auto resultSet = uniStore->QuerySql(queryPortraitAlbumIds);
-    if (resultSet == nullptr) {
-        return E_DB_FAIL;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        portraitAlbumIds.push_back(to_string(GetInt32Val(ALBUM_ID, resultSet)));
-    }
-    return E_OK;
 }
 
 int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)

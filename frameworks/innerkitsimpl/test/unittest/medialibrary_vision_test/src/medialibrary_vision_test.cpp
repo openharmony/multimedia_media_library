@@ -16,6 +16,7 @@
 
 #include "medialibrary_vision_test.h"
 #include "datashare_result_set.h"
+#include "photo_album_column.h"
 #include "get_self_permissions.h"
 #include "location_column.h"
 #include "media_log.h"
@@ -1805,6 +1806,44 @@ HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test, TestSize.Level0)
     auto deletedRows = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_GT(deletedRows, 0);
     MEDIA_INFO_LOG("dismissAsset_Test::deletedRows = %{public}d. End", deletedRows);
+}
+
+void SetFavorite(string tagId, int value)
+{
+    MEDIA_INFO_LOG("SetFavorite");
+    Uri setAlbumUri(PAH_PORTRAIT_DISPLAY_LEVLE);
+    MediaLibraryCommand queryCmd(setAlbumUri);
+    DataShare::DataSharePredicates predicates;
+    int albumId = queryAlbumId(tagId);
+    MEDIA_INFO_LOG("albumId:%{public}d", albumId);
+    predicates.EqualTo(ALBUM_ID, albumId);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
+    valuesBucket.Put(USER_DISPLAY_LEVEL, value);
+
+    MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("placeToFrontOf_Test::Start");
+    Uri updateAlbumUri(MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM);
+    MediaLibraryCommand queryCmd(updateAlbumUri);
+    SetFavorite("tagId3", FAVORITE_PAGE);
+    SetFavorite("tagId4", FAVORITE_PAGE);
+    int albumId1 = queryAlbumId("tagId3");
+    int albumId2 = queryAlbumId("tagId4");
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_ID, albumId1);
+    valuesBucket.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, albumId2);
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, SMART);
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, PORTRAIT);
+    DataShare::DataSharePredicates predicates;
+    int32_t result = MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+    EXPECT_EQ(result, 0);
+    MEDIA_INFO_LOG("placeToFrontOf_Test::result = %{public}d. End", result);
+    SetFavorite("tagId3", UNFAVORITE_PAGE);
+    SetFavorite("tagId4", UNFAVORITE_PAGE);
 }
 } // namespace Media
 } // namespace OHOS
