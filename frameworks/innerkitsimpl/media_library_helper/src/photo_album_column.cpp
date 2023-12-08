@@ -62,7 +62,7 @@ const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
 // location default fetch columns
 const vector<string> PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS = {
     LATITUDE, LONGITUDE, LOCATION_ALBUM_TYPE, LOCATION_ALBUM_SUBTYPE, LOCATION_COUNT,
-    LOCATION_DATE_MODIFIED, LOCATION_COVER_URI
+    LOCATION_DATE_MODIFIED, LOCATION_COVER_URI, LOCATION_ALBUM_ID, LOCATION_ALBUM_NAME
 };
 
 // city default fetch columns
@@ -74,7 +74,7 @@ const string PhotoAlbumColumns::ALBUM_URI_PREFIX = "file://media/PhotoAlbum/";
 const string PhotoAlbumColumns::DEFAULT_PHOTO_ALBUM_URI = "file://media/PhotoAlbum";
 const string PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX = "file://media/HiddenAlbum/";
 const string PhotoAlbumColumns::DEFAULT_HIDDEN_ALBUM_URI = "file://media/HiddenAlbum";
-const string PhotoAlbumColumns::ANAALBUM_URI_PREFIX = "file://media/AnalysisAlbum/";
+const string PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX = "file://media/AnalysisAlbum/";
 
 // Create tables
 const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +

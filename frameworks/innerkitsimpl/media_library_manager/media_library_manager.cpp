@@ -368,16 +368,7 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     return E_SUCCESS;
 }
 
-static inline bool IsSmallThumb(const int32_t width, const int32_t height)
-{
-    if (((width == DEFAULT_MTH_SIZE) && (height == DEFAULT_MTH_SIZE)) ||
-        ((width == DEFAULT_YEAR_SIZE) && (height == DEFAULT_YEAR_SIZE))) {
-        return true;
-    }
-    return false;
-}
-
-static std::string GetSandboxPath(const std::string &path, const Size &size, bool isAudio, bool isAstc)
+static std::string GetSandboxPath(const std::string &path, const Size &size, bool isAstc)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
@@ -385,26 +376,12 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
     int min = std::min(size.width, size.height);
     int max = std::max(size.width, size.height);
     std::string suffixStr = path.substr(ROOT_MEDIA_DIR.length()) + "/";
-    if (isAudio) {
-        if (min == DEFAULT_ORIGINAL && max == DEFAULT_ORIGINAL) {
-            suffixStr += "LCD.jpg";
-        } else if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
-            suffixStr += "THM.jpg";
-        } else {
-            suffixStr += "LCD.jpg";
-        }
+    if (min == DEFAULT_ORIGINAL && max == DEFAULT_ORIGINAL) {
+        suffixStr += "LCD.jpg";
+    } else if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
+        suffixStr += isAstc ? "THM_ASTC.astc" : "THM.jpg";
     } else {
-        if (size.width == DEFAULT_MTH_SIZE && size.height == DEFAULT_MTH_SIZE) {
-            suffixStr += "MTH.jpg";
-        } else if (size.width == DEFAULT_YEAR_SIZE && size.height == DEFAULT_YEAR_SIZE) {
-            suffixStr += "YEAR.jpg";
-        } else if (size.width == DEFAULT_ORIGINAL && size.height == DEFAULT_ORIGINAL) {
-            suffixStr += "LCD.jpg";
-        } else if (min <= DEFAULT_THUMBNAIL_SIZE && max <= MAX_DEFAULT_THUMBNAIL_SIZE) {
-            suffixStr += isAstc ? "THM_ASTC.astc" : "THM.jpg";
-        } else {
-            suffixStr += "LCD.jpg";
-        }
+        suffixStr += "LCD.jpg";
     }
 
     return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
@@ -417,8 +394,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         return E_ERR;
     }
     if (!path.empty()) {
-        string sandboxPath = GetSandboxPath(path, size,
-            (MediaFileUri::GetMediaTypeFromUri(uriStr) == MediaType::MEDIA_TYPE_AUDIO), isAstc);
+        string sandboxPath = GetSandboxPath(path, size, isAstc);
         int fd = -1;
         if (!sandboxPath.empty()) {
             fd = open(sandboxPath.c_str(), O_RDONLY);
@@ -504,7 +480,7 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
             uriParams.size.height = stoi(queryKey[THUMBNAIL_HEIGHT]);
         }
         if (queryKey.count(THUMBNAIL_OPER) != 0) {
-            uriParams.isAstc = queryKey[THUMBNAIL_HEIGHT] == MEDIA_DATA_DB_THUMB_ASTC;
+            uriParams.isAstc = queryKey[THUMBNAIL_OPER] == MEDIA_DATA_DB_THUMB_ASTC;
         }
     }
     return true;
@@ -563,31 +539,6 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
     return pixelMap;
 }
 
-unique_ptr<PixelMap> MediaLibraryManager::GetPixelMapWithoutDecode(UniqueFd &uniqueFd, const Size &size)
-{
-    Media::InitializationOptions option = {
-        .size = size,
-        .pixelFormat = PixelFormat::RGB_565
-    };
-    unique_ptr<PixelMap> pixel = Media::PixelMap::Create(option);
-    if (pixel == nullptr) {
-        MEDIA_ERR_LOG("Can not create pixel");
-        return nullptr;
-    }
-
-    struct stat statInfo;
-    if (fstat(uniqueFd.Get(), &statInfo) == E_ERR) {
-        return nullptr;
-    }
-    uint8_t *buffer = static_cast<uint8_t*>(malloc(statInfo.st_size));
-    if (buffer == nullptr) {
-        return nullptr;
-    }
-    read(uniqueFd.Get(), buffer, statInfo.st_size);
-    pixel->SetPixelsAddr(buffer, nullptr, statInfo.st_size, AllocatorType::HEAP_ALLOC, nullptr);
-    return pixel;
-}
-
 unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(const std::string &uri, Size &size,
                                                          const string &path, bool isAstc)
 {
@@ -604,13 +555,7 @@ unique_ptr<PixelMap> MediaLibraryManager::QueryThumbnail(const std::string &uri,
         return nullptr;
     }
     tracer.Finish();
-    if (IsSmallThumb(size.width, size.height) &&
-        (MediaFileUri::GetMediaTypeFromUri(uri) != MediaType::MEDIA_TYPE_AUDIO)) {
-        // only get MTH and YEAR thumbnails
-        return GetPixelMapWithoutDecode(uniqueFd, size);
-    } else {
-        return DecodeThumbnail(uniqueFd, size);
-    }
+    return DecodeThumbnail(uniqueFd, size);
 }
 
 std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
@@ -618,10 +563,16 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
     // uri is dataability:///media/image/<id>/thumbnail/<width>/<height>
     string uriStr = uri.ToString();
     auto thumbLatIdx = uriStr.find("thumbnail");
+    bool isAstc = false;
     if (thumbLatIdx == string::npos || thumbLatIdx > uriStr.length()) {
-        return nullptr;
+        thumbLatIdx = uriStr.find("astc");
+        if (thumbLatIdx == string::npos || thumbLatIdx > uriStr.length()) {
+            MEDIA_ERR_LOG("GetThumbnail failed, oper is invalid");
+            return nullptr;
+        }
+        isAstc = true;
     }
-    thumbLatIdx += strlen("thumbnail");
+    thumbLatIdx += isAstc ? strlen("astc") : strlen("thumbnail");
     bool isOldVersion = uriStr[thumbLatIdx] == '/';
     UriParams uriParams;
     if (!GetParamsFromUri(uriStr, isOldVersion, uriParams)) {
