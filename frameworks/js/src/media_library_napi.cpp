@@ -19,6 +19,7 @@
 
 #include <fcntl.h>
 #include <sys/sendfile.h>
+#include <functional>
 
 #include "directory_ex.h"
 #include "file_ex.h"
@@ -46,6 +47,13 @@
 #include "userfile_client.h"
 #include "uv.h"
 #include "form_map.h"
+#include "ui_content.h"
+#include "modal_ui_extension_config.h"
+#include "want.h"
+#include "ability_context.h"
+#include "js_native_api.h"
+#include "js_native_api_types.h"
+#include "delete_callback.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -258,6 +266,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
     const vector<napi_property_descriptor> staticProps = {
         DECLARE_NAPI_STATIC_FUNCTION("getPhotoAccessHelper", GetPhotoAccessHelper),
         DECLARE_NAPI_STATIC_FUNCTION("getPhotoAccessHelperAsync", GetPhotoAccessHelperAsync),
+        DECLARE_NAPI_STATIC_FUNCTION("createDeleteRequest", CreateDeleteRequest),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumKeys", CreateAlbumKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
@@ -5181,7 +5190,8 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
     context->fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
     context->fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
     context->fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
-    context->fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum);
+    context->fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum ==
+        PhotoAlbumSubType::GEOGRAPHY_LOCATION);
 }
 
 static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, void *data)
@@ -6277,6 +6287,84 @@ napi_value MediaLibraryNapi::JSApplyChanges(napi_env env, napi_callback_info inf
     CHECK_ARGS(env, napi_unwrap(env, argv[PARAM0], reinterpret_cast<void**>(&obj)), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, obj != nullptr, "MediaChangeRequestNapi object is null");
     return obj->ApplyChanges(env, info);
+}
+
+static napi_value initRequest(OHOS::AAFwk::Want &request, shared_ptr<DeleteCallback> &callback,
+                              napi_env env, napi_value args[])
+{
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    request.SetElementName(DELETE_UI_PACKAGE_NAME, DELETE_UI_EXT_ABILITY_NAME);
+    request.SetParam(DELETE_UI_EXTENSION_TYPE, DELETE_UI_REQUEST_TYPE);
+
+    size_t nameRes = 0;
+    char nameBuffer[ARG_BUF_SIZE];
+    if (napi_get_value_string_utf8(env, args[ARGS_ONE], nameBuffer, ARG_BUF_SIZE, &nameRes) != napi_ok) {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return nullptr;
+    }
+    string appName = string(nameBuffer);
+    request.SetParam(DELETE_UI_APPNAME, appName);
+
+    vector<string> uris;
+    uint32_t len = 0;
+    CHECK_ARGS(env, napi_get_array_length(env, args[ARGS_TWO], &len), JS_ERR_PARAMETER_INVALID);
+    char uriBuffer[ARG_BUF_SIZE];
+    for (uint32_t i = 0; i < len; i++) {
+        napi_value uri = nullptr;
+        CHECK_ARGS(env, napi_get_element(env, args[ARGS_TWO], i, &uri), JS_ERR_PARAMETER_INVALID);
+        if (uri == nullptr) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            return nullptr;
+        }
+        size_t uriRes = 0;
+        CHECK_ARGS(env, napi_get_value_string_utf8(env, uri, uriBuffer, ARG_BUF_SIZE, &uriRes),
+                   JS_ERR_PARAMETER_INVALID);
+        uris.push_back(string(uriBuffer));
+    }
+    request.SetParam(DELETE_UI_URIS, uris);
+    callback->SetUris(uris);
+    callback->SetFunc(args[ARGS_THREE]);
+    return result;
+}
+
+napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_FOUR;
+    napi_value args[ARGS_FOUR] = {nullptr};
+    napi_value thisVar = nullptr;
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), JS_ERR_PARAMETER_INVALID);
+    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
+    NAPI_ASSERT(env, context != nullptr, "context == nullptr");
+
+    std::shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
+        OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
+    NAPI_ASSERT(env, abilityContext != nullptr, "abilityContext == nullptr");
+
+    auto uiContent = abilityContext->GetUIContent();
+    NAPI_ASSERT(env, uiContent != nullptr, "uiContent == nullptr");
+
+    auto callback = std::make_shared<DeleteCallback>(env, uiContent);
+    OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
+        std::bind(&DeleteCallback::OnRelease, callback, std::placeholders::_1),
+        std::bind(&DeleteCallback::OnResult, callback, std::placeholders::_1, std::placeholders::_2),
+        std::bind(&DeleteCallback::OnReceive, callback, std::placeholders::_1),
+        std::bind(&DeleteCallback::OnError, callback, std::placeholders::_1,
+                  std::placeholders::_2, std::placeholders::_3),
+    };
+    OHOS::Ace::ModalUIExtensionConfig config;
+    config.isProhibitBack = true;
+    OHOS::AAFwk::Want request;
+    napi_value initRequestResult = initRequest(request, callback, env, args);
+    NAPI_ASSERT(env, initRequestResult != nullptr, "initRequest fail");
+
+    int32_t sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
+    NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
+
+    callback->SetSessionId(sessionId);
+    return result;
 }
 } // namespace Media
 } // namespace OHOS

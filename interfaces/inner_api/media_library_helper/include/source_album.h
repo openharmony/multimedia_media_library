@@ -19,6 +19,7 @@
 #include "media_column.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
+#include "vision_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -72,39 +73,39 @@ const std::string COUNT_VALUE_UPDATE =
     MediaColumn::MEDIA_HIDDEN + " = 0 )";
 
 const std::string INSERT_PHOTO_MAP =
-    " INSERT INTO " + PhotoMap::TABLE +
+    " INSERT INTO " + ANALYSIS_PHOTO_MAP_TABLE +
     " (" + PhotoMap::ALBUM_ID + " , " + PhotoMap::ASSET_ID + " )" +
     " VALUES " +
-    " ( ( SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
+    " ( ( SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE +
     " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " AND " +
-    PhotoAlbumColumns::ALBUM_TYPE + " = "+ std::to_string(OHOS::Media::PhotoAlbumType::SYSTEM) + " AND " +
+    PhotoAlbumColumns::ALBUM_TYPE + " = "+ std::to_string(OHOS::Media::PhotoAlbumType::SMART) + " AND " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = "+ std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE) + ")," +
     " NEW." + MediaColumn::MEDIA_ID + " );";
 
 const std::string SOURCE_ALBUM_WHERE =
     " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
-    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SYSTEM) +
+    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SMART) +
     " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE);
 
 const std::string SOURCE_ALBUM_WHERE_UPDATE =
     " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = OLD." + MediaColumn::MEDIA_PACKAGE_NAME +
-    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SYSTEM) +
+    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SMART) +
     " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE);
 
 const std::string WHEN_SOURCE_PHOTO_COUNT =
     " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND ( SELECT COUNT(1) FROM " +
-        PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
+        ANALYSIS_ALBUM_TABLE + SOURCE_ALBUM_WHERE + " )";
 
 const std::string WHEN_UPDATE_AND_DELETE = " WHEN OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL ";
 
 const std::string TRIGGER_CODE_UPDATE_AND_DELETE =
     WHEN_UPDATE_AND_DELETE +
-    " BEGIN UPDATE " + PhotoAlbumColumns::TABLE +
+    " BEGIN UPDATE " + ANALYSIS_ALBUM_TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COUNT + " = " + COUNT_VALUE_UPDATE + SOURCE_ALBUM_WHERE_UPDATE + ";" +
-    " UPDATE " + PhotoAlbumColumns::TABLE +
+    " UPDATE " + ANALYSIS_ALBUM_TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = '' " + SOURCE_ALBUM_WHERE_UPDATE +
     " AND " + PhotoAlbumColumns::ALBUM_COUNT + " = 0;" +
-    " UPDATE " + PhotoAlbumColumns::TABLE +
+    " UPDATE " + ANALYSIS_ALBUM_TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = " + COVER_URI_VALUE_UPDATE + SOURCE_ALBUM_WHERE_UPDATE +
     " AND " + PhotoAlbumColumns::ALBUM_COUNT + " > 0;" + " END;";
 
@@ -116,17 +117,24 @@ const std::string DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM = "DROP TRIGGER IF EXIST
 
 const std::string DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM = "DROP TRIGGER IF EXISTS delete_photo_update_source_album";
 
+const std::string CLEAR_SOURCE_ALBUM_PHOTO_MAP = "DELETE FROM " + PhotoMap::TABLE + " WHERE " + PhotoMap::ASSET_ID +
+    " in (SELECT " + MediaColumn::MEDIA_ID + " FROM "+ PhotoColumn::PHOTOS_TABLE +")";
+
+const std::string CLEAR_SYSTEM_SOURCE_ALBUM = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
+    PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SYSTEM) + " AND " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + " = 1032";
+
 const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
     "CREATE TRIGGER insert_photo_insert_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
     WHEN_SOURCE_PHOTO_COUNT + " = 0 " +
-    " BEGIN INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
+    " BEGIN INSERT INTO " + ANALYSIS_ALBUM_TABLE + "(" +
     PhotoAlbumColumns::ALBUM_TYPE + " , " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " , " +
     PhotoAlbumColumns::ALBUM_NAME + " , "
     + PhotoAlbumColumns::ALBUM_COVER_URI + " , " +
     PhotoAlbumColumns::ALBUM_COUNT +
     " ) VALUES ( " +
-    std::to_string(OHOS::Media::PhotoAlbumType::SYSTEM) + " , " +
+    std::to_string(OHOS::Media::PhotoAlbumType::SMART) + " , " +
     std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE) +
     " , NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " , " +
     COVER_URI_VALUE_INSERT + " , " +
@@ -136,7 +144,7 @@ const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
 const std::string INSERT_PHOTO_UPDATE_SOURCE_ALBUM =
     "CREATE TRIGGER insert_photo_update_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
     WHEN_SOURCE_PHOTO_COUNT + "> 0 " +
-    " BEGIN UPDATE " + PhotoAlbumColumns::TABLE +
+    " BEGIN UPDATE " + ANALYSIS_ALBUM_TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = " + COVER_URI_VALUE_INSERT + "," +
     PhotoAlbumColumns::ALBUM_COUNT + " = " + COUNT_VALUE_INSERT +
     SOURCE_ALBUM_WHERE + ";" +

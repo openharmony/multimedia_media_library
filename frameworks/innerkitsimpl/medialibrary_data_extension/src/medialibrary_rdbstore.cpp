@@ -933,6 +933,10 @@ static const vector<string> onCreateSqlStrs = {
     UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
     DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
     FormMap::CREATE_FORM_MAP_TABLE,
+    CREATE_DICTIONARY_INDEX,
+    CREATE_KNOWLEDGE_INDEX,
+    CREATE_CITY_NAME_INDEX,
+    CREATE_LOCATION_KEY_INDEX,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -1304,6 +1308,24 @@ static void AddSourceAlbumTrigger(RdbStore &store)
         DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+    };
+    MEDIA_INFO_LOG("start add source album trigger");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void RemoveSourceAlbumToAnalysis(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        CLEAR_SOURCE_ALBUM_PHOTO_MAP,
+        CLEAR_SYSTEM_SOURCE_ALBUM,
         INSERT_PHOTO_INSERT_SOURCE_ALBUM,
         INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
@@ -1826,6 +1848,19 @@ static void UpdateClassifyDirtyData(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpdateGeoTables(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE tab_geo_dictionary RENAME TO " +  GEO_DICTIONARY_TABLE,
+        "ALTER TABLE tab_geo_knowledge RENAME TO " +  GEO_KNOWLEDGE_TABLE,
+        CREATE_DICTIONARY_INDEX,
+        CREATE_KNOWLEDGE_INDEX,
+        CREATE_CITY_NAME_INDEX,
+        CREATE_LOCATION_KEY_INDEX,
+    };
+    ExecSqls(sqls, store);
+}
+
 void AddMultiStagesCaptureColumns(RdbStore &store)
 {
     MEDIA_INFO_LOG("start!");
@@ -1897,6 +1932,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_PORTRAIT_IN_ALBUM) {
         AddPortraitInAnalysisAlbum(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_GEO_TABLE) {
+        UpdateGeoTables(store);
     }
 
     if (oldVersion < VERSION_ADD_MULTISTAGES_CAPTURE) {
@@ -1980,6 +2019,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_CLEAR_LABEL_DATA) {
         UpdateClassifyDirtyData(store);
+    }
+
+    if (oldVersion < VERSION_REOMOVE_SOURCE_ALBUM_TO_ANALYSIS) {
+        RemoveSourceAlbumToAnalysis(store);
     }
 }
 

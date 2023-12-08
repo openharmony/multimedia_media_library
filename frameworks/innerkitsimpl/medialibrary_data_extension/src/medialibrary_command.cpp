@@ -341,7 +341,7 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     // use in Location Analyse
     { GEO_DICTIONARY_TABLE, OperationObject::GEO_DICTIONARY },
     { GEO_KNOWLEDGE_TABLE, OperationObject::GEO_KNOWLEDGE },
-    { PAH_ANA_ADDRESS, OperationObject::GEO_KNOWLEDGE },
+    { PAH_ANA_ADDRESS, OperationObject::GEO_PHOTO },
     { PAH_GEO_PHOTOS, OperationObject::GEO_PHOTO },
 
     // use in search

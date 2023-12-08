@@ -464,11 +464,6 @@ bool ThumbnailManager::RequestFastImage(const RequestSharedPtr &request)
     }
     UniqueFd uniqueFd(OpenThumbnail(request->GetPath(), GetThumbType(fastSize.width, fastSize.height)));
     if (uniqueFd.Get() < 0) {
-        uniqueFd = UniqueFd(GetPixelMapFromServer(request->GetUri(), fastSize, request->GetPath()));
-    }
-    if (uniqueFd.Get() < 0) {
-        NAPI_ERR_LOG("Can not get pixelMap from uri %{public}s", request->GetUri().c_str());
-        request->error = E_FAIL;
         return false;
     }
 

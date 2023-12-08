@@ -424,6 +424,10 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
 
+        case OperationObject::ANALYSIS_PHOTO_MAP: {
+            return MediaLibrarySearchOperations::InsertOperation(cmd);
+        }
+
         default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
@@ -965,6 +969,16 @@ static const map<OperationObject, string> QUERY_CONDITION_MAP {
     { OperationObject::BUNDLE_PERMISSION, "" },
 };
 
+bool CheckIsPortraitAlbum(MediaLibraryCommand &cmd)
+{
+    auto predicates = cmd.GetAbsRdbPredicates();
+    auto whereClause = predicates->GetWhereClause();
+    if (whereClause.find(USER_DISPLAY_LEVEL) != string::npos || whereClause.find(IS_ME) != string::npos) {
+        return true;
+    }
+    return false;
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
@@ -999,6 +1013,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
         queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
     } else if (oprnObject == OperationObject::PHOTO_ALBUM) {
         queryResultSet = MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
+    } else if (oprnObject == OperationObject::ANALYSIS_PHOTO_ALBUM && CheckIsPortraitAlbum(cmd)) {
+        queryResultSet = MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
     } else if (oprnObject == OperationObject::PHOTO_MAP || oprnObject == OperationObject::ANALYSIS_PHOTO_MAP) {
         queryResultSet = PhotoMapOperations::QueryPhotoAssets(
             RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
