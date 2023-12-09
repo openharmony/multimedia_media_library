@@ -13,7 +13,11 @@ const mediaAppName = 'com.android.providers.media.module';
 const cameraAppName = 'com.huawei.camera';
 
 const UPDATE_RESTORE : number = 0;
-const CLONE_RESTORE : number = 1;
+const DUAL_FRAME_CLONE_RESTORE : number = 1;
+const CLONE_RESTORE : number = 2;
+
+const UPDATE_NAME = "0.0.0.0";
+const DUAL_FRAME_CLONE_NAME = "99.99.99.999";
 
 export default class MediaBackupExtAbility extends BackupExtensionAbility {
   async onBackup() : Promise<void> {
@@ -24,8 +28,11 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.log(TAG, `onRestore ok ${JSON.stringify(bundleVersion)}`);
     console.time(TAG + ' RESTORE');
     let path:string;
-    if (bundleVersion.name === '0.0.0.0' && bundleVersion.code === 0) {
+    if (bundleVersion.name === UPDATE_NAME && bundleVersion.code === 0) {
       await mediabackup.startRestore(UPDATE_RESTORE, galleryAppName, mediaAppName, cameraAppName);
+      path = backupPath;
+    } else if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+      await mediabackup.startRestore(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName, cameraAppName);
       path = backupPath;
     } else {
       await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName, cameraAppName);

@@ -48,8 +48,20 @@ int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &upd
     appDataPath_ = orignPath;
     if (MediaFileUtils::IsFileExists(orignPath + "/" + CLONE_TAG)) {
         filePath_ = orignPath;
+        galleryDbPath_ = orignPath + "/" + UPDATE_GALLERY_DB_NAME;
     } else {
         filePath_ = updatePath;
+        galleryDbPath_ = orignPath + "/" + galleryAppName_ + "/ce/databases/gallery.db";
+        externalDbPath_ = orignPath + "/" + mediaAppName_ + "/ce/databases/external.db";
+        if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
+            MEDIA_ERR_LOG("External db is not exist.");
+            return E_FAIL;
+        }
+        int32_t externalErr = InitOldDb(UPDATE_EXTERNAL_DB_NAME, externalDbPath_, mediaAppName_, externalRdb_);
+        if (externalRdb_ == nullptr) {
+            MEDIA_ERR_LOG("External init rdb fail, err = %{public}d", externalErr);
+            return E_FAIL;
+        }
     }
 
     if (isUpdate && BaseRestore::Init() != E_OK) {
@@ -61,19 +73,9 @@ int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &upd
     } else {
         int32_t galleryErr = InitOldDb(UPDATE_GALLERY_DB_NAME, galleryDbPath_, galleryAppName_, galleryRdb_);
         if (galleryRdb_ == nullptr) {
-            MEDIA_ERR_LOG("gallyer data syncer init rdb fail, err = %{public}d", galleryErr);
+            MEDIA_ERR_LOG("Gallery init rdb fail, err = %{public}d", galleryErr);
             return E_FAIL;
         }
-    }
-    externalDbPath_ = orignPath + "/" + mediaAppName_ + "/ce/databases/external.db";
-    if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
-        MEDIA_ERR_LOG("Gallery media db is not exist.");
-        return E_FAIL;
-    }
-    int32_t externalErr = InitOldDb(UPDATE_EXTERNAL_DB_NAME, externalDbPath_, mediaAppName_, externalRdb_);
-    if (externalRdb_ == nullptr) {
-        MEDIA_ERR_LOG("external data syncer init rdb fail, err = %{public}d", externalErr);
-        return E_FAIL;
     }
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
