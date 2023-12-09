@@ -45,7 +45,7 @@ napi_value MediaAlbumChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("placeBefore", JSPlaceBefore),
             DECLARE_NAPI_FUNCTION("setDisplayLevel", JSSetDisplayLevel),
             DECLARE_NAPI_FUNCTION("mergeAlbum", JSMergeAlbum),
-            DECLARE_NAPI_FUNCTION("dismissAsset", JSDismissAsset),
+            DECLARE_NAPI_FUNCTION("dismissAssets", JSDismissAssets),
             DECLARE_NAPI_FUNCTION("setIsMe", JSSetIsMe)
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -204,7 +204,7 @@ bool MediaAlbumChangeRequestNapi::CheckDismissAssetVaild(std::vector<std::string
     return true;
 }
 
-napi_value MediaAlbumChangeRequestNapi::JSDismissAsset(napi_env env, napi_callback_info info)
+napi_value MediaAlbumChangeRequestNapi::JSDismissAssets(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
