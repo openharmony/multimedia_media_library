@@ -324,10 +324,15 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
 }
 
 static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
-    ValuesBucket &values, const bool hiddenState)
+    ValuesBucket &values, const bool hiddenState, PhotoAlbumSubType subtype)
 {
     string newCover;
-    int32_t newCount = GetFileCount(fileResult);
+    int32_t newCount;
+    if (subtype == PORTRAIT) {
+        newCount = GetPortraitFileCount(fileResult);
+    } else {
+        newCount = GetFileCount(fileResult);
+    }
     if (newCount != 0) {
         newCover = GetCover(fileResult);
     }
@@ -400,7 +405,7 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(fileResult, albumResult, values, hiddenState, subtype);
-    SetCover(fileResult, albumResult, values, hiddenState);
+    SetCover(fileResult, albumResult, values, hiddenState, subtype);
     if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
         subtype > PhotoAlbumSubType::ANALYSIS_END)) {
         predicates.Clear();
