@@ -106,11 +106,28 @@ void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, vo
     }
 }
 
-napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
+napi_value FileAssetNapi::GetExports(napi_env &env, napi_value &exports, napi_property_descriptor *file_asset_props,
+    int32_t fileAssetPropsSize)
 {
     napi_status status;
     napi_value ctorObj;
     int32_t refCount = 1;
+    status = napi_define_class(env, FILE_ASSET_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH, FileAssetNapiConstructor,
+        nullptr, fileAssetPropsSize, file_asset_props, &ctorObj);
+    if (status == napi_ok) {
+        status = napi_create_reference(env, ctorObj, refCount, &sConstructor_);
+        if (status == napi_ok) {
+            status = napi_set_named_property(env, exports, FILE_ASSET_NAPI_CLASS_NAME.c_str(), ctorObj);
+            if (status == napi_ok) {
+                return exports;
+            }
+        }
+    }
+    return nullptr;
+}
+
+napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
+{
     napi_property_descriptor file_asset_props[] = {
         DECLARE_NAPI_GETTER("id", JSGetFileId),
         DECLARE_NAPI_GETTER("uri", JSGetFileUri),
@@ -145,19 +162,10 @@ napi_value FileAssetNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("trash", JSTrash),
         DECLARE_NAPI_FUNCTION("isTrash", JSIsTrash),
     };
-
-    status = napi_define_class(env, FILE_ASSET_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
-                               FileAssetNapiConstructor, nullptr,
-                               sizeof(file_asset_props) / sizeof(file_asset_props[PARAM0]),
-                               file_asset_props, &ctorObj);
-    if (status == napi_ok) {
-        status = napi_create_reference(env, ctorObj, refCount, &sConstructor_);
-        if (status == napi_ok) {
-            status = napi_set_named_property(env, exports, FILE_ASSET_NAPI_CLASS_NAME.c_str(), ctorObj);
-            if (status == napi_ok) {
-                return exports;
-            }
-        }
+    int32_t fileAssetPropsSize = sizeof(file_asset_props) / sizeof(file_asset_props[PARAM0]);
+    napi_value exportsValue = GetExports(env, exports, file_asset_props, fileAssetPropsSize);
+    if (exportsValue != nullptr) {
+        return exportsValue;
     }
     return nullptr;
 }
