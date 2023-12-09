@@ -454,12 +454,38 @@ int32_t MediaLibraryObjectUtils::CreateDirObj(MediaLibraryCommand &cmd, int64_t 
     return E_FILE_EXIST;
 }
 
+int32_t InitQueryParentResultSet(int32_t dirId, int32_t &parentIdVal, string &dirVal,
+    shared_ptr<MediaLibraryUnistore> &uniStore)
+{
+    if (MediaLibraryObjectUtils::IsColumnValueExist(to_string(dirId), MEDIA_DATA_DB_PARENT_ID)) {
+        return E_SUCCESS;
+    }
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
+    cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(dirId));
+    shared_ptr<NativeRdb::ResultSet> queryParentResultSet = uniStore->Query(cmd, {});
+    if (queryParentResultSet->GoToNextRow() != NativeRdb::E_OK) {
+        return E_SUCCESS;
+    }
+    int32_t colIndex = 0;
+    queryParentResultSet->GetColumnIndex(MEDIA_DATA_DB_PARENT_ID, colIndex);
+    queryParentResultSet->GetInt(colIndex, parentIdVal);
+    queryParentResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, colIndex);
+    queryParentResultSet->GetString(colIndex, dirVal);
+    queryParentResultSet.reset();
+    if (parentIdVal == 0) {
+        return E_SUCCESS;
+    }
+    MEDIA_DEBUG_LOG("dirVal = %{private}s, parentIdVal = %{public}d", dirVal.c_str(), parentIdVal);
+    return E_ERR;
+}
+
 int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
 {
     if (dirId <= 0) {
         return E_INVALID_FILEID;
     }
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    shared_ptr<MediaLibraryUnistore> uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
         return E_HAS_DB_ERROR;
@@ -469,29 +495,12 @@ int32_t MediaLibraryObjectUtils::DeleteEmptyDirsRecursively(int32_t dirId)
     const int32_t MAX_DIR_DEPTH = 15;
     int depth = 0;
     while ((depth++ < MAX_DIR_DEPTH) && (dirId > 0)) {
-        if (IsColumnValueExist(to_string(dirId), MEDIA_DATA_DB_PARENT_ID)) {
-            return E_SUCCESS;
-        }
-
-        MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
-        cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(dirId));
-        auto queryParentResultSet = uniStore->Query(cmd, {});
-        if (queryParentResultSet->GoToNextRow() != NativeRdb::E_OK) {
-            return E_SUCCESS;
-        }
-        int32_t colIndex = 0;
         int32_t parentIdVal = 0;
         string dirVal;
-        queryParentResultSet->GetColumnIndex(MEDIA_DATA_DB_PARENT_ID, colIndex);
-        queryParentResultSet->GetInt(colIndex, parentIdVal);
-        queryParentResultSet->GetColumnIndex(MEDIA_DATA_DB_FILE_PATH, colIndex);
-        queryParentResultSet->GetString(colIndex, dirVal);
-        queryParentResultSet.reset();
-        if (parentIdVal == 0) {
-            return E_SUCCESS;
+        int32_t state = InitQueryParentResultSet(dirId, parentIdVal, dirVal, uniStore);
+        if (state == E_SUCCESS) {
+            return state;
         }
-        MEDIA_DEBUG_LOG("dirVal = %{private}s, parentIdVal = %{public}d", dirVal.c_str(), parentIdVal);
-
         // Do not delete user created dir
         if (MediaFileUtils::IsFileExists(dirVal + "/" + ".nofile")) {
             return E_SUCCESS;
