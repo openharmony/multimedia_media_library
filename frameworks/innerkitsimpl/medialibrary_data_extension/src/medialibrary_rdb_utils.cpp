@@ -619,4 +619,14 @@ void MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(const shared_ptr<RdbStore> 
     UpdateUserAlbumHiddenState(rdbStore);
     UpdateSysAlbumHiddenState(rdbStore);
 }
+
+void MediaLibraryRdbUtils::UpdateAllAlbums(const shared_ptr<RdbStore> &rdbStore)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateAllAlbums");
+
+    MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore);
+}
 } // namespace OHOS::Media
