@@ -144,6 +144,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     MediaColumn::MEDIA_PACKAGE_NAME,
     MEDIA_DATA_DB_IS_FAV,
     MEDIA_DATA_DB_TIME_PENDING,
+    MEDIA_DATA_DB_POSITION,
 
     // Photos table columns
     COMPAT_HIDDEN,
