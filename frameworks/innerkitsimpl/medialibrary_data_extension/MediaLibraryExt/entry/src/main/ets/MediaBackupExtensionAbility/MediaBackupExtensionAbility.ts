@@ -7,7 +7,7 @@ const TAG = 'MediaBackupExtAbility';
 
 const backupPath = '/data/storage/el2/backup/restore/';
 const backupClonePath = '/data/storage/el2/backup/restore/storage/cloud/files/';
-const documentPath = '/storage/media/local/files/Documents';
+const documentPath = '/storage/media/local/files/Docs/Documents';
 const galleryAppName = 'com.huawei.photos';
 const mediaAppName = 'com.android.providers.media.module';
 const cameraAppName = 'com.huawei.camera';
@@ -57,19 +57,23 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.log(TAG, 'Start to move rest files.');
     const MOVE_ERR_CODE = 13900015;
     let list = [];
-    await fs.moveDir(path, documentPath, 1).then(() => {
+    try {
+      await fs.moveDir(path, documentPath, 1);
       console.info(TAG, 'Move rest files succeed');
-    }).catch((err) => {
+    } catch (err) {
       if (err.code === MOVE_ERR_CODE) {
         list = err.data;
       } else {
         console.error(TAG, `move directory failed, message = ${err.message}; code = ${err.code}`);
       }
-    });
+    }
+
     for (let i = 0; i < list.length; i++) {
-      await this.moveConflictFile(list[i].srcFile, list[i].destFile).catch(err => {
+      try {
+        await this.moveConflictFile(list[i].srcFile, list[i].destFile);
+      } catch (err) {
         console.error(TAG, `MoveConflictFile failed, message = ${err.message}; code = ${err.code}`);
-      });
+      }
     }
   }
 
@@ -97,8 +101,10 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       }
       count++;
     }
-    await fs.moveFile(srcFile, `${dirPath}/${newFileName}`).catch(err => {
+    try {
+      await fs.moveFile(srcFile, `${dirPath}/${newFileName}`);
+    } catch (err) {
       console.error(TAG, `moveFile file failed, message = ${err.message}; code = ${err.code}`);
-    });
+    }
   }
 }
