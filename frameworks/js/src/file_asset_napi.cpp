@@ -4192,11 +4192,11 @@ static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
         if (fstat(uniqueFd.Get(), &fileInfo) == 0) {
             off_t fileSize = fileInfo.st_size;
             if (fileSize < 0) {
-                NAPI_ERR_LOG("fileBuffer error : %{public}ld", (long)fileSize);
+                NAPI_ERR_LOG("fileBuffer error : %{public}ld", static_cast<long>(fileSize));
                 context->SaveError(E_FAIL);
                 return;
             }
-            context->editDataBuffer = (char*)malloc(fileSize + 1);
+            context->editDataBuffer = static_cast<char*>(malloc(fileSize + 1));
             if (!context->editDataBuffer) {
                 NAPI_ERR_LOG("Photo request edit data failed, fd: %{public}d", uniqueFd.Get());
                 context->SaveError(E_FAIL);
