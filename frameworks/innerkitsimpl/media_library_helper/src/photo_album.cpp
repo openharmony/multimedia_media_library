@@ -212,6 +212,11 @@ bool PhotoAlbum::IsSmartPortraitPhotoAlbum(const PhotoAlbumType albumType, const
     return (albumType == PhotoAlbumType::SMART) && (albumSubType == PhotoAlbumSubType::PORTRAIT);
 }
 
+bool PhotoAlbum::IsSmartClassifyAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::SMART) && (albumSubType == PhotoAlbumSubType::CLASSIFY);
+}
+
 bool PhotoAlbum::IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
 {
     return (albumType == PhotoAlbumType::SYSTEM) && (albumSubType == PhotoAlbumSubType::TRASH);

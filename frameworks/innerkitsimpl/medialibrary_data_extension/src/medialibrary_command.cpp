@@ -92,7 +92,7 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_PORTRAIT_IS_ME, OperationType::PORTRAIT_IS_ME },
     { OPRN_PORTRAIT_ALBUM_NAME, OperationType::PORTRAIT_ALBUM_NAME },
     { OPRN_PORTRAIT_MERGE_ALBUM, OperationType::PORTRAIT_MERGE_ALBUM },
-    { OPRN_PORTRAIT_DISMISS_ASSET, OperationType::PORTRAIT_DISMISS_ASSET },
+    { OPRN_DISMISS_ASSET, OperationType::DISMISS_ASSET },
     { OPRN_PORTRAIT_COVER_URI, OperationType::PORTRAIT_COVER_URI },
 };
 }

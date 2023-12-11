@@ -52,7 +52,7 @@ const std::string OPRN_PORTRAIT_DISPLAY_LEVEL = "display_level";
 const std::string OPRN_PORTRAIT_IS_ME = "is_me";
 const std::string OPRN_PORTRAIT_ALBUM_NAME = "album_name";
 const std::string OPRN_PORTRAIT_MERGE_ALBUM = "merge_album";
-const std::string OPRN_PORTRAIT_DISMISS_ASSET = "dismiss_asset";
+const std::string OPRN_DISMISS_ASSET = "dismiss_asset";
 const std::string OPRN_PORTRAIT_COVER_URI = "cover_uri";
 
 // Asset operations constants
@@ -230,8 +230,8 @@ const std::string PAH_PORTRAIT_ANAALBUM_ALBUM_NAME = MEDIALIBRARY_DATA_URI + "/"
     OPRN_PORTRAIT_ALBUM_NAME;
 const std::string PAH_PORTRAIT_MERGE_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
     OPRN_PORTRAIT_MERGE_ALBUM;
-const std::string PAH_PORTRAIT_DISMISS_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MAP + "/" +
-    OPRN_PORTRAIT_DISMISS_ASSET;
+const std::string PAH_DISMISS_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MAP + "/" +
+    OPRN_DISMISS_ASSET;
 const std::string PAH_PORTRAIT_ANAALBUM_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
     OPRN_PORTRAIT_COVER_URI;
 

@@ -233,46 +233,57 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
 
 int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
 {
-    vector<string> whereArgs = predicates.GetWhereArgs();
+    vector<string> whereArgsUri = predicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
-
-    if (predicates.GetWhereArgs().size() == 0) {
+    
+    const vector<string> &whereArgsId = predicates.GetWhereArgs();
+    if (whereArgsId.size() == 0) {
         MEDIA_ERR_LOG("No fileAsset to delete");
         return E_INVALID_ARGUMENTS;
     }
-    string strAlbumId = predicates.GetWhereArgs()[0];
+    string strAlbumId = whereArgsId[0];
     if (strAlbumId.empty()) {
         MEDIA_ERR_LOG("Failed to get albumId");
         return E_INVALID_ARGUMENTS;
     }
+
     int32_t albumId = atoi(strAlbumId.c_str());
     if (albumId <= 0) {
         MEDIA_WARN_LOG("Ignore failure on get album id when remove assets, album updating would be lost");
         return E_INVALID_ARGUMENTS;
     }
+    string strSubtype = whereArgsId[whereArgsId.size() - 1];
+    int32_t subtype = atoi(strSubtype.c_str());
+    if (subtype != PhotoAlbumSubType::CLASSIFY && subtype != PhotoAlbumSubType::PORTRAIT) {
+        MEDIA_ERR_LOG("Invalid album subtype: %{public}d", subtype);
+        return E_INVALID_ARGUMENTS;
+    }
 
     vector<string> assetsArray;
-    for (size_t i = 1; i < predicates.GetWhereArgs().size(); i++) {
-        assetsArray.push_back(predicates.GetWhereArgs()[i]);
+    for (size_t i = 1; i < whereArgsId.size() - 1; i++) {
+        assetsArray.push_back(whereArgsId[i]);
     }
-    vector<string> portraitAlbumIds;
-    GetPortraitAlbumIds(strAlbumId, portraitAlbumIds);
-    DataShare::DataSharePredicates dataSharePredicates;
-    dataSharePredicates.In(MAP_ALBUM, portraitAlbumIds);
-    dataSharePredicates.And()->In(MAP_ASSET, assetsArray);
-    NativeRdb::RdbPredicates rdbPredicate = OHOS::RdbDataShareAdapter::RdbUtils::ToPredicates(dataSharePredicates,
-        ANALYSIS_PHOTO_MAP_TABLE);
+    vector<string> updateAlbumIds;
+    NativeRdb::RdbPredicates rdbPredicate {ANALYSIS_PHOTO_MAP_TABLE};
+    if (subtype == PhotoAlbumSubType::PORTRAIT) {
+        GetPortraitAlbumIds(strAlbumId, updateAlbumIds);
+        rdbPredicate.In(MAP_ALBUM, updateAlbumIds);
+        rdbPredicate.And()->In(MAP_ASSET, assetsArray);
+    } else {
+        rdbPredicate.EqualTo(MAP_ALBUM, strAlbumId);
+        rdbPredicate.And()->In(MAP_ASSET, assetsArray);
+        updateAlbumIds.push_back(strAlbumId);
+    }
     int deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
     if (deleteRow <= 0) {
         return deleteRow;
     }
 
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), portraitAlbumIds);
-
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateAlbumIds);
     auto watch = MediaLibraryNotify::GetInstance();
-    for (size_t i = 1; i < whereArgs.size(); i++) {
-        watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_DISMISS_ASSET, albumId);
+    for (size_t i = 1; i < whereArgsUri.size() - 1; i++) {
+        watch->Notify(MediaFileUtils::Encode(whereArgsUri[i]), NotifyType::NOTIFY_ALBUM_DISMISS_ASSET, albumId);
     }
     return deleteRow;
 }
