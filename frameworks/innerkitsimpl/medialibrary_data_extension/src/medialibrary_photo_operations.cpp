@@ -26,6 +26,7 @@
 #include "media_log.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_async_worker.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
@@ -58,6 +59,8 @@ using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
+static const int32_t NEED_ANALYSIS = 0;
+static const int32_t NOT_NEED_ANALYSIS = 2;
 static const string ANALYSIS_HAS_DATA = "1";
 shared_ptr<PhotoEditingRecord> PhotoEditingRecord::instance_ = nullptr;
 mutex PhotoEditingRecord::mutex_;
@@ -617,6 +620,46 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
     }
 }
 
+static void DoAsyncTaskForAnalysisData(AsyncTaskData *taskData)
+{
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("taskData is nullptr");
+        return;
+    }
+    UpdateAnalysisDataAsyncTaskData* data = static_cast<UpdateAnalysisDataAsyncTaskData*>(taskData);
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("UpdateAnalysisDataAsyncTaskData is nullptr");
+        return;
+    }
+    vector<string> whereIdArgs = data->predicates_.GetWhereArgs();
+    int32_t statusValue = data->hiddenState_ == 0 ? NEED_ANALYSIS : NOT_NEED_ANALYSIS;
+
+    DataShare::DataSharePredicates predicates;
+    predicates.In(MediaColumn::MEDIA_ID, whereIdArgs);
+    auto rdbPredicates = RdbUtils::ToPredicates(predicates, VISION_TOTAL_TABLE);
+    ValuesBucket values;
+    values.Put(STATUS, statusValue);
+    MediaLibraryRdbStore::Update(values, rdbPredicates);
+}
+
+static void UpdateAnalysisDataForHide(const RdbPredicates &predicates, const int32_t hiddenState)
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker ==  nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return;
+    }
+    UpdateAnalysisDataAsyncTaskData* taskData =
+        new (std::nothrow) UpdateAnalysisDataAsyncTaskData(predicates, hiddenState);
+    shared_ptr<MediaLibraryAsyncTask> updateAsyncTask =
+        make_shared<MediaLibraryAsyncTask>(DoAsyncTaskForAnalysisData, taskData);
+    if (updateAsyncTask != nullptr) {
+        asyncWorker->AddTask(updateAsyncTask, true);
+    } else {
+        MEDIA_ERR_LOG("UpdateAnalysisDataForHide fail");
+    }
+}
+
 static int32_t HidePhotos(MediaLibraryCommand &cmd)
 {
     int32_t hiddenState = GetHiddenState(cmd.GetValueBucket());
@@ -637,6 +680,7 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     if (changedRows < 0) {
         return changedRows;
     }
+    UpdateAnalysisDataForHide(predicates, hiddenState);
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
             std::to_string(PhotoAlbumSubType::FAVORITE),
