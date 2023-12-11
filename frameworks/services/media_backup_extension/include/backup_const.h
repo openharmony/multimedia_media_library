@@ -29,7 +29,7 @@ constexpr int32_t UPDATE_RESTORE_ID = 0;
 constexpr int32_t CLONE_RESTORE_ID = 1;
 
 const std::string ORIGIN_PATH = "/data/storage/el2/backup/restore";
-const std::string DOCUMENT_PATH = "/storage/media/local/files/Documents";
+const std::string DOCUMENT_PATH = "/storage/media/local/files/Docs/Documents";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string UPDATE_FILE_DIR = "/storage/media/local/files/data";
