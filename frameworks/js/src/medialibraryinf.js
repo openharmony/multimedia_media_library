@@ -18,7 +18,7 @@ const featureAbility = requireNapi('ability.featureAbility');
 const ARGS_ONE = 1;
 const ARGS_TWO = 2;
 
-function GetParameter () {
+function getParameter() {
   const select = 'singleselect';
   const parameter = {
     want:
@@ -46,7 +46,7 @@ async function startMediaSelect (option, asyncCallback) {
   console.log('MediaLibrary startMediaSelectInner param num ' + arguments.length);
   console.log('MediaLibrary startMediaSelectInner param ' + JSON.stringify(option));
  
-  const parameter = GetParameter();
+  const parameter = getParameter();
 
   if (option !== undefined && typeof option === 'object') {
     if (option.count !== undefined && option.count > 1) {
