@@ -100,6 +100,11 @@ public:
     static const std::string PHOTO_LAST_VISIT_TIME;
     static const std::string PHOTO_HIDDEN_TIME;
     static const std::string PHOTO_THUMB_STATUS;
+    static const std::string PHOTO_ID;
+    static const std::string PHOTO_QUALITY;
+    static const std::string PHOTO_FIRST_VISIT_TIME;
+    static const std::string PHOTO_DEFERRED_PROC_TYPE;
+
     // index in PhotoTable
     static const std::string PHOTO_DATE_YEAR_INDEX;
     static const std::string PHOTO_DATE_MONTH_INDEX;
