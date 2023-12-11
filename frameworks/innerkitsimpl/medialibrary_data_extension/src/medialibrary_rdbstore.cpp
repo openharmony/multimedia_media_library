@@ -1863,7 +1863,6 @@ static void UpdateGeoTables(RdbStore &store)
 
 void AddMultiStagesCaptureColumns(RdbStore &store)
 {
-    MEDIA_INFO_LOG("start!");
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_ID + " TEXT",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_QUALITY + " INT",
@@ -1873,7 +1872,6 @@ void AddMultiStagesCaptureColumns(RdbStore &store)
             " INT DEFAULT 0",
     };
     ExecSqls(sqls, store);
-    MEDIA_INFO_LOG("end");
 }
 
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
