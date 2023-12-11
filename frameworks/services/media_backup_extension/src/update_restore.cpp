@@ -67,7 +67,6 @@ int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &upd
     if (isUpdate && BaseRestore::Init() != E_OK) {
         return E_FAIL;
     }
-    galleryDbPath_ = orignPath + "/" + galleryAppName_ + "/ce/databases/gallery.db";
     if (!MediaFileUtils::IsFileExists(galleryDbPath_)) {
         MEDIA_ERR_LOG("Gallery media db is not exist.");
     } else {
