@@ -2290,5 +2290,83 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_002, TestSize.L
 
     MEDIA_INFO_LOG("end tdd photo_edit_record_test_002");
 }
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd multistages_capture_test_001");
+
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "MultiStagesCaptureTest001.jpg");
+    EXPECT_GT(fileId, E_OK);
+
+    // Query
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    cmd.SetDataSharePred(predicates);
+    vector<string> columns;
+    columns.push_back(MediaColumn::MEDIA_NAME);
+    columns.push_back(PhotoColumn::PHOTO_ID);
+    columns.push_back(PhotoColumn::PHOTO_QUALITY);
+    columns.push_back(PhotoColumn::PHOTO_FIRST_VISIT_TIME);
+    columns.push_back(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE);
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    ASSERT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "MultiStagesCaptureTest001.jpg");
+    int photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
+    EXPECT_EQ(photoQuality, 0);
+    string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    EXPECT_EQ(photoId, "");
+    int64_t firstVisitTime = GetInt64Val(PhotoColumn::PHOTO_FIRST_VISIT_TIME, resultSet);
+    EXPECT_EQ(firstVisitTime, 0);
+    int deferredProcType = GetInt32Val(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, resultSet);
+    EXPECT_EQ(deferredProcType, 0);
+
+    MEDIA_INFO_LOG("end tdd multistages_capture_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd multistages_capture_test_002");
+
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "MultiStagesCaptureTest001.jpg");
+    EXPECT_GT(fileId, E_OK);
+
+    // Update
+    MediaLibraryCommand cmd_u(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE,
+        MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_QUALITY, 1);
+    values.Put(PhotoColumn::PHOTO_ID, "20231031001");
+    values.Put(PhotoColumn::PHOTO_FIRST_VISIT_TIME, 20231031002);
+    values.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, 1);
+    cmd_u.SetValueBucket(values);
+    cmd_u.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    EXPECT_GT(MediaLibraryPhotoOperations::Update(cmd_u), E_OK);
+
+    // check update result
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    cmd.SetDataSharePred(predicates);
+    vector<string> columns { MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY,
+        PhotoColumn::PHOTO_FIRST_VISIT_TIME, PhotoColumn::PHOTO_DEFERRED_PROC_TYPE };
+    auto resultSet = MediaLibraryPhotoOperations::Query(cmd, columns);
+    ASSERT_NE(resultSet, nullptr);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    string name = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
+    EXPECT_EQ(name, "MultiStagesCaptureTest001.jpg");
+    int photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
+    EXPECT_EQ(photoQuality, 1);
+    string photoId = GetStringVal(PhotoColumn::PHOTO_ID, resultSet);
+    EXPECT_EQ(photoId, "20231031001");
+    int64_t firstVisitTime = GetInt64Val(PhotoColumn::PHOTO_FIRST_VISIT_TIME, resultSet);
+    EXPECT_EQ(firstVisitTime, 20231031002);
+    int deferredProcType = GetInt32Val(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, resultSet);
+    EXPECT_EQ(deferredProcType, 1);
+
+    MEDIA_INFO_LOG("end tdd multistages_capture_test_002");
+}
 } // namespace Media
 } // namespace OHOS

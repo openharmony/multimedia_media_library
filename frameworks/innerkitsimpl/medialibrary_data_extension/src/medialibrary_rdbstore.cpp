@@ -1861,6 +1861,19 @@ static void UpdateGeoTables(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddMultiStagesCaptureColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_ID + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_QUALITY + " INT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_FIRST_VISIT_TIME +
+            " BIGINT DEFAULT 0",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_DEFERRED_PROC_TYPE +
+            " INT DEFAULT 0",
+    };
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -1921,6 +1934,10 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_GEO_TABLE) {
         UpdateGeoTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_MULTISTAGES_CAPTURE) {
+        AddMultiStagesCaptureColumns(store);
     }
 }
 

@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 47;
+const int32_t MEDIA_RDB_VERSION = 48;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -73,6 +73,7 @@ enum {
     VERSION_ADD_PORTRAIT_IN_ALBUM = 45,
     VERSION_UPDATE_GEO_TABLE = 46,
     VERSION_REOMOVE_SOURCE_ALBUM_TO_ANALYSIS = 47,
+    VERSION_ADD_MULTISTAGES_CAPTURE = 48,
 };
 
 enum {
@@ -206,6 +207,11 @@ const std::string MEDIA_DATA_DB_RINGTONE_URI = "ringtone_uri";
 const std::string MEDIA_DATA_DB_ALARM_URI = "alarm_uri";
 const std::string MEDIA_DATA_DB_NOTIFICATION_URI = "notification_uri";
 const std::string MEDIA_DATA_DB_RINGTONE_TYPE = "ringtone_type";
+
+const std::string MEDIA_DATA_DB_PHOTO_ID = "photo_id";
+const std::string MEDIA_DATA_DB_PHOTO_QUALITY = "photo_quality";
+const std::string MEDIA_DATA_DB_FIRST_VISIT_TIME = "first_visit_time";
+const std::string MEDIA_DATA_DB_DEFERRED_PROC_TYPE = "deferred_proc_type";
 
 const std::string MEDIA_DATA_IMAGE_BITS_PER_SAMPLE = "BitsPerSample";
 const std::string MEDIA_DATA_IMAGE_ORIENTATION = "Orientation";

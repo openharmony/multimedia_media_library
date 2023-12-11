@@ -1661,6 +1661,10 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { AudioColumn::AUDIO_ARTIST, { Forbidden } },
     { PhotoColumn::CAMERA_SHOT_KEY, { Forbidden } },
     { PhotoColumn::PHOTO_USER_COMMENT, { IsString } },
+    { PhotoColumn::PHOTO_ID, { IsString } },
+    { PhotoColumn::PHOTO_QUALITY, { IsInt32 } },
+    { PhotoColumn::PHOTO_FIRST_VISIT_TIME, { IsInt64 } },
+    { PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, { IsInt32 } }
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
