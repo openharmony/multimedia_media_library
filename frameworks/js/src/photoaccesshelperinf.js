@@ -201,6 +201,23 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
   return undefined;
 }
 
+const RecommendationType = {
+  // Indicates that QR code or barcode photos can be recommended
+  QR_OR_BAR_CODE: 1,
+
+  // Indicates that QR code photos can be recommended
+  QR_CODE: 2,
+
+  // Indicates that barcode photos can be recommended
+  BAR_CODE: 3,
+
+  // Indicates that QR code or barcode photos can be recommended
+  ID_CARD: 4,
+
+  // Indicates that profile picture photos can be recommended
+  PROFILE_PICTURE: 5
+}
+
 const PhotoViewMIMETypes = {
   IMAGE_TYPE: 'image/*',
   VIDEO_TYPE: 'video/*',
@@ -275,7 +292,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isSearchSupported = option.isSearchSupported === undefined || option.isSearchSupported;
     config.parameters.isPhotoTakingSupported = option.isPhotoTakingSupported === undefined || option.isPhotoTakingSupported;
     config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
-    config.parameters.option = option;
+    config.parameters.recommendationOptions = option.recommendationOptions;
   }
 
   return config;
@@ -362,6 +379,9 @@ function PhotoViewPicker() {
   this.select = photoPickerSelect;
 }
 
+function RecommendationOptions() {
+}
+
 export default {
   getPhotoAccessHelper,
   getPhotoAccessHelperAsync,
@@ -381,6 +401,8 @@ export default {
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,
   PhotoViewPicker: PhotoViewPicker,
+  RecommendationType: RecommendationType,
+  RecommendationOptions: RecommendationOptions,
   MediaAssetChangeRequest: photoAccessHelper.MediaAssetChangeRequest,
   MediaAlbumChangeRequest: photoAccessHelper.MediaAlbumChangeRequest,
 };
