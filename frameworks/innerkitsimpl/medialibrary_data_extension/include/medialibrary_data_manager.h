@@ -116,6 +116,7 @@ private:
     int32_t InitialiseThumbnailService(const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
     std::shared_ptr<NativeRdb::ResultSet> QuerySet(MediaLibraryCommand &cmd, const std::vector<std::string> &columns,
         const DataShare::DataSharePredicates &predicates, int &errCode);
+    void InitACLPermission();
 #ifdef DISTRIBUTED
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();
