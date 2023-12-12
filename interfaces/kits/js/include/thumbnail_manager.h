@@ -29,6 +29,7 @@
 #include "safe_map.h"
 #include "safe_queue.h"
 #include "pixel_map.h"
+#include "unique_fd.h"
 #include "userfile_manager_types.h"
 
 namespace OHOS {
@@ -63,11 +64,10 @@ public:
 
 class ThumnailUv {
 public:
-    ThumnailUv(const RequestSharedPtr &request, ThumbnailManager *manager, bool isFastImage) : request_(request),
-        manager_(manager), isFastImage_(isFastImage) {}
+    ThumnailUv(const RequestSharedPtr &request, ThumbnailManager *manager) : request_(request),
+        manager_(manager) {}
     RequestSharedPtr request_;
     ThumbnailManager *manager_;
-    bool isFastImage_ = false;
 };
 
 class ThumbnailRequest {
@@ -124,6 +124,16 @@ public:
         return uuid_;
     }
 
+    void SetFd(int32_t fd)
+    {
+        fd_ = UniqueFd(fd);
+    }
+
+    const UniqueFd &GetFd() const
+    {
+        return fd_;
+    }
+
     ThumbnailCallback callback_;
     RequestPhotoType requestPhotoType;
     int32_t error = 0;
@@ -134,6 +144,7 @@ private:
     ThumbnailStatus status_ = ThumbnailStatus::THUMB_INITIAL;
     std::mutex mutex_;
     std::string uuid_;
+    UniqueFd fd_;
 
     PixelMapPtr fastPixelMap;
     PixelMapPtr pixelMap;
@@ -141,7 +152,7 @@ private:
 
 class MMapFdPtr {
 public:
-    explicit MMapFdPtr(int32_t fd);
+    explicit MMapFdPtr(int32_t fd, bool isNeedRelease);
     ~MMapFdPtr();
     void* GetFdPtr();
     off_t GetFdSize();
@@ -150,6 +161,7 @@ private:
     void* fdPtr_;
     off_t size_;
     bool isValid_ = false;
+    bool isNeedRelease_ = false;
 };
 
 constexpr int THREAD_NUM = 5;
@@ -164,6 +176,7 @@ public:
     static std::unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, const Size &size,
         const std::string &path);
     void DeleteRequestIdFromMap(const std::string &requestId);
+    void AddQualityPhotoRequest(const RequestSharedPtr &request);
 private:
     ThumbnailManager() = default;
     void DealWithFastRequest(const RequestSharedPtr &request);
@@ -171,9 +184,7 @@ private:
 
     void ImageWorker(int num);
     void AddFastPhotoRequest(const RequestSharedPtr &request);
-    void AddQualityPhotoRequest(const RequestSharedPtr &request);
-    void AddNewQualityPhotoRequest(const RequestSharedPtr &request);
-    bool NotifyImage(const RequestSharedPtr &request, bool isFastImage);
+    void NotifyImage(const RequestSharedPtr &request);
     bool RequestFastImage(const RequestSharedPtr &request);
 
     SafeMap<std::string, RequestSharedPtr> thumbRequest_;
