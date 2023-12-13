@@ -23,6 +23,7 @@
 
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
+#include "acl.h"
 #include "background_task_mgr_helper.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
@@ -178,6 +179,8 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     MimeTypeUtils::InitMimeTypeMap();
     errCode = MakeDirQuerySetMap(dirQuerySetMap_);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at MakeDirQuerySetMap");
+
+    InitACLPermission();
 
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
@@ -1135,6 +1138,22 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService(
     }
     thumbnailService_->Init(rdbStore_, kvStorePtr_, extensionContext);
     return E_OK;
+}
+
+void MediaLibraryDataManager::InitACLPermission()
+{
+    if (access(THUMB_DIR.c_str(), F_OK)) {
+        return;
+    }
+
+    if (!MediaFileUtils::CreateDirectory(THUMB_DIR)) {
+        MEDIA_ERR_LOG("Failed create thumbs Photo dir");
+        return;
+    }
+
+    if (Acl::AclSetDefault() != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl read permission for the thumbs Photo dir");
+    }
 }
 
 int32_t ScanFileCallback::OnScanFinished(const int32_t status, const string &uri, const string &path)
