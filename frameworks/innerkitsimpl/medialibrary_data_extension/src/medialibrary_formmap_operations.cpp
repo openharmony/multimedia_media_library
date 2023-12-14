@@ -57,6 +57,7 @@ namespace Media {
 std::mutex MediaLibraryFormMapOperations::mutex_;
 bool MediaLibraryFormMapOperations::isHaveEmptyUri = false;
 const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_data";
+const string MEDIA_LIBRARY_PROXY_IMAGE_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_uri";
 const string NO_PICTURES = "";
 const string IMAGE_DELETED = "-1";
 
@@ -75,13 +76,19 @@ static void ReadThumbnailFile(const string &path, vector<uint8_t> &buffer)
         return ;
     }
     buffer.reserve(statInfo.st_size);
-    uint8_t tempBuffer[statInfo.st_size];
+    uint8_t *tempBuffer = (uint8_t *)malloc(statInfo.st_size);
+    if (tempBuffer == nullptr) {
+        MEDIA_ERR_LOG("The point tempBuffer is null!");
+        return ;
+    }
     ssize_t bytes = read(uniqueFd.Get(), tempBuffer, statInfo.st_size);
     if (bytes < 0) {
         MEDIA_ERR_LOG("read file failed!");
+        free(tempBuffer);
         return ;
     }
     buffer.assign(tempBuffer, tempBuffer + statInfo.st_size);
+    free(tempBuffer);
 }
 
 string MediaLibraryFormMapOperations::GetUriByFileId(const int32_t &fileId, const string &path)
@@ -159,18 +166,22 @@ static string GetFilePathById(const string &fileId)
     return GetStringVal(MEDIA_DATA_DB_FILE_PATH, queryResult);
 }
 
-void MediaLibraryFormMapOperations::ModifyFormMapMassage(const string &uri, int64_t &formId)
+void MediaLibraryFormMapOperations::ModifyFormMapMassage(const string &uri, int64_t &formId, const bool &isSave)
 {
+    if (isSave) {
+        MEDIA_INFO_LOG("Modify FormMap massage return!, the case is saveFormInfo");
+        return;
+    }
     lock_guard<mutex> lock(mutex_);
-    string NewUri = uri;
+    string newUri = uri;
     if (!uri.empty()) {
         int pos = uri.find("?");
         if (pos > 0) {
-            NewUri = uri.substr(0, pos);
+            newUri = uri.substr(0, pos);
         }
     }
     ValuesBucket value;
-    value.PutString(FormMap::FORMMAP_URI, NewUri);
+    value.PutString(FormMap::FORMMAP_URI, newUri);
 
     RdbPredicates predicates(FormMap::FORM_MAP_TABLE);
     predicates.And()->EqualTo(FormMap::FORMMAP_FORM_ID, std::to_string(formId));
@@ -182,7 +193,8 @@ void MediaLibraryFormMapOperations::ModifyFormMapMassage(const string &uri, int6
     return;
 }
 
-void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<int64_t> &formIds)
+void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<int64_t> &formIds,
+    const bool &isSave)
 {
     CreateOptions options;
     options.enabled_ = true;
@@ -199,10 +211,9 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<
         for (auto &formId : formIds) {
             data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_URI, formId, tempData));
             std::vector<OperationResult> results = dataShareHelper->Publish(data, BUNDLE_NAME);
-            MEDIA_INFO_LOG("Published uri is %{private}s!", MEDIA_LIBRARY_PROXY_URI.c_str());
             MEDIA_INFO_LOG("Published formId is %{private}s!", to_string(formId).c_str());
             MEDIA_INFO_LOG("Published size of value is %{private}zu!", NO_PICTURES.size());
-            MediaLibraryFormMapOperations::ModifyFormMapMassage(IMAGE_DELETED, formId);
+            MediaLibraryFormMapOperations::ModifyFormMapMassage(IMAGE_DELETED, formId, isSave);
         }
     } else {
         vector<uint8_t> buffer;
@@ -214,13 +225,16 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<
         if (MEDIA_TYPE_IMAGE == MediaType(type)) {
             ReadThumbnailFile(filePath, buffer);
             tempData = buffer;
+            PublishedDataItem::DataType uriData = newUri;
             for (auto &formId : formIds) {
                 data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_URI, formId, tempData));
-                std::vector<OperationResult> results = dataShareHelper->Publish(data, BUNDLE_NAME);
-                MEDIA_INFO_LOG("Published uri is %{private}s!", MEDIA_LIBRARY_PROXY_URI.c_str());
+                std::vector<OperationResult> dataResults = dataShareHelper->Publish(data, BUNDLE_NAME);
+                data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_IMAGE_URI, formId, uriData));
+                std::vector<OperationResult> uriResults = dataShareHelper->Publish(data, BUNDLE_NAME);
                 MEDIA_INFO_LOG("Published formId is %{private}s!", to_string(formId).c_str());
                 MEDIA_INFO_LOG("Published size of value is %{private}zu!", buffer.size());
-                MediaLibraryFormMapOperations::ModifyFormMapMassage(newUri, formId);
+                MEDIA_INFO_LOG("Published image uri is %{private}s!", newUri.c_str());
+                MediaLibraryFormMapOperations::ModifyFormMapMassage(newUri, formId, isSave);
                 isHaveEmptyUri = false;
             }
         }
@@ -274,6 +288,7 @@ bool MediaLibraryFormMapOperations::CheckQueryIsInDb(const OperationObject &oper
 
 int32_t MediaLibraryFormMapOperations::HandleStoreFormIdOperation(MediaLibraryCommand &cmd)
 {
+    vector<int64_t> formIds;
     string formId = GetStringObject(cmd, FormMap::FORMMAP_FORM_ID);
     if (formId.empty()) {
         MEDIA_ERR_LOG("GetObject failed");
@@ -290,6 +305,9 @@ int32_t MediaLibraryFormMapOperations::HandleStoreFormIdOperation(MediaLibraryCo
         string fileId = mediaUri.GetFileId();
         CHECK_AND_RETURN_RET_LOG(MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::UFM_PHOTO, fileId),
             E_GET_PRAMS_FAIL, "the fileId is not exist");
+        int64_t tempFormId = std::stoll(formId);
+        formIds.push_back(tempFormId);
+        MediaLibraryFormMapOperations::PublishedChange(uri, formIds, true);
     }
     if (MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::PAH_FORM_MAP, formId)) {
         lock_guard<mutex> lock(mutex_);

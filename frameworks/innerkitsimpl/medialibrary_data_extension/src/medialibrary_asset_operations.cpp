@@ -1228,7 +1228,7 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
     vector<int64_t> formIds;
     MediaLibraryFormMapOperations::GetFormMapFormId(notifyData->notifyUri, formIds);
     if (!formIds.empty()) {
-        MediaLibraryFormMapOperations::PublishedChange("", formIds);
+        MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
     }
 }
 
@@ -1805,7 +1805,12 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
         vector<int64_t> formIds;
         MediaLibraryFormMapOperations::GetFormMapFormId("", formIds);
         if (!formIds.empty()) {
-            MediaLibraryFormMapOperations::PublishedChange(uri, formIds);
+            string newUri = uri;
+            int pos = newUri.find("?");
+            if (pos > 0) {
+                newUri = newUri.substr(0, pos);
+            }
+            MediaLibraryFormMapOperations::PublishedChange(newUri, formIds, false);
         }
     }
     return E_OK;
