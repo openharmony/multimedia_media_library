@@ -189,7 +189,9 @@ int ThumbnailService::GetThumbnailFd(const string &uri, bool isAstc)
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_THUMBNAIL_INVALID_SIZE;
     }
-    string id, path, table;
+    string id;
+    string path;
+    string table;
     Size size;
     if (!ThumbnailUriUtils::ParseThumbnailInfo(uri, id, size, path, table)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_FAIL},

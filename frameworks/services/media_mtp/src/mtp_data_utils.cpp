@@ -355,7 +355,9 @@ void MtpDataUtils::GetFormatByPath(const std::string &path, uint16_t &outFormat)
 int32_t MtpDataUtils::GetFormat(const shared_ptr<DataShare::DataShareResultSet> &resultSet,
     uint16_t &outFormat)
 {
-    int index, status, mediaType;
+    int index;
+    int status;
+    int mediaType;
     status = resultSet->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, index);
     if (status != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("GetColumnIndex failed");
