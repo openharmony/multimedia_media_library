@@ -2059,7 +2059,8 @@ static void JSDeleteAssetExecute(napi_env env, void *data)
     MediaLibraryAsyncContext *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
-    string mediaType, deleteId;
+    string mediaType;
+    string deleteId;
     bool isValid = false;
     string notifyUri = context->valuesBucket.Get(MEDIA_DATA_DB_URI, isValid);
     if (!isValid) {
@@ -4374,7 +4375,7 @@ static napi_status CheckCreateOption(MediaLibraryAsyncContext &context)
     bool isValid = false;
     int32_t subtype = context.valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
     string cameraShotKey = context.valuesBucket.Get(PhotoColumn::CAMERA_SHOT_KEY, isValid);
-    if (isValid == true) {
+    if (isValid) {
         if (cameraShotKey.size() < CAMERA_SHOT_KEY_SIZE) {
             NAPI_ERR_LOG("cameraShotKey is not null with but is less than CAMERA_SHOT_KEY_SIZE");
             return napi_invalid_arg;
@@ -4896,7 +4897,7 @@ static napi_status ParseSaveFormInfoOption(napi_env env, napi_value arg, MediaLi
     }
     bool isValid = false;
     string tempFormId = context.valuesBucket.Get(FormMap::FORMMAP_FORM_ID, isValid);
-    if (isValid == false) {
+    if (!isValid) {
         return napi_invalid_arg;
     }
     return CheckFormId(tempFormId);
