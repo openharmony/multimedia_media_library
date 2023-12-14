@@ -4848,7 +4848,7 @@ static napi_status CheckFormId(string &formId)
     if (formId.empty() || formId.length() > FORMID_MAX_LEN) {
         return napi_invalid_arg;
     }
-    for (int i = 0; i < formId.length(); i++) {
+    for (uint32_t i = 0; i < formId.length(); i++) {
         if (!isdigit(formId[i])) {
             return napi_invalid_arg;
         }
@@ -5395,7 +5395,7 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
 
-    for (int32_t i = 0; i < sizeof(property) / sizeof(property[0]); i++) {
+    for (uint32_t i = 0; i < sizeof(property) / sizeof(property[0]); i++) {
         CHECK_ARGS(env, AddIntegerNamedProperty(env, result, property[i].enumName, property[i].enumValue),
             JS_INNER_FAIL);
     }
