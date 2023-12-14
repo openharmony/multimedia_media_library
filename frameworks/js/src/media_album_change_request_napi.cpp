@@ -222,8 +222,9 @@ napi_value MediaAlbumChangeRequestNapi::JSDismissAssets(napi_env env, napi_callb
     }
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env,
-        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
-        "Only portrait album can dismiss asset");
+        PhotoAlbum::IsSmartPortraitPhotoAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()) ||
+            PhotoAlbum::IsSmartClassifyAlbum(photoAlbum->GetPhotoAlbumType(), photoAlbum->GetPhotoAlbumSubType()),
+        "Only portrait and classify album can dismiss asset");
 
     asyncContext->objectInfo->albumChangeOperations_.push_back(AlbumChangeOperation::DISMISS_ASSET);
     napi_value result = nullptr;
@@ -406,13 +407,14 @@ void MediaAlbumChangeRequestNapi::ClearDismissAssetArray()
 
 static bool DismissAssetExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
-    string disMissAssetAssetsUri = PAH_PORTRAIT_DISMISS_ASSET;
+    string disMissAssetAssetsUri = PAH_DISMISS_ASSET;
     Uri uri(disMissAssetAssetsUri);
 
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MAP_ALBUM, to_string(photoAlbum->GetAlbumId()));
     predicates.And()->In(MAP_ASSET, context.objectInfo->GetDismissAssets());
+    predicates.And()->EqualTo(ALBUM_SUBTYPE, to_string(photoAlbum->GetPhotoAlbumSubType()));
 
     auto deletedRows = UserFileClient::Delete(uri, predicates);
     context.objectInfo->ClearDismissAssetArray();

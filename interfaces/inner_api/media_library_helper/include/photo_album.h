@@ -81,6 +81,7 @@ public:
     static bool CheckPhotoAlbumType(const PhotoAlbumType albumType);
     static bool CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType);
     static bool IsSmartPortraitPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
+    static bool IsSmartClassifyAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
 
 private:
     int32_t albumId_;

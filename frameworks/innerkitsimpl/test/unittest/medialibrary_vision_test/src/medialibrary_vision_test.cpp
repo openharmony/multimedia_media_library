@@ -1813,7 +1813,7 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_Test, TestSize.Level0)
 HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("dismissAsset_Test::Start");
-    string disMissAssetAssetsUri = PAH_PORTRAIT_DISMISS_ASSET;
+    string disMissAssetAssetsUri = PAH_DISMISS_ASSET;
     Uri uri(disMissAssetAssetsUri);
     MediaLibraryCommand cmd(uri);
     DataShare::DataSharePredicates predicates;
@@ -1822,6 +1822,7 @@ HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test, TestSize.Level0)
     vector<string> assetId = {"file://media/Photo/1/1/1.jpg"};
     predicates.EqualTo(MAP_ALBUM, albumId);
     predicates.And()->In(MAP_ASSET, assetId);
+    predicates.And()->EqualTo(ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::PORTRAIT));
 
     auto deletedRows = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
     EXPECT_GT(deletedRows, 0);
