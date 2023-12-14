@@ -1772,6 +1772,24 @@ HWTEST_F(MediaLibraryVisionTest, SetIsMe, TestSize.Level0)
     MEDIA_INFO_LOG("SetIsMe::ret = %{public}d. End", ret);
 }
 
+void SetCoverUri(string tagId)
+{
+    MEDIA_INFO_LOG("SetCoverUri Start");
+    Uri setAlbumUri(PAH_PORTRAIT_ANAALBUM_COVER_URI);
+    MediaLibraryCommand queryCmd(setAlbumUri);
+    DataShare::DataSharePredicates predicates;
+    int albumId = queryAlbumId(tagId);
+    MEDIA_INFO_LOG("albumId:%{public}d", albumId);
+    predicates.EqualTo(ALBUM_ID, albumId);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(COVER_URI, "file://media/Photo/1/test_portrait/test_merge.jpg");
+    valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
+
+    int ret = MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("SetCoverUri::ret = %{public}d. End", ret);
+}
+
 HWTEST_F(MediaLibraryVisionTest, MergeAlbum_Test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MergeAlbum_Test::Start");
@@ -1781,6 +1799,8 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_Test, TestSize.Level0)
     MediaLibraryCommand queryCmd(updateAlbumUri);
     int albumId = queryAlbumId("tagId3");
     int targetAlbumId = queryAlbumId("tagId2");
+    SetCoverUri("tagId3");
+    SetCoverUri("tagId2");
     MEDIA_INFO_LOG("albumId:%{public}d, targetAlbumId:%{public}d", albumId, targetAlbumId);
     valuesBucket.Put(ALBUM_ID, albumId);
     valuesBucket.Put(TARGET_ALBUM_ID, targetAlbumId);
@@ -1844,6 +1864,42 @@ HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test, TestSize.Level0)
     MEDIA_INFO_LOG("placeToFrontOf_Test::result = %{public}d. End", result);
     SetFavorite("tagId3", UNFAVORITE_PAGE);
     SetFavorite("tagId4", UNFAVORITE_PAGE);
+}
+
+void UriAppendKeyValue(string &uri, const string &key, const string &value)
+{
+    string uriKey = key + '=';
+    if (uri.find(uriKey) != string::npos) {
+        return;
+    }
+
+    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
+    string append = queryMark + key + '=' + value;
+
+    size_t posJ = uri.find('#');
+    if (posJ == string::npos) {
+        uri += append;
+    } else {
+        uri.insert(posJ, append);
+    }
+}
+
+HWTEST_F(MediaLibraryVisionTest, hidePicForAnalysis_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("hidePicForAnalysis_Test::Start");
+    string uriString = PAH_HIDE_PHOTOS;
+    UriAppendKeyValue(uriString, "api_version", "10");
+    Uri uri(uriString);
+    MediaLibraryCommand queryCmd(uri);
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("61");
+    predicates.In(MediaColumn::MEDIA_ID, inValues);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, 1);
+    int32_t result = MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+    EXPECT_GT(result, 0);
+    MEDIA_INFO_LOG("placeToFrontOf_Test::result = %{public}d. End", result);
 }
 } // namespace Media
 } // namespace OHOS
