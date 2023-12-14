@@ -131,6 +131,22 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_001, TestSize.Level0
     EXPECT_EQ(ret, true);
 }
 
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_002, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "Photos";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    int outLcdCount = 0;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
+    EXPECT_EQ(ret, true);
+}
+
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
@@ -229,12 +245,45 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_001, TestSize.Leve
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_002, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "Photos";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    int LcdLimit = 0;
+    vector<ThumbnailData> infos;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryNoLcdInfos(opts, LcdLimit, infos, err);
+    EXPECT_EQ(ret, false);
+}
+
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
     }
     string table = "medialib_QueryNoThumbnailInfos_test_001";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    vector<ThumbnailData> infos;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryNoThumbnailInfos(opts, infos, err);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_002, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    string table = "Photos";
     ThumbRdbOpt opts = {
         .store = storePtr,
         .table = table
