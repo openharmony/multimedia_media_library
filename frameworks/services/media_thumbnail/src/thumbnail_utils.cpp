@@ -492,6 +492,9 @@ bool ThumbnailUtils::QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err
         MEDIA_DATA_DB_ID,
     };
     RdbPredicates rdbPredicates(opts.table);
+    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+        rdbPredicates.EqualTo(PhotoColumn::PHOTO_LAST_VISIT_TIME, "0");
+    }
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
@@ -528,6 +531,13 @@ bool ThumbnailUtils::QueryLcdCountByTime(const int64_t &time, const bool &before
         MEDIA_DATA_DB_ID,
     };
     RdbPredicates rdbPredicates(opts.table);
+    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+        if (before) {
+            rdbPredicates.LessThanOrEqualTo(PhotoColumn::PHOTO_LAST_VISIT_TIME, to_string(time));
+        } else {
+            rdbPredicates.GreaterThan(PhotoColumn::PHOTO_LAST_VISIT_TIME, to_string(time));
+        }
+    }
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
@@ -700,6 +710,9 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
 
     rdbPredicates.Limit(LcdLimit);
+    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+        rdbPredicates.OrderByAsc(PhotoColumn::PHOTO_LAST_VISIT_TIME);
+    }
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -730,6 +743,9 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
         MEDIA_DATA_DB_MEDIA_TYPE,
     };
     RdbPredicates rdbPredicates(opts.table);
+    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+        rdbPredicates.EqualTo(PhotoColumn::PHOTO_LAST_VISIT_TIME, "0");
+    }
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     if ((opts.table == PhotoColumn::PHOTOS_TABLE) || (opts.table == AudioColumn::AUDIOS_TABLE)) {
@@ -774,6 +790,9 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
         MEDIA_DATA_DB_MEDIA_TYPE,
     };
     RdbPredicates rdbPredicates(opts.table);
+    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+        rdbPredicates.EqualTo(PhotoColumn::PHOTO_LAST_VISIT_TIME, "0");
+    }
     if ((opts.table == PhotoColumn::PHOTOS_TABLE) || (opts.table == AudioColumn::AUDIOS_TABLE)) {
         rdbPredicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
     } else {
@@ -821,6 +840,9 @@ bool ThumbnailUtils::QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &ti
         MEDIA_DATA_DB_ID,
     };
     RdbPredicates rdbPredicates(opts.table);
+    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+        rdbPredicates.GreaterThan(PhotoColumn::PHOTO_LAST_VISIT_TIME, to_string(time));
+    }
     if (opts.table == MEDIALIBRARY_TABLE) {
         rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
     } else {
@@ -1114,6 +1136,9 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
     if (withLcd) {
         values.PutNull(MEDIA_DATA_DB_LCD);
         values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+        if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+            values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, 0);
+        }
     }
     int changedRows;
     auto err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
