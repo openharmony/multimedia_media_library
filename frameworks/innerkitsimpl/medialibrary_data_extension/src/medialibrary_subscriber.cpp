@@ -180,6 +180,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
     WriteThumbnailStat();
 }
 
+#ifdef MEDIALIBRARY_MTP_ENABLE
 void MedialibrarySubscriber::DoStartMtpService()
 {
     AAFwk::Want want;
@@ -189,6 +190,7 @@ void MedialibrarySubscriber::DoStartMtpService()
         OHOS::AAFwk::DEFAULT_INVAL_VALUE);
     MEDIA_INFO_LOG("MedialibrarySubscriber::DoStartMtpService. End calling StartAbility. ret=%{public}d", err);
 }
+#endif
 
 void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleName)
 {

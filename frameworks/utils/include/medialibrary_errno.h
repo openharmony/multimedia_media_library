@@ -27,7 +27,9 @@ namespace Media {
 // linux standard ERROR { 0, 200 }
 constexpr int32_t E_OK = 0;
 constexpr int32_t E_SUCCESS = 0;
+#ifdef MEDIALIBRARY_MTP_ENABLE
 constexpr int32_t MTP_SUCCESS = 0;
+#endif
 constexpr int32_t E_ERR = -1;
 constexpr int32_t E_PERMISSION_DENIED = -EACCES;
 constexpr int32_t E_NO_SUCH_FILE      = -ENOENT;
@@ -137,6 +139,7 @@ constexpr int32_t E_DENIED_MOVE =               MEDIA_LIBRARY_ERR(E_MEDIA_FILE_O
 constexpr int32_t E_UPDATE_DB_FAIL =            MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 8);
 constexpr int32_t E_DENIED_RENAME =             MEDIA_LIBRARY_ERR(E_MEDIA_FILE_OFFSET, 9);
 
+#ifdef MEDIALIBRARY_MTP_ENABLE
 // common error {14000, 14099}
 constexpr int32_t E_MTP_COMMON_OFFSET = 14000;
 constexpr int32_t MTP_FAIL =                            MEDIA_LIBRARY_ERR(E_MTP_COMMON_OFFSET, 0);
@@ -163,6 +166,7 @@ constexpr int32_t MTP_ERROR_INVALID_OBJECTPROPCODE =    MEDIA_LIBRARY_ERR(E_MTP_
 constexpr int32_t MTP_ERROR_ACCESS_DENIED =             MEDIA_LIBRARY_ERR(E_MTP_MEDIALIBRARY_OFFSET, 7);
 constexpr int32_t MTP_ERROR_SPECIFICATION_BY_GROUP_UNSUPPORTED = MEDIA_LIBRARY_ERR(E_MTP_MEDIALIBRARY_OFFSET, 8);
 constexpr int32_t MTP_ERROR_SPECIFICATION_BY_DEPTH_UNSUPPORTED = MEDIA_LIBRARY_ERR(E_MTP_MEDIALIBRARY_OFFSET, 9);
+#endif
 
 // media smart album module error code { 4000, 4099 }
 constexpr int32_t E_MEDIA_SMART_OFFSET = 4000;
