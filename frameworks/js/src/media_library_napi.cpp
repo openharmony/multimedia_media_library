@@ -18,8 +18,8 @@
 #include "media_library_napi.h"
 
 #include <fcntl.h>
-#include <sys/sendfile.h>
 #include <functional>
+#include <sys/sendfile.h>
 
 #include "directory_ex.h"
 #include "file_ex.h"
@@ -64,11 +64,11 @@ namespace OHOS {
 namespace Media {
 using ChangeType = AAFwk::ChangeInfo::ChangeType;
 thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
-const int32_t NUM_2 = 2;
-const int32_t NUM_3 = 3;
-const string DATE_FUNCTION = "DATE(";
+const int32_t SECOND_ENUM = 2;
+const int32_t THIRD_ENUM = 3;
 const int32_t FORMID_MAX_LEN = 19;
 const int64_t MAX_INT64 = 9223372036854775807;
+const string DATE_FUNCTION = "DATE(";
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
@@ -1765,7 +1765,7 @@ static bool CheckTypeOfType(const string &firstDirName, int32_t fileMediaType)
             return false;
         }
     }
-    if (!strcmp(firstDirName.c_str(), directoryEnumValues[NUM_2].c_str())) {
+    if (!strcmp(firstDirName.c_str(), directoryEnumValues[SECOND_ENUM].c_str())) {
         if (fileMediaType == MEDIA_TYPE_IMAGE || fileMediaType == MEDIA_TYPE_VIDEO) {
             return true;
         } else {
@@ -1773,7 +1773,7 @@ static bool CheckTypeOfType(const string &firstDirName, int32_t fileMediaType)
             return false;
         }
     }
-    if (!strcmp(firstDirName.c_str(), directoryEnumValues[NUM_3].c_str())) {
+    if (!strcmp(firstDirName.c_str(), directoryEnumValues[THIRD_ENUM].c_str())) {
         if (fileMediaType == MEDIA_TYPE_AUDIO) {
             return true;
         } else {
