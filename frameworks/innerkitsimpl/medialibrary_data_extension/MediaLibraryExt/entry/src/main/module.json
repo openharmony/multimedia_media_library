@@ -77,30 +77,6 @@
         }
       },
       {
-        "name": "ohos.permission.READ_MEDIA",
-        "reason": "$string:permission_read_media",
-        "usedScene": {
-          "abilities": [
-            "MainAbility",
-            "DataShareExtAbility",
-            "MediaBackupExtensionAbility"
-          ],
-          "when": "inuse"
-        }
-      },
-      {
-        "name": "ohos.permission.WRITE_MEDIA",
-        "reason": "$string:permission_write_media",
-        "usedScene": {
-          "abilities": [
-            "MainAbility",
-            "DataShareExtAbility",
-            "MediaBackupExtensionAbility"
-          ],
-          "when": "inuse"
-        }
-      },
-      {
         "name": "ohos.permission.START_ABILITIES_FROM_BACKGROUND",
         "reason": "$string:permission_start_abilites_from_background",
         "usedScene": {
