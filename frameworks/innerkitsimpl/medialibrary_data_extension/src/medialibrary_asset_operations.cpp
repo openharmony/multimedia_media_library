@@ -1903,9 +1903,14 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     }
     vector<string> ids;
     vector<string> paths;
+    int32_t deletedRows = 0;
     GetIdsAndPaths(predicates, ids, paths);
-    int32_t deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
-    if (deletedRows <= 0 || ids.empty()) {
+    if (ids.empty()) {
+        MEDIA_ERR_LOG("Failed to delete files in db, ids size: 0");
+        return deletedRows;
+    }
+    deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
+    if (deletedRows <= 0) {
         MEDIA_ERR_LOG("Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
             deletedRows, ids.size());
         return deletedRows;
