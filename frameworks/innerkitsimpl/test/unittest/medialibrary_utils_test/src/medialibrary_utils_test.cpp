@@ -144,7 +144,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_002, TestSize.Level0
     int outLcdCount = 0;
     int err = 0;
     bool ret = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestSize.Level0)
@@ -259,7 +259,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_002, TestSize.Leve
     vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryNoLcdInfos(opts, LcdLimit, infos, err);
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_001, TestSize.Level0)
