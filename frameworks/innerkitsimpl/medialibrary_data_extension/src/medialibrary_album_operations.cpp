@@ -52,6 +52,7 @@ constexpr int32_t PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME = 20;
 constexpr int32_t PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT = 10;
 constexpr int32_t SUPPORT_QUERY_ISME_MIN_COUNT = 80;
 constexpr int32_t PERCENTAGE_FOR_SUPPORT_QUERY_ISME = 100;
+constexpr int32_t QUERY_IS_ME_VALUE = 1;
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -578,14 +579,8 @@ void GetIsMeAlbumPredicates(DataShare::DataSharePredicates &predicates)
         MEDIA_ERR_LOG("Not support to query isMe");
         return;
     }
-
-    string onClause = ANALYSIS_ALBUM_TABLE + "." + ALBUM_ID + " = " + ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM;
-    predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
-    string selection = "WHERE " + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + "AND EXISTS (SELECT 1 FROM " +
-        PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTOS_TABLE + "." + FILE_ID + " = " +
-        ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ASSET + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
-        PhotoColumn::PHOTO_SHOOTING_MODE + " = 0) GROUP BY " + ANALYSIS_ALBUM_TABLE + "." + GROUP_TAG +
-        " ORDER BY COUNT(*) DESC";
+    string selection = "WHERE " + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + COUNT + " > " +
+        to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " GROUP BY " + GROUP_TAG + " ORDER BY " + COUNT + " DESC";
     predicates.SetWhereClause(selection);
 }
 
@@ -603,6 +598,10 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
         }
         GetDisplayLevelAlbumPredicates(value, predicatesPortrait);
     } else if (whereClause.find(IS_ME) != string::npos) {
+        int32_t value = GetPortraitSubtype(IS_ME, whereClause, whereArgs);
+        if (value == E_INDEX || value != QUERY_IS_ME_VALUE) {
+            return nullptr;
+        }
         GetIsMeAlbumPredicates(predicatesPortrait);
     } else {
         MEDIA_INFO_LOG("QueryPortraitAlbum whereClause is error");
@@ -1520,10 +1519,12 @@ int32_t SetIsMe(const ValuesBucket &values, const DataSharePredicates &predicate
         return E_DB_FAIL;
     }
 
+    std::string clearIsMeAlbum = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 0" + " WHERE " +
+        IS_ME + " = 1";
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1" + " WHERE " +
         GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " +
         targetAlbumId + ")";
-    vector<string> updateSqls = { updateForSetIsMe};
+    vector<string> updateSqls = { clearIsMeAlbum, updateForSetIsMe};
     int32_t err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
@@ -1558,8 +1559,8 @@ int32_t SetAlbumName(const ValuesBucket &values, const DataSharePredicates &pred
         return E_INVALID_VALUES;
     }
     std::string updateForSetAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
-        "' WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
-        " = " + targetAlbumId + ")";
+        "' , " + RENAME_OPERATION + " = 1 WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
     vector<string> updateSqls = { updateForSetAlbumName};
     err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {

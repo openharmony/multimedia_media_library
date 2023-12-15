@@ -43,6 +43,8 @@ constexpr int32_t FIRST_PAGE = 1;
 constexpr int32_t SECOND_PAGE = 2;
 constexpr int32_t FAVORITE_PAGE = 3;
 constexpr int32_t UNFAVORITE_PAGE = 0;
+constexpr int32_t DISMISS_ASSET_ALBUM_ID = -2;
+constexpr int32_t TEST_COUNT = -1;
 void CleanVisionData()
 {
     DataShare::DataSharePredicates predicates;
@@ -1568,6 +1570,36 @@ void InsertTestData()
     for (int i = TAG_ID1_COUNT; i <= TAG_ID4_END; i++) {
         InsertAlbumMapTestData(queryAlbumId("tagId4"), i);
     }
+
+    InsertAlbumTestData("file://media/Photo/1/11/11.jpg", TAG_ID4_COUNT, "tagId5");
+    for (int i = 1; i <= TAG_ID1_COUNT; i++) {
+        InsertAlbumMapTestData(queryAlbumId("tagId5"), i);
+    }
+
+    InsertAlbumTestData("file://media/Photo/1/61/61.jpg", TAG_ID4_COUNT, "tagId6");
+    for (int i = 1; i <= TAG_ID1_COUNT; i++) {
+        InsertAlbumMapTestData(queryAlbumId("tagId6"), i);
+    }
+
+    InsertAlbumTestData("file://media/Photo/1/61/61.jpg", TAG_ID4_COUNT, "tagId7");
+    for (int i = 1; i <= TAG_ID1_COUNT; i++) {
+        InsertAlbumMapTestData(queryAlbumId("tagId7"), i);
+    }
+
+    InsertAlbumTestData("file://media/Photo/1/61/61.jpg", TAG_ID4_COUNT, "tagId8");
+    for (int i = 1; i <= TAG_ID1_COUNT; i++) {
+        InsertAlbumMapTestData(queryAlbumId("tagId8"), i);
+    }
+
+    InsertAlbumTestData("file://media/Photo/1/61/61.jpg", TAG_ID4_COUNT, "tagId9");
+    for (int i = 1; i <= TAG_ID1_COUNT; i++) {
+        InsertAlbumMapTestData(queryAlbumId("tagId9"), i);
+    }
+
+    InsertAlbumTestData("file://media/Photo/1/61/61.jpg", TAG_ID4_COUNT, "tagId10");
+    for (int i = 1; i <= TAG_ID1_COUNT; i++) {
+        InsertAlbumMapTestData(queryAlbumId("tagId10"), i);
+    }
 }
 
 HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_1, TestSize.Level0)
@@ -1645,6 +1677,51 @@ HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe, TestSize.Level0)
     MEDIA_INFO_LOG("Get_Protrait_Album_IsMe::count = %{public}d. End", count);
 }
 
+shared_ptr<DataShare::DataShareResultSet> QueryPortraitAlbumTest(string column, string value)
+{
+    MEDIA_INFO_LOG("QueryPortraitAlbumTest");
+    Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand queryCmd(queryAlbumUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(column, value);
+    vector<string> columns;
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryCmd, columns, predicates, errCode);
+    if (queryResultSet == nullptr) {
+        MEDIA_INFO_LOG("queryResultSet is nullptr");
+        return nullptr;
+    }
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    return resultSet;
+}
+
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_error_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Get_Protrait_Album_error_test_001::Start");
+    auto resultSet = QueryPortraitAlbumTest("user_display2223j344", "2");
+    if (resultSet == nullptr) {
+        EXPECT_EQ(resultSet, nullptr);
+    } else {
+        int count;
+        resultSet->GetRowCount(count);
+        EXPECT_EQ(count, TEST_COUNT);
+    }
+}
+
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_error_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Get_Protrait_Album_error_test_002::Start");
+    auto resultSet = QueryPortraitAlbumTest(USER_DISPLAY_LEVEL, "9");
+    EXPECT_EQ(resultSet, nullptr);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_error_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Get_Protrait_Album_error_test_002::Start");
+    auto resultSet = QueryPortraitAlbumTest(IS_ME, "9");
+    EXPECT_EQ(resultSet, nullptr);
+}
+
 HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_1, TestSize.Level0)
 {
     MEDIA_INFO_LOG("SetDisplayLevel_1::Start");
@@ -1718,6 +1795,71 @@ HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_0, TestSize.Level0)
     MEDIA_INFO_LOG("SetDisplayLevel_0::ret = %{public}d. End", ret);
 }
 
+int SetDisplayLevelTest(string column, int value, int albumId)
+{
+    MEDIA_INFO_LOG("SetDisplayLevelTest");
+    Uri setAlbumUri(PAH_PORTRAIT_DISPLAY_LEVLE);
+    MediaLibraryCommand queryCmd(setAlbumUri);
+    DataShare::DataSharePredicates predicates;
+
+    predicates.EqualTo(ALBUM_ID, albumId);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
+    valuesBucket.Put(column, value);
+    return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+}
+
+int SetDisplayLevelErrorTest(string column, int value)
+{
+    MEDIA_INFO_LOG("SetDisplayLevelTest");
+    Uri setAlbumUri(PAH_PORTRAIT_DISPLAY_LEVLE);
+    MediaLibraryCommand queryCmd(setAlbumUri);
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
+    valuesBucket.Put(column, value);
+    return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetDisplayLevel_error_test_001::Start");
+    int testDisplayLevel = TEST_COUNT;
+    int albumId = queryAlbumId("tagId3");
+    MEDIA_INFO_LOG("SetDisplayLevelTest, albumId:%{public}d", albumId);
+    int ret = SetDisplayLevelTest(USER_DISPLAY_LEVEL, testDisplayLevel, albumId);
+    EXPECT_LE(ret, 0);
+    MEDIA_INFO_LOG("SetDisplayLevel_error_test_001::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetDisplayLevel_error_test_002::Start");
+    int testDisplayLevel = TEST_COUNT;
+    int albumId = queryAlbumId("tagId3");
+    MEDIA_INFO_LOG("SetDisplayLevelTest, albumId:%{public}d", albumId);
+    int ret = SetDisplayLevelTest("user_display", testDisplayLevel, albumId);
+    EXPECT_LE(ret, 0);
+    MEDIA_INFO_LOG("SetDisplayLevel_error_test_002::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetDisplayLevel_error_test_003::Start");
+    int ret = SetDisplayLevelErrorTest(USER_DISPLAY_LEVEL, 1);
+    EXPECT_LE(ret, 0);
+    MEDIA_INFO_LOG("SetDisplayLevel_error_test_002::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetDisplayLevel_error_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetDisplayLevel_error_test_004::Start");
+    int testDisplayLevel = TEST_COUNT;
+    int ret = SetDisplayLevelTest("user_display", testDisplayLevel, TEST_COUNT);
+    EXPECT_LE(ret, 0);
+    MEDIA_INFO_LOG("SetDisplayLevel_error_test_002::ret = %{public}d. End", ret);
+}
+
 HWTEST_F(MediaLibraryVisionTest, SetAlbumName, TestSize.Level0)
 {
     MEDIA_INFO_LOG("SetAlbumName::Start");
@@ -1734,6 +1876,52 @@ HWTEST_F(MediaLibraryVisionTest, SetAlbumName, TestSize.Level0)
     int ret = MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
     EXPECT_EQ(ret, 0);
     MEDIA_INFO_LOG("SetAlbumName::ret = %{public}d. End", ret);
+}
+
+int SetAlbumNameTest(string albumName, int albumId)
+{
+    MEDIA_INFO_LOG("SetAlbumNameTest");
+    Uri setAlbumUri(PAH_PORTRAIT_ANAALBUM_ALBUM_NAME);
+    MediaLibraryCommand queryCmd(setAlbumUri);
+    DataShare::DataSharePredicates predicates;
+    if (albumId > 0) {
+        predicates.EqualTo(ALBUM_ID, albumId);
+    }
+    DataShare::DataShareValuesBucket valuesBucket;
+    if (albumName != "testError") {
+        valuesBucket.Put(ALBUM_NAME, albumName);
+    }
+    valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
+    return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetAlbumName_error_test_001::Start");
+    int albumId = queryAlbumId("tagId1");
+    MEDIA_INFO_LOG("albumId:%{public}d", albumId);
+    int ret = SetAlbumNameTest("", albumId);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("SetAlbumName_error_test_001::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetAlbumName_error_test_002::Start");
+    int testAlbumId = TEST_COUNT;
+    int ret = SetAlbumNameTest("test1", testAlbumId);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("SetAlbumName_error_test_002::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetAlbumName_error_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetAlbumName_error_test_003::Start");
+    int albumId = queryAlbumId("tagId1");
+    MEDIA_INFO_LOG("albumId:%{public}d", albumId);
+    int ret = SetAlbumNameTest("testError", albumId);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("SetAlbumName_error_test_003::ret = %{public}d. End", ret);
 }
 
 HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri, TestSize.Level0)
@@ -1754,21 +1942,87 @@ HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri, TestSize.Level0)
     MEDIA_INFO_LOG("SetAlbumCoverUri::ret = %{public}d. End", ret);
 }
 
+int SetCoverUriTest(string coverUri, int albumId)
+{
+    MEDIA_INFO_LOG("SetCoverUriTest::Start");
+    Uri setAlbumUri(PAH_PORTRAIT_ANAALBUM_COVER_URI);
+    MediaLibraryCommand queryCmd(setAlbumUri);
+    DataShare::DataSharePredicates predicates;
+    if (albumId > 0) {
+        predicates.EqualTo(ALBUM_ID, albumId);
+    }
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    if (coverUri != "testCoverUri") {
+        valuesBucket.Put(COVER_URI, coverUri);
+    }
+    valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
+    return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_001::Start");
+    int albumId = queryAlbumId("tagId1");
+    MEDIA_INFO_LOG("albumId:%{public}d", albumId);
+    int ret = SetCoverUriTest("", albumId);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_001::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_002::Start");
+    int albumId = queryAlbumId("tagId1");
+    MEDIA_INFO_LOG("albumId:%{public}d", albumId);
+    int ret = SetCoverUriTest("testCoverUri", albumId);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_002::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetAlbumCoverUri_error_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_003::Start");
+    int albumId = TEST_COUNT;
+    int ret = SetCoverUriTest("file://media/1/test_portrait/test_portrait.jpg", albumId);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("SetAlbumCoverUri_error_test_003::ret = %{public}d. End", ret);
+}
+
+int SetIsMeTest(int albumId)
+{
+    MEDIA_INFO_LOG("SetIsMeTest::Start");
+    Uri setAlbumUri(PAH_PORTRAIT_IS_ME);
+    MediaLibraryCommand queryCmd(setAlbumUri);
+    DataShare::DataSharePredicates predicates;
+    if (albumId > 0) {
+        predicates.EqualTo(ALBUM_ID, albumId);
+    }
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(IS_ME, 1);
+    valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
+    return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+}
+
 HWTEST_F(MediaLibraryVisionTest, SetIsMe, TestSize.Level0)
 {
     MEDIA_INFO_LOG("SetIsMe::Start");
     Uri setAlbumUri(PAH_PORTRAIT_IS_ME);
-    MediaLibraryCommand queryCmd(setAlbumUri);
-    DataShare::DataSharePredicates predicates;
     int albumId = queryAlbumId("tagId3");
     MEDIA_INFO_LOG("SetIsMe, albumId:%{public}d", albumId);
-    predicates.EqualTo(ALBUM_ID, albumId);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(IS_ME, 1);
-    valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
-
-    int ret = MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+    int ret = SetIsMeTest(albumId);
     EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("SetIsMe::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, SetIsMe_error_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("SetIsMe::Start");
+    Uri setAlbumUri(PAH_PORTRAIT_IS_ME);
+    int albumId = TEST_COUNT;
+    int ret = SetIsMeTest(albumId);
+    EXPECT_LT(ret, 0);
     MEDIA_INFO_LOG("SetIsMe::ret = %{public}d. End", ret);
 }
 
@@ -1810,23 +2064,197 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_Test, TestSize.Level0)
     MEDIA_INFO_LOG("MergeAlbum_Test::ret = %{public}d. End", ret);
 }
 
-HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test, TestSize.Level0)
+int MergeAlbumTest(int albumId, int targetAlbumId)
 {
-    MEDIA_INFO_LOG("dismissAsset_Test::Start");
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    Uri updateAlbumUri(PAH_PORTRAIT_MERGE_ALBUM);
+    MediaLibraryCommand queryCmd(updateAlbumUri);
+
+    if (albumId >= 0) {
+        valuesBucket.Put(ALBUM_ID, albumId);
+    }
+    if (targetAlbumId >= 0) {
+        valuesBucket.Put(TARGET_ALBUM_ID, targetAlbumId);
+    }
+    return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MergeAlbum_error_test_001::Start");
+
+    int albumId = queryAlbumId("tagId3");
+    int ret = MergeAlbumTest(albumId, 0);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("MergeAlbum_error_test_001::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MergeAlbum_error_test_002::Start");
+
+    int targetAlbumId = queryAlbumId("tagId3");
+    int ret = MergeAlbumTest(0, targetAlbumId);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("MergeAlbum_error_test_002::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MergeAlbum_error_test_003::Start");
+
+    int targetAlbumId = queryAlbumId("tagId3");
+    int testAlbumId = TEST_COUNT;
+    int ret = MergeAlbumTest(testAlbumId, targetAlbumId);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("MergeAlbum_error_test_003::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MergeAlbum_error_test_004::Start");
+
+    int albumId = queryAlbumId("tagId3");
+    int testAlbumId = TEST_COUNT;
+    int ret = MergeAlbumTest(albumId, testAlbumId);
+    EXPECT_LT(ret, 0);
+    MEDIA_INFO_LOG("MergeAlbum_error_test_004::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MergeAlbum_error_test_005::Start");
+
+    int albumId = queryAlbumId("tagId1");
+    int targetAlbumId = queryAlbumId("tagId4");
+    SetDisplayLevelTest(USER_DISPLAY_LEVEL, FAVORITE_PAGE, albumId);
+    SetDisplayLevelTest(USER_DISPLAY_LEVEL, FAVORITE_PAGE, targetAlbumId);
+    SetCoverUri("tagId1");
+    SetCoverUri("tagId4");
+    int ret = MergeAlbumTest(albumId, targetAlbumId);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("MergeAlbum_error_test_005::ret = %{public}d. End", ret);
+    SetDisplayLevelTest(USER_DISPLAY_LEVEL, UNFAVORITE_PAGE, albumId);
+    SetDisplayLevelTest(USER_DISPLAY_LEVEL, UNFAVORITE_PAGE, targetAlbumId);
+}
+
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MergeAlbum_error_test_006::Start");
+
+    int albumId = queryAlbumId("tagId1");
+    int targetAlbumId = queryAlbumId("tagId4");
+    SetDisplayLevelTest(USER_DISPLAY_LEVEL, FAVORITE_PAGE, albumId);
+    SetCoverUri("tagId1");
+    SetCoverUri("tagId4");
+    int ret = MergeAlbumTest(albumId, targetAlbumId);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("MergeAlbum_error_test_006::ret = %{public}d. End", ret);
+}
+
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MergeAlbum_error_test_007::Start");
+
+    int albumId = queryAlbumId("tagId5");
+    int targetAlbumId = queryAlbumId("tagId6");
+    SetDisplayLevelTest(USER_DISPLAY_LEVEL, FAVORITE_PAGE, albumId);
+    SetCoverUri("tagId5");
+    SetCoverUri("tagId6");
+    int ret = MergeAlbumTest(albumId, targetAlbumId);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("MergeAlbum_error_test_007::ret = %{public}d. End", ret);
+    SetDisplayLevelTest(USER_DISPLAY_LEVEL, UNFAVORITE_PAGE, albumId);
+}
+
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MergeAlbum_error_test_008::Start");
+
+    int albumId = queryAlbumId("tagId7");
+    int targetAlbumId = queryAlbumId("tagId8");
+    SetDisplayLevelTest(USER_DISPLAY_LEVEL, FIRST_PAGE, albumId);
+    SetCoverUri("tagId7");
+    SetCoverUri("tagId8");
+    int ret = MergeAlbumTest(albumId, targetAlbumId);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("MergeAlbum_error_test_008::ret = %{public}d. End", ret);
+    SetDisplayLevelTest(USER_DISPLAY_LEVEL, SECOND_PAGE, albumId);
+}
+
+HWTEST_F(MediaLibraryVisionTest, MergeAlbum_error_test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MergeAlbum_error_test_009::Start");
+
+    int albumId = queryAlbumId("tagId9");
+    int targetAlbumId = queryAlbumId("tagId10");
+    SetDisplayLevelTest(USER_DISPLAY_LEVEL, SECOND_PAGE, albumId);
+    SetCoverUri("tagId9");
+    SetCoverUri("tagId10");
+    int ret = MergeAlbumTest(albumId, targetAlbumId);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("MergeAlbum_error_test_009::ret = %{public}d. End", ret);
+}
+
+int dismissAssetsTest(int albumId, vector<string> assetId)
+{
+    MEDIA_INFO_LOG("dismissAssetsTest::Start");
     string disMissAssetAssetsUri = PAH_DISMISS_ASSET;
     Uri uri(disMissAssetAssetsUri);
     MediaLibraryCommand cmd(uri);
     DataShare::DataSharePredicates predicates;
+    if (albumId == DISMISS_ASSET_ALBUM_ID) {
+        predicates.EqualTo(MAP_ALBUM, "");
+        predicates.And()->In(MAP_ASSET, assetId);
+        predicates.And()->EqualTo(ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::PORTRAIT));
+    }
+    if (albumId >= 0) {
+        predicates.EqualTo(MAP_ALBUM, albumId);
+        predicates.And()->In(MAP_ASSET, assetId);
+        predicates.And()->EqualTo(ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::PORTRAIT));
+    }
+
+    return MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("dismissAsset_Test::Start");
     int albumId = queryAlbumId("tagId1");
     MEDIA_INFO_LOG("albumId:%{public}d", albumId);
     vector<string> assetId = {"file://media/Photo/1/1/1.jpg"};
-    predicates.EqualTo(MAP_ALBUM, albumId);
-    predicates.And()->In(MAP_ASSET, assetId);
-    predicates.And()->EqualTo(ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::PORTRAIT));
-
-    auto deletedRows = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    auto deletedRows = dismissAssetsTest(albumId, assetId);
     EXPECT_GT(deletedRows, 0);
     MEDIA_INFO_LOG("dismissAsset_Test::deletedRows = %{public}d. End", deletedRows);
+}
+
+HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("dismissAsset_Test_error_001::Start");
+    int testAlbumId = TEST_COUNT;
+    vector<string> assetId = {"file://media/Photo/1/1/1.jpg"};
+    auto deletedRows = dismissAssetsTest(testAlbumId, assetId);
+    EXPECT_LT(deletedRows, 0);
+    MEDIA_INFO_LOG("dismissAsset_Test_error_001::deletedRows = %{public}d. End", deletedRows);
+}
+
+HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("dismissAsset_Test_error_002::Start");
+    vector<string> assetId = {"file://media/Photo/1/1/1.jpg"};
+    auto deletedRows = dismissAssetsTest(DISMISS_ASSET_ALBUM_ID, assetId);
+    EXPECT_LT(deletedRows, 0);
+    MEDIA_INFO_LOG("dismissAsset_Test_error_002::deletedRows = %{public}d. End", deletedRows);
+}
+
+HWTEST_F(MediaLibraryVisionTest, dismissAsset_Test_error_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("dismissAsset_Test_error_003::Start");
+    vector<string> assetId = {"file://media/Photo/1/1/1.jpg"};
+    auto deletedRows = dismissAssetsTest(0, assetId);
+    EXPECT_LT(deletedRows, 0);
+    MEDIA_INFO_LOG("dismissAsset_Test_error_003::deletedRows = %{public}d. End", deletedRows);
 }
 
 void SetFavorite(string tagId, int value)
@@ -1845,6 +2273,21 @@ void SetFavorite(string tagId, int value)
     MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
 }
 
+int placeToFrontOfTest(int albumId1, int albumId2)
+{
+    MEDIA_INFO_LOG("placeToFrontOfTest::Start");
+    Uri updateAlbumUri(MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM);
+    MediaLibraryCommand queryCmd(updateAlbumUri);
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_ID, albumId1);
+    valuesBucket.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, albumId2);
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, SMART);
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, PORTRAIT);
+    DataShare::DataSharePredicates predicates;
+    return MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+}
+
 HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("placeToFrontOf_Test::Start");
@@ -1854,17 +2297,47 @@ HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test, TestSize.Level0)
     SetFavorite("tagId4", FAVORITE_PAGE);
     int albumId1 = queryAlbumId("tagId3");
     int albumId2 = queryAlbumId("tagId4");
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_ID, albumId1);
-    valuesBucket.Put(PhotoAlbumColumns::REFERENCE_ALBUM_ID, albumId2);
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, SMART);
-    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, PORTRAIT);
-    DataShare::DataSharePredicates predicates;
-    int32_t result = MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
+    int32_t result = placeToFrontOfTest(albumId1, albumId2);
     EXPECT_EQ(result, 0);
     MEDIA_INFO_LOG("placeToFrontOf_Test::result = %{public}d. End", result);
     SetFavorite("tagId3", UNFAVORITE_PAGE);
     SetFavorite("tagId4", UNFAVORITE_PAGE);
+}
+
+HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("placeToFrontOf_Test_error_001::Start");
+    Uri updateAlbumUri(MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM);
+    MediaLibraryCommand queryCmd(updateAlbumUri);
+    int albumId1 = queryAlbumId("tagId3");
+    int albumId2 = queryAlbumId("tagId4");
+    int32_t result = placeToFrontOfTest(albumId1, albumId2);
+    EXPECT_LT(result, 0);
+    MEDIA_INFO_LOG("placeToFrontOf_Test_error_001::result = %{public}d. End", result);
+}
+
+HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("placeToFrontOf_Test_error_002::Start");
+    Uri updateAlbumUri(MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM);
+    MediaLibraryCommand queryCmd(updateAlbumUri);
+    int albumId1 = TEST_COUNT;
+    int albumId2 = queryAlbumId("tagId4");
+    int32_t result = placeToFrontOfTest(albumId1, albumId2);
+    EXPECT_LT(result, 0);
+    MEDIA_INFO_LOG("placeToFrontOf_Test_error_002::result = %{public}d. End", result);
+}
+
+HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("placeToFrontOf_Test_error_003::Start");
+    Uri updateAlbumUri(MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM);
+    MediaLibraryCommand queryCmd(updateAlbumUri);
+    int albumId1 = TEST_COUNT;
+    int albumId2 = queryAlbumId("tagId4");
+    int32_t result = placeToFrontOfTest(albumId2, albumId1);
+    EXPECT_LT(result, 0);
+    MEDIA_INFO_LOG("placeToFrontOf_Test_error_003::result = %{public}d. End", result);
 }
 
 void UriAppendKeyValue(string &uri, const string &key, const string &value)
