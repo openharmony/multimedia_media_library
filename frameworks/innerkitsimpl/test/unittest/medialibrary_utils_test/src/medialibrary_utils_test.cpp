@@ -51,7 +51,9 @@ int ConfigTestOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersio
 {
     return 0;
 }
+
 shared_ptr<NativeRdb::RdbStore> storePtr = nullptr;
+
 void MediaLibraryUtilsTest::SetUpTestCase(void)
 {
     const string dbPath = "/data/test/medialibrary_utils_test.db";
@@ -61,6 +63,7 @@ void MediaLibraryUtilsTest::SetUpTestCase(void)
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     storePtr = store;
 }
+
 void MediaLibraryUtilsTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
@@ -94,7 +97,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailSet_test_001, TestSize.Le
         .table = MEDIALIBRARY_TABLE,
         .row = row
     };
-
     auto resultSetPtr = ThumbnailUtils::QueryThumbnailSet(opts);
     EXPECT_NE(resultSetPtr, nullptr);
 }
@@ -111,7 +113,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailInfo_test_001, TestSize.L
         .row = row
     };
     ThumbnailData data;
-    int err  = 0;
+    int err = 0;
     auto resultSetPtr = ThumbnailUtils::QueryThumbnailInfo(opts, data, err);
     EXPECT_EQ(resultSetPtr, nullptr);
 }
