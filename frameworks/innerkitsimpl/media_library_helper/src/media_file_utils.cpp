@@ -724,6 +724,15 @@ string MediaFileUtils::StrCreateTime(const string &format, int64_t time)
     return strTime;
 }
 
+string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t time)
+{
+    char strTime[DEFAULT_TIME_SIZE] = "";
+    int64_t times = time / MSEC_TO_SEC;
+    auto tm = localtime(&times);
+    (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
+    return strTime;
+}
+
 string MediaFileUtils::GetIdFromUri(const string &uri)
 {
     return MediaFileUri(uri).GetFileId();
@@ -1398,5 +1407,10 @@ string MediaFileUtils::RemoveDocsFromRelativePath(const string &relativePath)
         return relativePath.substr(DOCS_PATH.size());
     }
     return relativePath;
+}
+
+int64_t MediaFileUtils::Timespec2Millisecond(const struct timespec &time)
+{
+    return time.tv_sec * MSEC_TO_SEC + time.tv_nsec / MSEC_TO_NSEC;
 }
 } // namespace OHOS::Media
