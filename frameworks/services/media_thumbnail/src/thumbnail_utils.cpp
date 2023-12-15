@@ -61,7 +61,7 @@ constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 512;
 constexpr int32_t LCD_LONG_SIDE_THRESHOLD = 1920;
 constexpr int32_t MAXIMUM_LCD_LONG_SIDE = 4096;
 constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
-constexpr int32_t MIN_COMPRESS_BUF_SIZE = 8000;
+constexpr int32_t MIN_COMPRESS_BUF_SIZE = 8192;
 
 bool ThumbnailUtils::UpdateRemotePath(string &path, const string &networkId)
 {
