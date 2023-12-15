@@ -231,6 +231,20 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
     return changedRows;
 }
 
+static void GetDismissAssetsPredicates(NativeRdb::RdbPredicates &rdbPredicate, vector<string> &updateAlbumIds,
+    PhotoAlbumSubType subtype, const string &strAlbumId, const vector<string> &assetsArray)
+{
+    if (subtype == PhotoAlbumSubType::PORTRAIT) {
+        GetPortraitAlbumIds(strAlbumId, updateAlbumIds);
+        rdbPredicate.In(MAP_ALBUM, updateAlbumIds);
+        rdbPredicate.And()->In(MAP_ASSET, assetsArray);
+    } else {
+        rdbPredicate.EqualTo(MAP_ALBUM, strAlbumId);
+        rdbPredicate.And()->In(MAP_ASSET, assetsArray);
+        updateAlbumIds.push_back(strAlbumId);
+    }
+}
+
 int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
 {
     vector<string> whereArgsUri = predicates.GetWhereArgs();
@@ -265,15 +279,8 @@ int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
     }
     vector<string> updateAlbumIds;
     NativeRdb::RdbPredicates rdbPredicate {ANALYSIS_PHOTO_MAP_TABLE};
-    if (subtype == PhotoAlbumSubType::PORTRAIT) {
-        GetPortraitAlbumIds(strAlbumId, updateAlbumIds);
-        rdbPredicate.In(MAP_ALBUM, updateAlbumIds);
-        rdbPredicate.And()->In(MAP_ASSET, assetsArray);
-    } else {
-        rdbPredicate.EqualTo(MAP_ALBUM, strAlbumId);
-        rdbPredicate.And()->In(MAP_ASSET, assetsArray);
-        updateAlbumIds.push_back(strAlbumId);
-    }
+    GetDismissAssetsPredicates(rdbPredicate, updateAlbumIds,
+        static_cast<PhotoAlbumSubType>(subtype), strAlbumId, assetsArray);
     int deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
     if (deleteRow <= 0) {
         return deleteRow;
