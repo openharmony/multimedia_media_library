@@ -301,7 +301,6 @@ bool MediaLibraryNapiUtils::GetLocationPredicate(AsyncContext &context,
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
-    vector<OperationItem> operations;
     map<string, string> locationMap;
     auto &items = predicate->GetOperationList();
     for (auto &item : items) {
@@ -319,38 +318,32 @@ bool MediaLibraryNapiUtils::GetLocationPredicate(AsyncContext &context,
             if (param == DIAMETER) {
                 continue;
             }
-            switch (LOCATION_PARAM_MAP.at(param).second) {
-                case DataShare::GREATER_THAN_OR_EQUAL_TO:
-                    context->predicates.GreaterThanOrEqualTo(LOCATION_PARAM_MAP.at(param).first, value);
-                    break;
-                case DataShare::GREATER_THAN_OR_EQUAL_TO:
-                    context->predicates.LessThan(LOCATION_PARAM_MAP.at(param).first, value);
-                    break;
-                case DataShare::GREATER_THAN_OR_EQUAL_TO:
-                    context->predicates.EqualTo(LOCATION_PARAM_MAP.at(param).first, value);
-                    break;
-                default:
-                    NAPI_ERR_LOG("location album invalid operator");
-                    break;
+            if (LOCATION_PARAM_MAP.at(param).second == DataShare::GREATER_THAN_OR_EQUAL_TO) {
+                context->predicates.GreaterThanOrEqualTo(LOCATION_PARAM_MAP.at(param).first, value);
+                continue;
+            }
+            if (LOCATION_PARAM_MAP.at(param).second == DataShare::LESS_THAN) {
+                context->predicates.LessThan(LOCATION_PARAM_MAP.at(param).first, value);
+                continue;
+            }
+            if (LOCATION_PARAM_MAP.at(param).second == DataShare::EQUAL_TO) {
+                context->predicates.EqualTo(LOCATION_PARAM_MAP.at(param).first, value);
+                continue;
             }
         }
     }
 
-    if (locationMap.count(DIAMETER) == 1) {
-        if (locationMap.count(START_LATITUDE) == 1 && locationMap.count(START_LONGITUDE) == 1) {
-            string latitudeIndex = "round((latitude - " + locationMap.at(START_LATITUDE) + ") / " +
-                locationMap.at(DIAMETER) + " - 0.5)";
-            string longitudeIndex = "round((longitude - " + locationMap.at(START_LONGITUDE) + ") / " +
-                locationMap.at(DIAMETER) + " - 0.5)";
-            string albumName = LATITUDE + "||'_'||" + LONGITUDE + "||'_'||" + latitudeIndex + "||'_'||" +
-                longitudeIndex + " AS " + ALBUM_NAME;
-            context->fetchColumn.push_back(albumName);
-            string locationGroup = latitudeIndex + "," + longitudeIndex;
-            context->predicates.GroupBy({ locationGroup });
-        } else {
-            NAPI_ERR_LOG("location album predicates not exist");
-            return false;
-        }
+    if (locationMap.count(DIAMETER) == 1 && locationMap.count(START_LATITUDE) == 1
+        && locationMap.count(START_LONGITUDE) == 1) {
+        string latitudeIndex = "round((latitude - " + locationMap.at(START_LATITUDE) + ") / " +
+            locationMap.at(DIAMETER) + " - 0.5)";
+        string longitudeIndex = "round((longitude - " + locationMap.at(START_LONGITUDE) + ") / " +
+            locationMap.at(DIAMETER) + " - 0.5)";
+        string albumName = LATITUDE + "||'_'||" + LONGITUDE + "||'_'||" + latitudeIndex + "||'_'||" +
+            longitudeIndex + " AS " + ALBUM_NAME;
+        context->fetchColumn.push_back(albumName);
+        string locationGroup = latitudeIndex + "," + longitudeIndex;
+        context->predicates.GroupBy({ locationGroup });
     }
     return true;
 }
