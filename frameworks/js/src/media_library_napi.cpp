@@ -25,7 +25,6 @@
 #include "file_ex.h"
 #include "hitrace_meter.h"
 #include "location_column.h"
-#include "locale_config.h"
 #include "media_change_request_napi.h"
 #include "media_column.h"
 #include "media_file_uri.h"
@@ -5740,16 +5739,16 @@ static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &contex
 {
     if (albumSubType == PhotoAlbumSubType::GEOGRAPHY_LOCATION) {
         context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_LOCATION;
-        context->fetchColumn = PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS;
+        context->fetchColumn.insert(context->fetchColumn.end(),
+            PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS.begin(),
+            PhotoAlbumColumns::LOCATION_DEFAULT_FETCH_COLUMNS.end());
         MediaLibraryNapiUtils::GetAllLocationPredicates(context->predicates);
         return false;
     } else if (albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
         context->fetchColumn = PhotoAlbumColumns::CITY_DEFAULT_FETCH_COLUMNS;
         context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_CITY;
         string onClause = PhotoAlbumColumns::ALBUM_NAME  + " = " + CITY_ID;
-        string language = Global::I18n::LocaleConfig::GetSystemLanguage();
         context->predicates.InnerJoin(GEO_DICTIONARY_TABLE)->On({ onClause });
-        context->predicates.And()->EqualTo(LANGUAGE, language);
     }
     return true;
 }
