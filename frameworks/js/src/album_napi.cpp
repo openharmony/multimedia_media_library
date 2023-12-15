@@ -358,7 +358,7 @@ napi_value AlbumNapi::JSGetAlbumDateModified(napi_env env, napi_callback_info in
 
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&obj));
     if (status == napi_ok && obj != nullptr) {
-        dateModified = obj->albumAssetPtr->GetAlbumDateModified();
+        dateModified = obj->albumAssetPtr->GetAlbumDateModified() / MSEC_TO_SEC;
         status = napi_create_int64(env, dateModified, &jsResult);
         if (status == napi_ok) {
             return jsResult;
@@ -741,6 +741,7 @@ static void GetFileAssetsNative(napi_env env, void *data)
     AlbumNapiAsyncContext *context = static_cast<AlbumNapiAsyncContext*>(data);
 
     UpdateSelection(context);
+    MediaLibraryNapiUtils::FixSpecialDateType(context->selection);
     context->predicates.SetWhereClause(context->selection);
     context->predicates.SetWhereArgs(context->selectionArgs);
     context->predicates.SetOrder(context->order);
