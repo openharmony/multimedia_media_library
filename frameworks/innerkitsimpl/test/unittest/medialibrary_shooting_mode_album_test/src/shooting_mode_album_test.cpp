@@ -47,6 +47,7 @@ static shared_ptr<RdbStore> g_rdbStore;
 const std::string URI_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_CREATE;
 const std::string URI_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_UPDATE;
 const std::string URI_ORDER_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PHOTO_ALBUM_OPRN + "/" + OPRN_ORDER_ALBUM;
+constexpr int32_t SHOOTING_MODE_ALBUM_MIN_NUM = 9;
 int32_t ClearTable(const string &table)
 {
     RdbPredicates predicates(table);
@@ -202,8 +203,7 @@ void ShootingModeAlbumTest::TearDown() {}
 
 /**
  * @tc.name: photoalbum_create_album_001
- * @tc.desc: Create photo albums test
- *           1. Create an album called "photoalbum_create_album_001"
+ * @tc.desc: Create ShootingMode albums test
  * @tc.type: FUNC
  * @tc.require: issueI6B1SE
  */
@@ -222,5 +222,27 @@ HWTEST_F(ShootingModeAlbumTest, photoalbum_create_ShootingMode_album_001, TestSi
     DoCheckShootingAlbumData(HIGH_PIXEL_ALBUM);
     DoCheckShootingAlbumData(SUPER_MACRO_ALBUM);
     MEDIA_INFO_LOG("photoalbum_create_album_001 exit");
+}
+
+/**
+ * @tc.name: query_shooting_mode_album_001
+ * @tc.desc: query shooting mode albums amd check if number matches
+ * @tc.type: FUNC
+ */
+HWTEST_F(ShootingModeAlbumTest, query_shooting_mode_album_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("query_shooting_mode_album_001 enter");
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, SHOOTING_MODE_TYPE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, SHOOTING_MODE_SUB_TYPE);
+    int errCode = 0;
+    shared_ptr<DataShare::ResultSetBridge> queryResultSet =
+        MediaLibraryDataManager::GetInstance()->Query(cmd, {}, predicates, errCode);
+    shared_ptr<DataShareResultSet> resultSet = make_shared<DataShareResultSet>(queryResultSet);
+    int32_t albumCount = 0;
+    resultSet->GetRowCount(albumCount);
+    EXPECT_EQ((albumCount >= SHOOTING_MODE_ALBUM_MIN_NUM), true);
 }
 } // namespace OHOS::Media
