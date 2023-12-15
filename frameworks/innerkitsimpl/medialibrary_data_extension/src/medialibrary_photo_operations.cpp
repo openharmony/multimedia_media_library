@@ -539,7 +539,7 @@ static void TrashPhotosSendNotify(vector<string> &notifyUris)
         MediaLibraryFormMapOperations::GetFormMapFormId(notifyUri.c_str(), formIds);
     }
     if (!formIds.empty()) {
-        MediaLibraryFormMapOperations::PublishedChange("", formIds);
+        MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
     }
 }
 
@@ -1097,7 +1097,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
         vector<int64_t> formIds;
         MediaLibraryFormMapOperations::GetFormMapFormId(uri.c_str(), formIds);
         if (!formIds.empty()) {
-            MediaLibraryFormMapOperations::PublishedChange(uri, formIds);
+            MediaLibraryFormMapOperations::PublishedChange(uri, formIds, false);
         }
     }
     return E_OK;
@@ -1176,7 +1176,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
         vector<int64_t> formIds;
         MediaLibraryFormMapOperations::GetFormMapFormId(uri.c_str(), formIds);
         if (!formIds.empty()) {
-            MediaLibraryFormMapOperations::PublishedChange(uri, formIds);
+            MediaLibraryFormMapOperations::PublishedChange(uri, formIds, false);
         }
     }
     return E_OK;

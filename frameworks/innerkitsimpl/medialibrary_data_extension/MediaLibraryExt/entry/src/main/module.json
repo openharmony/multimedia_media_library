@@ -59,7 +59,7 @@
           "abilities": [
             "MainAbility",
             "DataShareExtAbility",
-            "MediaBackupExtensionAbility"           
+            "MediaBackupExtensionAbility"
           ],
           "when": "inuse"
         }
@@ -123,6 +123,18 @@
           ],
           "when": "inuse"
         }
+      }
+    ],
+    "proxyDatas": [
+      {
+        "uri":"datashareproxy://com.ohos.medialibrary.medialibrarydata/image_data",
+        "requiredReadPermission":"ohos.permission.READ_IMAGEVIDEO",
+        "requiredWritePermission":"ohos.permission.WRITE_IMAGEVIDEO"
+      },
+      {
+        "uri":"datashareproxy://com.ohos.medialibrary.medialibrarydata/image_uri",
+        "requiredReadPermission":"ohos.permission.READ_IMAGEVIDEO",
+        "requiredWritePermission":"ohos.permission.WRITE_IMAGEVIDEO"
       }
     ]
   }

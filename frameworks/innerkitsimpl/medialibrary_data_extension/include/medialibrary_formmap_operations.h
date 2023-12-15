@@ -35,14 +35,14 @@ class MediaLibraryFormMapOperations : public MediaLibraryAssetOperations {
 public:
     static int32_t RemoveFormIdOperations(RdbPredicates &predicates);
     static int32_t HandleStoreFormIdOperation(MediaLibraryCommand &cmd);
-    static void PublishedChange(const std::string newUri, std::vector<int64_t> &formIds);
+    static void PublishedChange(const std::string newUri, std::vector<int64_t> &formIds, const bool &isSave);
     static void GetFormMapFormId(const std::string &uri, std::vector<int64_t> &formIds);
     static std::string GetUriByFileId(const int32_t &fileId, const std::string &path);
     static bool GetFormIdWithEmptyUriState();
     static bool isHaveEmptyUri;
 
 private:
-    static void ModifyFormMapMassage(const std::string &uri, int64_t &formId);
+    static void ModifyFormMapMassage(const std::string &uri, int64_t &formId, const bool &isSave);
     static bool CheckQueryIsInDb(const OperationObject &operationObject, const std::string &queryId);
     static std::mutex mutex_;
 };
