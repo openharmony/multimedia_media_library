@@ -555,7 +555,9 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_006, TestSize.Level0)
     DataSharePredicates predicates;
     EXPECT_EQ(OrderAlbums(values, predicates), 0);
     int32_t currentOrder = GetAlbumOrder(2);
+    MEDIA_INFO_LOG("current order is %{public}d", currentOrder);
     int32_t referenceOrder = GetAlbumOrder(5);
+    MEDIA_INFO_LOG("reference order is %{public}d", referenceOrder);
     EXPECT_LT(currentOrder, referenceOrder);
     MEDIA_INFO_LOG("photoalbum_order_album_006 end");
 }
@@ -579,7 +581,9 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_007, TestSize.Level0)
     DataSharePredicates predicates;
     EXPECT_EQ(OrderAlbums(values, predicates), 0);
     int32_t currentOrder = GetAlbumOrder(2);
+    MEDIA_INFO_LOG("current order is %{public}d", currentOrder);
     int32_t referenceOrder = GetAlbumOrder(5);
+    MEDIA_INFO_LOG("reference order is %{public}d", referenceOrder);
     EXPECT_LT(currentOrder, referenceOrder);
     MEDIA_INFO_LOG("photoalbum_order_album_007 end");
 }
