@@ -754,6 +754,14 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
         rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
     }
     rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
+    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+        rdbPredicates.BeginWrap();
+        // Filter data that Only exists in Cloud to avoid cosuming data of downloading the original image
+        // meaning of Position: 1--only in local, 2--only in cloud, 3--both in local and cloud
+        rdbPredicates.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
+        rdbPredicates.Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3");
+        rdbPredicates.EndWrap();
+    }
 
     rdbPredicates.Limit(LcdLimit);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
@@ -801,10 +809,62 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
+    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
+        rdbPredicates.BeginWrap();
+        // Filter data that Only exists in Cloud to avoid cosuming data of downloading the original image
+        // meaning of Position: 1--only in local, 2--only in cloud, 3--both in local and cloud
+        rdbPredicates.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
+        rdbPredicates.Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3");
+        rdbPredicates.EndWrap();
+    }
 
     rdbPredicates.Limit(THUMBNAIL_QUERY_MAX);
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
 
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err);
+        if (!data.path.empty()) {
+            infos.push_back(data);
+        }
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
+bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicates.NotEqualTo(PhotoColumn::PHOTO_LAST_VISIT_TIME, "0");
+    rdbPredicates.BeginWrap();
+    // Filter data that Only exists in Cloud to avoid cosuming data of downloading the original image
+    // meaning of Position: 1--only in local, 2--only in cloud, 3--both in local and cloud
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_POSITION, "1");
+    rdbPredicates.Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3");
+    rdbPredicates.EndWrap();
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);

@@ -18,6 +18,7 @@
 
 #include <memory>
 #include "appexecfwk_errors.h"
+#include "background_task_mgr_helper.h"
 #include "bundle_info.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
@@ -32,6 +33,7 @@
 #include "medialibrary_inotify.h"
 #include "application_context.h"
 #include "ability_manager_client.h"
+#include "resource_type.h"
 using namespace OHOS::AAFwk;
 
 namespace OHOS {
@@ -106,6 +108,9 @@ void MedialibrarySubscriber::Init()
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     if (isScreenOff_ && isPowerConnected_) {
+        BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
+            BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
+        BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
         Init();
         std::shared_ptr<MediaLibraryDataManager> dataManager = MediaLibraryDataManager::GetInstance();
         if (dataManager == nullptr) {
@@ -147,6 +152,11 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 
         MEDIA_DEBUG_LOG("DoBackgroundOperation success isScreenOff_ %{public}d, isPowerConnected_ %{public}d",
             isScreenOff_, isPowerConnected_);
+        
+        result = dataManager->DoStopLongTimeTask();
+        if (result != E_OK) {
+            MEDIA_ERR_LOG("DoStopLongTimeTask faild");
+        }
     }
 }
 
@@ -178,6 +188,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
 {
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     WriteThumbnailStat();
+    BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
 }
 
 void MedialibrarySubscriber::DoStartMtpService()

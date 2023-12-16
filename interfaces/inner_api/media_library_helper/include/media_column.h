@@ -90,6 +90,7 @@ public:
     static const std::string PHOTO_USER_COMMENT;
     static const std::string PHOTO_ALL_EXIF;
     static const std::string PHOTO_CLEAN_FLAG;
+    static const std::string PHOTO_HAS_ASTC;
 
     static const std::string PHOTO_SYNCING;
     static const std::string PHOTO_DATE_YEAR;
