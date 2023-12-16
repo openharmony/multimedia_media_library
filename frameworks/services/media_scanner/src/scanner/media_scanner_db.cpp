@@ -147,6 +147,7 @@ static void InsertDateAdded(const Metadata &metadata, ValuesBucket &outValues)
                 MEDIA_WARN_LOG("Invalid dateAdded time, use current time instead: %{public}lld",
                     static_cast<long long>(dateAdded));
             } else {
+                dateAdded = dateModified;
                 MEDIA_WARN_LOG("Invalid dateAdded time, use dateModified instead: %{public}lld",
                     static_cast<long long>(dateAdded));
             }

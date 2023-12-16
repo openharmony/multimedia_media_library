@@ -74,6 +74,7 @@
 #include "value_object.h"
 #include "post_event_utils.h"
 #include "medialibrary_formmap_operations.h"
+#include "ithumbnail_helper.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -1216,6 +1217,20 @@ int32_t MediaLibraryDataManager::DoTrashAging(shared_ptr<int> countPtr)
       *countPtr = *smartAlbumTrashPtr + *albumTrashtPtr + *audioTrashtPtr;
     }
     return E_SUCCESS;
+}
+
+int32_t MediaLibraryDataManager::DoStopLongTimeTask()
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+    ThumbRdbOpt opts;
+    ThumbnailData thumbnailData;
+
+    IThumbnailHelper::AddAsyncTask(IThumbnailHelper::StopLongTimeTask, opts, thumbnailData, false);
+    return E_OK;
 }
 
 int32_t MediaLibraryDataManager::RevertPendingByFileId(const std::string &fileId)
