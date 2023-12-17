@@ -18,13 +18,18 @@
 #include "media_asset_change_request_napi.h"
 
 #include <fcntl.h>
+#include <functional>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <unordered_map>
 #include <unordered_set>
 
+#include "ability_context.h"
+#include "delete_callback.h"
 #include "directory_ex.h"
 #include "file_uri.h"
+#include "js_native_api.h"
+#include "js_native_api_types.h"
 #include "media_asset_edit_data_napi.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -32,9 +37,12 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
+#include "modal_ui_extension_config.h"
 #include "permission_utils.h"
+#include "ui_content.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
+#include "want.h"
 
 using namespace std;
 
@@ -48,6 +56,7 @@ constexpr int32_t YES = 1;
 constexpr int32_t NO = 0;
 
 constexpr int32_t USER_COMMENT_MAX_LEN = 420;
+constexpr int32_t MAX_DELETE_NUMBER = 300;
 
 const std::string SUBTYPE = "subType";
 const std::string PAH_SUBTYPE = "subtype";
@@ -73,6 +82,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("createVideoAssetRequest", JSCreateVideoAssetRequest),
             DECLARE_NAPI_STATIC_FUNCTION("deleteAssets", JSDeleteAssets),
             DECLARE_NAPI_FUNCTION("getAsset", JSGetAsset),
+            DECLARE_NAPI_FUNCTION("setEditData", JSSetEditData),
             DECLARE_NAPI_FUNCTION("setFavorite", JSSetFavorite),
             DECLARE_NAPI_FUNCTION("setHidden", JSSetHidden),
             DECLARE_NAPI_FUNCTION("setTitle", JSSetTitle),
@@ -535,25 +545,44 @@ napi_value MediaAssetChangeRequestNapi::JSCreateVideoAssetRequest(napi_env env, 
     return CreateAssetRequestFromRealPath(env, asyncContext->realPath);
 }
 
+static napi_value initDeleteRequest(napi_env env, MediaAssetChangeRequestAsyncContext& context,
+    OHOS::AAFwk::Want& request, shared_ptr<DeleteCallback>& callback)
+{
+    request.SetElementName(DELETE_UI_PACKAGE_NAME, DELETE_UI_EXT_ABILITY_NAME);
+    request.SetParam(DELETE_UI_EXTENSION_TYPE, DELETE_UI_REQUEST_TYPE);
+
+    CHECK_COND(env, !context.appName.empty(), JS_INNER_FAIL);
+    request.SetParam(DELETE_UI_APPNAME, context.appName);
+
+    request.SetParam(DELETE_UI_URIS, context.uris);
+    callback->SetUris(context.uris);
+
+    napi_valuetype valueType = napi_undefined;
+    CHECK_COND_WITH_MESSAGE(env, context.argc >= ARGS_THREE && context.argc <= ARGS_FOUR, "Failed to check args");
+    napi_value func = context.argv[PARAM1];
+    CHECK_ARGS(env, napi_typeof(env, func, &valueType), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, valueType == napi_function, "Failed to check args");
+    callback->SetFunc(func);
+    RETURN_NAPI_TRUE(env);
+}
+
 static napi_value ParseArgsDeleteAssets(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& context)
 {
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
-
-    constexpr size_t minArgs = ARGS_TWO;
-    constexpr size_t maxArgs = ARGS_THREE;
+    constexpr size_t minArgs = ARGS_THREE;
+    constexpr size_t maxArgs = ARGS_FOUR;
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, context, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
     CHECK_COND(env, MediaAssetChangeRequestNapi::InitUserFileClient(env, info), JS_INNER_FAIL);
 
+    napi_valuetype valueType = napi_undefined;
+    CHECK_ARGS(env, napi_typeof(env, context->argv[PARAM1], &valueType), JS_INNER_FAIL);
+    CHECK_COND(env, valueType == napi_function, JS_INNER_FAIL);
+
     vector<string> uris;
     vector<napi_value> napiValues;
-    napi_valuetype valueType = napi_undefined;
-    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM1], napiValues));
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[PARAM2], napiValues));
     CHECK_COND_WITH_MESSAGE(env, !napiValues.empty(), "array is empty");
     CHECK_ARGS(env, napi_typeof(env, napiValues.front(), &valueType), JS_INNER_FAIL);
     if (valueType == napi_string) { // array of asset uri
@@ -565,14 +594,14 @@ static napi_value ParseArgsDeleteAssets(
         return nullptr;
     }
 
-    CHECK_COND_WITH_MESSAGE(env, !uris.empty(), "Failed to check empty uri");
+    CHECK_COND_WITH_MESSAGE(env, !uris.empty(), "Failed to check empty array");
     for (const auto& uri : uris) {
-        CHECK_COND_WITH_MESSAGE(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos,
-            "Failed to check uri format, not a photo uri");
+        CHECK_COND(env, uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos, JS_E_URI);
     }
 
     context->predicates.In(PhotoColumn::MEDIA_ID, uris);
     context->valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
+    context->uris.assign(uris.begin(), uris.end());
     RETURN_NAPI_TRUE(env);
 }
 
@@ -614,8 +643,41 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
 {
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAssets(env, info, asyncContext), "Failed to parse args");
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(
-        env, asyncContext, "ChangeRequestDeleteAssets", DeleteAssetsExecute, DeleteAssetsCompleteCallback);
+    if (MediaLibraryNapiUtils::IsSystemApp()) {
+        return MediaLibraryNapiUtils::NapiCreateAsyncWork(
+            env, asyncContext, "ChangeRequestDeleteAssets", DeleteAssetsExecute, DeleteAssetsCompleteCallback);
+    }
+
+    // Deletion control by ui extension
+    CHECK_COND(env, HasWritePermission(), OHOS_PERMISSION_DENIED_CODE);
+    CHECK_COND_WITH_MESSAGE(
+        env, asyncContext->uris.size() <= MAX_DELETE_NUMBER, "No more than 300 assets can be deleted at one time");
+    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, asyncContext->argv[PARAM0]);
+    CHECK_COND_WITH_MESSAGE(env, context != nullptr, "Failed to get stage mode context");
+    auto abilityContext = OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
+    CHECK_COND(env, abilityContext != nullptr, JS_INNER_FAIL);
+    auto abilityInfo = abilityContext->GetAbilityInfo();
+    abilityContext->GetResourceManager()->GetStringById(abilityInfo->labelId, asyncContext->appName);
+    auto uiContent = abilityContext->GetUIContent();
+    CHECK_COND(env, uiContent != nullptr, JS_INNER_FAIL);
+
+    auto callback = std::make_shared<DeleteCallback>(env, uiContent);
+    OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
+        std::bind(&DeleteCallback::OnRelease, callback, std::placeholders::_1),
+        std::bind(&DeleteCallback::OnResult, callback, std::placeholders::_1, std::placeholders::_2),
+        std::bind(&DeleteCallback::OnReceive, callback, std::placeholders::_1),
+        std::bind(
+            &DeleteCallback::OnError, callback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+    };
+    OHOS::Ace::ModalUIExtensionConfig config;
+    config.isProhibitBack = true;
+    OHOS::AAFwk::Want request;
+    CHECK_COND(env, initDeleteRequest(env, *asyncContext, request, callback), JS_INNER_FAIL);
+
+    int32_t sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
+    CHECK_COND(env, sessionId != 0, JS_INNER_FAIL);
+    callback->SetSessionId(sessionId);
+    RETURN_NAPI_UNDEFINED(env);
 }
 
 napi_value MediaAssetChangeRequestNapi::JSSetEditData(napi_env env, napi_callback_info info)

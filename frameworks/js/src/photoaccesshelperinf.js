@@ -17,11 +17,13 @@ const photoAccessHelper = requireInternal('file.photoAccessHelper');
 const bundleManager = requireNapi('bundle.bundleManager');
 
 const ARGS_TWO = 2;
+const ARGS_THREE = 3;
 
 const WRITE_PERMISSION = 'ohos.permission.WRITE_IMAGEVIDEO';
 
 const PERMISSION_DENIED = 13900012;
 const ERR_CODE_PARAMERTER_INVALID = 13900020;
+const ERR_CODE_OHOS_PARAMERTER_INVALID = 401;
 const REQUEST_CODE_SUCCESS = 0;
 const PERMISSION_STATE_ERROR = -1;
 const ERROR_MSG_WRITE_PERMISSION = 'not have ohos.permission.WRITE_IMAGEVIDEO';
@@ -390,6 +392,44 @@ function PhotoViewPicker() {
 function RecommendationOptions() {
 }
 
+class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest {
+  static deleteAssets(context, assets, asyncCallback) {
+    if (arguments.length > ARGS_THREE || arguments.length < ARGS_TWO) {
+      throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
+    }
+
+    try {
+      if (asyncCallback) {
+        return super.deleteAssets(context, result => {
+          if (result.result === REQUEST_CODE_SUCCESS) {
+            asyncCallback();
+          } else {
+            asyncCallback(new BusinessError(ERROR_MSG_USER_DENY)); // TODO:
+          }
+        }, assets, asyncCallback);
+      }
+
+      return new Promise((resolve, reject) => {
+        super.deleteAssets(context, result => {
+          if (result.result === REQUEST_CODE_SUCCESS) {
+            resolve();
+          } else {
+            reject(new BusinessError(ERROR_MSG_USER_DENY)); // TODO:
+          }
+        }, assets, (err) => {
+          if (err) {
+            reject(err); // TODO:
+          } else {
+            resolve();
+          }
+        });
+      });
+    } catch (error) {
+      return errorResult(new BusinessError(error.message, error.code), asyncCallback);
+    }
+  }
+}
+
 export default {
   getPhotoAccessHelper,
   getPhotoAccessHelperAsync,
@@ -412,7 +452,7 @@ export default {
   RecommendationType: RecommendationType,
   RecommendationOptions: RecommendationOptions,
   MediaAssetEditData: photoAccessHelper.MediaAssetEditData,
-  MediaAssetChangeRequest: photoAccessHelper.MediaAssetChangeRequest,
+  MediaAssetChangeRequest: MediaAssetChangeRequest,
   MediaAssetsChangeRequest: photoAccessHelper.MediaAssetsChangeRequest,
   MediaAlbumChangeRequest: photoAccessHelper.MediaAlbumChangeRequest,
 };
