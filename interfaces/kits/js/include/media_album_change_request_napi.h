@@ -66,7 +66,7 @@ public:
     std::vector<std::string> GetRemoveAssetArray() const;
     std::vector<std::string> GetRecoverAssetArray() const;
     std::vector<std::string> GetDeleteAssetArray() const;
-    std::vector<std::string> GetDismissAssets() const;
+    std::vector<std::string> GetDismissAssetArray() const;
     std::map<std::shared_ptr<PhotoAlbum>, std::vector<std::string>, PhotoAlbumPtrCompare> GetMoveMap() const;
     void RecordMoveAssets(std::vector<std::string>& assetArray, std::shared_ptr<PhotoAlbum>& targetAlbum);
     void ClearAddAssetArray();
