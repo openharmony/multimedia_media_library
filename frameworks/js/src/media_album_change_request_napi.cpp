@@ -151,7 +151,7 @@ vector<string> MediaAlbumChangeRequestNapi::GetDeleteAssetArray() const
     return assetsToDelete_;
 }
 
-vector<string> MediaAlbumChangeRequestNapi::GetDismissAssets() const
+vector<string> MediaAlbumChangeRequestNapi::GetDismissAssetArray() const
 {
     return dismissAssets_;
 }
@@ -220,6 +220,11 @@ bool MediaAlbumChangeRequestNapi::CheckChangeOperations(napi_env env)
 
     if (albumChangeOperations_.front() != AlbumChangeOperation::CREATE_ALBUM && photoAlbum->GetAlbumId() <= 0) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid album change request");
+        return false;
+    }
+
+    if (!CheckPortraitMergeAlbum()) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Missing setAlbumName after mergeAlbum");
         return false;
     }
 
@@ -1015,7 +1020,7 @@ static bool DismissAssetExecute(MediaAlbumChangeRequestAsyncContext& context)
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MAP_ALBUM, to_string(photoAlbum->GetAlbumId()));
-    predicates.And()->In(MAP_ASSET, context.objectInfo->GetDismissAssets());
+    predicates.And()->In(MAP_ASSET, context.objectInfo->GetDismissAssetArray());
     predicates.And()->EqualTo(ALBUM_SUBTYPE, to_string(photoAlbum->GetPhotoAlbumSubType()));
 
     auto deletedRows = UserFileClient::Delete(uri, predicates);
@@ -1059,7 +1064,6 @@ static bool SetAlbumPropertyExecute(
         return true;
     }
 
-    string property;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
@@ -1072,8 +1076,7 @@ static bool SetAlbumPropertyExecute(
             } else {
                 uri = PAH_UPDATE_PHOTO_ALBUM;
             }
-            property = PhotoAlbumColumns::ALBUM_NAME;
-            valuesBucket.Put(property, photoAlbum->GetAlbumName());
+            valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
             break;
         case AlbumChangeOperation::SET_COVER_URI:
             if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
@@ -1081,18 +1084,15 @@ static bool SetAlbumPropertyExecute(
             } else {
                 uri = PAH_UPDATE_PHOTO_ALBUM;
             }
-            property = PhotoAlbumColumns::ALBUM_COVER_URI;
-            valuesBucket.Put(property, photoAlbum->GetCoverUri());
+            valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, photoAlbum->GetCoverUri());
             break;
         case AlbumChangeOperation::SET_DISPLAY_LEVEL:
             uri = PAH_PORTRAIT_DISPLAY_LEVLE;
-            property = USER_DISPLAY_LEVEL;
-            valuesBucket.Put(property, photoAlbum->GetDisplayLevel());
+            valuesBucket.Put(USER_DISPLAY_LEVEL, photoAlbum->GetDisplayLevel());
             break;
         case AlbumChangeOperation::SET_IS_ME:
             uri = PAH_PORTRAIT_IS_ME;
-            property = IS_ME;
-            valuesBucket.Put(property, 1);
+            valuesBucket.Put(IS_ME, 1);
             break;
         default:
             context.SaveError(E_FAIL);
@@ -1106,7 +1106,7 @@ static bool SetAlbumPropertyExecute(
     int32_t changedRows = UserFileClient::Update(updateAlbumUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context.SaveError(changedRows);
-        NAPI_ERR_LOG("Failed to set %{public}s, err: %{public}d", property.c_str(), changedRows);
+        NAPI_ERR_LOG("Failed to update property of album, err: %{public}d", changedRows);
         return false;
     }
     return true;
@@ -1202,9 +1202,6 @@ napi_value MediaAlbumChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
         MediaLibraryNapiUtils::AsyncContextGetArgs(env, info, asyncContext, minArgs, maxArgs) == napi_ok,
         "Failed to get args");
     asyncContext->objectInfo = this;
-
-    CHECK_COND_WITH_MESSAGE(env, !albumChangeOperations_.empty(), "None request to apply");
-    CHECK_COND_WITH_MESSAGE(env, CheckPortraitMergeAlbum(), "No setAlbumName after mergeAlbum");
     CHECK_COND_WITH_MESSAGE(env, CheckChangeOperations(env), "Failed to check album change request operations");
     asyncContext->albumChangeOperations = albumChangeOperations_;
     albumChangeOperations_.clear();
