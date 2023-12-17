@@ -300,6 +300,10 @@ const std::vector<std::string> requestPhotoTypeEnum {
     "REQUEST_ALL_THUMBNAILS", "REQUEST_FAST_THUMBNAIL", "REQUEST_QUALITY_THUMBNAIL"
 };
 
+const std::vector<std::string> resourceTypeEnum {
+    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY"
+};
+
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
     MEDIA_DATA_DB_RELATIVE_PATH,
