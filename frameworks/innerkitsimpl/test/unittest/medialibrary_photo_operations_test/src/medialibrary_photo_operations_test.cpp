@@ -209,6 +209,7 @@ void ClearAndRestart()
     system("rm -rf /storage/cloud/files/*");
     system("rm -rf /storage/cloud/files/.thumbs");
     system("rm -rf /storage/cloud/files/.editData");
+    system("rm -rf /storage/cloud/files/.cache");
     for (const auto &dir : TEST_ROOT_DIRS) {
         string ROOT_PATH = "/storage/cloud/100/files/";
         bool ret = MediaFileUtils::CreateDirectory(ROOT_PATH + dir + "/");
@@ -2366,6 +2367,244 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, multistages_capture_test_002, TestSize
     EXPECT_EQ(deferredProcType, 1);
 
     MEDIA_INFO_LOG("end tdd multistages_capture_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_open_cache_test_001");
+
+    string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_open_cache_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_open_cache_test_002");
+
+    string fileName = "open_cache_test_002.jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+
+    MediaLibraryCommand duplicatedCmd(openCacheUri);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->OpenFile(duplicatedCmd, "w");
+    EXPECT_LT(ret, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_open_cache_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_open_cache_test_003");
+
+    string unsupportedFileName = "open_cache_test_003.txt";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + unsupportedFileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_LT(ret, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_open_cache_test_003");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_001");
+
+    // open cache file
+    string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+    close(fd);
+
+    // create by cache
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_NAME, "create_by_cache.jpg");
+    valuesBucket.Put(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    valuesBucket.Put(CACHE_FILE_NAME, fileName);
+
+    string assetUri;
+    MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->InsertExt(submitCacheCmd, valuesBucket, assetUri);
+    EXPECT_GT(ret, 0);
+    EXPECT_EQ(assetUri.empty(), false);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_002");
+
+    // open cache file
+    string fileName = "create_by_cache_test_002.jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+    close(fd);
+
+    // create by cache
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_NAME, "create_by_cache.mp4");
+    valuesBucket.Put(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_VIDEO);
+    valuesBucket.Put(CACHE_FILE_NAME, fileName);
+
+    string assetUri;
+    MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->InsertExt(submitCacheCmd, valuesBucket, assetUri);
+    EXPECT_LT(ret, 0);
+    EXPECT_EQ(assetUri.empty(), true);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_modify_by_cache_test_001");
+
+    // create asset
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    // open cache file
+    string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+    close(fd);
+
+    // modify by cache
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
+    valuesBucket.Put(CACHE_FILE_NAME, fileName);
+
+    MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
+    EXPECT_EQ(ret, fileId);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_modify_by_cache_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_modify_by_cache_test_002");
+
+    // create asset
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "photo.mp4");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    // open cache file
+    string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+    close(fd);
+
+    // modify by cache
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
+    valuesBucket.Put(CACHE_FILE_NAME, fileName);
+
+    MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
+    EXPECT_LT(ret, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_modify_by_cache_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_delete_cache_test_001");
+
+    // open cache file
+    string fileName = "delete_cache_test_001.jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+
+    // delete cache file
+    string deleteUri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(deleteUri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri deleteCacheUri(deleteUri);
+
+    MediaLibraryCommand deleteCacheCmd(deleteCacheUri);
+    DataSharePredicates predicates;
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Delete(deleteCacheCmd, predicates);
+    EXPECT_EQ(ret, E_OK);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_delete_cache_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_delete_cache_test_002");
+
+    // open cache file
+    string fileName = "delete_cache_test_002.jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+
+    // delete cache file
+    string deleteUri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + "NONE.jpg";
+    MediaFileUtils::UriAppendKeyValue(deleteUri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri deleteCacheUri(deleteUri);
+
+    MediaLibraryCommand deleteCacheCmd(deleteCacheUri);
+    DataSharePredicates predicates;
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Delete(deleteCacheCmd, predicates);
+    EXPECT_LT(ret, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_delete_cache_test_002");
 }
 } // namespace Media
 } // namespace OHOS
