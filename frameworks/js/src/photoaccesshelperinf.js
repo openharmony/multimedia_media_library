@@ -123,9 +123,9 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
     let result = photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
       if (asyncCallback) {
         if (result.result === REQUEST_CODE_SUCCESS) {
-          return asyncCallback();
+          asyncCallback();
         } else {
-          return asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
+          asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
         }
       }
     });
