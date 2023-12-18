@@ -4874,11 +4874,11 @@ static napi_status ParseSaveFormInfoOption(napi_env env, napi_value arg, MediaLi
 {
     const std::string formId = "formId";
     const std::string uri = "uri";
-    const std::map<std::string, std::string> storeFormOptionsParam = {
+    const std::map<std::string, std::string> saveFormInfoOptionsParam = {
         { formId, FormMap::FORMMAP_FORM_ID },
         { uri, FormMap::FORMMAP_URI }
     };
-    for (const auto &iter : storeFormOptionsParam) {
+    for (const auto &iter : saveFormInfoOptionsParam) {
         string param = iter.first;
         bool present = false;
         napi_status result = napi_has_named_property(env, arg, param.c_str(), &present);
@@ -4938,10 +4938,10 @@ static void SaveFormInfoExec(napi_env env, void *data, ResultNapiType type)
     }
 }
 
-static void StoreFormIdAsyncCallbackComplete(napi_env env, napi_status status, void *data)
+static void SaveFormInfoAsyncCallbackComplete(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("StoreFormIdAsyncCallbackComplete");
+    tracer.Start("SaveFormInfoAsyncCallbackComplete");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     auto jsContext = make_unique<JSAsyncContextOutput>();
@@ -4964,8 +4964,6 @@ static void StoreFormIdAsyncCallbackComplete(napi_env env, napi_status status, v
 static napi_value ParseArgsRemoveFormInfo(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
-    string formId;
-    napi_value value;
     constexpr size_t minArgs = ARGS_ONE;
     constexpr size_t maxArgs = ARGS_TWO;
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs,
@@ -4979,15 +4977,15 @@ static napi_value ParseArgsRemoveFormInfo(napi_env env, napi_callback_info info,
         return nullptr;
     }
 
+    napi_value value;
     CHECK_COND_WITH_MESSAGE(env, napi_get_named_property(env, context->argv[ARGS_ZERO], "formId", &value) == napi_ok,
         "failed to get named property");
     char buffer[ARG_BUF_SIZE];
     size_t res = 0;
     CHECK_COND_WITH_MESSAGE(env, napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res) == napi_ok,
         "failed to get string param");
-    formId = string(buffer);
-    CHECK_COND_WITH_MESSAGE(env, CheckFormId(formId) == napi_ok, "FormId is invalid");
-    context->formId = formId;
+    context->formId = string(buffer);
+    CHECK_COND_WITH_MESSAGE(env, CheckFormId(context->formId) == napi_ok, "FormId is invalid");
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
     return result;
@@ -5052,7 +5050,7 @@ napi_value MediaLibraryNapi::PhotoAccessSaveFormInfo(napi_env env, napi_callback
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     CHECK_NULLPTR_RET(ParseArgsSaveFormInfo(env, info, asyncContext));
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessSaveFormInfo",
-        PhotoAccessSaveFormInfoExec, StoreFormIdAsyncCallbackComplete);
+        PhotoAccessSaveFormInfoExec, SaveFormInfoAsyncCallbackComplete);
 }
 
 static void PhotoAccessRemoveFormInfoExec(napi_env env, void *data)
