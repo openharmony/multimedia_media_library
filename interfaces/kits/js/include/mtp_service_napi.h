@@ -15,6 +15,7 @@
 
 #ifndef MPT_SERVICE_H_
 #define MPT_SERVICE_H_
+#ifdef MEDIALIBRARY_MTP_ENABLE
 
 #include "napi_base_context.h"
 #include "napi/native_api.h"
@@ -45,3 +46,4 @@ private:
 } // namespace OHOS
 
 #endif // MPT_SERVICE_H_
+#endif

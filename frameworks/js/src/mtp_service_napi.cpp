@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#ifdef MEDIALIBRARY_MTP_ENABLE
 #define MLOG_TAG "MtpServiceNapi"
 
 #include "mtp_service_napi.h"
@@ -137,3 +137,4 @@ extern "C" __attribute__((constructor)) void RegisterModule(void)
 }
 } // namespace Media
 } // namespace OHOS
+#endif
