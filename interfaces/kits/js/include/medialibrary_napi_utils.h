@@ -396,12 +396,13 @@ const std::vector<std::pair<std::string, std::string>> DEFAULT_URI_ENUM_PROPERTI
     std::make_pair("DEFAULT_HIDDEN_ALBUM_URI",  PhotoAlbumColumns::DEFAULT_HIDDEN_ALBUM_URI),
 };
 
-const std::map<std::string, std::string> LOCATION_PARAM_MAP = {
-    { START_LATITUDE, LATITUDE },
-    { END_LATITUDE, LATITUDE },
-    { START_LONGITUDE, LONGITUDE },
-    { END_LONGITUDE, LONGITUDE },
-    { DIAMETER, DIAMETER },
+const std::map<std::string, std::pair<std::string, int32_t>> LOCATION_PARAM_MAP = {
+    { START_LATITUDE, { LATITUDE, DataShare::GREATER_THAN_OR_EQUAL_TO } },
+    { END_LATITUDE, { LATITUDE, DataShare::LESS_THAN } },
+    { START_LONGITUDE, { LONGITUDE, DataShare::GREATER_THAN_OR_EQUAL_TO } },
+    { END_LONGITUDE, { LONGITUDE, DataShare::LESS_THAN } },
+    { DIAMETER, { DIAMETER, DataShare::EQUAL_TO } },
+    { LANGUAGE, { LANGUAGE, DataShare::EQUAL_TO } },
 };
 
 struct JSAsyncContextOutput {
