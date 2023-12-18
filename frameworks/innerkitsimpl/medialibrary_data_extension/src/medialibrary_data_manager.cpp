@@ -1156,7 +1156,7 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService(
 
 void MediaLibraryDataManager::InitACLPermission()
 {
-    if (access(THUMB_DIR.c_str(), F_OK)) {
+    if (access(THUMB_DIR.c_str(), F_OK) == 0) {
         return;
     }
 
