@@ -97,7 +97,6 @@ const std::string DIAMETER = "diameter";
 
 // location album result
 const std::string LOCATION_ALBUM_ID = MediaColumn::MEDIA_ID + " AS " + ALBUM_ID;
-const std::string LOCATION_ALBUM_NAME = LATITUDE + "||'_'||" + LONGITUDE + " AS " + ALBUM_NAME;
 const std::string LOCATION_ALBUM_TYPE = std::to_string(PhotoAlbumType::SMART) + " AS " + ALBUM_TYPE;
 const std::string LOCATION_ALBUM_SUBTYPE = std::to_string(PhotoAlbumSubType::GEOGRAPHY_LOCATION) +
     " AS " + ALBUM_SUBTYPE;
