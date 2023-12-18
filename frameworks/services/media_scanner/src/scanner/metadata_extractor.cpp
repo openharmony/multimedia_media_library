@@ -201,11 +201,12 @@ static std::string ExtractVideoShootingMode(const std::string &genreJson)
     return "";
 }
 
-void PopulateExtractedAVMetadataOne(const std::unordered_map<int32_t, std::string> &resultMap,
+void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,
     std::unique_ptr<Metadata> &data)
 {
     string strTemp;
     int32_t intTempMeta;
+    int64_t int64TempMeta;
 
     strTemp = resultMap.at(AV_KEY_ALBUM);
     if (strTemp != "") {
@@ -239,14 +240,6 @@ void PopulateExtractedAVMetadataOne(const std::unordered_map<int32_t, std::strin
     if (strTemp != "") {
         data->SetFileMimeType(strTemp);
     }
-}
-
-void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::string> &resultMap,
-    std::unique_ptr<Metadata> &data)
-{
-    string strTemp;
-    int32_t intTempMeta;
-    int64_t int64TempMeta;
 
     strTemp = resultMap.at(AV_KEY_DATE_TIME_FORMAT);
     if (strTemp != "") {
@@ -278,14 +271,7 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
         std::string videoShootingMode = ExtractVideoShootingMode(strTemp);
         data->SetShootingMode(videoShootingMode);
     }
-}
-
-void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,
-    std::unique_ptr<Metadata> &data)
-{
-    PopulateExtractedAVMetadataOne(resultMap, data);
-    PopulateExtractedAVMetadataTwo(resultMap, data);
-
+    
     int64_t timeNow = MediaFileUtils::UTCTimeMilliSeconds();
     data->SetLastVisitTime(timeNow);
 }
