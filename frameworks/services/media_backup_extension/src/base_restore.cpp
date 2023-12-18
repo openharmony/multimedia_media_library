@@ -26,6 +26,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_type_const.h"
+#include "medialibrary_rdb_utils.h"
 #include "medialibrary_errno.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
@@ -43,6 +44,7 @@ void BaseRestore::StartRestore(const std::string &orignPath, const std::string &
     }
     // Re-scanning is required when the system is restarted
     MediaScannerManager::GetInstance()->ScanDirSync(RESTORE_CLOUD_DIR, nullptr);
+    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(mediaLibraryRdb_);
     HandleRestData();
 }
 
