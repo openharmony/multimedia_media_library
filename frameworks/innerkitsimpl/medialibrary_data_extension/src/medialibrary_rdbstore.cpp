@@ -1898,6 +1898,15 @@ void UpdateMillisecondDate(RdbStore &store)
     MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
 }
 
+void AddAddressDescriptionColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + CITY_NAME + " TEXT",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + ADDRESS_DESCRIPTION + " TEXT",
+    };
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2049,6 +2058,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     
     if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
         UpdateMillisecondDate(store);
+    }
+
+    if (oldVersion < VERSION_ADD_ADDRESS_DESCRIPTION) {
+        AddAddressDescriptionColumns(store);
     }
 }
 
