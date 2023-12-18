@@ -335,7 +335,7 @@ bool MediaLibraryNapiUtils::GetLocationPredicate(AsyncContext &context,
 
     if (locationMap.count(DIAMETER) == 1 && locationMap.count(START_LATITUDE) == 1
         && locationMap.count(START_LONGITUDE) == 1) {
-        // 0.5:Used for rounding down   
+        // 0.5:Used for rounding down
         string latitudeIndex = "round((latitude - " + locationMap.at(START_LATITUDE) + ") / " +
             locationMap.at(DIAMETER) + " - 0.5)";
         string longitudeIndex = "round((longitude - " + locationMap.at(START_LONGITUDE) + ") / " +
