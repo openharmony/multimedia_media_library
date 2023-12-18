@@ -56,7 +56,8 @@ namespace OHOS {
 namespace Media {
 std::mutex MediaLibraryFormMapOperations::mutex_;
 bool MediaLibraryFormMapOperations::isHaveEmptyUri = false;
-const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_data";
+const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata";
+const string MEDIA_LIBRARY_PROXY_DATA_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_data";
 const string MEDIA_LIBRARY_PROXY_IMAGE_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_uri";
 const string NO_PICTURES = "";
 const string IMAGE_DELETED = "-1";
@@ -200,10 +201,10 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, const v
     if (newUri.empty()) {
         tempData = NO_PICTURES;
         for (auto &formId : formIds) {
-            data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_URI, formId, tempData));
-            std::vector<OperationResult> results = dataShareHelper->Publish(data, BUNDLE_NAME);
             MEDIA_INFO_LOG("Published formId is %{private}s, size of value is %{private}zu!",
                 to_string(formId).c_str(), NO_PICTURES.size());
+            data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_DATA_URI, formId, tempData));
+            std::vector<OperationResult> results = dataShareHelper->Publish(data, BUNDLE_NAME);
             MediaLibraryFormMapOperations::ModifyFormMapMessage(IMAGE_DELETED, formId, isSave);
         }
     } else {
@@ -217,12 +218,12 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, const v
             tempData = buffer;
             PublishedDataItem::DataType uriData = newUri;
             for (auto &formId : formIds) {
-                data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_URI, formId, tempData));
+                MEDIA_INFO_LOG("Published formId: %{private}s!, value size: %{private}zu, image uri: %{private}s",
+                    to_string(formId).c_str(), buffer.size(), newUri.c_str());
+                data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_DATA_URI, formId, tempData));
                 std::vector<OperationResult> dataResults = dataShareHelper->Publish(data, BUNDLE_NAME);
                 data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_IMAGE_URI, formId, uriData));
                 std::vector<OperationResult> uriResults = dataShareHelper->Publish(data, BUNDLE_NAME);
-                MEDIA_INFO_LOG("Published formId: %{private}s!, value size: %{private}zu, image uri: %{private}s",
-                    to_string(formId).c_str(), buffer.size(), newUri.c_str());
                 MediaLibraryFormMapOperations::ModifyFormMapMessage(newUri, formId, isSave);
                 isHaveEmptyUri = false;
             }
