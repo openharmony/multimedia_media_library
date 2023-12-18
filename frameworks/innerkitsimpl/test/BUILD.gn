@@ -47,7 +47,8 @@ group("test") {
     "unittest/photo_album_test:PhotoAlbumTest",
   ]
 
-  if (defined(global_parts_info.hdf_drivers_interface_usb)) {
+  if (defined(global_parts_info.hdf_drivers_interface_usb) &&
+      defined(medialibrary_mtp_enable)) {
     deps += [
       "unittest/medialibrary_mtp_test:unittest",
       "unittest/mtp_native_test:unittest",

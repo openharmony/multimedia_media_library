@@ -69,13 +69,16 @@ config("napi_config") {
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
-    "${MEDIALIB_MTP_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "../../../../../distributedhardware/device_manager/interfaces/inner_kits/native_cpp/include",
     "//third_party/e2fsprogs/e2fsprogs/lib",
   ]
+
+  if (defined(medialibrary_mtp_enable)) {
+    include_dirs += [ "${MEDIALIB_MTP_PATH}/include" ]
+  }
 
   ldflags = [ "-Wl" ]
 }
@@ -140,6 +143,9 @@ ohos_shared_library("medialibrary_nutils") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
+  if (defined(medialibrary_mtp_enable)) {
+    defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
+  }
   if (!link_opt) {
     sanitize = {
       cfi = true
@@ -197,6 +203,9 @@ ohos_shared_library("medialibrary") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
+  if (defined(medialibrary_mtp_enable)) {
+    defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
+  }
   if (!link_opt) {
     sanitize = {
       cfi = true
@@ -252,6 +261,9 @@ ohos_shared_library("userfilemanager") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
+  if (defined(medialibrary_mtp_enable)) {
+    defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
+  }
   if (!link_opt) {
     sanitize = {
       cfi = true
@@ -353,6 +365,9 @@ ohos_shared_library("photoaccesshelper") {
 
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
+  if (defined(medialibrary_mtp_enable)) {
+    defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
+  }
   if (!link_opt) {
     sanitize = {
       cfi = true
