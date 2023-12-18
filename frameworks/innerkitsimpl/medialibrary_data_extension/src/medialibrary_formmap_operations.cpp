@@ -134,14 +134,13 @@ void MediaLibraryFormMapOperations::GetFormMapFormId(const string &uri, vector<i
         return;
     }
     while (queryResult->GoToNextRow() == NativeRdb::E_OK) {
-        string tempFormId = GetStringVal(FormMap::FORMMAP_FORM_ID, queryResult);
-        if (tempFormId.empty()) {
+        string formId = GetStringVal(FormMap::FORMMAP_FORM_ID, queryResult);
+        if (formId.empty()) {
             MEDIA_WARN_LOG("Failed to get form id from result!");
             continue;
         }
         if (GetStringVal(FormMap::FORMMAP_URI, queryResult) == uri) {
-            int64_t formId = std::stoll(tempFormId);
-            formIds.push_back(formId);
+            formIds.push_back(std::stoll(formId));
         }
     }
 }
@@ -166,34 +165,26 @@ static string GetFilePathById(const string &fileId)
     return GetStringVal(MEDIA_DATA_DB_FILE_PATH, queryResult);
 }
 
-void MediaLibraryFormMapOperations::ModifyFormMapMassage(const string &uri, int64_t &formId, const bool &isSave)
+void MediaLibraryFormMapOperations::ModifyFormMapMessage(const string &uri, const int64_t &formId, const bool &isSave)
 {
     if (isSave) {
-        MEDIA_INFO_LOG("Modify FormMap massage return!, the case is saveFormInfo");
+        MEDIA_INFO_LOG("Modify FormMap message return!, the case is saveFormInfo");
         return;
     }
     lock_guard<mutex> lock(mutex_);
-    string newUri = uri;
-    if (!uri.empty()) {
-        int pos = uri.find("?");
-        if (pos > 0) {
-            newUri = uri.substr(0, pos);
-        }
-    }
     ValuesBucket value;
-    value.PutString(FormMap::FORMMAP_URI, newUri);
-
+    value.PutString(FormMap::FORMMAP_URI, uri);
     RdbPredicates predicates(FormMap::FORM_MAP_TABLE);
     predicates.And()->EqualTo(FormMap::FORMMAP_FORM_ID, std::to_string(formId));
     int32_t updateRow = MediaLibraryRdbStore::Update(value, predicates);
     if (updateRow < 0) {
-        MEDIA_ERR_LOG("Modify FormMap massage err!, uri is %{private}s, formId is %{private}s",
+        MEDIA_ERR_LOG("Modify FormMap message err!, uri is %{private}s, formId is %{private}s",
             uri.c_str(), to_string(formId).c_str());
     }
     return;
 }
 
-void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<int64_t> &formIds,
+void MediaLibraryFormMapOperations::PublishedChange(const string newUri, const vector<int64_t> &formIds,
     const bool &isSave)
 {
     CreateOptions options;
@@ -211,18 +202,17 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<
         for (auto &formId : formIds) {
             data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_URI, formId, tempData));
             std::vector<OperationResult> results = dataShareHelper->Publish(data, BUNDLE_NAME);
-            MEDIA_INFO_LOG("Published formId is %{private}s!", to_string(formId).c_str());
-            MEDIA_INFO_LOG("Published size of value is %{private}zu!", NO_PICTURES.size());
-            MediaLibraryFormMapOperations::ModifyFormMapMassage(IMAGE_DELETED, formId, isSave);
+            MEDIA_INFO_LOG("Published formId is %{private}s, size of value is %{private}zu!",
+                to_string(formId).c_str(), NO_PICTURES.size());
+            MediaLibraryFormMapOperations::ModifyFormMapMessage(IMAGE_DELETED, formId, isSave);
         }
     } else {
-        vector<uint8_t> buffer;
         MediaFileUri fileUri = MediaFileUri(newUri);
         ThumbnailWait thumbnailWait(false);
         thumbnailWait.CheckAndWait(fileUri.GetFileId(), true);
         string filePath = GetFilePathById(fileUri.GetFileId());
-        int32_t type = MediaFileUtils::GetMediaType(filePath);
-        if (MEDIA_TYPE_IMAGE == MediaType(type)) {
+        if (MediaType(MediaFileUtils::GetMediaType(filePath)) == MEDIA_TYPE_IMAGE) {
+            vector<uint8_t> buffer;
             ReadThumbnailFile(filePath, buffer);
             tempData = buffer;
             PublishedDataItem::DataType uriData = newUri;
@@ -231,10 +221,9 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, vector<
                 std::vector<OperationResult> dataResults = dataShareHelper->Publish(data, BUNDLE_NAME);
                 data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_IMAGE_URI, formId, uriData));
                 std::vector<OperationResult> uriResults = dataShareHelper->Publish(data, BUNDLE_NAME);
-                MEDIA_INFO_LOG("Published formId is %{private}s!", to_string(formId).c_str());
-                MEDIA_INFO_LOG("Published size of value is %{private}zu!", buffer.size());
-                MEDIA_INFO_LOG("Published image uri is %{private}s!", newUri.c_str());
-                MediaLibraryFormMapOperations::ModifyFormMapMassage(newUri, formId, isSave);
+                MEDIA_INFO_LOG("Published formId: %{private}s!, value size: %{private}zu, image uri: %{private}s",
+                    to_string(formId).c_str(), buffer.size(), newUri.c_str());
+                MediaLibraryFormMapOperations::ModifyFormMapMessage(newUri, formId, isSave);
                 isHaveEmptyUri = false;
             }
         }
@@ -288,7 +277,6 @@ bool MediaLibraryFormMapOperations::CheckQueryIsInDb(const OperationObject &oper
 
 int32_t MediaLibraryFormMapOperations::HandleStoreFormIdOperation(MediaLibraryCommand &cmd)
 {
-    vector<int64_t> formIds;
     string formId = GetStringObject(cmd, FormMap::FORMMAP_FORM_ID);
     if (formId.empty()) {
         MEDIA_ERR_LOG("GetObject failed");
@@ -302,11 +290,9 @@ int32_t MediaLibraryFormMapOperations::HandleStoreFormIdOperation(MediaLibraryCo
         isHaveEmptyUri = true;
     } else {
         MediaFileUri mediaUri(uri);
-        string fileId = mediaUri.GetFileId();
-        CHECK_AND_RETURN_RET_LOG(MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::UFM_PHOTO, fileId),
-            E_GET_PRAMS_FAIL, "the fileId is not exist");
-        int64_t tempFormId = std::stoll(formId);
-        formIds.push_back(tempFormId);
+        CHECK_AND_RETURN_RET_LOG(MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::UFM_PHOTO,
+            mediaUri.GetFileId()), E_GET_PRAMS_FAIL, "the fileId is not exist");
+        vector<int64_t> formIds = { std::stoll(formId) };
         MediaLibraryFormMapOperations::PublishedChange(uri, formIds, true);
     }
     if (MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::PAH_FORM_MAP, formId)) {
