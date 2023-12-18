@@ -82,6 +82,8 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_001, TestSiz
     valuesBucket.Put(SUB_LOCALITY, "姑苏区");
     valuesBucket.Put(THOROUGHFARE, "人民路");
     valuesBucket.Put(SUB_THOROUGHFARE, "1285号");
+    valuesBucket.Put(CITY_NAME, "苏州市");
+    valuesBucket.Put(ADDRESS_DESCRIPTION, "中国江苏省苏州市姑苏区人民路辅路苏州国美电器人名路旗舰店");
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Location_InsertGeoKnowledge_Test_001::retVal = %{public}d. End", retVal);
@@ -105,6 +107,8 @@ HWTEST_F(MediaLibraryLocationTest, Location_InsertGeoKnowledge_Test_002, TestSiz
     valuesBucket.Put(THOROUGHFARE, "人民路");
     valuesBucket.Put(SUB_THOROUGHFARE, "1285号");
     valuesBucket.Put(FEATURE_NAME, "人民路辅路苏州国美电器人名路旗舰店");
+    valuesBucket.Put(CITY_NAME, "淮安市");
+    valuesBucket.Put(ADDRESS_DESCRIPTION, "中国江苏省淮安市姑苏区人民路辅路苏州国美电器人名路旗舰店");
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket valuesBucket2;
