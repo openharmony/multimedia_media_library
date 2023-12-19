@@ -20,20 +20,20 @@
 #include <mutex>
 #include <thread>
 
-#define TRACE_ASYNC_WORKER_API_EXPORT __attribute__ ((visibility ("default")))
+#define EXPORT __attribute__ ((visibility ("default")))
 namespace OHOS {
 namespace Media {
 class TrashAsyncTaskWorker {
 public:
-    virtual ~TrashAsyncTaskWorker();
-    TRACE_ASYNC_WORKER_API_EXPORT static std::shared_ptr<TrashAsyncTaskWorker> GetInstance();
-    TRACE_ASYNC_WORKER_API_EXPORT void Interrupt();
-    TRACE_ASYNC_WORKER_API_EXPORT void Init();
+    EXPORT virtual ~TrashAsyncTaskWorker();
+    EXPORT static std::shared_ptr<TrashAsyncTaskWorker> GetInstance();
+    EXPORT void Interrupt();
+    EXPORT void Init();
 private:
-    TrashAsyncTaskWorker();
-    void StartWorker();
+    EXPORT TrashAsyncTaskWorker();
+    EXPORT void StartWorker();
     static std::mutex instanceLock_;
-    static std::shared_ptr<TrashAsyncTaskWorker> asyncWorkerInstance_;
+    EXPORT static std::shared_ptr<TrashAsyncTaskWorker> asyncWorkerInstance_;
 };
 } // namespace Media
 } // namespace OHOS

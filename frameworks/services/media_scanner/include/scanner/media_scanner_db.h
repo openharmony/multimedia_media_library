@@ -37,36 +37,37 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaScannerDb {
 public:
-    MediaScannerDb();
-    MediaScannerDb(MediaScannerDb &other) = delete;
-    void operator=(const MediaScannerDb &) = delete;
-    ~MediaScannerDb() = default;
+    EXPORT MediaScannerDb();
+    EXPORT MediaScannerDb(MediaScannerDb &other) = delete;
+    EXPORT void operator=(const MediaScannerDb &) = delete;
+    EXPORT ~MediaScannerDb() = default;
 
-    static std::unique_ptr<MediaScannerDb> GetDatabaseInstance();
-    bool DeleteMetadata(const std::vector<std::string> &idList, const std::string &tableName);
-    void NotifyDatabaseChange(const MediaType mediaType);
-    void SetRdbHelper(void);
+    EXPORT static std::unique_ptr<MediaScannerDb> GetDatabaseInstance();
+    EXPORT bool DeleteMetadata(const std::vector<std::string> &idList, const std::string &tableName);
+    EXPORT void NotifyDatabaseChange(const MediaType mediaType);
+    EXPORT void SetRdbHelper(void);
 
-    std::string InsertMetadata(const Metadata &metadata, std::string &tableName,
+    EXPORT std::string InsertMetadata(const Metadata &metadata, std::string &tableName,
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    std::string UpdateMetadata(const Metadata &metadata, std::string &tableName,
+    EXPORT std::string UpdateMetadata(const Metadata &metadata, std::string &tableName,
         MediaLibraryApi api = MediaLibraryApi::API_OLD, bool skipPhoto = true);
-    std::string GetFileDBUriFromPath(const std::string &path);
-    int32_t InsertAlbum(const Metadata &metadata);
-    int32_t UpdateAlbum(const Metadata &metadata);
-    int32_t ReadAlbums(const std::string &path, std::unordered_map<std::string, Metadata> &albumMap);
-    std::unordered_map<int32_t, MediaType> GetIdsFromFilePath(const std::string &path, const std::string &tableName,
-        const std::string &whitePath = "");
+    EXPORT std::string GetFileDBUriFromPath(const std::string &path);
+    EXPORT int32_t InsertAlbum(const Metadata &metadata);
+    EXPORT int32_t UpdateAlbum(const Metadata &metadata);
+    EXPORT int32_t ReadAlbums(const std::string &path, std::unordered_map<std::string, Metadata> &albumMap);
+    EXPORT std::unordered_map<int32_t, MediaType> GetIdsFromFilePath(const std::string &path,
+        const std::string &tableName, const std::string &whitePath = "");
 
-    int32_t GetIdFromPath(const std::string &path);
-    int32_t GetFileBasicInfo(const std::string &path, std::unique_ptr<Metadata> &ptr,
+    EXPORT int32_t GetIdFromPath(const std::string &path);
+    EXPORT int32_t GetFileBasicInfo(const std::string &path, std::unique_ptr<Metadata> &ptr,
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
 
-    int32_t RecordError(const std::string &err);
-    std::set<std::string> ReadError();
-    int32_t DeleteError(const std::string &err);
+    EXPORT int32_t RecordError(const std::string &err);
+    EXPORT std::set<std::string> ReadError();
+    EXPORT int32_t DeleteError(const std::string &err);
     static void UpdateAlbumInfo(const std::vector<std::string> &subtypes = {},
         const std::vector<std::string> &userAlbumIds = {});
 

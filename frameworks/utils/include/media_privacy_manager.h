@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 enum PrivacyType {
     PRIVACY_NONE = 0,
     PRIVACY_LOCATION,
@@ -29,10 +30,10 @@ enum PrivacyType {
 
 class MediaPrivacyManager {
 public:
-    MediaPrivacyManager(const std::string &path, const std::string &mode);
-    virtual ~MediaPrivacyManager();
+    EXPORT MediaPrivacyManager(const std::string &path, const std::string &mode);
+    EXPORT virtual ~MediaPrivacyManager();
 
-    int32_t Open();
+    EXPORT int32_t Open();
 
 private:
     std::string path_;

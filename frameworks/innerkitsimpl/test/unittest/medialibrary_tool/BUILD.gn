@@ -78,6 +78,16 @@ ohos_executable("mediatool") {
     ]
   }
 
+  ldflags = [ "-Wl,--gc-sections" ]
+
+  cflags = [
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-Os",
+  ]
+
+  cflags_cc = [ "-Os" ]
+
   if (!link_opt) {
     sanitize = {
       cfi = true

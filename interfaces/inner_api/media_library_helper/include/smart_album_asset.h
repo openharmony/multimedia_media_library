@@ -22,6 +22,7 @@
 #include "medialibrary_type_const.h"
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 /**
  * @brief Data class for album details
  *
@@ -30,36 +31,36 @@ namespace Media {
  */
 class SmartAlbumAsset {
 public:
-    SmartAlbumAsset();
-    virtual ~SmartAlbumAsset();
+    EXPORT SmartAlbumAsset();
+    EXPORT virtual ~SmartAlbumAsset();
 
-    void SetAlbumId(const int32_t albumId);
-    void SetAlbumName(const std::string &albumName);
-    void SetAlbumUri(const std::string &albumUri);
-    void SetAlbumTag(const std::string &albumTag);
-    void SetAlbumCapacity(const int32_t albumCapacity);
-    void SetAlbumDateModified(const int64_t albumDateModified);
-    void SetCategoryId(const int32_t categoryId);
-    void SetCategoryName(const std::string &categoryName);
-    void SetCoverUri(const std::string &coverUri);
-    void SetAlbumPrivateType(const PrivateAlbumType albumPrivateType);
-    void SetResultNapiType(const ResultNapiType type);
-    void SetDescription(const std::string &description);
-    void SetExpiredTime(const int32_t expiredTime);
+    EXPORT void SetAlbumId(const int32_t albumId);
+    EXPORT void SetAlbumName(const std::string &albumName);
+    EXPORT void SetAlbumUri(const std::string &albumUri);
+    EXPORT void SetAlbumTag(const std::string &albumTag);
+    EXPORT void SetAlbumCapacity(const int32_t albumCapacity);
+    EXPORT void SetAlbumDateModified(const int64_t albumDateModified);
+    EXPORT void SetCategoryId(const int32_t categoryId);
+    EXPORT void SetCategoryName(const std::string &categoryName);
+    EXPORT void SetCoverUri(const std::string &coverUri);
+    EXPORT void SetAlbumPrivateType(const PrivateAlbumType albumPrivateType);
+    EXPORT void SetResultNapiType(const ResultNapiType type);
+    EXPORT void SetDescription(const std::string &description);
+    EXPORT void SetExpiredTime(const int32_t expiredTime);
 
-    int32_t GetAlbumId() const;
-    std::string GetAlbumName() const;
-    std::string GetAlbumUri() const;
-    std::string GetAlbumTag() const;
-    int32_t GetAlbumCapacity() const;
-    int64_t GetAlbumDateModified() const;
-    int32_t GetCategoryId() const;
-    std::string GetCategoryName() const;
-    std::string GetCoverUri() const;
-    PrivateAlbumType GetAlbumPrivateType() const;
-    ResultNapiType GetResultNapiType() const;
-    std::string GetDescription() const;
-    int32_t GetExpiredTime() const;
+    EXPORT int32_t GetAlbumId() const;
+    EXPORT std::string GetAlbumName() const;
+    EXPORT std::string GetAlbumUri() const;
+    EXPORT std::string GetAlbumTag() const;
+    EXPORT int32_t GetAlbumCapacity() const;
+    EXPORT int64_t GetAlbumDateModified() const;
+    EXPORT int32_t GetCategoryId() const;
+    EXPORT std::string GetCategoryName() const;
+    EXPORT std::string GetCoverUri() const;
+    EXPORT PrivateAlbumType GetAlbumPrivateType() const;
+    EXPORT ResultNapiType GetResultNapiType() const;
+    EXPORT std::string GetDescription() const;
+    EXPORT int32_t GetExpiredTime() const;
 
 private:
     int32_t albumId_;

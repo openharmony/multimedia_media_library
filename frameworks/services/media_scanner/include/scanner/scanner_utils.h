@@ -28,7 +28,8 @@
 
 namespace OHOS {
 namespace Media {
-enum ErrorCodes {
+#define EXPORT __attribute__ ((visibility ("default")))
+enum EXPORT ErrorCodes {
     ERR_FAIL = -1,
     ERR_SUCCESS,
     ERR_EMPTY_ARGS,
@@ -197,21 +198,21 @@ static const std::unordered_map<std::string, std::string> SUPPORTED_EXTN_MAP = {
 
 class ScannerUtils {
 public:
-    ScannerUtils();
-    ~ScannerUtils();
+    EXPORT ScannerUtils();
+    EXPORT ~ScannerUtils();
 
-    static bool IsExists(const std::string &path);
-    static std::string GetFileNameFromUri(const std::string &path);
-    static std::string GetFileExtension(const std::string &path);
-    static std::string GetParentPath(const std::string &path);
-    static bool IsFileHidden(const std::string &path);
-    static bool IsDirectory(const std::string &path);
-    static bool IsRegularFile(const std::string &path);
-    static void GetRootMediaDir(std::string &dir);
-    static std::string GetFileTitle(const std::string &displayName);
-    static bool IsDirHiddenRecursive(const std::string &path, bool skipPhoto = true);
-    static bool IsDirHidden(const std::string &path, bool skipPhoto = true);
-    static bool CheckSkipScanList(const std::string &path);
+    EXPORT static bool IsExists(const std::string &path);
+    EXPORT static std::string GetFileNameFromUri(const std::string &path);
+    EXPORT static std::string GetFileExtension(const std::string &path);
+    EXPORT static std::string GetParentPath(const std::string &path);
+    EXPORT static bool IsFileHidden(const std::string &path);
+    EXPORT static bool IsDirectory(const std::string &path);
+    EXPORT static bool IsRegularFile(const std::string &path);
+    EXPORT static void GetRootMediaDir(std::string &dir);
+    EXPORT static std::string GetFileTitle(const std::string &displayName);
+    EXPORT static bool IsDirHiddenRecursive(const std::string &path, bool skipPhoto = true);
+    EXPORT static bool IsDirHidden(const std::string &path, bool skipPhoto = true);
+    EXPORT static bool CheckSkipScanList(const std::string &path);
 };
 } // namespace Media
 } // namespace OHOS

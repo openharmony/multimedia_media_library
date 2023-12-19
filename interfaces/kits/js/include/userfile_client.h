@@ -27,33 +27,35 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class UserFileClient {
 public:
-    UserFileClient() {}
-    virtual ~UserFileClient() {}
-    static bool IsValid();
-    static napi_status CheckIsStage(napi_env env, napi_callback_info info, bool &result);
-    static sptr<IRemoteObject> ParseTokenInStageMode(napi_env env, napi_callback_info info);
-    static sptr<IRemoteObject> ParseTokenInAbility(napi_env env, napi_callback_info info);
+    EXPORT UserFileClient() {}
+    EXPORT virtual ~UserFileClient() {}
+    EXPORT static bool IsValid();
+    EXPORT static napi_status CheckIsStage(napi_env env, napi_callback_info info, bool &result);
+    EXPORT static sptr<IRemoteObject> ParseTokenInStageMode(napi_env env, napi_callback_info info);
+    EXPORT static sptr<IRemoteObject> ParseTokenInAbility(napi_env env, napi_callback_info info);
 
-    static void Init(const sptr<IRemoteObject> &token, bool isSetHelper = false);
-    static void Init(napi_env env, napi_callback_info info);
-    static std::shared_ptr<DataShare::DataShareResultSet> Query(Uri &uri,
+    EXPORT static void Init(const sptr<IRemoteObject> &token, bool isSetHelper = false);
+    EXPORT static void Init(napi_env env, napi_callback_info info);
+    EXPORT static std::shared_ptr<DataShare::DataShareResultSet> Query(Uri &uri,
         const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns, int &errCode);
-    static int Insert(Uri &uri, const DataShare::DataShareValuesBucket &value);
-    static int InsertExt(Uri &uri, const DataShare::DataShareValuesBucket &value, std::string &result);
-    static int BatchInsert(Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values);
-    static int Delete(Uri &uri, const DataShare::DataSharePredicates &predicates);
-    static void NotifyChange(const Uri &uri);
-    static void RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
-    static void UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
-    static int OpenFile(Uri &uri, const std::string &mode);
-    static int Update(Uri &uri, const DataShare::DataSharePredicates &predicates,
+    EXPORT static int Insert(Uri &uri, const DataShare::DataShareValuesBucket &value);
+    EXPORT static int InsertExt(Uri &uri, const DataShare::DataShareValuesBucket &value, std::string &result);
+    EXPORT static int BatchInsert(Uri &uri, const std::vector<DataShare::DataShareValuesBucket> &values);
+    EXPORT static int Delete(Uri &uri, const DataShare::DataSharePredicates &predicates);
+    EXPORT static void NotifyChange(const Uri &uri);
+    EXPORT static void RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
+    EXPORT static void UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver);
+    EXPORT static int OpenFile(Uri &uri, const std::string &mode);
+    EXPORT static int Update(Uri &uri, const DataShare::DataSharePredicates &predicates,
         const DataShare::DataShareValuesBucket &value);
-    static void RegisterObserverExt(const Uri &uri,
+    EXPORT static void RegisterObserverExt(const Uri &uri,
         std::shared_ptr<DataShare::DataShareObserver> dataObserver, bool isDescendants);
-    static void UnregisterObserverExt(const Uri &uri, std::shared_ptr<DataShare::DataShareObserver> dataObserver);
-    static void Clear();
+    EXPORT static void UnregisterObserverExt(const Uri &uri,
+        std::shared_ptr<DataShare::DataShareObserver> dataObserver);
+    EXPORT static void Clear();
 private:
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);

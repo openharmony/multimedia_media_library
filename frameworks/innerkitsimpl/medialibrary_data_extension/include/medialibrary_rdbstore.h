@@ -26,6 +26,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 #ifdef DISTRIBUTED
 class MediaLibraryRdbStoreObserver;
 #endif
@@ -34,34 +35,34 @@ class MediaLibraryDataCallBack;
 
 class MediaLibraryRdbStore final : public MediaLibraryUnistore {
 public:
-    explicit MediaLibraryRdbStore(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
-    virtual ~MediaLibraryRdbStore();
+    EXPORT explicit MediaLibraryRdbStore(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
+    EXPORT virtual ~MediaLibraryRdbStore();
 
-    virtual int32_t Init() override;
-    virtual void Stop() override;
+    EXPORT virtual int32_t Init() override;
+    EXPORT virtual void Stop() override;
 
-    virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) override;
-    virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
-    virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows) override;
-    std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
+    EXPORT virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) override;
+    EXPORT virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
+    EXPORT virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows) override;
+    EXPORT std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns) override;
 
-    int32_t ExecuteSql(const std::string &sql) override;
-    std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
+    EXPORT int32_t ExecuteSql(const std::string &sql) override;
+    EXPORT std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) override;
 
-    std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
+    EXPORT std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
 
-    static void BuildValuesSql(const NativeRdb::ValuesBucket &values, std::vector<NativeRdb::ValueObject> &bindArgs,
-        std::string &sql);
-    static void BuildQuerySql(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,
+    EXPORT static void BuildValuesSql(const NativeRdb::ValuesBucket &values,
         std::vector<NativeRdb::ValueObject> &bindArgs, std::string &sql);
-    static int32_t ExecuteForLastInsertedRowId(const std::string &sql,
+    EXPORT static void BuildQuerySql(const NativeRdb::AbsRdbPredicates &predicates,
+        const std::vector<std::string> &columns, std::vector<NativeRdb::ValueObject> &bindArgs, std::string &sql);
+    EXPORT static int32_t ExecuteForLastInsertedRowId(const std::string &sql,
         const std::vector<NativeRdb::ValueObject> &bindArgs);
-    static std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::AbsRdbPredicates &predicates,
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> Query(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns);
-    static int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates);
-    static int32_t Update(NativeRdb::ValuesBucket &values, const NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT static int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT static int32_t Update(NativeRdb::ValuesBucket &values, const NativeRdb::AbsRdbPredicates &predicates);
     static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
     static std::shared_ptr<NativeRdb::ResultSet> GetIndexOfUri(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns, const std::string &id);
@@ -69,11 +70,11 @@ public:
     static std::string GetString(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &column);
     static void ResetAnalysisTables();
     static void ResetSearchTables();
-    static int32_t UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows);
+    EXPORT static int32_t UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows);
 
 private:
-    static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
-    static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
+    EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
+    EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string> &args);
     static std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 #ifdef DISTRIBUTED
     std::shared_ptr<MediaLibraryRdbStoreObserver> rdbStoreObs_;

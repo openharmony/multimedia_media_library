@@ -21,6 +21,7 @@
 #include "singleton.h"
 namespace OHOS {
 namespace Media {
+#define COMPILE_HIDDEN __attribute__ ((visibility ("hidden")))
 const std::string KEY_OPT_TYPE = "optType";
 
 const std::string KEY_ERR_FILE = "errFile";
@@ -65,22 +66,22 @@ public:
     void PostStatProcess(const uint32_t &statType, const VariantMap &stat);
 
 private:
-    std::string GetOptType(const uint32_t &optType);
-    void PostFileOptError(const VariantMap &errMap);
-    void PostDbOptError(const VariantMap &errMap);
-    void PostDbUpgradeError(const VariantMap &errMap);
-    void PostThumbnailStat(const VariantMap &stat);
-    void PostDbUpgradeStat(const VariantMap &stat);
-    void PostSyncStat();
-    void PostAgingStat(const VariantMap &stat);
+    COMPILE_HIDDEN std::string GetOptType(const uint32_t &optType);
+    COMPILE_HIDDEN void PostFileOptError(const VariantMap &errMap);
+    COMPILE_HIDDEN void PostDbOptError(const VariantMap &errMap);
+    COMPILE_HIDDEN void PostDbUpgradeError(const VariantMap &errMap);
+    COMPILE_HIDDEN void PostThumbnailStat(const VariantMap &stat);
+    COMPILE_HIDDEN void PostDbUpgradeStat(const VariantMap &stat);
+    COMPILE_HIDDEN void PostSyncStat();
+    COMPILE_HIDDEN void PostAgingStat(const VariantMap &stat);
     
-    int GetIntValue(const std::string &key, const VariantMap &map);
-    std::string GetStringValue(const std::string &key, const VariantMap &map);
+    COMPILE_HIDDEN int GetIntValue(const std::string &key, const VariantMap &map);
+    COMPILE_HIDDEN std::string GetStringValue(const std::string &key, const VariantMap &map);
 
-    uint32_t thumbnailTimes_ = 0;
-    uint32_t dbUpgradeTimes_ = 0;
-    uint32_t syncTimes_ = 0;
-    uint32_t recycleTimes_ = 0;
+    COMPILE_HIDDEN uint32_t thumbnailTimes_ = 0;
+    COMPILE_HIDDEN uint32_t dbUpgradeTimes_ = 0;
+    COMPILE_HIDDEN uint32_t syncTimes_ = 0;
+    COMPILE_HIDDEN uint32_t recycleTimes_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

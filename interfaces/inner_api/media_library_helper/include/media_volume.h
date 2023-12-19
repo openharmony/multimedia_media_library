@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 /**
  * @brief Data class for MediaVolume details
  *
@@ -29,14 +30,14 @@ namespace Media {
  */
 class MediaVolume {
 public:
-    MediaVolume();
-    virtual ~MediaVolume();
-    void SetSize(const int mediaType, const int64_t size);
+    EXPORT MediaVolume();
+    EXPORT virtual ~MediaVolume();
+    EXPORT void SetSize(const int mediaType, const int64_t size);
 
-    int64_t GetFilesSize() const;
-    int64_t GetVideosSize() const;
-    int64_t GetImagesSize() const;
-    int64_t GetAudiosSize() const;
+    EXPORT int64_t GetFilesSize() const;
+    EXPORT int64_t GetVideosSize() const;
+    EXPORT int64_t GetImagesSize() const;
+    EXPORT int64_t GetAudiosSize() const;
 
 private:
     std::unordered_map<int, int64_t> mediaVolumeMap_;

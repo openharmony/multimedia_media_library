@@ -24,6 +24,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 enum class AlbumChangeOperation {
     SET_ALBUM_NAME,
     SET_COVER_URI,
@@ -36,9 +37,9 @@ enum class AlbumChangeOperation {
 
 class MediaAlbumChangeRequestNapi : public MediaChangeRequestNapi {
 public:
-    MediaAlbumChangeRequestNapi() = default;
-    ~MediaAlbumChangeRequestNapi() override = default;
-    static napi_value Init(napi_env env, napi_value exports);
+    EXPORT MediaAlbumChangeRequestNapi() = default;
+    EXPORT ~MediaAlbumChangeRequestNapi() override = default;
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
 
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;
     std::shared_ptr<PhotoAlbum> GetReferencePhotoAlbumInstance() const;
@@ -48,16 +49,16 @@ public:
     void ClearDismissAssetArray();
 
 private:
-    static napi_value Constructor(napi_env env, napi_callback_info info);
-    static void Destructor(napi_env env, void* nativeObject, void* finalizeHint);
+    EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
+    EXPORT static void Destructor(napi_env env, void* nativeObject, void* finalizeHint);
 
-    static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
-    static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
-    static napi_value JSPlaceBefore(napi_env env, napi_callback_info info);
-    static napi_value JSSetDisplayLevel(napi_env env, napi_callback_info info);
-    static napi_value JSMergeAlbum(napi_env env, napi_callback_info info);
-    static napi_value JSDismissAssets(napi_env env, napi_callback_info info);
-    static napi_value JSSetIsMe(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPlaceBefore(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetDisplayLevel(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSMergeAlbum(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSDismissAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetIsMe(napi_env env, napi_callback_info info);
     bool CheckPortraitMergeAlbum();
     static bool CheckDismissAssetVaild(std::vector<std::string> &dismissAssets,
         std::vector<std::string> &newAssetArray);

@@ -25,14 +25,15 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class PhotoAlbumNapi {
 public:
-    PhotoAlbumNapi();
-    ~PhotoAlbumNapi();
+    EXPORT PhotoAlbumNapi();
+    EXPORT ~PhotoAlbumNapi();
 
-    static napi_value Init(napi_env env, napi_value exports);
-    static napi_value PhotoAccessInit(napi_env env, napi_value exports);
-    static napi_value CreatePhotoAlbumNapi(napi_env env, std::unique_ptr<PhotoAlbum> &albumData);
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static napi_value PhotoAccessInit(napi_env env, napi_value exports);
+    EXPORT static napi_value CreatePhotoAlbumNapi(napi_env env, std::unique_ptr<PhotoAlbum> &albumData);
 
     int32_t GetAlbumId() const;
     int32_t GetCount() const;
@@ -55,46 +56,46 @@ public:
     bool GetHiddenOnly() const;
 
 private:
-    void SetPhotoAlbumNapiProperties();
-    static napi_value PhotoAlbumNapiConstructor(napi_env env, napi_callback_info info);
-    static void PhotoAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalizeHint);
+    EXPORT void SetPhotoAlbumNapiProperties();
+    EXPORT static napi_value PhotoAlbumNapiConstructor(napi_env env, napi_callback_info info);
+    EXPORT static void PhotoAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalizeHint);
 
-    static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumCount(napi_env env, napi_callback_info info);
-    static napi_value JSGetPhotoAlbumType(napi_env env, napi_callback_info info);
-    static napi_value JSGetPhotoAlbumSubType(napi_env env, napi_callback_info info);
-    static napi_value JSGetCoverUri(napi_env env, napi_callback_info info);
-    static napi_value JSGetDateModified(napi_env env, napi_callback_info info);
-    static napi_value JSGetLatitude(napi_env env, napi_callback_info info);
-    static napi_value JSGetLongitude(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumCount(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetPhotoAlbumType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetPhotoAlbumSubType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetCoverUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetDateModified(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetLatitude(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetLongitude(napi_env env, napi_callback_info info);
 
-    static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
-    static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperSetCoverUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetAlbumName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetCoverUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperSetCoverUri(napi_env env, napi_callback_info info);
 
-    static napi_value JSCommitModify(napi_env env, napi_callback_info info);
-    static napi_value JSPhotoAlbumAddAssets(napi_env env, napi_callback_info info);
-    static napi_value JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_info info);
-    static napi_value JSGetPhotoAssets(napi_env env, napi_callback_info info);
-    static napi_value JSRecoverPhotos(napi_env env, napi_callback_info info);
-    static napi_value JSDeletePhotos(napi_env env, napi_callback_info info);
-    static napi_value PrivateAlbumRecoverPhotos(napi_env env, napi_callback_info info);
-    static napi_value PrivateAlbumDeletePhotos(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSCommitModify(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAlbumAddAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAlbumRemoveAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetPhotoAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSRecoverPhotos(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSDeletePhotos(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PrivateAlbumRecoverPhotos(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PrivateAlbumDeletePhotos(napi_env env, napi_callback_info info);
 
-    static napi_value JSPhotoAccessGetAlbumName(napi_env env, napi_callback_info info);
-    static napi_value JSPhotoAccessSetAlbumName(napi_env env, napi_callback_info info);
-    static napi_value JSPhotoAccessGetAlbumUri(napi_env env, napi_callback_info info);
-    static napi_value JSPhotoAccessGetAlbumCount(napi_env env, napi_callback_info info);
-    static napi_value JSPhotoAccessGetAlbumImageCount(napi_env env, napi_callback_info info);
-    static napi_value JSPhotoAccessGetAlbumVideoCount(napi_env env, napi_callback_info info);
-    static napi_value JSPhoteAccessGetPhotoAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAccessGetAlbumName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAccessSetAlbumName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAccessGetAlbumUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAccessGetAlbumCount(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAccessGetAlbumImageCount(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhotoAccessGetAlbumVideoCount(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSPhoteAccessGetPhotoAssets(napi_env env, napi_callback_info info);
 
-    static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperAddAssets(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperRemoveAssets(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperRecoverPhotos(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperDeletePhotos(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperAddAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperRemoveAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperRecoverPhotos(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperDeletePhotos(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<PhotoAlbum> photoAlbumPtr;

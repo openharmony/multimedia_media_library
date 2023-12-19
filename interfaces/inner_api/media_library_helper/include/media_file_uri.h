@@ -25,6 +25,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 enum {
     API10_PHOTO_URI,
     API10_PHOTOALBUM_URI,
@@ -42,29 +43,29 @@ class MediaFileUri : public OHOS::Uri {
     int uriType_;
     void ParseUri(const std::string& uri);
 public:
-    explicit MediaFileUri(const std::string &uriStr) : Uri(uriStr) {ParseUri(uriStr);}
-    explicit MediaFileUri(MediaType mediaType,
+    EXPORT explicit MediaFileUri(const std::string &uriStr) : Uri(uriStr) {ParseUri(uriStr);}
+    EXPORT explicit MediaFileUri(MediaType mediaType,
                           const std::string &fileId,
                           const std::string &networkId = "",
                           const int32_t &apiVersion = MEDIA_API_VERSION_V9,
                           const std::string &extrUri = "") : Uri(
                           MediaFileUriConstruct(mediaType, fileId, networkId, apiVersion, extrUri)) {}
-    ~MediaFileUri() = default;
+    EXPORT ~MediaFileUri() = default;
 
-    std::string GetNetworkId();
-    std::string GetFileId();
-    std::string GetFilePath();
-    std::unordered_map<std::string, std::string> &GetQueryKeys();
-    std::string GetTableName();
-    bool IsValid();
-    bool IsApi10();
-    int GetUriType();
-    static MediaType GetMediaTypeFromUri(const std::string &uri);
-    static std::string GetPathFirstDentry(Uri &uri);
-    static std::string GetPathSecondDentry(Uri &uri);
-    static void RemoveAllFragment(std::string &uri);
-    static std::string GetMediaTypeUri(MediaType mediaType, const int32_t &apiVersion);
-    static std::string GetPhotoId(const std::string &uri);
+    EXPORT std::string GetNetworkId();
+    EXPORT std::string GetFileId();
+    EXPORT std::string GetFilePath();
+    EXPORT std::unordered_map<std::string, std::string> &GetQueryKeys();
+    EXPORT std::string GetTableName();
+    EXPORT bool IsValid();
+    EXPORT bool IsApi10();
+    EXPORT int GetUriType();
+    EXPORT static MediaType GetMediaTypeFromUri(const std::string &uri);
+    EXPORT static std::string GetPathFirstDentry(Uri &uri);
+    EXPORT static std::string GetPathSecondDentry(Uri &uri);
+    EXPORT static void RemoveAllFragment(std::string &uri);
+    EXPORT static std::string GetMediaTypeUri(MediaType mediaType, const int32_t &apiVersion);
+    EXPORT static std::string GetPhotoId(const std::string &uri);
 };
 } // namespace Media
 } // namespace OHOS
