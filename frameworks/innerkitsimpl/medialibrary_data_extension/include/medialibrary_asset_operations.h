@@ -35,7 +35,8 @@
 
 namespace OHOS {
 namespace Media {
-const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
+#define EXPORT __attribute__ ((visibility ("default")))
+EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_ID, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_FILE_PATH, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_SIZE, MEMBER_TYPE_INT64 },
@@ -76,15 +77,15 @@ public:
     static int32_t DeleteOperation(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
-    static int32_t UpdateOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t UpdateOperation(MediaLibraryCommand &cmd);
     static int32_t OpenOperation(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t DeleteToolOperation(MediaLibraryCommand &cmd);
 
     static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
-    static int32_t CreateAssetUniqueId(int32_t type);
-    static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
+    EXPORT static int32_t CreateAssetUniqueId(int32_t type);
+    EXPORT static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &filePath);
-    static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
+    EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
 
 protected:
@@ -129,7 +130,7 @@ protected:
 
     static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         int32_t &value);
-    static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
+    EXPORT static std::string CreateExtUriForV10Asset(FileAsset &fileAsset);
     static bool GetStringFromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         std::string &value);
     static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode);

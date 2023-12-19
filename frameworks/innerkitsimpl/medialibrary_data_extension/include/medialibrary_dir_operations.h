@@ -34,11 +34,12 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryDirOperations {
 public:
-    static int32_t HandleDirOperation(MediaLibraryCommand &cmd);
-    static int32_t CreateDirOperation(MediaLibraryCommand &cmd);
-    static int32_t TrashDirOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t HandleDirOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t CreateDirOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t TrashDirOperation(MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS

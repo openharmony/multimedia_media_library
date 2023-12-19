@@ -50,8 +50,22 @@ config("media_data_extension_public_config") {
   include_dirs += include_distributed
   include_dirs += include_scanner
 
+  ldflags = [ "-Wl,--gc-sections" ]
+
+  cflags = [
+    "-fvisibility=hidden",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-Os",
+  ]
+
+  cflags_cc = [
+    "-fvisibility-inlines-hidden",
+    "-Os",
+  ]
+
   if (target_cpu == "arm") {
-    cflags = [ "-DBINDER_IPC_32BIT" ]
+    cflags += [ "-DBINDER_IPC_32BIT" ]
   }
 }
 

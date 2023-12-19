@@ -22,15 +22,16 @@
 #include "rdb_store.h"
 
 namespace OHOS::Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryRdbUtils {
 public:
-    static void UpdateSystemAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateSystemAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &subtypes = {});
-    static void UpdateUserAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateUserAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &userAlbumIds = {});
 
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);
-    static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    EXPORT static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateAnalysisAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &userAlbumIds = {});
     static void UpdateAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);

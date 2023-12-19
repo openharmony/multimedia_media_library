@@ -20,6 +20,7 @@
 
 #include "hitrace_meter.h"
 
+#define COMPILE_HIDDEN __attribute__ ((visibility ("hidden")))
 class MediaLibraryTracer final {
 public:
     MediaLibraryTracer() = default;
@@ -46,7 +47,7 @@ public:
     }
 
 private:
-    int32_t count_ = 0;
+    COMPILE_HIDDEN int32_t count_ = 0;
 };
 
 #endif // OHOS_MEDIA_LIBRARY_TRACER

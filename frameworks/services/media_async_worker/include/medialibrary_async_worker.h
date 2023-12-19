@@ -26,6 +26,7 @@
 #define ASYNC_WORKER_API_EXPORT __attribute__ ((visibility ("default")))
 namespace OHOS {
 namespace Media {
+#define COMPILE_HIDDEN __attribute__ ((visibility ("hidden")))
 class AsyncTaskData {
 public:
     AsyncTaskData() {};
@@ -58,33 +59,33 @@ public:
     ASYNC_WORKER_API_EXPORT int32_t AddTask(const std::shared_ptr<MediaLibraryAsyncTask> &task, bool isFg);
 
 private:
-    MediaLibraryAsyncWorker();
-    void StartWorker(int num);
-    void Init();
-    std::shared_ptr<MediaLibraryAsyncTask> GetFgTask();
-    std::shared_ptr<MediaLibraryAsyncTask> GetBgTask();
-    void ReleaseFgTask();
-    void ReleaseBgTask();
-    void WaitForTask();
-    bool IsFgQueueEmpty();
-    bool IsBgQueueEmpty();
-    void SleepFgWork();
-    void SleepBgWork();
+    COMPILE_HIDDEN MediaLibraryAsyncWorker();
+    COMPILE_HIDDEN void StartWorker(int num);
+    COMPILE_HIDDEN void Init();
+    COMPILE_HIDDEN std::shared_ptr<MediaLibraryAsyncTask> GetFgTask();
+    COMPILE_HIDDEN std::shared_ptr<MediaLibraryAsyncTask> GetBgTask();
+    COMPILE_HIDDEN void ReleaseFgTask();
+    COMPILE_HIDDEN void ReleaseBgTask();
+    COMPILE_HIDDEN void WaitForTask();
+    COMPILE_HIDDEN bool IsFgQueueEmpty();
+    COMPILE_HIDDEN bool IsBgQueueEmpty();
+    COMPILE_HIDDEN void SleepFgWork();
+    COMPILE_HIDDEN void SleepBgWork();
 
-    static std::mutex instanceLock_;
-    static std::shared_ptr<MediaLibraryAsyncWorker> asyncWorkerInstance_;
-    std::atomic<bool> isThreadRunning_;
-    std::mutex bgTaskLock_;
-    std::queue<std::shared_ptr<MediaLibraryAsyncTask>> bgTaskQueue_;
+    COMPILE_HIDDEN static std::mutex instanceLock_;
+    COMPILE_HIDDEN static std::shared_ptr<MediaLibraryAsyncWorker> asyncWorkerInstance_;
+    COMPILE_HIDDEN std::atomic<bool> isThreadRunning_;
+    COMPILE_HIDDEN std::mutex bgTaskLock_;
+    COMPILE_HIDDEN std::queue<std::shared_ptr<MediaLibraryAsyncTask>> bgTaskQueue_;
 
-    std::mutex fgTaskLock_;
-    std::queue<std::shared_ptr<MediaLibraryAsyncTask>> fgTaskQueue_;
+    COMPILE_HIDDEN std::mutex fgTaskLock_;
+    COMPILE_HIDDEN std::queue<std::shared_ptr<MediaLibraryAsyncTask>> fgTaskQueue_;
 
-    std::mutex bgWorkLock_;
-    std::condition_variable bgWorkCv_;
-    std::atomic<uint32_t> doneTotal_;
+    COMPILE_HIDDEN std::mutex bgWorkLock_;
+    COMPILE_HIDDEN std::condition_variable bgWorkCv_;
+    COMPILE_HIDDEN std::atomic<uint32_t> doneTotal_;
 
-    std::list<std::thread> threads_;
+    COMPILE_HIDDEN std::list<std::thread> threads_;
 };
 } // namespace Media
 } // namespace OHOS

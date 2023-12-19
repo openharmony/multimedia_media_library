@@ -24,53 +24,54 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class Metadata {
 public:
-    Metadata();
-    ~Metadata() = default;
+    EXPORT Metadata();
+    EXPORT ~Metadata() = default;
     using VariantData = std::variant<int32_t, std::string, int64_t, double>;
 
-    void SetFileId(const VariantData &id);
-    int32_t GetFileId() const;
+    EXPORT void SetFileId(const VariantData &id);
+    EXPORT int32_t GetFileId() const;
 
-    void SetFilePath(const VariantData &path);
-    const std::string &GetFilePath() const;
+    EXPORT void SetFilePath(const VariantData &path);
+    EXPORT const std::string &GetFilePath() const;
 
     void SetUri(const VariantData &uri);
     const std::string &GetUri() const;
 
-    void SetRelativePath(const VariantData &relativePath);
-    const std::string &GetRelativePath() const;
+    EXPORT void SetRelativePath(const VariantData &relativePath);
+    EXPORT const std::string &GetRelativePath() const;
 
     void SetFileMimeType(const VariantData &mimeType);
     const std::string &GetFileMimeType() const;
 
-    void SetFileMediaType(const VariantData &mediaType);
-    MediaType GetFileMediaType() const;
+    EXPORT void SetFileMediaType(const VariantData &mediaType);
+    EXPORT MediaType GetFileMediaType() const;
 
-    void SetFileName(const VariantData &name);
-    const std::string &GetFileName() const;
+    EXPORT void SetFileName(const VariantData &name);
+    EXPORT const std::string &GetFileName() const;
 
-    void SetFileSize(const VariantData &size);
-    int64_t GetFileSize() const;
+    EXPORT void SetFileSize(const VariantData &size);
+    EXPORT int64_t GetFileSize() const;
 
     void SetFileDateAdded(const VariantData &dateAdded);
     int64_t GetFileDateAdded() const;
 
-    void SetFileDateModified(const VariantData &dateModified);
-    int64_t GetFileDateModified() const;
+    EXPORT void SetFileDateModified(const VariantData &dateModified);
+    EXPORT int64_t GetFileDateModified() const;
 
     void SetFileExtension(const VariantData &fileExt);
     const std::string &GetFileExtension() const;
 
-    void SetFileTitle(const VariantData &title);
-    const std::string &GetFileTitle() const;
+    EXPORT void SetFileTitle(const VariantData &title);
+    EXPORT const std::string &GetFileTitle() const;
 
     void SetFileArtist(const VariantData &artist);
     const std::string &GetFileArtist() const;
 
-    void SetAlbum(const VariantData &album);
-    const std::string &GetAlbum() const;
+    EXPORT void SetAlbum(const VariantData &album);
+    EXPORT const std::string &GetAlbum() const;
 
     void SetFileHeight(const VariantData &height);
     int32_t GetFileHeight() const;
@@ -84,20 +85,20 @@ public:
     void SetFileDuration(const VariantData &duration);
     int32_t GetFileDuration() const;
 
-    int32_t GetParentId() const;
-    void SetParentId(const VariantData &id);
+    EXPORT int32_t GetParentId() const;
+    EXPORT void SetParentId(const VariantData &id);
 
     void SetAlbumId(const VariantData &albumId);
     int32_t GetAlbumId() const;
 
-    void SetAlbumName(const VariantData &album);
-    const std::string &GetAlbumName() const;
+    EXPORT void SetAlbumName(const VariantData &album);
+    EXPORT const std::string &GetAlbumName() const;
 
-    void SetRecyclePath(const VariantData &recyclePath);
-    const std::string &GetRecyclePath() const;
+    EXPORT void SetRecyclePath(const VariantData &recyclePath);
+    EXPORT const std::string &GetRecyclePath() const;
 
-    void SetDateTaken(const VariantData &dateTaken);
-    int64_t GetDateTaken() const;
+    EXPORT void SetDateTaken(const VariantData &dateTaken);
+    EXPORT int64_t GetDateTaken() const;
 
     void SetLongitude(const VariantData &longitude);
     double GetLongitude() const;
@@ -141,7 +142,7 @@ public:
     void SetTableName(const std::string &tableName);
     std::string GetTableName();
 
-    void Init();
+    EXPORT void Init();
 
     using MetadataFnPtr = void (Metadata::*)(const VariantData &);
     std::unordered_map<std::string, std::pair<ResultSetDataType, MetadataFnPtr>> memberFuncMap_;

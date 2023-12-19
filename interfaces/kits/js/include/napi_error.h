@@ -24,6 +24,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 struct NapiError {
     int32_t error = 0;
     std::string apiName;
@@ -31,8 +32,9 @@ struct NapiError {
     void SaveError(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet);
     void SaveError(int32_t ret);
     void HandleError(napi_env env, napi_value &errorObj);
-    static void ThrowError(napi_env env, int32_t err, const std::string &errMsg = "");
-    static void ThrowError(napi_env env, int32_t err, const char *func, int32_t line, const std::string &errMsg = "");
+    EXPORT static void ThrowError(napi_env env, int32_t err, const std::string &errMsg = "");
+    EXPORT static void ThrowError(napi_env env, int32_t err, const char *func, int32_t line,
+        const std::string &errMsg = "");
 };
 } // namespace Media
 } // namespace OHOS

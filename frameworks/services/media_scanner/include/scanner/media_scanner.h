@@ -54,6 +54,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 /**
  * Media Scanner class for scanning files and folders in MediaLibrary Database
  * and updating the metadata for each media file
@@ -71,15 +72,15 @@ public:
         SET_ERROR
     };
 
-    MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
+    EXPORT MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
         MediaScannerObj::ScanType type, MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    MediaScannerObj(MediaScannerObj::ScanType type);
-    virtual ~MediaScannerObj() = default;
+    EXPORT MediaScannerObj(MediaScannerObj::ScanType type);
+    EXPORT virtual ~MediaScannerObj() = default;
 
-    void Scan();
+    EXPORT void Scan();
 
     /* stop */
-    void SetStopFlag(std::shared_ptr<bool> &stopFlag);
+    EXPORT void SetStopFlag(std::shared_ptr<bool> &stopFlag);
 
     /* Record Error */
     void SetErrorPath(const std::string &path);
@@ -92,24 +93,25 @@ public:
 
 private:
     /* file */
-    int32_t ScanFile();
-    int32_t ScanFileInternal();
+    EXPORT int32_t ScanFile();
+    EXPORT int32_t ScanFileInternal();
     int32_t BuildFileInfo(const std::string &parent, int32_t parentId);
     int32_t BuildData(const struct stat &statInfo);
-    int32_t GetFileMetadata();
-    int32_t GetParentDirInfo(const std::string &parent, int32_t parentId);
-    int32_t GetMediaInfo();
+    EXPORT int32_t GetFileMetadata();
+    EXPORT int32_t GetParentDirInfo(const std::string &parent, int32_t parentId);
+    EXPORT int32_t GetMediaInfo();
 #ifdef MEDIALIBRARY_COMPATIBILITY
     void SetPhotoSubType(const std::string &parent);
 #endif
 
     /* dir */
-    int32_t ScanDir();
-    int32_t ScanDirInternal();
-    int32_t ScanFileInTraversal(const std::string &path, const std::string &parent, int32_t parentId);
-    int32_t WalkFileTree(const std::string &path, int32_t parentId);
-    int32_t CleanupDirectory();
-    int32_t InsertOrUpdateAlbumInfo(const std::string &albumPath, int32_t parentId, const std::string &albumName);
+    EXPORT int32_t ScanDir();
+    EXPORT int32_t ScanDirInternal();
+    EXPORT int32_t ScanFileInTraversal(const std::string &path, const std::string &parent, int32_t parentId);
+    EXPORT int32_t WalkFileTree(const std::string &path, int32_t parentId);
+    EXPORT int32_t CleanupDirectory();
+    EXPORT int32_t InsertOrUpdateAlbumInfo(const std::string &albumPath, int32_t parentId,
+        const std::string &albumName);
 
     /* error */
     int32_t Start();
@@ -119,12 +121,12 @@ private:
     int32_t SetError();
 
     /* db ops */
-    int32_t Commit();
-    int32_t AddToTransaction();
-    int32_t CommitTransaction();
+    EXPORT int32_t Commit();
+    EXPORT int32_t AddToTransaction();
+    EXPORT int32_t CommitTransaction();
 
     /* callback */
-    int32_t InvokeCallback(int32_t code);
+    EXPORT int32_t InvokeCallback(int32_t code);
 
     ScanType type_;
     std::string path_;

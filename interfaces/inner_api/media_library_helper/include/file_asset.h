@@ -25,6 +25,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 
 constexpr int MEMBER_TYPE_INT32 = 0;
 constexpr int MEMBER_TYPE_INT64 = 1;
@@ -42,134 +43,134 @@ constexpr int OPEN_TYPE_WRITE = 1;
  */
 class FileAsset {
 public:
-    FileAsset();
-    virtual ~FileAsset() = default;
+    EXPORT FileAsset();
+    EXPORT virtual ~FileAsset() = default;
 
-    int32_t GetId() const;
-    void SetId(int32_t id);
+    EXPORT int32_t GetId() const;
+    EXPORT void SetId(int32_t id);
 
-    int32_t GetCount() const;
-    void SetCount(int32_t count);
+    EXPORT int32_t GetCount() const;
+    EXPORT void SetCount(int32_t count);
 
-    const std::string &GetUri() const;
-    void SetUri(const std::string &uri);
+    EXPORT const std::string &GetUri() const;
+    EXPORT void SetUri(const std::string &uri);
 
-    const std::string &GetPath() const;
-    void SetPath(const std::string &path);
+    EXPORT const std::string &GetPath() const;
+    EXPORT void SetPath(const std::string &path);
 
-    const std::string &GetRelativePath() const;
-    void SetRelativePath(const std::string &relativePath);
+    EXPORT const std::string &GetRelativePath() const;
+    EXPORT void SetRelativePath(const std::string &relativePath);
 
-    const std::string &GetMimeType() const;
-    void SetMimeType(const std::string &mimeType);
+    EXPORT const std::string &GetMimeType() const;
+    EXPORT void SetMimeType(const std::string &mimeType);
 
-    MediaType GetMediaType() const;
-    void SetMediaType(MediaType mediaType);
+    EXPORT MediaType GetMediaType() const;
+    EXPORT void SetMediaType(MediaType mediaType);
 
-    const std::string &GetDisplayName() const;
-    void SetDisplayName(const std::string &displayName);
+    EXPORT const std::string &GetDisplayName() const;
+    EXPORT void SetDisplayName(const std::string &displayName);
 
-    int64_t GetSize() const;
-    void SetSize(int64_t size);
+    EXPORT int64_t GetSize() const;
+    EXPORT void SetSize(int64_t size);
 
-    int64_t GetDateAdded() const;
-    void SetDateAdded(int64_t dataAdded);
+    EXPORT int64_t GetDateAdded() const;
+    EXPORT void SetDateAdded(int64_t dataAdded);
 
-    int64_t GetDateModified() const;
-    void SetDateModified(int64_t dateModified);
+    EXPORT int64_t GetDateModified() const;
+    EXPORT void SetDateModified(int64_t dateModified);
 
-    const std::string &GetTitle() const;
-    void SetTitle(const std::string &title);
+    EXPORT const std::string &GetTitle() const;
+    EXPORT void SetTitle(const std::string &title);
 
-    const std::string &GetArtist() const;
-    void SetArtist(const std::string &artist);
+    EXPORT const std::string &GetArtist() const;
+    EXPORT void SetArtist(const std::string &artist);
 
-    const std::string &GetAlbum() const;
-    void SetAlbum(const std::string &album);
+    EXPORT const std::string &GetAlbum() const;
+    EXPORT void SetAlbum(const std::string &album);
 
-    int32_t GetPosition() const;
-    void SetPosition(int32_t position);
+    EXPORT int32_t GetPosition() const;
+    EXPORT void SetPosition(int32_t position);
 
-    int32_t GetWidth() const;
-    void SetWidth(int32_t width);
+    EXPORT int32_t GetWidth() const;
+    EXPORT void SetWidth(int32_t width);
 
-    int32_t GetHeight() const;
-    void SetHeight(int32_t height);
+    EXPORT int32_t GetHeight() const;
+    EXPORT void SetHeight(int32_t height);
 
-    int32_t GetDuration() const;
-    void SetDuration(int32_t duration);
+    EXPORT int32_t GetDuration() const;
+    EXPORT void SetDuration(int32_t duration);
 
-    int32_t GetOrientation() const;
-    void SetOrientation(int32_t orientation);
+    EXPORT int32_t GetOrientation() const;
+    EXPORT void SetOrientation(int32_t orientation);
 
-    int32_t GetAlbumId() const;
-    void SetAlbumId(int32_t albumId);
+    EXPORT int32_t GetAlbumId() const;
+    EXPORT void SetAlbumId(int32_t albumId);
 
-    const std::string &GetAlbumName() const;
-    void SetAlbumName(const std::string &albumName);
+    EXPORT const std::string &GetAlbumName() const;
+    EXPORT void SetAlbumName(const std::string &albumName);
 
-    int32_t GetParent() const;
-    void SetParent(int32_t parent);
-    const std::string &GetAlbumUri() const;
-    void SetAlbumUri(const std::string &albumUri);
-    int64_t GetDateTaken() const;
-    void SetDateTaken(int64_t dataTaken);
+    EXPORT int32_t GetParent() const;
+    EXPORT void SetParent(int32_t parent);
+    EXPORT const std::string &GetAlbumUri() const;
+    EXPORT void SetAlbumUri(const std::string &albumUri);
+    EXPORT int64_t GetDateTaken() const;
+    EXPORT void SetDateTaken(int64_t dataTaken);
 
-    int64_t GetTimePending() const;
-    void SetTimePending(int64_t timePending);
+    EXPORT int64_t GetTimePending() const;
+    EXPORT void SetTimePending(int64_t timePending);
 
-    bool IsFavorite() const;
-    void SetFavorite(bool isFavorite);
-    int64_t GetDateTrashed() const;
-    void SetDateTrashed(int64_t dateTrashed);
+    EXPORT bool IsFavorite() const;
+    EXPORT void SetFavorite(bool isFavorite);
+    EXPORT int64_t GetDateTrashed() const;
+    EXPORT void SetDateTrashed(int64_t dateTrashed);
 
-    const std::string &GetSelfId() const;
-    void SetSelfId(const std::string &selfId);
-    int32_t GetIsTrash() const;
-    void SetIsTrash(int32_t isTrash);
-    const std::string GetOwnerPackage() const;
-    void SetOwnerPackage(const std::string &ownerPackage);
-    const std::string GetPackageName() const;
-    void SetPackageName(const std::string &packageName);
+    EXPORT const std::string &GetSelfId() const;
+    EXPORT void SetSelfId(const std::string &selfId);
+    EXPORT int32_t GetIsTrash() const;
+    EXPORT void SetIsTrash(int32_t isTrash);
+    EXPORT const std::string GetOwnerPackage() const;
+    EXPORT void SetOwnerPackage(const std::string &ownerPackage);
+    EXPORT const std::string GetPackageName() const;
+    EXPORT void SetPackageName(const std::string &packageName);
 
-    const std::string &GetRecyclePath() const;
-    void SetRecyclePath(const std::string &recyclePath);
+    EXPORT const std::string &GetRecyclePath() const;
+    EXPORT void SetRecyclePath(const std::string &recyclePath);
 
-    ResultNapiType GetResultNapiType() const;
-    void SetResultNapiType(const ResultNapiType type);
+    EXPORT ResultNapiType GetResultNapiType() const;
+    EXPORT void SetResultNapiType(const ResultNapiType type);
 
-    int32_t GetPhotoSubType() const;
-    void SetPhotoSubType(int32_t photoSubType);
+    EXPORT int32_t GetPhotoSubType() const;
+    EXPORT void SetPhotoSubType(int32_t photoSubType);
 
-    int32_t GetPhotoIndex() const;
+    EXPORT int32_t GetPhotoIndex() const;
 
-    const std::string &GetCameraShotKey() const;
-    void SetCameraShotKey(const std::string &cameraShotKey);
+    EXPORT const std::string &GetCameraShotKey() const;
+    EXPORT void SetCameraShotKey(const std::string &cameraShotKey);
 
-    bool IsHidden() const;
-    void SetHidden(bool isHidden);
+    EXPORT bool IsHidden() const;
+    EXPORT void SetHidden(bool isHidden);
 
-    void SetOpenStatus(int32_t fd, int32_t openStatus);
-    void RemoveOpenStatus(int32_t fd);
-    int32_t GetOpenStatus(int32_t fd);
+    EXPORT void SetOpenStatus(int32_t fd, int32_t openStatus);
+    EXPORT void RemoveOpenStatus(int32_t fd);
+    EXPORT int32_t GetOpenStatus(int32_t fd);
 
-    std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> &GetMemberMap();
-    std::variant<int32_t, int64_t, std::string, double> &GetMemberValue(const std::string &name);
+    EXPORT std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> &GetMemberMap();
+    EXPORT std::variant<int32_t, int64_t, std::string, double> &GetMemberValue(const std::string &name);
 
-    std::string GetAssetJson();
-    void SetResultTypeMap(const std::string &colName, ResultSetDataType type);
+    EXPORT std::string GetAssetJson();
+    EXPORT void SetResultTypeMap(const std::string &colName, ResultSetDataType type);
 
-    const std::string &GetAllExif() const;
-    void SetAllExif(const std::string &allExif);
+    EXPORT const std::string &GetAllExif() const;
+    EXPORT void SetAllExif(const std::string &allExif);
 
-    const std::string &GetUserComment() const;
-    void SetUserComment(const std::string &userComment);
+    EXPORT const std::string &GetUserComment() const;
+    EXPORT void SetUserComment(const std::string &userComment);
 
-    const std::string &GetFilePath() const;
-    void SetFilePath(const std::string &filePath);
+    EXPORT const std::string &GetFilePath() const;
+    EXPORT void SetFilePath(const std::string &filePath);
 
-    int64_t GetPhotoEditTime() const;
-    void SetPhotoEditTime(int64_t photoEditTime);
+    EXPORT int64_t GetPhotoEditTime() const;
+    EXPORT void SetPhotoEditTime(int64_t photoEditTime);
 
 private:
     const std::string &GetStrMember(const std::string &name) const;

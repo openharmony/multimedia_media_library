@@ -29,10 +29,11 @@ using namespace DataShare;
 /**
  * @brief Basic datashare extension ability components.
  */
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaDataShareExtAbility : public DataShareExtAbility {
 public:
-    MediaDataShareExtAbility(Runtime& runtime);
-    virtual ~MediaDataShareExtAbility() override;
+    EXPORT MediaDataShareExtAbility(Runtime& runtime);
+    EXPORT virtual ~MediaDataShareExtAbility() override;
 
     /**
      * @brief Create MediaDataShareExtAbility.
@@ -40,7 +41,7 @@ public:
      * @param runtime The runtime.
      * @return The MediaDataShareExtAbility instance.
      */
-    static MediaDataShareExtAbility* Create(const std::unique_ptr<Runtime>& runtime);
+    EXPORT static MediaDataShareExtAbility* Create(const std::unique_ptr<Runtime>& runtime);
 
     /**
      * @brief Init the extension.
@@ -50,7 +51,7 @@ public:
      * @param handler the extension handler.
      * @param token the remote token.
      */
-    void Init(const std::shared_ptr<AppExecFwk::AbilityLocalRecord> &record,
+    EXPORT void Init(const std::shared_ptr<AppExecFwk::AbilityLocalRecord> &record,
         const std::shared_ptr<AppExecFwk::OHOSApplication> &application,
         std::shared_ptr<AppExecFwk::AbilityHandler> &handler,
         const sptr<IRemoteObject> &token) override;
@@ -62,9 +63,9 @@ public:
      * This function can be called only once in the entire lifecycle of an extension.
      * @param Want Indicates the {@link Want} structure containing startup information about the extension.
      */
-    void OnStart(const AAFwk::Want &want) override;
+    EXPORT void OnStart(const AAFwk::Want &want) override;
 
-    void OnStop() override;
+    EXPORT void OnStop() override;
 
     /**
      * @brief Called when this datashare extension ability is connected for the first time.
@@ -75,7 +76,7 @@ public:
      * extension.
      * @return Returns a pointer to the <b>sid</b> of the connected datashare extension ability.
      */
-    sptr<IRemoteObject> OnConnect(const AAFwk::Want &want) override;
+    EXPORT sptr<IRemoteObject> OnConnect(const AAFwk::Want &want) override;
 
     /**
      * @brief Obtains the MIME types of files supported.
@@ -85,7 +86,7 @@ public:
      *
      * @return Returns the matched MIME types. If there is no match, null is returned.
      */
-    std::vector<std::string> GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter) override;
+    EXPORT std::vector<std::string> GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter) override;
 
     /**
      * @brief Opens a file in a specified remote path.
@@ -98,7 +99,7 @@ public:
      *
      * @return Returns the file descriptor.
      */
-    int OpenFile(const Uri &uri, const std::string &mode) override;
+    EXPORT int OpenFile(const Uri &uri, const std::string &mode) override;
 
     /**
      * @brief This is like openFile, open a file that need to be able to return sub-sections of files，often assets
@@ -112,7 +113,7 @@ public:
      *
      * @return Returns the RawFileDescriptor object containing file descriptor.
      */
-    int OpenRawFile(const Uri &uri, const std::string &mode) override;
+    EXPORT int OpenRawFile(const Uri &uri, const std::string &mode) override;
 
     /**
      * @brief Inserts a single data record into the database.
@@ -122,7 +123,7 @@ public:
      *
      * @return Returns the index of the inserted data record.
      */
-    int Insert(const Uri &uri, const DataShareValuesBucket &value) override;
+    EXPORT int Insert(const Uri &uri, const DataShareValuesBucket &value) override;
 
     /**
      * @brief Inserts a single data record into the database.
@@ -132,7 +133,7 @@ public:
      * @param result Indicates the data result to insert.
      * @return Returns the index of the inserted data record.
      */
-    int InsertExt(const Uri &uri, const DataShareValuesBucket &value, std::string &result) override;
+    EXPORT int InsertExt(const Uri &uri, const DataShareValuesBucket &value, std::string &result) override;
 
     /**
      * @brief Updates data records in the database.
@@ -143,7 +144,7 @@ public:
      *
      * @return Returns the number of data records updated.
      */
-    int Update(const Uri &uri, const DataSharePredicates &predicates,
+    EXPORT int Update(const Uri &uri, const DataSharePredicates &predicates,
 		    const DataShareValuesBucket &value) override;
 
     /**
@@ -154,7 +155,7 @@ public:
      *
      * @return Returns the number of data records deleted.
      */
-    int Delete(const Uri &uri, const DataSharePredicates &predicates) override;
+    EXPORT int Delete(const Uri &uri, const DataSharePredicates &predicates) override;
 
     /**
      * @brief Deletes one or more data records from the database.
@@ -166,7 +167,7 @@ public:
      
      * @return Returns the query result.
      */
-    std::shared_ptr<DataShareResultSet> Query(const Uri &uri, const DataSharePredicates &predicates,
+    EXPORT std::shared_ptr<DataShareResultSet> Query(const Uri &uri, const DataSharePredicates &predicates,
 		    std::vector<std::string> &columns, DatashareBusinessError &businessError) override;
 
     /**
@@ -177,7 +178,7 @@ public:
      *
      * @return Returns the MIME type that matches the data specified by uri.
      */
-    std::string GetType(const Uri &uri) override;
+    EXPORT std::string GetType(const Uri &uri) override;
 
     /**
      * @brief Inserts multiple data records into the database.
@@ -187,7 +188,7 @@ public:
      *
      * @return Returns the number of data records inserted.
      */
-    int BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values) override;
+    EXPORT int BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values) override;
 
     /**
      * @brief Registers an observer to DataObsMgr specified by the given Uri.
@@ -195,7 +196,7 @@ public:
      * @param uri, Indicates the path of the data to operate.
      * @param dataObserver, Indicates the IDataAbilityObserver object.
      */
-    bool RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
+    EXPORT bool RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
 
     /**
      * @brief Deregisters an observer used for DataObsMgr specified by the given Uri.
@@ -203,7 +204,7 @@ public:
      * @param uri, Indicates the path of the data to operate.
      * @param dataObserver, Indicates the IDataAbilityObserver object.
      */
-    bool UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
+    EXPORT bool UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
 
     /**
      * @brief Notifies the registered observers of a change to the data resource specified by Uri.
@@ -212,7 +213,7 @@ public:
      *
      * @return Return true if success. otherwise return false.
      */
-    bool NotifyChange(const Uri &uri) override;
+    EXPORT bool NotifyChange(const Uri &uri) override;
 
     /**
      * @brief Converts the given uri that refer to the Data ability into a normalized URI. A normalized URI can be used
@@ -227,7 +228,7 @@ public:
      *
      * @return Returns the normalized Uri object if the Data ability supports URI normalization; returns null otherwise.
      */
-    Uri NormalizeUri(const Uri &uri) override;
+    EXPORT Uri NormalizeUri(const Uri &uri) override;
 
     /**
      * @brief Converts the given normalized uri generated by normalizeUri(ohos.utils.net.Uri) into a denormalized one.
@@ -239,7 +240,7 @@ public:
      * passed to this method if there is nothing to do; returns null if the data identified by the original Uri cannot
      * be found in the current environment.
      */
-    Uri DenormalizeUri(const Uri &uri) override;
+    EXPORT Uri DenormalizeUri(const Uri &uri) override;
 private:
     Runtime& runtime_;
 };

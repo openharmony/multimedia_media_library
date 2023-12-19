@@ -40,13 +40,14 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 static const std::string SMART_ALBUM_NAPI_CLASS_NAME = "SmartAlbum";
 static const std::string USERFILEMGR_SMART_ALBUM_NAPI_CLASS_NAME = "UserFileMgrSmartAlbum";
 class SmartAlbumNapi {
 public:
-    static napi_value Init(napi_env env, napi_value exports);
-    static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value CreateSmartAlbumNapi(napi_env env, std::unique_ptr<SmartAlbumAsset> &albumData);
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static napi_value UserFileMgrInit(napi_env env, napi_value exports);
+    EXPORT static napi_value CreateSmartAlbumNapi(napi_env env, std::unique_ptr<SmartAlbumAsset> &albumData);
     int32_t GetSmartAlbumId() const;
     std::string GetSmartAlbumName() const;
     std::string GetSmartAlbumUri() const;
@@ -59,38 +60,38 @@ public:
     void SetExpiredTime(int32_t expiredTime);
     void SetDescription(std::string &description);
     void SetCoverUri(std::string &coverUri);
-    SmartAlbumNapi();
-    ~SmartAlbumNapi();
+    EXPORT SmartAlbumNapi();
+    EXPORT ~SmartAlbumNapi();
 
 private:
-    static void SmartAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
-    static napi_value SmartAlbumNapiConstructor(napi_env env, napi_callback_info info);
+    EXPORT static void SmartAlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
+    EXPORT static napi_value SmartAlbumNapiConstructor(napi_env env, napi_callback_info info);
     void SetSmartAlbumNapiProperties();
 
-    static napi_value JSGetSmartAlbumId(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumName(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumUri(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumTag(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumCapacity(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumCategoryId(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumCategoryName(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumCoverUri(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumDateModified(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumType(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumDescription(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumExpiredTime(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumId(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumTag(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumCapacity(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumCategoryId(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumCategoryName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumCoverUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumDateModified(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumDescription(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumExpiredTime(napi_env env, napi_callback_info info);
 
-    static napi_value JSSmartAlbumNameSetter(napi_env env, napi_callback_info info);
-    static napi_value JSCommitModify(napi_env env, napi_callback_info info);
-    static napi_value JSAddFileAssets(napi_env env, napi_callback_info info);
-    static napi_value JSRemoveFileAssets(napi_env env, napi_callback_info info);
-    static napi_value JSGetSmartAlbumFileAssets(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrRecoverAsset(napi_env env, napi_callback_info info);
-    static napi_value JSSmartAlbumDescriptionSetter(napi_env env, napi_callback_info info);
-    static napi_value JSSmartAlbumCoverUriSetter(napi_env env, napi_callback_info info);
-    static napi_value JSSmartAlbumExpiredTimeSetter(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSmartAlbumNameSetter(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSCommitModify(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSAddFileAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSRemoveFileAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbumFileAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrRecoverAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSmartAlbumDescriptionSetter(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSmartAlbumCoverUriSetter(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSmartAlbumExpiredTimeSetter(napi_env env, napi_callback_info info);
 
     static thread_local SmartAlbumAsset *sAlbumData_;
     std::shared_ptr<SmartAlbumAsset> smartAlbumAssetPtr = nullptr;

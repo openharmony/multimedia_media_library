@@ -50,6 +50,16 @@ ohos_executable("scanner") {
       "relational_store:native_appdatafwk",
       "samgr:samgr_proxy",
     ]
+
+    ldflags = [ "-Wl,--gc-sections" ]
+
+    cflags = [
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-Os",
+    ]
+
+    cflags_cc = [ "-Os" ]
   }
 
   subsystem_name = "multimedia"

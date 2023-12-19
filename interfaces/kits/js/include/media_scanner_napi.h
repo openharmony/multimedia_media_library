@@ -25,6 +25,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 static const std::string SCANNER_HELPER_NAPI_CLASS_NAME = "ScannerInstance";
 
 class MediaScannerNapiCallback : public IMediaScannerCallback {
@@ -42,17 +43,17 @@ private:
 
 class MediaScannerNapi {
 public:
-    static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
 
-    MediaScannerNapi();
-    ~MediaScannerNapi();
+    EXPORT MediaScannerNapi();
+    EXPORT ~MediaScannerNapi();
 
 private:
-    static void MediaScannerNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
-    static napi_value MediaScannerNapiConstructor(napi_env env, napi_callback_info info);
-    static napi_value ScanFile(napi_env env, napi_callback_info info);
-    static napi_value ScanDir(napi_env env, napi_callback_info info);
-    static napi_value GetMediaScannerInstance(napi_env env, napi_callback_info info);
+    EXPORT static void MediaScannerNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
+    EXPORT static napi_value MediaScannerNapiConstructor(napi_env env, napi_callback_info info);
+    EXPORT static napi_value ScanFile(napi_env env, napi_callback_info info);
+    EXPORT static napi_value ScanDir(napi_env env, napi_callback_info info);
+    EXPORT static napi_value GetMediaScannerInstance(napi_env env, napi_callback_info info);
 
     static napi_value NapiScanUtils(napi_env env, napi_callback_info info, const std::string &scanType);
     static void DataShareScanBoardcast(const std::string &event);

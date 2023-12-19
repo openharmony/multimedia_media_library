@@ -80,7 +80,19 @@ config("napi_config") {
     include_dirs += [ "${MEDIALIB_MTP_PATH}/include" ]
   }
 
-  ldflags = [ "-Wl" ]
+  ldflags = [ "-Wl,--gc-sections" ]
+
+  cflags = [
+    "-fvisibility=hidden",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-Os",
+  ]
+
+  cflags_cc = [
+    "-fvisibility-inlines-hidden",
+    "-Os",
+  ]
 }
 
 ohos_shared_library("medialibrary_nutils") {

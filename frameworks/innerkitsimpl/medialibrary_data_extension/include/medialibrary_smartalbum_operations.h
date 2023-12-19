@@ -29,11 +29,12 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibrarySmartAlbumOperations {
 public:
-    static int32_t HandleSmartAlbumOperation(MediaLibraryCommand &cmd);
-    static int32_t CreateSmartAlbumOperation(MediaLibraryCommand &cmd);
-    static int32_t DeleteSmartAlbumOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t HandleSmartAlbumOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t CreateSmartAlbumOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t DeleteSmartAlbumOperation(MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS

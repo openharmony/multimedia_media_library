@@ -29,7 +29,8 @@
 
 namespace OHOS {
 namespace Media {
-enum class OperationObject : uint32_t {
+#define EXPORT __attribute__ ((visibility ("default")))
+enum class EXPORT OperationObject : uint32_t {
     UNKNOWN_OBJECT = 0,
     FILESYSTEM_ASSET,
     FILESYSTEM_PHOTO,
@@ -79,7 +80,7 @@ enum class OperationObject : uint32_t {
     SEARCH_TOTAL,  // search
 };
 
-enum class OperationType : uint32_t {
+enum class EXPORT OperationType : uint32_t {
     UNKNOWN_TYPE = 0,
     OPEN,
     CLOSE,
@@ -122,43 +123,43 @@ enum class OperationType : uint32_t {
 
 class MediaLibraryCommand {
 public:
-    explicit MediaLibraryCommand(const Uri &uri);
-    MediaLibraryCommand(const Uri &uri, const NativeRdb::ValuesBucket &value);
-    MediaLibraryCommand(const Uri &uri, const OperationType &oprnType);
-    MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
+    EXPORT explicit MediaLibraryCommand(const Uri &uri);
+    EXPORT MediaLibraryCommand(const Uri &uri, const NativeRdb::ValuesBucket &value);
+    EXPORT MediaLibraryCommand(const Uri &uri, const OperationType &oprnType);
+    EXPORT MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
+    EXPORT MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
         const NativeRdb::ValuesBucket &value, MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
+    EXPORT MediaLibraryCommand(const OperationObject &oprnObject, const OperationType &oprnType,
         const std::string &networkId, MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    MediaLibraryCommand() = delete;
-    ~MediaLibraryCommand();
-    MediaLibraryCommand(const MediaLibraryCommand &) = delete;
-    MediaLibraryCommand &operator=(const MediaLibraryCommand &) = delete;
-    MediaLibraryCommand(MediaLibraryCommand &&) = delete;
-    MediaLibraryCommand &operator=(MediaLibraryCommand &&) = delete;
+    EXPORT MediaLibraryCommand() = delete;
+    EXPORT ~MediaLibraryCommand();
+    EXPORT MediaLibraryCommand(const MediaLibraryCommand &) = delete;
+    EXPORT MediaLibraryCommand &operator=(const MediaLibraryCommand &) = delete;
+    EXPORT MediaLibraryCommand(MediaLibraryCommand &&) = delete;
+    EXPORT MediaLibraryCommand &operator=(MediaLibraryCommand &&) = delete;
 
     OperationObject GetOprnObject() const;
     OperationType GetOprnType() const;
     const std::string &GetTableName();
     NativeRdb::ValuesBucket &GetValueBucket();
-    NativeRdb::AbsRdbPredicates *GetAbsRdbPredicates();
+    EXPORT NativeRdb::AbsRdbPredicates *GetAbsRdbPredicates();
     const std::string &GetOprnFileId();
     const std::string &GetOprnDevice();
     const Uri &GetUri() const;
     const std::string &GetBundleName();
     const std::string &GetDeviceName();
-    std::string GetUriStringWithoutSegment() const;
+    EXPORT std::string GetUriStringWithoutSegment() const;
     MediaLibraryApi GetApi();
     std::string GetQuerySetParam(const std::string &key);
-    void SetDataSharePred(const DataShare::DataSharePredicates &pred);
+    EXPORT void SetDataSharePred(const DataShare::DataSharePredicates &pred);
     const DataShare::DataSharePredicates &GetDataSharePred() const;
     const std::string &GetResult();
 
-    void SetOprnObject(OperationObject object);
-    void SetOprnAssetId(const std::string &oprnId);
-    void SetValueBucket(const NativeRdb::ValuesBucket &value);
-    void SetTableName(const std::string &tableName);
+    EXPORT void SetOprnObject(OperationObject object);
+    EXPORT void SetOprnAssetId(const std::string &oprnId);
+    EXPORT void SetValueBucket(const NativeRdb::ValuesBucket &value);
+    EXPORT void SetTableName(const std::string &tableName);
     void SetBundleName(const std::string &bundleName);
     void SetDeviceName(const std::string &deviceName);
     void SetResult(const std::string &result);

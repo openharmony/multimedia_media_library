@@ -26,6 +26,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 struct WatchInfo {
     WatchInfo(const std::string &path, const std::string &uri, const std::string &bundleName,
         MediaLibraryApi api): path_(path), uri_(uri), bundleName_(bundleName), api_(api), meetEvent_(0){};
@@ -38,13 +39,13 @@ struct WatchInfo {
 
 class MediaLibraryInotify {
 public:
-    static std::shared_ptr<MediaLibraryInotify> GetInstance();
-    int32_t AddWatchList(const std::string &path, const std::string &uri,
+    EXPORT static std::shared_ptr<MediaLibraryInotify> GetInstance();
+    EXPORT int32_t AddWatchList(const std::string &path, const std::string &uri,
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    MediaLibraryInotify() = default;
-    ~MediaLibraryInotify() = default;
-    int32_t RemoveByFileUri(const std::string &uri, MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    void DoAging();
+    EXPORT MediaLibraryInotify() = default;
+    EXPORT ~MediaLibraryInotify() = default;
+    EXPORT int32_t RemoveByFileUri(const std::string &uri, MediaLibraryApi api = MediaLibraryApi::API_OLD);
+    EXPORT void DoAging();
     void DoStop();
 private:
     int32_t Remove(int wd);

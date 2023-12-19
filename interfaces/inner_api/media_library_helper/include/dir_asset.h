@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 /**
  * @brief Data class for dir details
  *
@@ -29,17 +30,17 @@ namespace Media {
  */
 class DirAsset {
 public:
-    DirAsset();
-    virtual ~DirAsset();
+    EXPORT DirAsset();
+    EXPORT virtual ~DirAsset();
 
-    void SetDirType(const int32_t dirType);
-    void SetMediaTypes(const std::string mediaTypes);
-    void SetDirectory(const std::string directory);
-    void SetExtensions(const std::string extensions);
-    int32_t GetDirType() const;
-    std::string GetMediaTypes() const;
-    std::string GetDirectory() const;
-    std::string GetExtensions() const;
+    EXPORT void SetDirType(const int32_t dirType);
+    EXPORT void SetMediaTypes(const std::string mediaTypes);
+    EXPORT void SetDirectory(const std::string directory);
+    EXPORT void SetExtensions(const std::string extensions);
+    EXPORT int32_t GetDirType() const;
+    EXPORT std::string GetMediaTypes() const;
+    EXPORT std::string GetDirectory() const;
+    EXPORT std::string GetExtensions() const;
 
 private:
     int32_t dirType_;

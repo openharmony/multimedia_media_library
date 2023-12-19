@@ -24,6 +24,7 @@
 #include "rdb_store.h"
 
 namespace OHOS::Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 static constexpr int32_t SQLITE3_DATABASE_LOCKER = -5;
 /**
  * This class is used for database transaction creation, commit, and rollback
@@ -40,10 +41,10 @@ static constexpr int32_t SQLITE3_DATABASE_LOCKER = -5;
  */
 class TransactionOperations {
 public:
-    TransactionOperations(const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
-    ~TransactionOperations();
-    int32_t Start();
-    void Finish();
+    EXPORT TransactionOperations(const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
+    EXPORT ~TransactionOperations();
+    EXPORT int32_t Start();
+    EXPORT void Finish();
 
 private:
     int32_t BeginTransaction();
