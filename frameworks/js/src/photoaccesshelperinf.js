@@ -27,6 +27,7 @@ const PERMISSION_STATE_ERROR = -1;
 const ERROR_MSG_WRITE_PERMISSION = 'not have ohos.permission.WRITE_IMAGEVIDEO';
 const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
+const ERROR_MSG_INNER_FAIL = 'System inner fail';
 
 const MAX_DELETE_NUMBER = 300;
 const MIN_DELETE_NUMBER = 1;
@@ -124,8 +125,10 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
       return photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
         if (result.result === REQUEST_CODE_SUCCESS) {
           asyncCallback();
-        } else {
+        } else if (result.result == PERMISSION_DENIED) {
           asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
+        } else {
+          asyncCallback(new BusinessError(ERROR_MSG_INNER_FAIL, result.result));
         }
       });
     } else {
@@ -133,8 +136,10 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
         photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
           if (result.result === REQUEST_CODE_SUCCESS) {
             resolve();
-          } else {
+          } else if (result.result == PERMISSION_DENIED) {
             reject(new BusinessError(ERROR_MSG_USER_DENY));
+          } else {
+            reject(new BusinessError(ERROR_MSG_INNER_FAIL, result.result));
           }
         });
       });
