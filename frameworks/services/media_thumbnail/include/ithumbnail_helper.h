@@ -73,12 +73,16 @@ public:
     static void DeleteThumbnailKv(ThumbRdbOpt &opts);
     static void CreateLcd(AsyncTaskData *data);
     static void CreateThumbnail(AsyncTaskData *data);
+    static void CreateAstc(AsyncTaskData *data);
+    static void StopLongTimeTask(AsyncTaskData* data);
     static void AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront);
+    static int32_t UpdateAstcState(ThumbRdbOpt &opts);
 protected:
     static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
+    static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const std::string &suffix);

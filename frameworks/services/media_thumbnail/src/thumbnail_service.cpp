@@ -366,6 +366,13 @@ int32_t ThumbnailService::GenerateThumbnails()
             MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
         }
 
+        if (tableName == PhotoColumn::PHOTOS_TABLE) {
+            err = ThumbnailGenerateHelper::CreateAstcBatch(opts);
+            if (err != E_OK) {
+                MEDIA_ERR_LOG("CreateAstcBatch failed : %{public}d", err);
+            }
+        }
+
         if (tableName != AudioColumn::AUDIOS_TABLE) {
             err = ThumbnailGenerateHelper::CreateLcdBatch(opts);
             if (err != E_OK) {

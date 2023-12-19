@@ -27,12 +27,14 @@ public:
     ThumbnailGenerateHelper() = delete;
     virtual ~ThumbnailGenerateHelper() = delete;
     static int32_t CreateThumbnailBatch(ThumbRdbOpt &opts);
+    static int32_t CreateAstcBatch(ThumbRdbOpt &opts);
     static int32_t CreateLcdBatch(ThumbRdbOpt &opts);
     static int32_t GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count);
 private:
     static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
     static int32_t GetNoLcdData(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &outDatas);
     static int32_t GetNoThumbnailData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
+    static int32_t GetNoAstcData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
 };
 } // namespace Media
 } // namespace OHOS

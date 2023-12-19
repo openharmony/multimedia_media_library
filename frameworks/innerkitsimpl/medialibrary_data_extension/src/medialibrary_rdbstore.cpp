@@ -985,7 +985,7 @@ int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
     if (PrepareUniqueMemberTable(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
-    
+
     if (PrepareShootingModeAlbum(store)!= NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
@@ -1898,6 +1898,14 @@ void UpdateMillisecondDate(RdbStore &store)
     MEDIA_DEBUG_LOG("UpdateMillisecondDate end");
 }
 
+void AddHasAstcColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_HAS_ASTC + " INT DEFAULT 0 ",
+    };
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2049,6 +2057,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     
     if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
         UpdateMillisecondDate(store);
+    }
+
+    if (oldVersion < VERSION_ADD_HAS_ASTC) {
+        AddHasAstcColumns(store);
     }
 }
 
