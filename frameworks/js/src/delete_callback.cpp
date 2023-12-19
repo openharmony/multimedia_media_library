@@ -19,7 +19,6 @@
 #include "medialibrary_napi_log.h"
 #include "media_file_utils.h"
 #include "userfile_client.h"
-#include "medialibrary_client_errno.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -39,8 +38,8 @@ void DeleteCallback::OnRelease(int32_t releaseCode)
 
 void DeleteCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &result)
 {
-    this->resultCode_ = resultCode;
     if (resultCode == DELETE_CODE_SUCCESS) {
+        this->resultCode_ = resultCode;
         string trashUri = PAH_TRASH_PHOTO;
         MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
         Uri updateAssetUri(trashUri);
@@ -50,14 +49,17 @@ void DeleteCallback::OnResult(int32_t resultCode, const OHOS::AAFwk::Want &resul
         valuesBucket.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeSeconds());
         int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
         if (changedRows < 0) {
-            this->resultCode_ = DELETE_CODE_ERROR;
+            this->resultCode_ = JS_INNER_FAIL;
         }
+    } else {
+        this->resultCode_ = JS_ERR_PERMISSION_DENIED;
     }
     SendMessageBack();
 }
 
 void DeleteCallback::OnError(int32_t code, const string &name, const string &message)
 {
+    this->resultCode_ = JS_INNER_FAIL;
     SendMessageBack();
 }
 

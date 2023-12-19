@@ -23,6 +23,7 @@
 
 #include "want.h"
 #include "ui_content.h"
+#include "medialibrary_client_errno.h"
 
 namespace OHOS {
 namespace Media {
@@ -34,7 +35,6 @@ const std::string DELETE_UI_APPNAME = "appName";
 const std::string DELETE_UI_URIS = "uris";
 const std::string RESULT = "result";
 const int32_t DELETE_CODE_SUCCESS = 0;
-const int32_t DELETE_CODE_ERROR = -1;
 const int32_t DEFAULT_SESSION_ID = 0;
 
 class DeleteCallback {
@@ -50,7 +50,7 @@ public:
 
 private:
     int32_t sessionId_ = DEFAULT_SESSION_ID;
-    int32_t resultCode_ = DELETE_CODE_ERROR;
+    int32_t resultCode_ = JS_ERR_PERMISSION_DENIED;
     std::vector<std::string> uris_;
     napi_env env_ = nullptr;
     napi_ref callbackRef = nullptr;
