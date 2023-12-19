@@ -120,20 +120,23 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
     return errorResult(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_PARAMERTER_INVALID), asyncCallback);
   }
   try {
-    let result = photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
-      if (asyncCallback) {
+    if (asyncCallback) {
+      return photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
         if (result.result === REQUEST_CODE_SUCCESS) {
           asyncCallback();
         } else {
           asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
         }
-      }
-    });
-    if (asyncCallback) {
-      return result;
+      });
     } else {
-      return new Promise((resolve) => {
-        resolve();
+      return new Promise((resolve, reject) => {
+        photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
+          if (result.result === REQUEST_CODE_SUCCESS) {
+            resolve();
+          } else {
+            reject(new BusinessError(ERROR_MSG_USER_DENY));
+          }
+        });
       });
     }
   } catch (error) {
