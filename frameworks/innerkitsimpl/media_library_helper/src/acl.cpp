@@ -175,6 +175,7 @@ void InitSandboxEntry(AclXattrEntry &entry)
     entry.tag = ACL_TAG::GROUP;
     entry.id = THUMB_ACL_GROUP;
     entry.perm.SetR();
+    entry.perm.SetE();
 }
 
 int32_t Acl::AclSetDefault()
