@@ -226,7 +226,7 @@ HWTEST_F(ShootingModeAlbumTest, photoalbum_create_ShootingMode_album_001, TestSi
 
 /**
  * @tc.name: query_shooting_mode_album_001
- * @tc.desc: query shooting mode albums amd check if number matches
+ * @tc.desc: query shooting mode albums and check if number matches
  * @tc.type: FUNC
  */
 HWTEST_F(ShootingModeAlbumTest, query_shooting_mode_album_001, TestSize.Level0)
