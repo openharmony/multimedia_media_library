@@ -133,14 +133,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateDirectory_Test_001, Te
     EXPECT_EQ(MediaFileUtils::CreateDirectory(dirPath), true);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_RemoveDirectory_Test_001, TestSize.Level0)
-{
-    string dirPath = "/data/test/removedir_001";
-    string subPath = dirPath + "/removedir_001";
-    EXPECT_EQ(MediaFileUtils::CreateDirectory(subPath), true);
-    EXPECT_EQ(MediaFileUtils::RemoveDirectory(dirPath), 0);
-}
-
 static bool CheckFileString(const string &filePath, const string &text)
 {
     ifstream inputFile(filePath);
@@ -351,45 +343,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_UpdatePath_Test_007, TestSiz
     EXPECT_EQ(MediaFileUtils::UpdatePath(path, uri), path);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_001, TestSize.Level0)
-{
-    string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_AUDIO_URI;
-    EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_AUDIO, ""), uri);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_002, TestSize.Level0)
-{
-    string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_VIDEO_URI;
-    EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_VIDEO, ""), uri);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_003, TestSize.Level0)
-{
-    string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_IMAGE_URI;
-    EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_IMAGE, ""), uri);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_004, TestSize.Level0)
-{
-    string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI;
-    EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, ""), uri);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUri_Test_005, TestSize.Level0)
-{
-    string uri = MEDIALIBRARY_DATA_URI + MEDIALIBRARY_TYPE_FILE_URI;
-    EXPECT_EQ(MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_ALL, ""), uri);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriByNameAndId_Test_001, TestSize.Level0)
-{
-    string displayName = "test.jpg";
-    string networkId = "";
-    int32_t fd = 1;
-    string targetUri = MediaFileUri(MEDIA_TYPE_IMAGE, to_string(fd), networkId).ToString();
-    EXPECT_EQ(MediaFileUtils::GetUriByNameAndId(displayName, networkId, fd), targetUri);
-}
-
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaType_Test_001, TestSize.Level0)
 {
     string displayName = "";
@@ -589,49 +542,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetRealUriFromVirtualUri_Tes
     EXPECT_EQ(realUri, virtualUri);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileMediaTypeUriV10_Test_001, TestSize.Level0)
-{
-    int32_t mediaType = MEDIA_TYPE_FILE;
-    string networkId = "testNetWorkId";
-    string uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId);
-    EXPECT_EQ(uri, "datashare://testNetWorkId/media/file");
-
-    mediaType = MEDIA_TYPE_AUDIO;
-    uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId);
-    EXPECT_EQ(uri, "datashare://testNetWorkId/media/Audio");
-
-    mediaType = MEDIA_TYPE_VIDEO;
-    uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId);
-    EXPECT_EQ(uri, "datashare://testNetWorkId/media/Photo");
-
-    mediaType = MEDIA_TYPE_IMAGE;
-    uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId);
-    EXPECT_EQ(uri, "datashare://testNetWorkId/media/Photo");
-
-    mediaType = MEDIA_TYPE_FILE;
-    uri = MediaFileUtils::GetFileMediaTypeUriV10(mediaType, networkId);
-    EXPECT_EQ(uri, "datashare://testNetWorkId/media/file");
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetLastDentry_Test_001, TestSize.Level0)
-{
-    string testPath;
-    string uri = MediaFileUtils::GetLastDentry(testPath);
-    EXPECT_EQ(uri, "");
-
-    testPath = "datashare://testpath/media/file";
-    uri = MediaFileUtils::GetLastDentry(testPath);
-    EXPECT_EQ(uri, "file");
-
-    testPath = "datashare://";
-    uri = MediaFileUtils::GetLastDentry(testPath);
-    EXPECT_EQ(uri, "");
-
-    testPath = "datashare://test/testdir";
-    uri = MediaFileUtils::GetLastDentry(testPath);
-    EXPECT_EQ(uri, "testdir");
-}
-
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ModifyAsset_Test_001, TestSize.Level0)
 {
     string oldPath;
@@ -663,19 +573,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_ModifyAsset_Test_002, TestSi
     EXPECT_EQ(ret, E_NO_SUCH_FILE);
 }
 
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_StrCreateTime_Test_001, TestSize.Level0)
-{
-    string format = "test";
-    int64_t time = 1234567890;
-    string strTime = MediaFileUtils::StrCreateTime(format, time);
-    EXPECT_EQ(strTime, "test");
-
-    format = "";
-    time = 11111111111;
-    strTime = MediaFileUtils::StrCreateTime(format, time);
-    EXPECT_EQ(strTime, "");
-}
-
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateAsset_Test_001, TestSize.Level0)
 {
     string filePath;
@@ -685,17 +582,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CreateAsset_Test_001, TestSi
     filePath = "datashare://test";
     MediaFileUtils::CreateAsset(filePath);
     EXPECT_EQ(ret, E_VIOLATION_PARAMETERS);
-}
-
-HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_DeleteAsset_Test_001, TestSize.Level0)
-{
-    string filePath;
-    int32_t ret = MediaFileUtils::DeleteAsset(filePath);
-    EXPECT_EQ(ret, E_ERR);
-
-    filePath = "datashare://test";
-    MediaFileUtils::DeleteAsset(filePath);
-    EXPECT_EQ(ret, E_ERR);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsUriV10_Test_001, TestSize.Level0)

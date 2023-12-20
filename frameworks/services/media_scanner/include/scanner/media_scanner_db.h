@@ -54,8 +54,6 @@ public:
     std::string UpdateMetadata(const Metadata &metadata, std::string &tableName,
         MediaLibraryApi api = MediaLibraryApi::API_OLD, bool skipPhoto = true);
     std::string GetFileDBUriFromPath(const std::string &path);
-    std::vector<std::string> BatchInsert(const std::vector<Metadata> &metadataList);
-
     int32_t InsertAlbum(const Metadata &metadata);
     int32_t UpdateAlbum(const Metadata &metadata);
     int32_t ReadAlbums(const std::string &path, std::unordered_map<std::string, Metadata> &albumMap);

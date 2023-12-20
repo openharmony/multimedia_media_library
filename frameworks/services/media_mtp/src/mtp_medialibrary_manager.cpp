@@ -25,7 +25,6 @@
 #include "media_file_utils.h"
 #include "media_mtp_utils.h"
 #include "mtp_error_utils.h"
-#include "media_thumbnail_helper.h"
 #include "media_log.h"
 #include "system_ability_definition.h"
 

@@ -24,7 +24,6 @@
 #include "media_log.h"
 #include "medialibrary_file_operations.h"
 #include "media_file_utils.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_smartalbum_map_operations.h"

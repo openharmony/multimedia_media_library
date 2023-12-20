@@ -21,14 +21,15 @@
 #include "base_column.h"
 
 namespace OHOS::Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class FormMap : BaseColumn {
 public:
     // Sql to create the table
-    static const std::string CREATE_FORM_MAP_TABLE;
+    static const std::string CREATE_FORM_MAP_TABLE EXPORT;
 
-    static const std::string FORM_MAP_TABLE;
-    static const std::string FORMMAP_FORM_ID;
-    static const std::string FORMMAP_URI;
+    static const std::string FORM_MAP_TABLE EXPORT;
+    static const std::string FORMMAP_FORM_ID EXPORT;
+    static const std::string FORMMAP_URI EXPORT;
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_FORM_MAP_H

@@ -52,16 +52,6 @@ string MediaLibraryDataManagerUtils::GetOperationType(const string &uri)
     return oprn;
 }
 
-string MediaLibraryDataManagerUtils::GetIdFromUri(const string &uri)
-{
-    return MediaFileUri(uri).GetFileId();
-}
-
-string MediaLibraryDataManagerUtils::GetNetworkIdFromUri(const string &uri)
-{
-    return MediaFileUri(uri).GetNetworkId();
-}
-
 string MediaLibraryDataManagerUtils::GetDisPlayNameFromPath(const std::string &path)
 {
     string displayName;

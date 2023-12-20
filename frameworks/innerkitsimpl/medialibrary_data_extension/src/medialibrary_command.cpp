@@ -229,7 +229,7 @@ const string &MediaLibraryCommand::GetOprnFileId()
 const string &MediaLibraryCommand::GetOprnDevice()
 {
     if (oprnDevice_.empty()) {
-        oprnDevice_ = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri_.ToString());
+        oprnDevice_ = MediaFileUtils::GetNetworkIdFromUri(uri_.ToString());
     }
     return oprnDevice_;
 }
@@ -495,7 +495,7 @@ void MediaLibraryCommand::ParseFileId()
         uriInValue = GetUriStringWithoutSegment();
     }
 
-    string idFromUri = MediaLibraryDataManagerUtils::GetIdFromUri(uriInValue);
+    string idFromUri = MediaFileUtils::GetIdFromUri(uriInValue);
     if (!MediaLibraryDataManagerUtils::IsNumber(idFromUri)) {
         return;
     }

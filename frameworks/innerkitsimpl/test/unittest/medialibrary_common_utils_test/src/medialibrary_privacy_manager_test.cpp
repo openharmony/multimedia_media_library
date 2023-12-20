@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 #include "medialibrary_common_utils_test.h"
-#include "medialibrary_device.h"
 #include "medialibrary_errno.h"
 #define private public
 #include "media_privacy_manager.h"

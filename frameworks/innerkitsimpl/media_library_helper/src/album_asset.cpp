@@ -130,38 +130,6 @@ bool AlbumAsset::GetAlbumVirtual() const
     return albumVirtual_;
 }
 
-bool AlbumAsset::CreateAlbumAsset(shared_ptr<int> errCodePtr)
-{
-    if (!(MediaFileUtils::IsDirectory(albumPath_, errCodePtr))) {
-        return MediaFileUtils::CreateDirectory(albumPath_, errCodePtr);
-    } else {
-        MEDIA_ERR_LOG("Cannot create album that already exists: %{private}s", albumPath_.c_str());
-        return false;
-    }
-}
-
-bool AlbumAsset::DeleteAlbumAsset(const string &albumUri)
-{
-    return MediaFileUtils::DeleteDir(albumUri);
-}
-
-bool AlbumAsset::ModifyAlbumAsset(const string &albumUri)
-{
-    string newAlbumUri;
-    string oldAlbumUri;
-    size_t slashIndex;
-    bool errCode = false;
-
-    oldAlbumUri = albumUri;
-    slashIndex = albumUri.rfind("/");
-    if (slashIndex != string::npos) {
-        newAlbumUri = albumUri.substr(0, slashIndex) + SLASH_CHAR + albumName_;
-        errCode =  MediaFileUtils::RenameDir(oldAlbumUri, newAlbumUri);
-    }
-
-    return errCode;
-}
-
 void AlbumAsset::SetResultNapiType(const ResultNapiType type)
 {
     resultNapiType_ = type;

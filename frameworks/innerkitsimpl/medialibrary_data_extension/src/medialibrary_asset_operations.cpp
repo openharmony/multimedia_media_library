@@ -462,7 +462,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
         return nullptr;
     }
 
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
+    string id = MediaFileUtils::GetIdFromUri(uri);
     if (uri.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
         return nullptr;
     }
@@ -766,29 +766,6 @@ int32_t MediaLibraryAssetOperations::DeleteAssetInDb(MediaLibraryCommand &cmd)
     return deletedRows;
 }
 
-int32_t MediaLibraryAssetOperations::ModifyAssetInDb(MediaLibraryCommand &cmd)
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-    if (rdbStore == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-
-    TransactionOperations transactionOprn(rdbStore->GetRaw());
-    int32_t errCode = transactionOprn.Start();
-    if (errCode != E_OK) {
-        return errCode;
-    }
-
-    int32_t rowId = 0;
-    int32_t ret = rdbStore->Update(cmd, rowId);
-    if (ret < 0 || rowId < 0) {
-        MEDIA_ERR_LOG("update path failed, ret=%{public}d", ret);
-        return ret;
-    }
-    transactionOprn.Finish();
-
-    return rowId;
-}
 
 int32_t MediaLibraryAssetOperations::UpdateFileName(MediaLibraryCommand &cmd,
     const shared_ptr<FileAsset> &fileAsset, bool &isNameChanged)
@@ -1795,7 +1772,7 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
         return status;
     }
 
-    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
+    string fileId = MediaFileUtils::GetIdFromUri(uri);
     int32_t type = MediaFileUtils::GetMediaType(path);
     if (this->isInvalidateThumb) {
         InvalidateThumbnail(fileId, type);

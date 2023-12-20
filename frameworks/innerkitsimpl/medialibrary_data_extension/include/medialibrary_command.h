@@ -164,7 +164,6 @@ public:
     void SetResult(const std::string &result);
 
 private:
-    void SetOprnDevice(const std::string &networkId);
     void ParseOprnObjectFromUri();
     void ParseOprnTypeFromUri();
     void ParseTableName();

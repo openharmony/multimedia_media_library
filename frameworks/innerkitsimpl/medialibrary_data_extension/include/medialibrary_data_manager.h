@@ -51,10 +51,7 @@ class MediaLibraryDataManager {
 public:
     EXPORT MediaLibraryDataManager();
     EXPORT ~MediaLibraryDataManager();
-    static std::shared_ptr<MediaLibraryDataManager> GetInstance();
-
-    EXPORT int32_t InitMediaLibraryRdbStore();
-    EXPORT int32_t InitialiseKvStore();
+    EXPORT static std::shared_ptr<MediaLibraryDataManager> GetInstance();
 
     EXPORT int32_t Insert(MediaLibraryCommand &cmd, const DataShare::DataShareValuesBucket &value);
     EXPORT int32_t InsertExt(MediaLibraryCommand &cmd, const DataShare::DataShareValuesBucket &value,
@@ -67,13 +64,13 @@ public:
     EXPORT std::shared_ptr<DataShare::ResultSetBridge> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates, int &errCode);
     EXPORT std::shared_ptr<NativeRdb::ResultSet>
-    QueryRdb(MediaLibraryCommand &cmd, const std::vector<std::string> &columns,
+    EXPORT QueryRdb(MediaLibraryCommand &cmd, const std::vector<std::string> &columns,
         const DataShare::DataSharePredicates &predicates, int &errCode);
     EXPORT int32_t OpenFile(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT std::string GetType(const Uri &uri);
     EXPORT void NotifyChange(const Uri &uri);
     EXPORT int32_t GenerateThumbnails();
-    EXPORT void InterruptBgworker();
+    void InterruptBgworker();
     EXPORT int32_t DoAging();
     EXPORT int32_t DoTrashAging(std::shared_ptr<int> countPtr = nullptr);
     /**
@@ -83,37 +80,34 @@ public:
      */
     EXPORT int32_t RevertPendingByPackage(const std::string &bundleName);
 
-    /**
-     * @brief Revert the pending state
-     * @return revert result
-     */
-    EXPORT int32_t HandleRevertPending();
-    std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
+    EXPORT std::shared_ptr<NativeRdb::RdbStore> rdbStore_;
 
-    int32_t InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
+    EXPORT int32_t InitMediaLibraryMgr(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context,
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
-    void ClearMediaLibraryMgr();
-    int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
-    void CreateThumbnailAsync(const std::string &uri, const std::string &path);
-    static std::unordered_map<std::string, DirAsset> GetDirQuerySetMap();
-    std::shared_ptr<MediaDataShareExtAbility> GetOwner();
-    void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);
-    int GetThumbnail(const std::string &uri);
+    EXPORT void ClearMediaLibraryMgr();
+    EXPORT int32_t MakeDirQuerySetMap(std::unordered_map<std::string, DirAsset> &outDirQuerySetMap);
+    EXPORT void CreateThumbnailAsync(const std::string &uri, const std::string &path);
+    EXPORT static std::unordered_map<std::string, DirAsset> GetDirQuerySetMap();
+    EXPORT std::shared_ptr<MediaDataShareExtAbility> GetOwner();
+    EXPORT void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);
+    EXPORT int GetThumbnail(const std::string &uri);
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
 
 private:
+    int32_t InitMediaLibraryRdbStore();
+
 #ifdef DISTRIBUTED
     bool QuerySync(const std::string &networkId, const std::string &tableName);
 #endif
     int32_t HandleThumbnailOperations(MediaLibraryCommand &cmd);
 
-    void NeedQuerySync(const std::string &networkId, OperationObject oprnObject);
-    int32_t SolveInsertCmd(MediaLibraryCommand &cmd);
-    int32_t SetCmdBundleAndDevice(MediaLibraryCommand &outCmd);
-    void ScanFile(const NativeRdb::ValuesBucket &values, const std::shared_ptr<NativeRdb::RdbStore> &rdbStore1);
+    EXPORT int32_t SolveInsertCmd(MediaLibraryCommand &cmd);
+    EXPORT int32_t SetCmdBundleAndDevice(MediaLibraryCommand &outCmd);
+#ifdef DISTRIBUTED
     int32_t InitDeviceData();
-    int32_t InitialiseThumbnailService(const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
+#endif
+    EXPORT int32_t InitialiseThumbnailService(const std::shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext);
     std::shared_ptr<NativeRdb::ResultSet> QuerySet(MediaLibraryCommand &cmd, const std::vector<std::string> &columns,
         const DataShare::DataSharePredicates &predicates, int &errCode);
     void InitACLPermission();
@@ -121,7 +115,7 @@ private:
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();
 #endif
-    std::shared_ptr<ThumbnailService> thumbnailService_;
+    EXPORT std::shared_ptr<ThumbnailService> thumbnailService_;
     int32_t RevertPendingByFileId(const std::string &fileId);
 #ifdef DISTRIBUTED
     int32_t SyncPullThumbnailKeys(const Uri &uri);
@@ -131,11 +125,12 @@ private:
     int32_t UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
         const DataShare::DataSharePredicates &predicates);
     std::shared_mutex mgrSharedMutex_;
+#ifdef DISTRIBUTED
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
     DistributedKv::DistributedKvDataManager dataManager_;
+#endif
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
     std::string bundleName_ {BUNDLE_NAME};
-    OHOS::sptr<AppExecFwk::IBundleMgr> bundleMgr_;
     static std::mutex mutex_;
     static std::shared_ptr<MediaLibraryDataManager> instance_;
     static std::unordered_map<std::string, DirAsset> dirQuerySetMap_;

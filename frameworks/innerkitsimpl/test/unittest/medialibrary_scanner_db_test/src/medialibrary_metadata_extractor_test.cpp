@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "medialibrary_device.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_scanner_db_test.h"
 #include "media_scanner_db.h"

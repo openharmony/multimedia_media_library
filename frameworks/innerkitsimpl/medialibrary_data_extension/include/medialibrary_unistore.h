@@ -66,11 +66,6 @@ public:
     {
         return nullptr;
     }
-
-    virtual std::string ObtainTableName(MediaLibraryCommand &cmd)
-    {
-        return "";
-    }
 };
 } // namespace Media
 } // namespace OHOS

@@ -261,7 +261,7 @@ int32_t UriPermissionOperations::CheckUriPermission(const std::string &fileUri, 
         return E_INVALID_MODE;
     }
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(fileUri);
+    string fileId = MediaFileUtils::GetIdFromUri(fileUri);
     TableType tableType = TableType::TYPE_FILES;
     static map<string, TableType> tableMap = {
         { MEDIALIBRARY_TYPE_IMAGE_URI, TableType::TYPE_PHOTOS },

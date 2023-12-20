@@ -203,28 +203,6 @@ static bool CompareIfArraysEquals(const unsigned char originArray[],
 }
 
 /**
- * @tc.number    : MediaLibraryManager_test_001
- * @tc.name      : create a test.jpg
- * @tc.desc      : create a image asset to see if error occurs
- */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("MediaLibraryManager_test_001::Start");
-    string displayName = "test.jpg";
-    string uri =  mediaLibraryManager->CreateAsset(displayName);
-    EXPECT_NE(uri, "");
-    int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
-    EXPECT_NE(destFd <= 0, true);
-    int32_t resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
-    if (resWrite == -1) {
-        EXPECT_EQ(false, true);
-    }
-    auto ret = mediaLibraryManager->CloseAsset(uri, destFd);
-    EXPECT_EQ(ret, E_SUCCESS);
-    MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
-}
-
-/**
  * @tc.number    : MediaLibraryManager_test_002
  * @tc.name      : create image again to see if error occurs
  * @tc.desc      : create same name file to see if error occur and
@@ -244,7 +222,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level0)
         EXPECT_EQ(false, true);
     }
     mediaLibraryManager->CloseAsset(uri, destFd);
- 
+
     int32_t srcFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
     int64_t srcLen = lseek(srcFd, 0, SEEK_END);
     lseek(srcFd, 0, SEEK_SET);

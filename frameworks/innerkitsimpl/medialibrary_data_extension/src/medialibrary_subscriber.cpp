@@ -100,7 +100,6 @@ void MedialibrarySubscriber::Init()
 {
     lockTime_ = GetNowTime();
     agingCount_ = 0;
-    scanCount_ = 0;
 }
 
 void MedialibrarySubscriber::DoBackgroundOperation()

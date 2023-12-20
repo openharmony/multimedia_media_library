@@ -1225,16 +1225,6 @@ void UpdateAPI10Table(RdbStore &store)
     MediaScannerManager::GetInstance()->ErrorRecord();
 }
 
-void MediaLibraryRdbStore::UpdateAPI10Tables()
-{
-    if (rdbStore_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return;
-    }
-
-    UpdateAPI10Table(*rdbStore_);
-}
-
 static void AddLocationTables(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {

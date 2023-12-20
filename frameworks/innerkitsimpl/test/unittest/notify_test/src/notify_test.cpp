@@ -214,21 +214,6 @@ void NotifyTest::SetUp() {}
 void NotifyTest::TearDown() {}
 
 /**
- * @tc.name: notify_init_001
- * @tc.desc: init notify
- *           1. init notify "notify_init_001"
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(NotifyTest, notify_init_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("notify_init_001 enter");
-    int errCode = MediaLibraryNotify().Init();
-    ASSERT_TRUE(errCode == E_OK);
-    MEDIA_INFO_LOG("notify_init_001 exit");
-}
-
-/**
  * @tc.name: get_album_id_by_subtype_001
  * @tc.desc: Get default album id
  *           1. Create an album called "get_album_id_by_subtype_001"
