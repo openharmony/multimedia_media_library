@@ -37,7 +37,6 @@ private:
     bool isScreenOff_;
     bool isPowerConnected_;
     int32_t agingCount_;
-    int32_t scanCount_;
     int64_t lockTime_;
     void DoBackgroundOperation();
     void StopBackgroundOperation();

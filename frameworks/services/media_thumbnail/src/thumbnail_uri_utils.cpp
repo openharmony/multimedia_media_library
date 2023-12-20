@@ -35,8 +35,8 @@ namespace Media {
 bool ThumbnailUriUtils::ParseFileUri(const string &uriString, string &outFileId, string &outNetworkId,
     string &outTableName)
 {
-    outFileId = GetIdFromUri(uriString);
-    outNetworkId = GetNetworkIdFromUri(uriString);
+    outFileId = MediaFileUtils::GetIdFromUri(uriString);
+    outNetworkId = MediaFileUtils::GetNetworkIdFromUri(uriString);
     outTableName = GetTableFromUri(uriString);
     return true;
 }
@@ -98,37 +98,11 @@ bool ThumbnailUriUtils::CheckSize(Size &outSize, const string &outPath)
     return true;
 }
 
-string ThumbnailUriUtils::GetNetworkIdFromUri(const string &uri)
-{
-    return MediaFileUri(uri).GetNetworkId();
-}
-
-string ThumbnailUriUtils::GetIdFromUri(const string &uri)
-{
-    return MediaFileUri(uri).GetFileId();
-}
-
 string ThumbnailUriUtils::GetTableFromUri(const string &uri)
 {
-    static map<string, string> TYPE_TO_TABLE_MAP = {
-        { PhotoColumn::PHOTO_TYPE_URI, PhotoColumn::PHOTOS_TABLE },
-        { AudioColumn::AUDIO_TYPE_URI, AudioColumn::AUDIOS_TABLE },
-#ifdef MEDIALIBRARY_COMPATIBILITY
-        { MEDIALIBRARY_TYPE_IMAGE_URI, PhotoColumn::PHOTOS_TABLE },
-        { MEDIALIBRARY_TYPE_VIDEO_URI, PhotoColumn::PHOTOS_TABLE },
-        { MEDIALIBRARY_TYPE_AUDIO_URI, AudioColumn::AUDIOS_TABLE }
-#else
-        { MEDIALIBRARY_TYPE_IMAGE_URI, MEDIALIBRARY_TABLE },
-        { MEDIALIBRARY_TYPE_VIDEO_URI, MEDIALIBRARY_TABLE },
-        { MEDIALIBRARY_TYPE_AUDIO_URI, MEDIALIBRARY_TABLE }
-#endif
-    };
-    string table = MEDIALIBRARY_TABLE;
-    for (const auto &iter : TYPE_TO_TABLE_MAP) {
-        if (uri.find(iter.first) != string::npos) {
-            table = iter.second;
-            break;
-        }
+    string table = MediaFileUri(uri).GetTableName();
+    if (table.empty()) {
+        return MEDIALIBRARY_TABLE;
     }
     return table;
 }

@@ -24,10 +24,4 @@ MEDIALIB_MTP_PATH = "${MEDIALIB_SERVICES_PATH}/media_mtp"
 
 declare_args() {
   link_opt = false
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.hiviewdfx_hicollie)) {
-    medialibrary_hicollie_enable = true
-  } else {
-    medialibrary_hicollie_enable = false
-  }
 }

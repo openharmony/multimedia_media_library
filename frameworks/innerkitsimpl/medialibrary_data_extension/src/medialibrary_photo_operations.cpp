@@ -263,7 +263,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     }
 
     string uriString = cmd.GetUriStringWithoutSegment();
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    string id = MediaFileUtils::GetIdFromUri(uriString);
     if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
         return E_INVALID_URI;
     }
@@ -429,7 +429,7 @@ void MediaLibraryPhotoOperations::SolvePhotoAlbumInCreate(MediaLibraryCommand &c
     string albumUri;
     GetStringFromValuesBucket(values, MEDIA_DATA_DB_ALARM_URI, albumUri);
     if (!albumUri.empty()) {
-        PhotoMapAddAsset(stoi(MediaLibraryDataManagerUtils::GetIdFromUri(albumUri)), to_string(fileAsset.GetId()),
+        PhotoMapAddAsset(stoi(MediaFileUtils::GetIdFromUri(albumUri)), to_string(fileAsset.GetId()),
             MediaFileUtils::GetExtraUri(fileAsset.GetDisplayName(), fileAsset.GetPath()));
     }
 }
@@ -846,7 +846,7 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
 int32_t MediaLibraryPhotoOperations::RequestEditData(MediaLibraryCommand &cmd)
 {
     string uriString = cmd.GetUriStringWithoutSegment();
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    string id = MediaFileUtils::GetIdFromUri(uriString);
     if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
         return E_INVALID_URI;
     }
@@ -895,7 +895,7 @@ int32_t MediaLibraryPhotoOperations::RequestEditData(MediaLibraryCommand &cmd)
 int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
 {
     string uriString = cmd.GetUriStringWithoutSegment();
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    string id = MediaFileUtils::GetIdFromUri(uriString);
     if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
         return E_INVALID_URI;
     }
@@ -940,7 +940,7 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
 int32_t MediaLibraryPhotoOperations::CommitEditOpen(MediaLibraryCommand &cmd)
 {
     string uriString = cmd.GetUriStringWithoutSegment();
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriString);
+    string id = MediaFileUtils::GetIdFromUri(uriString);
     if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
         return E_INVALID_URI;
     }

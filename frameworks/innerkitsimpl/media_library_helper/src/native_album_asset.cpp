@@ -34,7 +34,6 @@ NativeAlbumAsset::NativeAlbumAsset()
     albumRelativePath_ = DEFAULT_ALBUM_RELATIVE_PATH;
     coverUri_ = DEFAULT_COVERURI;
     albumPath_ = DEFAULT_ALBUM_PATH;
-    albumVirtual_ = DEFAULT_ALBUM_VIRTUAL;
 };
 NativeAlbumAsset::~NativeAlbumAsset() = default;
 
@@ -78,12 +77,6 @@ void NativeAlbumAsset::SetAlbumPath(const string albumPath)
     albumPath_ = albumPath;
 }
 
-void NativeAlbumAsset::SetAlbumVirtual(const bool albumVirtual)
-{
-    albumVirtual_ = albumVirtual;
-}
-
-
 int32_t NativeAlbumAsset::GetAlbumId() const
 {
     return albumId_;
@@ -122,11 +115,6 @@ string NativeAlbumAsset::GetCoverUri() const
 string NativeAlbumAsset::GetAlbumPath() const
 {
     return albumPath_;
-}
-
-bool NativeAlbumAsset::GetAlbumVirtual() const
-{
-    return albumVirtual_;
 }
 
 bool NativeAlbumAsset::CreateAlbumAsset()

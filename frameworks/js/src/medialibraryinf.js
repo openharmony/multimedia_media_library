@@ -45,7 +45,7 @@ function getParameter() {
 async function startMediaSelect (option, asyncCallback) {
   console.log('MediaLibrary startMediaSelectInner param num ' + arguments.length);
   console.log('MediaLibrary startMediaSelectInner param ' + JSON.stringify(option));
- 
+
   const parameter = getParameter();
 
   if (option !== undefined && typeof option === 'object') {

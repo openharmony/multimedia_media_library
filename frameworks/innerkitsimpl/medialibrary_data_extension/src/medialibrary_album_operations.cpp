@@ -20,7 +20,6 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_asset_operations.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
@@ -88,18 +87,6 @@ int32_t MediaLibraryAlbumOperations::ModifyAlbumOperation(MediaLibraryCommand &c
         ret = MediaLibraryObjectUtils::RenameDirObj(cmd, srcDirPath, dstDirPath);
     }
     return ret;
-}
-
-string MediaLibraryAlbumOperations::GetDistributedAlbumSql(const string &strQueryCondition, const string &tableName)
-{
-    string distributedAlbumSql = "SELECT * FROM ( " + DISTRIBUTED_ALBUM_COLUMNS + " FROM " + tableName + " " +
-        FILE_TABLE + ", " + tableName + " " + ALBUM_TABLE +
-        DISTRIBUTED_ALBUM_WHERE_AND_GROUPBY + " )";
-    if (!strQueryCondition.empty()) {
-        distributedAlbumSql += " WHERE " + strQueryCondition;
-    }
-    MEDIA_DEBUG_LOG("GetDistributedAlbumSql distributedAlbumSql = %{private}s", distributedAlbumSql.c_str());
-    return distributedAlbumSql;
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
@@ -257,7 +244,6 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
             AudioColumn::QUERY_MEDIA_VOLUME);
     }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
     string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     if (whereClause.find(MEDIA_DATA_DB_RELATIVE_PATH) != string::npos ||
         whereClause.find(MEDIA_DATA_DB_MEDIA_TYPE) != string::npos) {
@@ -270,28 +256,6 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
 
     QueryAlbumDebug(cmd, columns, uniStore);
     return uniStore->Query(cmd, columns);
-#else
-    string strQueryCondition = cmd.GetAbsRdbPredicates()->GetWhereClause();
-    strQueryCondition += " GROUP BY " + MEDIA_DATA_DB_BUCKET_ID;
-    cmd.GetAbsRdbPredicates()->SetWhereClause(strQueryCondition);
-    string networkId = cmd.GetOprnDevice();
-    if (!networkId.empty()) {
-        string tableName = cmd.GetTableName();
-        MEDIA_INFO_LOG("tableName is %{private}s", tableName.c_str());
-        if (!strQueryCondition.empty()) {
-            strQueryCondition = MediaLibraryDataManagerUtils::ObtionCondition(strQueryCondition,
-                cmd.GetAbsRdbPredicates()->GetWhereArgs());
-        }
-        string distributedAlbumSql = GetDistributedAlbumSql(strQueryCondition, tableName);
-        return uniStore->QuerySql(distributedAlbumSql);
-    }
-
-    if (!strQueryCondition.empty()) {
-        return uniStore->Query(cmd, columns);
-    }
-    string querySql = "SELECT * FROM " + cmd.GetTableName();
-    return uniStore->QuerySql(querySql);
-#endif
 }
 
 inline int32_t GetStringObject(const ValuesBucket &values, const string &key, string &value)

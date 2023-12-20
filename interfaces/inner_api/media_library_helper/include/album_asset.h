@@ -55,10 +55,6 @@ public:
     string GetAlbumPath() const;
     bool GetAlbumVirtual() const;
 
-    bool CreateAlbumAsset(std::shared_ptr<int> errCodePtr = nullptr);
-    bool DeleteAlbumAsset(const std::string &albumUri);
-    bool ModifyAlbumAsset(const std::string &albumUri);
-
     void SetResultNapiType(const ResultNapiType type);
     ResultNapiType GetResultNapiType() const;
 

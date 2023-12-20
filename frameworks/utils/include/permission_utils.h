@@ -36,13 +36,6 @@ const std::string PERM_WRITE_AUDIO = "ohos.permission.WRITE_AUDIO";
 const std::string PERM_WRITE_DOCUMENT = "ohos.permission.WRITE_DOCUMENT";
 const std::string PERM_MANAGE_PRIVATE_PHOTOS = "ohos.permission.MANAGE_PRIVATE_PHOTOS";
 
-constexpr int PERM_GRP_SIZE = 3;
-const std::array<std::string, PERM_GRP_SIZE> READ_PERMS = {
-    PERM_READ_IMAGEVIDEO,
-    PERM_READ_AUDIO,
-    PERM_READ_DOCUMENT
-};
-
 const std::vector<std::string> WRITE_PERMS_V10 = {
     PERM_WRITE_IMAGEVIDEO,
     PERM_WRITE_AUDIO,
@@ -52,7 +45,6 @@ const std::vector<std::string> WRITE_PERMS_V10 = {
 class PermissionUtils {
 public:
     static bool CheckCallerPermission(const std::string &permission);
-    static bool CheckNapiCallerPermission(const std::string &permission);
     static bool CheckCallerPermission(const std::vector<std::string> &perms);
     static bool CheckHasPermission(const std::vector<std::string> &perms);
     static void GetClientBundle(const int uid, std::string &bundleName);

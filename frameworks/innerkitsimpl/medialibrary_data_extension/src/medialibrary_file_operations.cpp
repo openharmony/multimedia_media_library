@@ -22,7 +22,6 @@
 #include "hitrace_meter.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
@@ -54,7 +53,7 @@ int32_t MediaLibraryFileOperations::HandleFileOperation(MediaLibraryCommand &cmd
     }
 
     // only support CloseAsset when networkId is not empty
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(actualUri);
+    string networkId = MediaFileUtils::GetNetworkIdFromUri(actualUri);
     if (!networkId.empty() && cmd.GetOprnType() != OperationType::CLOSE) {
         return E_PERMISSION_DENIED;
     }

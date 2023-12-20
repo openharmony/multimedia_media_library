@@ -16,7 +16,6 @@
 
 #include <chrono>
 #include <thread>
-#include "medialibrary_device.h"
 #include "context.h"
 #include "ability_context_impl.h"
 #include "js_runtime.h"

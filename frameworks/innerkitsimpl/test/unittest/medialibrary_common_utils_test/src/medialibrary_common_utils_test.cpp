@@ -173,23 +173,23 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_ExtractKeyWord_test_001, TestSize
     EXPECT_EQ(str, "date_added");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_removeSpecialCondition_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_RemoveSpecialCondition_test_001, TestSize.Level0)
 {
     string hacker = "";
-    MediaLibraryCommonUtils::removeSpecialCondition(hacker);
-    hacker = "removeSpecialConditionnot between ? and ?";
-    MediaLibraryCommonUtils::removeSpecialCondition(hacker);
-    EXPECT_EQ(hacker, "removeSpecialCondition ");
+    MediaLibraryCommonUtils::RemoveSpecialCondition(hacker);
+    hacker = "RemoveSpecialConditionnot between ? and ?";
+    MediaLibraryCommonUtils::RemoveSpecialCondition(hacker);
+    EXPECT_EQ(hacker, "RemoveSpecialCondition ");
 }
 
-HWTEST_F(MediaLibraryCommonUtilsTest, medialib_removeSpecialCondition_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_RemoveSpecialCondition_test_002, TestSize.Level0)
 {
     string hacker = "";
     string pattern = "?";
-    MediaLibraryCommonUtils::removeSpecialCondition(hacker, pattern);
-    hacker = "removeSpecialCondition?";
-    MediaLibraryCommonUtils::removeSpecialCondition(hacker, pattern);
-    EXPECT_EQ(hacker, "removeSpecialCondition ");
+    MediaLibraryCommonUtils::RemoveSpecialCondition(hacker, pattern);
+    hacker = "RemoveSpecialCondition?";
+    MediaLibraryCommonUtils::RemoveSpecialCondition(hacker, pattern);
+    EXPECT_EQ(hacker, "RemoveSpecialCondition ");
 }
 } // namespace Media
 } // namespace OHOS

@@ -26,30 +26,6 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::DataShare;
-
-/**
- * @brief Structure for defining the condition for fetching of files and albums
- *
- * @since 1.0
- * @version 1.0
- */
-struct MediaFetchOptions {
-    /**
-     * @brief The Query condition based on which to fetch the files/albums
-     */
-    string selections;
-
-    /**
-     * @brief List of values for columns mentioned in the selections query condition
-     */
-    vector<string> selectionArgs;
-
-    /**
-     * @brief The column based on which the output will be sorted in ascending order
-     */
-    string order;
-};
-
 /**
  * @brief Interface for accessing all the File operation and AlbumAsset operation APIs
  *

@@ -41,7 +41,6 @@ public:
     void SetAlbumRelativePath(const string albumRelativePath);
     void SetCoverUri(const string coverUri);
     void SetAlbumPath(const string albumPath);
-    void SetAlbumVirtual(const bool albumVirtual);
     int32_t GetAlbumId() const;
     string GetAlbumName() const;
     string GetAlbumUri() const;
@@ -50,7 +49,6 @@ public:
     string GetAlbumRelativePath() const;
     string GetCoverUri() const;
     string GetAlbumPath() const;
-    bool GetAlbumVirtual() const;
     bool CreateAlbumAsset();
     bool DeleteAlbumAsset(const std::string &albumUri);
     bool ModifyAlbumAsset(const std::string &albumUri);
@@ -64,7 +62,6 @@ private:
     string albumRelativePath_;
     string coverUri_;
     string albumPath_;
-    bool albumVirtual_;
 };
 } // namespace Media
 } // namespace OHOS

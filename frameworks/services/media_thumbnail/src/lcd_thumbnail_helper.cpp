@@ -17,7 +17,6 @@
 #include <fcntl.h>
 
 #include "medialibrary_errno.h"
-#include "medialibrary_xcollie_manager.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
 #include "thumbnail_utils.h"
@@ -67,7 +66,6 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &
             fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_LCD_SUFFIX);
         }
     }
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     auto fd = open(fileName.c_str(), O_RDONLY);
     if (fd >= 0) {
         if (opts.table == PhotoColumn::PHOTOS_TABLE) {

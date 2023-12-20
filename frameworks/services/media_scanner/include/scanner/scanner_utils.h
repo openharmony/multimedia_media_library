@@ -39,7 +39,7 @@ enum ErrorCodes {
     ERR_SCAN_NOT_INIT
 };
 
-const int32_t MAX_BATCH_SIZE = 5;
+constexpr int32_t MAX_BATCH_SIZE = 5;
 
 constexpr int32_t UNKNOWN_ID = -1;
 
@@ -211,11 +211,7 @@ public:
     static std::string GetFileTitle(const std::string &displayName);
     static bool IsDirHiddenRecursive(const std::string &path, bool skipPhoto = true);
     static bool IsDirHidden(const std::string &path, bool skipPhoto = true);
-    static void InitSkipList();
     static bool CheckSkipScanList(const std::string &path);
-
-private:
-    static std::vector<size_t> skipList_;
 };
 } // namespace Media
 } // namespace OHOS

@@ -22,7 +22,6 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "media_thumbnail_helper.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"
@@ -96,7 +95,7 @@ int MediaFileExtentionUtils::OpenFile(const Uri &uri, const int flags, int &fd)
     if (!CheckUriValid(uri.ToString())) {
         return E_URI_INVALID;
     }
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri.ToString());
+    string networkId = MediaFileUtils::GetNetworkIdFromUri(uri.ToString());
     if (!networkId.empty() && flags != O_RDONLY) {
         return E_OPENFILE_INVALID_FLAG;
     }
@@ -162,11 +161,7 @@ int MediaFileExtentionUtils::CreateFile(const Uri &parentUri, const string &disp
     MediaLibraryCommand cmd(createFileUri);
     ret = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     if (ret > 0) {
-#ifdef MEDIALIBRARY_COMPATIBILITY
         newFileUri = Uri(GetUriFromId(ret, ""));
-#else
-        newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", ret));
-#endif
     }
     return ret;
 }
@@ -206,11 +201,7 @@ int MediaFileExtentionUtils::Mkdir(const Uri &parentUri, const string &displayNa
     MediaLibraryCommand cmd(mkdirUri);
     ret = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     if (ret > 0) {
-#ifdef MEDIALIBRARY_COMPATIBILITY
         newFileUri = Uri(GetUriFromId(ret, ""));
-#else
-        newFileUri = Uri(MediaFileUtils::GetUriByNameAndId(displayName, "", ret));
-#endif
     }
     return ret;
 }
@@ -232,7 +223,7 @@ int MediaFileExtentionUtils::Delete(const Uri &sourceFileUri)
 #endif
     int mediaType = GetInt32Val(MEDIA_DATA_DB_MEDIA_TYPE, result);
     result->Close();
-    int fileId = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(sourceUri));
+    int fileId = stoi(MediaFileUtils::GetIdFromUri(sourceUri));
     DataShareValuesBucket valuesBucket;
     if (mediaType == MEDIA_TYPE_ALBUM) {
 #ifdef MEDIALIBRARY_COMPATIBILITY
@@ -268,7 +259,7 @@ bool MediaFileExtentionUtils::CheckUriValid(const string &uri)
 
 bool MediaFileExtentionUtils::CheckDistributedUri(const string &uri)
 {
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
+    string networkId = MediaFileUtils::GetNetworkIdFromUri(uri);
     if (!networkId.empty()) {
         MEDIA_ERR_LOG("not support distributed operation %{private}s", uri.c_str());
         return false;
@@ -296,8 +287,8 @@ shared_ptr<NativeRdb::ResultSet> MediaFileExtentionUtils::GetResultSetFromDb(str
     string input = value;
     if (field == MEDIA_DATA_DB_URI) {
         field = MEDIA_DATA_DB_ID;
-        networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(input);
-        input = MediaLibraryDataManagerUtils::GetIdFromUri(input);
+        networkId = MediaFileUtils::GetNetworkIdFromUri(input);
+        input = MediaFileUtils::GetIdFromUri(input);
     }
     Uri queryUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER);
     MediaLibraryCommand cmd(queryUri, OperationType::QUERY);
@@ -444,7 +435,7 @@ bool MediaFileExtentionUtils::GetAlbumRelativePathFromDB(const string &selectUri
 
 string GetQueryUri(const FileInfo &parentInfo, MediaFileUriType uriType)
 {
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+    string networkId = MediaFileUtils::GetNetworkIdFromUri(parentInfo.uri);
     string queryUri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
     if (uriType == URI_MEDIA_ROOT) {
 #ifndef MEDIALIBRARY_COMPATIBILITY
@@ -669,7 +660,7 @@ int32_t GetAlbumInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb:
     vector<FileInfo> &fileList)
 {
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "ResultSet is nullptr");
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+    string networkId = MediaFileUtils::GetNetworkIdFromUri(parentInfo.uri);
     FileInfo fileInfo;
     while (result->GoToNextRow() == NativeRdb::E_OK) {
         int fileId = GetInt32Val(MEDIA_DATA_DB_BUCKET_ID, result);
@@ -708,7 +699,7 @@ int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::
     vector<FileInfo> &fileList)
 {
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "ResultSet is nullptr");
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+    string networkId = MediaFileUtils::GetNetworkIdFromUri(parentInfo.uri);
     while (result->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo fileInfo;
         GetFileInfo(fileInfo, result, networkId);
@@ -721,7 +712,7 @@ int32_t GetFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<NativeRdb::
     vector<FileInfo> &fileList, MediaFileUriType uriType)
 {
     CHECK_AND_RETURN_RET_LOG(result != nullptr, E_FAIL, "ResultSet is nullptr");
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+    string networkId = MediaFileUtils::GetNetworkIdFromUri(parentInfo.uri);
     while (result->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo fileInfo;
         GetFileInfo(fileInfo, result, networkId);
@@ -796,7 +787,7 @@ int32_t GetScanFileFileInfoFromResult(const FileInfo &parentInfo, shared_ptr<Nat
         return E_ERR;
     }
 #endif
-    string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(parentInfo.uri);
+    string networkId = MediaFileUtils::GetNetworkIdFromUri(parentInfo.uri);
     while (result->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo fileInfo;
         GetFileInfo(fileInfo, result, networkId);
@@ -1097,7 +1088,7 @@ int MediaFileExtentionUtils::GetFileInfoFromUri(const Uri &selectFile, FileInfo 
             auto result = MediaFileExtentionUtils::GetResultSetFromDb(MEDIA_DATA_DB_URI, uri, columns);
             CHECK_AND_RETURN_RET_LOG(result != nullptr, E_INVALID_URI,
                 "GetFileInfoFromUri::uri is not correct: %{private}s", uri.c_str());
-            const string networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
+            const string networkId = MediaFileUtils::GetNetworkIdFromUri(uri);
             return GetFileInfo(fileInfo, result, networkId);
         }
         default:
@@ -1464,7 +1455,7 @@ int32_t MediaFileExtentionUtils::Move(const Uri &sourceFileUri, const Uri &targe
             MEDIA_ERR_LOG("Move file to another type album, denied");
             return E_DENIED_MOVE;
         }
-        string bucketId = MediaLibraryDataManagerUtils::GetIdFromUri(targetUri);
+        string bucketId = MediaFileUtils::GetIdFromUri(targetUri);
         ret = HandleAlbumMove(fileAsset, destRelativePath, bucketId);
     } else {
         ret = HandleFileMove(fileAsset, destRelativePath);
