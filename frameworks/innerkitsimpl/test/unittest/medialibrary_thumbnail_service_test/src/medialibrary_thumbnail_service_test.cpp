@@ -78,7 +78,11 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GetThumbnail_test_001, TestS
     EXPECT_LT(fd, 0);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
+#ifdef DISTRIBUTED
     serverTest->Init(storePtr, kvStorePtr, context);
+#else
+    serverTest->Init(storePtr, context);
+#endif
     fd = serverTest->GetThumbnailFd(uri);
     EXPECT_LT(fd, 0);
     serverTest->ReleaseService();
@@ -94,7 +98,11 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdAging_test_001, TestSize.
     EXPECT_EQ(ret, 0);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
+#ifdef DISTRIBUTED
     serverTest->Init(storePtr, kvStorePtr, context);
+#else
+    serverTest->Init(storePtr, context);
+#endif
     ret = serverTest->LcdAging();
     EXPECT_EQ(ret, 0);
     serverTest->ReleaseService();
@@ -132,10 +140,18 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnails_test_001,
     EXPECT_EQ(ret, -1);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
+#ifdef DISTRIBUTED
     serverTest->Init(nullptr, kvStorePtr, context);
+#else
+    serverTest->Init(nullptr, context);
+#endif
     ret = serverTest->GenerateThumbnails();
     EXPECT_EQ(ret, -1);
+#ifdef DISTRIBUTED
     serverTest->Init(storePtr, kvStorePtr, context);
+#else
+    serverTest->Init(storePtr, context);
+#endif
     ret = serverTest->GenerateThumbnails();
     EXPECT_EQ(ret, E_EMPTY_VALUES_BUCKET);
     serverTest->ReleaseService();
@@ -150,7 +166,11 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_InterruptBgworker_test_001, 
     serverTest->InterruptBgworker();
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
+#ifdef DISTRIBUTED
     serverTest->Init(storePtr, kvStorePtr, context);
+#else
+    serverTest->Init(storePtr, context);
+#endif
     serverTest->InterruptBgworker();
     serverTest->ReleaseService();
 }
@@ -164,7 +184,11 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_StopAllWorker_test_001, Test
     serverTest->StopAllWorker();
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
+#ifdef DISTRIBUTED
     serverTest->Init(storePtr, kvStorePtr, context);
+#else
+    serverTest->Init(storePtr, context);
+#endif
     serverTest->StopAllWorker();
     serverTest->ReleaseService();
 }

@@ -225,7 +225,7 @@ HWTEST_F(MtpNativeTest, mtp_native_test_007, TestSize.Level0)
     }
     MEDIA_INFO_LOG("mtp_native_test_007::End");
 }
- 
+
 /**
  * @tc.number    : mtp_native_test_008
  * @tc.name      : mtp_native_test_008

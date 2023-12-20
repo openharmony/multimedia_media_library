@@ -430,52 +430,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_Package_Test_001, TestSize.Leve
     MEDIA_INFO_LOG("DataManager_Revert_Package_Test_001::End");
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, Revert_BY_DAY_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("DataManager_Revert_BY_DAY_Test_001::Start");
-    shared_ptr<FileAsset> fileAsset = nullptr;
-    ASSERT_EQ(MediaLibraryUnitTestUtils::CreateFile("Revert_BY_DAY_Test_001.jpg", g_pictures, fileAsset), true);
-    DataShare::DataShareValuesBucket valuesBucketUpdate;
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_MEDIA_TYPE, fileAsset->GetMediaType());
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_URI, fileAsset->GetUri());
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_NAME, "Revert_BY_DAY_Test_001.jpg");
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_TITLE, "Revert_BY_DAY_Test_001");
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset->GetRelativePath());
-    int64_t time = MediaFileUtils::UTCTimeSeconds() - 8 * 24 * 60 * 60;
-    valuesBucketUpdate.Put(MEDIA_DATA_DB_TIME_PENDING, to_string(time));
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = " + to_string(fileAsset->GetId()));
-    Uri updateAssetUri(ReturnUri(MEDIALIBRARY_DATA_URI, MEDIA_FILEOPRN, MEDIA_FILEOPRN_MODIFYASSET));
-    MediaLibraryCommand cmd(updateAssetUri);
-    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, valuesBucketUpdate, predicates);
-    EXPECT_GT(retVal, 0);
-
-    MediaLibraryDataManager::GetInstance()->HandleRevertPending();
-
-    vector<string> columns;
-    Uri queryUri(MEDIALIBRARY_DATA_URI);
-    MediaLibraryCommand queryCmd(queryUri, OperationType::QUERY);
-    int32_t errCode = 0;
-    auto resultSetPtr = MediaLibraryDataManager::GetInstance()->QueryRdb(queryCmd, columns, predicates, errCode);
-    EXPECT_NE(resultSetPtr, nullptr);
-    int count = 0;
-    EXPECT_EQ(resultSetPtr->GetRowCount(count), E_OK);
-
-    auto fetchFileResult = make_shared<FetchResult<FileAsset>>();
-    for (int32_t row = 0; row < count; row++) {
-        unique_ptr<FileAsset> fileAssetObj = fetchFileResult->GetObjectFromRdb(resultSetPtr, row);
-        EXPECT_NE(fileAssetObj, nullptr);
-        EXPECT_EQ(fileAssetObj->GetTimePending(), 0);
-        NativeRdb::AbsRdbPredicates absPredicates(MEDIALIBRARY_TABLE);
-        absPredicates.SetWhereClause(predicates.GetWhereClause());
-        int32_t deletedRows = -1;
-        int ret = MediaLibraryDataManager::GetInstance()->rdbStore_->Delete(deletedRows, absPredicates);
-        EXPECT_GT(ret, E_FAIL);
-    }
-    MEDIA_INFO_LOG("DataManager_Revert_BY_DAY_Test_001::End");
-}
-
 /**
  * @tc.number    : DataManager_TrashRecovery_File_Test_001
  * @tc.name      : test trash and recovery file: normal case
@@ -972,6 +926,22 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
 }
 #endif
 
+string GetFileMediaTypeUri(int32_t mediaType, const string &networkId)
+{
+    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
+    switch (mediaType) {
+        case MEDIA_TYPE_AUDIO:
+            return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
+        case MEDIA_TYPE_VIDEO:
+            return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
+        case MEDIA_TYPE_IMAGE:
+            return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
+        case MEDIA_TYPE_FILE:
+        default:
+            return uri + MEDIALIBRARY_TYPE_FILE_URI;
+    }
+}
+
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("DataManager_CheckUriPermission_Test_003::Start");
@@ -984,7 +954,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     int32_t tableType = static_cast<int32_t>(TableType::TYPE_FILES);
     EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
 
-    string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
+    string uri = GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
     for (const auto &inputMode : MEDIA_OPEN_MODES) {
         auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
         EXPECT_EQ(ret, E_PERMISSION_DENIED);
@@ -1005,7 +975,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CheckUriPermission_Test_00
     int32_t tableType = static_cast<int32_t>(TableType::TYPE_FILES);
     EXPECT_EQ(MediaLibraryUnitTestUtils::GrantUriPermission(fileId, bundleName, mode, tableType), E_SUCCESS);
 
-    string uri = MediaFileUtils::GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
+    string uri = GetFileMediaTypeUri(MEDIA_TYPE_FILE, "") + SLASH_CHAR + to_string(fileId);
     string inputMode = "rWt";
     auto ret = UriPermissionOperations::CheckUriPermission(uri, inputMode);
     EXPECT_EQ(ret, E_PERMISSION_DENIED);
@@ -1047,13 +1017,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_CreateThumbnailAsync_Test_
     EXPECT_NE(mediaLibraryDataManager->thumbnailService_, nullptr);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_MakeDirQuerySetMap_Test_001, TestSize.Level0)
-{
-    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    int32_t ret = mediaLibraryDataManager->MakeDirQuerySetMap(MediaLibraryDataManager::dirQuerySetMap_);
-    EXPECT_EQ(ret, E_SUCCESS);
-}
-
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DoTrashAging_Test_001, TestSize.Level0)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
@@ -1085,25 +1048,6 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DistributeDeviceAging_Test
     EXPECT_EQ(ret, E_FAIL);
 }
 #endif
-
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_NeedQuerySync_Test_001, TestSize.Level0)
-{
-    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    string networkId = "";
-    OperationObject oprnObject = OperationObject::SMART_ALBUM;
-    mediaLibraryDataManager->NeedQuerySync(networkId, oprnObject);
-    string networkIdTest = "NeedQuerySync";
-    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
-    oprnObject = OperationObject::SMART_ALBUM_MAP;
-    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
-    oprnObject = OperationObject::FILESYSTEM_PHOTO;
-    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
-    oprnObject = OperationObject::FILESYSTEM_AUDIO;
-    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
-    oprnObject = OperationObject::PHOTO_ALBUM;
-    mediaLibraryDataManager->NeedQuerySync(networkIdTest, oprnObject);
-    EXPECT_NE(networkIdTest, "");
-}
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_SolveInsertCmd_Test_001, TestSize.Level0)
 {

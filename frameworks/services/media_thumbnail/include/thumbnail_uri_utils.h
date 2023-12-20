@@ -33,8 +33,6 @@ private:
     static void ParseThumbnailVersion(const std::string &key, const std::string &value, MediaLibraryApi api);
     static bool IsOriginalImg(const Size &outSize, const std::string &outPath);
     static bool CheckSize(Size &outSize, const std::string &outPath);
-    static std::string GetNetworkIdFromUri(const std::string &uri);
-    static std::string GetIdFromUri(const std::string &uri);
     static std::string GetTableFromUri(const std::string &uri);
 };
 } // namespace Media

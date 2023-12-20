@@ -26,13 +26,14 @@
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
-#include "thumbnail_datashare_bridge.h"
 
 namespace OHOS {
 namespace Media {
 struct ThumbRdbOpt {
     std::shared_ptr<NativeRdb::RdbStore> store;
+#ifdef DISTRIBUTED
     std::shared_ptr<DistributedKv::SingleKvStore> kvStore;
+#endif
     std::shared_ptr<AbilityRuntime::Context> context;
     std::string networkId;
     std::string path;
@@ -76,68 +77,60 @@ public:
     static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
         bool isHigh = false, std::shared_ptr<std::string> pathPtr = nullptr, bool isAstc = false);
     static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
-    static int GetPixelMapFromResult(const std::shared_ptr<DataShare::DataShareResultSet> &resultSet, const Size &size,
-        std::unique_ptr<PixelMap> &outPixelMap);
-
-    // URI utils
-    static bool UpdateRemotePath(std::string &path, const std::string &networkId);
 
     // RDB Store Query
-    static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
     static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
         ThumbnailData &data, int &err);
+#ifdef DISTRIBUTED
     static bool QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-
     // KV Store
     static bool RemoveDataFromKv(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore, const std::string &key);
-#ifdef DISTRIBUTED
     static bool IsImageExist(const std::string &key, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
-    static bool DeleteLcdData(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
 #endif
     static bool DeleteThumbFile(ThumbnailData &data, ThumbnailType type);
+#ifdef DISTRIBUTED
     static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
+#endif
 
-    static bool GetKvResultSet(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore, const std::string &key,
-        const std::string &networkId, std::shared_ptr<DataShare::ResultSetBridge> &outResultSet);
     static bool DeleteOriginImage(ThumbRdbOpt &opts);
-    static std::string GetThumbPath(const std::string &path, const std::string &key);
     // Steps
     static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true);
     static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
-    static DistributedKv::Status SaveThumbnailData(ThumbnailData &data, const std::string &networkId,
-        const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
 
-    static DistributedKv::Status SaveLcdData(ThumbnailData &data, const std::string &networkId,
-        const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
     static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
-    static int ToSaveFile(ThumbnailData &data, const ThumbnailType &type, const std::string &fileName,
-        uint8_t *output, const int &writeSize);
-    static int SaveFileCreateDir(const std::string &path, const std::string &suffix, std::string &fileName);
     static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+#ifdef DISTRIBUTED
     static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+#endif
 
     // RDB Store generate and aging
-    static bool QueryHasLcdFiles(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
-    static bool QueryHasThumbnailFiles(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err);
     static bool QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err);
     static bool QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
         std::vector<ThumbnailData> &infos, int &err);
+#ifdef DISTRIBUTED
     static bool QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
         std::vector<ThumbnailData> &infos, int &err);
+#endif
     static bool QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
+#ifdef DISTRIBUTED
     static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+#endif
     static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
         int &err);
     static bool ResizeThumb(int& width, int& height);
     static bool ResizeLcd(int& width, int& height);
     static bool IsSupportGenAstc();
 private:
+    static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
+    static int ToSaveFile(ThumbnailData &data, const ThumbnailType &type, const std::string &fileName,
+        uint8_t *output, const int &writeSize);
+    static int SaveFileCreateDir(const std::string &path, const std::string &suffix, std::string &fileName);
     static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     static int64_t UTCTimeMilliSeconds();
     static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
@@ -153,19 +146,15 @@ private:
     static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
         const bool isThumbnail, Size &desiredSize, uint32_t &errCode);
     static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
-    static std::string GetUdid();
-    // KV Store
-    static DistributedKv::Status SaveImage(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
-        const std::string &key, const std::vector<uint8_t> &image);
 
+#ifdef DISTRIBUTED
     // RDB Store
-    static bool GetRemoteThumbnailInfo(ThumbRdbOpt &opts, const std::string &id,
-        const std::string &udid, int &err);
     static bool GetUdidByNetworkId(ThumbRdbOpt &opts, const std::string &networkId,
         std::string &outUdid, int &err);
     static bool UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     static bool CleanDistributeLcdInfo(ThumbRdbOpt &opts);
+#endif
 
     // scale
     static bool ScaleFastThumb(ThumbnailData &data, const Size &size);

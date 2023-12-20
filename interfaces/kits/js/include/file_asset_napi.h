@@ -20,7 +20,6 @@
 
 #include "file_asset.h"
 #include "medialibrary_type_const.h"
-#include "media_thumbnail_helper.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "napi_error.h"

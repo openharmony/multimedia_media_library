@@ -209,7 +209,7 @@ static int32_t GetAlbumsById(const string &fileId, list<string> &albumIdList)
 static void HandleAlbumNotify(NotifyTaskData *taskData)
 {
     list<string> albumIdList;
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(taskData->uri_);
+    string id = MediaFileUtils::GetIdFromUri(taskData->uri_);
     int err = GetAlbumsById(id, albumIdList);
     CHECK_AND_RETURN_LOG(err == E_OK, "Fail to get albumId");
     for (const string &id : albumIdList) {

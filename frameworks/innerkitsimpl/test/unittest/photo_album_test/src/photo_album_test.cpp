@@ -92,9 +92,19 @@ inline int32_t DeletePhotoAlbum(DataSharePredicates &predicates)
     return MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
 
+inline string GetLastDentry(const string &path)
+{
+    string dentry = path;
+    size_t slashIndex = path.rfind('/');
+    if (slashIndex != string::npos) {
+        dentry = path.substr(slashIndex + 1);
+    }
+    return dentry;
+}
+
 void DoCheckAlbumData(const string &name, const bool isRelativePath)
 {
-    string albumName = isRelativePath ? MediaFileUtils::GetLastDentry(name) : name;
+    string albumName = isRelativePath ? GetLastDentry(name) : name;
     string relativePath = isRelativePath ? name : "";
 
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);

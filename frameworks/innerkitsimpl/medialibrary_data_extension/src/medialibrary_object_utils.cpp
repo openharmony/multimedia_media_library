@@ -43,7 +43,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
 #include "medialibrary_smartalbum_map_operations.h"
-#include "medialibrary_xcollie_manager.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
 #include "parameter.h"
@@ -154,14 +153,12 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     assetInfo.PutString(MEDIA_DATA_DB_RELATIVE_PATH, fileAsset.GetRelativePath());
     assetInfo.PutString(MEDIA_DATA_DB_NAME, displayName);
     assetInfo.PutString(MEDIA_DATA_DB_TITLE, MediaFileUtils::GetTitleFromDisplayName(displayName));
-    MediaLibraryXCollieManager xcollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat statInfo {};
     if (stat(fileAsset.GetPath().c_str(), &statInfo) == 0) {
         assetInfo.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
         assetInfo.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
         assetInfo.PutLong(MEDIA_DATA_DB_DATE_MODIFIED, MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim));
     }
-    xcollieManager.Cancel();
     assetInfo.PutString(MEDIA_DATA_DB_FILE_PATH, fileAsset.GetPath());
     assetInfo.PutInt(MEDIA_DATA_DB_BUCKET_ID, dirAsset.GetAlbumId());
     assetInfo.PutInt(MEDIA_DATA_DB_PARENT_ID, dirAsset.GetAlbumId());
@@ -360,7 +357,6 @@ int32_t SetDirValuesByPath(ValuesBucket &values, const string &path, int32_t par
     values.PutInt(MEDIA_DATA_DB_PARENT_ID, parentId);
     values.PutLong(MEDIA_DATA_DB_DATE_ADDED, MediaFileUtils::UTCTimeMilliSeconds());
 
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat statInfo {};
     if (stat(path.c_str(), &statInfo) == 0) {
         values.PutLong(MEDIA_DATA_DB_SIZE, statInfo.st_size);
@@ -1017,7 +1013,7 @@ shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromId(const string &
 
 shared_ptr<FileAsset> MediaLibraryObjectUtils::GetFileAssetFromUri(const string &uriStr)
 {
-    string id = MediaLibraryDataManagerUtils::GetIdFromUri(uriStr);
+    string id = MediaFileUtils::GetIdFromUri(uriStr);
     string networkId = MediaFileUtils::GetNetworkIdFromUri(uriStr);
 
     return GetFileAssetFromId(id, networkId);
@@ -1068,13 +1064,11 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
         dispName = dstPath.substr(found + 1);
     }
 
-    MediaLibraryXCollieManager xcollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat statInfo;
     if (stat(dstPath.c_str(), &statInfo) != 0) {
         MEDIA_ERR_LOG("dstPath %{private}s is invalid. Modify failed!", dstPath.c_str());
         return E_HAS_FS_ERROR;
     }
-    xcollieManager.Cancel();
     string fileId = cmd.GetOprnFileId();
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(dstPath));
     MediaType mediaType = MimeTypeUtils::GetMediaTypeFromMimeType(mimeType);
@@ -1098,11 +1092,6 @@ int32_t MediaLibraryObjectUtils::UpdateFileInfoInDb(MediaLibraryCommand &cmd, co
 string MediaLibraryObjectUtils::GetPathByIdFromDb(const string &id, const bool isDelete)
 {
     return GetStringColumnByIdFromDb(id, MEDIA_DATA_DB_FILE_PATH, isDelete);
-}
-
-string MediaLibraryObjectUtils::GetRecyclePathByIdFromDb(const string &id)
-{
-    return GetStringColumnByIdFromDb(id, MEDIA_DATA_DB_RECYCLE_PATH);
 }
 
 string MediaLibraryObjectUtils::GetStringColumnByIdFromDb(const string &id, const string &column, const bool isDelete)
@@ -1182,37 +1171,6 @@ int32_t MediaLibraryObjectUtils::GetIdByPathFromDb(const string &path)
     CHECK_AND_RETURN_RET_LOG(ret == 0, fileId, "Failed to obtain file id");
 
     return fileId;
-}
-
-int32_t MediaLibraryObjectUtils::GetParentIdByIdFromDb(const string &fileId)
-{
-    MEDIA_DEBUG_LOG("enter, fileId = %{private}s", fileId.c_str());
-    if (fileId.empty() || fileId == "-1") {
-        return E_INVALID_FILEID;
-    }
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr!");
-        return E_HAS_DB_ERROR;
-    }
-
-    int32_t parentIdVal = -1;
-    int32_t columnIndex = 0;
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
-    cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, fileId);
-    auto queryResultSet = uniStore->Query(cmd, {});
-    CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, parentIdVal, "Failed to obtain path from database");
-
-    auto ret = queryResultSet->GoToNextRow();
-    CHECK_AND_RETURN_RET_LOG(ret == 0, parentIdVal, "Failed to shift at next row");
-
-    ret = queryResultSet->GetColumnIndex(MEDIA_DATA_DB_PARENT_ID, columnIndex);
-    CHECK_AND_RETURN_RET_LOG(ret == 0, parentIdVal, "Failed to obtain column index");
-
-    ret = queryResultSet->GetInt(columnIndex, parentIdVal);
-    CHECK_AND_RETURN_RET_LOG(ret == 0, parentIdVal, "Failed to obtain file id");
-
-    return parentIdVal;
 }
 
 int32_t MediaLibraryObjectUtils::InsertInDb(MediaLibraryCommand &cmd)
@@ -1474,7 +1432,6 @@ int32_t MediaLibraryObjectUtils::CopyAsset(const shared_ptr<FileAsset> &srcFileA
 
 int32_t MediaLibraryObjectUtils::CopyAssetByFd(int32_t srcFd, int32_t srcId, int32_t destFd, int32_t destId)
 {
-    MediaLibraryXCollieManager xcollieManager = MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
     struct stat statSrc;
     if (fstat(srcFd, &statSrc) == -1) {
         CloseFileById(srcId);
@@ -1488,7 +1445,6 @@ int32_t MediaLibraryObjectUtils::CopyAssetByFd(int32_t srcFd, int32_t srcId, int
         MEDIA_ERR_LOG("copy file fail %{public}d ", errno);
         return E_FILE_OPER_FAIL;
     }
-    xcollieManager.Cancel();
     CloseFileById(srcId);
     CloseFileById(destId);
     return destId;

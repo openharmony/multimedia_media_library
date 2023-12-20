@@ -230,21 +230,6 @@ HWTEST_F(MediaLibraryObjectTest, medialib_GetIdByPathFromDb_test_001, TestSize.L
     MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
-HWTEST_F(MediaLibraryObjectTest, medialib_GetParentIdByIdFromDb_test_001, TestSize.Level0)
-{
-    string fileId = "";
-    int32_t ret = MediaLibraryObjectUtils::GetParentIdByIdFromDb(fileId);
-    EXPECT_EQ(ret, E_INVALID_FILEID);
-    fileId = "medialib_GetParentIdByIdFromDb_test_001";
-    ret = MediaLibraryObjectUtils::GetParentIdByIdFromDb(fileId);
-    EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
-    ret = MediaLibraryObjectUtils::GetParentIdByIdFromDb(fileId);
-    EXPECT_EQ(ret, -1);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
-}
-
 HWTEST_F(MediaLibraryObjectTest, medialib_InsertInDb_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);

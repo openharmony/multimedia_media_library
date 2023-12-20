@@ -26,7 +26,6 @@
 #include "media_file_utils.h"
 #include "media_library_napi.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"

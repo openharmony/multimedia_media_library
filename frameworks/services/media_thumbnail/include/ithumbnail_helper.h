@@ -70,7 +70,6 @@ public:
     virtual ~IThumbnailHelper() = default;
     virtual int32_t CreateThumbnail(ThumbRdbOpt &opts, bool isSync = false);
     virtual int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size, bool isAstc = false);
-    static void DeleteThumbnailKv(ThumbRdbOpt &opts);
     static void CreateLcd(AsyncTaskData *data);
     static void CreateThumbnail(AsyncTaskData *data);
     static void AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront);
@@ -82,16 +81,6 @@ protected:
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const std::string &suffix);
-};
-
-// copy from foundation/distributeddatamgr/data_share/frameworks/native/common/include/idatashare.h
-class IDataShareThumb : public IRemoteBroker {
-public:
-    DECLARE_INTERFACE_DESCRIPTOR(u"OHOS.DataShare.IDataShare");
-    enum {
-        CMD_INSERT = 4,
-    };
-    virtual int Insert(const Uri &uri, const DataShare::DataShareValuesBucket &value) = 0;
 };
 } // namespace Media
 } // namespace OHOS

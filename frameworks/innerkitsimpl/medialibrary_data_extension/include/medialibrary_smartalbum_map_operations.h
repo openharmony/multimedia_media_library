@@ -28,7 +28,6 @@
 #include "dir_asset.h"
 #include "file_asset.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_command.h"
 #include "native_album_asset.h"
 #include "rdb_store.h"
@@ -47,11 +46,11 @@ public:
         MediaLibraryCommand &cmd);
     static int32_t HandleAgingOperation(std::shared_ptr<int> countPtr = nullptr);
     static void SetInterrupt(bool interrupt);
-    static bool GetInterrupt();
 
 private:
-    static std::atomic<bool> isInterrupt_;
+    static bool GetInterrupt();
 
+    static std::atomic<bool> isInterrupt_;
     static std::mutex g_opMutex;
 };
 } // namespace Media

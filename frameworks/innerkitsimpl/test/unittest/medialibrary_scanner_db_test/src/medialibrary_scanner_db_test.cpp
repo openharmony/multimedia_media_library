@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "medialibrary_device.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_scanner_db_test.h"
@@ -332,15 +331,6 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_GetIdFromPath_test_001, TestSize.Le
     string path = "/storage/cloud/files/";
     id = mediaScannerDb.GetIdFromPath(path);
     EXPECT_EQ(id, -1);
-}
-
-HWTEST_F(MediaLibraryScannerDbTest, medialib_BatchInsert_test_001, TestSize.Level0)
-{
-    MediaScannerDb mediaScannerDb;
-    vector<Metadata> metadataList;
-    Metadata metadata;
-    vector<string> ret = mediaScannerDb.BatchInsert(metadataList);
-    EXPECT_EQ(ret.size(), 0);
 }
 } // namespace Media
 } // namespace OHOS

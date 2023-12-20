@@ -46,7 +46,6 @@ ohos_shared_library("media_library") {
     "src/media_file_utils.cpp",
     "src/media_volume.cpp",
     "src/medialibrary_helper_container.cpp",
-    "src/medialibrary_xcollie_manager.cpp",
     "src/mimetype_utils.cpp",
     "src/native_album_asset.cpp",
     "src/photo_album.cpp",
@@ -88,10 +87,6 @@ ohos_shared_library("media_library") {
       boundary_sanitize = true
       stack_protector_ret = true
     }
-  }
-  if (medialibrary_hicollie_enable) {
-    external_deps += [ "hicollie:libhicollie" ]
-    defines += [ "MEDIALIBRARY_XCOLLIE_OPEN=1" ]
   }
 
   innerapi_tags = [ "platformsdk" ]

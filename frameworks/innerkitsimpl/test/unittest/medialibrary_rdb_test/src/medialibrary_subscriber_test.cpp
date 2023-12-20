@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 #include "medialibrary_rdb_test.h"
-#include "medialibrary_device.h"
 #include "medialibrary_object_utils.h"
 #define private public
 #include "medialibrary_subscriber.h"
