@@ -18,12 +18,17 @@
 #include "ithumbnail_helper.h"
 
 #include "ability_manager_client.h"
+#include "background_task_mgr_helper.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
 #include "media_column.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
+#include "result_set_utils.h"
+#include "rdb_predicates.h"
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
@@ -72,6 +77,17 @@ void IThumbnailHelper::CreateThumbnail(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
     DoCreateThumbnail(taskData->opts, taskData->thumbnailData, false);
+}
+
+void IThumbnailHelper::CreateAstc(AsyncTaskData* data)
+{
+    GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
+    DoCreateAstc(taskData->opts, taskData->thumbnailData, false);
+}
+
+void IThumbnailHelper::StopLongTimeTask(AsyncTaskData* data)
+{
+    BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
 }
 
 void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront)
@@ -277,7 +293,7 @@ static bool RevertFastThumbnailPixelFormat(ThumbnailData &data, const Size &size
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -333,6 +349,22 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
     return true;
 }
 
+int32_t IThumbnailHelper::UpdateAstcState(ThumbRdbOpt &opts)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("UniStore is nullptr");
+        return E_ERR;
+    }
+    if (opts.table != PhotoColumn::PHOTOS_TABLE) {
+        MEDIA_ERR_LOG("opts.table is not Photos");
+        return E_ERR;
+    }
+    string updateAstcStateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE +
+        " SET has_astc = has_astc | 1 WHERE file_id = " + opts.row;
+    return uniStore->ExecuteSql(updateAstcStateSql);
+}
+
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
 {
     ThumbnailWait thumbnailWait(true);
@@ -355,6 +387,10 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
                 PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
                 return false;
             }
+            int32_t err = UpdateAstcState(opts);
+            if (err != E_OK) {
+                MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
+            }
         }
         if (!GenThumbnail(opts, data, ThumbnailType::MTH)) {
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
@@ -370,6 +406,29 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
         }
     }
 
+    return true;
+}
+
+bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
+{
+    if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
+    if (ThumbnailUtils::IsSupportGenAstc()) {
+        if (!GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {
+            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
+                {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+            return false;
+        }
+        int32_t err = UpdateAstcState(opts);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
+        }
+    }
     return true;
 }
 } // namespace Media
