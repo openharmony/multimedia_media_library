@@ -23,7 +23,6 @@
 #include <unistd.h>
 
 #include "medialibrary_db_const.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_command.h"
 #include "rdb_store.h"
 #include "values_bucket.h"

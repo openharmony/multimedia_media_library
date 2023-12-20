@@ -357,17 +357,6 @@ string MediaScannerDb::InsertMetadata(const Metadata &metadata, string &tableNam
     return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(rowNum));
 }
 
-vector<string> MediaScannerDb::BatchInsert(const vector<Metadata> &metadataList)
-{
-    vector<string> insertUriList;
-    for (auto itr : metadataList) {
-        string tableName;
-        insertUriList.push_back(InsertMetadata(itr, tableName));
-    }
-
-    return insertUriList;
-}
-
 static inline void GetUriStringInUpdate(MediaType mediaType, MediaLibraryApi api, string &mediaTypeUri,
     ValuesBucket &values)
 {
@@ -841,7 +830,7 @@ int32_t MediaScannerDb::InsertAlbum(const Metadata &metadata)
 
     string tableName;
     string uri = InsertMetadata(metadata, tableName);
-    id = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri));
+    id = stoi(MediaFileUtils::GetIdFromUri(uri));
 
     return id;
 }
@@ -852,7 +841,7 @@ int32_t MediaScannerDb::UpdateAlbum(const Metadata &metadata)
 
     string tableName;
     string uri = UpdateMetadata(metadata, tableName);
-    id = stoi(MediaLibraryDataManagerUtils::GetIdFromUri(uri));
+    id = stoi(MediaFileUtils::GetIdFromUri(uri));
 
     return id;
 }

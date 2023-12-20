@@ -25,7 +25,6 @@
 #include "file_asset.h"
 #include "medialibrary_command.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "native_album_asset.h"
 #include "rdb_utils.h"
@@ -56,13 +55,10 @@ public:
     static void ScanFileAsync(const std::string &path, const std::string &id, MediaLibraryApi api);
     static int32_t GetIdByPathFromDb(const std::string &path);
     static std::string GetPathByIdFromDb(const std::string &id, const bool isDelete = false);
-    static std::string GetRecyclePathByIdFromDb(const std::string &id);
-    static int32_t GetParentIdByIdFromDb(const std::string &fileId);
     static std::unique_ptr<FileAsset> GetFileAssetByPredicates(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns);
     static std::shared_ptr<FileAsset> GetFileAssetFromId(const std::string &id, const std::string &networkId = "");
     static std::shared_ptr<FileAsset> GetFileAssetFromUri(const std::string &uriStr);
-    static void GetDefaultRelativePath(const int32_t mediaType, string &relativePath);
 
     static int32_t InsertInDb(MediaLibraryCommand &cmd);
     static int32_t ModifyInfoByIdInDb(MediaLibraryCommand &cmd, const std::string &fileId = "");
@@ -82,13 +78,14 @@ public:
     static int32_t CheckDirExtension(const std::string &destFilePath);
     static int32_t CheckDirExtension(const std::string &relativePath, const std::string &displayName);
     static int32_t UpdateDateModified(const std::string &dirPath);
-    static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
-    static void ScanFile(const std::string &srcPath, MediaLibraryApi api = MediaLibraryApi::API_OLD);
+    static void GetDefaultRelativePath(const int32_t mediaType, string &relativePath);
     static void InvalidateThumbnail(const string &id, const string &tableName = MEDIALIBRARY_TABLE,
         const string &path = "");
     static void UpdateAnalysisProp(const std::string str);
 
 private:
+    static int32_t DeleteEmptyDirsRecursively(int32_t dirId);
+    static void ScanFile(const std::string &srcPath, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     static int32_t ModifyInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
     static int32_t DeleteInfoByPathInDb(MediaLibraryCommand &cmd, const std::string &path);
     static std::string GetStringColumnByIdFromDb(const std::string &id,

@@ -73,13 +73,11 @@ const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
 class MediaLibraryAssetOperations {
 public:
     static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
-    static int32_t CreateOperation(MediaLibraryCommand &cmd);
     static int32_t DeleteOperation(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     static int32_t UpdateOperation(MediaLibraryCommand &cmd);
     static int32_t OpenOperation(MediaLibraryCommand &cmd, const std::string &mode);
-    static int32_t CloseOperation(MediaLibraryCommand &cmd);
     static int32_t DeleteToolOperation(MediaLibraryCommand &cmd);
 
     static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
@@ -97,6 +95,8 @@ protected:
     static std::shared_ptr<FileAsset> GetFileAssetByUri(const std::string &fileUri, bool isPhoto,
         const std::vector<std::string> &columns, const std::string &pendingStatus = "");
 
+    static int32_t CreateOperation(MediaLibraryCommand &cmd);
+    static int32_t CloseOperation(MediaLibraryCommand &cmd);
     static int32_t InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset);
     static int32_t CheckWithType(bool isContains, const std::string &displayName,
          const std::string &extention, int32_t mediaType);
@@ -108,8 +108,6 @@ protected:
     static int32_t SetAssetPath(FileAsset &fileAsset, const std::string &extention);
     static int32_t DeleteAssetInDb(MediaLibraryCommand &cmd);
 
-    static bool IsContainsValue(NativeRdb::ValuesBucket &values, const std::string &key);
-    static int32_t ModifyAssetInDb(MediaLibraryCommand &cmd);
     static int32_t UpdateFileName(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNameChanged);
     static int32_t SetUserComment(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);

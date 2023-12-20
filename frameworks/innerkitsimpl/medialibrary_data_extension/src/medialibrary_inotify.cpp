@@ -21,10 +21,10 @@
 #include "unistd.h"
 #include "media_log.h"
 #include "media_file_uri.h"
+#include "media_file_utils.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_uripermission_operations.h"
 #include "permission_utils.h"
 
@@ -89,7 +89,7 @@ void MediaLibraryInotify::WatchCallBack()
                 ((meetEvent & IN_CLOSE_NOWRITE) && (meetEvent & IN_MODIFY))) {
                 MEDIA_DEBUG_LOG("path:%s, meetEvent:%x file_id:%s", item.path_.c_str(),
                     meetEvent, item.uri_.c_str());
-                string id = MediaLibraryDataManagerUtils::GetIdFromUri(item.uri_);
+                string id = MediaFileUtils::GetIdFromUri(item.uri_);
                 string itemPath = ConvertMediaPath(item.path_);
                 string bundleName = item.bundleName_;
                 MediaFileUri itemUri(item.uri_);

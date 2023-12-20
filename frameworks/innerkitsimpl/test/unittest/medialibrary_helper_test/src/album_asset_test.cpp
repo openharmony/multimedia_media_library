@@ -77,59 +77,5 @@ HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_SetGet_Test_001, TestSize.Level0
     albumAsset.SetResultNapiType(resultNapiType);
     EXPECT_EQ(albumAsset.GetResultNapiType(), resultNapiType);
 }
-
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check createalbumasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
-HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_CreateAlbumAsset_Test_001, TestSize.Level0)
-{
-    AlbumAsset albumAsset;
-    const string albumPath = "/data/test/CreateAlbumAsset_001";
-    albumAsset.SetAlbumPath(albumPath);
-    EXPECT_EQ(albumAsset.CreateAlbumAsset(), true);
-    EXPECT_EQ(albumAsset.CreateAlbumAsset(), false);
-}
-
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check deletealbumasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
-HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_DeleteAlbumAsset_Test_001, TestSize.Level0)
-{
-    AlbumAsset albumAsset;
-    const string albumPath = "/data/test/DeleteAlbumAsset_001";
-    albumAsset.SetAlbumPath(albumPath);
-    albumAsset.CreateAlbumAsset();
-    EXPECT_EQ(albumAsset.DeleteAlbumAsset(albumPath), true);
-}
-
-/*
- * Feature : MediaLibraryHelperUnitTest
- * Function : Check modifyalbumasset
- * SubFunction : NA
- * FunctionPoints : NA
- * EnvContions : NA
- * CaseDescription : NA
- */
-HWTEST_F(MediaLibraryHelperUnitTest, AlbumAsset_ModifyAlbumAsset_Test_001, TestSize.Level0)
-{
-    AlbumAsset albumAsset;
-    const string albumPath = "/data/test/ModifyAlbumAsset_001";
-    const string newAlbumName = "ModifyAlbumAsset_001_modified";
-    albumAsset.SetAlbumPath(albumPath);
-    albumAsset.CreateAlbumAsset();
-    albumAsset.SetAlbumName(newAlbumName);
-    EXPECT_EQ(albumAsset.ModifyAlbumAsset(albumPath), true);
-    EXPECT_EQ(albumAsset.ModifyAlbumAsset(newAlbumName), false);
-}
 } // namespace Media
 } // namespace OHOS

@@ -36,7 +36,6 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_peer_info.h"
 #include "medialibrary_tracer.h"
-#include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_album_napi.h"
 #include "result_set_utils.h"
@@ -903,7 +902,7 @@ napi_value MediaLibraryNapi::JSGetPublicDirectory(napi_env env, napi_callback_in
 #ifdef MEDIALIBRARY_COMPATIBILITY
 static string GetVirtualIdFromApi10Uri(const string &uri)
 {
-    string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
+    string fileId = MediaFileUtils::GetIdFromUri(uri);
     if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
         return fileId;
     }
@@ -926,11 +925,11 @@ static void GetFileAssetUpdateSelections(MediaLibraryAsyncContext *context)
 {
     if (!context->uri.empty()) {
         NAPI_ERR_LOG("context->uri is = %{private}s", context->uri.c_str());
-        context->networkId = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(context->uri);
+        context->networkId = MediaFileUtils::GetNetworkIdFromUri(context->uri);
 #ifdef MEDIALIBRARY_COMPATIBILITY
         string fileId = GetVirtualIdFromApi10Uri(context->uri);
 #else
-        string fileId = MediaLibraryDataManagerUtils::GetIdFromUri(context->uri);
+        string fileId = MediaFileUtils::::GetIdFromUri(context->uri);
 #endif
         if (!fileId.empty()) {
             string idPrefix = MEDIA_DATA_DB_ID + " = ? ";

@@ -63,7 +63,6 @@ public:
     static int32_t Delete(const NativeRdb::AbsRdbPredicates &predicates);
     static int32_t Update(NativeRdb::ValuesBucket &values, const NativeRdb::AbsRdbPredicates &predicates);
     static void ReplacePredicatesUriToId(NativeRdb::AbsRdbPredicates &predicates);
-    static void UpdateAPI10Tables();
     static std::shared_ptr<NativeRdb::ResultSet> GetIndexOfUri(const NativeRdb::AbsRdbPredicates &predicates,
         const std::vector<std::string> &columns, const std::string &id);
     static int32_t GetInt(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &column);

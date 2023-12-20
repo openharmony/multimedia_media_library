@@ -61,9 +61,6 @@ public:
         const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
     static std::shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
-
-private:
-    static std::string GetDistributedAlbumSql(const std::string &strQueryCondition, const std::string &tableName);
 };
 } // namespace Media
 } // namespace OHOS

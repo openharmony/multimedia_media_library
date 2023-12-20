@@ -198,7 +198,7 @@ bool MediaLibraryCommonUtils::CheckExpressValidation(std::vector<std::string> &s
     return true;
 }
 
-void MediaLibraryCommonUtils::removeSpecialCondition(std::string &hacker, const std::string &pattern)
+void MediaLibraryCommonUtils::RemoveSpecialCondition(std::string &hacker, const std::string &pattern)
 {
     auto pos = hacker.find(pattern);
     while (pos != std::string::npos) {
@@ -207,14 +207,14 @@ void MediaLibraryCommonUtils::removeSpecialCondition(std::string &hacker, const 
     }
 }
 
-void MediaLibraryCommonUtils::removeSpecialCondition(std::string &hacker)
+void MediaLibraryCommonUtils::RemoveSpecialCondition(std::string &hacker)
 {
     const std::string S1 = "not between ? and ?";
     const std::string S2 = "between ? and ?";
     const std::string S3 = "limit ?, ?";
-    removeSpecialCondition(hacker, S1);
-    removeSpecialCondition(hacker, S2);
-    removeSpecialCondition(hacker, S3);
+    RemoveSpecialCondition(hacker, S1);
+    RemoveSpecialCondition(hacker, S2);
+    RemoveSpecialCondition(hacker, S3);
 }
 
 void MediaLibraryCommonUtils::SeprateSelection(std::string &strCondition, std::vector<std::string> &sepratedStr)
@@ -230,7 +230,7 @@ void MediaLibraryCommonUtils::SeprateSelection(std::string &strCondition, std::v
     strCondition = regex_replace(strCondition, spacePattern, " ");
 
     // 3. remove special condition
-    removeSpecialCondition(strCondition);
+    RemoveSpecialCondition(strCondition);
 
     // 4. seprate core: according bound symbol,for example: and or ..
     std::regex conditionPattern("\\s*and\\s+|\\s*or\\s+",

@@ -24,6 +24,8 @@
 #include <sys/stat.h>
 
 #include "abs_shared_result_set.h"
+#include "access_token.h"
+#include "accesstoken_kit.h"
 #include "datashare_errno.h"
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
@@ -32,6 +34,7 @@
 #include "fetch_result.h"
 #include "file_uri.h"
 #include "hilog/log.h"
+#include "ipc_skeleton.h"
 #include "js_native_api.h"
 #include "js_native_api_types.h"
 #include "location_column.h"
@@ -40,14 +43,12 @@
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "medialibrary_client_errno.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
 #include "nlohmann/json.hpp"
-#include "permission_utils.h"
 #include "post_proc.h"
 #include "rdb_errno.h"
 #include "sandbox_helper.h"
@@ -65,6 +66,7 @@ using namespace std;
 using namespace OHOS::AppExecFwk;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
+using namespace OHOS::Security::AccessToken;
 using std::string;
 
 namespace OHOS {
@@ -3190,6 +3192,21 @@ napi_value FileAssetNapi::UserFileMgrSetPending(napi_env env, napi_callback_info
 
 static void UserFileMgrGetExifExecute(napi_env env, void *data) {}
 
+static bool CheckNapiCallerPermission(const std::string &permission)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckNapiCallerPermission");
+
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != PermissionState::PERMISSION_GRANTED) {
+        NAPI_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        return false;
+    }
+
+    return true;
+}
+
 static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *data)
 {
     auto *context = static_cast<FileAssetAsyncContext*>(data);
@@ -3208,7 +3225,8 @@ static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *d
             "parse json failed");
         napi_get_undefined(env, &jsContext->data);
     } else {
-        auto err = PermissionUtils::CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
+        const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
+        auto err = CheckNapiCallerPermission(PERMISSION_NAME_MEDIA_LOCATION);
         if (err == false) {
             allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LATITUDE);
             allExifJson.erase(PHOTO_DATA_IMAGE_GPS_LONGITUDE);

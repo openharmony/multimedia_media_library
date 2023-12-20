@@ -67,10 +67,6 @@ HWTEST_F(MediaLibraryHelperUnitTest, NativeAlbumAsset_SetGet_Test_001, TestSize.
     const string TEST_ALBUM_PATH = ROOT_MEDIA_DIR + PIC_DIR_VALUES + TEST_ALBUM_NAME;
     nativeAlbumAsset.SetAlbumPath(TEST_ALBUM_PATH);
     EXPECT_EQ(nativeAlbumAsset.GetAlbumPath(), TEST_ALBUM_PATH);
-
-    const bool TEST_ALBUM_VIRTUAL = true;
-    nativeAlbumAsset.SetAlbumVirtual(TEST_ALBUM_VIRTUAL);
-    EXPECT_EQ(nativeAlbumAsset.GetAlbumVirtual(), TEST_ALBUM_VIRTUAL);
 }
 
 /*

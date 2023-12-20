@@ -35,7 +35,6 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
-#include "medialibrary_xcollie_manager.h"
 #include "mimetype_utils.h"
 #include "medialibrary_tracer.h"
 #include "string_ex.h"
@@ -152,7 +151,6 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
 int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, struct FTW *ftwbuf)
 {
     CHECK_AND_RETURN_RET_LOG(fpath != nullptr, E_FAIL, "fpath == nullptr");
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     int32_t errRet = remove(fpath);
     if (errRet) {
         MEDIA_ERR_LOG("Failed to remove errno: %{public}d, path: %{private}s", errno, fpath);
@@ -163,13 +161,11 @@ int32_t UnlinkCb(const char *fpath, const struct stat *sb, int32_t typeflag, str
 
 int32_t MediaFileUtils::RemoveDirectory(const string &path)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
     return nftw(path.c_str(), UnlinkCb, OPEN_FDS, FTW_DEPTH | FTW_PHYS);
 }
 
 bool MediaFileUtils::Mkdir(const string &subStr, shared_ptr<int> errCodePtr)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     mode_t mask = umask(0);
     if (mkdir(subStr.c_str(), CHOWN_RWX_USR_GRP) == -1) {
         if (errCodePtr != nullptr) {
@@ -185,7 +181,6 @@ bool MediaFileUtils::Mkdir(const string &subStr, shared_ptr<int> errCodePtr)
 
 bool MediaFileUtils::CreateDirectory(const string &dirPath, shared_ptr<int> errCodePtr)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
     string subStr;
     string segment;
 
@@ -213,7 +208,6 @@ bool MediaFileUtils::CreateDirectory(const string &dirPath, shared_ptr<int> errC
 
 bool MediaFileUtils::IsFileExists(const string &fileName)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat statInfo {};
 
     return ((stat(fileName.c_str(), &statInfo)) == SUCCESS);
@@ -221,7 +215,6 @@ bool MediaFileUtils::IsFileExists(const string &fileName)
 
 bool MediaFileUtils::IsDirEmpty(const string &path)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     DIR *dir = opendir(path.c_str());
     if (dir == nullptr) {
         MEDIA_ERR_LOG("Failed to open dir:%{private}s, errno: %{public}d. Just return dir NOT empty.",
@@ -258,7 +251,6 @@ string MediaFileUtils::GetFileName(const string &filePath)
 
 bool MediaFileUtils::IsDirectory(const string &dirName, shared_ptr<int> errCodePtr)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     struct stat statInfo {};
 
     if (stat(dirName.c_str(), &statInfo) == SUCCESS) {
@@ -273,22 +265,8 @@ bool MediaFileUtils::IsDirectory(const string &dirName, shared_ptr<int> errCodeP
     return false;
 }
 
-string MediaFileUtils::GetFirstDirName(const string &filePath)
-{
-    string firstDirName = "";
-    if (!filePath.empty()) {
-        string::size_type pos = filePath.find_first_of('/');
-        if (pos == filePath.length()) {
-            return filePath;
-        }
-        firstDirName = filePath.substr(0, pos + 1);
-    }
-    return firstDirName;
-}
-
 bool MediaFileUtils::CreateFile(const string &filePath)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     bool errCode = false;
 
     if (filePath.empty() || IsFileExists(filePath)) {
@@ -312,13 +290,11 @@ bool MediaFileUtils::CreateFile(const string &filePath)
 
 bool MediaFileUtils::DeleteFile(const string &fileName)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     return (remove(fileName.c_str()) == SUCCESS);
 }
 
 bool MediaFileUtils::DeleteDir(const string &dirName)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
     bool errRet = false;
 
     if (IsDirectory(dirName)) {
@@ -330,7 +306,6 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
 
 bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     bool errRet = false;
 
     if (IsFileExists(oldPath) && !IsFileExists(newPath)) {
@@ -349,7 +324,6 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
         return errCode;
     }
     MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
@@ -402,7 +376,6 @@ bool MediaFileUtils::WriteStrToFile(const string &filePath, const string &str)
         return false;
     }
 
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
     if (!IsFileExists(filePath)) {
         MEDIA_ERR_LOG("Can not get FilePath %{private}s", filePath.c_str());
         return false;
@@ -425,7 +398,6 @@ bool MediaFileUtils::WriteStrToFile(const string &filePath, const string &str)
 
 bool MediaFileUtils::CopyFile(int32_t rfd, int32_t wfd)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
     static const off_t sendSize1G = 1LL * 1024 * 1024 * 1024;
     static const off_t maxSendSize2G = 2LL * 1024 * 1024 * 1024;
     struct stat fst = {0};
@@ -458,7 +430,6 @@ bool MediaFileUtils::CopyFile(int32_t rfd, int32_t wfd)
 
 bool MediaFileUtils::RenameDir(const string &oldPath, const string &newPath)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     bool errRet = false;
 
     if (IsDirectory(oldPath)) {
@@ -644,27 +615,6 @@ int32_t MediaFileUtils::CheckDentryName(const string &dentryName)
     return E_OK;
 }
 
-string MediaFileUtils::GetLastDentry(const string &path)
-{
-    string dentry = path;
-    size_t slashIndex = path.rfind('/');
-    if (slashIndex != string::npos) {
-        dentry = path.substr(slashIndex + 1);
-    }
-    return dentry;
-}
-
-// @path should NOT start with OR end with '/'
-string MediaFileUtils::GetFirstDentry(const string &path)
-{
-    string dentry = path;
-    size_t slashIndex = path.find('/');
-    if (slashIndex != string::npos) {
-        dentry = path.substr(0, slashIndex);
-    }
-    return dentry;
-}
-
 string MediaFileUtils::GetParentPath(const string &path)
 {
     string name;
@@ -714,14 +664,6 @@ int64_t MediaFileUtils::UTCTimeMilliSeconds()
     constexpr int64_t MSEC_TO_NSEC = 1e6;
     clock_gettime(CLOCK_REALTIME, &t);
     return t.tv_sec * SEC_TO_MSEC + t.tv_nsec / MSEC_TO_NSEC;
-}
-
-string MediaFileUtils::StrCreateTime(const string &format, int64_t time)
-{
-    char strTime[DEFAULT_TIME_SIZE] = "";
-    auto tm = localtime(&time);
-    (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
-    return strTime;
 }
 
 string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t time)
@@ -780,48 +722,6 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     return retStr;
 }
 
-string MediaFileUtils::GetFileMediaTypeUri(int32_t mediaType, const string &networkId)
-{
-    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    switch (mediaType) {
-        case MEDIA_TYPE_AUDIO:
-            return uri + MEDIALIBRARY_TYPE_AUDIO_URI;
-        case MEDIA_TYPE_VIDEO:
-            return uri + MEDIALIBRARY_TYPE_VIDEO_URI;
-        case MEDIA_TYPE_IMAGE:
-            return uri + MEDIALIBRARY_TYPE_IMAGE_URI;
-        case MEDIA_TYPE_FILE:
-        default:
-            return uri + MEDIALIBRARY_TYPE_FILE_URI;
-    }
-}
-
-string MediaFileUtils::GetFileMediaTypeUriV10(int32_t mediaType, const string &networkId)
-{
-    string uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + networkId + MEDIALIBRARY_DATA_URI_IDENTIFIER;
-    switch (mediaType) {
-        case MEDIA_TYPE_AUDIO:
-            return uri + AudioColumn::AUDIO_TYPE_URI;
-        case MEDIA_TYPE_VIDEO:
-        case MEDIA_TYPE_IMAGE:
-            return uri + PhotoColumn::PHOTO_TYPE_URI;
-        case MEDIA_TYPE_FILE:
-        default:
-            return uri + MEDIALIBRARY_TYPE_FILE_URI;
-    }
-}
-
-string MediaFileUtils::GetUriByNameAndId(const string &displayName, const string &networkId, int32_t id)
-{
-    MediaType mediaType = GetMediaType(displayName);
-#ifdef MEDIALIBRARY_COMPATIBILITY
-    int64_t fileId = MediaFileUtils::GetVirtualIdByType(id, MediaType(mediaType));
-    return MediaFileUri(mediaType, to_string(fileId), networkId).ToString();
-#else
-    return MediaFileUri(mediaType, to_string(id), networkId).ToString();
-#endif
-}
-
 MediaType MediaFileUtils::GetMediaType(const string &filePath)
 {
     if (filePath.empty()) {
@@ -850,7 +750,6 @@ string MediaFileUtils::GetExtensionFromPath(const string &path)
 
 int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     int32_t errCode = E_ERR;
 
     if (filePath.empty() || mode.empty()) {
@@ -894,8 +793,6 @@ int32_t MediaFileUtils::CreateAsset(const string &filePath)
     MediaLibraryTracer tracer;
     tracer.Start("MediaFileUtils::CreateAsset");
 
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
-
     int32_t errCode = E_ERR;
 
     if (filePath.empty()) {
@@ -932,8 +829,6 @@ int32_t MediaFileUtils::CreateAsset(const string &filePath)
 
 int32_t MediaFileUtils::ModifyAsset(const string &oldPath, const string &newPath)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
-
     int32_t err = E_MODIFY_DATA_FAIL;
 
     if (oldPath.empty() || newPath.empty()) {
@@ -956,22 +851,6 @@ int32_t MediaFileUtils::ModifyAsset(const string &oldPath, const string &newPath
     }
 
     return E_SUCCESS;
-}
-
-int32_t MediaFileUtils::DeleteAsset(const string &filePath)
-{
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_60S);
-    int32_t errCode = E_ERR;
-    if (!IsDirectory(filePath)) {
-        errCode = remove(filePath.c_str());
-    } else {
-        errCode = RemoveDirectory(filePath);
-    }
-    if (errCode != E_SUCCESS) {
-        MEDIA_ERR_LOG("DeleteAsset failed, filePath: %{private}s, errno: %{public}d, errmsg: %{private}s",
-            filePath.c_str(), errno, strerror(errno));
-    }
-    return errCode;
 }
 
 int32_t MediaFileUtils::OpenAsset(const string &filePath, const string &mode)
@@ -1001,8 +880,6 @@ int32_t MediaFileUtils::OpenAsset(const string &filePath, const string &mode)
         return E_INVALID_PATH;
     }
     MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
-
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_5S);
     std::string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
@@ -1020,7 +897,6 @@ int32_t MediaFileUtils::OpenAsset(const string &filePath, const string &mode)
 
 int32_t MediaFileUtils::CloseAsset(int32_t fd)
 {
-    MEDIALIBRARY_XCOLLIE_MANAGER(XCOLLIE_WAIT_TIME_1S);
     return close(fd);
 }
 
@@ -1058,17 +934,6 @@ std::string MediaFileUtils::GetMediaTypeUriV10(MediaType mediaType)
         case MEDIA_TYPE_FILE:
         default:
             return MEDIALIBRARY_FILE_URI;
-    }
-}
-
-void MediaFileUtils::AppendFetchOptionSelection(std::string &selection, const std::string &newCondition)
-{
-    if (!newCondition.empty()) {
-        if (!selection.empty()) {
-            selection = "(" + selection + ") AND " + newCondition;
-        } else {
-            selection = newCondition;
-        }
     }
 }
 

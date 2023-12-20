@@ -94,10 +94,7 @@ namespace Media {
 shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
-static constexpr int REVERT_DAYS = 7;
-static constexpr int DAY_HOURS = 24;
-static constexpr int PER_HOUR_MINUTES = 60;
-static constexpr int PER_MINUTE_SECONDS = 60;
+
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
 #endif
@@ -107,10 +104,12 @@ MediaLibraryDataManager::MediaLibraryDataManager(void)
 
 MediaLibraryDataManager::~MediaLibraryDataManager(void)
 {
+#ifdef DISTRIBUTED
     if (kvStorePtr_ != nullptr) {
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
         kvStorePtr_ = nullptr;
     }
+#endif
 }
 
 shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::GetInstance()
@@ -233,12 +232,12 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
 
     rdbStore_ = nullptr;
 
+#ifdef DISTRIBUTED
     if (kvStorePtr_ != nullptr) {
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
         kvStorePtr_ = nullptr;
     }
 
-#ifdef DISTRIBUTED
     if (MediaLibraryDevice::GetInstance()) {
         MediaLibraryDevice::GetInstance()->Stop();
     };
@@ -273,36 +272,6 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
         return E_ERR;
     }
 
-    return E_OK;
-}
-
-int32_t MediaLibraryDataManager::InitialiseKvStore()
-{
-    if (kvStorePtr_ != nullptr) {
-        return E_OK;
-    }
-
-    Options options = {
-        .createIfMissing = true,
-        .encrypt = false,
-        .backup = false,
-        .autoSync = false,
-        .securityLevel = DistributedKv::SecurityLevel::S3,
-        .area = DistributedKv::Area::EL2,
-        .kvStoreType = KvStoreType::SINGLE_VERSION,
-        .baseDir = context_->GetDatabaseDir(),
-    };
-
-    Status status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_STOREID, kvStorePtr_);
-    if (status != Status::SUCCESS || kvStorePtr_ == nullptr) {
-        MEDIA_ERR_LOG("MediaLibraryDataManager::InitialiseKvStore failed %{private}d", status);
-        return E_ERR;
-    }
-#ifdef DISTRIBUTED
-    if (!MediaLibraryDevice::GetInstance()->InitDeviceKvStore(kvStorePtr_)) {
-        return E_FAIL;
-    }
-#endif
     return E_OK;
 }
 
@@ -851,40 +820,6 @@ void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri, const stri
     }
 }
 
-void MediaLibraryDataManager::NeedQuerySync(const string &networkId, OperationObject oprnObject)
-{
-    if (networkId.empty()) {
-        return;
-    }
-    // tabletype mapping into tablename
-    string tableName = MEDIALIBRARY_TABLE;
-    switch (oprnObject) {
-        case OperationObject::SMART_ALBUM:
-            tableName = SMARTALBUM_TABLE;
-            break;
-        case OperationObject::SMART_ALBUM_MAP:
-            tableName = SMARTALBUM_MAP_TABLE;
-            break;
-        case OperationObject::FILESYSTEM_PHOTO:
-            tableName = PhotoColumn::PHOTOS_TABLE;
-            break;
-        case OperationObject::FILESYSTEM_AUDIO:
-            tableName = AudioColumn::AUDIOS_TABLE;
-            break;
-        default:
-            break;
-    }
-
-#ifdef DISTRIBUTED
-    if ((oprnObject != OperationObject::ASSETMAP) && (oprnObject != OperationObject::SMART_ALBUM_ASSETS)) {
-        MediaLibraryTracer tracer;
-        tracer.Start("QuerySync");
-        auto ret = QuerySync(networkId, tableName);
-        MEDIA_INFO_LOG("MediaLibraryDataManager QuerySync result = %{private}d", ret);
-    }
-#endif
-}
-
 shared_ptr<ResultSetBridge> MediaLibraryDataManager::Query(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates, int &errCode)
 {
@@ -1151,7 +1086,11 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService(
     if (thumbnailService_ == nullptr) {
         return E_THUMBNAIL_SERVICE_NULLPTR;
     }
+#ifdef DISTRIBUTED
     thumbnailService_->Init(rdbStore_, kvStorePtr_, extensionContext);
+#else
+    thumbnailService_->Init(rdbStore_,  extensionContext);
+#endif
     return E_OK;
 }
 
@@ -1276,35 +1215,6 @@ int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundl
     return ret;
 }
 
-int32_t MediaLibraryDataManager::HandleRevertPending()
-{
-    int64_t time = MediaFileUtils::UTCTimeSeconds();
-    time -= REVERT_DAYS * DAY_HOURS * PER_MINUTE_SECONDS * PER_HOUR_MINUTES;
-    if (time < 0) {
-        MEDIA_ERR_LOG("the time of revert is error, time=%{public}ld", (long)time);
-        return E_INVALID_VALUES;
-    }
-    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
-    queryCmd.GetAbsRdbPredicates()->LessThan(MEDIA_DATA_DB_TIME_PENDING, to_string(time))
-        ->And()->GreaterThan(MEDIA_DATA_DB_TIME_PENDING, to_string(0));
-    vector<string> columns = { MEDIA_DATA_DB_ID };
-    auto result = MediaLibraryObjectUtils::QueryWithCondition(queryCmd, columns);
-    if (result == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-
-    int32_t ret = E_SUCCESS;
-    while (result->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t id = GetInt32Val(MEDIA_DATA_DB_ID, result);
-        int32_t retVal = RevertPendingByFileId(to_string(id));
-        if (retVal != E_SUCCESS) {
-            ret = retVal;
-            MEDIA_ERR_LOG("Revert file %{public}d failed, ret=%{public}d", id, retVal);
-            continue;
-        }
-    }
-    return ret;
-}
 
 int32_t MediaLibraryDataManager::GetAgingDataSize(const int64_t &time, int &count)
 {

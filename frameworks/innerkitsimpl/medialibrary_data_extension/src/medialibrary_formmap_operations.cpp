@@ -27,7 +27,6 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdbstore.h"

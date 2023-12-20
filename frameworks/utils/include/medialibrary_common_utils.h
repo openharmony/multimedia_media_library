@@ -41,8 +41,8 @@ private:
     static bool CheckExpressValidation(std::vector<std::string> &sepratedStr);
     static bool CheckWhiteList(const std::string &express);
     static void ExtractKeyWord(std::string &str);
-    static void removeSpecialCondition(std::string &hacker, const std::string &pattern);
-    static void removeSpecialCondition(std::string &hacker);
+    static void RemoveSpecialCondition(std::string &hacker, const std::string &pattern);
+    static void RemoveSpecialCondition(std::string &hacker);
 };
 } // namespace Media
 } // namespace OHOS

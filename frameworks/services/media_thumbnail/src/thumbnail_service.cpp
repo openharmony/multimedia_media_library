@@ -43,7 +43,9 @@ std::mutex ThumbnailService::instanceLock_;
 ThumbnailService::ThumbnailService(void)
 {
     rdbStorePtr_ = nullptr;
+#ifdef DISTRIBUTED
     kvStorePtr_ = nullptr;
+#endif
 }
 
 shared_ptr<ThumbnailService> ThumbnailService::GetInstance()
@@ -94,11 +96,15 @@ bool ThumbnailService::CheckSizeValid()
 }
 
 void ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
+#ifdef DISTRIBUTED
     const shared_ptr<SingleKvStore> &kvStore,
+#endif
     const shared_ptr<Context> &context)
 {
     rdbStorePtr_ = rdbStore;
+#ifdef DISTRIBUTED
     kvStorePtr_ = kvStore;
+#endif
     context_ = context;
 
     if (!GetDefaultWindowSize(screenSize_)) {
@@ -112,7 +118,9 @@ void ThumbnailService::ReleaseService()
 {
     StopAllWorker();
     rdbStorePtr_ = nullptr;
+#ifdef DISTRIBUTED
     kvStorePtr_ = nullptr;
+#endif
     context_ = nullptr;
     thumbnailServiceInstance_ = nullptr;
 }
@@ -357,7 +365,9 @@ int32_t ThumbnailService::GenerateThumbnails()
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
+#ifdef DISTRIBUTED
             .kvStore = kvStorePtr_,
+#endif
             .table = tableName
         };
 
@@ -395,7 +405,9 @@ int32_t ThumbnailService::LcdAging()
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
+#ifdef DISTRIBUTED
             .kvStore = kvStorePtr_,
+#endif
             .table = tableName,
         };
         err = ThumbnailAgingHelper::AgingLcdBatch(opts);
@@ -461,7 +473,9 @@ int32_t ThumbnailService::GetAgingDataSize(const int64_t &time, int &count)
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
+#ifdef DISTRIBUTED
             .kvStore = kvStorePtr_,
+#endif
             .table = tableName,
         };
         int tempCount = 0;
@@ -487,7 +501,9 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     for (const auto &tableName : tableList) {
         ThumbRdbOpt opts = {
             .store = rdbStorePtr_,
+#ifdef DISTRIBUTED
             .kvStore = kvStorePtr_,
+#endif
             .table = tableName
         };
         int32_t tempCount = 0;

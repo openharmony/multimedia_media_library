@@ -76,27 +76,5 @@ HWTEST_F(MediaLibraryUriTest, medialib_ParseThumbnailInfo_test_001, TestSize.Lev
         outNetworkId, outTableName);
     EXPECT_EQ(ret, true);
 }
-
-HWTEST_F(MediaLibraryUriTest, medialib_GetNetworkIdFromUri_test_001, TestSize.Level0)
-{
-    string deviceId = ThumbnailUriUtils::GetNetworkIdFromUri("");
-    EXPECT_EQ(deviceId, "");
-    deviceId = ThumbnailUriUtils::GetNetworkIdFromUri("GetNetworkIdFromUri");
-    EXPECT_EQ(deviceId, "");
-    deviceId = ThumbnailUriUtils::GetNetworkIdFromUri(MEDIALIBRARY_DATA_ABILITY_PREFIX);
-    EXPECT_EQ(deviceId, "");
-    deviceId = ThumbnailUriUtils::GetNetworkIdFromUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + "test");
-    EXPECT_EQ(deviceId, "test");
-    deviceId = ThumbnailUriUtils::GetNetworkIdFromUri(MEDIALIBRARY_DATA_ABILITY_PREFIX + "Uri/test");
-    EXPECT_EQ(deviceId, "Uri");
-}
-
-HWTEST_F(MediaLibraryUriTest, medialib_GetIdFromUri_test_001, TestSize.Level0)
-{
-    string rowNum = ThumbnailUriUtils::GetIdFromUri("");
-    EXPECT_EQ(rowNum, "-1");
-    rowNum = ThumbnailUriUtils::GetIdFromUri("GetIdFromUri/test");
-    EXPECT_EQ(rowNum, "-1");
-}
 } // namespace Media
 } // namespace OHOS

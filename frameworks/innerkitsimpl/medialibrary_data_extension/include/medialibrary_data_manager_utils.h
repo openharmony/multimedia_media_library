@@ -30,8 +30,6 @@ public:
 
     static bool IsNumber(const std::string &str);
     static std::string GetOperationType(const std::string &uri);
-    static std::string GetIdFromUri(const std::string &uri);
-    static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string GetDisPlayNameFromPath(const std::string &path);
     static std::string ObtionCondition(std::string &strQueryCondition, const std::vector<std::string> &whereArgs);
     static std::string GetTypeUriByUri(std::string &uri);

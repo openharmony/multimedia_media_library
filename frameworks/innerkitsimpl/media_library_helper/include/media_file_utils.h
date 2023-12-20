@@ -40,11 +40,11 @@ const std::unordered_set<std::string> MEDIA_OPEN_MODES = {
     MEDIA_FILEMODE_READWRITEAPPEND
 };
 
-const int VIRTUAL_ID_DIVIDER = 5;
-const int PHOTO_VIRTUAL_IDENTIFIER = 4;
-const int AUDIO_VIRTUAL_IDENTIFIER = 3;
-const int FILE_VIRTUAL_IDENTIFIER = 2;
-const int CAMERA_SHOT_KEY_SIZE = 30;
+constexpr int VIRTUAL_ID_DIVIDER = 5;
+constexpr int PHOTO_VIRTUAL_IDENTIFIER = 4;
+constexpr int AUDIO_VIRTUAL_IDENTIFIER = 3;
+constexpr int FILE_VIRTUAL_IDENTIFIER = 2;
+constexpr int CAMERA_SHOT_KEY_SIZE = 30;
 
 constexpr int64_t MSEC_TO_SEC = 1e3;
 constexpr int64_t MSEC_TO_NSEC = 1e6;
@@ -82,21 +82,16 @@ public:
     static bool CreateFile(const std::string &filePath);
     static bool DeleteFile(const std::string &fileName);
     static bool DeleteDir(const std::string &dirName);
-    static int32_t RemoveDirectory(const std::string &path);
     static std::string GetFileName(const std::string &filePath);
-    static std::string GetFirstDentry(const std::string &path);
-    static std::string GetLastDentry(const std::string &path);
     static std::string GetParentPath(const std::string &path);
     static std::string GetTitleFromDisplayName(const std::string &displayName);
     static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
-    static std::string GetFirstDirName(const std::string &filePath);
     static bool MoveFile(const std::string &oldPath, const std::string &newPath);
     static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
     static bool WriteStrToFile(const std::string &filePath, const std::string &str);
     static bool CopyFile(int32_t rfd, int32_t wfd);
     static bool RenameDir(const std::string &oldPath, const std::string &newPath);
     static bool CreateDirectory(const std::string &dirPath, std::shared_ptr<int> errCodePtr = nullptr);
-    static int32_t CheckStringSize(const std::string &str, const size_t max);
     static int32_t CheckAlbumName(const std::string &albumName);
     static int32_t CheckDentryName(const std::string &dentryName);
     static int32_t CheckDisplayName(const std::string &displayName);
@@ -110,21 +105,16 @@ public:
     static std::string GetIdFromUri(const std::string &uri);
     static std::string GetNetworkIdFromUri(const std::string &uri);
     static std::string UpdatePath(const std::string &path, const std::string &uri);
-    static std::string GetFileMediaTypeUri(int32_t mediaType, const std::string &networkId);
-    static std::string GetFileMediaTypeUriV10(int32_t mediaType, const std::string &networkId);
-    static std::string GetUriByNameAndId(const std::string &displayName, const std::string &networkId, int32_t id);
     static MediaType GetMediaType(const std::string &filePath);
     static std::string SplitByChar(const std::string &str, const char split);
     static std::string GetExtensionFromPath(const std::string &path);
     static int32_t OpenFile(const std::string &path, const std::string &mode);
     static int32_t CreateAsset(const std::string &filePath);
     static int32_t ModifyAsset(const std::string &oldPath, const std::string &newPath);
-    static int32_t DeleteAsset(const std::string &filePath);
     static int32_t OpenAsset(const std::string &filePath, const std::string &mode);
     static int32_t CloseAsset(int32_t fd);
     static std::string GetMediaTypeUri(MediaType mediaType);
     static std::string GetMediaTypeUriV10(MediaType mediaType);
-    static void AppendFetchOptionSelection(std::string &selection, const std::string &newCondition);
     static bool CheckMode(const std::string &mode);
     static size_t FindIgnoreCase(const std::string &str, const std::string &key);
     static int64_t GetVirtualIdByType(int32_t id, MediaType type);
@@ -145,7 +135,6 @@ public:
     static bool IsUriV10(const std::string &mediaType);
     static bool IsFileTablePath(const std::string &path);
     static bool IsPhotoTablePath(const std::string &path);
-    static std::string StrCreateTime(const std::string &format, int64_t time);
     static std::string StrCreateTimeByMilliseconds(const std::string &format, int64_t time);
     static std::string AddDocsToRelativePath(const std::string &relativePath);
     static std::string RemoveDocsFromRelativePath(const std::string &relativePath);
@@ -153,6 +142,8 @@ public:
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
+    static int32_t RemoveDirectory(const std::string &path);
+    static int32_t CheckStringSize(const std::string &str, const size_t max);
 };
 } // namespace OHOS::Media
 

@@ -57,35 +57,6 @@ HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetOperationType_test_001, TestS
     EXPECT_EQ(ret, "");
 }
 
-HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetIdFromUri_test_001, TestSize.Level0)
-{
-    string uri = "medialib_GetIdFromUri_test_001/Test";
-    string ret = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
-    EXPECT_EQ(ret, "-1");
-    uri = "medialib_GetIdFromUri_test_001";
-    ret = MediaLibraryDataManagerUtils::GetIdFromUri(uri);
-    EXPECT_EQ(ret, "-1");
-}
-
-HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetNetworkIdFromUri_test_001, TestSize.Level0)
-{
-    string uri = "";
-    string ret = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
-    EXPECT_EQ(ret, "");
-    uri = "medialib_GetNetworkIdFromUri_test_001";
-    ret = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
-    EXPECT_EQ(ret, "");
-    uri = MEDIALIBRARY_DATA_ABILITY_PREFIX;
-    ret = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
-    EXPECT_EQ(ret, "");
-    uri = MEDIALIBRARY_DATA_ABILITY_PREFIX + "test";
-    ret = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
-    EXPECT_EQ(ret, "test");
-    uri = "test" + MEDIALIBRARY_MEDIA_PREFIX;
-    ret = MediaLibraryDataManagerUtils::GetNetworkIdFromUri(uri);
-    EXPECT_EQ(ret, "");
-}
-
 HWTEST_F(MediaLibraryManagerUtilsTest, medialib_GetDisPlayNameFromPath_test_001, TestSize.Level0)
 {
     string path = "medialib_GetDisPlayNameFromPath_test_001/test";
