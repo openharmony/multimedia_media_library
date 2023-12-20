@@ -62,12 +62,10 @@ napi_value MediaAssetEditDataNapi::Constructor(napi_env env, napi_callback_info 
     string formatVersion;
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, argc == ARGS_TWO, "Number of args is invalid");
-    CHECK_ARGS(env,
-        MediaLibraryNapiUtils::GetParamStringWithLength(env, argv[PARAM0], EDIT_FORMAT_MAX_LENGTH, compatibleFormat),
-        OHOS_INVALID_PARAM_CODE);
-    CHECK_ARGS(env,
-        MediaLibraryNapiUtils::GetParamStringWithLength(env, argv[PARAM1], EDIT_FORMAT_MAX_LENGTH, formatVersion),
-        OHOS_INVALID_PARAM_CODE);
+    CHECK_ARGS_THROW_INVALID_PARAM(env,
+        MediaLibraryNapiUtils::GetParamStringWithLength(env, argv[PARAM0], EDIT_FORMAT_MAX_LENGTH, compatibleFormat));
+    CHECK_ARGS_THROW_INVALID_PARAM(env,
+        MediaLibraryNapiUtils::GetParamStringWithLength(env, argv[PARAM1], EDIT_FORMAT_MAX_LENGTH, formatVersion));
 
     shared_ptr<MediaAssetEditData> editData = make_shared<MediaAssetEditData>(compatibleFormat, formatVersion);
     unique_ptr<MediaAssetEditDataNapi> obj = make_unique<MediaAssetEditDataNapi>();
@@ -197,7 +195,8 @@ napi_value MediaAssetEditDataNapi::JSGetData(napi_env env, napi_callback_info in
     return result;
 }
 
-static napi_value GetStringArg(napi_env env, napi_callback_info info, MediaAssetEditDataNapi** obj, string& arg)
+static napi_value GetStringArg(
+    napi_env env, napi_callback_info info, MediaAssetEditDataNapi** obj, int maxLen, string& arg)
 {
     size_t argc = ARGS_ONE;
     napi_value argv[ARGS_ONE];
@@ -206,13 +205,13 @@ static napi_value GetStringArg(napi_env env, napi_callback_info info, MediaAsset
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_INNER_FAIL);
     CHECK_COND(env, argc == ARGS_ONE && thisVar != nullptr, OHOS_INVALID_PARAM_CODE);
     CHECK_ARGS(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(obj)), JS_INNER_FAIL);
-    CHECK_ARGS_THROW_INVALID_PARAM(env, obj != nullptr);
-    CHECK_ARGS_THROW_INVALID_PARAM(
-        env, napi_typeof(env, argv[PARAM0], &valueType) == napi_ok && valueType == napi_string);
+    CHECK_COND(env, obj != nullptr, OHOS_INVALID_PARAM_CODE);
+    CHECK_COND(env, napi_typeof(env, argv[PARAM0], &valueType) == napi_ok && valueType == napi_string,
+        OHOS_INVALID_PARAM_CODE);
 
     size_t res = 0;
-    char buffer[EDIT_DATA_MAX_LENGTH];
-    CHECK_ARGS(env, napi_get_value_string_utf8(env, argv[PARAM0], buffer, EDIT_DATA_MAX_LENGTH, &res), JS_INNER_FAIL);
+    char buffer[maxLen];
+    CHECK_ARGS(env, napi_get_value_string_utf8(env, argv[PARAM0], buffer, maxLen, &res), JS_INNER_FAIL);
     arg = string(buffer);
     RETURN_NAPI_TRUE(env);
 }
@@ -221,7 +220,7 @@ napi_value MediaAssetEditDataNapi::JSSetCompatibleFormat(napi_env env, napi_call
 {
     MediaAssetEditDataNapi* obj = nullptr;
     string compatibleFormat;
-    CHECK_NULLPTR_RET(GetStringArg(env, info, &obj, compatibleFormat));
+    CHECK_NULLPTR_RET(GetStringArg(env, info, &obj, EDIT_FORMAT_MAX_LENGTH, compatibleFormat));
     obj->SetCompatibleFormat(compatibleFormat);
     RETURN_NAPI_UNDEFINED(env);
 }
@@ -230,7 +229,7 @@ napi_value MediaAssetEditDataNapi::JSSetFormatVersion(napi_env env, napi_callbac
 {
     MediaAssetEditDataNapi* obj = nullptr;
     string formatVersion;
-    CHECK_NULLPTR_RET(GetStringArg(env, info, &obj, formatVersion));
+    CHECK_NULLPTR_RET(GetStringArg(env, info, &obj, EDIT_FORMAT_MAX_LENGTH, formatVersion));
     obj->SetFormatVersion(formatVersion);
     RETURN_NAPI_UNDEFINED(env);
 }
@@ -239,7 +238,7 @@ napi_value MediaAssetEditDataNapi::JSSetData(napi_env env, napi_callback_info in
 {
     MediaAssetEditDataNapi* obj = nullptr;
     string data;
-    CHECK_NULLPTR_RET(GetStringArg(env, info, &obj, data));
+    CHECK_NULLPTR_RET(GetStringArg(env, info, &obj, EDIT_DATA_MAX_LENGTH, data));
     obj->SetData(data);
     RETURN_NAPI_UNDEFINED(env);
 }

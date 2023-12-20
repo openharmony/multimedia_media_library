@@ -456,6 +456,7 @@ export default {
   PhotoViewPicker: PhotoViewPicker,
   RecommendationType: RecommendationType,
   RecommendationOptions: RecommendationOptions,
+  ResourceType: photoAccessHelper.ResourceType,
   MediaAssetEditData: photoAccessHelper.MediaAssetEditData,
   MediaAssetChangeRequest: MediaAssetChangeRequest,
   MediaAssetsChangeRequest: photoAccessHelper.MediaAssetsChangeRequest,

@@ -674,6 +674,14 @@ int64_t MediaFileUtils::UTCTimeNanoSeconds()
     return t.tv_sec * SEC_TO_NSEC + t.tv_nsec;
 }
 
+string MediaFileUtils::StrCreateTime(const string &format, int64_t time)
+{
+    char strTime[DEFAULT_TIME_SIZE] = "";
+    auto tm = localtime(&time);
+    (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
+    return strTime;
+}
+
 string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t time)
 {
     char strTime[DEFAULT_TIME_SIZE] = "";

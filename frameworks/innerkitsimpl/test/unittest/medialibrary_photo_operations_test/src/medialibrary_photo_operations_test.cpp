@@ -2649,6 +2649,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, Test
     Uri deleteCacheUri(deleteUri);
 
     MediaLibraryCommand deleteCacheCmd(deleteCacheUri);
+    deleteCacheCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     DataSharePredicates predicates;
     int32_t ret = MediaLibraryDataManager::GetInstance()->Delete(deleteCacheCmd, predicates);
     EXPECT_EQ(ret, E_OK);
@@ -2676,6 +2677,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, Test
     Uri deleteCacheUri(deleteUri);
 
     MediaLibraryCommand deleteCacheCmd(deleteCacheUri);
+    deleteCacheCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     DataSharePredicates predicates;
     int32_t ret = MediaLibraryDataManager::GetInstance()->Delete(deleteCacheCmd, predicates);
     EXPECT_LT(ret, 0);
