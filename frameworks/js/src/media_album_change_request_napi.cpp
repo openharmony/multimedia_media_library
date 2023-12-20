@@ -27,6 +27,7 @@
 #include "medialibrary_tracer.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
+#include "result_set_utils.h"
 #include "userfile_client.h"
 #include "vision_column.h"
 
@@ -270,8 +271,10 @@ napi_value MediaAlbumChangeRequestNapi::JSGetAlbum(napi_env env, napi_callback_i
         return PhotoAlbumNapi::CreatePhotoAlbumNapi(env, photoAlbum);
     }
 
-    // PhotoAlbum object has not been actually created, return void.
-    RETURN_NAPI_UNDEFINED(env);
+    // PhotoAlbum object has not been actually created, return null.
+    napi_value nullValue;
+    napi_get_null(env, &nullValue);
+    return nullValue;
 }
 
 static napi_value ParseArgsCreateAlbum(
@@ -841,6 +844,46 @@ static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool FetchNewCount(MediaAlbumChangeRequestAsyncContext& context, shared_ptr<PhotoAlbum>& album)
+{
+    if (album == nullptr || !PhotoAlbum::IsUserPhotoAlbum(album->GetPhotoAlbumType(), album->GetPhotoAlbumSubType())) {
+        NAPI_ERR_LOG("Only user album can add or remove assets");
+        context.SaveError(E_FAIL);
+        return false;
+    }
+
+    Uri queryUri(PAH_QUERY_PHOTO_ALBUM);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, album->GetAlbumId());
+    vector<string> fetchColumns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_COUNT,
+        PhotoAlbumColumns::ALBUM_IMAGE_COUNT, PhotoAlbumColumns::ALBUM_VIDEO_COUNT };
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(queryUri, predicates, fetchColumns, errCode);
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("resultSet == nullptr, errCode is %{public}d", errCode);
+        context.SaveError(E_HAS_DB_ERROR);
+        return false;
+    }
+    if (resultSet->GoToFirstRow() != 0) {
+        NAPI_ERR_LOG("go to first row failed when fetch new count");
+        context.SaveError(E_HAS_DB_ERROR);
+        return false;
+    }
+
+    bool hiddenOnly = album->GetHiddenOnly();
+    int imageCount = hiddenOnly ? -1
+                                : get<int32_t>(ResultSetUtils::GetValFromColumn(
+                                      PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
+    int videoCount = hiddenOnly ? -1
+                                : get<int32_t>(ResultSetUtils::GetValFromColumn(
+                                      PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
+    album->SetCount(
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, resultSet, TYPE_INT32)));
+    album->SetImageCount(imageCount);
+    album->SetVideoCount(videoCount);
+    return true;
+}
+
 static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
     auto changeRequest = context.objectInfo;
@@ -864,7 +907,7 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     }
 
     NAPI_INFO_LOG("Add %{public}d asset(s) into album %{public}d", ret, albumId);
-    photoAlbum->SetCount(photoAlbum->GetCount() + ret);
+    FetchNewCount(context, photoAlbum);
     return true;
 }
 
@@ -887,8 +930,7 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
     }
 
     NAPI_INFO_LOG("Remove %{public}d asset(s) from album %{public}d", ret, albumId);
-    int32_t currentCount = photoAlbum->GetCount() - ret;
-    photoAlbum->SetCount(currentCount > 0 ? currentCount : 0);
+    FetchNewCount(context, photoAlbum);
     return true;
 }
 
@@ -921,7 +963,6 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
             return false;
         }
         NAPI_INFO_LOG("Move %{public}d asset(s) into album %{public}d", ret, targetAlbumId);
-        targetPhotoAlbum->SetCount(targetPhotoAlbum->GetCount() + ret);
 
         // Remove from current album.
         DataShare::DataSharePredicates predicates;
@@ -936,9 +977,9 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
             return false;
         }
         NAPI_INFO_LOG("Move %{public}d asset(s) from album %{public}d", ret, albumId);
-        int32_t currentCount = photoAlbum->GetCount() - ret;
-        photoAlbum->SetCount(currentCount > 0 ? currentCount : 0);
+        FetchNewCount(context, targetPhotoAlbum);
     }
+    FetchNewCount(context, photoAlbum);
     return true;
 }
 

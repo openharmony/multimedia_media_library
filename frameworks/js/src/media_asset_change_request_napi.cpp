@@ -25,9 +25,12 @@
 #include <unordered_set>
 
 #include "ability_context.h"
+#include "access_token.h"
+#include "accesstoken_kit.h"
 #include "delete_callback.h"
 #include "directory_ex.h"
 #include "file_uri.h"
+#include "ipc_skeleton.h"
 #include "js_native_api.h"
 #include "js_native_api_types.h"
 #include "media_asset_edit_data_napi.h"
@@ -45,6 +48,7 @@
 #include "want.h"
 
 using namespace std;
+using namespace OHOS::Security::AccessToken;
 
 namespace OHOS::Media {
 static const string MEDIA_ASSET_CHANGE_REQUEST_CLASS = "MediaAssetChangeRequest";
@@ -256,13 +260,17 @@ napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_i
         return FileAssetNapi::CreatePhotoAsset(env, fileAsset);
     }
 
-    // FileAsset object has not been actually created, return void.
-    RETURN_NAPI_UNDEFINED(env);
+    // FileAsset object has not been actually created, return null.
+    napi_value nullValue;
+    napi_get_null(env, &nullValue);
+    return nullValue;
 }
 
 static bool HasWritePermission()
 {
-    return PermissionUtils::CheckNapiCallerPermission(PERM_WRITE_IMAGEVIDEO);
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int result = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_WRITE_IMAGEVIDEO);
+    return result == PermissionState::PERMISSION_GRANTED;
 }
 
 static napi_status CheckCreateOption(MediaAssetChangeRequestAsyncContext& context)
@@ -479,7 +487,6 @@ static napi_value ParseFileUri(napi_env env, napi_value arg, MediaType mediaType
     AppFileService::ModuleFileUri::FileUri fileUri(fileUriStr);
     string path = fileUri.GetRealPath();
     CHECK_COND(env, PathToRealPath(path, context->realPath), JS_ERR_NO_SUCH_FILE);
-    NAPI_DEBUG_LOG("file from %{private}s, realPath: %{private}s", fileUriStr.c_str(), context->realPath.c_str());
 
     CHECK_COND_WITH_MESSAGE(env, mediaType == MediaFileUtils::GetMediaType(context->realPath), "Invalid file type");
     string fileName = MediaFileUtils::GetFileName(context->realPath);

@@ -137,6 +137,7 @@ public:
     EXPORT static bool IsUriV10(const std::string &mediaType);
     EXPORT static bool IsFileTablePath(const std::string &path);
     EXPORT static bool IsPhotoTablePath(const std::string &path);
+    EXPORT static std::string StrCreateTime(const std::string &format, int64_t time);
     EXPORT static std::string StrCreateTimeByMilliseconds(const std::string &format, int64_t time);
     EXPORT static std::string AddDocsToRelativePath(const std::string &relativePath);
     EXPORT static std::string RemoveDocsFromRelativePath(const std::string &relativePath);
