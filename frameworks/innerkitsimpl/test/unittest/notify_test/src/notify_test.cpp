@@ -193,7 +193,7 @@ void NotifyTest::SetUpTestCase()
     perms.push_back("ohos.permission.READ_MEDIA");
     perms.push_back("ohos.permission.WRITE_MEDIA");
     uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryQueryPerfUnitTest", perms, tokenId);
+    PermissionUtilsUnitTest::SetAccessTokenPermission("NotifyTest", perms, tokenId);
     ASSERT_TRUE(tokenId != 0);
 
     auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
