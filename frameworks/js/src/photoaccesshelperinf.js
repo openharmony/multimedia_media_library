@@ -27,6 +27,7 @@ const PERMISSION_STATE_ERROR = -1;
 const ERROR_MSG_WRITE_PERMISSION = 'not have ohos.permission.WRITE_IMAGEVIDEO';
 const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
+const ERROR_MSG_INNER_FAIL = 'System inner fail';
 
 const MAX_DELETE_NUMBER = 300;
 const MIN_DELETE_NUMBER = 1;
@@ -120,22 +121,29 @@ async function createPhotoDeleteRequestParamsOk(uriList, asyncCallback) {
     return errorResult(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_PARAMERTER_INVALID), asyncCallback);
   }
   try {
-    photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
-      if (asyncCallback) {
+    if (asyncCallback) {
+      return photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
         if (result.result === REQUEST_CODE_SUCCESS) {
-          return asyncCallback();
+          asyncCallback();
+        } else if (result.result == PERMISSION_DENIED) {
+          asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
         } else {
-          return asyncCallback(new BusinessError(ERROR_MSG_USER_DENY));
-        }
-      }
-      return new Promise((resolve, reject) => {
-        if (result.result === REQUEST_CODE_SUCCESS) {
-          resolve();
-        } else {
-          reject(new BusinessError(ERROR_MSG_USER_DENY));
+          asyncCallback(new BusinessError(ERROR_MSG_INNER_FAIL, result.result));
         }
       });
-    });
+    } else {
+      return new Promise((resolve, reject) => {
+        photoAccessHelper.createDeleteRequest(getContext(this), appName, uriList, result => {
+          if (result.result === REQUEST_CODE_SUCCESS) {
+            resolve();
+          } else if (result.result == PERMISSION_DENIED) {
+            reject(new BusinessError(ERROR_MSG_USER_DENY));
+          } else {
+            reject(new BusinessError(ERROR_MSG_INNER_FAIL, result.result));
+          }
+        });
+      });
+    }
   } catch (error) {
     return errorResult(new BusinessError(error.message, error.code), asyncCallback);
   }

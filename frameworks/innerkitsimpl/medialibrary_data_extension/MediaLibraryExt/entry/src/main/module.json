@@ -129,12 +129,12 @@
       {
         "uri":"datashareproxy://com.ohos.medialibrary.medialibrarydata/image_data",
         "requiredReadPermission":"ohos.permission.READ_IMAGEVIDEO",
-        "requiredWritePermission":"ohos.permission.WRITE_IMAGEVIDEO"
+        "requiredWritePermission":"ohos.permission.DISTRIBUTED_DATASYNC"
       },
       {
         "uri":"datashareproxy://com.ohos.medialibrary.medialibrarydata/image_uri",
         "requiredReadPermission":"ohos.permission.READ_IMAGEVIDEO",
-        "requiredWritePermission":"ohos.permission.WRITE_IMAGEVIDEO"
+        "requiredWritePermission":"ohos.permission.DISTRIBUTED_DATASYNC"
       }
     ]
   }

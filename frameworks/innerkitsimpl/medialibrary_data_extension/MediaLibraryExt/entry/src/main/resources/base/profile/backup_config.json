@@ -1,5 +1,6 @@
 {
     "allowToBackupRestore": true,
+    "supportScene": "next2next, hmos2next",
     "includes": [
         "/storage/cloud/files/Photo/",
         "/storage/cloud/files/Camera/",

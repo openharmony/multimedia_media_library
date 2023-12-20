@@ -84,6 +84,7 @@ const std::string PhotoColumn::PHOTO_ID = "photo_id";
 const std::string PhotoColumn::PHOTO_QUALITY = "photo_quality";
 const std::string PhotoColumn::PHOTO_FIRST_VISIT_TIME = "first_visit_time";
 const std::string PhotoColumn::PHOTO_DEFERRED_PROC_TYPE = "deferred_proc_type";
+const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_INDEX = "date_month_index";
@@ -158,7 +159,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_ID + " TEXT, " +
     PHOTO_QUALITY + " INT, " +
     PHOTO_FIRST_VISIT_TIME + " BIGINT DEFAULT 0, " +
-    PHOTO_DEFERRED_PROC_TYPE + " INT DEFAULT 0)";
+    PHOTO_DEFERRED_PROC_TYPE + " INT DEFAULT 0, " +
+    PHOTO_HAS_ASTC + " INT DEFAULT 0)";
 
 
 const std::string PhotoColumn::CREATE_YEAR_INDEX = BaseColumn::CreateIndex() +
