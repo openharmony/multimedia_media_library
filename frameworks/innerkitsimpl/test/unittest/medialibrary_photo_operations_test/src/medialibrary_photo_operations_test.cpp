@@ -2483,11 +2483,11 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_002, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd photo_oprn_modify_by_cache_test_001");
+    MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_003");
 
-    // create asset
+    // create asset in pending
     int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
     if (fileId < 0) {
         MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
@@ -2515,6 +2515,44 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_001, T
     int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
     EXPECT_EQ(ret, fileId);
 
+    MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_003");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_modify_by_cache_test_001");
+
+    // create asset
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    // open cache file
+    string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+    close(fd);
+
+    // modify by cache
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
+    valuesBucket.Put(CACHE_FILE_NAME, fileName);
+    valuesBucket.Put(COMPATIBLE_FORMAT, "compatibleFormat");
+    valuesBucket.Put(FORMAT_VERSION, "formatVersion");
+    valuesBucket.Put(EDIT_DATA, "data");
+
+    MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
+    EXPECT_EQ(ret, fileId);
+
     MEDIA_INFO_LOG("end tdd photo_oprn_modify_by_cache_test_001");
 }
 
@@ -2523,9 +2561,47 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_002, T
     MEDIA_INFO_LOG("start tdd photo_oprn_modify_by_cache_test_002");
 
     // create asset
-    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "photo.mp4");
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "photo.mp4");
     if (fileId < 0) {
-        MEDIA_ERR_LOG("CreatePhoto In APi10 failed, ret=%{public}d", fileId);
+        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    // open cache file
+    string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+    close(fd);
+
+    // modify by cache
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
+    valuesBucket.Put(CACHE_FILE_NAME, fileName);
+    valuesBucket.Put(COMPATIBLE_FORMAT, "compatibleFormat");
+    valuesBucket.Put(FORMAT_VERSION, "formatVersion");
+    valuesBucket.Put(EDIT_DATA, "data");
+
+    MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
+    EXPECT_LT(ret, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_modify_by_cache_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_modify_by_cache_test_003");
+
+    // create asset
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
         return;
     }
 
@@ -2550,7 +2626,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_002, T
     int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
     EXPECT_LT(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd photo_oprn_modify_by_cache_test_002");
+    MEDIA_INFO_LOG("end tdd photo_oprn_modify_by_cache_test_003");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, TestSize.Level0)
@@ -2605,6 +2681,41 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, Test
     EXPECT_LT(ret, 0);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_delete_cache_test_002");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_batch_update_user_comment_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_batch_update_user_comment_test_001");
+    int32_t fileId1 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    if (fileId1 < 0) {
+        MEDIA_ERR_LOG("CreatePhoto failed, ret=%{public}d", fileId1);
+        return;
+    }
+
+    int32_t fileId2 = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo2.jpg");
+    if (fileId2 < 0) {
+        MEDIA_ERR_LOG("CreatePhoto failed, ret=%{public}d", fileId2);
+        return;
+    }
+
+    int32_t fileId3 = CreatePhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "photo3.mp4");
+    if (fileId3 < 0) {
+        MEDIA_ERR_LOG("CreatePhoto failed, ret=%{public}d", fileId3);
+        return;
+    }
+
+    vector<string> assetsArray = { to_string(fileId1), to_string(fileId2), to_string(fileId3) };
+    string newUserComment = "batch update user comment";
+    DataSharePredicates predicates;
+    predicates.In(PhotoColumn::MEDIA_ID, assetsArray);
+    DataShareValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_USER_COMMENT, newUserComment);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::BATCH_UPDATE_USER_COMMENT, MediaLibraryApi::API_10);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
+    EXPECT_EQ(changedRows, 3);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_batch_update_user_comment_test_001");
 }
 } // namespace Media
 } // namespace OHOS

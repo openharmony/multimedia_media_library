@@ -29,7 +29,6 @@
 #include "medialibrary_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_async_worker.h"
-#include "medialibrary_bundle_manager.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
@@ -1386,13 +1385,12 @@ int32_t MediaLibraryPhotoOperations::ParseMediaAssetEditData(MediaLibraryCommand
         "Failed to get formatVersion");
     CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, EDIT_DATA, data), E_INVALID_VALUES,
         "Failed to get edit data");
-    string appId = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
 
     nlohmann::json editDataJson;
     editDataJson["compatibleFormat"] = compatibleFormat;
     editDataJson["formatVersion"] = formatVersion;
     editDataJson["data"] = data;
-    editDataJson["appId"] = appId;
+    editDataJson["appId"] = cmd.GetBundleName();;
     editData = editDataJson.dump();
     return E_OK;
 }

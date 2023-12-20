@@ -23,6 +23,7 @@ const WRITE_PERMISSION = 'ohos.permission.WRITE_IMAGEVIDEO';
 
 const PERMISSION_DENIED = 13900012;
 const ERR_CODE_PARAMERTER_INVALID = 13900020;
+const ERR_CODE_OHOS_PERMISSION_DENIED = 201;
 const ERR_CODE_OHOS_PARAMERTER_INVALID = 401;
 const REQUEST_CODE_SUCCESS = 0;
 const PERMISSION_STATE_ERROR = -1;
@@ -403,8 +404,10 @@ class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest 
         return super.deleteAssets(context, result => {
           if (result.result === REQUEST_CODE_SUCCESS) {
             asyncCallback();
+          } else if (result.result == PERMISSION_DENIED) {
+            asyncCallback(new BusinessError(ERROR_MSG_USER_DENY, ERR_CODE_OHOS_PERMISSION_DENIED));
           } else {
-            asyncCallback(new BusinessError(ERROR_MSG_USER_DENY)); // TODO:
+            asyncCallback(new BusinessError(ERROR_MSG_INNER_FAIL, result.result));
           }
         }, assets, asyncCallback);
       }
@@ -413,12 +416,14 @@ class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest 
         super.deleteAssets(context, result => {
           if (result.result === REQUEST_CODE_SUCCESS) {
             resolve();
+          } else if (result.result == PERMISSION_DENIED) {
+            reject(new BusinessError(ERROR_MSG_USER_DENY, ERR_CODE_OHOS_PERMISSION_DENIED));
           } else {
-            reject(new BusinessError(ERROR_MSG_USER_DENY)); // TODO:
+            reject(new BusinessError(ERROR_MSG_INNER_FAIL, result.result));
           }
         }, assets, (err) => {
           if (err) {
-            reject(err); // TODO:
+            reject(err);
           } else {
             resolve();
           }
