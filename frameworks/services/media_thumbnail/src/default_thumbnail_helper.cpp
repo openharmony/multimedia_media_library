@@ -60,13 +60,20 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Si
     if (opts.table == AudioColumn::AUDIOS_TABLE) {
         type = ThumbnailType::THUMB;
     }
-    string fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_THUMB_SUFFIX);
+    string fileName = GetThumbnailPath(thumbnailData.path,
+        isAstc ? THUMBNAIL_THUMBASTC_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
+    if (access(fileName.c_str(), F_OK) != 0 && isAstc) {
+        string suffixStr = "THM_ASTC.astc";
+        size_t thmIdx = fileName.find(suffixStr);
+        fileName.replace(thmIdx, suffixStr.length(), "THM.jpg");
+    }
     if (access(fileName.c_str(), F_OK) != 0) {
         if (!DoCreateThumbnail(opts, thumbnailData)) {
             return E_THUMBNAIL_LOCAL_CREATE_FAIL;
         }
         if (!opts.path.empty()) {
-            fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_THUMB_SUFFIX);
+            fileName = GetThumbnailPath(thumbnailData.path,
+                isAstc ? THUMBNAIL_THUMBASTC_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
         }
     }
     auto fd = open(fileName.c_str(), O_RDONLY);
