@@ -16,6 +16,8 @@
 #define MLOG_TAG "MediaLibraryCloneRestore"
 
 #include "clone_restore.h"
+
+#include "backup_database_utils.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -39,20 +41,9 @@ int32_t CloneRestore::Init(const std::string &orignPath, const std::string &upda
     if (isUpdate && BaseRestore::Init() != E_OK) {
         return E_FAIL;
     }
-
-    NativeRdb::RdbStoreConfig config(MEDIA_DATA_ABILITY_DB_NAME);
-    config.SetPath(dbPath_);
-    config.SetBundleName(BUNDLE_NAME);
-    config.SetReadConSize(CONNECT_SIZE);
-    config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
-    config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
-    config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
-
-    int32_t err;
-    RdbCallback cb;
-    mediaRdb_ = NativeRdb::RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, cb, err);
+    int32_t err = BackupDatabaseUtils::InitDb(mediaRdb_, MEDIA_DATA_ABILITY_DB_NAME, dbPath_, BUNDLE_NAME, true);
     if (mediaRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Init media rdb fail");
+        MEDIA_ERR_LOG("Init remote medialibrary rdb fail, err = %{public}d", err);
         return E_FAIL;
     }
     MEDIA_INFO_LOG("Init db succ.");
