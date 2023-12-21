@@ -398,6 +398,12 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         int fd = -1;
         if (!sandboxPath.empty()) {
             fd = open(sandboxPath.c_str(), O_RDONLY);
+            if (fd < 0 && isAstc) {
+                string suffixStr = "THM_ASTC.astc";
+                size_t thmIdx = sandboxPath.find(suffixStr);
+                sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
+                fd = open(sandboxPath.c_str(), O_RDONLY);
+            }
         }
         if (fd > 0) {
             return fd;
