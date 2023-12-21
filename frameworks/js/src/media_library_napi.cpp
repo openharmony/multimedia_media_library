@@ -1636,8 +1636,8 @@ static void JSCreateUriInCallback(napi_env env, MediaLibraryAsyncContext *contex
         if (status != napi_ok || jsObject == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset uri napi object");
             napi_get_undefined(env, &jsContext->data);
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
-                "Failed to create js object for FileAsset");
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL,
+                "System inner fail");
         } else {
             jsContext->data = jsObject;
             napi_get_undefined(env, &jsContext->error);
@@ -1659,8 +1659,8 @@ static void JSCreateAssetInCallback(napi_env env, MediaLibraryAsyncContext *cont
         if (jsFileAsset == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
-                "Failed to create js object for FileAsset");
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL,
+                "System inner fail");
         } else {
             NAPI_DEBUG_LOG("JSCreateAssetCompleteCallback jsFileAsset != nullptr");
             jsContext->data = jsFileAsset;
