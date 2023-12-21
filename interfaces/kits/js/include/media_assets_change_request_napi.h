@@ -26,6 +26,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 enum class AssetsChangeOperation {
     BATCH_SET_FAVORITE,
     BATCH_SET_HIDDEN,
@@ -34,10 +35,10 @@ enum class AssetsChangeOperation {
 
 class MediaAssetsChangeRequestNapi : public MediaChangeRequestNapi {
 public:
-    MediaAssetsChangeRequestNapi() = default;
-    ~MediaAssetsChangeRequestNapi() override = default;
+    EXPORT MediaAssetsChangeRequestNapi() = default;
+    EXPORT ~MediaAssetsChangeRequestNapi() override = default;
 
-    static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
 
     std::vector<std::string> GetFileAssetUriArray() const;
     bool GetFavoriteStatus() const;
@@ -46,12 +47,12 @@ public:
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
 
 private:
-    static napi_value Constructor(napi_env env, napi_callback_info info);
-    static void Destructor(napi_env env, void* nativeObject, void* finalizeHint);
+    EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
+    EXPORT static void Destructor(napi_env env, void* nativeObject, void* finalizeHint);
 
-    static napi_value JSSetFavorite(napi_env env, napi_callback_info info);
-    static napi_value JSSetHidden(napi_env env, napi_callback_info info);
-    static napi_value JSSetUserComment(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetFavorite(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetHidden(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetUserComment(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
 
