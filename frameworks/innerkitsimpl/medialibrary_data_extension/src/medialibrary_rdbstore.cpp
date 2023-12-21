@@ -1896,6 +1896,15 @@ void AddHasAstcColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddAddressDescriptionColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + CITY_NAME + " TEXT",
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + ADDRESS_DESCRIPTION + " TEXT",
+    };
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2051,6 +2060,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_HAS_ASTC) {
         AddHasAstcColumns(store);
+    }
+
+    if (oldVersion < VERSION_ADD_ADDRESS_DESCRIPTION) {
+        AddAddressDescriptionColumns(store);
     }
 }
 
