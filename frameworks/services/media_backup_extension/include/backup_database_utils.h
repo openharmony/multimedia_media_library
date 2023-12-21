@@ -25,8 +25,30 @@ namespace OHOS {
 namespace Media {
 class BackupDatabaseUtils {
 public:
+    static int32_t InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
+        const std::string &dbPath, const std::string &bundleName, bool isMediaLibary);
     static int32_t QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
         const std::string &column);
+    static int32_t InitGarbageAlbum(std::shared_ptr<NativeRdb::RdbStore> rdbStore, std::set<std::string> &cacheSet,
+        std::unordered_map<std::string, std::string> &nickMap);
+
+private:
+    static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
+    static std::string IsCallerSelfFunc(const std::vector<std::string> &args);
+};
+
+class RdbCallback : public NativeRdb::RdbOpenCallback {
+public:
+    virtual int32_t OnCreate(NativeRdb::RdbStore &rdb) override
+    {
+        return 0;
+    }
+
+    virtual int32_t OnUpgrade(NativeRdb::RdbStore &rdb, int32_t oldVersion,
+        int32_t newVersion) override
+    {
+        return 0;
+    }
 };
 } // namespace Media
 } // namespace OHOS

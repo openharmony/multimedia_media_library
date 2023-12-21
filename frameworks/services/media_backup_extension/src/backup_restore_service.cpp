@@ -22,8 +22,6 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t UPDATE = 0;
-const int32_t DUAL_FRAME_CLONE = 1;
 BackupRestoreService &BackupRestoreService::GetInstance(void)
 {
     static BackupRestoreService inst;
@@ -34,8 +32,12 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
     const std::string &mediaAppName, const std::string &cameraAppName)
 {
     std::unique_ptr<BaseRestore> restoreService;
-    if (sceneCode == UPDATE || sceneCode == DUAL_FRAME_CLONE) {
-        restoreService = std::make_unique<UpdateRestore>(galleryAppName, mediaAppName, cameraAppName);
+    if (sceneCode == UPDATE_RESTORE_ID) {
+        restoreService = std::make_unique<UpdateRestore>(galleryAppName, mediaAppName, cameraAppName,
+        UPDATE_RESTORE_ID);
+    } else if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
+        restoreService = std::make_unique<UpdateRestore>(galleryAppName, mediaAppName, cameraAppName,
+            DUAL_FRAME_CLONE_RESTORE_ID);
     } else {
         restoreService = std::make_unique<CloneRestore>();
     }

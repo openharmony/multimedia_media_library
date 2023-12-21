@@ -64,7 +64,8 @@
           "storage_service",
           "user_file_service",
           "window_manager",
-          "background_task_mgr"
+          "background_task_mgr",
+          "ffrt"
         ],
         "third_party": [
           "e2fsprogs",

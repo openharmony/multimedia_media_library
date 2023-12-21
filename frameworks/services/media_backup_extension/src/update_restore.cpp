@@ -25,28 +25,29 @@
 #include "medialibrary_data_manager.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
+#include "ffrt.h"
 
 namespace OHOS {
 namespace Media {
 const std::string UPDATE_GALLERY_DB_NAME = "gallery.db";
 const std::string UPDATE_EXTERNAL_DB_NAME = "external.db";
-const std::string CLONE_TAG = "cloneBackupData.json";
 
 constexpr int32_t GALLERY_IMAGE_TYPE = 1;
 constexpr int32_t GALLERY_VIDEO_TYPE = 3;
 
 UpdateRestore::UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName,
-    const std::string &cameraAppName)
+    const std::string &cameraAppName, int32_t sceneCode)
 {
     galleryAppName_ = galleryAppName;
     mediaAppName_ = mediaAppName;
     cameraAppName_ = cameraAppName;
+    sceneCode_ = sceneCode;
 }
 
 int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate)
 {
     appDataPath_ = orignPath;
-    if (MediaFileUtils::IsFileExists(orignPath + "/" + CLONE_TAG)) {
+    if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
         filePath_ = orignPath;
         galleryDbPath_ = orignPath + "/" + UPDATE_GALLERY_DB_NAME;
     } else {
@@ -57,7 +58,8 @@ int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &upd
             MEDIA_ERR_LOG("External db is not exist.");
             return E_FAIL;
         }
-        int32_t externalErr = InitOldDb(UPDATE_EXTERNAL_DB_NAME, externalDbPath_, mediaAppName_, externalRdb_);
+        int32_t externalErr = BackupDatabaseUtils::InitDb(externalRdb_, UPDATE_EXTERNAL_DB_NAME, externalDbPath_,
+            mediaAppName_, false);
         if (externalRdb_ == nullptr) {
             MEDIA_ERR_LOG("External init rdb fail, err = %{public}d", externalErr);
             return E_FAIL;
@@ -70,7 +72,8 @@ int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &upd
     if (!MediaFileUtils::IsFileExists(galleryDbPath_)) {
         MEDIA_ERR_LOG("Gallery media db is not exist.");
     } else {
-        int32_t galleryErr = InitOldDb(UPDATE_GALLERY_DB_NAME, galleryDbPath_, galleryAppName_, galleryRdb_);
+        int32_t galleryErr = BackupDatabaseUtils::InitDb(galleryRdb_, UPDATE_GALLERY_DB_NAME, galleryDbPath_,
+            galleryAppName_, false);
         if (galleryRdb_ == nullptr) {
             MEDIA_ERR_LOG("Gallery init rdb fail, err = %{public}d", galleryErr);
             return E_FAIL;
@@ -80,68 +83,21 @@ int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &upd
     return E_OK;
 }
 
-int32_t UpdateRestore::InitOldDb(const std::string &dbName, const std::string &dbPath, const std::string &bundleName,
-    std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
-{
-    NativeRdb::RdbStoreConfig config(dbName);
-    config.SetPath(dbPath);
-    config.SetBundleName(bundleName);
-    config.SetReadConSize(CONNECT_SIZE);
-    config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
-    int32_t err;
-    RdbCallback cb;
-    rdbStore = NativeRdb::RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, cb, err);
-    return err;
-}
-
-
-int32_t UpdateRestore::InitGarbageAlbum()
-{
-    if (galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdb_ is nullptr, Maybe init failed.");
-        return E_FAIL;
-    }
-
-    const string querySql = "SELECT nick_dir, nick_name FROM garbage_album where type = 0";
-    auto resultSet = galleryRdb_->QuerySql(QUERY_GARBAGE_ALBUM);
-    if (resultSet == nullptr) {
-        return E_HAS_DB_ERROR;
-    }
-    int32_t count = -1;
-    int32_t err = resultSet->GetRowCount(count);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
-        return E_FAIL;
-    }
-    MEDIA_INFO_LOG("garbageCount: %{public}d", count);
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t type;
-        resultSet->GetInt(INDEX_TYPE, type);
-        if (type == NICK) {
-            string nickName;
-            string nickDir;
-            resultSet->GetString(INDEX_NICK_DIR, nickDir);
-            resultSet->GetString(INDEX_NICK_NAME, nickName);
-            nickMap_[nickDir] = nickName;
-        } else {
-            string cacheDir;
-            resultSet->GetString(INDEX_CACHE_DIR, cacheDir);
-            cacheSet_.insert(cacheDir);
-        }
-    }
-    MEDIA_INFO_LOG("add map success!");
-    resultSet->Close();
-    return E_OK;
-}
-
 void UpdateRestore::RestorePhoto(void)
 {
     InitGarbageAlbum();
     RestoreFromGallery();
-    RestoreFromExternal(true);
-    RestoreFromExternal(false);
+    if (sceneCode_ == UPDATE_RESTORE_ID) {
+        RestoreFromExternal(true);
+        RestoreFromExternal(false);
+    }
     (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
+}
+
+void UpdateRestore::InitGarbageAlbum()
+{
+    BackupDatabaseUtils::InitGarbageAlbum(galleryRdb_, cacheSet_, nickMap_);
 }
 
 void UpdateRestore::RestoreFromGallery()
@@ -149,9 +105,15 @@ void UpdateRestore::RestoreFromGallery()
     int32_t totalNumber = QueryTotalNumber();
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        std::vector<FileInfo> infos = QueryFileInfos(offset);
-        InsertPhoto(UPDATE_RESTORE_ID, infos, SourceType::GALLERY);
+        ffrt::submit([this, offset]() { RestoreBatch(offset); }, { &offset });
     }
+    ffrt::wait();
+}
+
+void UpdateRestore::RestoreBatch(int32_t offset)
+{
+    std::vector<FileInfo> infos = QueryFileInfos(offset);
+    InsertPhoto(UPDATE_RESTORE_ID, infos, SourceType::GALLERY);
 }
 
 void UpdateRestore::RestoreFromExternal(bool isCamera)
@@ -163,9 +125,17 @@ void UpdateRestore::RestoreFromExternal(bool isCamera)
     int32_t totalNumber = QueryNotSyncTotalNumber(maxId, isCamera);
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
-        std::vector<FileInfo> infos = QueryFileInfosFromExternal(offset, maxId, isCamera);
-        InsertPhoto(UPDATE_RESTORE_ID, infos, type);
+        ffrt::submit([this, offset, maxId, isCamera, type]() {
+                RestoreExternalBatch(offset, maxId, isCamera, type);
+            }, { &offset });
     }
+    ffrt::wait();
+}
+
+void UpdateRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type)
+{
+    std::vector<FileInfo> infos = QueryFileInfosFromExternal(offset, maxId, isCamera);
+    InsertPhoto(UPDATE_RESTORE_ID, infos, type);
 }
 
 int32_t UpdateRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
@@ -189,7 +159,7 @@ void UpdateRestore::HandleRestData(void)
         MEDIA_DEBUG_LOG("Start to delete media data.");
         (void)MediaFileUtils::DeleteDir(mediaData);
     }
-    if (!MediaFileUtils::IsFileExists(CLONE_TAG) && MediaFileUtils::IsFileExists(UPDATE_FILE_DIR)) {
+    if ((sceneCode_ == UPDATE_RESTORE_ID) && MediaFileUtils::IsFileExists(UPDATE_FILE_DIR)) {
         (void)MediaFileUtils::RenameDir(UPDATE_FILE_DIR, DOCUMENT_PATH);
     }
 }
@@ -242,7 +212,7 @@ std::vector<FileInfo> UpdateRestore::QueryFileInfosFromExternal(int32_t offset, 
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
-        if (ParseResultSet(resultSet, tmpInfo)) {
+        if (ParseResultSetFromExternal(resultSet, tmpInfo)) {
             std::string findPath = tmpInfo.relativePath;
             bool isValid = IsValidDir(findPath);
             if (isValid) {
@@ -293,6 +263,17 @@ bool UpdateRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &
     info.dateAdded = GetInt64Val(DATE_ADDED, resultSet);
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
     return true;
+}
+
+bool UpdateRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
+{
+    bool isSuccess = ParseResultSet(resultSet, info);
+    if (!isSuccess) {
+        MEDIA_ERR_LOG("ParseResultSetFromExternal fail");
+        return isSuccess;
+    }
+    info.dateAdded = GetInt64Val(DATE_ADDED, resultSet);
+    return isSuccess;
 }
 
 NativeRdb::ValuesBucket UpdateRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
