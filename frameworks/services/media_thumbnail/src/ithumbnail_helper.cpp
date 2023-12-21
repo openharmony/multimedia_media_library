@@ -417,17 +417,15 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data, bool
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
-    if (ThumbnailUtils::IsSupportGenAstc()) {
-        if (!GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-                {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-            return false;
-        }
-        int32_t err = UpdateAstcState(opts);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
-        }
+    if (!GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
+            {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
+    int32_t err = UpdateAstcState(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
     }
     return true;
 }
