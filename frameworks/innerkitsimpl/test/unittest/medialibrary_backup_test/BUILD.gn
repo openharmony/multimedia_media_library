@@ -30,10 +30,12 @@ ohos_unittest("medialibrary_backup_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/include",
   ]
 
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_database_utils.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/backup_file_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/base_restore.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_backup_extension/src/update_restore.cpp",
     "./src/external_source.cpp",
@@ -57,6 +59,7 @@ ohos_unittest("medialibrary_backup_test") {
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_provider",
+    "ffrt:libffrt",
     "hilog:libhilog",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
