@@ -94,7 +94,7 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     MediaLibraryUnitTestUtils::Init();
     vector<string> perms = { "ohos.permission.MEDIA_LOCATION" };
     uint64_t tokenId = 0;
-    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryQueryPerfUnitTest", perms, tokenId);
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryVisionTest", perms, tokenId);
     ASSERT_TRUE(tokenId != 0);
 }
 
