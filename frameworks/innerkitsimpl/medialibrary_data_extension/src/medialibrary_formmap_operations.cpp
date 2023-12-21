@@ -46,6 +46,7 @@
 #include "thumbnail_utils.h"
 #include "ithumbnail_helper.h"
 #include "form_map.h"
+#include "nlohmann/json.hpp"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -216,7 +217,8 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, const v
             vector<uint8_t> buffer;
             ReadThumbnailFile(filePath, buffer);
             tempData = buffer;
-            PublishedDataItem::DataType uriData = newUri;
+            nlohmann::json uriJson = newUri;
+            PublishedDataItem::DataType uriData = uriJson.dump();
             for (auto &formId : formIds) {
                 MEDIA_INFO_LOG("Published formId: %{private}s!, value size: %{private}zu, image uri: %{private}s",
                     to_string(formId).c_str(), buffer.size(), newUri.c_str());
