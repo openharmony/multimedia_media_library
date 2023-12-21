@@ -26,7 +26,8 @@ constexpr int32_t CONNECT_SIZE = 10;
 constexpr int32_t MILLISECONDS = 1000;
 constexpr int32_t GALLERY_HIDDEN_ID = -4;
 constexpr int32_t UPDATE_RESTORE_ID = 0;
-constexpr int32_t CLONE_RESTORE_ID = 1;
+constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
+constexpr int32_t CLONE_RESTORE_ID = 2;
 
 const std::string ORIGIN_PATH = "/data/storage/el2/backup/restore";
 const std::string DOCUMENT_PATH = "/storage/media/local/files/Docs/Documents";
@@ -80,6 +81,7 @@ struct FileInfo {
     std::string title;
     std::string userComment;
     std::string relativePath;
+    std::string cloudPath;
     int64_t fileSize {0};
     int64_t duration {0};
     int64_t recycledTime {0};
