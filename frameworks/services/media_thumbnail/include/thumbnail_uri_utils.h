@@ -21,13 +21,14 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class ThumbnailUriUtils {
 public:
-    ThumbnailUriUtils() = delete;
-    virtual ~ThumbnailUriUtils() = delete;
-    static bool ParseFileUri(const std::string &uriString, std::string &outFileId,
+    EXPORT ThumbnailUriUtils() = delete;
+    EXPORT virtual ~ThumbnailUriUtils() = delete;
+    EXPORT static bool ParseFileUri(const std::string &uriString, std::string &outFileId,
         std::string &outNetworkId, std::string &outTableName);
-    static bool ParseThumbnailInfo(const std::string &uriString, std::string &outFileId,
+    EXPORT static bool ParseThumbnailInfo(const std::string &uriString, std::string &outFileId,
         Size &outSize, std::string &outNetworkId, std::string &outTableName);
 private:
     static void ParseThumbnailVersion(const std::string &key, const std::string &value, MediaLibraryApi api);

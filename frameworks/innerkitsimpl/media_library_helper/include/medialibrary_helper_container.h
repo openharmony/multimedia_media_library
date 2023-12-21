@@ -20,6 +20,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 /**
  * @brief Utility class for file operations
  *
@@ -28,13 +29,13 @@ namespace Media {
  */
 class MediaLibraryHelperContainer {
 public:
-    MediaLibraryHelperContainer() = default;
-    virtual ~MediaLibraryHelperContainer() = default;
+    EXPORT MediaLibraryHelperContainer() = default;
+    EXPORT virtual ~MediaLibraryHelperContainer() = default;
 
-    static std::shared_ptr<MediaLibraryHelperContainer> GetInstance();
-    void CreateDataShareHelper(const sptr<IRemoteObject> &token, const std::string &uri);
-    void SetDataShareHelper(const std::shared_ptr<DataShare::DataShareHelper> &helper);
-    std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper();
+    EXPORT static std::shared_ptr<MediaLibraryHelperContainer> GetInstance();
+    EXPORT void CreateDataShareHelper(const sptr<IRemoteObject> &token, const std::string &uri);
+    EXPORT void SetDataShareHelper(const std::shared_ptr<DataShare::DataShareHelper> &helper);
+    EXPORT std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper();
 
 private:
     static std::mutex mutex_;

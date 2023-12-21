@@ -39,6 +39,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 static const std::string MEDIA_LIB_NAPI_CLASS_NAME = "MediaLibrary";
 static const std::string USERFILE_MGR_NAPI_CLASS_NAME = "UserFileManager";
 static const std::string PHOTOACCESSHELPER_NAPI_CLASS_NAME = "PhotoAccessHelper";
@@ -172,110 +173,110 @@ public:
 };
 class MediaLibraryNapi {
 public:
-    static napi_value Init(napi_env env, napi_value exports);
-    static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static napi_value UserFileMgrInit(napi_env env, napi_value exports);
+    EXPORT static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
 
     static void ReplaceSelection(std::string &selection, std::vector<std::string> &selectionArgs,
         const std::string &key, const std::string &keyInstead, const int32_t mode = ReplaceSelectionMode::DEFAULT);
 
-    MediaLibraryNapi();
-    ~MediaLibraryNapi();
+    EXPORT MediaLibraryNapi();
+    EXPORT ~MediaLibraryNapi();
 
     static std::mutex sUserFileClientMutex_;
 
 private:
-    static void MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
-    static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
+    EXPORT static void MediaLibraryNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
+    EXPORT static napi_value MediaLibraryNapiConstructor(napi_env env, napi_callback_info info);
 
-    static napi_value GetMediaLibraryNewInstance(napi_env env, napi_callback_info info);
-    static napi_value GetMediaLibraryNewInstanceAsync(napi_env env, napi_callback_info info);
+    EXPORT static napi_value GetMediaLibraryNewInstance(napi_env env, napi_callback_info info);
+    EXPORT static napi_value GetMediaLibraryNewInstanceAsync(napi_env env, napi_callback_info info);
 
-    static napi_value JSGetPublicDirectory(napi_env env, napi_callback_info info);
-    static napi_value JSGetFileAssets(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetPublicDirectory(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetFileAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbums(napi_env env, napi_callback_info info);
 
-    static napi_value JSCreateAsset(napi_env env, napi_callback_info info);
-    static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSCreateAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
 
-    static napi_value JSOnCallback(napi_env env, napi_callback_info info);
-    static napi_value JSOffCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSOnCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSOffCallback(napi_env env, napi_callback_info info);
 
-    static napi_value JSRelease(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSRelease(napi_env env, napi_callback_info info);
 
-    static napi_value JSGetActivePeers(napi_env env, napi_callback_info info);
-    static napi_value JSGetAllPeers(napi_env env, napi_callback_info info);
-    static napi_value CreateMediaTypeEnum(napi_env env);
-    static napi_value CreateFileKeyEnum(napi_env env);
-    static napi_value CreateDirectoryTypeEnum(napi_env env);
-    static napi_value CreateVirtualAlbumTypeEnum(napi_env env);
-    static napi_value CreatePrivateAlbumTypeEnum(napi_env env);
-    static napi_value CreatePhotoKeysEnum(napi_env env);
-    static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
+    EXPORT static napi_value JSGetActivePeers(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAllPeers(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreateMediaTypeEnum(napi_env env);
+    EXPORT static napi_value CreateFileKeyEnum(napi_env env);
+    EXPORT static napi_value CreateDirectoryTypeEnum(napi_env env);
+    EXPORT static napi_value CreateVirtualAlbumTypeEnum(napi_env env);
+    EXPORT static napi_value CreatePrivateAlbumTypeEnum(napi_env env);
+    EXPORT static napi_value CreatePhotoKeysEnum(napi_env env);
+    EXPORT static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
 
-    static napi_value CreateMediaTypeUserFileEnum(napi_env env);
+    EXPORT static napi_value CreateMediaTypeUserFileEnum(napi_env env);
 
-    static napi_value JSGetSmartAlbums(napi_env env, napi_callback_info info);
-    static napi_value JSGetPrivateAlbum(napi_env env, napi_callback_info info);
-    static napi_value JSCreateSmartAlbum(napi_env env, napi_callback_info info);
-    static napi_value JSDeleteSmartAlbum(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSmartAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetPrivateAlbum(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSCreateSmartAlbum(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSDeleteSmartAlbum(napi_env env, napi_callback_info info);
 
-    static napi_value JSStoreMediaAsset(napi_env env, napi_callback_info info);
-    static napi_value JSStartImagePreview(napi_env env, napi_callback_info info);
-    static napi_value JSGetMediaRemoteStub(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSStoreMediaAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSStartImagePreview(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetMediaRemoteStub(napi_env env, napi_callback_info info);
 
-    static napi_value GetUserFileMgr(napi_env env, napi_callback_info info);
-    static napi_value GetUserFileMgrAsync(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrCreatePhotoAsset(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrCreateAudioAsset(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrTrashAsset(napi_env env, napi_callback_info info);
-    static napi_value JSGetPhotoAlbums(napi_env env, napi_callback_info info);
-    static napi_value JSGetPhotoAssets(napi_env env, napi_callback_info info);
-    static napi_value JSGetJsonPhotoAssets(napi_env env, napi_callback_info info);
-    static napi_value JSGetAudioAssets(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrGetPrivateAlbum(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrCreateFileKeyEnum(napi_env env);
-    static napi_value UserFileMgrOnCallback(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrOffCallback(napi_env env, napi_callback_info info);
-    static napi_value CreateAudioKeyEnum(napi_env env);
-    static napi_value CreateImageVideoKeyEnum(napi_env env);
-    static napi_value CreateAlbumKeyEnum(napi_env env);
-    static napi_value CreatePositionTypeEnum(napi_env env);
-    static napi_value CreatePhotoSubTypeEnum(napi_env env);
+    EXPORT static napi_value GetUserFileMgr(napi_env env, napi_callback_info info);
+    EXPORT static napi_value GetUserFileMgrAsync(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrCreatePhotoAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrCreateAudioAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrDeleteAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrTrashAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetPhotoAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetPhotoAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetJsonPhotoAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAudioAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrGetPrivateAlbum(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrCreateFileKeyEnum(napi_env env);
+    EXPORT static napi_value UserFileMgrOnCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrOffCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreateAudioKeyEnum(napi_env env);
+    EXPORT static napi_value CreateImageVideoKeyEnum(napi_env env);
+    EXPORT static napi_value CreateAlbumKeyEnum(napi_env env);
+    EXPORT static napi_value CreatePositionTypeEnum(napi_env env);
+    EXPORT static napi_value CreatePhotoSubTypeEnum(napi_env env);
 
-    static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
-    static napi_value GetPhotoAccessHelperAsync(napi_env env, napi_callback_info info);
-    static napi_value CreateDeleteRequest(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperTrashAsset(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperOnCallback(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperOffCallback(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessCreatePhotoAlbum(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessDeletePhotoAlbums(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
+    EXPORT static napi_value GetPhotoAccessHelperAsync(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreateDeleteRequest(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperTrashAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperOnCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperOffCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessCreatePhotoAlbum(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessDeletePhotoAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info);
 
-    static napi_value SetHidden(napi_env env, napi_callback_info info);
-    static napi_value UfmGetHiddenAlbums(napi_env env, napi_callback_info info);
-    static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UfmGetHiddenAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
 
-    static napi_value CreateAlbumTypeEnum(napi_env env);
-    static napi_value CreateAlbumSubTypeEnum(napi_env env);
-    static napi_value CreateNotifyTypeEnum(napi_env env);
-    static napi_value CreateDefaultChangeUriEnum(napi_env env);
-    static napi_value CreateAnalysisTypeEnum(napi_env env);
-    static napi_value CreateRequestPhotoTypeEnum(napi_env env);
+    EXPORT static napi_value CreateAlbumTypeEnum(napi_env env);
+    EXPORT static napi_value CreateAlbumSubTypeEnum(napi_env env);
+    EXPORT static napi_value CreateNotifyTypeEnum(napi_env env);
+    EXPORT static napi_value CreateDefaultChangeUriEnum(napi_env env);
+    EXPORT static napi_value CreateAnalysisTypeEnum(napi_env env);
+    EXPORT static napi_value CreateRequestPhotoTypeEnum(napi_env env);
 
-    static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
-    static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
-    static napi_value GetPhotoAlbums(napi_env env, napi_callback_info info);
-    static napi_value JSGetPhotoIndex(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessGetPhotoIndex(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
+    EXPORT static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value GetPhotoAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetPhotoIndex(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetPhotoIndex(napi_env env, napi_callback_info info);
 
-    static napi_value JSApplyChanges(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSApplyChanges(napi_env env, napi_callback_info info);
 
     int32_t GetListenerType(const std::string &str) const;
     void RegisterChange(napi_env env, const std::string &type, ChangeListenerNapi &listObj);

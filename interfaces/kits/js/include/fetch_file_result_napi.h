@@ -28,6 +28,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 static const std::string FETCH_FILE_RESULT_CLASS_NAME = "FetchFileResult";
 static const std::string UFM_FETCH_FILE_RESULT_CLASS_NAME = "UserFileMgrFetchFileResult";
 static const std::string PAH_FETCH_FILE_RESULT_CLASS_NAME = "PhotoAccessHelperFetchFileResult";
@@ -43,12 +44,12 @@ public:
 
 class FetchFileResultNapi {
 public:
-    FetchFileResultNapi();
-    ~FetchFileResultNapi();
+    EXPORT FetchFileResultNapi();
+    EXPORT ~FetchFileResultNapi();
 
-    static napi_value Init(napi_env env, napi_value exports);
-    static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static napi_value UserFileMgrInit(napi_env env, napi_value exports);
+    EXPORT static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
 
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<FileAsset>> fileResult);
     static napi_value CreateFetchFileResult(napi_env env, std::unique_ptr<FetchResult<AlbumAsset>> fileResult);
@@ -68,18 +69,18 @@ public:
     static void SolveConstructorRef(unique_ptr<FetchResult<PhotoAlbum>> &fileResult, napi_ref &constructorRef);
 
 private:
-    static void FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
-    static void GetFetchResult(unique_ptr<FetchFileResultNapi> &obj);
-    static napi_value FetchFileResultNapiConstructor(napi_env env, napi_callback_info info);
+    EXPORT static void FetchFileResultNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
+    EXPORT static void GetFetchResult(unique_ptr<FetchFileResultNapi> &obj);
+    EXPORT static napi_value FetchFileResultNapiConstructor(napi_env env, napi_callback_info info);
 
-    static napi_value JSGetCount(napi_env env, napi_callback_info info);
-    static napi_value JSIsAfterLast(napi_env env, napi_callback_info info);
-    static napi_value JSGetFirstObject(napi_env env, napi_callback_info info);
-    static napi_value JSGetNextObject(napi_env env, napi_callback_info info);
-    static napi_value JSGetLastObject(napi_env env, napi_callback_info info);
-    static napi_value JSGetPositionObject(napi_env env, napi_callback_info info);
-    static napi_value JSGetAllObject(napi_env env, napi_callback_info info);
-    static napi_value JSClose(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetCount(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSIsAfterLast(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetFirstObject(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetNextObject(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetLastObject(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetPositionObject(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAllObject(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSClose(napi_env env, napi_callback_info info);
 
     napi_env env_;
     std::shared_ptr<FetchResultProperty> propertyPtr;

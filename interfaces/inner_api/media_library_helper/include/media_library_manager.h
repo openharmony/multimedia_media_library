@@ -26,6 +26,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace OHOS::DataShare;
+#define EXPORT __attribute__ ((visibility ("default")))
 /**
  * @brief Interface for accessing all the File operation and AlbumAsset operation APIs
  *
@@ -34,8 +35,8 @@ using namespace OHOS::DataShare;
  */
 class MediaLibraryManager {
 public:
-    MediaLibraryManager() = default;
-    virtual ~MediaLibraryManager() = default;
+    EXPORT MediaLibraryManager() = default;
+    EXPORT virtual ~MediaLibraryManager() = default;
 
     /**
      * @brief Returns the Media Library Manager Instance
@@ -44,7 +45,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    static MediaLibraryManager *GetMediaLibraryManager();
+    EXPORT static MediaLibraryManager *GetMediaLibraryManager();
 
     /**
      * @brief Initializes the environment for Media Library Manager
@@ -53,7 +54,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    void InitMediaLibraryManager(const sptr<IRemoteObject> &token);
+    EXPORT void InitMediaLibraryManager(const sptr<IRemoteObject> &token);
 
     /**
      * @brief Close an opened file
@@ -64,7 +65,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    int32_t CloseAsset(const string &uri, const int32_t fd);
+    EXPORT int32_t CloseAsset(const string &uri, const int32_t fd);
 
     /**
      * @brief create an photo or video asset
@@ -74,7 +75,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    string CreateAsset(const string &displayName);
+    EXPORT string CreateAsset(const string &displayName);
 
     /**
      * @brief open photo or video
@@ -85,7 +86,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    int32_t OpenAsset(string &uri, const string openMode);
+    EXPORT int32_t OpenAsset(string &uri, const string openMode);
 
     /**
      * @brief Obtain a mediaVolume object from MediaAssets can be obtained
@@ -95,7 +96,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    int32_t QueryTotalSize(MediaVolume &outMediaVolume);
+    EXPORT int32_t QueryTotalSize(MediaVolume &outMediaVolume);
 
     /**
      * @brief Make a query from database
@@ -107,7 +108,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    static std::shared_ptr<DataShareResultSet> GetResultSetFromDb(string columnName, const string &value,
+    EXPORT static std::shared_ptr<DataShareResultSet> GetResultSetFromDb(string columnName, const string &value,
         vector<string> &columns);
 
     /**
@@ -120,7 +121,7 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    int32_t GetFilePathFromUri(const Uri &fileUri, std::string &filePath, string userId = USERID);
+    EXPORT int32_t GetFilePathFromUri(const Uri &fileUri, std::string &filePath, string userId = USERID);
 
     /**
      * @brief Obtain a mediaVolume object from MediaAssets can be obtained
@@ -132,9 +133,9 @@ public:
      * @since 1.0
      * @version 1.0
      */
-    int32_t GetUriFromFilePath(const std::string &filePath, Uri &fileUri, string &userId);
+    EXPORT int32_t GetUriFromFilePath(const std::string &filePath, Uri &fileUri, string &userId);
 
-    std::unique_ptr<PixelMap> GetThumbnail(const Uri &uri);
+    EXPORT std::unique_ptr<PixelMap> GetThumbnail(const Uri &uri);
 
 private:
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);

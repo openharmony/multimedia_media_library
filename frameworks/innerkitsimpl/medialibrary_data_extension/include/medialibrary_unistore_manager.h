@@ -25,15 +25,16 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryUnistoreManager {
 public:
-    static MediaLibraryUnistoreManager &GetInstance()
+    EXPORT static MediaLibraryUnistoreManager &GetInstance()
     {
         static MediaLibraryUnistoreManager instance;
         return instance;
     }
 
-    int32_t Init(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
+    EXPORT int32_t Init(const std::shared_ptr<OHOS::AbilityRuntime::Context> &context)
     {
         if (rdbStorePtr_) {
             return E_OK;
@@ -47,7 +48,7 @@ public:
         return rdbStorePtr_->Init();
     }
 
-    void Stop()
+    EXPORT void Stop()
     {
         if (rdbStorePtr_) {
             rdbStorePtr_->Stop();
@@ -55,13 +56,13 @@ public:
         rdbStorePtr_ = nullptr;
     }
 
-    std::shared_ptr<MediaLibraryUnistore> GetRdbStore() const
+    EXPORT std::shared_ptr<MediaLibraryUnistore> GetRdbStore() const
     {
         return rdbStorePtr_;
     }
 
     // avoid using the raw rdbstore
-    std::shared_ptr<MediaLibraryRdbStore> GetRdbStoreRaw() const
+    EXPORT std::shared_ptr<MediaLibraryRdbStore> GetRdbStoreRaw() const
     {
         return rdbStorePtr_;
     }

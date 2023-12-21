@@ -27,15 +27,16 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryAudioOperations : public MediaLibraryAssetOperations {
 public:
-    static int32_t Create(MediaLibraryCommand &cmd);
-    static std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
+    EXPORT static int32_t Create(MediaLibraryCommand &cmd);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
-    static int32_t Update(MediaLibraryCommand &cmd);
-    static int32_t Delete(MediaLibraryCommand &cmd);
-    static int32_t Open(MediaLibraryCommand &cmd, const std::string &mode);
-    static int32_t Close(MediaLibraryCommand &cmd);
+    EXPORT static int32_t Update(MediaLibraryCommand &cmd);
+    EXPORT static int32_t Delete(MediaLibraryCommand &cmd);
+    EXPORT static int32_t Open(MediaLibraryCommand &cmd, const std::string &mode);
+    EXPORT static int32_t Close(MediaLibraryCommand &cmd);
     static int32_t TrashAging(std::shared_ptr<int> countPtr = nullptr);
 
 private:

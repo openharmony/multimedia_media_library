@@ -29,18 +29,19 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryPhotoOperations : public MediaLibraryAssetOperations {
 public:
-    static int32_t Create(MediaLibraryCommand &cmd);
-    static std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
+    EXPORT static int32_t Create(MediaLibraryCommand &cmd);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
-    static int32_t Update(MediaLibraryCommand &cmd);
-    static int32_t Delete(MediaLibraryCommand &cmd);
-    static int32_t Open(MediaLibraryCommand &cmd, const std::string &mode);
-    static int32_t Close(MediaLibraryCommand &cmd);
-    static int32_t CommitEditInsert(MediaLibraryCommand &cmd);
-    static int32_t RevertToOrigin(MediaLibraryCommand &cmd);
-    static void DeleteRevertMessage(const std::string &path);
+    EXPORT static int32_t Update(MediaLibraryCommand &cmd);
+    EXPORT static int32_t Delete(MediaLibraryCommand &cmd);
+    EXPORT static int32_t Open(MediaLibraryCommand &cmd, const std::string &mode);
+    EXPORT static int32_t Close(MediaLibraryCommand &cmd);
+    EXPORT static int32_t CommitEditInsert(MediaLibraryCommand &cmd);
+    EXPORT static int32_t RevertToOrigin(MediaLibraryCommand &cmd);
+    EXPORT static void DeleteRevertMessage(const std::string &path);
 
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
@@ -71,14 +72,14 @@ public:
 };
 class PhotoEditingRecord {
 public:
-    explicit PhotoEditingRecord();
-    static std::shared_ptr<PhotoEditingRecord> GetInstance();
+    EXPORT explicit PhotoEditingRecord();
+    EXPORT static std::shared_ptr<PhotoEditingRecord> GetInstance();
 
-    bool StartCommitEdit(int32_t fileId);
-    void EndCommitEdit(int32_t fileId);
-    bool StartRevert(int32_t fileId);
-    void EndRevert(int32_t fileId);
-    bool IsInEditOperation(int32_t fileId);
+    EXPORT bool StartCommitEdit(int32_t fileId);
+    EXPORT void EndCommitEdit(int32_t fileId);
+    EXPORT bool StartRevert(int32_t fileId);
+    EXPORT void EndRevert(int32_t fileId);
+    EXPORT bool IsInEditOperation(int32_t fileId);
 
 private:
     static std::mutex mutex_;

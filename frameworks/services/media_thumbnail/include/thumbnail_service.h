@@ -27,39 +27,39 @@
 #include "userfile_manager_types.h"
 #include "thumbnail_const.h"
 
-#define THUMBNAIL_API_EXPORT __attribute__ ((visibility ("default")))
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class ThumbnailService {
 public:
-    virtual ~ThumbnailService() = default;
-    THUMBNAIL_API_EXPORT static std::shared_ptr<ThumbnailService> GetInstance();
-    THUMBNAIL_API_EXPORT void ReleaseService();
+    EXPORT virtual ~ThumbnailService() = default;
+    EXPORT static std::shared_ptr<ThumbnailService> GetInstance();
+    EXPORT void ReleaseService();
 
-    THUMBNAIL_API_EXPORT int GetThumbnailFd(const std::string &uri, bool isAstc = false);
-    THUMBNAIL_API_EXPORT int32_t LcdAging();
+    EXPORT int GetThumbnailFd(const std::string &uri, bool isAstc = false);
+    EXPORT int32_t LcdAging();
 #ifdef DISTRIBUTED
-    THUMBNAIL_API_EXPORT int32_t LcdDistributeAging(const std::string &udid);
+    EXPORT int32_t LcdDistributeAging(const std::string &udid);
 #endif
-    THUMBNAIL_API_EXPORT int32_t GenerateThumbnails();
-    THUMBNAIL_API_EXPORT void InterruptBgworker();
-    THUMBNAIL_API_EXPORT void StopAllWorker();
+    EXPORT int32_t GenerateThumbnails();
+    EXPORT void InterruptBgworker();
+    EXPORT void StopAllWorker();
 #ifdef DISTRIBUTED
-    THUMBNAIL_API_EXPORT int32_t InvalidateDistributeThumbnail(const std::string &udid);
+    EXPORT int32_t InvalidateDistributeThumbnail(const std::string &udid);
 #endif
-    THUMBNAIL_API_EXPORT int32_t CreateThumbnail(const std::string &uri, const std::string &path,
+    EXPORT int32_t CreateThumbnail(const std::string &uri, const std::string &path,
         bool isSync = false);
-    THUMBNAIL_API_EXPORT void InvalidateThumbnail(const std::string &id, const std::string &tableName,
+    void InvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "");
-    THUMBNAIL_API_EXPORT void Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT void Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
 #ifdef DISTRIBUTED
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
 #endif
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
-    THUMBNAIL_API_EXPORT int32_t GetAgingDataSize(const int64_t &time, int &count);
-    THUMBNAIL_API_EXPORT int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
+    int32_t GetAgingDataSize(const int64_t &time, int &count);
+    int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
 private:
-    ThumbnailService();
+    EXPORT ThumbnailService();
     bool CheckSizeValid();
     int32_t ParseThumbnailParam(const std::string &uri, std::string &fileId, std::string &networkId,
         std::string &tableName);

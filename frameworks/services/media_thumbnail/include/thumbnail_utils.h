@@ -29,57 +29,59 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 struct ThumbRdbOpt {
-    std::shared_ptr<NativeRdb::RdbStore> store;
+    EXPORT std::shared_ptr<NativeRdb::RdbStore> store;
 #ifdef DISTRIBUTED
-    std::shared_ptr<DistributedKv::SingleKvStore> kvStore;
+    EXPORT std::shared_ptr<DistributedKv::SingleKvStore> kvStore;
 #endif
-    std::shared_ptr<AbilityRuntime::Context> context;
-    std::string networkId;
-    std::string path;
-    std::string table;
-    std::string udid;
-    std::string row;
-    std::string uri;
-    Size screenSize;
+    EXPORT std::shared_ptr<AbilityRuntime::Context> context;
+    EXPORT std::string networkId;
+    EXPORT std::string path;
+    EXPORT std::string table;
+    EXPORT std::string udid;
+    EXPORT std::string row;
+    EXPORT std::string uri;
+    EXPORT Size screenSize;
 };
 
 struct ThumbnailData {
-    ThumbnailData() {}
-    virtual ~ThumbnailData()
+    EXPORT ThumbnailData() {}
+    EXPORT virtual ~ThumbnailData()
     {
         source = nullptr;
         thumbnail.clear();
         lcd.clear();
     }
 
-    int mediaType {-1};
-    int64_t dateModified {0};
-    float degrees;
-    std::shared_ptr<PixelMap> source;
-    std::vector<uint8_t> thumbnail;
-    std::vector<uint8_t> thumbAstc;
-    std::vector<uint8_t> lcd;
-    std::string id;
-    std::string cloudId;
-    std::string udid;
-    std::string path;
-    std::string thumbnailKey;
-    std::string lcdKey;
+    EXPORT int mediaType {-1};
+    EXPORT int64_t dateModified {0};
+    EXPORT float degrees;
+    EXPORT std::shared_ptr<PixelMap> source;
+    EXPORT std::vector<uint8_t> thumbnail;
+    EXPORT std::vector<uint8_t> thumbAstc;
+    EXPORT std::vector<uint8_t> lcd;
+    EXPORT std::string id;
+    EXPORT std::string cloudId;
+    EXPORT std::string udid;
+    EXPORT std::string path;
+    EXPORT std::string thumbnailKey;
+    EXPORT std::string lcdKey;
 };
 
 class ThumbnailUtils {
 public:
-    ThumbnailUtils() = delete;
-    ~ThumbnailUtils() = delete;
+    EXPORT ThumbnailUtils() = delete;
+    EXPORT ~ThumbnailUtils() = delete;
     // utils
-    static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size, std::unique_ptr<PixelMap> &pixelMap);
-    static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
+    EXPORT static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size,
+        std::unique_ptr<PixelMap> &pixelMap);
+    EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
         bool isHigh = false, std::shared_ptr<std::string> pathPtr = nullptr, bool isAstc = false);
-    static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
+    EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
     // RDB Store Query
-    static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
         ThumbnailData &data, int &err);
 #ifdef DISTRIBUTED
     static bool QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
@@ -94,29 +96,29 @@ public:
     static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
 #endif
 
-    static bool DeleteOriginImage(ThumbRdbOpt &opts);
+    EXPORT static bool DeleteOriginImage(ThumbRdbOpt &opts);
     // Steps
-    static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true);
+    EXPORT static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true);
     static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
 
     static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
-    static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
 #ifdef DISTRIBUTED
     static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
 #endif
 
     // RDB Store generate and aging
-    static bool QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err);
-    static bool QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err);
-    static bool QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
+    EXPORT static bool QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err);
+    EXPORT static bool QueryDistributeLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err);
+    EXPORT static bool QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
         std::vector<ThumbnailData> &infos, int &err);
 #ifdef DISTRIBUTED
     static bool QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
         std::vector<ThumbnailData> &infos, int &err);
 #endif
-    static bool QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &infos, int &err);
-    static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+    EXPORT static bool QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &infos, int &err);
+    EXPORT static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNoAstcInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
 #ifdef DISTRIBUTED
@@ -124,29 +126,29 @@ public:
 #endif
     static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
         int &err);
-    static bool ResizeThumb(int& width, int& height);
-    static bool ResizeLcd(int& width, int& height);
+    EXPORT static bool ResizeThumb(int& width, int& height);
+    EXPORT static bool ResizeLcd(int& width, int& height);
     static bool IsSupportGenAstc();
 private:
-    static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
     static int ToSaveFile(ThumbnailData &data, const ThumbnailType &type, const std::string &fileName,
         uint8_t *output, const int &writeSize);
     static int SaveFileCreateDir(const std::string &path, const std::string &suffix, std::string &fileName);
-    static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
-    static int64_t UTCTimeMilliSeconds();
-    static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    EXPORT static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
+    EXPORT static int64_t UTCTimeMilliSeconds();
+    EXPORT static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         ThumbnailData &data, int &err);
-    static void ParseStringResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    EXPORT static void ParseStringResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         int index, std::string &data, int &err);
 
-    static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
+    EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     static Size ConvertDecodeSize(const Size &sourceSize, Size &desiredSize, const bool isThumbnail);
-    static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
-    static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
+    EXPORT static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
+    EXPORT static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
     static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
         const bool isThumbnail, Size &desiredSize, uint32_t &errCode);
-    static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
+    EXPORT static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
 
 #ifdef DISTRIBUTED
     // RDB Store

@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class NotifyTaskData : public AsyncTaskData {
 public:
     NotifyTaskData(const std::string &uri, const NotifyType &notifyType, const int albumId, const bool hiddenOnly)
@@ -44,12 +45,12 @@ constexpr size_t MAX_NOTIFY_LIST_SIZE = 32;
 constexpr size_t MNOTIFY_TIME_INTERVAL = 100;
 class MediaLibraryNotify {
 public:
-    static std::shared_ptr<MediaLibraryNotify> GetInstance();
-    virtual ~MediaLibraryNotify();
-    int32_t Notify(
+    EXPORT static std::shared_ptr<MediaLibraryNotify> GetInstance();
+    EXPORT virtual ~MediaLibraryNotify();
+    EXPORT int32_t Notify(
         const std::string &uri, const NotifyType notifyType, const int albumId = 0, bool hiddenOnly = false);
-    int32_t Notify(const std::shared_ptr<FileAsset> &closeAsset);
-    int32_t GetAlbumIdBySubType(const PhotoAlbumSubType subType);
+    EXPORT int32_t Notify(const std::shared_ptr<FileAsset> &closeAsset);
+    EXPORT int32_t GetAlbumIdBySubType(const PhotoAlbumSubType subType);
     static void GetNotifyUris(const NativeRdb::AbsRdbPredicates &predicates, std::vector<std::string> &notifyUris);
 
     static Utils::Timer timer_;

@@ -25,21 +25,22 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryFileOperations {
 public:
-    static int32_t HandleFileOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t HandleFileOperation(MediaLibraryCommand &cmd);
 
-    static int32_t CreateFileOperation(MediaLibraryCommand &cmd);
-    static int32_t CloseFileOperation(MediaLibraryCommand &cmd);
-    static int32_t GetAlbumCapacityOperation(MediaLibraryCommand &cmd);
-    static int32_t ModifyFileOperation(MediaLibraryCommand &cmd);
-    static int32_t CopyFileOperation(MediaLibraryCommand &cmd);
-    static std::shared_ptr<NativeRdb::ResultSet> QueryFileOperation(MediaLibraryCommand &cmd,
+    EXPORT static int32_t CreateFileOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t CloseFileOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t GetAlbumCapacityOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t ModifyFileOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t CopyFileOperation(MediaLibraryCommand &cmd);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryFileOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
 
 private:
-    static std::shared_ptr<NativeRdb::ResultSet> QueryFavFiles(MediaLibraryCommand &cmd);
-    static std::shared_ptr<NativeRdb::ResultSet> QueryTrashFiles(MediaLibraryCommand &cmd);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryFavFiles(MediaLibraryCommand &cmd);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryTrashFiles(MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS

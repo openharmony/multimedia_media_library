@@ -20,16 +20,17 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class UriPermissionOperations {
 public:
-    static int32_t GetUriPermissionMode(const std::string &fileId, const std::string &bundleName,
+    EXPORT static int32_t GetUriPermissionMode(const std::string &fileId, const std::string &bundleName,
         int32_t tableType, std::string &mode);
-    static int32_t CheckUriPermission(const std::string &fileUri, std::string mode);
-    static int32_t HandleUriPermOperations(MediaLibraryCommand &cmd);
-    static int32_t HandleUriPermInsert(MediaLibraryCommand &cmd);
-    static int32_t InsertBundlePermission(const int32_t &fileId, const std::string &bundleName,
+    EXPORT static int32_t CheckUriPermission(const std::string &fileUri, std::string mode);
+    EXPORT static int32_t HandleUriPermOperations(MediaLibraryCommand &cmd);
+    EXPORT static int32_t HandleUriPermInsert(MediaLibraryCommand &cmd);
+    EXPORT static int32_t InsertBundlePermission(const int32_t &fileId, const std::string &bundleName,
         const std::string &mode, const std::string &tableName);
-    static int32_t DeleteBundlePermission(const std::string &fileId, const std::string &bundleName,
+    EXPORT static int32_t DeleteBundlePermission(const std::string &fileId, const std::string &bundleName,
         const std::string &tableName);
 };
 } // Media

@@ -25,23 +25,24 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaScannerManager final {
 public:
-    static std::shared_ptr<MediaScannerManager> GetInstance();
+    EXPORT static std::shared_ptr<MediaScannerManager> GetInstance();
 
-    virtual ~MediaScannerManager() = default;
+    EXPORT virtual ~MediaScannerManager() = default;
 
     void Start();
     void Stop();
     void ScanError();
     void ErrorRecord(const std::string &path = ROOT_MEDIA_DIR);
 
-    int32_t ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
+    EXPORT int32_t ScanFile(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
         MediaLibraryApi api = MediaLibraryApi::API_OLD);
     int32_t ScanFileSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
         MediaLibraryApi api = MediaLibraryApi::API_OLD, bool isForceScan = false);
-    int32_t ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
-    int32_t ScanDirSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
+    EXPORT int32_t ScanDir(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
+    EXPORT int32_t ScanDirSync(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback);
 private:
     MediaScannerManager() = default;
 

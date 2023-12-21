@@ -24,49 +24,50 @@
 namespace OHOS {
 namespace DataShare {
 using DataShare::MediaDataShareExtAbility;
-class MediaDataShareStubImpl : public DataShareStub {
+#define EXPORT __attribute__ ((visibility ("default")))
+class EXPORT MediaDataShareStubImpl : public DataShareStub {
 public:
-    explicit MediaDataShareStubImpl(const std::shared_ptr<MediaDataShareExtAbility>& extension, napi_env env)
+    EXPORT explicit MediaDataShareStubImpl(const std::shared_ptr<MediaDataShareExtAbility>& extension, napi_env env)
         : extension_(extension)
     {
     }
 
-    virtual ~MediaDataShareStubImpl() {}
+    EXPORT virtual ~MediaDataShareStubImpl() {}
 
-    std::vector<std::string> GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter) override;
+    EXPORT std::vector<std::string> GetFileTypes(const Uri &uri, const std::string &mimeTypeFilter) override;
 
-    int OpenFile(const Uri &uri, const std::string &mode) override;
+    EXPORT int OpenFile(const Uri &uri, const std::string &mode) override;
 
-    int OpenRawFile(const Uri &uri, const std::string &mode) override;
+    EXPORT int OpenRawFile(const Uri &uri, const std::string &mode) override;
 
-    int Insert(const Uri &uri, const DataShareValuesBucket &value) override;
+    EXPORT int Insert(const Uri &uri, const DataShareValuesBucket &value) override;
 
-    int InsertExt(const Uri &uri, const DataShareValuesBucket &value, std::string &result) override;
+    EXPORT int InsertExt(const Uri &uri, const DataShareValuesBucket &value, std::string &result) override;
 
-    int Update(const Uri &uri, const DataSharePredicates &predicates,
+    EXPORT int Update(const Uri &uri, const DataSharePredicates &predicates,
         const DataShareValuesBucket &value) override;
 
-    int Delete(const Uri &uri, const DataSharePredicates &predicates) override;
+    EXPORT int Delete(const Uri &uri, const DataSharePredicates &predicates) override;
 
-    std::shared_ptr<DataShareResultSet> Query(const Uri &uri, const DataSharePredicates &predicates,
+    EXPORT std::shared_ptr<DataShareResultSet> Query(const Uri &uri, const DataSharePredicates &predicates,
         std::vector<std::string> &columns, DatashareBusinessError &businessError) override;
 
-    std::string GetType(const Uri &uri) override;
+    EXPORT std::string GetType(const Uri &uri) override;
 
-    int BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values) override;
+    EXPORT int BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values) override;
 
-    bool RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
+    EXPORT bool RegisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
 
-    bool UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
+    EXPORT bool UnregisterObserver(const Uri &uri, const sptr<AAFwk::IDataAbilityObserver> &dataObserver) override;
 
-    bool NotifyChange(const Uri &uri) override;
+    EXPORT bool NotifyChange(const Uri &uri) override;
 
-    Uri NormalizeUri(const Uri &uri) override;
+    EXPORT Uri NormalizeUri(const Uri &uri) override;
 
-    Uri DenormalizeUri(const Uri &uri) override;
+    EXPORT Uri DenormalizeUri(const Uri &uri) override;
 
 private:
-    std::shared_ptr<MediaDataShareExtAbility> GetOwner();
+    EXPORT std::shared_ptr<MediaDataShareExtAbility> GetOwner();
 
 private:
     std::shared_ptr<MediaDataShareExtAbility> extension_;

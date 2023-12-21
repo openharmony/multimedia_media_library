@@ -59,7 +59,12 @@ ohos_shared_library("media_library") {
     "-Wall",
     "-Werror",
     "-Wno-unused-but-set-variable",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-Os",
   ]
+
+  cflags_cc = [ "-Os" ]
 
   external_deps = [
     "ability_base:zuri",

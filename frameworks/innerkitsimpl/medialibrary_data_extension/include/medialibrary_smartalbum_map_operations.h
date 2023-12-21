@@ -35,16 +35,17 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 constexpr int32_t DEFAULT_ALBUMID = -1;
 constexpr int32_t DEFAULT_ASSETID = -1;
 class MediaLibrarySmartAlbumMapOperations {
 public:
-    static int32_t HandleSmartAlbumMapOperation(MediaLibraryCommand &cmd);
-    static int32_t HandleAddAssetOperation(const int32_t albumId, const int32_t childFileAssetId,
+    EXPORT static int32_t HandleSmartAlbumMapOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t HandleAddAssetOperation(const int32_t albumId, const int32_t childFileAssetId,
         const int32_t childAlbumId, MediaLibraryCommand &cmd);
-    static int32_t HandleRemoveAssetOperation(const int32_t albumId, const int32_t childFileAssetId,
+    EXPORT static int32_t HandleRemoveAssetOperation(const int32_t albumId, const int32_t childFileAssetId,
         MediaLibraryCommand &cmd);
-    static int32_t HandleAgingOperation(std::shared_ptr<int> countPtr = nullptr);
+    EXPORT static int32_t HandleAgingOperation(std::shared_ptr<int> countPtr = nullptr);
     static void SetInterrupt(bool interrupt);
 
 private:
