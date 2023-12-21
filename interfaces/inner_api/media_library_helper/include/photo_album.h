@@ -20,68 +20,69 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class PhotoAlbum {
 public:
-    PhotoAlbum();
-    virtual ~PhotoAlbum();
+    EXPORT PhotoAlbum();
+    EXPORT virtual ~PhotoAlbum();
 
-    void SetAlbumId(const int32_t photoAlbumId);
-    int32_t GetAlbumId() const;
+    EXPORT void SetAlbumId(const int32_t photoAlbumId);
+    EXPORT int32_t GetAlbumId() const;
 
-    void SetPhotoAlbumType(const PhotoAlbumType type);
-    PhotoAlbumType GetPhotoAlbumType() const;
+    EXPORT void SetPhotoAlbumType(const PhotoAlbumType type);
+    EXPORT PhotoAlbumType GetPhotoAlbumType() const;
 
-    void SetPhotoAlbumSubType(const PhotoAlbumSubType subType);
-    PhotoAlbumSubType GetPhotoAlbumSubType() const;
+    EXPORT void SetPhotoAlbumSubType(const PhotoAlbumSubType subType);
+    EXPORT PhotoAlbumSubType GetPhotoAlbumSubType() const;
 
-    void SetAlbumUri(const std::string &uri);
-    const std::string& GetAlbumUri() const;
+    EXPORT void SetAlbumUri(const std::string &uri);
+    EXPORT const std::string& GetAlbumUri() const;
 
-    void SetAlbumName(const std::string &photoAlbumName);
-    const std::string& GetAlbumName() const;
+    EXPORT void SetAlbumName(const std::string &photoAlbumName);
+    EXPORT const std::string& GetAlbumName() const;
 
-    void SetCoverUri(const std::string &coverUri);
-    const std::string& GetCoverUri() const;
+    EXPORT void SetCoverUri(const std::string &coverUri);
+    EXPORT const std::string& GetCoverUri() const;
 
-    void SetDateModified(const int64_t dateModified);
-    int64_t GetDateModified() const;
+    EXPORT void SetDateModified(const int64_t dateModified);
+    EXPORT int64_t GetDateModified() const;
 
-    void SetCount(const int32_t count);
-    int32_t GetCount() const;
+    EXPORT void SetCount(const int32_t count);
+    EXPORT int32_t GetCount() const;
 
-    void SetImageCount(const int32_t count);
-    int32_t GetImageCount() const;
+    EXPORT void SetImageCount(const int32_t count);
+    EXPORT int32_t GetImageCount() const;
 
-    void SetVideoCount(const int32_t count);
-    int32_t GetVideoCount() const;
+    EXPORT void SetVideoCount(const int32_t count);
+    EXPORT int32_t GetVideoCount() const;
 
-    void SetLatitude(const double latitude);
-    double GetLatitude() const;
+    EXPORT void SetLatitude(const double latitude);
+    EXPORT double GetLatitude() const;
 
-    void SetLongitude(const double longitude);
-    double GetLongitude() const;
+    EXPORT void SetLongitude(const double longitude);
+    EXPORT double GetLongitude() const;
 
-    void SetRelativePath(const std::string &logicalRelativePath);
-    const std::string& GetRelativePath() const;
+    EXPORT void SetRelativePath(const std::string &logicalRelativePath);
+    EXPORT const std::string& GetRelativePath() const;
 
-    void SetResultNapiType(const ResultNapiType resultNapiType);
-    ResultNapiType GetResultNapiType() const;
+    EXPORT void SetResultNapiType(const ResultNapiType resultNapiType);
+    EXPORT ResultNapiType GetResultNapiType() const;
 
-    void SetHiddenOnly(const bool hiddenOnly);
-    bool GetHiddenOnly() const;
+    EXPORT void SetHiddenOnly(const bool hiddenOnly);
+    EXPORT bool GetHiddenOnly() const;
 
-    void SetLocationOnly(const bool locationOnly);
-    bool GetLocationOnly() const;
+    EXPORT void SetLocationOnly(const bool locationOnly);
+    EXPORT bool GetLocationOnly() const;
 
-    void SetDisplayLevel(const int32_t displayLevel);
-    int32_t GetDisplayLevel() const;
+    EXPORT void SetDisplayLevel(const int32_t displayLevel);
+    EXPORT int32_t GetDisplayLevel() const;
 
-    static bool IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
-    static bool IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
-    static bool CheckPhotoAlbumType(const PhotoAlbumType albumType);
-    static bool CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType);
-    static bool IsSmartPortraitPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
-    static bool IsSmartClassifyAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
+    EXPORT static bool IsUserPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
+    EXPORT static bool IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
+    EXPORT static bool CheckPhotoAlbumType(const PhotoAlbumType albumType);
+    EXPORT static bool CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType);
+    EXPORT static bool IsSmartPortraitPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
+    EXPORT static bool IsSmartClassifyAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
 
 private:
     int32_t albumId_;

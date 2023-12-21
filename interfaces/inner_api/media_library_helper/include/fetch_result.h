@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 /**
  * @brief Class for returning the data cursor to application.
  *
@@ -39,37 +40,37 @@ namespace Media {
 template <class T>
 class FetchResult {
 public:
-    explicit FetchResult(const std::shared_ptr<DataShare::DataShareResultSet> &resultset);
-    FetchResult();
-    virtual ~FetchResult();
+    EXPORT explicit FetchResult(const std::shared_ptr<DataShare::DataShareResultSet> &resultset);
+    EXPORT FetchResult();
+    EXPORT virtual ~FetchResult();
 
-    void Close();
-    int32_t GetCount();
-    bool IsAtLastRow();
-    void SetInfo(unique_ptr<FetchResult<T>> &fetch);
-    void SetNetworkId(const string &networkId);
-    void SetResultNapiType(const ResultNapiType napiType);
-    void SetFetchResType(const FetchResType resType);
-    void SetHiddenOnly(const bool hiddenOnly);
-    void SetLocationOnly(const bool locationOnly);
+    EXPORT void Close();
+    EXPORT int32_t GetCount();
+    EXPORT bool IsAtLastRow();
+    EXPORT void SetInfo(unique_ptr<FetchResult<T>> &fetch);
+    EXPORT void SetNetworkId(const string &networkId);
+    EXPORT void SetResultNapiType(const ResultNapiType napiType);
+    EXPORT void SetFetchResType(const FetchResType resType);
+    EXPORT void SetHiddenOnly(const bool hiddenOnly);
+    EXPORT void SetLocationOnly(const bool locationOnly);
 
-    std::string GetNetworkId();
-    ResultNapiType GetResultNapiType();
-    std::shared_ptr<DataShare::DataShareResultSet> &GetDataShareResultSet();
-    FetchResType GetFetchResType();
-    bool GetHiddenOnly();
-    bool GetLocationOnly();
+    EXPORT std::string GetNetworkId();
+    EXPORT ResultNapiType GetResultNapiType();
+    EXPORT std::shared_ptr<DataShare::DataShareResultSet> &GetDataShareResultSet();
+    EXPORT FetchResType GetFetchResType();
+    EXPORT bool GetHiddenOnly();
+    EXPORT bool GetLocationOnly();
 
-    std::unique_ptr<T> GetObjectAtPosition(int32_t index);
-    std::unique_ptr<T> GetFirstObject();
-    std::unique_ptr<T> GetObjectFromRdb(std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx);
-    std::unique_ptr<T> GetNextObject();
-    std::unique_ptr<T> GetLastObject();
-    std::unique_ptr<T> GetObject();
+    EXPORT std::unique_ptr<T> GetObjectAtPosition(int32_t index);
+    EXPORT std::unique_ptr<T> GetFirstObject();
+    EXPORT std::unique_ptr<T> GetObjectFromRdb(std::shared_ptr<NativeRdb::ResultSet> &resultSet, int idx);
+    EXPORT std::unique_ptr<T> GetNextObject();
+    EXPORT std::unique_ptr<T> GetLastObject();
+    EXPORT std::unique_ptr<T> GetObject();
 
 private:
-    std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::ResultSet> &resultSet);
-    std::variant<int32_t, int64_t, std::string, double> GetRowValFromColumn(std::string columnName,
+    EXPORT std::unique_ptr<T> GetObject(std::shared_ptr<NativeRdb::ResultSet> &resultSet);
+    EXPORT std::variant<int32_t, int64_t, std::string, double> GetRowValFromColumn(std::string columnName,
         ResultSetDataType dataType, std::shared_ptr<NativeRdb::ResultSet> &resultSet);
     std::variant<int32_t, int64_t, std::string, double> GetValByIndex(int32_t index, ResultSetDataType dataType,
         std::shared_ptr<NativeRdb::ResultSet> &resultSet);

@@ -22,17 +22,18 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MimeTypeUtils {
 public:
-    MimeTypeUtils(const MimeTypeUtils&) = delete;
-    MimeTypeUtils(MimeTypeUtils&&) = delete;
-    MimeTypeUtils& operator=(const MimeTypeUtils&) = delete;
-    MimeTypeUtils& operator=(MimeTypeUtils&&) = delete;
-    static int32_t InitMimeTypeMap();
-    static std::string GetMimeTypeFromExtension(const std::string &extension);
-    static std::string GetMimeTypeFromExtension(const std::string &extension,
+    EXPORT MimeTypeUtils(const MimeTypeUtils&) = delete;
+    EXPORT MimeTypeUtils(MimeTypeUtils&&) = delete;
+    EXPORT MimeTypeUtils& operator=(const MimeTypeUtils&) = delete;
+    EXPORT MimeTypeUtils& operator=(MimeTypeUtils&&) = delete;
+    EXPORT static int32_t InitMimeTypeMap();
+    EXPORT static std::string GetMimeTypeFromExtension(const std::string &extension);
+    EXPORT static std::string GetMimeTypeFromExtension(const std::string &extension,
         const std::unordered_map<std::string, std::vector<std::string>> &mimeTypeMap);
-    static MediaType GetMediaTypeFromMimeType(const std::string &mimeType);
+    EXPORT static MediaType GetMediaTypeFromMimeType(const std::string &mimeType);
 
 private:
     static void CreateMapFromJson();

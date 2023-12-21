@@ -25,6 +25,7 @@
 
 namespace OHOS {
 namespace Media {
+#define COMPILE_HIDDEN __attribute__ ((visibility ("hidden")))
 const std::string PERMISSION_NAME_READ_MEDIA = "ohos.permission.READ_MEDIA";
 const std::string PERMISSION_NAME_WRITE_MEDIA = "ohos.permission.WRITE_MEDIA";
 const std::string PERMISSION_NAME_MEDIA_LOCATION = "ohos.permission.MEDIA_LOCATION";
@@ -56,8 +57,8 @@ public:
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
-    static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
-    static std::mutex bundleMgrMutex_;
+    COMPILE_HIDDEN static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
+    COMPILE_HIDDEN static std::mutex bundleMgrMutex_;
 };
 }  // namespace Media
 }  // namespace OHOS

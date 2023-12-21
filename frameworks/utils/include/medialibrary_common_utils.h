@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace Media {
+#define COMPILE_HIDDEN __attribute__ ((visibility ("hidden")))
 class MediaLibraryCommonUtils {
 public:
     static int32_t GenKeySHA256(const std::vector<uint8_t> &input, std::string &key);
@@ -30,8 +31,8 @@ public:
     static bool CheckWhereClause(const std::string &whereClause);
     static void AppendSelections(std::string &selections);
 private:
-    MediaLibraryCommonUtils() = delete;
-    ~MediaLibraryCommonUtils() = delete;
+    COMPILE_HIDDEN MediaLibraryCommonUtils() = delete;
+    COMPILE_HIDDEN ~MediaLibraryCommonUtils() = delete;
 
     static void Char2Hex(const unsigned char *data, const size_t len, std::string &hexStr);
     static int32_t GenKey(const unsigned char *data, const size_t len, std::string &key);

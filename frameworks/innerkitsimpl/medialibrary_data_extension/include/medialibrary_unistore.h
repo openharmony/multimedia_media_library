@@ -27,41 +27,42 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryUnistore {
 public:
-    MediaLibraryUnistore() = default;
-    virtual ~MediaLibraryUnistore() = default;
+    EXPORT MediaLibraryUnistore() = default;
+    EXPORT virtual ~MediaLibraryUnistore() = default;
 
-    virtual int32_t Init() = 0;
-    virtual void Stop() = 0;
+    EXPORT virtual int32_t Init() = 0;
+    EXPORT virtual void Stop() = 0;
 
-    virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) = 0;
-    virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &rowId) = 0;
-    virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &rowId) = 0;
-    virtual std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
+    EXPORT virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) = 0;
+    EXPORT virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &rowId) = 0;
+    EXPORT virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &rowId) = 0;
+    EXPORT virtual std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns)
     {
         return nullptr;
     }
     
-    virtual bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
+    EXPORT virtual bool SyncPullTable(const std::string &bundleName, const std::string &tableName,
         int32_t rowId, std::vector<std::string> &devices)
     {
         return false;
     }
 
-    virtual bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
+    EXPORT virtual bool SyncPushTable(const std::string &bundleName, const std::string &tableName,
         int32_t rowId, std::vector<std::string> &devices, bool isBlock = false)
     {
         return false;
     }
 
-    virtual int32_t ExecuteSql(const std::string &sql)
+    EXPORT virtual int32_t ExecuteSql(const std::string &sql)
     {
         return NativeRdb::E_NOT_SUPPORT;
     }
 
-    virtual std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
+    EXPORT virtual std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>())
     {
         return nullptr;

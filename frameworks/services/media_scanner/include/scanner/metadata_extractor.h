@@ -28,18 +28,19 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MetadataExtractor {
 public:
-    static int32_t Extract(std::unique_ptr<Metadata> &data);
-    static int32_t ExtractAVMetadata(std::unique_ptr<Metadata> &data);
-    static int32_t ExtractImageMetadata(std::unique_ptr<Metadata> &data);
+    EXPORT static int32_t Extract(std::unique_ptr<Metadata> &data);
+    EXPORT static int32_t ExtractAVMetadata(std::unique_ptr<Metadata> &data);
+    EXPORT static int32_t ExtractImageMetadata(std::unique_ptr<Metadata> &data);
     static int32_t ExtractImageExif(std::unique_ptr<ImageSource> &imageSource, std::unique_ptr<Metadata> &data);
 
 private:
     MetadataExtractor() = delete;
     ~MetadataExtractor() = delete;
 
-    static void FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
+    EXPORT static void FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
         std::unique_ptr<Metadata> &data);
 };
 } // namespace Media

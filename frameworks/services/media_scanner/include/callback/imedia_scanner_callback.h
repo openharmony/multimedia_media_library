@@ -20,9 +20,10 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class IMediaScannerCallback {
 public:
-    virtual ~IMediaScannerCallback() = default;
+    EXPORT virtual ~IMediaScannerCallback() = default;
 
     /**
      * @brief OnScanFinished will be executed when client receives callback from service after scan is finished/error
@@ -31,7 +32,7 @@ public:
      * @param uri file uri generated after database updation. For scanDir(), uri will be empty
      * @param path The path which was requested for scanning
      */
-    virtual int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) = 0;
+    EXPORT virtual int32_t OnScanFinished(const int32_t status, const std::string &uri, const std::string &path) = 0;
 };
 } // namespace Media
 } // namespace OHOS

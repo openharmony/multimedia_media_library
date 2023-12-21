@@ -40,23 +40,24 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 static const std::string ALBUM_NAPI_CLASS_NAME = "Album";
 static const std::string USERFILEMGR_ALBUM_NAPI_CLASS_NAME = "UserFileMgrAlbum";
 static const std::string PHOTOACCESSHELPER_ALBUM_NAPI_CLASS_NAME = "PhotoAccessHelperAlbum";
 
 class AlbumNapi {
 public:
-    static napi_value Init(napi_env env, napi_value exports);
-    static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static napi_value UserFileMgrInit(napi_env env, napi_value exports);
+    EXPORT static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
     static napi_value CreateAlbumNapi(napi_env env, std::unique_ptr<AlbumAsset> &albumData);
     int32_t GetAlbumId() const;
     std::string GetAlbumName() const;
     std::string GetAlbumPath() const;
     std::string GetAlbumUri() const;
     std::string GetNetworkId() const;
-    AlbumNapi();
-    ~AlbumNapi();
+    EXPORT AlbumNapi();
+    EXPORT ~AlbumNapi();
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
     PhotoAlbumType GetAlbumType() const;
@@ -64,30 +65,30 @@ public:
 #endif
 
 private:
-    static void AlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
-    static napi_value AlbumNapiConstructor(napi_env env, napi_callback_info info);
-    void SetAlbumNapiProperties();
+    EXPORT static void AlbumNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
+    EXPORT static napi_value AlbumNapiConstructor(napi_env env, napi_callback_info info);
+    EXPORT void SetAlbumNapiProperties();
 
-    static napi_value JSGetAlbumId(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumDateModified(napi_env env, napi_callback_info info);
-    static napi_value JSGetCount(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumRelativePath(napi_env env, napi_callback_info info);
-    static napi_value JSGetCoverUri(napi_env env, napi_callback_info info);
-    static napi_value JSCommitModify(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumFileAssets(napi_env env, napi_callback_info info);
-    static napi_value JSAlbumNameSetter(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumId(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumDateModified(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetCount(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumRelativePath(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetCoverUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSCommitModify(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumFileAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSAlbumNameSetter(napi_env env, napi_callback_info info);
 
-    static napi_value JSGetAlbumPath(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumVirtual(napi_env env, napi_callback_info info);
-    static napi_value JSSetAlbumPath(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumPath(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumVirtual(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetAlbumPath(napi_env env, napi_callback_info info);
 
-    static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrGetAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
 
-    static napi_value PhotoAccessHelperGetAssets(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
 
     napi_env env_;
 

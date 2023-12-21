@@ -23,14 +23,15 @@
 #include "userfile_manager_types.h"
 
 namespace OHOS::Media {
-const std::string MEDIA_FILEMODE_READONLY = "r";
-const std::string MEDIA_FILEMODE_WRITEONLY = "w";
-const std::string MEDIA_FILEMODE_READWRITE = "rw";
-const std::string MEDIA_FILEMODE_WRITETRUNCATE = "wt";
-const std::string MEDIA_FILEMODE_WRITEAPPEND = "wa";
-const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
-const std::string MEDIA_FILEMODE_READWRITEAPPEND = "rwa";
-const std::unordered_set<std::string> MEDIA_OPEN_MODES = {
+#define EXPORT __attribute__ ((visibility ("default")))
+EXPORT const std::string MEDIA_FILEMODE_READONLY = "r";
+EXPORT const std::string MEDIA_FILEMODE_WRITEONLY = "w";
+EXPORT const std::string MEDIA_FILEMODE_READWRITE = "rw";
+EXPORT const std::string MEDIA_FILEMODE_WRITETRUNCATE = "wt";
+EXPORT const std::string MEDIA_FILEMODE_WRITEAPPEND = "wa";
+EXPORT const std::string MEDIA_FILEMODE_READWRITETRUNCATE = "rwt";
+EXPORT const std::string MEDIA_FILEMODE_READWRITEAPPEND = "rwa";
+EXPORT const std::unordered_set<std::string> MEDIA_OPEN_MODES = {
     MEDIA_FILEMODE_READONLY,
     MEDIA_FILEMODE_WRITEONLY,
     MEDIA_FILEMODE_READWRITE,
@@ -49,20 +50,20 @@ constexpr int CAMERA_SHOT_KEY_SIZE = 30;
 constexpr int64_t MSEC_TO_SEC = 1e3;
 constexpr int64_t MSEC_TO_NSEC = 1e6;
 
-enum TrashType {
+enum EXPORT TrashType {
     NOT_TRASHED = 0,
     TRASHED_ASSET,
     TRASHED_DIR,
     TRASHED_DIR_CHILD
 };
 
-enum PortraitPages : int32_t {
+enum EXPORT PortraitPages : int32_t {
     UNFAVORITE_PAGE = 0,
     FIRST_PAGE,
     SECOND_PAGE,
     FAVORITE_PAGE
 };
-const std::unordered_set<int32_t> PORTRAIT_PAGE_MODE = {
+EXPORT const std::unordered_set<int32_t> PORTRAIT_PAGE_MODE = {
     PortraitPages::FIRST_PAGE,
     PortraitPages::SECOND_PAGE,
     PortraitPages::FAVORITE_PAGE,
@@ -77,68 +78,68 @@ const std::unordered_set<int32_t> PORTRAIT_PAGE_MODE = {
  */
 class MediaFileUtils {
 public:
-    static bool IsFileExists(const std::string &fileName);
-    static bool IsDirEmpty(const std::string &path);
-    static bool CreateFile(const std::string &filePath);
-    static bool DeleteFile(const std::string &fileName);
-    static bool DeleteDir(const std::string &dirName);
-    static std::string GetFileName(const std::string &filePath);
-    static std::string GetParentPath(const std::string &path);
-    static std::string GetTitleFromDisplayName(const std::string &displayName);
-    static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
-    static bool MoveFile(const std::string &oldPath, const std::string &newPath);
-    static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
-    static bool WriteStrToFile(const std::string &filePath, const std::string &str);
-    static bool CopyFile(int32_t rfd, int32_t wfd);
-    static bool RenameDir(const std::string &oldPath, const std::string &newPath);
-    static bool CreateDirectory(const std::string &dirPath, std::shared_ptr<int> errCodePtr = nullptr);
-    static int32_t CheckAlbumName(const std::string &albumName);
-    static int32_t CheckDentryName(const std::string &dentryName);
-    static int32_t CheckDisplayName(const std::string &displayName);
-    static int32_t CheckFileDisplayName(const std::string &displayName);
-    static int32_t CheckRelativePath(const std::string &relativePath);
-    static void FormatRelativePath(std::string &relativePath);
-    static void GetRootDirFromRelativePath(const std::string &relativePath, std::string &rootDir);
-    static int64_t GetAlbumDateModified(const std::string &albumPath);
-    static int64_t UTCTimeSeconds();
-    static int64_t UTCTimeMilliSeconds();
-    static std::string GetIdFromUri(const std::string &uri);
-    static std::string GetNetworkIdFromUri(const std::string &uri);
-    static std::string UpdatePath(const std::string &path, const std::string &uri);
-    static MediaType GetMediaType(const std::string &filePath);
-    static std::string SplitByChar(const std::string &str, const char split);
-    static std::string GetExtensionFromPath(const std::string &path);
-    static int32_t OpenFile(const std::string &path, const std::string &mode);
-    static int32_t CreateAsset(const std::string &filePath);
-    static int32_t ModifyAsset(const std::string &oldPath, const std::string &newPath);
-    static int32_t OpenAsset(const std::string &filePath, const std::string &mode);
-    static int32_t CloseAsset(int32_t fd);
-    static std::string GetMediaTypeUri(MediaType mediaType);
-    static std::string GetMediaTypeUriV10(MediaType mediaType);
-    static bool CheckMode(const std::string &mode);
-    static size_t FindIgnoreCase(const std::string &str, const std::string &key);
-    static int64_t GetVirtualIdByType(int32_t id, MediaType type);
-    static double GetRealIdByTable(int32_t virtualId, const std::string &tableName);
-    static std::string GetVirtualUriFromRealUri(const std::string &uri, const std::string &extrUri = "");
-    static std::string GetRealUriFromVirtualUri(const std::string &uri);
-    static bool StartsWith(const std::string &str, const std::string &prefix);
-    static void UriAppendKeyValue(std::string &uri, const std::string &key, std::string value = "10");
-    static std::string GetExtraUri(const std::string &displayName, const std::string &path,
+    EXPORT static bool IsFileExists(const std::string &fileName);
+    EXPORT static bool IsDirEmpty(const std::string &path);
+    EXPORT static bool CreateFile(const std::string &filePath);
+    EXPORT static bool DeleteFile(const std::string &fileName);
+    EXPORT static bool DeleteDir(const std::string &dirName);
+    EXPORT static std::string GetFileName(const std::string &filePath);
+    EXPORT static std::string GetParentPath(const std::string &path);
+    EXPORT static std::string GetTitleFromDisplayName(const std::string &displayName);
+    EXPORT static bool IsDirectory(const std::string &dirName, std::shared_ptr<int> errCodePtr = nullptr);
+    EXPORT static bool MoveFile(const std::string &oldPath, const std::string &newPath);
+    EXPORT static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
+    EXPORT static bool WriteStrToFile(const std::string &filePath, const std::string &str);
+    EXPORT static bool CopyFile(int32_t rfd, int32_t wfd);
+    EXPORT static bool RenameDir(const std::string &oldPath, const std::string &newPath);
+    EXPORT static bool CreateDirectory(const std::string &dirPath, std::shared_ptr<int> errCodePtr = nullptr);
+    EXPORT static int32_t CheckAlbumName(const std::string &albumName);
+    EXPORT static int32_t CheckDentryName(const std::string &dentryName);
+    EXPORT static int32_t CheckDisplayName(const std::string &displayName);
+    EXPORT static int32_t CheckFileDisplayName(const std::string &displayName);
+    EXPORT static int32_t CheckRelativePath(const std::string &relativePath);
+    EXPORT static void FormatRelativePath(std::string &relativePath);
+    EXPORT static void GetRootDirFromRelativePath(const std::string &relativePath, std::string &rootDir);
+    EXPORT static int64_t GetAlbumDateModified(const std::string &albumPath);
+    EXPORT static int64_t UTCTimeSeconds();
+    EXPORT static int64_t UTCTimeMilliSeconds();
+    EXPORT static std::string GetIdFromUri(const std::string &uri);
+    EXPORT static std::string GetNetworkIdFromUri(const std::string &uri);
+    EXPORT static std::string UpdatePath(const std::string &path, const std::string &uri);
+    EXPORT static MediaType GetMediaType(const std::string &filePath);
+    EXPORT static std::string SplitByChar(const std::string &str, const char split);
+    EXPORT static std::string GetExtensionFromPath(const std::string &path);
+    EXPORT static int32_t OpenFile(const std::string &path, const std::string &mode);
+    EXPORT static int32_t CreateAsset(const std::string &filePath);
+    EXPORT static int32_t ModifyAsset(const std::string &oldPath, const std::string &newPath);
+    EXPORT static int32_t OpenAsset(const std::string &filePath, const std::string &mode);
+    EXPORT static int32_t CloseAsset(int32_t fd);
+    EXPORT static std::string GetMediaTypeUri(MediaType mediaType);
+    EXPORT static std::string GetMediaTypeUriV10(MediaType mediaType);
+    EXPORT static bool CheckMode(const std::string &mode);
+    EXPORT static size_t FindIgnoreCase(const std::string &str, const std::string &key);
+    EXPORT static int64_t GetVirtualIdByType(int32_t id, MediaType type);
+    EXPORT static double GetRealIdByTable(int32_t virtualId, const std::string &tableName);
+    EXPORT static std::string GetVirtualUriFromRealUri(const std::string &uri, const std::string &extrUri = "");
+    EXPORT static std::string GetRealUriFromVirtualUri(const std::string &uri);
+    EXPORT static bool StartsWith(const std::string &str, const std::string &prefix);
+    EXPORT static void UriAppendKeyValue(std::string &uri, const std::string &key, std::string value = "10");
+    EXPORT static std::string GetExtraUri(const std::string &displayName, const std::string &path,
         const bool isNeedEncode = true);
-    static std::string GetUriByExtrConditions(const std::string &prefix, const std::string &fileId,
+    EXPORT static std::string GetUriByExtrConditions(const std::string &prefix, const std::string &fileId,
         const std::string &suffix = "");
-    static std::string Encode(const std::string &uri);
-    static bool CheckDisplayLevel(const int32_t &displayLevel);
+    EXPORT static std::string Encode(const std::string &uri);
+    EXPORT static bool CheckDisplayLevel(const int32_t &displayLevel);
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    static std::string GetTableFromVirtualUri(const std::string &uri);
+    EXPORT static std::string GetTableFromVirtualUri(const std::string &uri);
 #endif
-    static bool IsUriV10(const std::string &mediaType);
-    static bool IsFileTablePath(const std::string &path);
-    static bool IsPhotoTablePath(const std::string &path);
-    static std::string StrCreateTimeByMilliseconds(const std::string &format, int64_t time);
-    static std::string AddDocsToRelativePath(const std::string &relativePath);
-    static std::string RemoveDocsFromRelativePath(const std::string &relativePath);
-    static int64_t Timespec2Millisecond(const struct timespec &time);
+    EXPORT static bool IsUriV10(const std::string &mediaType);
+    EXPORT static bool IsFileTablePath(const std::string &path);
+    EXPORT static bool IsPhotoTablePath(const std::string &path);
+    EXPORT static std::string StrCreateTimeByMilliseconds(const std::string &format, int64_t time);
+    EXPORT static std::string AddDocsToRelativePath(const std::string &relativePath);
+    EXPORT static std::string RemoveDocsFromRelativePath(const std::string &relativePath);
+    EXPORT static int64_t Timespec2Millisecond(const struct timespec &time);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

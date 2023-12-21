@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 /*
  * ACL extended attributes (xattr) names
  */
@@ -94,7 +95,7 @@ constexpr uint32_t ACL_EA_VERSION = 0x0002;
 constexpr uint32_t ACL_UNDEFINED_ID = (uint32_t)-1;
 constexpr uint32_t THUMB_ACL_GROUP = 2008;
 
-const std::string THUMB_DIR = "/storage/cloud/files/.thumbs/Photo";
+EXPORT const std::string THUMB_DIR = "/storage/cloud/files/.thumbs/Photo";
 /*
  * ACL data structure
  */
@@ -132,13 +133,13 @@ struct AclXattrEntry {
 
 class Acl {
 public:
-    bool IsEmpty();
-    bool IsValid();
-    int InsertEntry(const AclXattrEntry &entry);
-    char *Serialize(size_t &bufSize);
+    EXPORT bool IsEmpty();
+    EXPORT bool IsValid();
+    EXPORT int InsertEntry(const AclXattrEntry &entry);
+    EXPORT char *Serialize(size_t &bufSize);
 
-    static int32_t AclSetDefault();
-    ~Acl();
+    EXPORT static int32_t AclSetDefault();
+    EXPORT ~Acl();
 private:
     void CompareInsertEntry(const AclXattrEntry &entry);
 

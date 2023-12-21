@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 using namespace std;
 /**
  * @brief Data class for album details
@@ -30,28 +31,28 @@ using namespace std;
  */
 class NativeAlbumAsset {
 public:
-    NativeAlbumAsset();
-    virtual ~NativeAlbumAsset();
+    EXPORT NativeAlbumAsset();
+    EXPORT virtual ~NativeAlbumAsset();
 
-    void SetAlbumId(const int32_t albumId);
-    void SetAlbumName(const string albumName);
-    void SetAlbumUri(const string albumUri);
-    void SetAlbumDateModified(const int64_t albumDateModified);
-    void SetCount(const int32_t count);
-    void SetAlbumRelativePath(const string albumRelativePath);
-    void SetCoverUri(const string coverUri);
-    void SetAlbumPath(const string albumPath);
-    int32_t GetAlbumId() const;
-    string GetAlbumName() const;
-    string GetAlbumUri() const;
-    int64_t GetAlbumDateModified() const;
-    int32_t GetCount() const;
-    string GetAlbumRelativePath() const;
-    string GetCoverUri() const;
-    string GetAlbumPath() const;
-    bool CreateAlbumAsset();
-    bool DeleteAlbumAsset(const std::string &albumUri);
-    bool ModifyAlbumAsset(const std::string &albumUri);
+    EXPORT void SetAlbumId(const int32_t albumId);
+    EXPORT void SetAlbumName(const string albumName);
+    EXPORT void SetAlbumUri(const string albumUri);
+    EXPORT void SetAlbumDateModified(const int64_t albumDateModified);
+    EXPORT void SetCount(const int32_t count);
+    EXPORT void SetAlbumRelativePath(const string albumRelativePath);
+    EXPORT void SetCoverUri(const string coverUri);
+    EXPORT void SetAlbumPath(const string albumPath);
+    EXPORT int32_t GetAlbumId() const;
+    EXPORT string GetAlbumName() const;
+    EXPORT string GetAlbumUri() const;
+    EXPORT int64_t GetAlbumDateModified() const;
+    EXPORT int32_t GetCount() const;
+    EXPORT string GetAlbumRelativePath() const;
+    EXPORT string GetCoverUri() const;
+    EXPORT string GetAlbumPath() const;
+    EXPORT bool CreateAlbumAsset();
+    EXPORT bool DeleteAlbumAsset(const std::string &albumUri);
+    EXPORT bool ModifyAlbumAsset(const std::string &albumUri);
 
 private:
     int32_t albumId_;

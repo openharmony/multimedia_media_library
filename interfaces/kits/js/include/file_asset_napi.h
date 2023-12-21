@@ -34,6 +34,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 static const std::string FILE_ASSET_NAPI_CLASS_NAME = "FileAsset";
 static const std::string USERFILEMGR_FILEASSET_NAPI_CLASS_NAME = "UserFileMgrFileAsset";
 static const std::string PHOTOACCESSHELPER_FILEASSET_NAPI_CLASS_NAME = "PhotoAccessHelperFileAsset";
@@ -45,13 +46,13 @@ struct AnalysisSourceInfo {
 
 class FileAssetNapi {
 public:
-    FileAssetNapi();
-    ~FileAssetNapi();
+    EXPORT FileAssetNapi();
+    EXPORT ~FileAssetNapi();
 
-    static napi_value Init(napi_env env, napi_value exports);
-    static napi_value UserFileMgrInit(napi_env env, napi_value exports);
-    static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
-    static napi_value CreateFileAsset(napi_env env, std::unique_ptr<FileAsset> &iAsset);
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static napi_value UserFileMgrInit(napi_env env, napi_value exports);
+    EXPORT static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
+    EXPORT static napi_value CreateFileAsset(napi_env env, std::unique_ptr<FileAsset> &iAsset);
 
     std::string GetFileDisplayName() const;
     std::string GetRelativePath() const;
@@ -73,78 +74,78 @@ public:
     std::shared_ptr<FileAsset> GetFileAssetInstance() const;
 
 private:
-    static void FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
-    static napi_value FileAssetNapiConstructor(napi_env env, napi_callback_info info);
+    EXPORT static void FileAssetNapiDestructor(napi_env env, void *nativeObject, void *finalize_hint);
+    EXPORT static napi_value FileAssetNapiConstructor(napi_env env, napi_callback_info info);
 
-    static napi_value JSGetFileId(napi_env env, napi_callback_info info);
-    static napi_value JSGetFileUri(napi_env env, napi_callback_info info);
-    static napi_value JSGetFileDisplayName(napi_env env, napi_callback_info info);
-    static napi_value JSGetFilePath(napi_env env, napi_callback_info info);
-    static napi_value JSGetMimeType(napi_env env, napi_callback_info info);
-    static napi_value JSGetMediaType(napi_env env, napi_callback_info info);
-    static napi_value JSGetTitle(napi_env env, napi_callback_info info);
-    static napi_value JSGetArtist(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbum(napi_env env, napi_callback_info info);
-    static napi_value JSGetSize(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumId(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
-    static napi_value JSGetDateAdded(napi_env env, napi_callback_info info);
-    static napi_value JSGetDateModified(napi_env env, napi_callback_info info);
-    static napi_value JSGetOrientation(napi_env env, napi_callback_info info);
-    static napi_value JSGetWidth(napi_env env, napi_callback_info info);
-    static napi_value JSGetHeight(napi_env env, napi_callback_info info);
-    static napi_value JSGetDuration(napi_env env, napi_callback_info info);
-    static napi_value JSGetRelativePath(napi_env env, napi_callback_info info);
-    static napi_value JSGetDateTrashed(napi_env env, napi_callback_info info);
-    static napi_value JSSetFileDisplayName(napi_env env, napi_callback_info info);
-    static napi_value JSSetRelativePath(napi_env env, napi_callback_info info);
-    static napi_value JSSetTitle(napi_env env, napi_callback_info info);
-    static napi_value JSSetOrientation(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetFileId(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetFileUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetFileDisplayName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetFilePath(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetMimeType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetMediaType(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetTitle(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetArtist(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbum(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetSize(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumId(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetDateAdded(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetDateModified(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetOrientation(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetWidth(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetHeight(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetDuration(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetRelativePath(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetDateTrashed(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetFileDisplayName(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetRelativePath(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetTitle(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetOrientation(napi_env env, napi_callback_info info);
 
-    static napi_value JSParent(napi_env env, napi_callback_info info);
-    static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
-    static napi_value JSGetDateTaken(napi_env env, napi_callback_info info);
-    static napi_value JSIsDirectory(napi_env env, napi_callback_info info);
-    static napi_value JSCommitModify(napi_env env, napi_callback_info info);
-    static napi_value JSOpen(napi_env env, napi_callback_info info);
-    static napi_value JSClose(napi_env env, napi_callback_info info);
-    static napi_value JSGetThumbnail(napi_env env, napi_callback_info info);
-    static napi_value JSFavorite(napi_env env, napi_callback_info info);
-    static napi_value JSIsFavorite(napi_env env, napi_callback_info info);
-    static napi_value JSTrash(napi_env env, napi_callback_info info);
-    static napi_value JSIsTrash(napi_env env, napi_callback_info info);
-    static napi_value JSGetCount(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSParent(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAlbumUri(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetDateTaken(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSIsDirectory(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSCommitModify(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSOpen(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSClose(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetThumbnail(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSFavorite(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSIsFavorite(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSTrash(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSIsTrash(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetCount(napi_env env, napi_callback_info info);
     void UpdateFileAssetInfo();
-    static napi_value UserFileMgrSet(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrGet(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrOpen(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrClose(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrFavorite(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrGetThumbnail(napi_env env, napi_callback_info info);
-    static napi_value JSGetReadOnlyFd(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrSetHidden(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrSetPending(napi_env env, napi_callback_info info);
-    static napi_value JSGetExif(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrSetUserComment(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrSet(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrGet(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrOpen(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrClose(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrCommitModify(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrFavorite(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrGetThumbnail(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetReadOnlyFd(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrSetHidden(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrSetPending(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetExif(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrSetUserComment(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetAnalysisData(napi_env env, napi_callback_info info);
 
-    static napi_value PhotoAccessHelperOpen(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperClose(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperFavorite(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperRequestPhoto(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperCancelPhotoRequest(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperSetPending(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperSetUserComment(napi_env env, napi_callback_info info);
-    static napi_value UserFileMgrGetJson(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperIsEdited(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperRequestEditData(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperRequestSource(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperCommitEditedAsset(napi_env env, napi_callback_info info);
-    static napi_value PhotoAccessHelperRevertToOriginal(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperOpen(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperClose(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperCommitModify(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperFavorite(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetThumbnail(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperRequestPhoto(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperCancelPhotoRequest(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperSetHidden(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperSetPending(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperSetUserComment(napi_env env, napi_callback_info info);
+    EXPORT static napi_value UserFileMgrGetJson(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperIsEdited(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperRequestEditData(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperRequestSource(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperCommitEditedAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperRevertToOriginal(napi_env env, napi_callback_info info);
     static napi_value GetExports(napi_env &env, napi_value &exports, napi_property_descriptor *file_asset_props,
         int32_t fileAssetPropsSize);
 

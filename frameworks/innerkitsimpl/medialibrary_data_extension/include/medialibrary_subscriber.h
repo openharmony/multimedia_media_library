@@ -23,14 +23,15 @@
 
 namespace OHOS {
 namespace Media {
-class MedialibrarySubscriber : public EventFwk::CommonEventSubscriber {
+#define EXPORT __attribute__ ((visibility ("default")))
+class EXPORT MedialibrarySubscriber : public EventFwk::CommonEventSubscriber {
 public:
-    MedialibrarySubscriber() = default;
-    explicit MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo);
-    static bool Subscribe(void);
-    virtual ~MedialibrarySubscriber() = default;
+    EXPORT MedialibrarySubscriber() = default;
+    EXPORT explicit MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo);
+    EXPORT static bool Subscribe(void);
+    EXPORT virtual ~MedialibrarySubscriber() = default;
 
-    virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
+    EXPORT virtual void OnReceiveEvent(const EventFwk::CommonEventData &eventData) override;
 
 private:
     static const std::vector<std::string> events_;
@@ -38,8 +39,8 @@ private:
     bool isPowerConnected_;
     int32_t agingCount_;
     int64_t lockTime_;
-    void DoBackgroundOperation();
-    void StopBackgroundOperation();
+    EXPORT void DoBackgroundOperation();
+    EXPORT void StopBackgroundOperation();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();
