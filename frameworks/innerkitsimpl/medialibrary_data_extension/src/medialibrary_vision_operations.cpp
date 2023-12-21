@@ -18,9 +18,9 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
-#include "medialibrary_vision_operations.h"
 #include "medialibrary_data_manager.h"
 #include "vision_column.h"
+#include "medialibrary_vision_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
