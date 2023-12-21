@@ -3342,6 +3342,10 @@ napi_value FileAssetNapi::UserFileMgrSetUserComment(napi_env env, napi_callback_
 static napi_value ParseArgsPhotoAccessHelperOpen(napi_env env, napi_callback_info info,
     unique_ptr<FileAssetAsyncContext> &context, bool isReadOnly)
 {
+    if (!isReadOnly && !MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
     size_t minArgs = ARGS_ZERO;
     size_t maxArgs = ARGS_ONE;
     if (!isReadOnly) {
