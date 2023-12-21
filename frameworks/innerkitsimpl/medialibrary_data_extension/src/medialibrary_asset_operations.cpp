@@ -60,6 +60,7 @@
 #include "value_object.h"
 #include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
+#include "medialibrary_vision_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -84,6 +85,9 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
             break;
         case OperationType::COMMIT_EDIT:
             errCode = MediaLibraryPhotoOperations::CommitEditInsert(cmd);
+            if (errCode == E_SUCCESS) {
+                MediaLibraryVisionOperations::EditCommitOperation(cmd);
+            }
             break;
         case OperationType::REVERT_EDIT:
             errCode = MediaLibraryPhotoOperations::RevertToOrigin(cmd);
