@@ -481,8 +481,8 @@ static void GetNapiResFromAsset(napi_env env, FetchFileResultAsyncContext *conte
     if (jsAsset == nullptr) {
         NAPI_ERR_LOG("Failed to get file asset napi object");
         napi_get_undefined(env, &jsContext->data);
-        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
-            "Failed to create js object for FileAsset");
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL,
+            "System inner fail");
     } else {
         jsContext->data = jsAsset;
         napi_get_undefined(env, &jsContext->error);
