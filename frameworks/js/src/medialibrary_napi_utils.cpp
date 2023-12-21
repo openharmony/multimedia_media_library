@@ -628,13 +628,16 @@ void MediaLibraryNapiUtils::HandleError(napi_env env, int error, napi_value &err
         return;
     }
 
-    string errMsg = "operation fail";
+    string errMsg = "System inner fail";
+    int errorOriginal = error;
     if (jsErrMap.count(error) > 0) {
         errMsg = jsErrMap.at(error);
+    } else {
+        error = JS_INNER_FAIL;
     }
     CreateNapiErrorObject(env, errorObj, error, errMsg);
     errMsg = Name + " " + errMsg;
-    NAPI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), error);
+    NAPI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), errorOriginal);
 }
 
 void MediaLibraryNapiUtils::CreateNapiErrorObject(napi_env env, napi_value &errorObj, const int32_t errCode,
