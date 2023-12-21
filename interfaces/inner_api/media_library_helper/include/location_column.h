@@ -44,6 +44,7 @@ const std::string SUB_THOROUGHFARE = "sub_thoroughfare";
 const std::string FEATURE_NAME = "feature_name";
 const std::string CITY_ID = "city_id";
 const std::string CITY_NAME = "city_name";
+const std::string ADDRESS_DESCRIPTION = "address_description";
 const std::string DICTIONARY_INDEX = "dictionary_index";
 const std::string KNOWLEDG_INDEX = "knowledge_index";
 const std::string LOCATION_CITY_NAME_INDEX = "idx_city_name_index";
@@ -63,7 +64,9 @@ const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     SUB_LOCALITY + " TEXT, " +
     THOROUGHFARE + " TEXT, " +
     SUB_THOROUGHFARE + " TEXT, " +
-    FEATURE_NAME + " TEXT) ";
+    FEATURE_NAME + " TEXT, " +
+    CITY_NAME + " TEXT, " +
+    ADDRESS_DESCRIPTION + " TEXT) ";
 
 const std::string CREATE_GEO_DICTIONARY_TABLE =
     "CREATE TABLE IF NOT EXISTS " + GEO_DICTIONARY_TABLE + " ( " +

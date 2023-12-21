@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 50;
+const int32_t MEDIA_RDB_VERSION = 51;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -76,6 +76,7 @@ enum {
     VERSION_ADD_MULTISTAGES_CAPTURE = 48,
     VERSION_UPDATE_DATE_TO_MILLISECOND = 49,
     VERSION_ADD_HAS_ASTC = 50,
+    VERSION_ADD_ADDRESS_DESCRIPTION = 51,
 };
 
 enum {
