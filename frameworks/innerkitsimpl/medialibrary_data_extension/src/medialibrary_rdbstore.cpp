@@ -1874,14 +1874,15 @@ void UpdateMillisecondDate(RdbStore &store)
         "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " +
         MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + "*1000," +
         MediaColumn::MEDIA_DATE_MODIFIED + " = " + MediaColumn::MEDIA_DATE_MODIFIED + "*1000," +
-        MediaColumn::MEDIA_DATE_TRASHED + " = " + MediaColumn::MEDIA_DATE_TRASHED + "*1000;" +
+        MediaColumn::MEDIA_DATE_TRASHED + " = " + MediaColumn::MEDIA_DATE_TRASHED + "*1000;",
         "UPDATE " + AudioColumn::AUDIOS_TABLE + " SET " +
         MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + "*1000," +
         MediaColumn::MEDIA_DATE_MODIFIED + " = " + MediaColumn::MEDIA_DATE_MODIFIED + "*1000," +
-        MediaColumn::MEDIA_DATE_TRASHED + " = " + MediaColumn::MEDIA_DATE_TRASHED + "*1000;" +
+        MediaColumn::MEDIA_DATE_TRASHED + " = " + MediaColumn::MEDIA_DATE_TRASHED + "*1000;",
         "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
-        MediaColumn::MEDIA_DATE_MODIFIED + " = " +  MediaColumn::MEDIA_DATE_MODIFIED + "*1000;" +
-        "UPDATE Files SET" + MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + "*1000," +
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " +  MediaColumn::MEDIA_DATE_MODIFIED + "*1000;",
+        "UPDATE " + MEDIALIBRARY_TABLE + " SET " +
+        MediaColumn::MEDIA_DATE_ADDED + " = " + MediaColumn::MEDIA_DATE_ADDED + "*1000," +
         MediaColumn::MEDIA_DATE_MODIFIED + " = " + MediaColumn::MEDIA_DATE_MODIFIED + "*1000;",
     };
     ExecSqls(updateSql, store);
@@ -1997,7 +1998,7 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_IMAGE_VIDEO_COUNT) {
         AddImageVideoCount(store);
     }
-    
+
     if (oldVersion < VERSION_ADD_SCHPT_HIDDEN_TIME_INDEX) {
         AddSCHPTHiddenTimeIndex(store);
     }
@@ -2044,7 +2045,7 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_REOMOVE_SOURCE_ALBUM_TO_ANALYSIS) {
         RemoveSourceAlbumToAnalysis(store);
     }
-    
+
     if (oldVersion < VERSION_UPDATE_DATE_TO_MILLISECOND) {
         UpdateMillisecondDate(store);
     }
