@@ -103,7 +103,7 @@ public:
     EXPORT static int64_t GetAlbumDateModified(const std::string &albumPath);
     EXPORT static int64_t UTCTimeSeconds();
     EXPORT static int64_t UTCTimeMilliSeconds();
-    EXPORT static int64_t UTCTimeMilliSeconds();
+    EXPORT static int64_t UTCTimeNanoSeconds();
     EXPORT static std::string GetIdFromUri(const std::string &uri);
     EXPORT static std::string GetNetworkIdFromUri(const std::string &uri);
     EXPORT static std::string UpdatePath(const std::string &path, const std::string &uri);

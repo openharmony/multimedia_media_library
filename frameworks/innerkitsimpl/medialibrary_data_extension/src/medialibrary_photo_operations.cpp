@@ -1387,10 +1387,10 @@ int32_t MediaLibraryPhotoOperations::ParseMediaAssetEditData(MediaLibraryCommand
         "Failed to get edit data");
 
     nlohmann::json editDataJson;
-    editDataJson["compatibleFormat"] = compatibleFormat;
-    editDataJson["formatVersion"] = formatVersion;
-    editDataJson["data"] = data;
-    editDataJson["appId"] = cmd.GetBundleName();;
+    editDataJson[COMPATIBLE_FORMAT] = compatibleFormat;
+    editDataJson[FORMAT_VERSION] = formatVersion;
+    editDataJson[EDIT_DATA] = data;
+    editDataJson[APP_ID] = cmd.GetBundleName();;
     editData = editDataJson.dump();
     return E_OK;
 }

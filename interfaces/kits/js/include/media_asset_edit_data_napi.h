@@ -23,25 +23,28 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaAssetEditDataNapi {
 public:
-    MediaAssetEditDataNapi() = default;
-    virtual ~MediaAssetEditDataNapi() = default;
+    EXPORT MediaAssetEditDataNapi() = default;
+    EXPORT virtual ~MediaAssetEditDataNapi() = default;
+
+    EXPORT static napi_value Init(napi_env env, napi_value exports);
+    EXPORT static napi_value CreateMediaAssetEditData(napi_env env, const std::string& compatibleFormat,
+        const std::string& formatVersion, const std::string& data);
 
     std::shared_ptr<MediaAssetEditData> GetMediaAssetEditData() const;
 
-    static napi_value Init(napi_env env, napi_value exports);
-
 private:
-    static napi_value Constructor(napi_env env, napi_callback_info info);
-    static void Destructor(napi_env env, void* nativeObject, void* finalizeHint);
+    EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
+    EXPORT static void Destructor(napi_env env, void* nativeObject, void* finalizeHint);
 
-    static napi_value JSGetCompatibleFormat(napi_env env, napi_callback_info info);
-    static napi_value JSGetFormatVersion(napi_env env, napi_callback_info info);
-    static napi_value JSGetData(napi_env env, napi_callback_info info);
-    static napi_value JSSetCompatibleFormat(napi_env env, napi_callback_info info);
-    static napi_value JSSetFormatVersion(napi_env env, napi_callback_info info);
-    static napi_value JSSetData(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetCompatibleFormat(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetFormatVersion(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetData(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetCompatibleFormat(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetFormatVersion(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetData(napi_env env, napi_callback_info info);
 
     std::string GetCompatibleFormat() const;
     void SetCompatibleFormat(const std::string& compatibleFormat);

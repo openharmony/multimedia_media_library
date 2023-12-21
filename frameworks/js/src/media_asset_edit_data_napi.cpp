@@ -88,6 +88,27 @@ void MediaAssetEditDataNapi::Destructor(napi_env env, void* nativeObject, void* 
     }
 }
 
+napi_value MediaAssetEditDataNapi::CreateMediaAssetEditData(napi_env env,
+    const string& compatibleFormat, const string& formatVersion, const string& data)
+{
+    napi_value constructor = nullptr;
+    napi_value instance = nullptr;
+    napi_value argv[ARGS_TWO];
+    CHECK_ARGS(env, napi_create_string_utf8(env, compatibleFormat.c_str(),
+        NAPI_AUTO_LENGTH, &(argv[PARAM0])), JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_create_string_utf8(env, formatVersion.c_str(),
+        NAPI_AUTO_LENGTH, &(argv[PARAM1])), JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_get_reference_value(env, constructor_, &constructor), JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_new_instance(env, constructor, ARGS_TWO, argv, &instance), JS_INNER_FAIL);
+    CHECK_COND(env, instance != nullptr, JS_INNER_FAIL);
+
+    MediaAssetEditDataNapi* assetEditData = nullptr;
+    CHECK_ARGS(env, napi_unwrap(env, instance, reinterpret_cast<void**>(&assetEditData)), JS_INNER_FAIL);
+    CHECK_COND(env, assetEditData != nullptr, JS_INNER_FAIL);
+    assetEditData->SetData(data);
+    return instance;
+}
+
 shared_ptr<MediaAssetEditData> MediaAssetEditDataNapi::GetMediaAssetEditData() const
 {
     return editData_;

@@ -57,6 +57,7 @@ class MediaAlbumChangeRequestNapi : public MediaChangeRequestNapi {
 public:
     EXPORT MediaAlbumChangeRequestNapi() = default;
     EXPORT ~MediaAlbumChangeRequestNapi() override = default;
+
     EXPORT static napi_value Init(napi_env env, napi_value exports);
 
     std::shared_ptr<PhotoAlbum> GetPhotoAlbumInstance() const;

@@ -656,6 +656,7 @@ const std::string COMMIT_REQUEST = "commit_request";        // MEDIA_OPERN_KEYWO
 const std::string EDIT_DATA = "edit_data";
 const std::string COMPATIBLE_FORMAT = "compatible_format";
 const std::string FORMAT_VERSION = "format_version";
+const std::string APP_ID = "app_id";
 
 // write cache
 const std::string CACHE_FILE_NAME = "cache_file_name";
