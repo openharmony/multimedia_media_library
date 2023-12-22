@@ -28,6 +28,7 @@ group("test") {
     "unittest/medialibrary_location_test:unittest",
     "unittest/medialibrary_manager_utils_test:unittest",
     "unittest/medialibrary_mimetype_test:unittest",
+    "unittest/medialibrary_multistages_capture_test:unittest",
     "unittest/medialibrary_object_test:unittest",
     "unittest/medialibrary_photo_operations_test:unittest",
     "unittest/medialibrary_queryperf_test:unittest",

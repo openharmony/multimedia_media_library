@@ -83,3 +83,30 @@ MEDIALIB_AGING_STAT:
   __BASE: { type: BEHAVIOR, level: MINOR, desc: aging state }
   TIMES: { type: UINT32, desc: history trigger times }
   COUNT: { type: UINT32, desc: the recycle number of aging }
+
+MEDIALIB_MSC_FIRST_VISIT_STAT:
+  __BASE: { type: BEHAVIOR, level: MINOR, desc: time interval between photo capture and first visit by the app }
+  PHOTO_ID: { type: STRING, desc: photo id }
+  TIME_INTERVAL: { type: UINT64, desc: the time interval from taking the photo to the fist visit }
+
+MEDIALIB_MSC_REQUST_POLICY_STAT:
+  __BASE: { type: STATISTIC, level: MINOR, desc: multistages capture request policy }
+  CALLING_PACKAGE: { type: STRING, desc: calling package name }
+  HIGH_QUALITY_COUNT: { type: UINT32, desc: high quality policy count }
+  BALANCE_QUALITY_COUNT: { type: UINT32, desc: balance quality policy count }
+  EMERGENCY_QUALITY_COUNT: { type: UINT32, desc: emergency quality policy count }
+
+MEDIALIB_MSC_TRIGGER_RATIO_STAT:
+  __BASE: { type: STATISTIC, level: MINOR, desc: trigger source ratio }
+  THIRD_PART_COUNT: { type: UINT32, desc: count of third part app trigger multistages capture }
+  AUTO_COUNT: { type: UINT32, desc: count of auto trigger multistages capture  }
+
+MEDIALIB_MSC_TOTAL_TIME_STAT:
+  __BASE: { type: STATISTIC, level: MINOR, desc: multistages capture total time cost }
+  PHOTO_ID: { type: STRING, desc: photo id }
+  TOTAL_TIME_COST: { type: UINT64, desc: total time cost of multistages capture }
+
+MEDIALIB_MSC_RESULT_STAT:
+  __BASE: { type: STATISTIC, level: MINOR, desc: result of multistages capture }
+  PHOTO_ID: { type: STRING, desc: photo id }
+  RESULT: { type: INT32, desc: result of processing multistages capture }
