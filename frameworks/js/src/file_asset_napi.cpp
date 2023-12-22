@@ -4276,16 +4276,16 @@ static void GetEditDataString(char* editDataBuffer, string& result)
     }
 
     string editDataStr(editDataBuffer);
-    nlohmann::json editDataJson = nlohmann::json::parse(editDataStr);
-    if (editDataJson.is_discarded()) {
+    if (!nlohmann::json::accept(editDataStr)) {
         result = editDataStr;
-        NAPI_WARN_LOG("Failed to parse edit data to json");
         return;
     }
 
-    if (editDataJson.contains(EDIT_DATA)) {
+    nlohmann::json editDataJson = nlohmann::json::parse(editDataStr);
+    if (editDataJson.contains(COMPATIBLE_FORMAT) && editDataJson.contains(FORMAT_VERSION) &&
+        editDataJson.contains(EDIT_DATA)) { // edit data saved by media change request
         result = editDataJson.at(EDIT_DATA);
-    } else {
+    } else { // edit data saved by commitEditedAsset
         result = editDataStr;
     }
 }
@@ -4298,17 +4298,18 @@ static napi_value GetEditDataObject(napi_env env, char* editDataBuffer)
     }
 
     string editDataStr(editDataBuffer);
-    nlohmann::json editDataJson = nlohmann::json::parse(editDataStr);
-    if (editDataJson.is_discarded()) {
-        NAPI_WARN_LOG("Failed to parse edit data to json");
+    if (!nlohmann::json::accept(editDataStr)) {
         return MediaAssetEditDataNapi::CreateMediaAssetEditData(env, "", "", editDataStr);
     }
 
+    nlohmann::json editDataJson = nlohmann::json::parse(editDataStr);
     if (editDataJson.contains(COMPATIBLE_FORMAT) && editDataJson.contains(FORMAT_VERSION) &&
-        editDataJson.contains(EDIT_DATA)) {
+        editDataJson.contains(EDIT_DATA)) { // edit data saved by media change request
         return MediaAssetEditDataNapi::CreateMediaAssetEditData(env,
             editDataJson.at(COMPATIBLE_FORMAT), editDataJson.at(FORMAT_VERSION), editDataJson.at(EDIT_DATA));
     }
+
+    // edit data saved by commitEditedAsset
     return MediaAssetEditDataNapi::CreateMediaAssetEditData(env, "", "", editDataStr);
 }
 

@@ -1404,7 +1404,7 @@ int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
     string editDataPath = GetEditDataPath(assetPath);
     CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_VALUES, "Failed to get edit data path");
 
-    if (fileAsset->GetPhotoEditTime() == 0) { // first edit
+    if (fileAsset->GetPhotoEditTime() == 0) { // the asset has not been edited before
         string editDataDirPath = GetEditDataDirPath(assetPath);
         CHECK_AND_RETURN_RET_LOG(!editDataDirPath.empty(), E_INVALID_URI, "Failed to get edit dir path");
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(editDataDirPath), E_HAS_FS_ERROR,
