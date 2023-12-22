@@ -35,6 +35,12 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/scanner",
   ]
 
+  include_multistages_capture = [
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/dfx",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/utils",
+  ]
+
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -49,6 +55,7 @@ config("media_data_extension_public_config") {
   include_dirs += include_fileext
   include_dirs += include_distributed
   include_dirs += include_scanner
+  include_dirs += include_multistages_capture
 
   ldflags = [ "-Wl,--gc-sections" ]
 
@@ -140,6 +147,15 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_rdb_transaction.cpp",
   ]
 
+  media_multistages_capture_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_first_visit.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_request_policy.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_result.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_total_time.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_trigger_ratio.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/database_adapter.cpp",
+  ]
+
   sources = [
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "src/media_datashare_ext_ability.cpp",
@@ -173,6 +189,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_thumbnail_source
   sources += media_cloud_sync_source
   sources += media_rdb_utils_source
+  sources += media_multistages_capture_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 
