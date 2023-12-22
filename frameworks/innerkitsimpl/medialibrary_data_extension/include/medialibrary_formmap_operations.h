@@ -38,6 +38,7 @@ public:
     static void PublishedChange(const std::string newUri, const std::vector<int64_t> &formIds, const bool &isSave);
     static void GetFormMapFormId(const std::string &uri, std::vector<int64_t> &formIds);
     static std::string GetUriByFileId(const int32_t &fileId, const std::string &path);
+    static std::string GetFilePathById(const std::string &fileId);
     static bool GetFormIdWithEmptyUriState();
     static bool isHaveEmptyUri;
 
