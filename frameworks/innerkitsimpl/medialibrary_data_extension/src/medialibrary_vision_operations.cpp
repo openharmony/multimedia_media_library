@@ -26,7 +26,7 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 using Uri = OHOS::Uri;
-using namespace DataShare;
+using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
@@ -85,7 +85,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryVisionOperations::QueryOperation(Me
     return rdbStore->Query(cmd, columns);
 }
 
-static int32_t UpdateAnalysisTotal(string &uriTotal, string &selection, string &columnName)
+static int32_t UpdateAnalysisTotal(string &uriTotal, string &selection, const string &columnName)
 {
     Uri uri = Uri(uriTotal);
     DataSharePredicates predicate;
@@ -97,23 +97,28 @@ static int32_t UpdateAnalysisTotal(string &uriTotal, string &selection, string &
     return MediaLibraryDataManager::GetInstance()->Update(cmdTotal, valueBucket, predicate);
 }
 
-static int32_t DeleteFromSaliencyTable(string &fileId)
+static int32_t DeleteFromVisionTableCommon(string &fileId, string &selectionTotal,
+    const string &columnTotal, const string &tableName)
 {
     string uriTotal = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TOTAL;
-    string selection = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
-    int32_t updateRows = UpdateAnalysisTotal(uriTotal, selection, SALIENCY);
-    MEDIA_DEBUG_LOG("Update %{public}d rows at total for edit commit", updateRows);
+    int32_t updateRows = UpdateAnalysisTotal(uriTotal, selectionTotal, columnTotal);
+    MEDIA_DEBUG_LOG("Update %{public}d rows at total for edit commit to %{public}s", updateRows, columnTotal.c_str());
     if (updateRows <= 0) {
         return updateRows;
     }
 
-    string uriSal = MEDIALIBRARY_DATA_URI + "/" + VISION_SALIENCY_TABLE;
-    Uri uri = Uri(uriSal);
+    string uriTable = MEDIALIBRARY_DATA_URI + "/" + tableName;
+    Uri uri = Uri(uriTable);
     DataSharePredicates predicate;
-    string selection = FILE_ID + " = " + fileId;
-    predicate.SetWhereClause(selection);
-    MediaLibraryCommand cmdSal(uri);
-    return MediaLibraryDataManager::GetInstance()->Delete(cmdSal, predicate);
+    predicate.EqualTo(FILE_ID, fileId);
+    MediaLibraryCommand cmdTable(uri);
+    return MediaLibraryDataManager::GetInstance()->Delete(cmdTable, predicate);
+}
+
+static int32_t DeleteFromSaliencyTable(string &fileId)
+{
+    string selectionTotal = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
+    return DeleteFromVisionTableCommon(fileId, selectionTotal, SALIENCY, VISION_SALIENCY_TABLE);
 }
 
 static void UpdateVisionTableForEdit(string fileId)
