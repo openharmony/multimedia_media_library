@@ -1096,8 +1096,51 @@ static bool MergeAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumChangeOperation changeOperation,
+    string& uri, DataShare::DataShareValuesBucket& valuesBucket, string& property)
+{
+    if (photoAlbum == nullptr) {
+        NAPI_ERR_LOG("photoAlbum is null");
+        return false;
+    }
+
+    switch (changeOperation) {
+        case AlbumChangeOperation::SET_ALBUM_NAME:
+            if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
+                uri = PAH_PORTRAIT_ANAALBUM_ALBUM_NAME;
+            } else {
+                uri = PAH_UPDATE_PHOTO_ALBUM;
+            }
+            property = PhotoAlbumColumns::ALBUM_NAME;
+            valuesBucket.Put(property, photoAlbum->GetAlbumName());
+            break;
+        case AlbumChangeOperation::SET_COVER_URI:
+            if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
+                uri = PAH_PORTRAIT_ANAALBUM_COVER_URI;
+            } else {
+                uri = PAH_UPDATE_PHOTO_ALBUM;
+            }
+            property = PhotoAlbumColumns::ALBUM_COVER_URI;
+            valuesBucket.Put(property, photoAlbum->GetCoverUri());
+            break;
+        case AlbumChangeOperation::SET_DISPLAY_LEVEL:
+            uri = PAH_PORTRAIT_DISPLAY_LEVLE;
+            property = USER_DISPLAY_LEVEL;
+            valuesBucket.Put(property, photoAlbum->GetDisplayLevel());
+            break;
+        case AlbumChangeOperation::SET_IS_ME:
+            uri = PAH_PORTRAIT_IS_ME;
+            property = IS_ME;
+            valuesBucket.Put(property, 1);
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
 static bool SetAlbumPropertyExecute(
-    MediaAlbumChangeRequestAsyncContext& context, const AlbumChangeOperation& changeOperation)
+    MediaAlbumChangeRequestAsyncContext& context, const AlbumChangeOperation changeOperation)
 {
     // In the scenario of creation, the new name will be applied when the album is created.
     if (changeOperation == AlbumChangeOperation::SET_ALBUM_NAME &&
@@ -1110,44 +1153,19 @@ static bool SetAlbumPropertyExecute(
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(photoAlbum->GetAlbumId()));
     string uri;
-    switch (changeOperation) {
-        case AlbumChangeOperation::SET_ALBUM_NAME:
-            if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
-                uri = PAH_PORTRAIT_ANAALBUM_ALBUM_NAME;
-            } else {
-                uri = PAH_UPDATE_PHOTO_ALBUM;
-            }
-            valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, photoAlbum->GetAlbumName());
-            break;
-        case AlbumChangeOperation::SET_COVER_URI:
-            if (photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
-                uri = PAH_PORTRAIT_ANAALBUM_COVER_URI;
-            } else {
-                uri = PAH_UPDATE_PHOTO_ALBUM;
-            }
-            valuesBucket.Put(PhotoAlbumColumns::ALBUM_COVER_URI, photoAlbum->GetCoverUri());
-            break;
-        case AlbumChangeOperation::SET_DISPLAY_LEVEL:
-            uri = PAH_PORTRAIT_DISPLAY_LEVLE;
-            valuesBucket.Put(USER_DISPLAY_LEVEL, photoAlbum->GetDisplayLevel());
-            break;
-        case AlbumChangeOperation::SET_IS_ME:
-            uri = PAH_PORTRAIT_IS_ME;
-            valuesBucket.Put(IS_ME, 1);
-            break;
-        default:
-            context.SaveError(E_FAIL);
-            NAPI_ERR_LOG("Unsupported album change operation: %{public}d", changeOperation);
-            return false;
+    string property;
+    if (!GetAlbumUpdateValue(photoAlbum, changeOperation, uri, valuesBucket, property)) {
+        context.SaveError(E_FAIL);
+        NAPI_ERR_LOG("Failed to parse album change operation: %{public}d", changeOperation);
+        return false;
     }
-
     valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, photoAlbum->GetPhotoAlbumSubType());
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAlbumUri(uri);
     int32_t changedRows = UserFileClient::Update(updateAlbumUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context.SaveError(changedRows);
-        NAPI_ERR_LOG("Failed to update property of album, err: %{public}d", changedRows);
+        NAPI_ERR_LOG("Failed to set %{public}s, err: %{public}d", property.c_str(), changedRows);
         return false;
     }
     return true;
