@@ -26,6 +26,7 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 using Uri = OHOS::Uri;
+using namespace DataShare;
 
 namespace OHOS {
 namespace Media {
@@ -84,25 +85,31 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryVisionOperations::QueryOperation(Me
     return rdbStore->Query(cmd, columns);
 }
 
-static int32_t UpdateAnalysisTotal(string &fileId)
+static int32_t UpdateAnalysisTotal(string &uriTotal, string &selection, string &columnName)
 {
-    string uriTotal = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TOTAL;
     Uri uri = Uri(uriTotal);
-    DataShare::DataSharePredicates predicate;
-    string selection = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
+    DataSharePredicates predicate;
     predicate.SetWhereClause(selection);
     MediaLibraryCommand cmdTotal(uri);
-    DataShare::DataShareValuesBucket valueBucket;
+    DataShareValuesBucket valueBucket;
     valueBucket.Put(STATUS, 0);
-    valueBucket.Put(SALIENCY, 0);
+    valueBucket.Put(columnName, 0);
     return MediaLibraryDataManager::GetInstance()->Update(cmdTotal, valueBucket, predicate);
 }
 
-static int32_t  DeleteFromSaliencyTable(string &fileId)
+static int32_t DeleteFromSaliencyTable(string &fileId)
 {
+    string uriTotal = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TOTAL;
+    string selection = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
+    int32_t updateRows = UpdateAnalysisTotal(uriTotal, selection, SALIENCY);
+    MEDIA_DEBUG_LOG("Update %{public}d rows at total for edit commit", updateRows);
+    if (updateRows <= 0) {
+        return updateRows;
+    }
+
     string uriSal = MEDIALIBRARY_DATA_URI + "/" + VISION_SALIENCY_TABLE;
     Uri uri = Uri(uriSal);
-    DataShare::DataSharePredicates predicate;
+    DataSharePredicates predicate;
     string selection = FILE_ID + " = " + fileId;
     predicate.SetWhereClause(selection);
     MediaLibraryCommand cmdSal(uri);
@@ -110,13 +117,9 @@ static int32_t  DeleteFromSaliencyTable(string &fileId)
 }
 
 static void UpdateVisionTableForEdit(string fileId)
-{
-    int32_t updateRows = UpdateAnalysisTotal(fileId);
-    MEDIA_DEBUG_LOG("Update %{public}d rows at total for edit commit", updateRows);
-    if (updateRows > 0) {
-        int32_t delRows = DeleteFromSaliencyTable(fileId);
-        MEDIA_DEBUG_LOG("delete %{public}d rows from saliency for edit commit", delRows);
-    }
+{ 
+    int32_t delRows = DeleteFromSaliencyTable(fileId);
+    MEDIA_DEBUG_LOG("delete %{public}d rows from saliency for edit commit", delRows);
 }
 
 int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &cmd)
