@@ -21,6 +21,7 @@
 #include "medialibrary_data_manager.h"
 #include "vision_column.h"
 #include "medialibrary_vision_operations.h"
+#include <thread>
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -108,6 +109,16 @@ static int32_t  DeleteFromSaliencyTable(string &fileId)
     return MediaLibraryDataManager::GetInstance()->Delete(cmdSal, predicate);
 }
 
+static void UpdateVisionTableForEdit(string fileId)
+{
+    int32_t updateRows = UpdateAnalysisTotal(fileId);
+    MEDIA_DEBUG_LOG("Update %{public}d rows at total for edit commit", updateRows);
+    if (updateRows > 0) {
+        int32_t delRows = DeleteFromSaliencyTable(fileId);
+        MEDIA_DEBUG_LOG("delete %{public}d rows from saliency for edit commit", delRows);
+    }
+}
+
 int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &cmd)
 {
     if (cmd.GetOprnObject() != OperationObject::FILESYSTEM_PHOTO) {
@@ -122,12 +133,7 @@ int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &c
         return E_HAS_DB_ERROR;
     }
 
-    int32_t updateRows = UpdateAnalysisTotal(fileId);
-    MEDIA_DEBUG_LOG("Update %{public}d rows at total for edit commit", updateRows);
-    if (updateRows > 0) {
-        int32_t delRows = DeleteFromSaliencyTable(fileId);
-        MEDIA_DEBUG_LOG("delete %{public}d rows from saliency for edit commit", delRows);
-    }
+    thread(UpdateVisionTableForEdit, fileId).detach();
     return E_SUCCESS;
 }
 }
