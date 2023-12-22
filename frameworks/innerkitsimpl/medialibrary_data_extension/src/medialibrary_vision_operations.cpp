@@ -14,6 +14,7 @@
  */
 #define MLOG_TAG "VisionOperation"
 
+#include <thread>
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -21,7 +22,6 @@
 #include "medialibrary_data_manager.h"
 #include "vision_column.h"
 #include "medialibrary_vision_operations.h"
-#include <thread>
 
 using namespace std;
 using namespace OHOS::NativeRdb;
