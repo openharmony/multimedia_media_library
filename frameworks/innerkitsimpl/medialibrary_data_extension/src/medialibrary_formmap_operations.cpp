@@ -61,7 +61,6 @@ const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.m
 const string MEDIA_LIBRARY_PROXY_DATA_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_data";
 const string MEDIA_LIBRARY_PROXY_IMAGE_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_uri";
 const string NO_PICTURES = "";
-const string IMAGE_DELETED = "-1";
 
 bool MediaLibraryFormMapOperations::GetFormIdWithEmptyUriState()
 {
@@ -147,7 +146,7 @@ void MediaLibraryFormMapOperations::GetFormMapFormId(const string &uri, vector<i
     }
 }
 
-static string GetFilePathById(const string &fileId)
+string MediaLibraryFormMapOperations::GetFilePathById(const string &fileId)
 {
     MediaLibraryCommand queryCmd(OperationObject::UFM_PHOTO, OperationType::QUERY);
     queryCmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, fileId);
@@ -206,13 +205,14 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, const v
                 to_string(formId).c_str(), NO_PICTURES.size());
             data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_DATA_URI, formId, tempData));
             std::vector<OperationResult> results = dataShareHelper->Publish(data, BUNDLE_NAME);
-            MediaLibraryFormMapOperations::ModifyFormMapMessage(IMAGE_DELETED, formId, isSave);
+            MediaLibraryFormMapOperations::ModifyFormMapMessage(NO_PICTURES, formId, isSave);
+            isHaveEmptyUri = true;
         }
     } else {
         MediaFileUri fileUri = MediaFileUri(newUri);
         ThumbnailWait thumbnailWait(false);
         thumbnailWait.CheckAndWait(fileUri.GetFileId(), true);
-        string filePath = GetFilePathById(fileUri.GetFileId());
+        string filePath = MediaLibraryFormMapOperations::GetFilePathById(fileUri.GetFileId());
         if (MediaType(MediaFileUtils::GetMediaType(filePath)) == MEDIA_TYPE_IMAGE) {
             vector<uint8_t> buffer;
             ReadThumbnailFile(filePath, buffer);
