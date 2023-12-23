@@ -269,6 +269,7 @@ private:
     EXPORT static napi_value CreateDefaultChangeUriEnum(napi_env env);
     EXPORT static napi_value CreateAnalysisTypeEnum(napi_env env);
     EXPORT static napi_value CreateRequestPhotoTypeEnum(napi_env env);
+    EXPORT static napi_value CreateResourceTypeEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -311,6 +312,7 @@ private:
     static thread_local napi_ref sDefaultChangeUriRef_;
     static thread_local napi_ref sAnalysisType_;
     static thread_local napi_ref sRequestPhotoTypeEnumRef_;
+    static thread_local napi_ref sResourceTypeEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

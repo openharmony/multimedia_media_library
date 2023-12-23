@@ -17,11 +17,14 @@ const photoAccessHelper = requireInternal('file.photoAccessHelper');
 const bundleManager = requireNapi('bundle.bundleManager');
 
 const ARGS_TWO = 2;
+const ARGS_THREE = 3;
 
 const WRITE_PERMISSION = 'ohos.permission.WRITE_IMAGEVIDEO';
 
 const PERMISSION_DENIED = 13900012;
 const ERR_CODE_PARAMERTER_INVALID = 13900020;
+const ERR_CODE_OHOS_PERMISSION_DENIED = 201;
+const ERR_CODE_OHOS_PARAMERTER_INVALID = 401;
 const REQUEST_CODE_SUCCESS = 0;
 const PERMISSION_STATE_ERROR = -1;
 const ERROR_MSG_WRITE_PERMISSION = 'not have ohos.permission.WRITE_IMAGEVIDEO';
@@ -390,6 +393,48 @@ function PhotoViewPicker() {
 function RecommendationOptions() {
 }
 
+class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest {
+  static deleteAssets(context, assets, asyncCallback) {
+    if (arguments.length > ARGS_THREE || arguments.length < ARGS_TWO) {
+      throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
+    }
+
+    try {
+      if (asyncCallback) {
+        return super.deleteAssets(context, result => {
+          if (result.result === REQUEST_CODE_SUCCESS) {
+            asyncCallback();
+          } else if (result.result == PERMISSION_DENIED) {
+            asyncCallback(new BusinessError(ERROR_MSG_USER_DENY, ERR_CODE_OHOS_PERMISSION_DENIED));
+          } else {
+            asyncCallback(new BusinessError(ERROR_MSG_INNER_FAIL, result.result));
+          }
+        }, assets, asyncCallback);
+      }
+
+      return new Promise((resolve, reject) => {
+        super.deleteAssets(context, result => {
+          if (result.result === REQUEST_CODE_SUCCESS) {
+            resolve();
+          } else if (result.result == PERMISSION_DENIED) {
+            reject(new BusinessError(ERROR_MSG_USER_DENY, ERR_CODE_OHOS_PERMISSION_DENIED));
+          } else {
+            reject(new BusinessError(ERROR_MSG_INNER_FAIL, result.result));
+          }
+        }, assets, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+    } catch (error) {
+      return errorResult(new BusinessError(error.message, error.code), asyncCallback);
+    }
+  }
+}
+
 export default {
   getPhotoAccessHelper,
   getPhotoAccessHelperAsync,
@@ -411,6 +456,9 @@ export default {
   PhotoViewPicker: PhotoViewPicker,
   RecommendationType: RecommendationType,
   RecommendationOptions: RecommendationOptions,
-  MediaAssetChangeRequest: photoAccessHelper.MediaAssetChangeRequest,
+  ResourceType: photoAccessHelper.ResourceType,
+  MediaAssetEditData: photoAccessHelper.MediaAssetEditData,
+  MediaAssetChangeRequest: MediaAssetChangeRequest,
+  MediaAssetsChangeRequest: photoAccessHelper.MediaAssetsChangeRequest,
   MediaAlbumChangeRequest: photoAccessHelper.MediaAlbumChangeRequest,
 };

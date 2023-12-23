@@ -39,6 +39,7 @@ public:
     EXPORT static int32_t Delete(MediaLibraryCommand &cmd);
     EXPORT static int32_t Open(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT static int32_t Close(MediaLibraryCommand &cmd);
+    EXPORT static int32_t SubmitCache(MediaLibraryCommand &cmd);
     EXPORT static int32_t CommitEditInsert(MediaLibraryCommand &cmd);
     EXPORT static int32_t RevertToOrigin(MediaLibraryCommand &cmd);
     EXPORT static void DeleteRevertMessage(const std::string &path);
@@ -51,6 +52,8 @@ private:
     static int32_t UpdateV10(MediaLibraryCommand &cmd);
     static int32_t TrashPhotos(MediaLibraryCommand &cmd);
     static void SolvePhotoAlbumInCreate(MediaLibraryCommand &cmd, FileAsset &fileAsset);
+    static int32_t OpenCache(MediaLibraryCommand &cmd, bool &isCacheOperation);
+    static int32_t DeleteCache(MediaLibraryCommand &cmd);
     static int32_t OpenEditOperation(MediaLibraryCommand &cmd, bool &isSkip);
     static int32_t RequestEditData(MediaLibraryCommand &cmd);
     static int32_t RequestEditSource(MediaLibraryCommand &cmd);
@@ -59,7 +62,12 @@ private:
     static int32_t CommitEditInsertExecute(const std::shared_ptr<FileAsset> &fileAsset,
         const std::string &editData);
     static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
+    static int32_t ParseMediaAssetEditData(MediaLibraryCommand &cmd, std::string &editData);
+    static int32_t SaveSourceAndEditData(const std::shared_ptr<FileAsset> &fileAsset, const std::string &editData);
+    static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
+        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
+    static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
 };
 
 class UpdateAnalysisDataAsyncTaskData : public AsyncTaskData {
