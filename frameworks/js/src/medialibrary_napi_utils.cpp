@@ -40,6 +40,7 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
+static const string EMPTY_STRING = "";
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -1018,54 +1019,65 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
 string MediaLibraryNapiUtils::ParseResultSet2JsonStr(shared_ptr<DataShare::DataShareResultSet> resultSet,
     const std::vector<std::string> &columns)
 {
-    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return "";
+    json jsonArray = json::array();
+    if (resultSet == nullptr) {
+        return jsonArray.dump();
     }
-    json jsonObject;
-    for (uint32_t i = 0; i < columns.size(); i++) {
-        DataShare::DataType dataType;
-        jsonObject[columns[i]] = "";
-        int index;
-        if (resultSet->GetColumnIndex(columns[i], index) != NativeRdb::E_OK ||
-            resultSet->GetDataType(index, dataType) != NativeRdb::E_OK) {
-            continue;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        json jsonObject;
+        for (uint32_t i = 0; i < columns.size(); i++) {
+            string columnName = columns[i];
+            jsonObject[columnName] = GetStringValueByColumn(resultSet, columnName);
         }
-        switch (dataType) {
-            case DataShare::DataType::TYPE_INTEGER: {
-                int intValue = -1;
-                if (resultSet->GetInt(index, intValue) == NativeRdb::E_OK) {
-                    jsonObject[columns[i]] = to_string(intValue);
-                }
-                break;
+        jsonArray.push_back(jsonObject);
+    }
+    return jsonArray.dump();
+}
+
+string MediaLibraryNapiUtils::GetStringValueByColumn(shared_ptr<DataShare::DataShareResultSet> resultSet,
+    const std::string columnName)
+{
+    int index;
+    DataShare::DataType dataType;
+    if (resultSet->GetColumnIndex(columnName, index) || resultSet->GetDataType(index, dataType)) {
+        return EMPTY_STRING;
+    }
+    switch (dataType) {
+        case DataShare::DataType::TYPE_INTEGER: {
+            int intValue = -1;
+            if (resultSet->GetInt(index, intValue) == NativeRdb::E_OK) {
+                return to_string(intValue);
             }
-            case DataShare::DataType::TYPE_FLOAT: {
-                double douValue = 0.0;
-                if (resultSet->GetDouble(index, douValue) == NativeRdb::E_OK) {
-                    jsonObject[columns[i]] = to_string(douValue);
-                }
-                break;
+            break;
+        }
+        case DataShare::DataType::TYPE_FLOAT: {
+            double douValue = 0.0;
+            if (resultSet->GetDouble(index, douValue) == NativeRdb::E_OK) {
+                return to_string(douValue);
             }
-            case DataShare::DataType::TYPE_STRING: {
-                std::string strValue;
-                if (resultSet->GetString(index, strValue) == NativeRdb::E_OK) {
-                    jsonObject[columns[i]] = strValue;
-                }
-                break;
+            break;
+        }
+        case DataShare::DataType::TYPE_STRING: {
+            std::string strValue;
+            if (resultSet->GetString(index, strValue) == NativeRdb::E_OK) {
+                return strValue;
             }
-            case DataShare::DataType::TYPE_BLOB: {
-                std::vector<uint8_t> blobValue;
-                if (resultSet->GetBlob(index, blobValue) == NativeRdb::E_OK) {
-                    std::string tempValue(blobValue.begin(), blobValue.end());
-                    jsonObject[columns[i]] = tempValue;
-                }
-                break;
+            break;
+        }
+        case DataShare::DataType::TYPE_BLOB: {
+            std::vector<uint8_t> blobValue;
+            if (resultSet->GetBlob(index, blobValue) == NativeRdb::E_OK) {
+                std::string tempValue(blobValue.begin(), blobValue.end());
+                return tempValue;
             }
-            default: {
-                NAPI_ERR_LOG("Unsupported dataType: %{public}d", dataType);
-            }
+            break;
+        }
+        default: {
+            NAPI_ERR_LOG("Unsupported dataType: %{public}d", dataType);
+            break;
         }
     }
-    return jsonObject.dump();
+    return EMPTY_STRING;
 }
 
 string MediaLibraryNapiUtils::GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,

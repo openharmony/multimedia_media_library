@@ -550,6 +550,8 @@ public:
         const std::string &propertyName);
     static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::vector<std::string> &cloumns);
+    static std::string GetStringValueByColumn(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
+        const std::string columnName);
 
     static napi_value GetNapiValueArray(napi_env env, napi_value arg, std::vector<napi_value> &values);
     static napi_value GetUriArrayFromAssets(
