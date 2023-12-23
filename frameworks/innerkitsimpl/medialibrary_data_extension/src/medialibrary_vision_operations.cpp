@@ -117,8 +117,20 @@ static int32_t DeleteFromVisionTables(string &fileId, string &selectionTotal,
 
 static void UpdateVisionTableForEdit(string fileId)
 {
-    string selectionTotal = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
-    int32_t delRows = DeleteFromVisionTables(fileId, selectionTotal, SALIENCY, VISION_SALIENCY_TABLE);;
+    string selectionTotal = FILE_ID + " = " + fileId + " AND " + LABEL + " = 1";
+    int32_t delRows = DeleteFromVisionTables(fileId, selectionTotal, LABEL, VISION_LABEL_TABLE);
+    MEDIA_DEBUG_LOG("delete %{public}d rows from label for edit commit", delRows);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + AESTHETICS_SCORE + " = 1";
+    delRows = DeleteFromVisionTables(fileId, selectionTotal, AESTHETICS_SCORE, VISION_AESTHETICS_TABLE);
+    MEDIA_DEBUG_LOG("delete %{public}d rows from aethetic score for edit commit", delRows);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + OCR + " = 1";
+    delRows = DeleteFromVisionTables(fileId, selectionTotal, OCR, VISION_OCR_TABLE);
+    MEDIA_DEBUG_LOG("delete %{public}d rows from OCR for edit commit", delRows);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
+    delRows = DeleteFromVisionTables(fileId, selectionTotal, SALIENCY, VISION_SALIENCY_TABLE);
     MEDIA_DEBUG_LOG("delete %{public}d rows from saliency for edit commit", delRows);
 }
 
