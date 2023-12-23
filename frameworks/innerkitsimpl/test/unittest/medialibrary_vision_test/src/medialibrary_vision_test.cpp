@@ -1659,7 +1659,7 @@ HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_DisPlayLevel_3, TestSize.Lev
     MEDIA_INFO_LOG("Get_Protrait_Album_DisPlayLevel_3::count = %{public}d. End", count);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_1, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Get_Protrait_Album_IsMe::Start");
     Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
@@ -1675,6 +1675,37 @@ HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe, TestSize.Level0)
     resultSet->GetRowCount(count);
     EXPECT_EQ(count, 0);
     MEDIA_INFO_LOG("Get_Protrait_Album_IsMe::count = %{public}d. End", count);
+}
+
+void InsertTotalTest()
+{
+    Uri totalUri(URI_TOTAL);
+    MediaLibraryCommand cmd(totalUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    for (int i = TAG_ID2_COUNT; i < TAG_ID1_COUNT; i++) {
+        valuesBucket.Put(FILE_ID, i);
+        valuesBucket.Put(STATUS, 1);
+        MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    }
+}
+
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_2, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Get_Protrait_Album_IsMe_2::Start");
+    InsertTotalTest();
+    Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand queryCmd(queryAlbumUri);
+    DataShare::DataSharePredicates predicates;
+
+    predicates.EqualTo(IS_ME, "1");
+    vector<string> columns;
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryCmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_GT(count, 0);
+    MEDIA_INFO_LOG("Get_Protrait_Album_IsMe_2::count = %{public}d. End", count);
 }
 
 shared_ptr<DataShare::DataShareResultSet> QueryPortraitAlbumTest(string column, string value)
