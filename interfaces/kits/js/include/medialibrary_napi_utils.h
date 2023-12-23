@@ -267,7 +267,7 @@ const std::vector<std::string> systemAlbumSubType {
 };
 
 const std::vector<std::string> analysisAlbumSubType {
-    "CLASSIFY", "SOURCE", "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY", "SHOOTING_MODE"
+    "CLASSIFY", "SOURCE", "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY", "SHOOTING_MODE", "PORTRAIT"
 };
 
 const std::vector<std::string> positionTypeEnum {
