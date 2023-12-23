@@ -884,7 +884,7 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
         case OperationType::BATCH_UPDATE_FAV:
             return BatchSetFavorite(cmd);
         case OperationType::BATCH_UPDATE_USER_COMMENT:
-            return BatchSetUserComment(cmd); 
+            return BatchSetUserComment(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
@@ -965,7 +965,7 @@ int32_t MediaLibraryPhotoOperations::OpenCache(MediaLibraryCommand& cmd, bool& i
         MediaFileUtils::CreateDirectory(cacheDir), E_HAS_FS_ERROR, "Cannot create dir %{private}s", cacheDir.c_str());
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateAsset(path) == E_SUCCESS, E_HAS_FS_ERROR,
         "Create cache file failed, path=%{private}s", path.c_str());
-    return OpenFileWithPrivacy(path, MEDIA_FILEMODE_READWRITE);
+    return OpenFileWithPrivacy(path, MEDIA_FILEMODE_WRITEONLY);
 }
 
 int32_t MediaLibraryPhotoOperations::OpenEditOperation(MediaLibraryCommand &cmd, bool &isSkip)
@@ -1390,7 +1390,7 @@ int32_t MediaLibraryPhotoOperations::ParseMediaAssetEditData(MediaLibraryCommand
     editDataJson[COMPATIBLE_FORMAT] = compatibleFormat;
     editDataJson[FORMAT_VERSION] = formatVersion;
     editDataJson[EDIT_DATA] = data;
-    editDataJson[APP_ID] = cmd.GetBundleName();;
+    editDataJson[APP_ID] = cmd.GetBundleName();
     editData = editDataJson.dump();
     return E_OK;
 }
@@ -1432,15 +1432,16 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
 {
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) ==
-                                 MediaFileUtils::GetExtensionFromPath(cachePath),
+    CHECK_AND_RETURN_RET_LOG(
+        MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) ==
+            MediaFileUtils::GetExtensionFromPath(cachePath),
         E_INVALID_VALUES, "displayName mismatches extension of cache file name");
     CHECK_AND_RETURN_RET_LOG(fileAsset->GetDateTrashed() == 0, E_IS_RECYCLED, "FileAsset is in recycle");
 
     int64_t pending = fileAsset->GetTimePending();
     CHECK_AND_RETURN_RET_LOG(
         pending == 0 || pending == UNCREATE_FILE_TIMEPENDING || pending == UNOPEN_FILE_COMPONENT_TIMEPENDING,
-        E_IS_PENDING_ERROR, "FileAsset is in pending: %{public}ld", (long)pending);
+        E_IS_PENDING_ERROR, "FileAsset is in pending: %{public}ld", static_cast<long>(pending));
 
     string editData;
     int32_t id = fileAsset->GetId();

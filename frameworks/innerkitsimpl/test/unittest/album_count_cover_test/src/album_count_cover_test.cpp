@@ -784,10 +784,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
     // 2. Create a photo.
     MEDIA_INFO_LOG("Step: Create a photo, and then favorite it.");
     auto fileAsset = CreateImageAsset("Test_Favorites_001.jpg");
-    EXPECT_NE(fileAsset, nullptr);
-    if (fileAsset == nullptr) {
-        return;
-    }
+    ASSERT_NE(fileAsset, nullptr);
     FavoriteFileAsset(fileAsset->GetId(), true);
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
 
@@ -795,10 +792,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
     sleep(SLEEP_INTERVAL);
     MEDIA_INFO_LOG("Step: Create another photo, and then favorite it.");
     auto fileAsset2 = CreateImageAsset("Test_Favorites_002.jpg");
-    EXPECT_NE(fileAsset2, nullptr);
-    if (fileAsset2 == nullptr) {
-        return;
-    }
+    ASSERT_NE(fileAsset2, nullptr);
     FavoriteFileAsset(fileAsset2->GetId(), true);
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
 
