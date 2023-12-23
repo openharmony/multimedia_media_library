@@ -105,7 +105,7 @@ const std::string IN_CAMERA = " bucket_id IN (-1739773001, 0, 1028075469, 0) AND
 
 const std::string NOT_IN_CAMERA = " bucket_id NOT IN (-1739773001, 0, 1028075469, 0 ) AND is_pending = 0";
 
-const std::string QUERY_NOT_SYNC = " _id < 1000000000 AND media_type IN (1, 3) ";
+const std::string QUERY_NOT_SYNC = " _id < 1000000000 AND media_type IN (1, 3) AND _size > 0 ";
 
 const std::string COMPARE_ID = " _id > ";
 
@@ -117,23 +117,23 @@ const std::string QUERY_GARBAGE_ALBUM = "SELECT type, cache_dir, nick_dir, nick_
 const std::string QUERY_MAX_ID_CAMERA_SCREENSHOT = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND bucket_id IN (-1739773001, 0, 1028075469, 0) AND \
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
-    (storage_id IN (0, 65537) or storage_id IS NULL)";
+    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 ";
 
 const std::string QUERY_MAX_ID_OTHERS = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND bucket_id NOT IN (-1739773001, 0, 1028075469, 0) AND \
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
-    (storage_id IN (0, 65537) or storage_id IS NULL)";
+    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 ";
 
 const std::string QUERY_GALLERY_COUNT = "SELECT count(1) AS count FROM gallery_media \
     WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
-    SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)";
+    SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0";
 
 const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + GALLERY_FILE_DATA + "," +
     GALLERY_DISPLAY_NAME + "," + GALLERY_DESCRIPTION + "," + GALLERY_IS_FAVORITE + "," + GALLERY_RECYCLED_TIME +
     "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + " FROM gallery_media \
     WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
-    SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) ORDER BY showDateToken ASC ";
+    SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0 ORDER BY showDateToken ASC ";
 } // namespace Media
 } // namespace OHOS
 
