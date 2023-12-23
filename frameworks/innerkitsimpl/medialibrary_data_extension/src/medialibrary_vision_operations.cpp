@@ -115,8 +115,19 @@ static int32_t DeleteFromVisionTables(string &fileId, string &selectionTotal,
     return MediaLibraryDataManager::GetInstance()->Delete(cmdTable, predicate);
 }
 
-static void UpdateVisionTableForEdit(string fileId)
+static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
 {
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("taskData is nullptr");
+        return;
+    }
+    UpdateVisionAsyncTaskData* data = static_cast<UpdateVisionAsyncTaskData*>(taskData);
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("UpdateVisionAsyncTaskData is nullptr");
+        return;
+    }
+    string fileId = move(data->fileId_);
+
     string selectionTotal = FILE_ID + " = " + fileId + " AND " + LABEL + " = 1";
     int32_t delRows = DeleteFromVisionTables(fileId, selectionTotal, LABEL, PAH_ANA_LABEL);
     MEDIA_DEBUG_LOG("delete %{public}d rows from label for edit commit", delRows);
@@ -148,7 +159,20 @@ int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &c
         return E_HAS_DB_ERROR;
     }
 
-    thread(UpdateVisionTableForEdit, fileId).detach();
+    //thread(UpdateVisionTableForEdit, fileId).detach();
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker ==  nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return E_ERR;
+    }
+    UpdateVisionAsyncTaskData* taskData = new (std::nothrow) UpdateVisionAsyncTaskData(fileId);
+    shared_ptr<MediaLibraryAsyncTask> updateAsyncTask =
+        make_shared<MediaLibraryAsyncTask>(UpdateVisionTableForEdit, taskData);
+    if (updateAsyncTask != nullptr) {
+        asyncWorker->AddTask(updateAsyncTask, true);
+    } else {
+        MEDIA_ERR_LOG("UpdateAnalysisDataForEdit fail");
+    }
     return E_SUCCESS;
 }
 }
