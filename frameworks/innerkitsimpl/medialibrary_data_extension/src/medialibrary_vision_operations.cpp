@@ -97,7 +97,7 @@ static int32_t UpdateAnalysisTotal(string &uriTotal, string &selection, const st
     return MediaLibraryDataManager::GetInstance()->Update(cmdTotal, valueBucket, predicate);
 }
 
-static int32_t DeleteFromVisionTableCommon(string &fileId, string &selectionTotal,
+static int32_t DeleteFromVisionTables(string &fileId, string &selectionTotal,
     const string &columnTotal, const string &tableName)
 {
     string uriTotal = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TOTAL;
@@ -115,15 +115,10 @@ static int32_t DeleteFromVisionTableCommon(string &fileId, string &selectionTota
     return MediaLibraryDataManager::GetInstance()->Delete(cmdTable, predicate);
 }
 
-static int32_t DeleteFromSaliencyTable(string &fileId)
+static void UpdateVisionTableForEdit(string fileId)
 {
     string selectionTotal = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
-    return DeleteFromVisionTableCommon(fileId, selectionTotal, SALIENCY, VISION_SALIENCY_TABLE);
-}
-
-static void UpdateVisionTableForEdit(string fileId)
-{ 
-    int32_t delRows = DeleteFromSaliencyTable(fileId);
+    int32_t delRows = DeleteFromVisionTables(fileId, selectionTotal, SALIENCY, VISION_SALIENCY_TABLE);;
     MEDIA_DEBUG_LOG("delete %{public}d rows from saliency for edit commit", delRows);
 }
 
