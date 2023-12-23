@@ -144,7 +144,11 @@ static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
     delRows = DeleteFromVisionTables(fileId, selectionTotal, SALIENCY, PAH_ANA_SALIENCY);
     MEDIA_DEBUG_LOG("delete %{public}d rows from saliency for edit commit", delRows);
 
-    selectionTotal = FILE_ID + " = " + fileId + " AND " + FACE + " != 0";
+    selectionTotal = FILE_ID + " = " + fileId + " AND ( " +
+        FACE + " = 1 OR " +
+        FACE + " = 2 OR " +
+        FACE + " = 3 OR " +
+        FACE + " = -2 ) " ;
     delRows = DeleteFromVisionTables(fileId, selectionTotal, FACE, PAH_ANA_FACE);
     MEDIA_DEBUG_LOG("delete %{public}d rows from face for edit commit", delRows);
 
