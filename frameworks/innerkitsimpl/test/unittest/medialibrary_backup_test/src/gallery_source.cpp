@@ -65,6 +65,9 @@ void GallerySource::Init(const string &dbPath)
         "'/storage/emulated/0/BaiduMap/cache/fake_garbage_baidu.jpg', 'fake_garbage_baidu.jpg', " +
         "'fake_garbage_baidu', null, 2160867, 0, 0, 1, 1495954569032, 1546937461, 2976, 3968, " +
         "'fake_garbage_baidu', 0, 65537, 1151084355, -1617409521, 0)");
+    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(7, 7, ") +
+        "'/storage/emulated/0/Pictures/zero_size.jpg', 'zero_size.jpg', 'zero_size', null, 0, 0, 0," +
+        " 1, 1495962070277, 1698397638, 2448, 3264, 'zero_size', 0, 65537, 218866788, -1617409521, 0)");
     store->ExecuteSql(string("INSERT INTO garbage_album VALUES('baidu', '/BaiduMap/cache', ") +
         "null, null, 1, 1151084355);");
     store->ExecuteSql(string("INSERT INTO garbage_album VALUES('ctrip', '/CTRIP/avatar', ") +
