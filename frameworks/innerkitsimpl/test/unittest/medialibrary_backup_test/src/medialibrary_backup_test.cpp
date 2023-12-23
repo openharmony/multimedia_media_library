@@ -295,5 +295,16 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_pending_others, T
     ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_pending_others end");
 }
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_restore_size_0, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_not_restore_size_0 start");
+    std::string queryNotSyncPendingOthers =
+        "SELECT file_id from Photos where display_name ='zero_size.jpg'";
+    auto resultSet = photosStorePtr->QuerySql(queryNotSyncPendingOthers);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_not_restore_size_0 end");
+}
 } // namespace Media
 } // namespace OHOS
