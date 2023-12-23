@@ -4283,9 +4283,11 @@ static void GetEditDataString(char* editDataBuffer, string& result)
 
     nlohmann::json editDataJson = nlohmann::json::parse(editDataStr);
     if (editDataJson.contains(COMPATIBLE_FORMAT) && editDataJson.contains(FORMAT_VERSION) &&
-        editDataJson.contains(EDIT_DATA)) { // edit data saved by media change request
+        editDataJson.contains(EDIT_DATA) && editDataJson.contains(APP_ID)) {
+        // edit data saved by media change request
         result = editDataJson.at(EDIT_DATA);
-    } else { // edit data saved by commitEditedAsset
+    } else {
+        // edit data saved by commitEditedAsset
         result = editDataStr;
     }
 }
@@ -4304,7 +4306,8 @@ static napi_value GetEditDataObject(napi_env env, char* editDataBuffer)
 
     nlohmann::json editDataJson = nlohmann::json::parse(editDataStr);
     if (editDataJson.contains(COMPATIBLE_FORMAT) && editDataJson.contains(FORMAT_VERSION) &&
-        editDataJson.contains(EDIT_DATA)) { // edit data saved by media change request
+        editDataJson.contains(EDIT_DATA) && editDataJson.contains(APP_ID)) {
+        // edit data saved by media change request
         return MediaAssetEditDataNapi::CreateMediaAssetEditData(env,
             editDataJson.at(COMPATIBLE_FORMAT), editDataJson.at(FORMAT_VERSION), editDataJson.at(EDIT_DATA));
     }

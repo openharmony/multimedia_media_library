@@ -918,10 +918,11 @@ napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callbac
     CHECK_COND(env, CheckWriteOperation(env, changeRequest), JS_E_OPERATION_NOT_SUPPORT);
 
     int32_t resourceType = -1;
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0], resourceType) == napi_ok,
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0], resourceType) == napi_ok,
         "Failed to get resourceType");
-    CHECK_COND_WITH_MESSAGE(env, resourceType == static_cast<int>(fileAsset->GetMediaType()),
-        "Failed to check resourceType");
+    CHECK_COND_WITH_MESSAGE(
+        env, resourceType == static_cast<int>(fileAsset->GetMediaType()), "Failed to check resourceType");
 
     napi_valuetype valueType;
     napi_value value = asyncContext->argv[PARAM1];
@@ -957,9 +958,9 @@ static bool IsCreation(MediaAssetChangeRequestAsyncContext& context)
 {
     auto assetChangeOperations = context.assetChangeOperations;
     bool isCreateFromScratch = std::find(assetChangeOperations.begin(), assetChangeOperations.end(),
-                                   AssetChangeOperation::CREATE_FROM_SCRATCH) != assetChangeOperations.end();
+                                         AssetChangeOperation::CREATE_FROM_SCRATCH) != assetChangeOperations.end();
     bool isCreateFromUri = std::find(assetChangeOperations.begin(), assetChangeOperations.end(),
-                               AssetChangeOperation::CREATE_FROM_URI) != assetChangeOperations.end();
+                                     AssetChangeOperation::CREATE_FROM_URI) != assetChangeOperations.end();
     return isCreateFromScratch || isCreateFromUri;
 }
 
@@ -972,7 +973,7 @@ int32_t MediaAssetChangeRequestNapi::CopyFileToMediaLibrary(const UniqueFd& dest
         return srcFd.Get();
     }
 
-    struct stat statSrc;
+    struct stat statSrc {};
     int32_t status = fstat(srcFd.Get(), &statSrc);
     if (status != 0) {
         NAPI_ERR_LOG("Failed to get file stat, errno=%{public}d", errno);
@@ -1000,7 +1001,7 @@ int32_t MediaAssetChangeRequestNapi::CopyDataBufferToMediaLibrary(const UniqueFd
     while (offset < length) {
         ssize_t written = write(destFd.Get(), (char*)dataBuffer_ + offset, length - offset);
         if (written < 0) {
-            NAPI_ERR_LOG("Failed to copy data buffer, return %{public}d", (int)written);
+            NAPI_ERR_LOG("Failed to copy data buffer, return %{public}d", static_cast<int>(written));
             return written;
         }
         offset += written;
@@ -1061,7 +1062,7 @@ static bool CreateBySecurityComponent(MediaAssetChangeRequestAsyncContext& conte
     int32_t ret = E_FAIL;
     auto assetChangeOperations = context.assetChangeOperations;
     bool isCreateFromUri = std::find(assetChangeOperations.begin(), assetChangeOperations.end(),
-                               AssetChangeOperation::CREATE_FROM_URI) != assetChangeOperations.end();
+                                     AssetChangeOperation::CREATE_FROM_URI) != assetChangeOperations.end();
     auto changeRequest = context.objectInfo;
     if (isCreateFromUri) {
         ret = changeRequest->CopyToMediaLibrary(AddResourceMode::FILE_URI);
@@ -1156,7 +1157,7 @@ static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAsyncContext& context
         ssize_t written = write(destFd.Get(), (char*)dataBuffer + offset, length - offset);
         if (written < 0) {
             context.SaveError(written);
-            NAPI_ERR_LOG("Failed to write data buffer to cache file, return %{public}d", (int)written);
+            NAPI_ERR_LOG("Failed to write data buffer to cache file, return %{public}d", static_cast<int>(written));
             return false;
         }
         offset += written;
@@ -1175,7 +1176,7 @@ static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context, Unique
         return false;
     }
 
-    struct stat statSrc;
+    struct stat statSrc {};
     int32_t status = fstat(srcFd.Get(), &statSrc);
     if (status != 0) {
         context.SaveError(status);

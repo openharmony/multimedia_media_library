@@ -668,7 +668,7 @@ int64_t MediaFileUtils::UTCTimeMilliSeconds()
 
 int64_t MediaFileUtils::UTCTimeNanoSeconds()
 {
-    struct timespec t;
+    struct timespec t {};
     constexpr int64_t SEC_TO_NSEC = 1e9;
     clock_gettime(CLOCK_REALTIME, &t);
     return t.tv_sec * SEC_TO_NSEC + t.tv_nsec;

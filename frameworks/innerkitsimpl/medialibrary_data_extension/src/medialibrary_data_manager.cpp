@@ -732,12 +732,13 @@ static void CacheAging()
     time_t now = time(nullptr);
     constexpr int thresholdSeconds = 7 * 24 * 60 * 60; // 7 days
     for (const auto& entry : filesystem::recursive_directory_iterator(cacheDir)) {
+        const char* filePath = entry.path().string().c_str();
         if (!entry.is_regular_file()) {
-            continue; // only aging cache file
+            MEDIA_WARN_LOG("skip %{private}s, not regular file", filePath);
+            continue;
         }
 
-        struct stat statInfo = { 0 };
-        const char* filePath = entry.path().string().c_str();
+        struct stat statInfo {};
         if (stat(filePath, &statInfo) != 0) {
             MEDIA_WARN_LOG("skip %{private}s when stat error, errno: %{public}d", filePath, errno);
             continue;
@@ -750,8 +751,6 @@ static void CacheAging()
 
         if (!filesystem::remove(entry.path(), errCode)) {
             MEDIA_WARN_LOG("Failed to remove %{private}s, errCode: %{public}d", filePath, errCode.value());
-        } else {
-            MEDIA_INFO_LOG("Remove %{private}s, duration: %{public}f seconds", filePath, duration);
         }
     }
 }

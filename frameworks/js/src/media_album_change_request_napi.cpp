@@ -871,12 +871,10 @@ static bool FetchNewCount(MediaAlbumChangeRequestAsyncContext& context, shared_p
     }
 
     bool hiddenOnly = album->GetHiddenOnly();
-    int imageCount = hiddenOnly ? -1
-                                : get<int32_t>(ResultSetUtils::GetValFromColumn(
-                                      PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
-    int videoCount = hiddenOnly ? -1
-                                : get<int32_t>(ResultSetUtils::GetValFromColumn(
-                                      PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
+    int imageCount = hiddenOnly ? -1 :
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, resultSet, TYPE_INT32));
+    int videoCount = hiddenOnly ? -1 :
+        get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, resultSet, TYPE_INT32));
     album->SetCount(
         get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_COUNT, resultSet, TYPE_INT32)));
     album->SetImageCount(imageCount);

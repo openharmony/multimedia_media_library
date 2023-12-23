@@ -72,8 +72,8 @@ napi_value MediaAssetEditDataNapi::Constructor(napi_env env, napi_callback_info 
     CHECK_COND(env, editData != nullptr && obj != nullptr, JS_INNER_FAIL);
     obj->editData_ = editData;
     CHECK_ARGS(env,
-        napi_wrap(
-            env, thisVar, reinterpret_cast<void*>(obj.get()), MediaAssetEditDataNapi::Destructor, nullptr, nullptr),
+        napi_wrap(env, thisVar, reinterpret_cast<void*>(obj.get()),
+            MediaAssetEditDataNapi::Destructor, nullptr, nullptr),
         JS_INNER_FAIL);
     obj.release();
     return thisVar;
