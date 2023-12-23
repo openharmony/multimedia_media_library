@@ -165,6 +165,20 @@
         }                                                           \
     } while (0)
 
+#define RETURN_NAPI_TRUE(env)                                                 \
+    do {                                                                      \
+        napi_value result = nullptr;                                          \
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL); \
+        return result;                                                        \
+    } while (0)
+
+#define RETURN_NAPI_UNDEFINED(env)                                        \
+    do {                                                                  \
+        napi_value result = nullptr;                                      \
+        CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL); \
+        return result;                                                    \
+    } while (0)
+
 namespace OHOS {
 namespace Media {
 /* Constants for array index */
@@ -284,6 +298,10 @@ const std::vector<std::string> notifyTypeEnum {
 
 const std::vector<std::string> requestPhotoTypeEnum {
     "REQUEST_ALL_THUMBNAILS", "REQUEST_FAST_THUMBNAIL", "REQUEST_QUALITY_THUMBNAIL"
+};
+
+const std::vector<std::string> resourceTypeEnum {
+    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY"
 };
 
 const std::vector<std::string> fileKeyEnumValues {

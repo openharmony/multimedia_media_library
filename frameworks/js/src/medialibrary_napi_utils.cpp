@@ -21,6 +21,7 @@
 #include "location_column.h"
 #include "ipc_skeleton.h"
 #include "media_asset_change_request_napi.h"
+#include "media_assets_change_request_napi.h"
 #include "media_album_change_request_napi.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -1155,7 +1156,7 @@ napi_value MediaLibraryNapiUtils::GetNapiValueArray(napi_env env, napi_value arg
         napi_value value = nullptr;
         CHECK_ARGS(env, napi_get_element(env, arg, i, &value), JS_INNER_FAIL);
         if (value == nullptr) {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset element");
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get element");
             return nullptr;
         }
         values.push_back(value);
@@ -1307,6 +1308,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<P
 template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext> &context, string &param);
 
+template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<MediaAssetsChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetsChangeRequestAsyncContext> &context, string &param);
+
 template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<MediaAlbumChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext> &context, string &param);
 
@@ -1331,6 +1335,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<Fil
 template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext> &context, bool &param);
 
+template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<MediaAssetsChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetsChangeRequestAsyncContext> &context, bool &param);
+
 template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<PhotoAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
     const size_t maxArgs);
@@ -1341,6 +1348,10 @@ template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr
 
 template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& asyncContext,
+    const size_t minArgs, const size_t maxArgs);
+
+template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<MediaAssetsChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetsChangeRequestAsyncContext>& asyncContext,
     const size_t minArgs, const size_t maxArgs);
 
 template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<MediaAlbumChangeRequestAsyncContext>>(
@@ -1373,6 +1384,10 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaLibraryInitC
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetChangeRequestAsyncContext>(napi_env env,
     unique_ptr<MediaAssetChangeRequestAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetsChangeRequestAsyncContext>(napi_env env,
+    unique_ptr<MediaAssetsChangeRequestAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAlbumChangeRequestAsyncContext>(napi_env env,

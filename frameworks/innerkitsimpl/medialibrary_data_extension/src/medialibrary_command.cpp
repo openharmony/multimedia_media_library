@@ -94,6 +94,9 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_PORTRAIT_MERGE_ALBUM, OperationType::PORTRAIT_MERGE_ALBUM },
     { OPRN_DISMISS_ASSET, OperationType::DISMISS_ASSET },
     { OPRN_PORTRAIT_COVER_URI, OperationType::PORTRAIT_COVER_URI },
+    { OPRN_SUBMIT_CACHE, OperationType::SUBMIT_CACHE },
+    { OPRN_BATCH_UPDATE_FAV, OperationType::BATCH_UPDATE_FAV },
+    { OPRN_BATCH_UPDATE_USER_COMMENT, OperationType::BATCH_UPDATE_USER_COMMENT },
 };
 }
 
@@ -543,6 +546,12 @@ void MediaLibraryCommand::ParseOprnObjectFromFileUri()
     }
 
     string uri = uri_.ToString();
+    // parse cache file uri
+    if (MediaFileUtils::StartsWith(uri, PhotoColumn::PHOTO_CACHE_URI_PREFIX)) {
+        oprnObject_ = OperationObject::PAH_PHOTO;
+        return;
+    }
+
     static const map<string, OperationObject> oprnMap = {
         { PhotoColumn::PHOTO_URI_PREFIX, OperationObject::FILESYSTEM_PHOTO },
         { AudioColumn::AUDIO_URI_PREFIX, OperationObject::FILESYSTEM_AUDIO }

@@ -119,6 +119,9 @@ enum class EXPORT OperationType : uint32_t {
     PORTRAIT_MERGE_ALBUM,
     DISMISS_ASSET,
     PORTRAIT_COVER_URI,
+    SUBMIT_CACHE,
+    BATCH_UPDATE_FAV,
+    BATCH_UPDATE_USER_COMMENT,
 };
 
 class MediaLibraryCommand {

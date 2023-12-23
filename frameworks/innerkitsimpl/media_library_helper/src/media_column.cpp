@@ -104,6 +104,7 @@ const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
 
 const std::string PhotoColumn::PHOTO_URI_PREFIX = "file://media/Photo/";
 const std::string PhotoColumn::DEFAULT_PHOTO_URI = "file://media/Photo";
+const std::string PhotoColumn::PHOTO_CACHE_URI_PREFIX = "file://media/Photo/cache/";
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 
 const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS " +

@@ -15,8 +15,10 @@
 
 #include "medialibrary_photo_operations.h"
 
+#include <filesystem>
 #include <memory>
 #include <mutex>
+#include <nlohmann/json.hpp>
 
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
@@ -78,8 +80,32 @@ int32_t MediaLibraryPhotoOperations::Create(MediaLibraryCommand &cmd)
     }
 }
 
+int32_t MediaLibraryPhotoOperations::DeleteCache(MediaLibraryCommand& cmd)
+{
+    string uriString = cmd.GetUriStringWithoutSegment();
+    if (!MediaFileUtils::StartsWith(uriString, PhotoColumn::PHOTO_CACHE_URI_PREFIX)) {
+        return E_INVALID_VALUES;
+    }
+
+    string fileName = uriString.substr(PhotoColumn::PHOTO_CACHE_URI_PREFIX.size());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(fileName) == E_OK, E_INVALID_URI,
+        "Check fileName failed, fileName=%{private}s", fileName.c_str());
+    string cacheDir = GetAssetCacheDir();
+    string path = cacheDir + "/" + fileName;
+    if (!MediaFileUtils::DeleteFile(path)) {
+        MEDIA_ERR_LOG("Delete cache file failed, errno: %{public}d, uri: %{private}s", errno, uriString.c_str());
+        return E_HAS_FS_ERROR;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
 {
+    // delete file in .cache
+    if (MediaFileUtils::StartsWith(cmd.GetUri().ToString(), PhotoColumn::PHOTO_CACHE_URI_PREFIX)) {
+        return DeleteCache(cmd);
+    }
+
     string fileId = cmd.GetOprnFileId();
     vector<string> columns = {
         PhotoColumn::MEDIA_ID,
@@ -256,8 +282,14 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::Open");
 
+    bool isCacheOperation = false;
+    int32_t errCode = OpenCache(cmd, isCacheOperation);
+    if (errCode != E_OK || isCacheOperation) {
+        return errCode;
+    }
+
     bool isSkipEdit = true;
-    int32_t errCode = OpenEditOperation(cmd, isSkipEdit);
+    errCode = OpenEditOperation(cmd, isSkipEdit);
     if (errCode != E_OK || !isSkipEdit) {
         return errCode;
     }
@@ -698,6 +730,97 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     return changedRows;
 }
 
+static int32_t GetFavoriteState(const ValuesBucket& values)
+{
+    ValueObject obj;
+    bool isValid = values.GetObject(PhotoColumn::MEDIA_IS_FAV, obj);
+    if (!isValid) {
+        return E_INVALID_VALUES;
+    }
+
+    int32_t favoriteState = -1;
+    int ret = obj.GetInt(favoriteState);
+    if (ret != E_OK || (favoriteState != 0 && favoriteState != 1)) {
+        return E_INVALID_VALUES;
+    }
+    return favoriteState;
+}
+
+static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
+{
+    int32_t favoriteState = GetFavoriteState(cmd.GetValueBucket());
+    CHECK_AND_RETURN_RET_LOG(favoriteState >= 0, favoriteState, "Failed to get favoriteState");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    CHECK_AND_RETURN_RET_LOG(rdbStore != nullptr, E_HAS_DB_ERROR, "Failed to get rdbStore");
+
+    RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
+    vector<string> notifyUris = predicates.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
+    ValuesBucket values;
+    values.Put(PhotoColumn::MEDIA_IS_FAV, favoriteState);
+    int32_t updatedRows = rdbStore->Update(values, predicates);
+    CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Failed to set favorite, err: %{public}d", updatedRows);
+
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw(), { to_string(PhotoAlbumSubType::FAVORITE) });
+    auto watch = MediaLibraryNotify::GetInstance();
+    int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
+    if (favAlbumId > 0) {
+        NotifyType type = favoriteState ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+        for (const string& notifyUri : notifyUris) {
+            watch->Notify(notifyUri, type, favAlbumId);
+        }
+    } else {
+        MEDIA_WARN_LOG("Favorite album not found, failed to notify favorite album.");
+    }
+
+    for (const string& notifyUri : notifyUris) {
+        watch->Notify(notifyUri, NotifyType::NOTIFY_UPDATE);
+    }
+
+    if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
+        MEDIA_WARN_LOG(
+            "Try to notify %{public}zu items, but only %{public}d items updated.", notifyUris.size(), updatedRows);
+    }
+    return updatedRows;
+}
+
+int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cmd)
+{
+    vector<shared_ptr<FileAsset>> fileAssetVector;
+    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_TYPE, PhotoColumn::MEDIA_NAME };
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(*(cmd.GetAbsRdbPredicates()));
+    int32_t errCode = GetFileAssetVectorFromDb(*(cmd.GetAbsRdbPredicates()),
+        OperationObject::FILESYSTEM_PHOTO, fileAssetVector, columns);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to query file asset vector from db, errCode=%{private}d", errCode);
+
+    for (const auto& fileAsset : fileAssetVector) {
+        errCode = SetUserComment(cmd, fileAsset);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to set user comment, errCode=%{private}d", errCode);
+    }
+
+    TransactionOperations transactionOprn(MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    errCode = transactionOprn.Start();
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode,
+        "Failed to start TransactionOperations, errCode=%{private}d", errCode);
+    int32_t updateRows = UpdateFileInDb(cmd);
+    if (updateRows < 0) {
+        MEDIA_ERR_LOG("Update Photo in database failed, updateRows=%{public}d", updateRows);
+        return updateRows;
+    }
+    transactionOprn.Finish();
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    for (const auto& fileAsset : fileAssetVector) {
+        string extraUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath());
+        string assetUri = MediaFileUtils::GetUriByExtrConditions(
+            PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()), extraUri);
+        watch->Notify(assetUri, NotifyType::NOTIFY_UPDATE);
+    }
+    return updateRows;
+}
+
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
     vector<string> columns = {
@@ -758,6 +881,10 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return SetPendingStatus(cmd);
         case OperationType::HIDE:
             return HidePhotos(cmd);
+        case OperationType::BATCH_UPDATE_FAV:
+            return BatchSetFavorite(cmd);
+        case OperationType::BATCH_UPDATE_USER_COMMENT:
+            return BatchSetUserComment(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
@@ -813,6 +940,32 @@ int32_t MediaLibraryPhotoOperations::UpdateV9(MediaLibraryCommand &cmd)
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId())),
         NotifyType::NOTIFY_UPDATE);
     return rowId;
+}
+
+int32_t MediaLibraryPhotoOperations::OpenCache(MediaLibraryCommand& cmd, bool& isCacheOperation)
+{
+    isCacheOperation = false;
+    string uriString = cmd.GetUriStringWithoutSegment();
+    if (!MediaFileUtils::StartsWith(uriString, PhotoColumn::PHOTO_CACHE_URI_PREFIX)) {
+        return E_OK;
+    }
+
+    isCacheOperation = true;
+    string fileName = uriString.substr(PhotoColumn::PHOTO_CACHE_URI_PREFIX.size());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckDisplayName(fileName) == E_OK, E_INVALID_URI,
+        "Check fileName failed, fileName=%{private}s", fileName.c_str());
+    MediaType mediaType = MediaFileUtils::GetMediaType(fileName);
+    CHECK_AND_RETURN_RET_LOG(mediaType == MediaType::MEDIA_TYPE_IMAGE || mediaType == MediaType::MEDIA_TYPE_VIDEO,
+        E_INVALID_URI, "Check mediaType failed, fileName=%{private}s, mediaType=%{public}d", fileName.c_str(),
+        mediaType);
+
+    string cacheDir = GetAssetCacheDir();
+    string path = cacheDir + "/" + fileName;
+    CHECK_AND_RETURN_RET_LOG(
+        MediaFileUtils::CreateDirectory(cacheDir), E_HAS_FS_ERROR, "Cannot create dir %{private}s", cacheDir.c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateAsset(path) == E_SUCCESS, E_HAS_FS_ERROR,
+        "Create cache file failed, path=%{private}s", path.c_str());
+    return OpenFileWithPrivacy(path, MEDIA_FILEMODE_WRITEONLY);
 }
 
 int32_t MediaLibraryPhotoOperations::OpenEditOperation(MediaLibraryCommand &cmd, bool &isSkip)
@@ -1046,6 +1199,21 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsert(MediaLibraryCommand &cmd)
     return ret;
 }
 
+static void NotifyFormMap(const int32_t fileId, const string& path, const bool isSave)
+{
+    string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileId, path);
+    if (uri.empty()) {
+        MEDIA_WARN_LOG("Failed to GetUriByFileId(%{public}d, %{private}s)", fileId, path.c_str());
+        return;
+    }
+
+    vector<int64_t> formIds;
+    MediaLibraryFormMapOperations::GetFormMapFormId(uri.c_str(), formIds);
+    if (!formIds.empty()) {
+        MediaLibraryFormMapOperations::PublishedChange(uri, formIds, isSave);
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<FileAsset> &fileAsset,
     const string &editData)
 {
@@ -1092,14 +1260,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
     int32_t errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
         fileAsset->GetId());
-    string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileAsset->GetId(), fileAsset->GetFilePath());
-    if (!uri.empty()) {
-        vector<int64_t> formIds;
-        MediaLibraryFormMapOperations::GetFormMapFormId(uri.c_str(), formIds);
-        if (!formIds.empty()) {
-            MediaLibraryFormMapOperations::PublishedChange(uri, formIds, false);
-        }
-    }
+    NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
 }
 
@@ -1170,15 +1331,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
         fileId);
     ScanFile(path, true, true, true);
-
-    string uri = MediaLibraryFormMapOperations::GetUriByFileId(fileAsset->GetId(), fileAsset->GetFilePath());
-    if (!uri.empty()) {
-        vector<int64_t> formIds;
-        MediaLibraryFormMapOperations::GetFormMapFormId(uri.c_str(), formIds);
-        if (!formIds.empty()) {
-            MediaLibraryFormMapOperations::PublishedChange(uri, formIds, false);
-        }
-    }
+    NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
 }
 
@@ -1204,6 +1357,156 @@ void MediaLibraryPhotoOperations::DeleteRevertMessage(const string &path)
         return;
     }
     return;
+}
+
+static int32_t MoveCacheFile(const string& srcPath, const string& destPath)
+{
+    std::error_code errCode;
+    filesystem::path dest(destPath);
+    if (filesystem::exists(dest) && !filesystem::remove(dest, errCode)) {
+        MEDIA_ERR_LOG("Failed to remove %{private}s, errCode: %{public}d", destPath.c_str(), errCode.value());
+        return errCode.value();
+    }
+
+    filesystem::path src(srcPath);
+    filesystem::rename(src, dest, errCode);
+    return errCode.value();
+}
+
+int32_t MediaLibraryPhotoOperations::ParseMediaAssetEditData(MediaLibraryCommand& cmd, string& editData)
+{
+    string compatibleFormat;
+    string formatVersion;
+    string data;
+    const ValuesBucket& values = cmd.GetValueBucket();
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, COMPATIBLE_FORMAT, compatibleFormat), E_INVALID_VALUES,
+        "Failed to get compatibleFormat");
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, FORMAT_VERSION, formatVersion), E_INVALID_VALUES,
+        "Failed to get formatVersion");
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, EDIT_DATA, data), E_INVALID_VALUES,
+        "Failed to get edit data");
+
+    nlohmann::json editDataJson;
+    editDataJson[COMPATIBLE_FORMAT] = compatibleFormat;
+    editDataJson[FORMAT_VERSION] = formatVersion;
+    editDataJson[EDIT_DATA] = data;
+    editDataJson[APP_ID] = cmd.GetBundleName();
+    editData = editDataJson.dump();
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
+    const shared_ptr<FileAsset>& fileAsset, const string& editData)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
+    string assetPath = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+    string editDataPath = GetEditDataPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_VALUES, "Failed to get edit data path");
+
+    if (fileAsset->GetPhotoEditTime() == 0) { // the asset has not been edited before
+        string editDataDirPath = GetEditDataDirPath(assetPath);
+        CHECK_AND_RETURN_RET_LOG(!editDataDirPath.empty(), E_INVALID_URI, "Failed to get edit dir path");
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(editDataDirPath), E_HAS_FS_ERROR,
+            "Failed to create dir %{private}s", editDataDirPath.c_str());
+
+        string sourcePath = GetEditDataSourcePath(assetPath);
+        CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Failed to get source path");
+        if (!MediaFileUtils::IsFileExists(sourcePath)) {
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(assetPath, sourcePath) == E_SUCCESS, E_HAS_FS_ERROR,
+                "Move file failed, srcPath:%{private}s, newPath:%{private}s", assetPath.c_str(), sourcePath.c_str());
+        }
+
+        if (!MediaFileUtils::IsFileExists(editDataPath)) {
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(editDataPath), E_HAS_FS_ERROR,
+                "Failed to create file %{private}s", editDataPath.c_str());
+        }
+    }
+
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, editData), E_HAS_FS_ERROR,
+        "Failed to write editdata:%{private}s", editDataPath.c_str());
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd,
+    const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
+    CHECK_AND_RETURN_RET_LOG(
+        MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) ==
+            MediaFileUtils::GetExtensionFromPath(cachePath),
+        E_INVALID_VALUES, "displayName mismatches extension of cache file name");
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetDateTrashed() == 0, E_IS_RECYCLED, "FileAsset is in recycle");
+
+    int64_t pending = fileAsset->GetTimePending();
+    CHECK_AND_RETURN_RET_LOG(
+        pending == 0 || pending == UNCREATE_FILE_TIMEPENDING || pending == UNOPEN_FILE_COMPONENT_TIMEPENDING,
+        E_IS_PENDING_ERROR, "FileAsset is in pending: %{public}ld", static_cast<long>(pending));
+
+    string editData;
+    int32_t id = fileAsset->GetId();
+    bool isEdit = (pending == 0);
+    if (isEdit) {
+        int32_t errCode = ParseMediaAssetEditData(cmd, editData);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to parse MediaAssetEditData");
+
+        if (!PhotoEditingRecord::GetInstance()->StartCommitEdit(id)) {
+            return E_IS_IN_REVERT;
+        }
+        errCode = SaveSourceAndEditData(fileAsset, editData);
+        if (errCode != E_OK) {
+            PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
+            return errCode;
+        }
+    }
+
+    string assetPath = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+    int32_t errCode = MoveCacheFile(cachePath, assetPath);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
+        "Failed to move %{private}s to %{private}s, errCode: %{public}d", cachePath.c_str(), assetPath.c_str(),
+        errCode);
+    ScanFile(assetPath, true, true, true);
+    NotifyFormMap(id, assetPath, false);
+
+    if (isEdit) {
+        int32_t errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
+        PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
+    }
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
+{
+    const ValuesBucket& values = cmd.GetValueBucket();
+    string fileName;
+    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, CACHE_FILE_NAME, fileName),
+        E_INVALID_VALUES, "Failed to get fileName");
+    string cachePath = GetAssetCacheDir() + "/" + fileName;
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(cachePath), E_NO_SUCH_FILE,
+        "cachePath: %{private}s does not exist!", cachePath.c_str());
+
+    int32_t id = 0;
+    if (!GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id)) {
+        string displayName;
+        CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName),
+            E_INVALID_VALUES, "Failed to get displayName");
+        CHECK_AND_RETURN_RET_LOG(
+            MediaFileUtils::GetExtensionFromPath(displayName) == MediaFileUtils::GetExtensionFromPath(fileName),
+            E_INVALID_VALUES, "displayName mismatches extension of cache file name");
+        id = CreateV10(cmd);
+        CHECK_AND_RETURN_RET_LOG(id > 0, E_FAIL, "Failed to create asset");
+    }
+
+    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
+        PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
+        PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "Failed to get FileAsset, fileId=%{public}d", id);
+    int32_t errCode = SubmitCacheExecute(cmd, fileAsset, cachePath);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to submit cache, fileId=%{public}d", id);
+    return id;
 }
 
 PhotoEditingRecord::PhotoEditingRecord()

@@ -53,6 +53,7 @@ public:
     EXPORT static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     EXPORT static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
     EXPORT static napi_value CreateFileAsset(napi_env env, std::unique_ptr<FileAsset> &iAsset);
+    EXPORT static napi_value CreatePhotoAsset(napi_env env, std::shared_ptr<FileAsset> &fileAsset);
 
     std::string GetFileDisplayName() const;
     std::string GetRelativePath() const;
@@ -146,6 +147,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperRequestSource(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCommitEditedAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperRevertToOriginal(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperGetEditData(napi_env env, napi_callback_info info);
     static napi_value GetExports(napi_env &env, napi_value &exports, napi_property_descriptor *file_asset_props,
         int32_t fileAssetPropsSize);
 
