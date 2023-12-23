@@ -546,7 +546,7 @@ void GetIsMeAlbumPredicates(DataShare::DataSharePredicates &predicates)
         MEDIA_ERR_LOG("Not support to query isMe");
         return;
     }
-    string selection = "WHERE " + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + COUNT + " > " +
+    string selection = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + COUNT + " > " +
         to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " GROUP BY " + GROUP_TAG + " ORDER BY " + COUNT + " DESC";
     predicates.SetWhereClause(selection);
 }
