@@ -143,6 +143,18 @@ static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
     selectionTotal = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
     delRows = DeleteFromVisionTables(fileId, selectionTotal, SALIENCY, PAH_ANA_SALIENCY);
     MEDIA_DEBUG_LOG("delete %{public}d rows from saliency for edit commit", delRows);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + OBJECT + " = 1";
+    delRows = DeleteFromVisionTables(fileId, selectionTotal, OBJECT, PAH_ANA_OBJECT);
+    MEDIA_DEBUG_LOG("delete %{public}d rows from object for edit commit", delRows);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + RECOMMENDATION + " = 1";
+    delRows = DeleteFromVisionTables(fileId, selectionTotal, RECOMMENDATION, PAH_ANA_RECOMMENDATION);
+    MEDIA_DEBUG_LOG("delete %{public}d rows from recommendation for edit commit", delRows);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + SEGMENTATION + " = 1";
+    delRows = DeleteFromVisionTables(fileId, selectionTotal, SEGMENTATION, PAH_ANA_SEGMENTATION);
+    MEDIA_DEBUG_LOG("delete %{public}d rows from segmentation for edit commit", delRows);
 }
 
 int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &cmd)
@@ -159,7 +171,6 @@ int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &c
         return E_HAS_DB_ERROR;
     }
 
-    //thread(UpdateVisionTableForEdit, fileId).detach();
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker ==  nullptr) {
         MEDIA_ERR_LOG("Can not get asyncWorker");
