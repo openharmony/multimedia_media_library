@@ -24,6 +24,12 @@
 
 namespace OHOS {
 namespace Media {
+class UpdateVisionAsyncTaskData : public AsyncTaskData {
+public:
+    UpdateVisionAsyncTaskData(std::string fileId) : fileId_(std::move(fileId)) {};
+    virtual ~UpdateVisionAsyncTaskData() override = default;
+    std::string fileId_;
+};
 class MediaLibraryVisionOperations {
 public:
     static int32_t InsertOperation(MediaLibraryCommand &cmd);

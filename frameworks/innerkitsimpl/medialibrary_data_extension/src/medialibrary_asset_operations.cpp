@@ -91,6 +91,9 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
             break;
         case OperationType::REVERT_EDIT:
             errCode = MediaLibraryPhotoOperations::RevertToOrigin(cmd);
+            if (errCode == E_SUCCESS) {
+                MediaLibraryVisionOperations::EditCommitOperation(cmd);
+            }
             break;
         default:
             MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
