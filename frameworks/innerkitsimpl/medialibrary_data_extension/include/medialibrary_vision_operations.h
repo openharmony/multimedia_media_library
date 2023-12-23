@@ -30,6 +30,7 @@ public:
     virtual ~UpdateVisionAsyncTaskData() override = default;
     std::string fileId_;
 };
+
 class MediaLibraryVisionOperations {
 public:
     static int32_t InsertOperation(MediaLibraryCommand &cmd);
