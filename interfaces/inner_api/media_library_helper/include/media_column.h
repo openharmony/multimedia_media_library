@@ -147,6 +147,7 @@ public:
     static const std::string PHOTO_URI_PREFIX EXPORT;
     static const std::string PHOTO_TYPE_URI EXPORT;
     static const std::string DEFAULT_PHOTO_URI EXPORT;
+    static const std::string PHOTO_CACHE_URI_PREFIX EXPORT;
 
     // all columns
     static const std::set<std::string> PHOTO_COLUMNS EXPORT;

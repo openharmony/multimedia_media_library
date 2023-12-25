@@ -121,6 +121,7 @@ thread_local napi_ref MediaLibraryNapi::sNotifyType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDefaultChangeUriRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAnalysisType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sRequestPhotoTypeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sResourceTypeEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -276,7 +277,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
         DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
         DECLARE_NAPI_PROPERTY("AnalysisType", CreateAnalysisTypeEnum(env)),
-        DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env))
+        DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("ResourceType", CreateResourceTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -1636,8 +1638,8 @@ static void JSCreateUriInCallback(napi_env env, MediaLibraryAsyncContext *contex
         if (status != napi_ok || jsObject == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset uri napi object");
             napi_get_undefined(env, &jsContext->data);
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
-                "Failed to create js object for FileAsset");
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL,
+                "System inner fail");
         } else {
             jsContext->data = jsObject;
             napi_get_undefined(env, &jsContext->error);
@@ -1659,8 +1661,8 @@ static void JSCreateAssetInCallback(napi_env env, MediaLibraryAsyncContext *cont
         if (jsFileAsset == nullptr) {
             NAPI_ERR_LOG("Failed to get file asset napi object");
             napi_get_undefined(env, &jsContext->data);
-            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
-                "Failed to create js object for FileAsset");
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL,
+                "System inner fail");
         } else {
             NAPI_DEBUG_LOG("JSCreateAssetCompleteCallback jsFileAsset != nullptr");
             jsContext->data = jsFileAsset;
@@ -5424,6 +5426,12 @@ napi_value MediaLibraryNapi::CreateNotifyTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateRequestPhotoTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, requestPhotoTypeEnum, sRequestPhotoTypeEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
+{
+    const int32_t startIdx = 1;
+    return CreateNumberEnumProperty(env, resourceTypeEnum, sResourceTypeEnumRef_, startIdx);
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,

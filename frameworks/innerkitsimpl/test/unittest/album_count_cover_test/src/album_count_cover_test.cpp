@@ -381,6 +381,18 @@ int32_t HideFileAsset(const unique_ptr<FileAsset> &fileAsset, bool hiddenState)
     return changedRows;
 }
 
+void BatchFavoriteFileAsset(const vector<string>& uriArray, bool favoriteState)
+{
+    DataSharePredicates predicates;
+    predicates.In(PhotoColumn::MEDIA_ID, uriArray);
+    DataShareValuesBucket values;
+    values.Put(PhotoColumn::MEDIA_IS_FAV, favoriteState ? 1 : 0);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::BATCH_UPDATE_FAV, MediaLibraryApi::API_10);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
+    EXPECT_EQ(changedRows, uriArray.size());
+}
+
 int32_t FavoriteFileAsset(const int32_t fileId, bool favoriteState)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
@@ -494,7 +506,7 @@ void AlbumCountCoverTest::TearDown() {}
  * @tc.desc: Basic tool functions of this test
  *  1. Create asset/album.
  *  2. Album add/remove photos.
- *  3. Trash/Hide/Favorite/Delete photos.
+ *  3. Trash/Hide/(Batch)Favorite/Delete photos.
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
@@ -538,6 +550,12 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_001, TestSize.Level0)
     FavoriteFileAsset(fileAsset->GetId(), true);
     FavoriteFileAsset(fileAsset->GetId(), false);
     MEDIA_INFO_LOG("Test favorite asset end");
+
+    MEDIA_INFO_LOG("Test batchFavorite asset begin");
+    vector<string> fileAssetUriArray = { fileAsset->GetUri(), fileAsset2->GetUri() };
+    BatchFavoriteFileAsset(fileAssetUriArray, true);
+    BatchFavoriteFileAsset(fileAssetUriArray, false);
+    MEDIA_INFO_LOG("Test batchFavorite asset end");
 
     TrashFileAsset(fileAsset, true);
     DeletePermanentlyFileAsset(fileAsset->GetId());
@@ -745,6 +763,8 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
  *  7. Un-trash a photo.
  *  8. Un-favorite a photo.
  *  9. Un-favorite all photos.
+ *  10. Batch favorite all photos.
+ *  11. Batch un-favorite all photos.
  * @tc.type: FUNC
  * @tc.require: issueI89E9N
  */
@@ -764,10 +784,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
     // 2. Create a photo.
     MEDIA_INFO_LOG("Step: Create a photo, and then favorite it.");
     auto fileAsset = CreateImageAsset("Test_Favorites_001.jpg");
-    EXPECT_NE(fileAsset, nullptr);
-    if (fileAsset == nullptr) {
-        return;
-    }
+    ASSERT_NE(fileAsset, nullptr);
     FavoriteFileAsset(fileAsset->GetId(), true);
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
 
@@ -775,10 +792,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
     sleep(SLEEP_INTERVAL);
     MEDIA_INFO_LOG("Step: Create another photo, and then favorite it.");
     auto fileAsset2 = CreateImageAsset("Test_Favorites_002.jpg");
-    EXPECT_NE(fileAsset2, nullptr);
-    if (fileAsset2 == nullptr) {
-        return;
-    }
+    ASSERT_NE(fileAsset2, nullptr);
     FavoriteFileAsset(fileAsset2->GetId(), true);
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
 
@@ -812,6 +826,15 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_005, TestSize.Level0)
 
     // 9. Un-favorite all photos.
     FavoriteFileAsset(fileAsset->GetId(), false);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+
+    // 10. Batch favorite all photos.
+    vector<string> fileAssetUriArray = { fileAsset->GetUri(), fileAsset2->GetUri() };
+    BatchFavoriteFileAsset(fileAssetUriArray, true);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
+
+    // 11. Batch un-favorite all photos.
+    BatchFavoriteFileAsset(fileAssetUriArray, false);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::FAVORITE);
 
     MEDIA_INFO_LOG("album_count_cover_005 end");

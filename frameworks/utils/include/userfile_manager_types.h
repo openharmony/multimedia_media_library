@@ -45,6 +45,12 @@ enum MediaType {
     MEDIA_TYPE_DEFAULT,
 };
 
+enum class ResourceType {
+    PHOTO_PROXY = 0,
+    IMAGE_RESOURCE, // corresponds to MEDIA_TYPE_IMAGE
+    VIDEO_RESOURCE, // corresponds to MEDIA_TYPE_VIDEO
+};
+
 enum AnalysisType : int32_t {
     ANALYSIS_INVALID = -1,
     ANALYSIS_AESTHETICS_SCORE,

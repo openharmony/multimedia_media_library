@@ -21,6 +21,7 @@
 #include "location_column.h"
 #include "ipc_skeleton.h"
 #include "media_asset_change_request_napi.h"
+#include "media_assets_change_request_napi.h"
 #include "media_album_change_request_napi.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -40,6 +41,7 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
+static const string EMPTY_STRING = "";
 using json = nlohmann::json;
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
@@ -628,13 +630,16 @@ void MediaLibraryNapiUtils::HandleError(napi_env env, int error, napi_value &err
         return;
     }
 
-    string errMsg = "operation fail";
+    string errMsg = "System inner fail";
+    int errorOriginal = error;
     if (jsErrMap.count(error) > 0) {
         errMsg = jsErrMap.at(error);
+    } else {
+        error = JS_INNER_FAIL;
     }
     CreateNapiErrorObject(env, errorObj, error, errMsg);
     errMsg = Name + " " + errMsg;
-    NAPI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), error);
+    NAPI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), errorOriginal);
 }
 
 void MediaLibraryNapiUtils::CreateNapiErrorObject(napi_env env, napi_value &errorObj, const int32_t errCode,
@@ -1015,54 +1020,65 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
 string MediaLibraryNapiUtils::ParseResultSet2JsonStr(shared_ptr<DataShare::DataShareResultSet> resultSet,
     const std::vector<std::string> &columns)
 {
-    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return "";
+    json jsonArray = json::array();
+    if (resultSet == nullptr) {
+        return jsonArray.dump();
     }
-    json jsonObject;
-    for (uint32_t i = 0; i < columns.size(); i++) {
-        DataShare::DataType dataType;
-        jsonObject[columns[i]] = "";
-        int index;
-        if (resultSet->GetColumnIndex(columns[i], index) != NativeRdb::E_OK ||
-            resultSet->GetDataType(index, dataType) != NativeRdb::E_OK) {
-            continue;
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        json jsonObject;
+        for (uint32_t i = 0; i < columns.size(); i++) {
+            string columnName = columns[i];
+            jsonObject[columnName] = GetStringValueByColumn(resultSet, columnName);
         }
-        switch (dataType) {
-            case DataShare::DataType::TYPE_INTEGER: {
-                int intValue = -1;
-                if (resultSet->GetInt(index, intValue) == NativeRdb::E_OK) {
-                    jsonObject[columns[i]] = to_string(intValue);
-                }
-                break;
+        jsonArray.push_back(jsonObject);
+    }
+    return jsonArray.dump();
+}
+
+string MediaLibraryNapiUtils::GetStringValueByColumn(shared_ptr<DataShare::DataShareResultSet> resultSet,
+    const std::string columnName)
+{
+    int index;
+    DataShare::DataType dataType;
+    if (resultSet->GetColumnIndex(columnName, index) || resultSet->GetDataType(index, dataType)) {
+        return EMPTY_STRING;
+    }
+    switch (dataType) {
+        case DataShare::DataType::TYPE_INTEGER: {
+            int intValue = -1;
+            if (resultSet->GetInt(index, intValue) == NativeRdb::E_OK) {
+                return to_string(intValue);
             }
-            case DataShare::DataType::TYPE_FLOAT: {
-                double douValue = 0.0;
-                if (resultSet->GetDouble(index, douValue) == NativeRdb::E_OK) {
-                    jsonObject[columns[i]] = to_string(douValue);
-                }
-                break;
+            break;
+        }
+        case DataShare::DataType::TYPE_FLOAT: {
+            double douValue = 0.0;
+            if (resultSet->GetDouble(index, douValue) == NativeRdb::E_OK) {
+                return to_string(douValue);
             }
-            case DataShare::DataType::TYPE_STRING: {
-                std::string strValue;
-                if (resultSet->GetString(index, strValue) == NativeRdb::E_OK) {
-                    jsonObject[columns[i]] = strValue;
-                }
-                break;
+            break;
+        }
+        case DataShare::DataType::TYPE_STRING: {
+            std::string strValue;
+            if (resultSet->GetString(index, strValue) == NativeRdb::E_OK) {
+                return strValue;
             }
-            case DataShare::DataType::TYPE_BLOB: {
-                std::vector<uint8_t> blobValue;
-                if (resultSet->GetBlob(index, blobValue) == NativeRdb::E_OK) {
-                    std::string tempValue(blobValue.begin(), blobValue.end());
-                    jsonObject[columns[i]] = tempValue;
-                }
-                break;
+            break;
+        }
+        case DataShare::DataType::TYPE_BLOB: {
+            std::vector<uint8_t> blobValue;
+            if (resultSet->GetBlob(index, blobValue) == NativeRdb::E_OK) {
+                std::string tempValue(blobValue.begin(), blobValue.end());
+                return tempValue;
             }
-            default: {
-                NAPI_ERR_LOG("Unsupported dataType: %{public}d", dataType);
-            }
+            break;
+        }
+        default: {
+            NAPI_ERR_LOG("Unsupported dataType: %{public}d", dataType);
+            break;
         }
     }
-    return jsonObject.dump();
+    return EMPTY_STRING;
 }
 
 string MediaLibraryNapiUtils::GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
@@ -1140,7 +1156,7 @@ napi_value MediaLibraryNapiUtils::GetNapiValueArray(napi_env env, napi_value arg
         napi_value value = nullptr;
         CHECK_ARGS(env, napi_get_element(env, arg, i, &value), JS_INNER_FAIL);
         if (value == nullptr) {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get asset element");
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get element");
             return nullptr;
         }
         values.push_back(value);
@@ -1292,6 +1308,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<P
 template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext> &context, string &param);
 
+template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<MediaAssetsChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetsChangeRequestAsyncContext> &context, string &param);
+
 template napi_status MediaLibraryNapiUtils::ParseArgsStringCallback<unique_ptr<MediaAlbumChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext> &context, string &param);
 
@@ -1316,6 +1335,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<Fil
 template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext> &context, bool &param);
 
+template napi_status MediaLibraryNapiUtils::ParseArgsBoolCallBack<unique_ptr<MediaAssetsChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetsChangeRequestAsyncContext> &context, bool &param);
+
 template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr<PhotoAlbumNapiAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<PhotoAlbumNapiAsyncContext> &asyncContext, const size_t minArgs,
     const size_t maxArgs);
@@ -1326,6 +1348,10 @@ template napi_status MediaLibraryNapiUtils::AsyncContextSetObjectInfo<unique_ptr
 
 template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext>& asyncContext,
+    const size_t minArgs, const size_t maxArgs);
+
+template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<MediaAssetsChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetsChangeRequestAsyncContext>& asyncContext,
     const size_t minArgs, const size_t maxArgs);
 
 template napi_status MediaLibraryNapiUtils::AsyncContextGetArgs<unique_ptr<MediaAlbumChangeRequestAsyncContext>>(
@@ -1358,6 +1384,10 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaLibraryInitC
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetChangeRequestAsyncContext>(napi_env env,
     unique_ptr<MediaAssetChangeRequestAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetsChangeRequestAsyncContext>(napi_env env,
+    unique_ptr<MediaAssetsChangeRequestAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAlbumChangeRequestAsyncContext>(napi_env env,

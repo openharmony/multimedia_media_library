@@ -40,32 +40,19 @@ protected:
     virtual void HandleRestData(void) = 0;
 
     virtual bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
-    static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
-    static std::string IsCallerSelfFunc(const std::vector<std::string> &args);
+    virtual std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
+        int32_t sourceType);
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
-    void InsertPhoto(int32_t sceneCode, const std::vector<FileInfo> &fileInfos, int32_t sourceType) const;
+    void InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
         std::string &newPath, std::string &relativePath);
     bool IsSameFile(const FileInfo &fileInfo) const;
+    void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
-};
-
-class RdbCallback : public NativeRdb::RdbOpenCallback {
-public:
-    virtual int32_t OnCreate(NativeRdb::RdbStore &rdb) override
-    {
-        return 0;
-    }
-
-    virtual int32_t OnUpgrade(NativeRdb::RdbStore &rdb, int32_t oldVersion,
-        int32_t newVersion) override
-    {
-        return 0;
-    }
 };
 } // namespace Media
 } // namespace OHOS

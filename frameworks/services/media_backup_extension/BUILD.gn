@@ -26,10 +26,12 @@ ohos_shared_library("mediabackup") {
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_scanner/src/scanner/include",
   ]
 
   sources = [
     "./src/backup_database_utils.cpp",
+    "./src/backup_file_utils.cpp",
     "./src/backup_restore_service.cpp",
     "./src/base_restore.cpp",
     "./src/clone_restore.cpp",
@@ -47,11 +49,13 @@ ohos_shared_library("mediabackup") {
   ]
 
   external_deps = [
+    "ability_base:zuri",
     "ability_runtime:ability_manager",
     "ability_runtime:app_context",
     "ability_runtime:runtime",
     "c_utils:utils",
     "data_share:datashare_consumer",
+    "ffrt:libffrt",
     "hilog:libhilog",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",

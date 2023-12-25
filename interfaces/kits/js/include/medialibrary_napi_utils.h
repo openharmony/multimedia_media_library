@@ -165,6 +165,20 @@
         }                                                           \
     } while (0)
 
+#define RETURN_NAPI_TRUE(env)                                                 \
+    do {                                                                      \
+        napi_value result = nullptr;                                          \
+        CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL); \
+        return result;                                                        \
+    } while (0)
+
+#define RETURN_NAPI_UNDEFINED(env)                                        \
+    do {                                                                  \
+        napi_value result = nullptr;                                      \
+        CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL); \
+        return result;                                                    \
+    } while (0)
+
 namespace OHOS {
 namespace Media {
 /* Constants for array index */
@@ -267,7 +281,7 @@ const std::vector<std::string> systemAlbumSubType {
 };
 
 const std::vector<std::string> analysisAlbumSubType {
-    "CLASSIFY", "SOURCE", "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY", "SHOOTING_MODE"
+    "CLASSIFY", "SOURCE", "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY", "SHOOTING_MODE", "PORTRAIT"
 };
 
 const std::vector<std::string> positionTypeEnum {
@@ -284,6 +298,10 @@ const std::vector<std::string> notifyTypeEnum {
 
 const std::vector<std::string> requestPhotoTypeEnum {
     "REQUEST_ALL_THUMBNAILS", "REQUEST_FAST_THUMBNAIL", "REQUEST_QUALITY_THUMBNAIL"
+};
+
+const std::vector<std::string> resourceTypeEnum {
+    "IMAGE_RESOURCE", "VIDEO_RESOURCE", "PHOTO_PROXY"
 };
 
 const std::vector<std::string> fileKeyEnumValues {
@@ -550,6 +568,8 @@ public:
         const std::string &propertyName);
     static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::vector<std::string> &cloumns);
+    static std::string GetStringValueByColumn(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
+        const std::string columnName);
 
     static napi_value GetNapiValueArray(napi_env env, napi_value arg, std::vector<napi_value> &values);
     static napi_value GetUriArrayFromAssets(

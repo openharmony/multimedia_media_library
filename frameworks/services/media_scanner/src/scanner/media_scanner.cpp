@@ -608,7 +608,7 @@ int32_t MediaScannerObj::InsertOrUpdateAlbumInfo(const string &albumPath, int32_
         Metadata albumInfo = albumMap_.at(albumPath);
         albumId = albumInfo.GetFileId();
 
-        if (albumInfo.GetFileDateModified() == MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim)) {
+        if ((albumInfo.GetFileDateModified() / MSEC_TO_SEC) == statInfo.st_mtime) {
             scannedIds_.insert(make_pair(MEDIALIBRARY_TABLE, albumId));
             return albumId;
         } else {

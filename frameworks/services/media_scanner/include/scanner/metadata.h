@@ -43,8 +43,8 @@ public:
     EXPORT void SetRelativePath(const VariantData &relativePath);
     EXPORT const std::string &GetRelativePath() const;
 
-    void SetFileMimeType(const VariantData &mimeType);
-    const std::string &GetFileMimeType() const;
+    EXPORT void SetFileMimeType(const VariantData &mimeType);
+    EXPORT const std::string &GetFileMimeType() const;
 
     EXPORT void SetFileMediaType(const VariantData &mediaType);
     EXPORT MediaType GetFileMediaType() const;
@@ -61,7 +61,7 @@ public:
     EXPORT void SetFileDateModified(const VariantData &dateModified);
     EXPORT int64_t GetFileDateModified() const;
 
-    void SetFileExtension(const VariantData &fileExt);
+    EXPORT void SetFileExtension(const VariantData &fileExt);
     const std::string &GetFileExtension() const;
 
     EXPORT void SetFileTitle(const VariantData &title);
@@ -74,16 +74,16 @@ public:
     EXPORT const std::string &GetAlbum() const;
 
     void SetFileHeight(const VariantData &height);
-    int32_t GetFileHeight() const;
+    EXPORT int32_t GetFileHeight() const;
 
     void SetFileWidth(const VariantData &width);
-    int32_t GetFileWidth() const;
+    EXPORT int32_t GetFileWidth() const;
 
     void SetOrientation(const VariantData &orientation);
-    int32_t GetOrientation() const;
+    EXPORT int32_t GetOrientation() const;
 
     void SetFileDuration(const VariantData &duration);
-    int32_t GetFileDuration() const;
+    EXPORT int32_t GetFileDuration() const;
 
     EXPORT int32_t GetParentId() const;
     EXPORT void SetParentId(const VariantData &id);
@@ -101,10 +101,10 @@ public:
     EXPORT int64_t GetDateTaken() const;
 
     void SetLongitude(const VariantData &longitude);
-    double GetLongitude() const;
+    EXPORT double GetLongitude() const;
 
     void SetLatitude(const VariantData &latitude);
-    double GetLatitude() const;
+    EXPORT double GetLatitude() const;
 
     void SetTimePending(const VariantData &timePending);
     int64_t GetTimePending() const;
@@ -113,7 +113,7 @@ public:
     const std::string &GetUserComment() const;
 
     void SetAllExif(const VariantData &allExif);
-    const std::string &GetAllExif() const;
+    EXPORT const std::string &GetAllExif() const;
 
     void SetDateYear(const VariantData &dateYear);
     const std::string &getDateYear() const;
@@ -125,13 +125,13 @@ public:
     const std::string &GetDateDay() const;
 
     void SetShootingMode(const VariantData &shootingMode);
-    const std::string &GetShootingMode() const;
+    EXPORT const std::string &GetShootingMode() const;
 
     void SetShootingModeTag(const VariantData &shootingMode);
-    const std::string &GetShootingModeTag() const;
+    EXPORT const std::string &GetShootingModeTag() const;
 
     void SetLastVisitTime(const VariantData &lastVisitTime);
-    int64_t GetLastVisitTime() const;
+    EXPORT int64_t GetLastVisitTime() const;
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
     void SetPhotoSubType(const VariantData &photoSubType);
