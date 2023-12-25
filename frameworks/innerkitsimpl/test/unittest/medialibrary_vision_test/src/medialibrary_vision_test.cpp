@@ -96,6 +96,7 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     uint64_t tokenId = 0;
     PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryVisionTest", perms, tokenId);
     ASSERT_TRUE(tokenId != 0);
+    CleanVisionData();
 }
 
 void MediaLibraryVisionTest::TearDownTestCase(void)
