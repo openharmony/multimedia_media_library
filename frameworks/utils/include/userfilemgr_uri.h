@@ -57,6 +57,10 @@ const std::string OPRN_PORTRAIT_MERGE_ALBUM = "merge_album";
 const std::string OPRN_DISMISS_ASSET = "dismiss_asset";
 const std::string OPRN_PORTRAIT_COVER_URI = "cover_uri";
 const std::string OPRN_SUBMIT_CACHE = "operation_submit_cache";
+const std::string OPRN_ADD_IMAGE = "add_image";
+const std::string OPRN_PROCESS_IMAGE = "process_image";
+const std::string OPRN_SET_LOCATION = "set_location";
+const std::string OPRN_SET_PHOTO_QUALITY = "set_photo_quality";
 
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -199,6 +203,7 @@ const std::string PAH_ANA_SALIENCY = "phaccess_ana_sal_operation";
 const std::string PAH_ANA_ADDRESS = "phaccess_ana_address_operation";
 const std::string PAH_GEO_PHOTOS = "phaccess_geo_photos_operation";
 const std::string PAH_ANA_TOTAL = "phaccess_ana_total_operation";
+const std::string PAH_MULTISTAGES_CAPTURE = "phaccess_multistages_capture_operation";
 
 // PhotoAccessHelper photo operation constants
 const std::string PAH_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE;
@@ -213,6 +218,12 @@ const std::string PAH_SUBMIT_CACHE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "
 const std::string PAH_BATCH_UPDATE_FAVORITE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_FAV;
 const std::string PAH_BATCH_UPDATE_USER_COMMENT =
     MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_USER_COMMENT;
+
+// MultiStages capture related operation uri
+const std::string PAH_SET_PHOTO_QUALITY = MEDIALIBRARY_DATA_URI + "/ "+ PAH_PHOTO + "/" + OPRN_SET_PHOTO_QUALITY;
+const std::string PAH_PROCESS_IMAGE = MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_PROCESS_IMAGE;
+const std::string PAH_ADD_IMAGE = MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_ADD_IMAGE;
+const std::string PAH_SET_LOCATION = MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_SET_LOCATION;
 
 // PhotoAccessHelper album operation constants
 const std::string PAH_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_CREATE;
