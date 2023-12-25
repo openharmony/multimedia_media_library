@@ -53,6 +53,7 @@
 #include "value_object.h"
 #include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
+#include "medialibrary_vision_operations.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
