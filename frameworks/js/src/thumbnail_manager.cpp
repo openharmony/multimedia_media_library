@@ -371,13 +371,17 @@ static PixelMapPtr DecodeThumbnail(const UniqueFd &uniqueFd, const Size &size)
         NAPI_ERR_LOG("CreatePixelMap err %{public}d", err);
         return nullptr;
     }
-#ifdef IMAGE_PURGEABLE_PIXELMAP
-    PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, uniqueFd.Get(), opts, decodeOpts);
-#endif
+
     PostProc postProc;
     if (size.width != DEFAULT_ORIGINAL && !isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
         return nullptr;
     }
+
+    // Make the ashmem of pixelmap to be purgeable after the operation on ashmem.
+    // And then make the pixelmap subject to PurgeableManager's control.
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, imageSource, decodeOpts, size);
+#endif
     return pixelMap;
 }
 
