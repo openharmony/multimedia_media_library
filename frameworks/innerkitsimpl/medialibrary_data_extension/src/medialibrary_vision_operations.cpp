@@ -126,43 +126,35 @@ static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
         MEDIA_ERR_LOG("UpdateVisionAsyncTaskData is nullptr");
         return;
     }
-    string fileId = move(data->fileId_);
+    string fileId = to_string(data->fileId_);
 
     string selectionTotal = FILE_ID + " = " + fileId + " AND " + LABEL + " = 1";
-    int32_t delRows = DeleteFromVisionTables(fileId, selectionTotal, LABEL, PAH_ANA_LABEL);
-    MEDIA_DEBUG_LOG("delete %{public}d rows from label for edit commit", delRows);
+    DeleteFromVisionTables(fileId, selectionTotal, LABEL, PAH_ANA_LABEL);
 
     selectionTotal = FILE_ID + " = " + fileId + " AND " + AESTHETICS_SCORE + " = 1";
-    delRows = DeleteFromVisionTables(fileId, selectionTotal, AESTHETICS_SCORE, PAH_ANA_ATTS);
-    MEDIA_DEBUG_LOG("delete %{public}d rows from aethetic score for edit commit", delRows);
+    DeleteFromVisionTables(fileId, selectionTotal, AESTHETICS_SCORE, PAH_ANA_ATTS);
 
     selectionTotal = FILE_ID + " = " + fileId + " AND " + OCR + " = 1";
-    delRows = DeleteFromVisionTables(fileId, selectionTotal, OCR, PAH_ANA_OCR);
-    MEDIA_DEBUG_LOG("delete %{public}d rows from OCR for edit commit", delRows);
+    DeleteFromVisionTables(fileId, selectionTotal, OCR, PAH_ANA_OCR);
 
     selectionTotal = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
-    delRows = DeleteFromVisionTables(fileId, selectionTotal, SALIENCY, PAH_ANA_SALIENCY);
-    MEDIA_DEBUG_LOG("delete %{public}d rows from saliency for edit commit", delRows);
+    DeleteFromVisionTables(fileId, selectionTotal, SALIENCY, PAH_ANA_SALIENCY);
 
     selectionTotal = FILE_ID + " = " + fileId + " AND ( " +
         FACE + " = 1 OR " +
         FACE + " = 2 OR " +
         FACE + " = 3 OR " +
         FACE + " = -2 ) " ;
-    delRows = DeleteFromVisionTables(fileId, selectionTotal, FACE, PAH_ANA_FACE);
-    MEDIA_DEBUG_LOG("delete %{public}d rows from face for edit commit", delRows);
+    DeleteFromVisionTables(fileId, selectionTotal, FACE, PAH_ANA_FACE);
 
     selectionTotal = FILE_ID + " = " + fileId + " AND " + OBJECT + " = 1";
-    delRows = DeleteFromVisionTables(fileId, selectionTotal, OBJECT, PAH_ANA_OBJECT);
-    MEDIA_DEBUG_LOG("delete %{public}d rows from object for edit commit", delRows);
+    DeleteFromVisionTables(fileId, selectionTotal, OBJECT, PAH_ANA_OBJECT);
 
     selectionTotal = FILE_ID + " = " + fileId + " AND " + RECOMMENDATION + " = 1";
-    delRows = DeleteFromVisionTables(fileId, selectionTotal, RECOMMENDATION, PAH_ANA_RECOMMENDATION);
-    MEDIA_DEBUG_LOG("delete %{public}d rows from recommendation for edit commit", delRows);
+    DeleteFromVisionTables(fileId, selectionTotal, RECOMMENDATION, PAH_ANA_RECOMMENDATION);
 
     selectionTotal = FILE_ID + " = " + fileId + " AND " + SEGMENTATION + " = 1";
-    delRows = DeleteFromVisionTables(fileId, selectionTotal, SEGMENTATION, PAH_ANA_SEGMENTATION);
-    MEDIA_DEBUG_LOG("delete %{public}d rows from segmentation for edit commit", delRows);
+    DeleteFromVisionTables(fileId, selectionTotal, SEGMENTATION, PAH_ANA_SEGMENTATION);
 }
 
 int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &cmd)
@@ -172,9 +164,9 @@ int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &c
     }
     const ValuesBucket &values = cmd.GetValueBucket();
     ValueObject valueObject;
-    string fileId;
+    int32_t fileId;
     if (values.GetObject(PhotoColumn::MEDIA_ID, valueObject)) {
-        valueObject.GetString(fileId);
+        valueObject.GetInt(fileId);
     } else {
         return E_HAS_DB_ERROR;
     }

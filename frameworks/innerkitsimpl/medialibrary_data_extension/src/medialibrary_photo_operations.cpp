@@ -1473,6 +1473,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
         int32_t errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
         PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
+        MediaLibraryVisionOperations::EditCommitOperation(cmd);
     }
     return E_OK;
 }
