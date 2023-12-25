@@ -24,11 +24,19 @@
 
 namespace OHOS {
 namespace Media {
+class UpdateVisionAsyncTaskData : public AsyncTaskData {
+public:
+    UpdateVisionAsyncTaskData(int32_t fileId) : fileId_(fileId) {};
+    virtual ~UpdateVisionAsyncTaskData() override = default;
+    int32_t fileId_;
+};
+
 class MediaLibraryVisionOperations {
 public:
     static int32_t InsertOperation(MediaLibraryCommand &cmd);
     static int32_t UpdateOperation(MediaLibraryCommand &cmd);
     static int32_t DeleteOperation(MediaLibraryCommand &cmd);
+    static int32_t EditCommitOperation(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
 };

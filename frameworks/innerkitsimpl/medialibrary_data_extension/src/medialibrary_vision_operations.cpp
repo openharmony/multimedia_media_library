@@ -14,14 +14,19 @@
  */
 #define MLOG_TAG "VisionOperation"
 
+#include <thread>
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
+#include "medialibrary_data_manager.h"
+#include "vision_column.h"
 #include "medialibrary_vision_operations.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
+using Uri = OHOS::Uri;
+using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
@@ -78,6 +83,108 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryVisionOperations::QueryOperation(Me
         return nullptr;
     }
     return rdbStore->Query(cmd, columns);
+}
+
+static int32_t UpdateAnalysisTotal(string &uriTotal, string &selection, const string &columnName)
+{
+    Uri uri = Uri(uriTotal);
+    DataSharePredicates predicate;
+    predicate.SetWhereClause(selection);
+    MediaLibraryCommand cmdTotal(uri);
+    DataShareValuesBucket valueBucket;
+    valueBucket.Put(STATUS, 0);
+    valueBucket.Put(columnName, 0);
+    return MediaLibraryDataManager::GetInstance()->Update(cmdTotal, valueBucket, predicate);
+}
+
+static int32_t DeleteFromVisionTables(string &fileId, string &selectionTotal,
+    const string &columnTotal, const string &tableName)
+{
+    string uriTotal = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TOTAL;
+    int32_t updateRows = UpdateAnalysisTotal(uriTotal, selectionTotal, columnTotal);
+    MEDIA_DEBUG_LOG("Update %{public}d rows at total for edit commit to %{public}s", updateRows, columnTotal.c_str());
+    if (updateRows <= 0) {
+        return updateRows;
+    }
+
+    string uriTable = MEDIALIBRARY_DATA_URI + "/" + tableName;
+    Uri uri = Uri(uriTable);
+    DataSharePredicates predicate;
+    predicate.EqualTo(FILE_ID, fileId);
+    MediaLibraryCommand cmdTable(uri);
+    return MediaLibraryDataManager::GetInstance()->Delete(cmdTable, predicate);
+}
+
+static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
+{
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("taskData is nullptr");
+        return;
+    }
+    UpdateVisionAsyncTaskData* data = static_cast<UpdateVisionAsyncTaskData*>(taskData);
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("UpdateVisionAsyncTaskData is nullptr");
+        return;
+    }
+    string fileId = to_string(data->fileId_);
+
+    string selectionTotal = FILE_ID + " = " + fileId + " AND " + LABEL + " = 1";
+    DeleteFromVisionTables(fileId, selectionTotal, LABEL, PAH_ANA_LABEL);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + AESTHETICS_SCORE + " = 1";
+    DeleteFromVisionTables(fileId, selectionTotal, AESTHETICS_SCORE, PAH_ANA_ATTS);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + OCR + " = 1";
+    DeleteFromVisionTables(fileId, selectionTotal, OCR, PAH_ANA_OCR);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
+    DeleteFromVisionTables(fileId, selectionTotal, SALIENCY, PAH_ANA_SALIENCY);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND ( " +
+        FACE + " = 1 OR " +
+        FACE + " = 2 OR " +
+        FACE + " = 3 OR " +
+        FACE + " = -2 ) " ;
+    DeleteFromVisionTables(fileId, selectionTotal, FACE, PAH_ANA_FACE);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + OBJECT + " = 1";
+    DeleteFromVisionTables(fileId, selectionTotal, OBJECT, PAH_ANA_OBJECT);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + RECOMMENDATION + " = 1";
+    DeleteFromVisionTables(fileId, selectionTotal, RECOMMENDATION, PAH_ANA_RECOMMENDATION);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + SEGMENTATION + " = 1";
+    DeleteFromVisionTables(fileId, selectionTotal, SEGMENTATION, PAH_ANA_SEGMENTATION);
+}
+
+int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &cmd)
+{
+    if (cmd.GetOprnObject() != OperationObject::FILESYSTEM_PHOTO) {
+        return E_SUCCESS;
+    }
+    const ValuesBucket &values = cmd.GetValueBucket();
+    ValueObject valueObject;
+    int32_t fileId;
+    if (values.GetObject(PhotoColumn::MEDIA_ID, valueObject)) {
+        valueObject.GetInt(fileId);
+    } else {
+        return E_HAS_DB_ERROR;
+    }
+
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker ==  nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return E_ERR;
+    }
+    UpdateVisionAsyncTaskData* taskData = new (std::nothrow) UpdateVisionAsyncTaskData(fileId);
+    shared_ptr<MediaLibraryAsyncTask> updateAsyncTask =
+        make_shared<MediaLibraryAsyncTask>(UpdateVisionTableForEdit, taskData);
+    if (updateAsyncTask != nullptr) {
+        asyncWorker->AddTask(updateAsyncTask, true);
+    } else {
+        MEDIA_ERR_LOG("UpdateAnalysisDataForEdit fail");
+    }
+    return E_SUCCESS;
 }
 }
 }
