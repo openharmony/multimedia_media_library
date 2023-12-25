@@ -38,6 +38,7 @@
 #include "js_native_api.h"
 #include "js_native_api_types.h"
 #include "location_column.h"
+#include "media_asset_edit_data_napi.h"
 #include "media_exif.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -233,6 +234,7 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
             DECLARE_NAPI_FUNCTION("commitEditedAsset", PhotoAccessHelperCommitEditedAsset),
             DECLARE_NAPI_FUNCTION("revertToOriginal", PhotoAccessHelperRevertToOriginal),
             DECLARE_NAPI_FUNCTION("getAnalysisData", PhotoAccessHelperGetAnalysisData),
+            DECLARE_NAPI_FUNCTION("getEditData", PhotoAccessHelperGetEditData),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -294,6 +296,26 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &i
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
 
     sFileAsset_ = nullptr;
+    return result;
+}
+
+napi_value FileAssetNapi::CreatePhotoAsset(napi_env env, shared_ptr<FileAsset> &fileAsset)
+{
+    if (fileAsset == nullptr || fileAsset->GetResultNapiType() != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        NAPI_ERR_LOG("Unsupported fileAsset");
+        return nullptr;
+    }
+
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_reference_value(env, photoAccessHelperConstructor_, &constructor));
+    NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
+    CHECK_COND(env, result != nullptr, JS_INNER_FAIL);
+
+    FileAssetNapi* fileAssetNapi = nullptr;
+    CHECK_ARGS(env, napi_unwrap(env, result, reinterpret_cast<void**>(&fileAssetNapi)), JS_INNER_FAIL);
+    CHECK_COND(env, fileAssetNapi != nullptr, JS_INNER_FAIL);
+    fileAssetNapi->fileAssetPtr = fileAsset;
     return result;
 }
 
@@ -4245,6 +4267,55 @@ static void PhotoAccessHelperRequestEditDataExecute(napi_env env, void *data)
     }
 }
 
+static void GetEditDataString(char* editDataBuffer, string& result)
+{
+    if (editDataBuffer == nullptr) {
+        result = "";
+        NAPI_WARN_LOG("editDataBuffer is nullptr");
+        return;
+    }
+
+    string editDataStr(editDataBuffer);
+    if (!nlohmann::json::accept(editDataStr)) {
+        result = editDataStr;
+        return;
+    }
+
+    nlohmann::json editDataJson = nlohmann::json::parse(editDataStr);
+    if (editDataJson.contains(COMPATIBLE_FORMAT) && editDataJson.contains(FORMAT_VERSION) &&
+        editDataJson.contains(EDIT_DATA) && editDataJson.contains(APP_ID)) {
+        // edit data saved by media change request
+        result = editDataJson.at(EDIT_DATA);
+    } else {
+        // edit data saved by commitEditedAsset
+        result = editDataStr;
+    }
+}
+
+static napi_value GetEditDataObject(napi_env env, char* editDataBuffer)
+{
+    if (editDataBuffer == nullptr) {
+        NAPI_WARN_LOG("editDataBuffer is nullptr");
+        return MediaAssetEditDataNapi::CreateMediaAssetEditData(env, "", "", "");
+    }
+
+    string editDataStr(editDataBuffer);
+    if (!nlohmann::json::accept(editDataStr)) {
+        return MediaAssetEditDataNapi::CreateMediaAssetEditData(env, "", "", editDataStr);
+    }
+
+    nlohmann::json editDataJson = nlohmann::json::parse(editDataStr);
+    if (editDataJson.contains(COMPATIBLE_FORMAT) && editDataJson.contains(FORMAT_VERSION) &&
+        editDataJson.contains(EDIT_DATA) && editDataJson.contains(APP_ID)) {
+        // edit data saved by media change request
+        return MediaAssetEditDataNapi::CreateMediaAssetEditData(env,
+            editDataJson.at(COMPATIBLE_FORMAT), editDataJson.at(FORMAT_VERSION), editDataJson.at(EDIT_DATA));
+    }
+
+    // edit data saved by commitEditedAsset
+    return MediaAssetEditDataNapi::CreateMediaAssetEditData(env, "", "", editDataStr);
+}
+
 static void PhotoAccessHelperRequestEditDataComplete(napi_env env, napi_status status, void *data)
 {
     auto *context = static_cast<FileAssetAsyncContext *>(data);
@@ -4256,13 +4327,10 @@ static void PhotoAccessHelperRequestEditDataComplete(napi_env env, napi_status s
     CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
 
     if (context->error == ERR_DEFAULT) {
-        if (context->editDataBuffer == nullptr) {
-            CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, "", NAPI_AUTO_LENGTH,
-                &jsContext->data), JS_INNER_FAIL);
-        } else {
-            CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, context->editDataBuffer, NAPI_AUTO_LENGTH,
-                &jsContext->data), JS_INNER_FAIL);
-        }
+        string editDataStr;
+        GetEditDataString(context->editDataBuffer, editDataStr);
+        CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, editDataStr.c_str(),
+            NAPI_AUTO_LENGTH, &jsContext->data), JS_INNER_FAIL);
         jsContext->status = true;
     } else {
         context->HandleError(env, jsContext->error);
@@ -4271,6 +4339,32 @@ static void PhotoAccessHelperRequestEditDataComplete(napi_env env, napi_status s
     if (context->work != nullptr) {
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
+    }
+    if (context->editDataBuffer != nullptr) {
+        free(context->editDataBuffer);
+    }
+    delete context;
+}
+
+static void PhotoAccessHelperGetEditDataComplete(napi_env env, napi_status status, void* data)
+{
+    auto* context = static_cast<FileAssetAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_INNER_FAIL);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_INNER_FAIL);
+    if (context->error == ERR_DEFAULT) {
+        jsContext->data = GetEditDataObject(env, context->editDataBuffer);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(
+            env, context->deferred, context->callbackRef, context->work, *jsContext);
     }
     if (context->editDataBuffer != nullptr) {
         free(context->editDataBuffer);
@@ -4301,6 +4395,30 @@ napi_value FileAssetNapi::PhotoAccessHelperRequestEditData(napi_env env, napi_ca
     asyncContext->valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperRequestEditData",
         PhotoAccessHelperRequestEditDataExecute, PhotoAccessHelperRequestEditDataComplete);
+}
+
+napi_value FileAssetNapi::PhotoAccessHelperGetEditData(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperGetEditData");
+
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<FileAssetAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::ParseArgsOnlyCallBack(env, info, asyncContext) == napi_ok,
+        "Failed to parse js args");
+    asyncContext->objectPtr = asyncContext->objectInfo->fileAssetPtr;
+    napi_value ret = nullptr;
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext->objectPtr, ret, "PhotoAsset is null");
+    auto fileUri = asyncContext->objectInfo->GetFileUri();
+    MediaLibraryNapiUtils::UriAppendKeyValue(fileUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    asyncContext->valuesBucket.Put(MEDIA_DATA_DB_URI, fileUri);
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperGetEditData",
+        PhotoAccessHelperRequestEditDataExecute, PhotoAccessHelperGetEditDataComplete);
 }
 
 static void PhotoAccessHelperRequestSourceExecute(napi_env env, void *data)

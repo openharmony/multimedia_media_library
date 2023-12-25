@@ -34,7 +34,7 @@ public:
     EXPORT static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static void UpdateAnalysisAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &userAlbumIds = {});
-    static void UpdateAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    EXPORT static void UpdateAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIALIBRARY_RDB_UTILS_H

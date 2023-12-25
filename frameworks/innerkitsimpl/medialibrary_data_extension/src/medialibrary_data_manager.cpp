@@ -427,7 +427,7 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     cmd.SetValueBucket(value);
 
     OperationType oprnType = cmd.GetOprnType();
-    if (oprnType == OperationType::CREATE) {
+    if (oprnType == OperationType::CREATE || oprnType == OperationType::SUBMIT_CACHE) {
         if (SetCmdBundleAndDevice(cmd) != ERR_OK) {
             MEDIA_ERR_LOG("MediaLibraryDataManager SetCmdBundleAndDevice failed.");
         }
@@ -510,7 +510,13 @@ int32_t MediaLibraryDataManager::Delete(MediaLibraryCommand &cmd, const DataShar
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
     }
-    if (cmd.GetUri().ToString().find(MEDIALIBRARY_DATA_URI) == string::npos) {
+
+    string uriString = cmd.GetUri().ToString();
+    if (MediaFileUtils::StartsWith(uriString, PhotoColumn::PHOTO_CACHE_URI_PREFIX)) {
+        return MediaLibraryAssetOperations::DeleteOperation(cmd);
+    }
+
+    if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("Not Data ability Uri");
         return E_INVALID_URI;
     }
@@ -715,6 +721,40 @@ int32_t MediaLibraryDataManager::GenerateThumbnails()
     return thumbnailService_->GenerateThumbnails();
 }
 
+static void CacheAging()
+{
+    filesystem::path cacheDir(MEDIA_CACHE_DIR);
+    if (!filesystem::exists(cacheDir)) {
+        return;
+    }
+
+    std::error_code errCode;
+    time_t now = time(nullptr);
+    constexpr int thresholdSeconds = 7 * 24 * 60 * 60; // 7 days
+    for (const auto& entry : filesystem::recursive_directory_iterator(cacheDir)) {
+        const char* filePath = entry.path().string().c_str();
+        if (!entry.is_regular_file()) {
+            MEDIA_WARN_LOG("skip %{private}s, not regular file", filePath);
+            continue;
+        }
+
+        struct stat statInfo {};
+        if (stat(filePath, &statInfo) != 0) {
+            MEDIA_WARN_LOG("skip %{private}s when stat error, errno: %{public}d", filePath, errno);
+            continue;
+        }
+        time_t timeModified = statInfo.st_mtime;
+        double duration = difftime(now, timeModified); // diff in seconds
+        if (duration < thresholdSeconds) {
+            continue;
+        }
+
+        if (!filesystem::remove(entry.path(), errCode)) {
+            MEDIA_WARN_LOG("Failed to remove %{private}s, errCode: %{public}d", filePath, errCode.value());
+        }
+    }
+}
+
 int32_t MediaLibraryDataManager::DoAging()
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
@@ -723,6 +763,8 @@ int32_t MediaLibraryDataManager::DoAging()
         MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
         return E_FAIL;
     }
+
+    CacheAging(); // aging file in .cache
 
     if (thumbnailService_ == nullptr) {
         return E_THUMBNAIL_SERVICE_NULLPTR;

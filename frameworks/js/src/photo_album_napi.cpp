@@ -135,6 +135,26 @@ napi_value PhotoAlbumNapi::CreatePhotoAlbumNapi(napi_env env, unique_ptr<PhotoAl
     return result;
 }
 
+napi_value PhotoAlbumNapi::CreatePhotoAlbumNapi(napi_env env, shared_ptr<PhotoAlbum>& albumData)
+{
+    if (albumData == nullptr || albumData->GetResultNapiType() != ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        NAPI_ERR_LOG("Unsupported photo album data");
+        return nullptr;
+    }
+
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_reference_value(env, photoAccessConstructor_, &constructor), JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_new_instance(env, constructor, 0, nullptr, &result), JS_INNER_FAIL);
+    CHECK_COND(env, result != nullptr, JS_INNER_FAIL);
+
+    PhotoAlbumNapi* photoAlbumNapi = nullptr;
+    CHECK_ARGS(env, napi_unwrap(env, result, reinterpret_cast<void**>(&photoAlbumNapi)), JS_INNER_FAIL);
+    CHECK_COND(env, photoAlbumNapi != nullptr, JS_INNER_FAIL);
+    photoAlbumNapi->photoAlbumPtr = albumData;
+    return result;
+}
+
 int32_t PhotoAlbumNapi::GetAlbumId() const
 {
     return photoAlbumPtr->GetAlbumId();
@@ -245,11 +265,9 @@ napi_value PhotoAlbumNapi::PhotoAlbumNapiConstructor(napi_env env, napi_callback
 
     unique_ptr<PhotoAlbumNapi> obj = make_unique<PhotoAlbumNapi>();
     obj->env_ = env;
-    if (pAlbumData_ == nullptr) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-        return result;
+    if (pAlbumData_ != nullptr) {
+        obj->SetPhotoAlbumNapiProperties();
     }
-    obj->SetPhotoAlbumNapiProperties();
     CHECK_ARGS(env, napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
         PhotoAlbumNapi::PhotoAlbumNapiDestructor, nullptr, nullptr), JS_INNER_FAIL);
     obj.release();

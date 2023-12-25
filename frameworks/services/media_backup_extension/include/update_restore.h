@@ -22,26 +22,28 @@ namespace OHOS {
 namespace Media {
 class UpdateRestore : public BaseRestore {
 public:
-    UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName, const std::string &cameraAppName);
+    UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName, const std::string &cameraAppName,
+        int32_t sceneCode);
     virtual ~UpdateRestore() = default;
     int32_t Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate) override;
     int32_t QueryTotalNumber(void) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
-    int32_t InitGarbageAlbum();
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) const override;
     std::vector<FileInfo> QueryFileInfosFromExternal(int32_t offset, int32_t maxId, bool isCamera);
     int32_t QueryNotSyncTotalNumber(int32_t offset, bool isCamera);
+    void InitGarbageAlbum();
 
 private:
     void RestorePhoto(void) override;
     void HandleRestData(void) override;
     bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
-    int32_t InitOldDb(const std::string &dbName, const std::string &dbPath, const std::string &bundleName,
-        std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    bool ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
     void RestoreFromGallery();
     void RestoreFromExternal(bool isCamera);
     bool IsValidDir(const std::string &path);
+    void RestoreBatch(int32_t offset);
+    void RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -55,6 +57,7 @@ private:
     std::string cameraAppName_;
     std::set<std::string> cacheSet_;
     std::unordered_map<std::string, std::string> nickMap_;
+    bool sceneCode_;
 };
 } // namespace Media
 } // namespace OHOS

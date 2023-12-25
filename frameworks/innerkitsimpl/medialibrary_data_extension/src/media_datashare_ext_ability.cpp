@@ -530,6 +530,9 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     if (command.GetUri().ToString().find(MEDIA_DATA_DB_THUMB_ASTC) != string::npos) {
         command.SetOprnObject(OperationObject::THUMBNAIL_ASTC);
     }
+    if (command.GetUri().ToString().find(PhotoColumn::PHOTO_CACHE_URI_PREFIX) != string::npos) {
+        command.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    }
     return MediaLibraryDataManager::GetInstance()->OpenFile(command, unifyMode);
 }
 

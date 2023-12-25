@@ -34,6 +34,8 @@ const std::string OPRN_PENDING = "update_pending";
 const std::string OPRN_SCAN = "scan";
 const std::string OPRN_INDEX = "index";
 const std::string OPRN_HIDE = "hide";
+const std::string OPRN_BATCH_UPDATE_FAV = "batch_update_favorite";
+const std::string OPRN_BATCH_UPDATE_USER_COMMENT = "batch_update_user_comment";
 const std::string OPRN_QUERY_HIDDEN = "query_hidden";
 const std::string OPRN_STORE_FORM_ID = "store_form_id";
 const std::string OPRN_REMOVE_FORM_ID = "remove_form_id";
@@ -54,6 +56,7 @@ const std::string OPRN_PORTRAIT_ALBUM_NAME = "album_name";
 const std::string OPRN_PORTRAIT_MERGE_ALBUM = "merge_album";
 const std::string OPRN_DISMISS_ASSET = "dismiss_asset";
 const std::string OPRN_PORTRAIT_COVER_URI = "cover_uri";
+const std::string OPRN_SUBMIT_CACHE = "operation_submit_cache";
 
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -197,7 +200,7 @@ const std::string PAH_ANA_ADDRESS = "phaccess_ana_address_operation";
 const std::string PAH_GEO_PHOTOS = "phaccess_geo_photos_operation";
 const std::string PAH_ANA_TOTAL = "phaccess_ana_total_operation";
 
-// UserFileManager photo operation constants
+// PhotoAccessHelper photo operation constants
 const std::string PAH_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE;
 const std::string PAH_CREATE_PHOTO_COMPONENT = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE_COMPONENT;
 const std::string PAH_CLOSE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CLOSE;
@@ -206,8 +209,12 @@ const std::string PAH_TRASH_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/
 const std::string PAH_QUERY_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_QUERY;
 const std::string PAH_EDIT_USER_COMMENT_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SET_USER_COMMENT;
 const std::string PAH_HIDE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_HIDE;
+const std::string PAH_SUBMIT_CACHE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SUBMIT_CACHE;
+const std::string PAH_BATCH_UPDATE_FAVORITE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_FAV;
+const std::string PAH_BATCH_UPDATE_USER_COMMENT =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_USER_COMMENT;
 
-// UserFileManager album operation constants
+// PhotoAccessHelper album operation constants
 const std::string PAH_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_CREATE;
 const std::string PAH_DELETE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_DELETE;
 const std::string PAH_UPDATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_UPDATE;
