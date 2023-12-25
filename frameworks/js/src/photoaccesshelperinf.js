@@ -451,6 +451,8 @@ export default {
   AnalysisType: photoAccessHelper.AnalysisType,
   RequestPhotoType: photoAccessHelper.RequestPhotoType,
   PhotoViewMIMETypes: PhotoViewMIMETypes,
+  DeliveryMode: photoAccessHelper.DeliveryMode,
+  SourceMode: photoAccessHelper.SourceMode,
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,
   PhotoViewPicker: PhotoViewPicker,
@@ -461,4 +463,5 @@ export default {
   MediaAssetChangeRequest: MediaAssetChangeRequest,
   MediaAssetsChangeRequest: photoAccessHelper.MediaAssetsChangeRequest,
   MediaAlbumChangeRequest: photoAccessHelper.MediaAlbumChangeRequest,
+  MediaAssetManager: photoAccessHelper.MediaAssetManager,
 };
