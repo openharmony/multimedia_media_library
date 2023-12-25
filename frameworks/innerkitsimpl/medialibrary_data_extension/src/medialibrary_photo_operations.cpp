@@ -53,6 +53,7 @@
 #include "value_object.h"
 #include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
+#include "medialibrary_vision_operations.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -1473,6 +1474,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
         int32_t errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
         PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
+        MediaLibraryVisionOperations::EditCommitOperation(cmd);
     }
     return E_OK;
 }
