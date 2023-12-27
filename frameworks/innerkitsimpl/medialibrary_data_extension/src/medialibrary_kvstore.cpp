@@ -25,12 +25,13 @@ const OHOS::DistributedKv::AppId KVSTORE_APPID = {"com.ohos.medialibrary.mediali
 const OHOS::DistributedKv::StoreId KVSTORE_MONTH_STOREID = {"medialibrary_month_astc"};
 const OHOS::DistributedKv::StoreId KVSTORE_YEAR_STOREID = {"medialibrary_year_astc"};
 
-int32_t MediaLibraryKvStore::Init(const KvStoreRoleType &roleType, const KvStoreValueType &valueType)
+int32_t MediaLibraryKvStore::Init(
+    const KvStoreRoleType &roleType, const KvStoreValueType &valueType, const std::string &baseDir)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryKvStore::InitKvStore");
     Options options;
-    if (!GetKvStoreOption(options, roleType)) {
+    if (!GetKvStoreOption(options, roleType, baseDir)) {
         MEDIA_ERR_LOG("failed to GetKvStoreOption");
         return E_ERR;
     }
@@ -163,20 +164,20 @@ bool MediaLibraryKvStore::Close()
     return true;
 }
 
-bool MediaLibraryKvStore::GetKvStoreOption(DistributedKv::Options &options, const KvStoreRoleType &roleType)
+bool MediaLibraryKvStore::GetKvStoreOption(
+    DistributedKv::Options &options, const KvStoreRoleType &roleType, const std::string &baseDir)
 {
     if (roleType == KvStoreRoleType::OWNER) {
         options.createIfMissing = true;
         options.role = RoleType::OWNER;
-        options.group.groupDir = KV_STORE_OWNER_DIR;
     } else if (roleType == KvStoreRoleType::VISITOR) {
         options.createIfMissing = false;
         options.role = RoleType::VISITOR;
-        options.group.groupDir = KV_STORE_VISITOR_DIR;
     } else {
         MEDIA_ERR_LOG("GetKvStoreOption invalid role");
         return false;
     }
+    options.group.groupDir = baseDir;
     options.encrypt = false;
     options.backup = false;
     options.autoSync = false;

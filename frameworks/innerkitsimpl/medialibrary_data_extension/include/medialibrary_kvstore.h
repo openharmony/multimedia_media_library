@@ -40,14 +40,14 @@ public:
     ~MediaLibraryKvStore() = default;
 
     // return 0 means init KvStore success, others mean init kvstore fail
-    EXPORT int32_t Init(const KvStoreRoleType &roleType, const KvStoreValueType &valueType);
+    EXPORT int32_t Init(const KvStoreRoleType &roleType, const KvStoreValueType &valueType, const std::string &baseDir);
     EXPORT int32_t Insert(const std::string &key, const std::vector<uint8_t> &value);
     EXPORT int32_t Delete(const std::string &key);
     EXPORT int32_t Query(const std::string &key, std::vector<uint8_t> &value);
     EXPORT int32_t BatchQuery(const std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values);
     EXPORT bool Close();
 private:
-    bool GetKvStoreOption(DistributedKv::Options &options, const KvStoreRoleType &roleType);
+    bool GetKvStoreOption(DistributedKv::Options &options, const KvStoreRoleType &roleType, const std::string &baseDir);
 
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_ = nullptr;
     DistributedKv::DistributedKvDataManager dataManager_;
