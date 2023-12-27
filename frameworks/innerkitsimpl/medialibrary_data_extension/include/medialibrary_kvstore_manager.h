@@ -39,7 +39,8 @@ public:
     }
 
     EXPORT int32_t InitKvStore(const KvStoreRoleType &roleType, const KvStoreValueType &valueType);
-    EXPORT std::shared_ptr<MediaLibraryKvStore> GetKvStore(const KvStoreRoleType &roleType, const KvStoreValueType &valueType);
+    EXPORT std::shared_ptr<MediaLibraryKvStore> GetKvStore(
+        const KvStoreRoleType &roleType, const KvStoreValueType &valueType);
     EXPORT bool CloseKvStore(const KvStoreValueType &valueType);
     EXPORT void CloseAllKvStore();
 
