@@ -79,6 +79,7 @@ private:
     void ExtractMetaFromColumn(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         std::unique_ptr<Metadata> &metadata, const std::string &col);
     bool InsertData(const NativeRdb::ValuesBucket values, const std::string &tableName, int64_t &rowNum);
+    std::string MakeFileUri(const std::string &mediaTypeUri, const Metadata &metadata);
 };
 } // namespace Media
 } // namespace OHOS

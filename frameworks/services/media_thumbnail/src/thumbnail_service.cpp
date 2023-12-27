@@ -244,7 +244,8 @@ int32_t ThumbnailService::ParseThumbnailParam(const std::string &uri, string &fi
 int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &tableName, const string &fileId,
     const string &uri, const bool &isSync)
 {
-    int32_t err = CreateDefaultThumbnail(path, tableName, fileId, isSync);
+    std::string dateAdded = ThumbnailUriUtils::GetDateAddedFromUri(uri);
+    int32_t err = CreateDefaultThumbnail(path, tableName, fileId, dateAdded, isSync);
     if (err != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -289,7 +290,7 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
 }
 
 int32_t ThumbnailService::CreateDefaultThumbnail(const std::string &path,
-    const std::string &tableName, const std::string &fileId, const bool &isSync)
+    const std::string &tableName, const std::string &fileId, const std::string &dateAdded, const bool &isSync)
 {
     shared_ptr<IThumbnailHelper> thumbnailHelper =
         ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::DEFAULT);
@@ -302,6 +303,7 @@ int32_t ThumbnailService::CreateDefaultThumbnail(const std::string &path,
         .path = path,
         .table = tableName,
         .row = fileId,
+        .dateAdded = dateAdded,
         .screenSize = screenSize_
     };
     int32_t err = thumbnailHelper->CreateThumbnail(opts, isSync);
