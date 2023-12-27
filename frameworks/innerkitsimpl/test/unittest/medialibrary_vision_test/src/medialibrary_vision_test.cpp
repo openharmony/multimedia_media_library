@@ -2050,7 +2050,7 @@ HWTEST_F(MediaLibraryVisionTest, SetIsMe, TestSize.Level0)
 
 HWTEST_F(MediaLibraryVisionTest, SetIsMe_error_test, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("SetIsMe::Start");
+    MEDIA_INFO_LOG("SetIsMe_error_test::Start");
     Uri setAlbumUri(PAH_PORTRAIT_IS_ME);
     int albumId = TEST_COUNT;
     int ret = SetIsMeTest(albumId);

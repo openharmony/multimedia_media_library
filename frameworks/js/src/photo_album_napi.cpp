@@ -1005,6 +1005,20 @@ static void JSGetPhotoAssetsExecute(napi_env env, void *data)
     context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
 }
 
+void ConvertColumnsForPortrait(PhotoAlbumNapiAsyncContext *context)
+{
+    if (context == nullptr) {
+        return;
+    }
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    if (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT) {
+        return;
+    }
+    for (size_t i = 0; i < context->fetchColumn.size(); i++) {
+        context->fetchColumn[i] = PhotoColumn::PHOTOS_TABLE + "." + context->fetchColumn[i];
+    }
+}
+
 static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1012,6 +1026,7 @@ static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
 
     auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
     Uri uri(PAH_QUERY_PHOTO_MAP);
+    ConvertColumnsForPortrait(context);
     int32_t errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr) {
