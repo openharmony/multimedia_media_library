@@ -684,7 +684,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     for (size_t i = 0; i < count; i++) {
         string notifyUri = MediaFileUtils::Encode(whereArgs[i]);
         watch->Notify(notifyUri, NotifyType::NOTIFY_ADD);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
     }
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
     if (trashAlbumId > 0) {

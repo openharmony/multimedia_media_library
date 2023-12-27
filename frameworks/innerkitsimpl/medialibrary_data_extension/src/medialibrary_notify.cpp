@@ -96,7 +96,7 @@ static int SendAlbumSub(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
         MEDIA_ERR_LOG("Parcel data copy failed, err = %{public}d", ret);
     }
     ChangeType changeType;
-    if (type == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) {
+    if (type == NotifyType::NOTIFY_ALBUM_ADD_ASSET) {
         changeType = ChangeType::INSERT;
     } else {
         changeType = ChangeType::DELETE;
@@ -107,7 +107,7 @@ static int SendAlbumSub(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
 static int SolveAlbumUri(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
 {
     auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
-    if ((type == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) || (type == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET)) {
+    if ((type == NotifyType::NOTIFY_ALBUM_ADD_ASSET) || (type == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET)) {
         return SendAlbumSub(notifyUri, type, uris);
     } else {
         return obsMgrClient->NotifyChangeExt({static_cast<ChangeType>(type), uris});
@@ -220,10 +220,10 @@ static void HandleAlbumNotify(NotifyTaskData *taskData)
         return;
     }
     NotifyType hiddenAlbumsNotifyType = taskData->notifyType_;
-    if (taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) {
+    if (taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_ADD_ASSET) {
         hiddenAlbumsNotifyType = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     } else if (taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET) {
-        hiddenAlbumsNotifyType = NotifyType::NOTIFY_ALBUM_ADD_ASSERT;
+        hiddenAlbumsNotifyType = NotifyType::NOTIFY_ALBUM_ADD_ASSET;
     }
     taskData->notifyType_ = hiddenAlbumsNotifyType;
     for (const string &id : albumIdList) {
@@ -237,7 +237,7 @@ static void AddNfListMap(AsyncTaskData *data)
         return;
     }
     auto* taskData = static_cast<NotifyTaskData*>(data);
-    if ((taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_ADD_ASSERT) ||
+    if ((taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_ADD_ASSET) ||
         (taskData->notifyType_ == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET)) {
         if (taskData->albumId_ > 0) {
             AddNotify(taskData->uri_,
