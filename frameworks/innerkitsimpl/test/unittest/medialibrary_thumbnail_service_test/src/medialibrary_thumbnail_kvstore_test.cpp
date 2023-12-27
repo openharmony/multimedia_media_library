@@ -22,7 +22,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-const std::string TEST_PATH = "data/test";
+const std::string TEST_PATH = "/data/test";
 const std::string FIRST_KEY = "000001";
 const std::string SECOND_KEY = "000002";
 const std::string THIRD_KEY = "000003";
@@ -31,9 +31,9 @@ std::shared_ptr<MediaLibraryKvStore> kvStorePtr = nullptr;
 
 void MediaLibraryThumbnailKvStoreTest::SetUpTestCase(void)
 {
-    kvStorePtr = std::make_shared<MediaLibraryKvStore>;
-    int errCode = kvStorePtr->Init(KvStoreRoleType::QWNER, KvStoreValueType::MONTH_ASTC, TEST_PATH);
-    if (errCode != OK) {
+    kvStorePtr = std::make_shared<MediaLibraryKvStore>();
+    int errCode = kvStorePtr->Init(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC, TEST_PATH);
+    if (errCode != E_OK) {
         kvStorePtr = nullptr;
         return;
     }
@@ -48,7 +48,7 @@ void MediaLibraryThumbnailKvStoreTest::SetUpTestCase(void)
     errCode = kvStorePtr->Insert(SECOND_KEY, value);
     value.clear();
     EXPECT_EQ(errCode, E_OK);
-    
+
     value.assign(THIRD_KEY.begin(), THIRD_KEY.end());
     errCode = kvStorePtr->Insert(THIRD_KEY, value);
     value.clear();
@@ -112,7 +112,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_
     uriBatch.push_back(THIRD_KEY);
     uriBatch.push_back(SECOND_KEY);
     uriBatch.push_back(FIRST_KEY);
-    int errorCode = kvStorePtr->BatchQuery(uriBatch, dataBatch);
+    int errCode = kvStorePtr->BatchQuery(uriBatch, dataBatch);
     EXPECT_EQ(errCode, E_OK);
     EXPECT_EQ(dataBatch.size(), 3);
     dataBatch.clear();
@@ -123,7 +123,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_
     value.clear();
     EXPECT_EQ(errCode, E_OK);
 
-    errorCode = kvStorePtr->BatchQuery(uriBatch, dataBatch);
+    errCode = kvStorePtr->BatchQuery(uriBatch, dataBatch);
     EXPECT_EQ(errCode, E_OK);
     EXPECT_EQ(dataBatch.size(), 4);
     dataBatch.clear();
@@ -133,7 +133,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_
     errCode = kvStorePtr->Delete(THIRD_KEY);
     EXPECT_EQ(errCode, E_OK);
 
-    errorCode = kvStorePtr->BatchQuery(uriBatch, dataBatch);
+    errCode = kvStorePtr->BatchQuery(uriBatch, dataBatch);
     EXPECT_EQ(errCode, E_OK);
     EXPECT_EQ(dataBatch.size(), 2);
     dataBatch.clear();
