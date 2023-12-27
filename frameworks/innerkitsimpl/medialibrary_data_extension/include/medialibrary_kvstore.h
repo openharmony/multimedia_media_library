@@ -36,8 +36,8 @@ enum class KvStoreValueType : int32_t {
 
 class MediaLibraryKvStore {
 public:
-    MediaLibraryKvStore() = default;
-    ~MediaLibraryKvStore() = default;
+    EXPORT MediaLibraryKvStore() = default;
+    EXPORT ~MediaLibraryKvStore() = default;
 
     // return 0 means init KvStore success, others mean init kvstore fail
     EXPORT int32_t Init(const KvStoreRoleType &roleType, const KvStoreValueType &valueType, const std::string &baseDir);
