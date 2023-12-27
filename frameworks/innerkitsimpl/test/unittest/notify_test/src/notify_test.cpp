@@ -352,14 +352,14 @@ HWTEST_F(NotifyTest, asset_on_change_003, TestSize.Level0)
  * @tc.name: album_on_change_001
  * @tc.desc: solve album and get message
  *           1. RegisterObserverExt called "album_on_change_001"
- *           2. NotifyType::NOTIFY_ALBUM_ADD_ASSERT
+ *           2. NotifyType::NOTIFY_ALBUM_ADD_ASSET
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(NotifyTest, album_on_change_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("album_on_change_001 enter");
-    CheckAlbumNotify(NotifyType::NOTIFY_ALBUM_ADD_ASSERT, DataShareObserver::ChangeType::INSERT);
+    CheckAlbumNotify(NotifyType::NOTIFY_ALBUM_ADD_ASSET, DataShareObserver::ChangeType::INSERT);
     MEDIA_INFO_LOG("album_on_change_001 exit");
 }
 
