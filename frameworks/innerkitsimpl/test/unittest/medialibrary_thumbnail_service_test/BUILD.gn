@@ -27,7 +27,6 @@ ohos_unittest("medialibrary_thumbnail_service_test") {
   sources = [
     "./src/medialibrary_thumbnail_kvstore_test.cpp",
     "./src/medialibrary_thumbnail_service_test.cpp",
-  
   ]
   deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
 
