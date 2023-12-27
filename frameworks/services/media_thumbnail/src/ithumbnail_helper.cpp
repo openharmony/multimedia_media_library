@@ -437,8 +437,7 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
                 MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
             }
         }
-        if (MediaLibraryKvStoreManager::IsMonthAndYearAstcSupported() &&
-            !GenThumbnail(opts, data, ThumbnailType::MTH_ASTC)) {
+        if (!GenThumbnail(opts, data, ThumbnailType::MTH_ASTC)) {
             return false;
         }
         if (!GenThumbnail(opts, data, ThumbnailType::MTH)) {
@@ -453,8 +452,7 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
             PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             return false;
         }
-        if (MediaLibraryKvStoreManager::IsMonthAndYearAstcSupported() &&
-            !GenThumbnail(opts, data, ThumbnailType::YEAR_ASTC)) {
+        if (!GenThumbnail(opts, data, ThumbnailType::YEAR_ASTC)) {
             return false;
         }
     }

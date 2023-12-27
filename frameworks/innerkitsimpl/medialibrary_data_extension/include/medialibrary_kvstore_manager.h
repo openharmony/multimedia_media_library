@@ -33,11 +33,6 @@ public:
         return instance;
     }
 
-    EXPORT static bool IsMonthAndYearAstcSupported()
-    {
-        return false;
-    }
-
     EXPORT int32_t InitKvStore(const KvStoreRoleType &roleType, const KvStoreValueType &valueType);
     EXPORT std::shared_ptr<MediaLibraryKvStore> GetKvStore(
         const KvStoreRoleType &roleType, const KvStoreValueType &valueType);
