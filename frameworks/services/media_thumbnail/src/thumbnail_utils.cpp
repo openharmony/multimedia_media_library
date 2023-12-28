@@ -32,6 +32,7 @@
 #include "media_column.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_kvstore_manager.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_tracer.h"
 #include "media_file_utils.h"
@@ -59,6 +60,9 @@ constexpr int32_t LCD_LONG_SIDE_THRESHOLD = 1920;
 constexpr int32_t MAXIMUM_LCD_LONG_SIDE = 4096;
 constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
 constexpr int32_t MIN_COMPRESS_BUF_SIZE = 8192;
+constexpr int32_t MAX_FIELD_LENGTH = 10;
+constexpr int32_t MAX_TIMEID_LENGTH = 10;
+const std::string KVSTORE_KEY_TEMPLATE = "0000000000";
 
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
@@ -318,7 +322,7 @@ bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_
     }
     PackOption option = {
         .format = isAstc ? THUMBASTC_FORMAT : THUMBNAIL_FORMAT,
-        .quality = isHigh ? THUMBNAIL_HIGH : THUMBNAIL_MID,
+        .quality = isAstc ? ASTC_LOW_QUALITY : (isHigh ? THUMBNAIL_HIGH : THUMBNAIL_MID),
         .numberHint = NUMBER_HINT_1
     };
     data.resize(max(pixelMap->GetByteCount(), MIN_COMPRESS_BUF_SIZE));
@@ -1275,12 +1279,29 @@ int ThumbnailUtils::TrySaveFile(ThumbnailData &data, ThumbnailType type)
             output = data.lcd.data();
             writeSize = data.lcd.size();
             break;
+        case ThumbnailType::MTH_ASTC:
+            output = data.monthAstc.data();
+            writeSize = data.monthAstc.size();
+            break;
+        case ThumbnailType::YEAR_ASTC:
+            output = data.yearAstc.data();
+            writeSize = data.yearAstc.size();
+            break;
         default:
             return E_INVALID_ARGUMENTS;
     }
     if (writeSize <= 0) {
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
+    if (type == ThumbnailType::MTH_ASTC || type == ThumbnailType::YEAR_ASTC) {
+        return SaveAstcDataToKvStore(data, type);
+    }
+    return SaveThumbDataToLocalDir(data, type, suffix, output, writeSize);
+}
+
+int ThumbnailUtils::SaveThumbDataToLocalDir(ThumbnailData &data,
+    const ThumbnailType &type, const std::string &suffix, uint8_t *output, const int writeSize)
+{
     string fileName;
     int ret = SaveFileCreateDir(data.path, suffix, fileName);
     if (ret != E_OK) {
@@ -1632,6 +1653,101 @@ bool ThumbnailUtils::ResizeLcd(int &width, int &height)
 bool ThumbnailUtils::IsSupportGenAstc()
 {
     return ImageSource::IsSupportGenAstc();
+}
+
+int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type)
+{
+    string key;
+    if (!GenerateKvStoreKey(data.id, data.dateAdded, key)) {
+        MEDIA_ERR_LOG("GenerateKvStoreKey failed");
+        return E_ERR;
+    }
+
+    std::shared_ptr<MediaLibraryKvStore> kvStore;
+    if (type == ThumbnailType::MTH_ASTC) {
+        kvStore = MediaLibraryKvStoreManager::GetInstance()
+            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
+    } else if (type == ThumbnailType::YEAR_ASTC) {
+        kvStore = MediaLibraryKvStoreManager::GetInstance()
+            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC);
+    } else {
+        MEDIA_ERR_LOG("invalid thumbnailType");
+        return E_ERR;
+    }
+    if (kvStore == nullptr) {
+        MEDIA_ERR_LOG("kvStore is nullptr");
+        return E_ERR;
+    }
+
+    int status = kvStore->Insert(key, type == ThumbnailType::MTH_ASTC ? data.monthAstc : data.yearAstc);
+    MEDIA_DEBUG_LOG("type:%{public}d, field_id:%{public}s, status:%{public}d",
+        type, key.c_str(), status);
+    return status;
+}
+
+bool ThumbnailUtils::GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key)
+{
+    if (fieldId.empty()) {
+        MEDIA_ERR_LOG("fieldId is empty");
+        return false;
+    }
+    if (dateAdded.empty()) {
+        MEDIA_ERR_LOG("dateAdded is empty");
+        return false;
+    }
+    if (dateAdded.length() < MAX_TIMEID_LENGTH) {
+        MEDIA_ERR_LOG("dateAdded invalid");
+        return false;
+    }
+
+    size_t length = fieldId.length();
+    if (length >= MAX_FIELD_LENGTH) {
+        MEDIA_ERR_LOG("fieldId too long");
+        return false;
+    }
+    string assembledFieldId = KVSTORE_KEY_TEMPLATE.substr(length) + fieldId;
+    key = dateAdded.substr(0, MAX_TIMEID_LENGTH) + assembledFieldId;
+    return true;
+}
+
+bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    if (!data.dateAdded.empty()) {
+        return true;
+    }
+
+    vector<string> column = {
+        MEDIA_DATA_DB_DATE_ADDED,
+    };
+    vector<string> selectionArgs;
+    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + opts.row;
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.SetWhereClause(strQueryCondition);
+    rdbPredicates.SetWhereArgs(selectionArgs);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+
+    int err;
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("CheckResultSetCount failed, err: %{public}d", err);
+        return false;
+    }
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("GoToFirstRow failed, err: %{public}d", err);
+        return false;
+    }
+
+    int index;
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_ADDED, index);
+    if (err == NativeRdb::E_OK) {
+        ParseStringResult(resultSet, index, data.dateAdded, err);
+    } else {
+        MEDIA_ERR_LOG("GetColumnIndex failed, err: %{public}d", err);
+        resultSet->Close();
+        return false;
+    }
+    resultSet->Close();
+    return true;
 }
 } // namespace Media
 } // namespace OHOS
