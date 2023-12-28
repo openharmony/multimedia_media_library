@@ -163,7 +163,7 @@ int32_t PhotoMapOperations::AddPhotoAssets(const vector<DataShareValuesBucket> &
 
     auto watch = MediaLibraryNotify::GetInstance();
     for (const auto &uri : notifyUris) {
-        watch->Notify(MediaFileUtils::Encode(uri), NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
+        watch->Notify(MediaFileUtils::Encode(uri), NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
     }
 
     return changedRows;

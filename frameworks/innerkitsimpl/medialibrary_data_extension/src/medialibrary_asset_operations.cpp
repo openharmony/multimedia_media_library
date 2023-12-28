@@ -1262,14 +1262,14 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
         watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
     } else {
         watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_ADD);
-        watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT);
+        watch->Notify(notifyData->notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
     }
 
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
     if (trashAlbumId <= 0) {
         return;
     }
-    NotifyType type = (notifyData->trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT :
+    NotifyType type = (notifyData->trashDate > 0) ? NotifyType::NOTIFY_ALBUM_ADD_ASSET :
         NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     watch->Notify(notifyData->notifyUri, type, trashAlbumId);
     vector<int64_t> formIds;
@@ -1337,7 +1337,7 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, i
         return;
     }
 
-    NotifyType type = (isFavorite) ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+    NotifyType type = (isFavorite) ? NotifyType::NOTIFY_ALBUM_ADD_ASSET : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(rowId), extraUri),
         type, favAlbumId);
 }

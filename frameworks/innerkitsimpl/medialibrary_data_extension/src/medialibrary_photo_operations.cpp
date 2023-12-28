@@ -452,7 +452,7 @@ void PhotoMapAddAsset(const int &albumId, const string &assetId, const string &e
     auto watch = MediaLibraryNotify::GetInstance();
     if (errCode > 0) {
         watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, assetId, extrUri),
-            NotifyType::NOTIFY_ALBUM_ADD_ASSERT, albumId);
+            NotifyType::NOTIFY_ALBUM_ADD_ASSET, albumId);
     }
 }
 
@@ -568,7 +568,7 @@ static void TrashPhotosSendNotify(vector<string> &notifyUris)
     for (const auto &notifyUri : notifyUris) {
         watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
         watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSERT, trashAlbumId);
+        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET, trashAlbumId);
         MediaLibraryFormMapOperations::GetFormMapFormId(notifyUri.c_str(), formIds);
     }
     if (!formIds.empty()) {
@@ -637,10 +637,10 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
     if (hiddenState > 0) {
         assetNotifyType = NotifyType::NOTIFY_REMOVE;
         albumNotifyType = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
-        hiddenAlbumNotifyType = NotifyType::NOTIFY_ALBUM_ADD_ASSERT;
+        hiddenAlbumNotifyType = NotifyType::NOTIFY_ALBUM_ADD_ASSET;
     } else {
         assetNotifyType = NotifyType::NOTIFY_ADD;
-        albumNotifyType = NotifyType::NOTIFY_ALBUM_ADD_ASSERT;
+        albumNotifyType = NotifyType::NOTIFY_ALBUM_ADD_ASSET;
         hiddenAlbumNotifyType = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     }
     for (const auto &notifyUri : notifyUris) {
@@ -766,7 +766,7 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
     auto watch = MediaLibraryNotify::GetInstance();
     int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
     if (favAlbumId > 0) {
-        NotifyType type = favoriteState ? NotifyType::NOTIFY_ALBUM_ADD_ASSERT : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
+        NotifyType type = favoriteState ? NotifyType::NOTIFY_ALBUM_ADD_ASSET : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
         for (const string& notifyUri : notifyUris) {
             watch->Notify(notifyUri, type, favAlbumId);
         }
