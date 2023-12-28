@@ -467,6 +467,9 @@ void MediaFileUri::GetTimeIdFromUri(const std::vector<std::string> &uriBatch, st
 {
     for (size_t i = 0; i < uriBatch.size(); ++i) {
         std::string uri = uriBatch.at(i);
+        if (uri.empty()) {
+            continue;
+        }
         auto index = uri.rfind(ML_URI_TIME_ID);
         if (index == std::string::npos) {
             MEDIA_ERR_LOG("GetTimeIdFromUri find index for time_id failed: %{private}s", uri.c_str());

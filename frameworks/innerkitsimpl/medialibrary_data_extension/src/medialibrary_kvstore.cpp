@@ -133,6 +133,7 @@ int32_t MediaLibraryKvStore::BatchQuery(
         status = resultSet->GetEntry(entry);
         if (status != Status::SUCCESS) {
             MEDIA_ERR_LOG("GetEntry error occur, status: %{public}d", status);
+            return static_cast<int32_t>(status);
         }
 
         if (entry.key.ToString() < *begin) {
