@@ -2367,7 +2367,7 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
     }
     if (msg->data_ != nullptr && msg->changeInfo_.size_ > 0) {
         if ((int)msg->changeInfo_.changeType_ == ChangeType::INSERT) {
-            SetValueInt32(env, "type", (int)NotifyType::NOTIFY_ALBUM_ADD_ASSERT, result);
+            SetValueInt32(env, "type", (int)NotifyType::NOTIFY_ALBUM_ADD_ASSET, result);
         } else {
             SetValueInt32(env, "type", (int)NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, result);
         }
