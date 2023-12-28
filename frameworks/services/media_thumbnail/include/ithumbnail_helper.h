@@ -85,6 +85,8 @@ protected:
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const std::string &suffix);
+    static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
+    static bool GenMonthAndYearPixelMap(ThumbnailData &data, const ThumbnailType type);
 };
 } // namespace Media
 } // namespace OHOS

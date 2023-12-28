@@ -24,7 +24,10 @@ ohos_unittest("medialibrary_thumbnail_service_test") {
   module_out_path = "media_library/medialibraryextention"
   include_dirs = [ "./include" ]
 
-  sources = [ "./src/medialibrary_thumbnail_service_test.cpp" ]
+  sources = [
+    "./src/medialibrary_thumbnail_kvstore_test.cpp",
+    "./src/medialibrary_thumbnail_service_test.cpp",
+  ]
   deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
 
   external_deps = [
