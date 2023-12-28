@@ -28,6 +28,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 const std::string TEST_STRING = "GetDateAddedFromUri&";
+
 void MediaLibraryUriTest::SetUpTestCase(void) {}
 
 void MediaLibraryUriTest::TearDownTestCase(void) {}
