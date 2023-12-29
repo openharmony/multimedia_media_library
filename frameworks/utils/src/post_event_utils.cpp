@@ -27,7 +27,7 @@ const string OPT_CREATE = "CREATE";
 const string OPT_THUMB = "THUMB";
 const string OPT_SCAN = "SCAN";
 const string OPT_QUERY = "QUERY";
-static constexpr char MEDIA_LIBRARY[] = "";
+static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
 
 string PostEventUtils::GetOptType(const uint32_t &optType)
 {
@@ -58,6 +58,18 @@ int32_t PostEventUtils::GetIntValue(const string &key, const VariantMap &map)
     if (iter != map.end()) {
         if (holds_alternative<int32_t>(iter->second)) {
             return get<int32_t>(iter->second);
+        }
+    }
+    return value;
+}
+
+int64_t PostEventUtils::GetInt64Value(const string &key, const VariantMap &map)
+{
+    int64_t value = 0;
+    auto iter = map.find(key);
+    if (iter != map.end()) {
+        if (holds_alternative<int64_t>(iter->second)) {
+            return get<int64_t>(iter->second);
         }
     }
     return value;
@@ -187,6 +199,85 @@ void PostEventUtils::PostAgingStat(const VariantMap &stat)
     }
 }
 
+void PostEventUtils::PostMscFirstVisitStat(const VariantMap &stat)
+{
+    string photoId = GetStringValue(KEY_PHOTO_ID, stat);
+    int64_t timeInterval = GetInt64Value(KEY_TIME_INTERVAL, stat);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_MSC_FIRST_VISIT_STAT",
+        HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
+        KEY_PHOTO_ID, photoId,
+        KEY_TIME_INTERVAL, timeInterval);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("PostMscFirstVisitStat error:%{public}d", ret);
+    }
+}
+
+void PostEventUtils::PostMscRequestPolicyStat(const VariantMap &stat)
+{
+    string callingPackage = GetStringValue(KEY_CALLING_PACKAGE, stat);
+    int32_t highQualityCount = GetIntValue(KEY_HIGH_QUALITY_COUNT, stat);
+    int32_t balanceQualityCount = GetIntValue(KEY_BALANCE_QUALITY_COUNT, stat);
+    int32_t emergencyQualityCount = GetIntValue(KEY_EMERGENCY_QUALITY_COUNT, stat);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_MSC_REQUST_POLICY_STAT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        KEY_CALLING_PACKAGE, callingPackage,
+        KEY_HIGH_QUALITY_COUNT, highQualityCount,
+        KEY_BALANCE_QUALITY_COUNT, balanceQualityCount,
+        KEY_EMERGENCY_QUALITY_COUNT, emergencyQualityCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("PostMscRequestPolicyStat error:%{public}d", ret);
+    }
+}
+
+void PostEventUtils::PostMscTriggerRatioStat(const VariantMap &stat)
+{
+    int32_t thirdPartCount = GetIntValue(KEY_THIRD_PART_COUNT, stat);
+    int32_t autoCount = GetIntValue(KEY_AUTO_COUNT, stat);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_MSC_TRIGGER_RATIO_STAT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        KEY_THIRD_PART_COUNT, thirdPartCount,
+        KEY_AUTO_COUNT, autoCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("PostMscTriggerRatioStat error:%{public}d", ret);
+    }
+}
+
+void PostEventUtils::PostMscTotalTimeCostStat(const VariantMap &stat)
+{
+    string photoId = GetStringValue(KEY_PHOTO_ID, stat);
+    int64_t totalTimeCost = GetInt64Value(KEY_TOTAL_TIME_COST, stat);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_MSC_TOTAL_TIME_STAT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        KEY_PHOTO_ID, photoId,
+        KEY_TOTAL_TIME_COST, totalTimeCost);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("PostMscTotalTimeCostStat error:%{public}d", ret);
+    }
+}
+
+void PostEventUtils::PostMscResultStat(const VariantMap &stat)
+{
+    string photoId = GetStringValue(KEY_PHOTO_ID, stat);
+    int32_t result = GetIntValue(KEY_RESULT, stat);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_MSC_RESULT_STAT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        KEY_PHOTO_ID, photoId,
+        KEY_RESULT, result);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("PostMscResultStat error:%{public}d", ret);
+    }
+}
+
 void PostEventUtils::PostErrorProcess(const uint32_t &errType, const VariantMap &error)
 {
     switch (errType) {
@@ -209,6 +300,21 @@ void PostEventUtils::PostStatProcess(const uint32_t &statType, const VariantMap 
         case StatType::DB_UPGRADE_STAT:
         case StatType::SYNC_STAT:
         case StatType::AGING_STAT:
+            break;
+        case StatType::MSC_FIRST_VISIT_STAT:
+            PostMscFirstVisitStat(stat);
+            break;
+        case StatType::MSC_REQUEST_POLICY_STAT:
+            PostMscRequestPolicyStat(stat);
+            break;
+        case StatType::MSC_TRIGGER_RATIO_STAT:
+            PostMscTriggerRatioStat(stat);
+            break;
+        case StatType::MSC_TOTAL_TIME_COST_STAT:
+            PostMscTotalTimeCostStat(stat);
+            break;
+        case StatType::MSC_RESULT_STAT:
+            PostMscResultStat(stat);
             break;
         default:
             PostThumbnailStat(stat);
