@@ -211,6 +211,9 @@ private:
     EXPORT static napi_value CreateDirectoryTypeEnum(napi_env env);
     EXPORT static napi_value CreateVirtualAlbumTypeEnum(napi_env env);
     EXPORT static napi_value CreatePrivateAlbumTypeEnum(napi_env env);
+    EXPORT static napi_value CreateDeliveryModeEnum(napi_env env);
+    EXPORT static napi_value CreateSourceModeEnum(napi_env env);
+
     EXPORT static napi_value CreatePhotoKeysEnum(napi_env env);
     EXPORT static napi_value CreateHiddenPhotosDisplayModeEnum(napi_env env);
 
@@ -313,6 +316,8 @@ private:
     static thread_local napi_ref sAnalysisType_;
     static thread_local napi_ref sRequestPhotoTypeEnumRef_;
     static thread_local napi_ref sResourceTypeEnumRef_;
+    static thread_local napi_ref sDeliveryModeEnumRef_;
+    static thread_local napi_ref sSourceModeEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

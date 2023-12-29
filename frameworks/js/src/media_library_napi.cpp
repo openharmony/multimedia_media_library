@@ -102,6 +102,8 @@ thread_local napi_ref MediaLibraryNapi::sDirectoryEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sVirtualAlbumTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sFileKeyEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPrivateAlbumEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sDeliveryModeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sSourceModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPhotoSubType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHiddenPhotosDisplayModeEnumRef_ = nullptr;
@@ -279,6 +281,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("AnalysisType", CreateAnalysisTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("RequestPhotoType", CreateRequestPhotoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("ResourceType", CreateResourceTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("DeliveryMode", CreateDeliveryModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("SourceMode", CreateSourceModeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -5426,6 +5430,16 @@ napi_value MediaLibraryNapi::CreateNotifyTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateRequestPhotoTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, requestPhotoTypeEnum, sRequestPhotoTypeEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateDeliveryModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, deliveryModeEnum, sDeliveryModeEnumRef_);
+}
+
+napi_value MediaLibraryNapi::CreateSourceModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, sourceModeEnum, sSourceModeEnumRef_);
 }
 
 napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
