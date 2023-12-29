@@ -37,6 +37,21 @@ const std::string KEY_AFTER_VERSION = "afterVersion";
 
 const std::string KEY_COUNT = "count";
 
+const std::string KEY_TIME_INTERVAL = "TIME_INTERVAL";
+
+const std::string KEY_CALLING_PACKAGE = "CALLING_PACKAGE";
+const std::string KEY_HIGH_QUALITY_COUNT = "HIGH_QUALITY_COUNT";
+const std::string KEY_BALANCE_QUALITY_COUNT = "BALANCE_QUALITY_COUNT";
+const std::string KEY_EMERGENCY_QUALITY_COUNT = "EMERGENCY_QUALITY_COUNT";
+
+const std::string KEY_THIRD_PART_COUNT = "THIRD_PART_COUNT";
+const std::string KEY_AUTO_COUNT = "AUTO_COUNT";
+
+const std::string KEY_PHOTO_ID = "PHOTO_ID";
+const std::string KEY_TOTAL_TIME_COST = "TOTAL_TIME_COST";
+
+const std::string KEY_RESULT = "RESULT";
+
 enum OptType {
     CREATE = 0,
     THUMB,
@@ -57,8 +72,13 @@ enum StatType {
     DB_UPGRADE_STAT,
     SYNC_STAT,
     AGING_STAT,
+    MSC_FIRST_VISIT_STAT,
+    MSC_REQUEST_POLICY_STAT,
+    MSC_TRIGGER_RATIO_STAT,
+    MSC_TOTAL_TIME_COST_STAT,
+    MSC_RESULT_STAT,
 };
-using VariantMap = std::map<std::string, std::variant<int32_t, std::string>>;
+using VariantMap = std::map<std::string, std::variant<int32_t, int64_t, std::string>>;
 
 class PostEventUtils : public Singleton<PostEventUtils> {
 public:
@@ -74,8 +94,14 @@ private:
     COMPILE_HIDDEN void PostDbUpgradeStat(const VariantMap &stat);
     COMPILE_HIDDEN void PostSyncStat();
     COMPILE_HIDDEN void PostAgingStat(const VariantMap &stat);
+    COMPILE_HIDDEN void PostMscFirstVisitStat(const VariantMap &stat);
+    COMPILE_HIDDEN void PostMscRequestPolicyStat(const VariantMap &stat);
+    COMPILE_HIDDEN void PostMscTriggerRatioStat(const VariantMap &stat);
+    COMPILE_HIDDEN void PostMscTotalTimeCostStat(const VariantMap &stat);
+    COMPILE_HIDDEN void PostMscResultStat(const VariantMap &stat);
     
     COMPILE_HIDDEN int GetIntValue(const std::string &key, const VariantMap &map);
+    COMPILE_HIDDEN int64_t GetInt64Value(const std::string &key, const VariantMap &map);
     COMPILE_HIDDEN std::string GetStringValue(const std::string &key, const VariantMap &map);
 
     COMPILE_HIDDEN uint32_t thumbnailTimes_ = 0;
