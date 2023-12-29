@@ -28,5 +28,6 @@
 #include "media_library_napi.h"
 #include "media_scanner_napi.h"
 #include "napi/native_node_api.h"
+#include "media_asset_manager_napi.h"
 
 #endif  // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_NATIVE_MODULE_OHOS_MEDIALIBRARY_H_
