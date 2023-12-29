@@ -17,9 +17,10 @@
 #include "medialibrary_napi_utils.h"
 
 #include "basic/result_set.h"
-#include "datashare_predicates_proxy.h"
+#include "datashare_predicates.h"
 #include "location_column.h"
 #include "ipc_skeleton.h"
+#include "js_proxy.h"
 #include "media_asset_change_request_napi.h"
 #include "media_assets_change_request_napi.h"
 #include "media_album_change_request_napi.h"
@@ -401,7 +402,9 @@ napi_status MediaLibraryNapiUtils::GetPredicate(napi_env env, const napi_value a
         "Failed to check property name");
     if (present) {
         CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property), "Failed to get property");
-        shared_ptr<DataShareAbsPredicates> predicate = DataSharePredicatesProxy::GetNativePredicates(env, property);
+        JSProxy::JSProxy<DataShareAbsPredicates> *jsProxy = nullptr;
+        napi_unwrap(env, property, reinterpret_cast<void **>(&jsProxy));
+        shared_ptr<DataShareAbsPredicates> predicate = jsProxy->GetInstance();
         CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE, napi_invalid_arg,
             "invalid predicate");
         CHECK_COND_RET(GetLocationPredicate(context, predicate) == TRUE, napi_invalid_arg, "invalid predicate");
