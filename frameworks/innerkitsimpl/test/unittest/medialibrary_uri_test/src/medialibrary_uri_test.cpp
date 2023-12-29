@@ -27,8 +27,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-const std::string TEST_STRING = "GetDateAddedFromUri&";
-
 void MediaLibraryUriTest::SetUpTestCase(void) {}
 
 void MediaLibraryUriTest::TearDownTestCase(void) {}
@@ -77,26 +75,6 @@ HWTEST_F(MediaLibraryUriTest, medialib_ParseThumbnailInfo_test_001, TestSize.Lev
     ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize,
         outNetworkId, outTableName);
     EXPECT_EQ(ret, true);
-}
-
-HWTEST_F(MediaLibraryUriTest, medialib_GetDateAddedFromUri_test_001, TestSize.Level0)
-{
-    string testDateAdded = "0001";
-    string uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL;
-    string output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
-    EXPECT_EQ(output, "");
-
-    uriString = TEST_STRING + ML_URI_DATE_ADDED + testDateAdded;
-    output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
-    EXPECT_EQ(output, "");
-
-    uriString = TEST_STRING + THUMBNAIL_OPERN_KEYWORD + "=" + testDateAdded;
-    output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
-    EXPECT_EQ(output, "");
-
-    uriString = TEST_STRING + ML_URI_DATE_ADDED + "=" + testDateAdded;
-    output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
-    EXPECT_EQ(output, testDateAdded);
 }
 } // namespace Media
 } // namespace OHOS

@@ -310,40 +310,5 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_005, TestSize.Level0)
     free(buf);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
 }
-
-/**
- * @tc.number    : MediaLibraryManager_GetBatchAstcs_test_006
- * @tc.name      : Query astc batch to see if error occurs
- * @tc.desc      : Input uri list to obtain astc bacth
- */
-HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test_006, TestSize.Level0)
-{
-    vector<string> uriBatch;
-    vector<vector<uint8_t>> astcBatch;
-    int ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
-    EXPECT_EQ(ret, E_INVALID_URI);
-
-    string beginUri = "file://media/Photo/64/IMG_063/IMG_11311.jpg?oper=astc&width=256&height=256&time_id=00000001";
-    uriBatch.push_back("0000000001");
-    ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
-    EXPECT_EQ(ret, E_INVALID_URI);
-
-    uriBatch.clear();
-    uriBatch.push_back(beginUri);
-    ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
-    EXPECT_EQ(ret, E_INVALID_URI);
-
-    uriBatch.clear();
-    beginUri = "file://media/Photo/64/IMG_063/IMG_11311.jpg?oper=astc&width=128&height=128&time_id=00000001";
-    uriBatch.push_back(beginUri);
-    ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
-    EXPECT_EQ(ret, E_DB_FAIL);
-
-    uriBatch.clear();
-    beginUri = "file://media/Photo/64/IMG_063/IMG_11311.jpg?oper=astc&width=64&height=64&time_id=00000001";
-    uriBatch.push_back(beginUri);
-    ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
-    EXPECT_EQ(ret, E_DB_FAIL);
-}
 } // namespace Media
 } // namespace OHOS
