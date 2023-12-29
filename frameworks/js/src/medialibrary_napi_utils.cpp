@@ -1008,7 +1008,7 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
         case PhotoAlbumSubType::IMAGES: {
             return GetAllImagesPredicates(predicates, hiddenOnly);
         }
-        case PhotoAlbumSubType::SOURCE: {
+        case PhotoAlbumSubType::SOURCE_GENERIC: {
             return GetAllSourcePredicates(predicates, hiddenOnly);
         }
         default: {

@@ -62,6 +62,7 @@ static std::atomic<int> number(0);
 const int ZERO = 0;
 const int ONE = 1;
 const int TWO = 2;
+const string RECORD_BUNDLE_NAME = "com.ohos.app";
 
 struct InsertResult {
     int64_t fileId;
@@ -97,9 +98,9 @@ void InitSourceAlbumTrigger()
 void ClearData()
 {
     string clearPhotoSql = "DELETE FROM " + PhotoColumn::PHOTOS_TABLE;
-    string clearSourceAlbumSql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
-        PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SMART) + " AND " +
-        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::SOURCE);
+    string clearSourceAlbumSql = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
+        PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SOURCE) + " AND " +
+        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::SOURCE_GENERIC);
     vector<string> executeSqlStrs = {
         clearPhotoSql,
         clearSourceAlbumSql,
@@ -165,6 +166,7 @@ InsertResult InsertPhoto(string &packageName)
     valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
     if (!packageName.empty()) {
         valuesBucket.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
+        valuesBucket.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, RECORD_BUNDLE_NAME);
     }
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_ADDED, timestamp);
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, timestamp);
@@ -239,12 +241,13 @@ void UpdateDisplayName(int64_t &fileId, string &displayName)
 void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptPhotoCount,
     string exceptCoverUri)
 {
-    vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI };
-    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY,
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI,
+        PhotoAlbumColumns::ALBUM_BUNDLE_NAME};
+    MediaLibraryCommand cmd(OperationObject::PHOTO_ALBUM, OperationType::QUERY,
         MediaLibraryApi::API_10);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_NAME, packageName);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SMART));
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE));
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
     ASSERT_NE(g_rdbStore, nullptr);
     auto resultSet = g_rdbStore->Query(cmd, columns);
     ASSERT_NE(resultSet, nullptr);
@@ -255,20 +258,22 @@ void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptP
     EXPECT_EQ(count, exceptResultCount);
     int photoCount = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
     string coverURI = GetStringVal(PhotoAlbumColumns::ALBUM_COVER_URI, resultSet);
+    string bundleName = GetStringVal(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, resultSet);
     MEDIA_INFO_LOG("validPhotoAlbumValue photoCount is: %{public}d, coverURI is %{public}s",
         photoCount, coverURI.c_str());
     EXPECT_EQ(photoCount, exceptPhotoCount);
     EXPECT_EQ(coverURI, exceptCoverUri);
+    EXPECT_NE(bundleName, "");
 }
 
 void ValidNullPackageNameSourceAlbum()
 {
     vector<string> columns = {};
-    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY,
+    MediaLibraryCommand cmd(OperationObject::PHOTO_ALBUM, OperationType::QUERY,
         MediaLibraryApi::API_10);
     cmd.GetAbsRdbPredicates()->IsNull(PhotoAlbumColumns::ALBUM_NAME);
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SMART));
-    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE));
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
     ASSERT_NE(g_rdbStore, nullptr);
     auto resultSet = g_rdbStore->Query(cmd, columns);
     ASSERT_NE(resultSet, nullptr);
