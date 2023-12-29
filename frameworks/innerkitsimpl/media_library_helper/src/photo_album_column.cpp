@@ -42,6 +42,7 @@ const string PhotoAlbumColumns::ALBUM_IMAGE_COUNT = "image_count";
 const string PhotoAlbumColumns::ALBUM_VIDEO_COUNT = "video_count";
 const string PhotoAlbumColumns::ALBUM_LATITUDE = "latitude";
 const string PhotoAlbumColumns::ALBUM_LONGITUDE = "longitude";
+const string PhotoAlbumColumns::ALBUM_BUNDLE_NAME = "bundle_name";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
@@ -94,7 +95,8 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     HIDDEN_COVER + " TEXT DEFAULT '', " +
     ALBUM_ORDER + " INT," +
     ALBUM_IMAGE_COUNT + " INT DEFAULT 0, " +
-    ALBUM_VIDEO_COUNT + " INT DEFAULT 0)";
+    ALBUM_VIDEO_COUNT + " INT DEFAULT 0, " +
+    ALBUM_BUNDLE_NAME + " TEXT)";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
@@ -321,7 +323,7 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
         case PhotoAlbumSubType::IMAGES: {
             return GetAllImagesPredicates(predicates, hiddenState);
         }
-        case PhotoAlbumSubType::SOURCE: {
+        case PhotoAlbumSubType::SOURCE_GENERIC: {
             return GetAllSourcePredicates(predicates, hiddenState);
         }
         default: {

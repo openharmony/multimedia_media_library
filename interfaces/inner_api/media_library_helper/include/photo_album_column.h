@@ -41,6 +41,7 @@ public:
     static const std::string ALBUM_VIDEO_COUNT EXPORT;
     static const std::string ALBUM_LATITUDE EXPORT;
     static const std::string ALBUM_LONGITUDE EXPORT;
+    static const std::string ALBUM_BUNDLE_NAME EXPORT;
 
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH EXPORT;
