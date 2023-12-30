@@ -38,6 +38,7 @@
 #include "js_native_api.h"
 #include "js_native_api_types.h"
 #include "location_column.h"
+#include "locale_config.h"
 #include "media_asset_edit_data_napi.h"
 #include "media_exif.h"
 #include "media_column.h"
@@ -1871,11 +1872,12 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
         uriStr = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).uriStr;
         fetchColumn = ANALYSIS_SOURCE_INFO_MAP.at(context->analysisType).fetchColumn;
         if (context->analysisType == ANALYSIS_DETAIL_ADDRESS) {
+            string language = Global::I18n::LocaleConfig::GetSystemLanguage();
             vector<string> onClause = {
                 PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " +
                 GEO_KNOWLEDGE_TABLE + "." + LATITUDE + " AND " + PhotoColumn::PHOTOS_TABLE + "." +
                 PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE +
-                " AND " + GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \"zh-Hans\""
+                " AND " + GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = \"" + language + "\""
             };
             predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(onClause);
         }
