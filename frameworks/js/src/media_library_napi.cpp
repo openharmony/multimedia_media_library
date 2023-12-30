@@ -5265,8 +5265,9 @@ napi_value ParseArgsTrashAsset(napi_env env, napi_callback_info info, unique_ptr
         NapiError::ThrowError(env, JS_E_URI, "Failed to check empty uri!");
         return nullptr;
     }
-    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
-        NapiError::ThrowError(env, JS_E_URI, "Failed to check uri format, not a photo uri!");
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos &&
+        uri.find(AudioColumn::AUDIO_URI_PREFIX) == string::npos) {
+        NapiError::ThrowError(env, JS_E_URI, "Failed to check uri format, not a photo or audio uri");
         return nullptr;
     }
     context->uri = uri;
