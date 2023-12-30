@@ -62,6 +62,7 @@ gen_js_obj("medialibraryinf_abc") {
 
 config("napi_config") {
   include_dirs = [
+    "${MEDIALIB_GLOBAL_PATH}/i18n/frameworks/intl/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
@@ -146,6 +147,7 @@ ohos_shared_library("medialibrary_nutils") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "i18n:intl_util",
     "image_framework:image",
     "ipc:ipc_core",
     "ipc:ipc_js",
