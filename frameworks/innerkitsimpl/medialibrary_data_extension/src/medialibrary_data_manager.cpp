@@ -51,7 +51,6 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_file_operations.h"
 #include "medialibrary_inotify.h"
-#include "medialibrary_kvstore_manager.h"
 #include "medialibrary_location_operations.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_smartalbum_map_operations.h"
@@ -105,7 +104,6 @@ MediaLibraryDataManager::MediaLibraryDataManager(void)
 
 MediaLibraryDataManager::~MediaLibraryDataManager(void)
 {
-    MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 #ifdef DISTRIBUTED
     if (kvStorePtr_ != nullptr) {
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
@@ -233,7 +231,6 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     }
 
     rdbStore_ = nullptr;
-    MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 
 #ifdef DISTRIBUTED
     if (kvStorePtr_ != nullptr) {
