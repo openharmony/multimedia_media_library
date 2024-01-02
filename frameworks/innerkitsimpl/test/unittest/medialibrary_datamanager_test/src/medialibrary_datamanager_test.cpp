@@ -69,7 +69,9 @@ namespace {
 void MediaLibraryDataManagerUnitTest::SetUpTestCase(void)
 {
     MediaLibraryUnitTestUtils::Init();
-    vector<string> perms = { "ohos.permission.MEDIA_LOCATION" };
+    vector<string> perms;
+    perms.push_back("ohos.permission.MEDIA_LOCATION");
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
     uint64_t tokenId = 0;
     PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryDataManagerUnitTest", perms, tokenId);
     ASSERT_TRUE(tokenId != 0);
