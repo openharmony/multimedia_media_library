@@ -1417,12 +1417,14 @@ static int32_t UpdateFavoritesOrder(const int32_t value, const int32_t currentAl
     }
     std::string updateOtherAlbumOrder;
     std::string updateCurrentAlbumOrder;
+    vector<string> updateSortedAlbumsSqls;
     if (value == FAVORITE_PAGE) {
-        updateOtherAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RANK + " = " + RANK + " +1 WHERE " +
-            USER_DISPLAY_LEVEL + " = " + to_string(FAVORITE_PAGE);
-        updateCurrentAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RANK + " = 1" + " WHERE " + GROUP_TAG +
-            " IN (SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+        int maxAlbumOrder;
+        ObtainMaxPortraitAlbumOrder(maxAlbumOrder);
+        updateCurrentAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RANK + " = " + to_string(maxAlbumOrder) +
+            " +1 WHERE " + GROUP_TAG + " IN (SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
             " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) + ")";
+        updateSortedAlbumsSqls.push_back(updateCurrentAlbumOrder);
     } else {
         int rank;
         int err = ObtainCurrentPortraitAlbumOrder(currentAlbumId, rank);
@@ -1434,8 +1436,9 @@ static int32_t UpdateFavoritesOrder(const int32_t value, const int32_t currentAl
         updateCurrentAlbumOrder = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + RANK + " = 0" +
             " WHERE " + GROUP_TAG + " IN (SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
             " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) + ")";
+        updateSortedAlbumsSqls.push_back(updateOtherAlbumOrder);
+        updateSortedAlbumsSqls.push_back(updateCurrentAlbumOrder);
     }
-    vector<string> updateSortedAlbumsSqls = { updateOtherAlbumOrder, updateCurrentAlbumOrder};
     return ExecSqls(updateSortedAlbumsSqls, uniStore);
 }
 
