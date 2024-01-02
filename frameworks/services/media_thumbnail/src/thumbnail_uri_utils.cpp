@@ -106,26 +106,5 @@ string ThumbnailUriUtils::GetTableFromUri(const string &uri)
     }
     return table;
 }
-
-string ThumbnailUriUtils::GetDateAddedFromUri(const string &uri)
-{
-    auto index = uri.rfind('&');
-    if (index == std::string::npos) {
-        MEDIA_ERR_LOG("GetDateAddedFromUri find index for last string failed: %{private}s", uri.c_str());
-        return "";
-    }
-
-    string pairString = uri.substr(index + 1);
-    size_t splitIndex = pairString.find('=');
-    if (splitIndex == std::string::npos) {
-        MEDIA_ERR_LOG("GetDateAddedFromUri failed to parse pairString: %{private}s", pairString.c_str());
-        return "";
-    }
-
-    if (pairString.substr(0, splitIndex) == ML_URI_DATE_ADDED) {
-        return pairString.substr(splitIndex + 1);
-    }
-    return "";
-}
 } // namespace Media
 } // namespace OHOS

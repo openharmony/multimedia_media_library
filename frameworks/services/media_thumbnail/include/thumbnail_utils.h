@@ -42,7 +42,6 @@ struct ThumbRdbOpt {
     EXPORT std::string udid;
     EXPORT std::string row;
     EXPORT std::string uri;
-    EXPORT std::string dateAdded;
     EXPORT Size screenSize;
 };
 
@@ -53,8 +52,6 @@ struct ThumbnailData {
         source = nullptr;
         thumbnail.clear();
         lcd.clear();
-        monthAstc.clear();
-        yearAstc.clear();
     }
 
     EXPORT int mediaType {-1};
@@ -63,10 +60,7 @@ struct ThumbnailData {
     EXPORT std::shared_ptr<PixelMap> source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
-    EXPORT std::vector<uint8_t> monthAstc;
-    EXPORT std::vector<uint8_t> yearAstc;
     EXPORT std::vector<uint8_t> lcd;
-    EXPORT std::string dateAdded;
     EXPORT std::string id;
     EXPORT std::string cloudId;
     EXPORT std::string udid;
@@ -135,12 +129,8 @@ public:
     EXPORT static bool ResizeThumb(int& width, int& height);
     EXPORT static bool ResizeLcd(int& width, int& height);
     static bool IsSupportGenAstc();
-    static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
-
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
-    static int SaveThumbDataToLocalDir(ThumbnailData &data,
-        const ThumbnailType &type, const std::string &suffix, uint8_t *output, const int writeSize);
     static int ToSaveFile(ThumbnailData &data, const ThumbnailType &type, const std::string &fileName,
         uint8_t *output, const int &writeSize);
     static int SaveFileCreateDir(const std::string &path, const std::string &suffix, std::string &fileName);
@@ -171,9 +161,6 @@ private:
 
     // scale
     static bool ScaleFastThumb(ThumbnailData &data, const Size &size);
-
-    static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
-    static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
 };
 } // namespace Media
 } // namespace OHOS
