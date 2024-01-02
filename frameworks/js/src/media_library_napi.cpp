@@ -4174,6 +4174,7 @@ static napi_value GetStoreMediaAssetArgs(napi_env env, napi_value param,
         NAPI_DEBUG_LOG("optional relativePath param empty");
         relativePath = GetDefaultDirectory(mediaType);
     }
+    relativePath = MediaFileUtils::AddDocsToRelativePath(relativePath);
     context->valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
     NAPI_DEBUG_LOG("src:%{private}s mime:%{private}s relp:%{private}s filename:%{private}s",
         context->storeMediaSrc.c_str(), mimeType.c_str(), relativePath.c_str(), fileName.c_str());

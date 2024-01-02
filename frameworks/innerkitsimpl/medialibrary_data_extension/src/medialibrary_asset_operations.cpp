@@ -1967,6 +1967,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
             deletedRows, ids.size());
         return deletedRows;
     }
+    MEDIA_INFO_LOG("Delete files in db, deletedRows: %{public}d", deletedRows);
 
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
