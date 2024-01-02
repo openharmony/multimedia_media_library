@@ -462,21 +462,5 @@ std::string MediaFileUri::GetPhotoId(const std::string &uri)
     std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
     return tmp.substr(0, tmp.find_first_of('/'));
 }
-
-void MediaFileUri::GetTimeIdFromUri(const std::vector<std::string> &uriBatch, std::vector<std::string> &timeIdBatch)
-{
-    for (size_t i = 0; i < uriBatch.size(); ++i) {
-        std::string uri = uriBatch.at(i);
-        if (uri.empty()) {
-            continue;
-        }
-        auto index = uri.rfind(ML_URI_TIME_ID);
-        if (index == std::string::npos) {
-            MEDIA_ERR_LOG("GetTimeIdFromUri find index for time_id failed: %{private}s", uri.c_str());
-            continue;
-        }
-        timeIdBatch.emplace_back(uri.substr(index + ML_URI_TIME_ID.length()));
-    }
-}
 } // namespace Media
 } // namespace OHOS

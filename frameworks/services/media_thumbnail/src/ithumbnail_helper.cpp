@@ -23,7 +23,6 @@
 #include "ipc_skeleton.h"
 #include "media_column.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_kvstore_manager.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_rdbstore.h"
@@ -49,7 +48,6 @@ void IThumbnailHelper::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outDat
     if (!opts.path.empty()) {
         outData.path = opts.path;
         outData.id = opts.row;
-        outData.dateAdded = opts.dateAdded;
         return;
     }
     string filesTableName = opts.table;
@@ -279,16 +277,16 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
     return true;
 }
 
-static bool RevertFastThumbnailPixelFormat(ThumbnailData &data, const Size &size, PixelFormat format)
+static bool RevertFastThumbnailPixelFormat(ThumbnailData &data, const Size &size)
 {
-    if (data.source->GetPixelFormat() != format) {
+    if (data.source->GetPixelFormat() != PixelFormat::RGB_565) {
         Media::InitializationOptions option = {
             .size = size,
-            .pixelFormat = format,
+            .pixelFormat = PixelFormat::RGB_565
         };
         data.source = PixelMap::Create(*(data.source), option);
         if (data.source == nullptr) {
-            MEDIA_ERR_LOG("Can not revert fastThumbnail");
+            MEDIA_ERR_LOG("Can not revert fastThumbnail from RGBA_8888 to RGB_565");
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
                 {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
             PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -325,19 +323,16 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
             PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             return false;
         }
-    } else if (type == ThumbnailType::MTH_ASTC || type == ThumbnailType::YEAR_ASTC) {
-        if (!ThumbnailUtils::CheckDateAdded(opts, data)) {
-            MEDIA_ERR_LOG("CheckDateAdded failed in GenThumbnail");
-            return false;
-        }
-        if (!GenMonthAndYearAstcData(data, type)) {
-            MEDIA_ERR_LOG("GenMonthAndYearAstcData failed in GenThumbnail");
-            return false;
-        }
     } else {
         // generate MTH and YEAR pixelMap
-        if (!GenMonthAndYearPixelMap(data, type)) {
-            MEDIA_ERR_LOG("GenMonthAndYearPixelMap failed in GenThumbnail");
+        Size size;
+        if (type == ThumbnailType::MTH) {
+            size = {DEFAULT_MTH_SIZE, DEFAULT_MTH_SIZE };
+        } else {
+            size = { DEFAULT_YEAR_SIZE, DEFAULT_YEAR_SIZE };
+        }
+        ThumbnailUtils::GenTargetPixelmap(data, size);
+        if (!RevertFastThumbnailPixelFormat(data, size)) {
             return false;
         }
     }
@@ -352,46 +347,6 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
     }
     data.thumbnail.clear();
     return true;
-}
-
-bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type)
-{
-    Size size;
-    if (type == ThumbnailType::MTH_ASTC) {
-        size = {DEFAULT_MTH_SIZE, DEFAULT_MTH_SIZE };
-    } else if (type == ThumbnailType::YEAR_ASTC) {
-        size = {DEFAULT_YEAR_SIZE, DEFAULT_YEAR_SIZE };
-    } else {
-        MEDIA_ERR_LOG("invalid thumbnail type");
-        return false;
-    }
-
-    ThumbnailUtils::GenTargetPixelmap(data, size);
-    if (!RevertFastThumbnailPixelFormat(data, size, PixelFormat::RGBA_8888)) {
-        MEDIA_ERR_LOG("GenMonthAndYearAstcData revert to RGBA_8888 failed");
-        return false;
-    }
-    if (!ThumbnailUtils::CompressImage(data.source,
-        (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, false, nullptr, true)) {
-        MEDIA_ERR_LOG("CompressImage to astc failed");
-        return false;
-    }
-    return true;
-}
-
-bool IThumbnailHelper::GenMonthAndYearPixelMap(ThumbnailData &data, const ThumbnailType type)
-{
-    Size size;
-    if (type == ThumbnailType::MTH) {
-        size = {DEFAULT_MTH_SIZE, DEFAULT_MTH_SIZE };
-    } else if (type == ThumbnailType::YEAR) {
-        size = { DEFAULT_YEAR_SIZE, DEFAULT_YEAR_SIZE };
-    } else {
-        MEDIA_ERR_LOG("invalid thumbnail type");
-        return false;
-    }
-    ThumbnailUtils::GenTargetPixelmap(data, size);
-    return RevertFastThumbnailPixelFormat(data, size, PixelFormat::RGB_565);
 }
 
 int32_t IThumbnailHelper::UpdateAstcState(ThumbRdbOpt &opts)
@@ -437,9 +392,6 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
                 MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
             }
         }
-        if (!GenThumbnail(opts, data, ThumbnailType::MTH_ASTC)) {
-            return false;
-        }
         if (!GenThumbnail(opts, data, ThumbnailType::MTH)) {
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
                 {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -450,9 +402,6 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
                 {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
             PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-            return false;
-        }
-        if (!GenThumbnail(opts, data, ThumbnailType::YEAR_ASTC)) {
             return false;
         }
     }
