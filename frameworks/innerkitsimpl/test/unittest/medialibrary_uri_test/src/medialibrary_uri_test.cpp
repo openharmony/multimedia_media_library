@@ -27,6 +27,8 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+const std::string TEST_STRING = "GetDateAddedFromUri&";
+
 void MediaLibraryUriTest::SetUpTestCase(void) {}
 
 void MediaLibraryUriTest::TearDownTestCase(void) {}
@@ -84,15 +86,15 @@ HWTEST_F(MediaLibraryUriTest, medialib_GetDateAddedFromUri_test_001, TestSize.Le
     string output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
     EXPECT_EQ(output, "");
 
-    uriString = "ParseThumbnailInfo&" + ML_URI_DATE_ADDED + testDateAdded;
+    uriString = TEST_STRING + ML_URI_DATE_ADDED + testDateAdded;
     output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
     EXPECT_EQ(output, "");
 
-    uriString = "ParseThumbnailInfo&" + THUMBNAIL_OPERN_KEYWORD + "=" + testDateAdded;
+    uriString = TEST_STRING + THUMBNAIL_OPERN_KEYWORD + "=" + testDateAdded;
     output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
     EXPECT_EQ(output, "");
 
-    uriString = "ParseThumbnailInfo&" + ML_URI_DATE_ADDED + "=" + testDateAdded;
+    uriString = TEST_STRING + ML_URI_DATE_ADDED + "=" + testDateAdded;
     output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
     EXPECT_EQ(output, testDateAdded);
 }
