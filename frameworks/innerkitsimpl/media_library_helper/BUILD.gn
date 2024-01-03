@@ -47,6 +47,8 @@ ohos_shared_library("media_library") {
     "src/media_file_utils.cpp",
     "src/media_volume.cpp",
     "src/medialibrary_helper_container.cpp",
+    "src/medialibrary_kvstore.cpp",
+    "src/medialibrary_kvstore_manager.cpp",
     "src/mimetype_utils.cpp",
     "src/native_album_asset.cpp",
     "src/photo_album.cpp",
@@ -77,6 +79,7 @@ ohos_shared_library("media_library") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "kv_store:distributeddata_inner",
     "relational_store:native_rdb",
   ]
 
