@@ -32,8 +32,6 @@ enum class ThumbnailType : int32_t {
     MTH,
     YEAR,
     THUMB_ASTC,
-    MTH_ASTC,
-    YEAR_ASTC,
 };
 
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
@@ -55,7 +53,6 @@ const std::string THUMBNAIL_FORMAT = "image/jpeg";
 const std::string THUMBASTC_FORMAT = "image/astc/4*4";
 constexpr uint8_t THUMBNAIL_MID = 90;
 constexpr uint8_t THUMBNAIL_HIGH = 100;
-constexpr uint8_t ASTC_LOW_QUALITY = 20;
 
 constexpr uint32_t THUMBNAIL_QUERY_MAX = 2000;
 constexpr int64_t AV_FRAME_TIME = 0;
