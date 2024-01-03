@@ -22,10 +22,19 @@ group("unittest") {
 
 ohos_unittest("medialibrary_thumbnail_service_test") {
   module_out_path = "media_library/medialibraryextention"
-  include_dirs = [ "./include" ]
+  include_dirs = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "./include",
+  ]
 
-  sources = [ "./src/medialibrary_thumbnail_service_test.cpp" ]
-  deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
+  sources = [
+    "./src/medialibrary_thumbnail_kvstore_test.cpp",
+    "./src/medialibrary_thumbnail_service_test.cpp",
+  ]
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
 
   external_deps = [
     "ability_base:want",

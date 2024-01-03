@@ -43,6 +43,7 @@ ohos_shared_library("media_library_manager") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "kv_store:distributeddata_inner",
   ]
 
   ldflags = [ "-Wl,--gc-sections" ]
