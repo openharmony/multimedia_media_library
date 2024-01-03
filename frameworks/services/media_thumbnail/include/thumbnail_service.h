@@ -68,7 +68,7 @@ private:
     int32_t CreateThumbnailInfo(const std::string &path, const std::string &tableName, const std::string &fileId,
         const std::string &uri, const bool &isSync);
     int32_t CreateDefaultThumbnail(const std::string &path,
-        const std::string &tableName, const std::string &fileId, const bool &isSync);
+        const std::string &tableName, const std::string &fileId, const std::string &dateAdded, const bool &isSync);
     int32_t CreateLcdThumbnail(const std::string &path,
         const std::string &tableName, const std::string &fileId, const bool &isSync);
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
