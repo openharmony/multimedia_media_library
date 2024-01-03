@@ -107,6 +107,7 @@ void MediaLibraryVisionTest::TearDownTestCase(void)
 
 void MediaLibraryVisionTest::SetUp(void)
 {
+    CleanVisionData();
     MediaLibraryUnitTestUtils::CleanTestFiles();
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
