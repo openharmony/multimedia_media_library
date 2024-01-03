@@ -323,12 +323,12 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test_006, Te
     int ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
     EXPECT_EQ(ret, E_INVALID_URI);
 
+    string beginUri = "file://media/Photo/64/IMG_063/IMG_11311.jpg?oper=astc&width=256&height=256&time_id=00000001";
     uriBatch.push_back("0000000001");
     ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
     EXPECT_EQ(ret, E_INVALID_URI);
 
     uriBatch.clear();
-    string beginUri = "file://media/Photo/64/IMG_063/IMG_11311.jpg?oper=astc&width=256&height=256&time_id=00000001";
     uriBatch.push_back(beginUri);
     ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
     EXPECT_EQ(ret, E_INVALID_URI);

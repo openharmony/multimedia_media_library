@@ -30,7 +30,6 @@ int32_t MediaLibraryKvStoreManager::InitKvStore(const KvStoreRoleType &roleType,
         return E_OK;
     }
 
-    ptr = std::make_shared<MediaLibraryKvStore>();
     std::string baseDir = "";
     if (roleType == KvStoreRoleType::OWNER) {
         baseDir = KV_STORE_OWNER_DIR;
@@ -41,6 +40,7 @@ int32_t MediaLibraryKvStoreManager::InitKvStore(const KvStoreRoleType &roleType,
         return E_ERR;
     }
 
+    ptr = std::make_shared<MediaLibraryKvStore>();
     int32_t status = ptr->Init(roleType, valueType, baseDir);
     if (status != E_OK) {
         MEDIA_ERR_LOG("init kvStore failed, status %{public}d", status);
