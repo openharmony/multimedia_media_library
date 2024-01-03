@@ -429,7 +429,8 @@ string MediaScannerDb::UpdateMetadata(const Metadata &metadata, string &tableNam
         return "";
     }
     if (api == MediaLibraryApi::API_10) {
-        return MakeFileUri(mediaTypeUri, metadata);
+        return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(metadata.GetFileId()),
+            MediaFileUtils::GetExtraUri(metadata.GetFileName(), metadata.GetFilePath())) + "?api_version=10";
     }
     return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(metadata.GetFileId()));
 }
@@ -1025,13 +1026,6 @@ void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), subtypes);
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), userAlbumIds);
-}
-
-std::string MediaScannerDb::MakeFileUri(const std::string &mediaTypeUri, const Metadata &metadata)
-{
-    return MediaFileUtils::GetUriByExtrConditions(mediaTypeUri + "/", to_string(metadata.GetFileId()),
-        MediaFileUtils::GetExtraUri(metadata.GetFileName(), metadata.GetFilePath())) + "?api_version=10" +
-        "&date_added=" + to_string(metadata.GetFileDateAdded());
 }
 } // namespace Media
 } // namespace OHOS

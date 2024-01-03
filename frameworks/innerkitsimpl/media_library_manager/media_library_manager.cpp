@@ -33,7 +33,6 @@
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_kvstore_manager.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "post_proc.h"
@@ -55,8 +54,6 @@ namespace Media {
 shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sDataShareHelper_ = nullptr;
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
-constexpr int32_t DEFAULT_MONTH_THUMBNAIL_SIZE = 128;
-constexpr int32_t DEFAULT_YEAR_THUMBNAIL_SIZE = 64;
 
 struct UriParams {
     string path;
@@ -593,47 +590,6 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
     }
     auto pixelmap = QueryThumbnail(uriParams.fileUri, uriParams.size, uriParams.path, uriParams.isAstc);
     return pixelmap;
-}
-
-int32_t MediaLibraryManager::GetBatchAstcs(const vector<string> &uriBatch, vector<vector<uint8_t>> &astcBatch)
-{
-    if (uriBatch.empty()) {
-        MEDIA_INFO_LOG("GetBatchAstcs uriBatch is empty");
-        return E_INVALID_URI;
-    }
-
-    UriParams uriParams;
-    if (!GetParamsFromUri(uriBatch.at(0), false, uriParams)) {
-        MEDIA_ERR_LOG("GetParamsFromUri failed in GetBatchAstcs");
-        return E_INVALID_URI;
-    }
-    vector<string> timeIdBatch;
-    MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch);
-    MEDIA_INFO_LOG("GetBatchAstcs image batch size: %{public}zu, begin: %{public}s, end: %{public}s",
-        uriBatch.size(), timeIdBatch.back().c_str(), timeIdBatch.front().c_str());
-
-    KvStoreValueType valueType;
-    if (uriParams.size.width == DEFAULT_MONTH_THUMBNAIL_SIZE && uriParams.size.height == DEFAULT_MONTH_THUMBNAIL_SIZE) {
-        valueType = KvStoreValueType::MONTH_ASTC;
-    } else if (uriParams.size.width == DEFAULT_YEAR_THUMBNAIL_SIZE &&
-        uriParams.size.height == DEFAULT_YEAR_THUMBNAIL_SIZE) {
-        valueType = KvStoreValueType::YEAR_ASTC;
-    } else {
-        MEDIA_ERR_LOG("GetBatchAstcs invalid image size");
-        return E_INVALID_URI;
-    }
-
-    auto kvStore = MediaLibraryKvStoreManager::GetInstance().GetKvStore(KvStoreRoleType::VISITOR, valueType);
-    if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("GetBatchAstcs kvStore is nullptr");
-        return E_DB_FAIL;
-    }
-    int32_t status = kvStore->BatchQuery(timeIdBatch, astcBatch);
-    if (status != E_OK) {
-        MEDIA_ERR_LOG("GetBatchAstcs failed, status %{public}d", status);
-        return status;
-    }
-    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

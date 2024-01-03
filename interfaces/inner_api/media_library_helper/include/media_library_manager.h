@@ -137,16 +137,6 @@ public:
 
     EXPORT std::unique_ptr<PixelMap> GetThumbnail(const Uri &uri);
 
-    /**
-     * @brief Obtain a batch of astc data
-     *
-     * @param uriBatch parameter for input, indicates the range of astc data that needs to be obtained
-     * @param astcBatch parameter for output
-     * @return if obtain success, return 0; Otherwise return error code
-     */
-    EXPORT int32_t GetBatchAstcs(
-        const std::vector<std::string> &uriBatch, std::vector<std::vector<uint8_t>> &astcBatch);
-
 private:
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);
     static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path, bool isAstc);
