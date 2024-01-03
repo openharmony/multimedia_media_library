@@ -22,45 +22,45 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-const std::string TEST_PATH = "data/test";
+const std::string TEST_PATH = "/data/test";
 const std::string FIRST_KEY = "000001";
 const std::string SECOND_KEY = "000002";
 const std::string THIRD_KEY = "000003";
 const std::string FORTH_KEY = "000004";
-std::shared_ptr<MediaLibraryKvStore> kvStorePtr = nullptr;
+std::shared_ptr<MediaLibraryKvStore> kvStorePtr_ = nullptr;
 
 void MediaLibraryThumbnailKvStoreTest::SetUpTestCase(void)
 {
-    kvStorePtr = std::make_shared<MediaLibraryKvStore>;
-    int errCode = kvStorePtr->Init(KvStoreRoleType::QWNER, KvStoreValueType::MONTH_ASTC, TEST_PATH);
-    if (errCode != OK) {
-        kvStorePtr = nullptr;
+    kvStorePtr_ = std::make_shared<MediaLibraryKvStore>();
+    int errCode = kvStorePtr_->Init(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC, TEST_PATH);
+    if (errCode != E_OK) {
+        kvStorePtr_ = nullptr;
         return;
     }
 
     std::vector<uint8_t> value;
     value.assign(FIRST_KEY.begin(), FIRST_KEY.end());
-    errCode = kvStorePtr->Insert(FIRST_KEY, value);
+    errCode = kvStorePtr_->Insert(FIRST_KEY, value);
     value.clear();
     EXPECT_EQ(errCode, E_OK);
 
     value.assign(SECOND_KEY.begin(), SECOND_KEY.end());
-    errCode = kvStorePtr->Insert(SECOND_KEY, value);
+    errCode = kvStorePtr_->Insert(SECOND_KEY, value);
     value.clear();
     EXPECT_EQ(errCode, E_OK);
     
     value.assign(THIRD_KEY.begin(), THIRD_KEY.end());
-    errCode = kvStorePtr->Insert(THIRD_KEY, value);
+    errCode = kvStorePtr_->Insert(THIRD_KEY, value);
     value.clear();
     EXPECT_EQ(errCode, E_OK);
 }
 
 void MediaLibraryThumbnailKvStoreTest::TearDownTestCase(void)
 {
-    if (kvStorePtr == nullptr) {
+    if (kvStorePtr_ == nullptr) {
         return;
     }
-    kvStorePtr->Close();
+    kvStorePtr_->Close();
 }
 
 void MediaLibraryThumbnailKvStoreTest::SetUp(void) {}
@@ -69,41 +69,41 @@ void MediaLibraryThumbnailKvStoreTest::TearDown(void) {}
 
 HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Insert_test_001, TestSize.Level0)
 {
-    if (kvStorePtr == nullptr) {
+    if (kvStorePtr_ == nullptr) {
         exit(1);
     }
     std::vector<uint8_t> value;
     value.assign(FORTH_KEY.begin(), FORTH_KEY.end());
-    int errCode = kvStorePtr->Insert(FORTH_KEY, value);
+    int errCode = kvStorePtr_->Insert(FORTH_KEY, value);
     value.clear();
     EXPECT_EQ(errCode, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Delete_test_002, TestSize.Level0)
 {
-    if (kvStorePtr == nullptr) {
+    if (kvStorePtr_ == nullptr) {
         exit(1);
     }
-    int errCode = kvStorePtr->Delete(FIRST_KEY);
+    int errCode = kvStorePtr_->Delete(FIRST_KEY);
     EXPECT_EQ(errCode, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Query_test_003, TestSize.Level0)
 {
-    if (kvStorePtr == nullptr) {
+    if (kvStorePtr_ == nullptr) {
         exit(1);
     }
     std::vector<uint8_t> value;
-    int errCode = kvStorePtr->Query(FIRST_KEY, value);
+    int errCode = kvStorePtr_->Query(FIRST_KEY, value);
     EXPECT_NE(errCode, E_OK);
 
-    errCode = kvStorePtr->Query(SECOND_KEY, value);
+    errCode = kvStorePtr_->Query(SECOND_KEY, value);
     EXPECT_EQ(errCode, E_OK);
 }
 
 HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_004, TestSize.Level0)
 {
-    if (kvStorePtr == nullptr) {
+    if (kvStorePtr_ == nullptr) {
         exit(1);
     }
     std::vector<std::string> uriBatch;
@@ -112,28 +112,28 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_
     uriBatch.push_back(THIRD_KEY);
     uriBatch.push_back(SECOND_KEY);
     uriBatch.push_back(FIRST_KEY);
-    int errorCode = kvStorePtr->BatchQuery(uriBatch, dataBatch);
+    int errorCode = kvStorePtr_->BatchQuery(uriBatch, dataBatch);
     EXPECT_EQ(errCode, E_OK);
     EXPECT_EQ(dataBatch.size(), 3);
     dataBatch.clear();
 
     std::vector<uint8_t> value;
     value.assign(FIRST_KEY.begin(), FIRST_KEY.end());
-    errCode = kvStorePtr->Insert(FIRST_KEY, value);
+    errCode = kvStorePtr_->Insert(FIRST_KEY, value);
     value.clear();
     EXPECT_EQ(errCode, E_OK);
 
-    errorCode = kvStorePtr->BatchQuery(uriBatch, dataBatch);
+    errorCode = kvStorePtr_->BatchQuery(uriBatch, dataBatch);
     EXPECT_EQ(errCode, E_OK);
     EXPECT_EQ(dataBatch.size(), 4);
     dataBatch.clear();
 
-    errCode = kvStorePtr->Delete(SECOND_KEY);
+    errCode = kvStorePtr_->Delete(SECOND_KEY);
     EXPECT_EQ(errCode, E_OK);
-    errCode = kvStorePtr->Delete(THIRD_KEY);
+    errCode = kvStorePtr_->Delete(THIRD_KEY);
     EXPECT_EQ(errCode, E_OK);
 
-    errorCode = kvStorePtr->BatchQuery(uriBatch, dataBatch);
+    errorCode = kvStorePtr_->BatchQuery(uriBatch, dataBatch);
     EXPECT_EQ(errCode, E_OK);
     EXPECT_EQ(dataBatch.size(), 2);
     dataBatch.clear();
