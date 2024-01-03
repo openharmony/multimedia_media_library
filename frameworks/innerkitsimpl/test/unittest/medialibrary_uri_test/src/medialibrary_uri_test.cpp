@@ -76,5 +76,25 @@ HWTEST_F(MediaLibraryUriTest, medialib_ParseThumbnailInfo_test_001, TestSize.Lev
         outNetworkId, outTableName);
     EXPECT_EQ(ret, true);
 }
+
+HWTEST_F(MediaLibraryUriTest, medialib_GetDateAddedFromUri_test_001, TestSize.Level0)
+{
+    string testDateAdded = "0001";
+    string uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL;
+    string output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
+    EXPECT_EQ(output, "");
+
+    uriString = "ParseThumbnailInfo&" + ML_URI_DATE_ADDED + testDateAdded;
+    output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
+    EXPECT_EQ(output, "");
+
+    uriString = "ParseThumbnailInfo&" + THUMBNAIL_OPERN_KEYWORD + "=" + testDateAdded;
+    output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
+    EXPECT_EQ(output, "");
+
+    uriString = "ParseThumbnailInfo&" + ML_URI_DATE_ADDED + "=" + testDateAdded;
+    output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
+    EXPECT_EQ(output, testDateAdded);
+}
 } // namespace Media
 } // namespace OHOS
