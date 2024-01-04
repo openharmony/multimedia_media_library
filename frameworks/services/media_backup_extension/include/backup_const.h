@@ -25,15 +25,15 @@ constexpr int32_t QUERY_COUNT = 500;
 constexpr int32_t CONNECT_SIZE = 10;
 constexpr int32_t MILLISECONDS = 1000;
 constexpr int32_t GALLERY_HIDDEN_ID = -4;
-constexpr int32_t UPDATE_RESTORE_ID = 0;
+constexpr int32_t UPGRADE_RESTORE_ID = 0;
 constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
 constexpr int32_t CLONE_RESTORE_ID = 2;
 
-const std::string ORIGIN_PATH = "/data/storage/el2/backup/restore";
+const std::string BACKUP_RESTORE_DIR = "/data/storage/el2/backup/restore";
 const std::string DOCUMENT_PATH = "/storage/media/local/files/Docs/Documents";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
-const std::string UPDATE_FILE_DIR = "/storage/media/local/files/data";
+const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 
 // DB field for update scene
 const std::string GALLERY_LOCAL_MEDIA_ID = "local_media_id";
@@ -59,6 +59,9 @@ const std::string DATE_ADDED = "date_added";
 // custom column
 const std::string COUNT = "count";
 const std::string MAX_ID = "max_id";
+
+const std::string GALLERY_DB_NAME = "gallery.db";
+const std::string EXTERNAL_DB_NAME = "external.db";
 
 constexpr int32_t INDEX_TYPE = 0;
 constexpr int32_t INDEX_CACHE_DIR = 1;

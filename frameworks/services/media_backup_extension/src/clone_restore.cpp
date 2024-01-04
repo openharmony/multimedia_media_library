@@ -30,15 +30,15 @@ namespace OHOS {
 namespace Media {
 const std::string MEDIA_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 
-int32_t CloneRestore::Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate)
+int32_t CloneRestore::Init(const std::string &backupRetoreDir, const std::string &upgradePath, bool isUpgrade)
 {
-    dbPath_ = ORIGIN_PATH + MEDIA_DB_PATH;
-    filePath_ = ORIGIN_PATH + "/storage/cloud/files";
+    dbPath_ = BACKUP_RESTORE_DIR + MEDIA_DB_PATH;
+    filePath_ = BACKUP_RESTORE_DIR + "/storage/cloud/files";
     if (!MediaFileUtils::IsFileExists(dbPath_)) {
         MEDIA_ERR_LOG("Media db is not exist.");
         return E_FAIL;
     }
-    if (isUpdate && BaseRestore::Init() != E_OK) {
+    if (isUpgrade && BaseRestore::Init() != E_OK) {
         return E_FAIL;
     }
     int32_t err = BackupDatabaseUtils::InitDb(mediaRdb_, MEDIA_DATA_ABILITY_DB_NAME, dbPath_, BUNDLE_NAME, true);

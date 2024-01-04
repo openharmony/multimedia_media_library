@@ -13,19 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_UPDATE_RESTORE_H
-#define OHOS_MEDIA_UPDATE_RESTORE_H
+#ifndef OHOS_MEDIA_UPGRADE_RESTORE_H
+#define OHOS_MEDIA_UPGRADE_RESTORE_H
 
 #include "base_restore.h"
 
 namespace OHOS {
 namespace Media {
-class UpdateRestore : public BaseRestore {
+class UpgradeRestore : public BaseRestore {
 public:
-    UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName, const std::string &cameraAppName,
-        int32_t sceneCode);
-    virtual ~UpdateRestore() = default;
-    int32_t Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate) override;
+    UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode);
+    virtual ~UpgradeRestore() = default;
+    int32_t Init(const std::string &backupRestorePath, const std::string &upgradePath, bool isUpgrade) override;
     int32_t QueryTotalNumber(void) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
@@ -44,7 +43,8 @@ private:
     bool IsValidDir(const std::string &path);
     void RestoreBatch(int32_t offset);
     void RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type);
-
+    bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
+        std::string &relativePath) override;
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> externalRdb_;
@@ -54,7 +54,6 @@ private:
     std::string appDataPath_;
     std::string galleryAppName_;
     std::string mediaAppName_;
-    std::string cameraAppName_;
     std::set<std::string> cacheSet_;
     std::unordered_map<std::string, std::string> nickMap_;
     bool sceneCode_;
@@ -62,4 +61,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_UPDATE_RESTORE_H
+#endif  // OHOS_MEDIA_UPGRADE_RESTORE_H

@@ -19,7 +19,7 @@
 #include "external_source.h"
 #include "gallery_source.h"
 #include "media_log.h"
-#include "update_restore.h"
+#include "upgrade_restore.h"
 
 using namespace std;
 using namespace OHOS;
@@ -28,11 +28,10 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-const std::string TEST_ORIGIN_PATH = "/data/test/backup/db";
-const std::string TEST_UPDATE_FILE_DIR = "/data/test/backup/file";
+const std::string TEST_BACKUP_PATH = "/data/test/backup/db";
+const std::string TEST_UPGRADE_FILE_DIR = "/data/test/backup/file";
 const std::string GALLERY_APP_NAME = "gallery";
 const std::string MEDIA_APP_NAME = "external";
-const std::string CAMERA_APP_NAME = "camera";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 
 const int EXPECTED_NUM = 5;
@@ -59,27 +58,26 @@ int PhotosOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersion)
 }
 
 shared_ptr<NativeRdb::RdbStore> photosStorePtr = nullptr;
-std::unique_ptr<UpdateRestore> restoreService = nullptr;
+std::unique_ptr<UpgradeRestore> restoreService = nullptr;
 
 void Init(GallerySource &gallerySource, ExternalSource &externalSource)
 {
     MEDIA_INFO_LOG("start init galleryDb");
-    const string galleryDbPath = TEST_ORIGIN_PATH + "/" + GALLERY_APP_NAME + "/ce/databases/gallery.db";
+    const string galleryDbPath = TEST_BACKUP_PATH + "/" + GALLERY_APP_NAME + "/ce/databases/gallery.db";
     gallerySource.Init(galleryDbPath);
     MEDIA_INFO_LOG("end init galleryDb");
     MEDIA_INFO_LOG("start init externalDb");
-    const string externalDbPath = TEST_ORIGIN_PATH + "/" + MEDIA_APP_NAME + "/ce/databases/external.db";
+    const string externalDbPath = TEST_BACKUP_PATH + "/" + MEDIA_APP_NAME + "/ce/databases/external.db";
     externalSource.Init(externalDbPath);
     MEDIA_INFO_LOG("end init externalDb");
-    const string dbPath = TEST_ORIGIN_PATH + "/" + MEDIA_LIBRARY_APP_NAME + "/ce/databases/media_library.db";
+    const string dbPath = TEST_BACKUP_PATH + "/" + MEDIA_LIBRARY_APP_NAME + "/ce/databases/media_library.db";
     NativeRdb::RdbStoreConfig config(dbPath);
     PhotosOpenCall helper;
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     photosStorePtr = store;
-    restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, CAMERA_APP_NAME,
-        UPDATE_RESTORE_ID);
-    restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
+    restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
+    restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
     restoreService->InitGarbageAlbum();
 }
 
@@ -87,7 +85,7 @@ void RestoreFromGallery()
 {
     std::vector<FileInfo> fileInfos = restoreService->QueryFileInfos(0);
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        const NativeRdb::ValuesBucket values = restoreService->GetInsertValue(fileInfos[i], TEST_ORIGIN_PATH,
+        const NativeRdb::ValuesBucket values = restoreService->GetInsertValue(fileInfos[i], TEST_BACKUP_PATH,
             SourceType::GALLERY);
         int64_t rowNum = 0;
         if (photosStorePtr->Insert(rowNum, "Photos", values) != E_OK) {
@@ -105,7 +103,7 @@ void RestoreFromExternal(GallerySource &gallerySource, bool isCamera)
     std::vector<FileInfo> fileInfos = restoreService->QueryFileInfosFromExternal(0, maxId, isCamera);
     MEDIA_INFO_LOG("%{public}d asset will restor", (int)fileInfos.size());
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        const NativeRdb::ValuesBucket values = restoreService->GetInsertValue(fileInfos[i], TEST_ORIGIN_PATH,
+        const NativeRdb::ValuesBucket values = restoreService->GetInsertValue(fileInfos[i], TEST_BACKUP_PATH,
             type);
         int64_t rowNum = 0;
         if (photosStorePtr->Insert(rowNum, "Photos", values) != E_OK) {
@@ -138,9 +136,9 @@ void MediaLibraryBackupTest::TearDown(void) {}
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_init start");
-    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
-        CAMERA_APP_NAME, UPDATE_RESTORE_ID);
-    int32_t result = restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    int32_t result = restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
     EXPECT_EQ(result, 0);
     MEDIA_INFO_LOG("medialib_backup_test_init end");
 }
@@ -148,9 +146,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_init, TestSize.Level0)
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_query_total_number, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_query_total_number start");
-    std::unique_ptr<UpdateRestore> restoreService = std::make_unique<UpdateRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
-        CAMERA_APP_NAME, UPDATE_RESTORE_ID);
-    restoreService->Init(TEST_ORIGIN_PATH, TEST_UPDATE_FILE_DIR, false);
+    std::unique_ptr<UpgradeRestore> restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME,
+        UPGRADE_RESTORE_ID);
+    restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
     int32_t number = restoreService->QueryTotalNumber();
     MEDIA_INFO_LOG("medialib_backup_test_query_total_number %{public}d", number);
     EXPECT_EQ(number, EXPECTED_NUM);

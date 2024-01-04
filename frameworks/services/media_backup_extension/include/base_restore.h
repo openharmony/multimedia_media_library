@@ -26,8 +26,8 @@ class BaseRestore {
 public:
     BaseRestore() = default;
     virtual ~BaseRestore() = default;
-    void StartRestore(const std::string &orignPath, const std::string &updatePath);
-    virtual int32_t Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate) = 0;
+    void StartRestore(const std::string &backupRetorePath, const std::string &upgradePath);
+    virtual int32_t Init(const std::string &backupRetorePath, const std::string &upgradePath, bool isUpgrade) = 0;
     virtual int32_t QueryTotalNumber(void) = 0;
     virtual std::vector<FileInfo> QueryFileInfos(int32_t offset) = 0;
     virtual NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
@@ -40,14 +40,14 @@ protected:
     virtual void HandleRestData(void) = 0;
 
     virtual bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
-    virtual std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
+    virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
+        std::string &relativePath);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
     void InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
-    bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
-        std::string &newPath, std::string &relativePath);
     bool IsSameFile(const FileInfo &fileInfo) const;
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
 
