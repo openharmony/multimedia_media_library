@@ -25,7 +25,6 @@
 #include "file_asset.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
-#include "rdb_predicates.h"
 
 namespace OHOS {
 namespace Media {
@@ -70,14 +69,6 @@ private:
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
 };
 
-class UpdateAnalysisDataAsyncTaskData : public AsyncTaskData {
-public:
-    UpdateAnalysisDataAsyncTaskData(NativeRdb::RdbPredicates predicates, int32_t hiddenState)
-        : predicates_(predicates), hiddenState_(hiddenState) {};
-    virtual ~UpdateAnalysisDataAsyncTaskData() override = default;
-    NativeRdb::RdbPredicates predicates_;
-    int32_t hiddenState_;
-};
 class PhotoEditingRecord {
 public:
     EXPORT explicit PhotoEditingRecord();
