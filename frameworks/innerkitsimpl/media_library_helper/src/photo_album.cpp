@@ -222,6 +222,11 @@ bool PhotoAlbum::IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSu
     return (albumType == PhotoAlbumType::SYSTEM) && (albumSubType == PhotoAlbumSubType::TRASH);
 }
 
+bool PhotoAlbum::IsSourceAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::SOURCE) && (albumSubType == PhotoAlbumSubType::SOURCE_GENERIC);
+}
+
 bool PhotoAlbum::CheckPhotoAlbumType(const PhotoAlbumType albumType)
 {
     return (albumType == PhotoAlbumType::USER) || (albumType == PhotoAlbumType::SYSTEM) ||

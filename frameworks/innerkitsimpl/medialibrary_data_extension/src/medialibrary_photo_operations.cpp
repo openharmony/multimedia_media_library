@@ -177,6 +177,11 @@ static int32_t GetPredicatesByAlbumId(const string &albumId, RdbPredicates &pred
         return E_SUCCESS;
     }
 
+    if (PhotoAlbum::IsSourceAlbum(type, subType)) {
+        PhotoAlbumColumns::GetSourceAlbumPredicates(stoi(albumId), predicates, false);
+        return E_SUCCESS;
+    }
+
     if ((type != PhotoAlbumType::SYSTEM) || (subType == PhotoAlbumSubType::USER_GENERIC) ||
         (subType == PhotoAlbumSubType::ANY)) {
         MEDIA_ERR_LOG("album id %{private}s type:%d subtype:%d", albumId.c_str(), type, subType);
@@ -677,6 +682,8 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
             std::to_string(PhotoAlbumSubType::IMAGES),
         });
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
 
     MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(
