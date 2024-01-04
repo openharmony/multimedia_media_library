@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#define MLOG_TAG "MediaLibraryUpdateRestore"
+#define MLOG_TAG "MediaLibraryUpgradeRestore"
 
-#include "update_restore.h"
+#include "upgrade_restore.h"
 
 #include "backup_database_utils.h"
 #include "media_column.h"
@@ -29,36 +29,31 @@
 
 namespace OHOS {
 namespace Media {
-const std::string UPDATE_GALLERY_DB_NAME = "gallery.db";
-const std::string UPDATE_EXTERNAL_DB_NAME = "external.db";
-
 constexpr int32_t GALLERY_IMAGE_TYPE = 1;
 constexpr int32_t GALLERY_VIDEO_TYPE = 3;
 
-UpdateRestore::UpdateRestore(const std::string &galleryAppName, const std::string &mediaAppName,
-    const std::string &cameraAppName, int32_t sceneCode)
+UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
     galleryAppName_ = galleryAppName;
     mediaAppName_ = mediaAppName;
-    cameraAppName_ = cameraAppName;
     sceneCode_ = sceneCode;
 }
 
-int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate)
+int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
 {
-    appDataPath_ = orignPath;
+    appDataPath_ = backupRetoreDir;
     if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
-        filePath_ = orignPath;
-        galleryDbPath_ = orignPath + "/" + UPDATE_GALLERY_DB_NAME;
+        filePath_ = backupRetoreDir;
+        galleryDbPath_ = backupRetoreDir + "/" + GALLERY_DB_NAME;
     } else {
-        filePath_ = updatePath;
-        galleryDbPath_ = orignPath + "/" + galleryAppName_ + "/ce/databases/gallery.db";
-        externalDbPath_ = orignPath + "/" + mediaAppName_ + "/ce/databases/external.db";
+        filePath_ = upgradeFilePath;
+        galleryDbPath_ = backupRetoreDir + "/" + galleryAppName_ + "/ce/databases/gallery.db";
+        externalDbPath_ = backupRetoreDir + "/" + mediaAppName_ + "/ce/databases/external.db";
         if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
             MEDIA_ERR_LOG("External db is not exist.");
             return E_FAIL;
         }
-        int32_t externalErr = BackupDatabaseUtils::InitDb(externalRdb_, UPDATE_EXTERNAL_DB_NAME, externalDbPath_,
+        int32_t externalErr = BackupDatabaseUtils::InitDb(externalRdb_, EXTERNAL_DB_NAME, externalDbPath_,
             mediaAppName_, false);
         if (externalRdb_ == nullptr) {
             MEDIA_ERR_LOG("External init rdb fail, err = %{public}d", externalErr);
@@ -66,13 +61,13 @@ int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &upd
         }
     }
 
-    if (isUpdate && BaseRestore::Init() != E_OK) {
+    if (isUpgrade && BaseRestore::Init() != E_OK) {
         return E_FAIL;
     }
     if (!MediaFileUtils::IsFileExists(galleryDbPath_)) {
         MEDIA_ERR_LOG("Gallery media db is not exist.");
     } else {
-        int32_t galleryErr = BackupDatabaseUtils::InitDb(galleryRdb_, UPDATE_GALLERY_DB_NAME, galleryDbPath_,
+        int32_t galleryErr = BackupDatabaseUtils::InitDb(galleryRdb_, GALLERY_DB_NAME, galleryDbPath_,
             galleryAppName_, false);
         if (galleryRdb_ == nullptr) {
             MEDIA_ERR_LOG("Gallery init rdb fail, err = %{public}d", galleryErr);
@@ -83,11 +78,11 @@ int32_t UpdateRestore::Init(const std::string &orignPath, const std::string &upd
     return E_OK;
 }
 
-void UpdateRestore::RestorePhoto(void)
+void UpgradeRestore::RestorePhoto(void)
 {
     InitGarbageAlbum();
     RestoreFromGallery();
-    if (sceneCode_ == UPDATE_RESTORE_ID) {
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
         RestoreFromExternal(true);
         RestoreFromExternal(false);
     }
@@ -95,12 +90,12 @@ void UpdateRestore::RestorePhoto(void)
     (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
 }
 
-void UpdateRestore::InitGarbageAlbum()
+void UpgradeRestore::InitGarbageAlbum()
 {
     BackupDatabaseUtils::InitGarbageAlbum(galleryRdb_, cacheSet_, nickMap_);
 }
 
-void UpdateRestore::RestoreFromGallery()
+void UpgradeRestore::RestoreFromGallery()
 {
     int32_t totalNumber = QueryTotalNumber();
     MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
@@ -110,13 +105,13 @@ void UpdateRestore::RestoreFromGallery()
     ffrt::wait();
 }
 
-void UpdateRestore::RestoreBatch(int32_t offset)
+void UpgradeRestore::RestoreBatch(int32_t offset)
 {
     std::vector<FileInfo> infos = QueryFileInfos(offset);
-    InsertPhoto(UPDATE_RESTORE_ID, infos, SourceType::GALLERY);
+    InsertPhoto(UPGRADE_RESTORE_ID, infos, SourceType::GALLERY);
 }
 
-void UpdateRestore::RestoreFromExternal(bool isCamera)
+void UpgradeRestore::RestoreFromExternal(bool isCamera)
 {
     MEDIA_INFO_LOG("start restore from %{public}s", (isCamera ? "camera" : "others"));
     int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, isCamera ?
@@ -132,13 +127,13 @@ void UpdateRestore::RestoreFromExternal(bool isCamera)
     ffrt::wait();
 }
 
-void UpdateRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type)
+void UpgradeRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type)
 {
     std::vector<FileInfo> infos = QueryFileInfosFromExternal(offset, maxId, isCamera);
-    InsertPhoto(UPDATE_RESTORE_ID, infos, type);
+    InsertPhoto(UPGRADE_RESTORE_ID, infos, type);
 }
 
-int32_t UpdateRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
+int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
 {
     std::string queryCamera = isCamera ? IN_CAMERA : NOT_IN_CAMERA;
     std::string queryNotSyncByCount = QUERY_COUNT_FROM_FILES + queryCamera + " AND " +
@@ -146,7 +141,7 @@ int32_t UpdateRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
     return BackupDatabaseUtils::QueryInt(externalRdb_, queryNotSyncByCount, COUNT);
 }
 
-void UpdateRestore::HandleRestData(void)
+void UpgradeRestore::HandleRestData(void)
 {
     MEDIA_INFO_LOG("Start to handle rest data in native.");
     std::string photoData = appDataPath_ + "/" + galleryAppName_;
@@ -159,17 +154,17 @@ void UpdateRestore::HandleRestData(void)
         MEDIA_DEBUG_LOG("Start to delete media data.");
         (void)MediaFileUtils::DeleteDir(mediaData);
     }
-    if ((sceneCode_ == UPDATE_RESTORE_ID) && MediaFileUtils::IsFileExists(UPDATE_FILE_DIR)) {
-        (void)MediaFileUtils::RenameDir(UPDATE_FILE_DIR, DOCUMENT_PATH);
+    if ((sceneCode_ == UPGRADE_RESTORE_ID) && MediaFileUtils::IsFileExists(UPGRADE_FILE_DIR)) {
+        (void)MediaFileUtils::RenameDir(UPGRADE_FILE_DIR, DOCUMENT_PATH);
     }
 }
 
-int32_t UpdateRestore::QueryTotalNumber(void)
+int32_t UpgradeRestore::QueryTotalNumber(void)
 {
     return BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_GALLERY_COUNT, COUNT);
 }
 
-std::vector<FileInfo> UpdateRestore::QueryFileInfos(int32_t offset)
+std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
 {
     std::vector<FileInfo> result;
     result.reserve(QUERY_COUNT);
@@ -193,7 +188,7 @@ std::vector<FileInfo> UpdateRestore::QueryFileInfos(int32_t offset)
     return result;
 }
 
-std::vector<FileInfo> UpdateRestore::QueryFileInfosFromExternal(int32_t offset, int32_t maxId, bool isCamera)
+std::vector<FileInfo> UpgradeRestore::QueryFileInfosFromExternal(int32_t offset, int32_t maxId, bool isCamera)
 {
     std::vector<FileInfo> result;
     result.reserve(QUERY_COUNT);
@@ -223,7 +218,7 @@ std::vector<FileInfo> UpdateRestore::QueryFileInfosFromExternal(int32_t offset, 
     return result;
 }
 
-bool UpdateRestore::IsValidDir(const string &path)
+bool UpgradeRestore::IsValidDir(const string &path)
 {
     bool isValid = true;
     for (auto &cacheDir : cacheSet_) {
@@ -234,16 +229,19 @@ bool UpdateRestore::IsValidDir(const string &path)
     }
     return isValid;
 }
-bool UpdateRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
+bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
     // only parse image and video
     int32_t mediaType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
     if (mediaType != GALLERY_IMAGE_TYPE && mediaType != GALLERY_VIDEO_TYPE) {
-        MEDIA_ERR_LOG("Invalid media tyep: %{public}d.", mediaType);
+        MEDIA_ERR_LOG("Invalid media type: %{public}d.", mediaType);
         return false;
     }
     std::string oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
-    if (!ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
+    if (sceneCode_ == UPGRADE_RESTORE_ID ?
+        !BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath) :
+        !ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
         return false;
     }
 
@@ -265,7 +263,7 @@ bool UpdateRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &
     return true;
 }
 
-bool UpdateRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
+bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
     bool isSuccess = ParseResultSet(resultSet, info);
     if (!isSuccess) {
@@ -276,7 +274,7 @@ bool UpdateRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::
     return isSuccess;
 }
 
-NativeRdb::ValuesBucket UpdateRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
+NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
     int32_t sourceType) const
 {
     NativeRdb::ValuesBucket values;
@@ -311,6 +309,29 @@ NativeRdb::ValuesBucket UpdateRestore::GetInsertValue(const FileInfo &fileInfo, 
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
     return values;
+}
+
+bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
+    std::string &newPath, std::string &relativePath)
+{
+    int32_t pos = 0;
+    int32_t count = 0;
+    constexpr int32_t prefixLevel = 4;
+    for (size_t i = 0; i < srcPath.length(); i++) {
+        if (srcPath[i] == '/') {
+            count++;
+            if (count == prefixLevel) {
+                pos = i;
+                break;
+            }
+        }
+    }
+    if (count < prefixLevel) {
+        return false;
+    }
+    newPath = prefix + srcPath;
+    relativePath = srcPath.substr(pos);
+    return true;
 }
 } // namespace Media
 } // namespace OHOS
