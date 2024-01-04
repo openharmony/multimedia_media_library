@@ -287,15 +287,17 @@ static void GetAllImagesPredicates(RdbPredicates &predicates, const bool hiddenS
     predicates.EndWrap();
 }
 
-static void GetAllSourcePredicates(RdbPredicates &predicates, const bool hiddenState)
+void PhotoAlbumColumns::GetSourceAlbumPredicates(const int32_t albumId, RdbPredicates &predicates,
+    const bool hiddenState)
 {
-    predicates.BeginWrap();
+    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
+    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.EndWrap();
 }
 
 void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype, RdbPredicates &predicates,
@@ -322,9 +324,6 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
         }
         case PhotoAlbumSubType::IMAGES: {
             return GetAllImagesPredicates(predicates, hiddenState);
-        }
-        case PhotoAlbumSubType::SOURCE_GENERIC: {
-            return GetAllSourcePredicates(predicates, hiddenState);
         }
         default: {
             predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(0));

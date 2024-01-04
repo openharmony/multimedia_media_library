@@ -1025,6 +1025,8 @@ void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), subtypes);
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), userAlbumIds);
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), subtypes);
 }
 
 std::string MediaScannerDb::MakeFileUri(const std::string &mediaTypeUri, const Metadata &metadata)

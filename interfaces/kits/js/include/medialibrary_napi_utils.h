@@ -571,6 +571,8 @@ public:
     static int32_t GetAnalysisAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
     static int32_t GetPortraitAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates);
     static int32_t GetAllLocationPredicates(DataShare::DataSharePredicates &predicates);
+    static int32_t GetSourceAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates,
+        const bool hiddenOnly);
     static bool IsSystemApp();
     static std::string GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
         const std::string &propertyName);

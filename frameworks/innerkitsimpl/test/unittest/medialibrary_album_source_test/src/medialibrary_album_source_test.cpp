@@ -101,9 +101,14 @@ void ClearData()
     string clearSourceAlbumSql = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
         PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SOURCE) + " AND " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::SOURCE_GENERIC);
+    string initSystemAlbumSql = "UPDATE " + PhotoAlbumColumns::TABLE +
+        " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = '', " +
+        PhotoAlbumColumns::ALBUM_COUNT + " = 0" +
+        " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SYSTEM);
     vector<string> executeSqlStrs = {
         clearPhotoSql,
         clearSourceAlbumSql,
+        initSystemAlbumSql,
         DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
         DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
@@ -243,7 +248,7 @@ void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptP
 {
     vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI,
         PhotoAlbumColumns::ALBUM_BUNDLE_NAME};
-    MediaLibraryCommand cmd(OperationObject::PHOTO_ALBUM, OperationType::QUERY,
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,
         MediaLibraryApi::API_10);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_NAME, packageName);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
@@ -269,7 +274,7 @@ void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptP
 void ValidNullPackageNameSourceAlbum()
 {
     vector<string> columns = {};
-    MediaLibraryCommand cmd(OperationObject::PHOTO_ALBUM, OperationType::QUERY,
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,
         MediaLibraryApi::API_10);
     cmd.GetAbsRdbPredicates()->IsNull(PhotoAlbumColumns::ALBUM_NAME);
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
