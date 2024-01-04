@@ -54,7 +54,8 @@ constexpr int32_t PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME = 20;
 constexpr int32_t PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT = 10;
 constexpr int32_t SUPPORT_QUERY_ISME_MIN_COUNT = 80;
 constexpr int32_t PERCENTAGE_FOR_SUPPORT_QUERY_ISME = 100;
-constexpr int32_t QUERY_IS_ME_VALUE = 1;
+constexpr int32_t QUERY_PROB_IS_ME_VALUE = 1;
+constexpr int32_t QUERY_IS_ME_VALUE = 2;
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -540,14 +541,23 @@ bool IsSupportQueryIsMe()
     return true;
 }
 
-void GetIsMeAlbumPredicates(DataShare::DataSharePredicates &predicates)
+void GetIsMeAlbumPredicates(const int32_t value, DataShare::DataSharePredicates &predicates)
 {
-    if (!IsSupportQueryIsMe()) {
-        MEDIA_ERR_LOG("Not support to query isMe");
+    string selection;
+    if (value == QUERY_PROB_IS_ME_VALUE) {
+        if (!IsSupportQueryIsMe()) {
+            MEDIA_ERR_LOG("Not support to query isMe");
+            return;
+        }
+        selection = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + COUNT + " > " +
+            to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " GROUP BY " + GROUP_TAG +
+            " ORDER BY " + COUNT + " DESC";
+    } else if (value == QUERY_IS_ME_VALUE) {
+        selection = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + IS_ME + " = 1 GROUP BY " + GROUP_TAG;
+    } else {
+        MEDIA_ERR_LOG("The value is not support for query is me");
         return;
     }
-    string selection = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + COUNT + " > " +
-        to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " GROUP BY " + GROUP_TAG + " ORDER BY " + COUNT + " DESC";
     predicates.SetWhereClause(selection);
 }
 
@@ -566,10 +576,10 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
         GetDisplayLevelAlbumPredicates(value, predicatesPortrait);
     } else if (whereClause.find(IS_ME) != string::npos) {
         int32_t value = GetPortraitSubtype(IS_ME, whereClause, whereArgs);
-        if (value == E_INDEX || value != QUERY_IS_ME_VALUE) {
+        if (value == E_INDEX || (value != QUERY_PROB_IS_ME_VALUE && value != QUERY_IS_ME_VALUE)) {
             return nullptr;
         }
-        GetIsMeAlbumPredicates(predicatesPortrait);
+        GetIsMeAlbumPredicates(value, predicatesPortrait);
     } else {
         MEDIA_INFO_LOG("QueryPortraitAlbum whereClause is error");
         return nullptr;

@@ -2059,6 +2059,24 @@ HWTEST_F(MediaLibraryVisionTest, SetIsMe_error_test, TestSize.Level0)
     MEDIA_INFO_LOG("SetIsMe::ret = %{public}d. End", ret);
 }
 
+HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_2_1, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Get_Protrait_Album_IsMe_2_1::Start");
+    Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand queryCmd(queryAlbumUri);
+    DataShare::DataSharePredicates predicates;
+
+    predicates.EqualTo(IS_ME, "2");
+    vector<string> columns;
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryCmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_GT(count, 0);
+    MEDIA_INFO_LOG("Get_Protrait_Album_IsMe_2_1::count = %{public}d. End", count);
+}
+
 void SetCoverUri(string tagId)
 {
     MEDIA_INFO_LOG("SetCoverUri Start");
