@@ -198,7 +198,8 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, const v
     Data data;
     PublishedDataItem::DataType tempData;
     if (newUri.empty()) {
-        tempData = NO_PICTURES;
+        nlohmann::json noPicData = NO_PICTURES;
+        tempData = noPicData.dump();
         for (auto &formId : formIds) {
             MEDIA_INFO_LOG("Published formId is %{private}s, size of value is %{private}zu!",
                 to_string(formId).c_str(), NO_PICTURES.size());
