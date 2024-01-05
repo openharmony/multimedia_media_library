@@ -34,6 +34,7 @@
 #include "photo_map_column.h"
 #include "smart_album_napi.h"
 #include "tokenid_kit.h"
+#include "userfile_client.h"
 #include "vision_column.h"
 
 using namespace std;
@@ -1079,6 +1080,37 @@ string MediaLibraryNapiUtils::GetStringValueByColumn(shared_ptr<DataShare::DataS
         }
     }
     return EMPTY_STRING;
+}
+
+string MediaLibraryNapiUtils::TransferUri(const string &oldUri)
+{
+    MediaFileUri fileUri(oldUri);
+    if (fileUri.IsApi10()) {
+        return oldUri;
+    }
+    string fileId = fileUri.GetFileId();
+    if (fileId.empty()) {
+        return oldUri;
+    }
+    vector<string> columns = {
+        PhotoColumn::MEDIA_FILE_PATH,
+        PhotoColumn::MEDIA_NAME
+    };
+    string queryUri = MEDIALIBRARY_DATA_URI;
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    Uri uri(queryUri);
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
+        predicates, columns, errCode);
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        NAPI_ERR_LOG("Fail to query file asset!");
+        return oldUri;
+    }
+    string extrUri = MediaFileUtils::GetExtraUri(GetStringValueByColumn(resultSet, PhotoColumn::MEDIA_NAME),
+        GetStringValueByColumn(resultSet, PhotoColumn::MEDIA_FILE_PATH), false);
+    return MediaFileUri (fileUri.GetMediaTypeFromUri(oldUri), fileId, "",
+        MEDIA_API_VERSION_V10, extrUri).ToString();
 }
 
 string MediaLibraryNapiUtils::GetStringFetchProperty(napi_env env, napi_value arg, bool &err, bool &present,
