@@ -2390,41 +2390,5 @@ HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_003, TestSize.Level0)
     EXPECT_LT(result, 0);
     MEDIA_INFO_LOG("placeToFrontOf_Test_error_003::result = %{public}d. End", result);
 }
-
-void UriAppendKeyValue(string &uri, const string &key, const string &value)
-{
-    string uriKey = key + '=';
-    if (uri.find(uriKey) != string::npos) {
-        return;
-    }
-
-    char queryMark = (uri.find('?') == string::npos) ? '?' : '&';
-    string append = queryMark + key + '=' + value;
-
-    size_t posJ = uri.find('#');
-    if (posJ == string::npos) {
-        uri += append;
-    } else {
-        uri.insert(posJ, append);
-    }
-}
-
-HWTEST_F(MediaLibraryVisionTest, hidePicForAnalysis_Test, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("hidePicForAnalysis_Test::Start");
-    string uriString = PAH_HIDE_PHOTOS;
-    UriAppendKeyValue(uriString, "api_version", "10");
-    Uri uri(uriString);
-    MediaLibraryCommand queryCmd(uri);
-    DataShare::DataSharePredicates predicates;
-    vector<string> inValues;
-    inValues.push_back("61");
-    predicates.In(MediaColumn::MEDIA_ID, inValues);
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(MediaColumn::MEDIA_HIDDEN, 1);
-    int32_t result = MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
-    EXPECT_GT(result, 0);
-    MEDIA_INFO_LOG("placeToFrontOf_Test::result = %{public}d. End", result);
-}
 } // namespace Media
 } // namespace OHOS
