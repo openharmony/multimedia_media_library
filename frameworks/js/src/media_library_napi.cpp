@@ -4265,7 +4265,7 @@ static napi_value GetImagePreviewArgsUri(napi_env env, napi_value param, MediaLi
             NAPI_ERR_LOG("GetImagePreviewArgs get string fail");
             return nullptr;
         }
-        uri += string(inputStr.get());
+        uri += MediaLibraryNapiUtils::TransferUri(string(inputStr.get()));
         uri += "?";
     }
     context.uri = uri.substr(0, uri.length() - 1);
