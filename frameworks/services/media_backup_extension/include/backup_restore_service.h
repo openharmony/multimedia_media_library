@@ -24,8 +24,7 @@ class BackupRestoreService {
 public:
     virtual ~BackupRestoreService() = default;
     static BackupRestoreService &GetInstance(void);
-    void StartRestore(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName,
-        const std::string &cameraAppName);
+    void StartRestore(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName);
 
 private:
     BackupRestoreService() = default;

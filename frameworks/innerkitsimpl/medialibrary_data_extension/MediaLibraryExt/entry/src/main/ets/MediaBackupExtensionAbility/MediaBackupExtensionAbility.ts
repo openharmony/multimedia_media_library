@@ -25,13 +25,12 @@ const backupClonePath = '/data/storage/el2/backup/restore/storage/cloud/files/';
 const documentPath = '/storage/media/local/files/Docs/Documents';
 const galleryAppName = 'com.huawei.photos';
 const mediaAppName = 'com.android.providers.media.module';
-const cameraAppName = 'com.huawei.camera';
 
-const UPDATE_RESTORE : number = 0;
+const UPGRADE_RESTORE : number = 0;
 const DUAL_FRAME_CLONE_RESTORE : number = 1;
 const CLONE_RESTORE : number = 2;
 
-const UPDATE_NAME = "0.0.0.0";
+const UPGRADE_NAME = "0.0.0.0";
 const DUAL_FRAME_CLONE_NAME = "99.99.99.999";
 
 export default class MediaBackupExtAbility extends BackupExtensionAbility {
@@ -43,14 +42,14 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     console.log(TAG, `onRestore ok ${JSON.stringify(bundleVersion)}`);
     console.time(TAG + ' RESTORE');
     let path:string;
-    if (bundleVersion.name === UPDATE_NAME && bundleVersion.code === 0) {
-      await mediabackup.startRestore(UPDATE_RESTORE, galleryAppName, mediaAppName, cameraAppName);
+    if (bundleVersion.name === UPGRADE_NAME && bundleVersion.code === 0) {
+      await mediabackup.startRestore(UPGRADE_RESTORE, galleryAppName, mediaAppName);
       path = backupPath;
     } else if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
-      await mediabackup.startRestore(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName, cameraAppName);
+      await mediabackup.startRestore(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName);
       path = backupPath;
     } else {
-      await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName, cameraAppName);
+      await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName);
       path = backupClonePath;
     }
     console.timeEnd(TAG + ' RESTORE');
