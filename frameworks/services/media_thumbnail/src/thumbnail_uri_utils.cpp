@@ -80,7 +80,8 @@ bool ThumbnailUriUtils::ParseThumbnailInfo(const string &uriString, string &outF
 
 bool ThumbnailUriUtils::IsOriginalImg(const Size &outSize, const string &outPath)
 {
-    return outSize.width == DEFAULT_ORIGINAL && outSize.height == DEFAULT_ORIGINAL;
+    return outSize.width == DEFAULT_ORIGINAL && outSize.height == DEFAULT_ORIGINAL &&
+        MediaFileUtils::GetMediaType(outPath) == MEDIA_TYPE_AUDIO;
 }
 
 bool ThumbnailUriUtils::CheckSize(Size &outSize, const string &outPath)
