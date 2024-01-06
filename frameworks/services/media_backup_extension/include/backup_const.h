@@ -30,7 +30,6 @@ constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
 constexpr int32_t CLONE_RESTORE_ID = 2;
 
 const std::string BACKUP_RESTORE_DIR = "/data/storage/el2/backup/restore";
-const std::string DOCUMENT_PATH = "/storage/media/local/files/Docs/Documents";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
