@@ -268,7 +268,8 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
     return true;
 }
 
-bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize)
+bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize,
+    const std::string &targetPath)
 {
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
@@ -278,7 +279,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
 
     uint32_t err = 0;
     SourceOptions opts;
-    string path = data.path;
+    std::string path = targetPath.empty() ? data.path : targetPath;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
     if (err != E_OK || !imageSource) {
         MEDIA_ERR_LOG("Failed to create image source, path: %{private}s err: %{public}d", path.c_str(), err);
@@ -715,6 +716,7 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_ADDED,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
@@ -723,6 +725,7 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
     // meaning of Position: 1--only in local, 2--only in cloud, 3--both in local and cloud
     rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->
             EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -1129,7 +1132,7 @@ Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, Size &desiredSize
     }
 }
 
-bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail)
+bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail, const std::string &targetPath)
 {
     if (data.source != nullptr) {
         return true;
@@ -1145,12 +1148,13 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
     bool ret = false;
     data.degrees = 0.0;
     Size desiredSize;
-    if (data.mediaType == MEDIA_TYPE_VIDEO) {
+    bool isThumbnailExist = !targetPath.empty();
+    if (data.mediaType == MEDIA_TYPE_VIDEO && !isThumbnailExist) {
         ret = LoadVideoFile(data, isThumbnail, desiredSize);
-    } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
+    } else if (data.mediaType == MEDIA_TYPE_AUDIO && !isThumbnailExist) {
         ret = LoadAudioFile(data, isThumbnail, desiredSize);
     } else {
-        ret = LoadImageFile(data, isThumbnail, desiredSize);
+        ret = LoadImageFile(data, isThumbnail, desiredSize, targetPath);
     }
     if (!ret || (data.source == nullptr)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
@@ -1160,7 +1164,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
     }
     tracer.Finish();
 
-    if (isThumbnail) {
+    if (isThumbnail && !isThumbnailExist) {
         tracer.Start("CenterScale");
         PostProc postProc;
         if (!postProc.CenterScale(desiredSize, *data.source)) {
@@ -1578,6 +1582,11 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         ParseStringResult(resultSet, index, data.path, err);
     }
 
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_ADDED, index);
+    if (err == NativeRdb::E_OK) {
+        ParseStringResult(resultSet, index, data.dateAdded, err);
+    }
+
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, index);
     if (err == NativeRdb::E_OK) {
         data.mediaType = MediaType::MEDIA_TYPE_ALL;
@@ -1691,7 +1700,7 @@ int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailTy
     }
 
     int status = kvStore->Insert(key, type == ThumbnailType::MTH_ASTC ? data.monthAstc : data.yearAstc);
-    MEDIA_DEBUG_LOG("type:%{public}d, field_id:%{public}s, status:%{public}d",
+    MEDIA_INFO_LOG("type:%{public}d, field_id:%{public}s, status:%{public}d",
         type, key.c_str(), status);
     return status;
 }
