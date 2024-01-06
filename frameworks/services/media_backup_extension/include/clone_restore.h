@@ -24,8 +24,8 @@ class CloneRestore : public BaseRestore {
 public:
     CloneRestore() = default;
     virtual ~CloneRestore() = default;
-    // updatePath is useless now
-    int32_t Init(const std::string &orignPath, const std::string &updatePath, bool isUpdate) override;
+    // upgradePath is useless now
+    int32_t Init(const std::string &backupRestoreDir, const std::string &upgradeFilePath, bool isUpgrade) override;
 
 private:
     void RestorePhoto(void) override;

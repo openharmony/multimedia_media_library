@@ -41,9 +41,9 @@ namespace OHOS {
 namespace Media {
 const std::string DATABASE_PATH = "/data/storage/el2/database/rdb/media_library.db";
 
-void BaseRestore::StartRestore(const std::string &orignPath, const std::string &updatePath)
+void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
-    int32_t errorCode = Init(orignPath, updatePath, true);
+    int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         RestorePhoto();
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
@@ -201,7 +201,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
 
 bool BaseRestore::IsSameFile(const FileInfo &fileInfo) const
 {
-    std::string originPath = ORIGIN_PATH + RESTORE_CLOUD_DIR;
+    std::string originPath = BACKUP_RESTORE_DIR + RESTORE_CLOUD_DIR;
     std::string srcPath = fileInfo.filePath;
     std::string tmpPath = fileInfo.filePath;
     std::string dstPath =  tmpPath.replace(0, originPath.length(), RESTORE_LOCAL_DIR);

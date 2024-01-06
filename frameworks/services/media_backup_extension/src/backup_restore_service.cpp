@@ -18,7 +18,7 @@
 #include "backup_restore_service.h"
 #include "media_log.h"
 #include "clone_restore.h"
-#include "update_restore.h"
+#include "upgrade_restore.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,15 +29,13 @@ BackupRestoreService &BackupRestoreService::GetInstance(void)
 }
 
 void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &galleryAppName,
-    const std::string &mediaAppName, const std::string &cameraAppName)
+    const std::string &mediaAppName)
 {
     std::unique_ptr<BaseRestore> restoreService;
-    if (sceneCode == UPDATE_RESTORE_ID) {
-        restoreService = std::make_unique<UpdateRestore>(galleryAppName, mediaAppName, cameraAppName,
-        UPDATE_RESTORE_ID);
+    if (sceneCode == UPGRADE_RESTORE_ID) {
+        restoreService = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName, UPGRADE_RESTORE_ID);
     } else if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
-        restoreService = std::make_unique<UpdateRestore>(galleryAppName, mediaAppName, cameraAppName,
-            DUAL_FRAME_CLONE_RESTORE_ID);
+        restoreService = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName, DUAL_FRAME_CLONE_RESTORE_ID);
     } else {
         restoreService = std::make_unique<CloneRestore>();
     }
@@ -45,7 +43,7 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
         MEDIA_ERR_LOG("Create media restore service failed.");
         return;
     }
-    restoreService->StartRestore(ORIGIN_PATH, UPDATE_FILE_DIR);
+    restoreService->StartRestore(BACKUP_RESTORE_DIR, UPGRADE_FILE_DIR);
 }
 } // namespace Media
 } // namespace OHOS
