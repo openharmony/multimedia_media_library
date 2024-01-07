@@ -30,8 +30,8 @@ const UPGRADE_RESTORE : number = 0;
 const DUAL_FRAME_CLONE_RESTORE : number = 1;
 const CLONE_RESTORE : number = 2;
 
-const UPGRADE_NAME = "0.0.0.0";
-const DUAL_FRAME_CLONE_NAME = "99.99.99.999";
+const UPGRADE_NAME = '0.0.0.0';
+const DUAL_FRAME_CLONE_NAME = '99.99.99.999';
 
 export default class MediaBackupExtAbility extends BackupExtensionAbility {
   async onBackup() : Promise<void> {
