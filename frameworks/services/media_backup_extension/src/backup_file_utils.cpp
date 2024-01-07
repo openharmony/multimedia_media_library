@@ -15,6 +15,7 @@
 
 #include "backup_file_utils.h"
 
+#include "backup_const.h"
 #include "scanner_utils.h"
 #include "metadata_extractor.h"
 #include "mimetype_utils.h"
@@ -58,6 +59,47 @@ int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
     data->SetFileExtension(extension);
     data->SetFileMimeType(mimeType);
     return E_OK;
+}
+
+string BackupFileUtils::GarbleFilePath(std::string &filePath, int32_t sceneCode)
+{
+    if (filePath.empty()) {
+        return filePath;
+    }
+    size_t displayNameIndex = filePath.rfind("/");
+    if (displayNameIndex == string::npos) {
+        return filePath;
+    }
+    std::string displayName = filePath.substr(displayNameIndex);
+    std::string garbleDisplayName = GarbleFileName(displayName);
+    std::string path;
+    if (sceneCode == UPGRADE_RESTORE_ID) {
+        path = filePath.substr(0, displayNameIndex).replace(0, UPGRADE_FILE_DIR.length(), GARBLE);
+    } else if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
+        path = filePath.substr(0, displayNameIndex).replace(0, GARBLE_DUAL_FRAME_CLONE_DIR.length(), GARBLE);
+    } else if (sceneCode == CLONE_RESTORE_ID) {
+        path = filePath.substr(0, displayNameIndex).replace(0, GARBLE_CLONE_DIR.length(), GARBLE);
+    } else {
+        path = filePath.substr(0, displayNameIndex);
+    }
+    path += displayName;
+    return path;
+}
+
+string BackupFileUtils::GarbleFileName(std::string &fileName)
+{
+    if (fileName.empty()) {
+        return fileName;
+    }
+    if (fileName.find("Screenshot_") == 0 || fileName.find("IMG_") == 0 || fileName.find("VID_") == 0 ||
+        fileName.find("SVID_") == 0) {
+        return fileName;
+    }
+    if (fileName.length() > GARBLE_LENGTH) {
+        return fileName.replace(0, GARBLE_LENGTH, GARBLE);
+    } else {
+        return fileName.replace(0, 1, GARBLE);
+    }
 }
 } // namespace Media
 } // namespace OHOS
