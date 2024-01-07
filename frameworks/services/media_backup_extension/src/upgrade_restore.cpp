@@ -154,9 +154,6 @@ void UpgradeRestore::HandleRestData(void)
         MEDIA_DEBUG_LOG("Start to delete media data.");
         (void)MediaFileUtils::DeleteDir(mediaData);
     }
-    if ((sceneCode_ == UPGRADE_RESTORE_ID) && MediaFileUtils::IsFileExists(UPGRADE_FILE_DIR)) {
-        (void)MediaFileUtils::RenameDir(UPGRADE_FILE_DIR, DOCUMENT_PATH);
-    }
 }
 
 int32_t UpgradeRestore::QueryTotalNumber(void)
