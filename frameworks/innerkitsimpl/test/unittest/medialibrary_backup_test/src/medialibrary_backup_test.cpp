@@ -308,9 +308,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_restore_size_0, TestSi
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_contains_screen_video, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_contains_screen_video start");
-    std::string queryNotSyncPendingOthers =
+    std::string queryContainsScreenVideo =
         "SELECT file_id from Photos where display_name ='SVID_screen_video.mp4'";
-    auto resultSet = photosStorePtr->QuerySql(queryNotSyncPendingOthers);
+    auto resultSet = photosStorePtr->QuerySql(queryContainsScreenVideo);
     ASSERT_FALSE(resultSet == nullptr);
     ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_contains_screen_video end");

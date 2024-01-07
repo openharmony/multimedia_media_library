@@ -28,7 +28,9 @@ constexpr int32_t GALLERY_HIDDEN_ID = -4;
 constexpr int32_t UPGRADE_RESTORE_ID = 0;
 constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
 constexpr int32_t CLONE_RESTORE_ID = 2;
-constexpr int32_t GARBLE_LENGTH = 3;
+constexpr int32_t GARBLE_LOW_LENGTH = 3;
+constexpr int32_t GARBLE_MID_LENGTH = 10;
+constexpr int32_t GARBLE_HIGH_LENGTH = 20;
 
 const std::string BACKUP_RESTORE_DIR = "/data/storage/el2/backup/restore";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
