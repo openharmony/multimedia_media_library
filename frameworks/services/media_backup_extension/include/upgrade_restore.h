@@ -45,6 +45,10 @@ private:
     void RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type);
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath) override;
+    void AnalyzeSource() override;
+    void AnalyzeGallerySource();
+    void AnalyzeExternalSource();
+
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> externalRdb_;

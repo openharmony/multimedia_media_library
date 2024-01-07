@@ -130,5 +130,10 @@ bool CloneRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &r
     info.width = GetInt64Val(PhotoColumn::PHOTO_WIDTH, resultSet);
     return true;
 }
+
+void CloneRestore::AnalyzeSource()
+{
+    MEDIA_INFO_LOG("analyze source later");
+}
 } // namespace Media
 } // namespace OHOS

@@ -16,6 +16,8 @@
 #ifndef OHOS_MEDIA_BASE_RESTORE_H
 #define OHOS_MEDIA_BASE_RESTORE_H
 
+#include <atomic>
+
 #include "backup_const.h"
 #include "rdb_helper.h"
 #include "result_set.h"
@@ -40,6 +42,7 @@ protected:
     virtual void HandleRestData(void) = 0;
 
     virtual bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
+    virtual void AnalyzeSource() = 0;
     virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
@@ -50,6 +53,10 @@ protected:
     void InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     bool IsSameFile(const FileInfo &fileInfo) const;
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
+
+protected:
+    std::atomic<uint64_t> migrateDatabaseNumber_;
+    std::atomic<uint64_t> migrateFileNumber_;
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
