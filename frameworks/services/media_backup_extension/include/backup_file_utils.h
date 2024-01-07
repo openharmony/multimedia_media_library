@@ -25,6 +25,8 @@ namespace Media {
 class BackupFileUtils {
 public:
     static int32_t FillMetadata(std::unique_ptr<Metadata> &data);
+    static std::string GarbleFilePath(std::string &filePath, int32_t sceneCode);
+    static std::string GarbleFileName(std::string &fileName);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);

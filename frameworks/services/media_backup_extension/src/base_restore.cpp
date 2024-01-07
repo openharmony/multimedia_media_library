@@ -46,6 +46,8 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         RestorePhoto();
+        MEDIA_INFO_LOG("migrate database number: %{public}lld, file number: %{public}lld",
+            (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
         string notifyImage = MediaFileUtils::GetMediaTypeUri(MediaType::MEDIA_TYPE_IMAGE);
         Uri notifyImageUri(notifyImage);
@@ -79,6 +81,8 @@ int32_t BaseRestore::Init(void)
         MEDIA_ERR_LOG("When restore, InitMediaLibraryMgr fail, errcode = %{public}d", errCode);
         return errCode;
     }
+    migrateDatabaseNumber_ = 0;
+    migrateFileNumber_ = 0;
     return E_OK;
 }
 
@@ -136,12 +140,14 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
-            MEDIA_WARN_LOG("File is not exist, filePath = %{private}s.", fileInfos[i].filePath.c_str());
+            MEDIA_WARN_LOG("File is not exist, filePath = %{private}s.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
         if ((sceneCode == CLONE_RESTORE_ID) && (IsSameFile(fileInfos[i]))) {
             (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
-            MEDIA_WARN_LOG("File %{private}s already exists.", fileInfos[i].filePath.c_str());
+            MEDIA_WARN_LOG("File %{public}s already exists.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
         std::string cloudPath;
@@ -251,18 +257,24 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     }
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("%{public}ld assets insert.", (long)rowNum);
+    migrateDatabaseNumber_ += rowNum;
+    int32_t fileMoveCount = 0;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
-            MEDIA_WARN_LOG("File is not exist, filePath = %{private}s.", fileInfos[i].filePath.c_str());
+            MEDIA_WARN_LOG("File is not exist, filePath = %{public}s.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
         std::string tmpPath = fileInfos[i].cloudPath;
         std::string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
         if (MoveFile(fileInfos[i].filePath, localPath) != E_OK) {
-            MEDIA_ERR_LOG("MoveFile failed, filePath = %{private}s.", fileInfos[i].filePath.c_str());
+            MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
+        fileMoveCount++;
     }
+    migrateFileNumber_ += fileMoveCount;
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("insert %{public}ld assets const %{public}ld and move file cost %{public}ld.", (long)rowNum,
         (long)(startMove - startInsert), (long)(end - startMove));
