@@ -68,6 +68,10 @@ void GallerySource::Init(const string &dbPath)
     store->ExecuteSql(string("INSERT INTO gallery_media VALUES(7, 7, ") +
         "'/storage/emulated/0/Pictures/zero_size.jpg', 'zero_size.jpg', 'zero_size', null, 0, 0, 0," +
         " 1, 1495962070277, 1698397638, 2448, 3264, 'zero_size', 0, 65537, 218866788, -1617409521, 0)");
+    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(8, 8, ") +
+        "'/storage/emulated/0/Pictures/Screenshots/SVID_screen_video.mp4', 'SVID_screen_video.mp4', "+
+        "'SVID_screen_video', null, 94270, 0, 3508, 3, 1476702882, 1698397638, 1280, 606, 'SVID_screen_video', " +
+        "0, 65537, 218866788, 1028075469, 0)");
     store->ExecuteSql(string("INSERT INTO garbage_album VALUES('baidu', '/BaiduMap/cache', ") +
         "null, null, 1, 1151084355);");
     store->ExecuteSql(string("INSERT INTO garbage_album VALUES('ctrip', '/CTRIP/avatar', ") +

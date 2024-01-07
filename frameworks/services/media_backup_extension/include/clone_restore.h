@@ -33,6 +33,7 @@ private:
     int32_t QueryTotalNumber(void) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
     bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
+    void AnalyzeSource() override;
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;

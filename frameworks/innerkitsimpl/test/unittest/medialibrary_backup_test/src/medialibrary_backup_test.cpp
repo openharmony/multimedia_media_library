@@ -34,7 +34,7 @@ const std::string GALLERY_APP_NAME = "gallery";
 const std::string MEDIA_APP_NAME = "external";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 
-const int EXPECTED_NUM = 5;
+const int EXPECTED_NUM = 6;
 const int EXPECTED_OREINTATION = 270;
 const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "fake_wechat";
@@ -303,6 +303,17 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_restore_size_0, TestSi
     ASSERT_FALSE(resultSet == nullptr);
     ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_not_restore_size_0 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_contains_screen_video, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_contains_screen_video start");
+    std::string queryNotSyncPendingOthers =
+        "SELECT file_id from Photos where display_name ='SVID_screen_video.mp4'";
+    auto resultSet = photosStorePtr->QuerySql(queryNotSyncPendingOthers);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_contains_screen_video end");
 }
 } // namespace Media
 } // namespace OHOS

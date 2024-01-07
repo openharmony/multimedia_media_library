@@ -80,6 +80,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
 
 void UpgradeRestore::RestorePhoto(void)
 {
+    AnalyzeSource();
     InitGarbageAlbum();
     RestoreFromGallery();
     if (sceneCode_ == UPGRADE_RESTORE_ID) {
@@ -90,6 +91,46 @@ void UpgradeRestore::RestorePhoto(void)
     (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
 }
 
+void UpgradeRestore::AnalyzeSource()
+{
+    MEDIA_INFO_LOG("start AnalyzeSource.");
+    AnalyzeGallerySource();
+    AnalyzeExternalSource();
+    MEDIA_INFO_LOG("end AnalyzeSource.");
+}
+
+void UpgradeRestore::AnalyzeGallerySource()
+{
+    if (galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
+        return;
+    }
+    int32_t galleryAllCount = BackupDatabaseUtils::QueryGalleryAllCount(galleryRdb_);
+    int32_t galleryImageCount = BackupDatabaseUtils::QueryGalleryImageCount(galleryRdb_);
+    int32_t galleryVideoCount = BackupDatabaseUtils::QueryGalleryVideoCount(galleryRdb_);
+    int32_t galleryHiddenCount = BackupDatabaseUtils::QueryGalleryHiddenCount(galleryRdb_);
+    int32_t galleryTrashedCount = BackupDatabaseUtils::QueryGalleryTrashedCount(galleryRdb_);
+    int32_t galleryCloneCount = BackupDatabaseUtils::QueryGalleryCloneCount(galleryRdb_);
+    int32_t gallerySDCardCount = BackupDatabaseUtils::QueryGallerySDCardCount(galleryRdb_);
+    int32_t galleryScreenVideoCount = BackupDatabaseUtils::QueryGalleryScreenVideoCount(galleryRdb_);
+    MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, \
+        galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, \
+        galleryCloneCount: %{public}d, gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d",
+        galleryAllCount, galleryImageCount, galleryVideoCount, galleryHiddenCount, galleryTrashedCount,
+        galleryCloneCount, gallerySDCardCount, galleryScreenVideoCount);
+}
+
+void UpgradeRestore::AnalyzeExternalSource()
+{
+    if (externalRdb_ == nullptr) {
+        MEDIA_ERR_LOG("externalRdb_ is nullptr, Maybe init failed.");
+        return;
+    }
+    int32_t externalImageCount = BackupDatabaseUtils::QueryExternalImageCount(externalRdb_);
+    int32_t externalVideoCount = BackupDatabaseUtils::QueryExternalVideoCount(externalRdb_);
+    MEDIA_INFO_LOG("external analyze result: {externalImageCount: %{public}d, externalVideoCount: %{public}d",
+        externalImageCount, externalVideoCount);
+}
 void UpgradeRestore::InitGarbageAlbum()
 {
     BackupDatabaseUtils::InitGarbageAlbum(galleryRdb_, cacheSet_, nickMap_);
@@ -166,7 +207,7 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
     std::vector<FileInfo> result;
     result.reserve(QUERY_COUNT);
     if (galleryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("Pointer rdb_ is nullptr, Maybe init failed.");
+        MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
         return result;
     }
     std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS + "limit " + std::to_string(offset) + ", " +
