@@ -184,6 +184,7 @@ static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPred
     if (tableName == MEDIALIBRARY_TABLE || tableName == PhotoColumn::PHOTOS_TABLE) {
         valuesBucket.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_DELETED));
         valuesBucket.PutInt(MEDIA_DATA_DB_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_UPLOAD));
+        valuesBucket.PutLong(PhotoColumn::PHOTO_META_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
         ret = rdb.Update(deletedRows, tableName, valuesBucket, predicates.GetWhereClause(),
             predicates.GetWhereArgs());
     } else if (tableName == PhotoAlbumColumns::TABLE) {
