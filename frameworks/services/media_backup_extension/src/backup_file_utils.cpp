@@ -95,8 +95,12 @@ string BackupFileUtils::GarbleFileName(std::string &fileName)
         fileName.find("SVID_") == 0) {
         return fileName;
     }
-    if (fileName.length() > GARBLE_LENGTH) {
-        return fileName.replace(0, GARBLE_LENGTH, GARBLE);
+    if (fileName.length() > GARBLE_HIGH_LENGTH) {
+        return fileName.replace(0, GARBLE_HIGH_LENGTH, GARBLE);
+    } else if (fileName.length() > GARBLE_MID_LENGTH) {
+        return fileName.replace(0, GARBLE_MID_LENGTH, GARBLE);
+    } else if (fileName.length() > GARBLE_LOW_LENGTH) {
+        return fileName.replace(0, GARBLE_LOW_LENGTH, GARBLE);
     } else {
         return fileName.replace(0, 1, GARBLE);
     }
