@@ -1369,6 +1369,23 @@ static void AddAestheticCompositionTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpdateSpecForAddScreenshot(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_VISION_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_UPDATE_SPEC,
+        UPDATE_AESTHETICS_SCORE_TOTAL_VALUE,
+        UPDATE_LABEL_TOTAL_VALUE,
+        UPDATE_FACE_TOTAL_VALUE,
+        UPDATE_OBJECT_TOTAL_VALUE,
+        UPDATE_RECOMMENDATION_TOTAL_VALUE,
+        UPDATE_SEGMENTATION_TOTAL_VALUE,
+        UPDATE_COMPOSITION_TOTAL_VALUE,
+    };
+    MEDIA_INFO_LOG("update media analysis service specifications for add screenshot");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void AddSearchTable(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -1445,6 +1462,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     AddFaceTables(*rdbStore_);
     AddAestheticCompositionTables(*rdbStore_);
     AddSaliencyTables(*rdbStore_);
+    UpdateSpecForAddScreenshot(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -2065,6 +2083,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_ADDRESS_DESCRIPTION) {
         AddAddressDescriptionColumns(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_SPEC_FOR_ADD_SCREENSHOT) {
+        UpdateSpecForAddScreenshot(store);
     }
 }
 
