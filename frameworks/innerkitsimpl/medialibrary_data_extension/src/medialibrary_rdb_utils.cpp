@@ -535,6 +535,55 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore
     ForEachRow(rdbStore, albumResult, false, UpdateAnalysisAlbumIfNeeded);
 }
 
+void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<RdbStore> &rdbStore,
+    const vector<string> &fileIds, const vector<int> &albumTypes)
+{
+    if (fileIds.empty()) {
+        MEDIA_ERR_LOG("Failed to UpdateAnalysisAlbumByFile cause fileIds empty");
+        return;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateAnalysisAlbumByFile");
+    vector<string> columns = {
+        PhotoMap::ALBUM_ID,
+        PhotoMap::ASSET_ID,
+    };
+    RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
+    if (!albumTypes.empty()) {
+        std::string files;
+        for (std::string fileId : fileIds) {
+            files.append(fileId).append(",");
+        }
+        files = files.substr(0, files.length() - 1);
+        std::string subTypes;
+        for (int subtype : albumTypes) {
+            subTypes.append(to_string(subtype)).append(",");
+        }
+        subTypes = subTypes.substr(0, subTypes.length() - 1);
+        predicates.SetWhereClause(PhotoMap::ASSET_ID + " in(" + files + ") and " + PhotoMap::ALBUM_ID +
+            +" in(select album_id from AnalysisAlbum where album_subtype in(" + subTypes + "))");
+    } else {
+        predicates.In(PhotoMap::ASSET_ID, fileIds);
+    }
+    shared_ptr<ResultSet> mapResult = rdbStore->Query(predicates, columns);
+    if (mapResult == nullptr) {
+        MEDIA_ERR_LOG("Failed query AnalysisAlbum");
+        return;
+    }
+    vector<string> albumIds;
+    while (mapResult->GoToNextRow() == E_OK) {
+        albumIds.push_back(to_string(GetIntValFromColumn(mapResult, PhotoMap::ALBUM_ID)));
+    }
+    int err = E_HAS_DB_ERROR;
+    int32_t deletedRows = 0;
+    err = rdbStore->Delete(deletedRows, predicates);
+    if (err != E_OK || deletedRows <= 0) {
+        MEDIA_ERR_LOG("Failed Delete AnalysisPhotoMap");
+        return;
+    }
+    UpdateAnalysisAlbumInternal(rdbStore, albumIds);
+}
+
 static inline shared_ptr<ResultSet> GetSystemAlbum(const shared_ptr<RdbStore> &rdbStore,
     const vector<string> &subtypes, const vector<string> &columns)
 {
