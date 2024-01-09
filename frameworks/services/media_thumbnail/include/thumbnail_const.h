@@ -51,6 +51,8 @@ const std::string THUMBNAIL_YEAR_SUFFIX = "YEAR";   // The size which height is 
 
 const std::string FILE_URI_PREX = "file://";
 
+const std::string PHOTO_URI_PREFIX = "file://media/Photo/";
+
 const std::string THUMBNAIL_FORMAT = "image/jpeg";
 const std::string THUMBASTC_FORMAT = "image/astc/4*4";
 constexpr uint8_t THUMBNAIL_MID = 90;
