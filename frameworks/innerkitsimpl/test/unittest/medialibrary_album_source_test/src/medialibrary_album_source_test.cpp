@@ -268,7 +268,7 @@ void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptP
         photoCount, coverURI.c_str());
     EXPECT_EQ(photoCount, exceptPhotoCount);
     EXPECT_EQ(coverURI, exceptCoverUri);
-    EXPECT_NE(bundleName, "");
+    EXPECT_EQ(bundleName, RECORD_BUNDLE_NAME);
 }
 
 void ValidNullPackageNameSourceAlbum()

@@ -598,6 +598,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         return E_HAS_DB_ERROR;
     }
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw());
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore->GetRaw());
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw());
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
