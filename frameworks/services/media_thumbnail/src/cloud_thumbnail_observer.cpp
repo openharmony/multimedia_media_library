@@ -27,11 +27,21 @@ void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
     for (auto &uri : changeInfo.uris_) {
         string uriString = uri.ToString();
         auto pos = uriString.find_last_of('/');
+<<<<<<< HEAD
         if (pos == std::string::npos) {
             continue;
         }
         string idString = uriString.substr(pos + 1);
         if (idString.empty()) {
+=======
+        if (pos == std::string::npos)
+        {
+            continue;
+        }
+        string idString = uriString.substr(pos + 1);
+        if (idString.empty())
+        {
+>>>>>>> c00f47108a9d5c1e3f5d58ae6f1d374384ae04ae
             MEDIA_ERR_LOG("cloud observer get no fieldId and uri : %{public}s", uriString.c_str());
             continue;
         }
