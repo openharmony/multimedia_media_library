@@ -2910,7 +2910,6 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     if (context->objectInfo != nullptr) {
-        context->objectInfo->~MediaLibraryNapi();
         napi_create_int32(env, SUCCESS, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
@@ -2944,36 +2943,35 @@ napi_value MediaLibraryNapi::JSRelease(napi_env env, napi_callback_info info)
     tracer.Start("JSRelease");
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ERR_LOG("NAPI_ASSERT begin %{public}zu", argc);
     NAPI_ASSERT(env, (argc == ARGS_ONE || argc == ARGS_ZERO), "requires 1 parameters maximum");
-    NAPI_ERR_LOG("NAPI_ASSERT end");
     napi_get_undefined(env, &result);
 
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void **>(&asyncContext->objectInfo));
-    if (status == napi_ok && asyncContext->objectInfo != nullptr) {
-        if (argc == PARAM1) {
-            napi_valuetype valueType = napi_undefined;
-            napi_typeof(env, argv[PARAM0], &valueType);
-            if (valueType == napi_function) {
-                napi_create_reference(env, argv[PARAM0], refCount, &asyncContext->callbackRef);
-            }
-        }
-        CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
+    NAPI_ASSERT(env, status == napi_ok && asyncContext->objectInfo != nullptr, "Failed to get object info");
 
-        NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
-        NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRelease", asyncContext);
-
-        status = napi_create_async_work(
-            env, nullptr, resource, [](napi_env env, void *data) {},
-            reinterpret_cast<CompleteCallback>(JSReleaseCompleteCallback),
-            static_cast<void *>(asyncContext.get()), &asyncContext->work);
-        if (status != napi_ok) {
-            napi_get_undefined(env, &result);
-        } else {
-            napi_queue_async_work(env, asyncContext->work);
-            asyncContext.release();
+    if (argc == PARAM1) {
+        napi_valuetype valueType = napi_undefined;
+        napi_typeof(env, argv[PARAM0], &valueType);
+        if (valueType == napi_function) {
+            napi_create_reference(env, argv[PARAM0], refCount, &asyncContext->callbackRef);
         }
+    }
+    CHECK_NULL_PTR_RETURN_UNDEFINED(env, result, result, "Failed to obtain arguments");
+
+    NAPI_CALL(env, napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->objectInfo)));
+    NAPI_CREATE_PROMISE(env, asyncContext->callbackRef, asyncContext->deferred, result);
+    NAPI_CREATE_RESOURCE_NAME(env, resource, "JSRelease", asyncContext);
+
+    status = napi_create_async_work(
+        env, nullptr, resource, [](napi_env env, void *data) {},
+        reinterpret_cast<CompleteCallback>(JSReleaseCompleteCallback),
+        static_cast<void *>(asyncContext.get()), &asyncContext->work);
+    if (status != napi_ok) {
+        napi_get_undefined(env, &result);
+    } else {
+        napi_queue_async_work(env, asyncContext->work);
+        asyncContext.release();
     }
 
     return result;
@@ -6302,8 +6300,13 @@ napi_value MediaLibraryNapi::JSApplyChanges(napi_env env, napi_callback_info inf
 {
     size_t argc = ARGS_TWO;
     napi_value argv[ARGS_TWO] = { 0 };
+    napi_value thisVar = nullptr;
     napi_valuetype valueType;
-    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), JS_INNER_FAIL);
+    MediaLibraryNapi* mediaLibraryNapi;
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&mediaLibraryNapi)), JS_INNER_FAIL);
+    CHECK_COND_WITH_MESSAGE(env, mediaLibraryNapi != nullptr, "Failed to get object info");
+
     CHECK_COND_WITH_MESSAGE(env, argc >= ARGS_ONE && argc <= ARGS_TWO, "Number of args is invalid");
     CHECK_ARGS(env, napi_typeof(env, argv[PARAM0], &valueType), JS_INNER_FAIL);
     CHECK_COND_WITH_MESSAGE(env, valueType == napi_object, "Invalid argument type");
