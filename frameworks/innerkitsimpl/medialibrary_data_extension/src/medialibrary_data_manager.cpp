@@ -202,7 +202,6 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
 
     dataObserver_ = std::make_shared<CloudThumbnailObserver>();
-    dataObserver_ = std::shared_ptr<CloudThumbnailObserver>(new (std::nothrow)CloudThumbnailObserver());
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     shareHelper->RegisterObserverExt(Uri(PHOTO_URI_PREFIX), dataObserver_, true);
 

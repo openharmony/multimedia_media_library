@@ -1791,8 +1791,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFieldId(ThumbRdbOpt &opts, const std:
         ParseStringResult(resultSet, index, data.dateAdded, err);
     }
 
-    if (err != NativeRdb::E_OK || data.path.empty()) 
-    {
+    if (err != NativeRdb::E_OK || data.path.empty()) {
         MEDIA_ERR_LOG("Fail to query thumbnail data using id: %{public}s, err: %{public}d", id.c_str(), err);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_TYPE, OptType::THUMB}};
