@@ -6318,9 +6318,9 @@ napi_value MediaLibraryNapi::JSApplyChanges(napi_env env, napi_callback_info inf
 }
 
 static napi_value initRequest(OHOS::AAFwk::Want &request, shared_ptr<DeleteCallback> &callback,
-                              napi_env env, napi_value args[], size_t len)
+                              napi_env env, napi_value args[], size_t argsLen)
 {
-    if (len < ARGS_THREE) {
+    if (argsLen < ARGS_THREE) {
         return nullptr;
     }
     napi_value result = nullptr;
