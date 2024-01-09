@@ -201,9 +201,9 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
 
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
 
-    dataObserver_ = std::make_shared<CloudThumbnailObserver>();
+    cloudDataObserver_ = std::make_shared<CloudThumbnailObserver>();
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
-    shareHelper->RegisterObserverExt(Uri(PHOTO_URI_PREFIX), dataObserver_, true);
+    shareHelper->RegisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_, true);
 
     refCnt_++;
     return E_OK;
@@ -238,7 +238,7 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     }
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
-    shareHelper->UnregisterObserverExt(Uri(PHOTO_URI_PREFIX), dataObserver_);
+    shareHelper->UnregisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_);
     rdbStore_ = nullptr;
     MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 

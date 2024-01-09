@@ -1774,12 +1774,18 @@ void ThumbnailUtils::QueryThumbnailDataFromFieldId(ThumbRdbOpt &opts, const std:
         MEDIA_DATA_DB_DATE_ADDED,
     };
     auto resultSet = opts.store->QueryByStep(predicates, columns);
-
+    if (resultSet == nullptr) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return;
+    }
     err = resultSet->GoToFirstRow();
     if (err != NativeRdb::E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        resultSet->Close();
         return;
     }
 
@@ -1796,8 +1802,10 @@ void ThumbnailUtils::QueryThumbnailDataFromFieldId(ThumbRdbOpt &opts, const std:
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        resultSet->Close();
         return;
     }
+    resultSet->Close();
 }
 
 } // namespace Media
