@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_CLOUD_THUMBNAIL_OBSERVER_H
-#define FOUNDATION_CLOUD_THUMBNAIL_OBSERVER_H
+#ifndef FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_CLOUD_THUMBNAIL_OBSERVER_H
+#define FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_CLOUD_THUMBNAIL_OBSERVER_H
 
 #include <utility>
 
@@ -32,8 +32,6 @@ public:
     ~CloudThumbnailObserver() = default;
 
     void OnChange(const ChangeInfo &changeInfo) override;
-
-    void GenerateAstcFromResultSet(std::shared_ptr<NativeRdb::ResultSet> result);
 };
 
 } // namespace Media

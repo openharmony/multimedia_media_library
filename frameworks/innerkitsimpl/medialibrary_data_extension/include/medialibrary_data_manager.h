@@ -139,7 +139,7 @@ private:
     static std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
     std::atomic<int> refCnt_ {0};
     std::shared_ptr<MediaDataShareExtAbility> extension_;
-    std::shared_ptr<CloudThumbnailObserver> dataObserver_;
+    std::shared_ptr<CloudThumbnailObserver> cloudDataObserver_;
 };
 
 // Scanner callback objects
