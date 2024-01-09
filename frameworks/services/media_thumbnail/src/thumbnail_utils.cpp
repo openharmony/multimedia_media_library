@@ -1731,7 +1731,7 @@ bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
         MEDIA_DATA_DB_DATE_ADDED,
     };
     vector<string> selectionArgs;
-    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + opts.row;
+    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + data.id;
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.SetWhereClause(strQueryCondition);
     rdbPredicates.SetWhereArgs(selectionArgs);
@@ -1760,5 +1760,46 @@ bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
     resultSet->Close();
     return true;
 }
+
+void ThumbnailUtils::QueryThumbnailDataFromFieldId(ThumbRdbOpt &opts, const std::string &id,
+    ThumbnailData &data, int &err)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, id);
+    predicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, to_string(false));
+    vector<string> columns = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_ADDED,
+    };
+    auto resultSet = opts.store->QueryByStep(predicates, columns);
+
+    err = resultSet->GoToFirstRow();
+    if (err != NativeRdb::E_OK) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return;
+    }
+
+    ParseQueryResult(resultSet, data, err);
+
+    int index;
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_ADDED, index);
+    if (err == NativeRdb::E_OK) {
+        ParseStringResult(resultSet, index, data.dateAdded, err);
+    }
+
+    if (err != NativeRdb::E_OK || data.path.empty()) 
+    {
+        MEDIA_ERR_LOG("Fail to query thumbnail data using id: %{public}s, err: %{public}d", id.c_str(), err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return;
+    }
+}
+
 } // namespace Media
 } // namespace OHOS
