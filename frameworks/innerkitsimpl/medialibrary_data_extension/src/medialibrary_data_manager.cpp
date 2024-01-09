@@ -63,6 +63,7 @@
 #include "medialibrary_vision_operations.h"
 #include "medialibrary_search_operations.h"
 #include "mimetype_utils.h"
+#include "multistages_capture_manager.h"
 #include "permission_utils.h"
 #include "photo_map_operations.h"
 #include "resource_type.h"
@@ -680,6 +681,12 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE: {
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
+        }
+        case OperationObject::PAH_MULTISTAGES_CAPTURE: {
+            if (cmd.GetOprnType() == OperationType::ADD_IMAGE) {
+                MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, value.GetAll());
+            }
+            return E_OK;
         }
         default:
             break;

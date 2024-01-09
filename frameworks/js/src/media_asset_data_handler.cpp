@@ -14,6 +14,7 @@
  */
 
 #include "media_asset_data_handler.h"
+
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_utils.h"
 #include "napi_error.h"
@@ -55,6 +56,5 @@ void NapiMediaAssetDataHandler::JsOnDataPreared(napi_value arg)
         NapiError::ThrowError(env_, JS_INNER_FAIL, "calling onDataPrepared failed");
     }
 }
-    
 } // namespace Media
-} // namespace Media
+} // namespace OHOS

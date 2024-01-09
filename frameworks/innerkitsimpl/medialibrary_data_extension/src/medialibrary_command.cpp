@@ -97,6 +97,10 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_SUBMIT_CACHE, OperationType::SUBMIT_CACHE },
     { OPRN_BATCH_UPDATE_FAV, OperationType::BATCH_UPDATE_FAV },
     { OPRN_BATCH_UPDATE_USER_COMMENT, OperationType::BATCH_UPDATE_USER_COMMENT },
+    { OPRN_SET_PHOTO_QUALITY, OperationType::SET_PHOTO_QUALITY },
+    { OPRN_ADD_IMAGE, OperationType::ADD_IMAGE },
+    { OPRN_PROCESS_IMAGE, OperationType::PROCESS_IMAGE },
+    { OPRN_SET_LOCATION, OperationType::SET_LOCATION },
 };
 }
 
@@ -320,6 +324,7 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     { SMARTALBUM_TABLE, OperationObject::SMART_ALBUM },
     { SMARTALBUM_MAP_TABLE, OperationObject::SMART_ALBUM_MAP },
     { MEDIA_QUERYOPRN_QUERYVOLUME, OperationObject::MEDIA_VOLUME },
+    { PAH_MULTISTAGES_CAPTURE, OperationObject::PAH_MULTISTAGES_CAPTURE },
 
     // use in Vision
     { PAH_ANA_OCR, OperationObject::VISION_OCR },

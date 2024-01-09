@@ -46,9 +46,9 @@ enum MediaType {
 };
 
 enum class ResourceType {
-    PHOTO_PROXY = 0,
-    IMAGE_RESOURCE, // corresponds to MEDIA_TYPE_IMAGE
+    IMAGE_RESOURCE = 1, // corresponds to MEDIA_TYPE_IMAGE
     VIDEO_RESOURCE, // corresponds to MEDIA_TYPE_VIDEO
+    PHOTO_PROXY,
 };
 
 enum AnalysisType : int32_t {

@@ -33,6 +33,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
+#include "multistages_capture_manager.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "permission_utils.h"
@@ -117,6 +118,8 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
         return;
     }
+
+    MultiStagesCaptureManager::GetInstance().Init();
 
     Media::MedialibrarySubscriber::Subscribe();
     MEDIA_INFO_LOG("%{public}s end.", __func__);
@@ -590,6 +593,14 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, vector<string> &columns, DatashareBusinessError &businessError)
 {
     MediaLibraryCommand cmd(uri);
+    if (cmd.GetOprnObject() == OperationObject::PAH_MULTISTAGES_CAPTURE) {
+        if (cmd.GetOprnType() == Media::OperationType::PROCESS_IMAGE && columns.size() == 1) {
+            NativeRdb::ValuesBucket valuesBucket;
+            valuesBucket.PutInt(PhotoColumn::MEDIA_ID, std::stoi(columns[0]));
+            MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, valuesBucket);
+        }
+        return nullptr;
+    }
     int32_t err = CheckPermFromUri(cmd, false);
     if (err < 0) {
         auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
