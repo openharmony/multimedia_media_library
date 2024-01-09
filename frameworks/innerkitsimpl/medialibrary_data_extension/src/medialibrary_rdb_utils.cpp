@@ -561,7 +561,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<RdbStore> 
         }
         subTypes = subTypes.substr(0, subTypes.length() - 1);
         predicates.SetWhereClause(PhotoMap::ASSET_ID + " in(" + files + ") and " + PhotoMap::ALBUM_ID +
-            +" in(select album_id from AnalysisAlbum where album_subtype in(" + subTypes + "))");
+            " in(select album_id from AnalysisAlbum where album_subtype in(" + subTypes + "))");
     } else {
         predicates.In(PhotoMap::ASSET_ID, fileIds);
     }
