@@ -1250,6 +1250,7 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
         return;
     }
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
 
     auto watch = MediaLibraryNotify::GetInstance();

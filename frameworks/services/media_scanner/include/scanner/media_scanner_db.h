@@ -69,7 +69,7 @@ public:
     EXPORT std::set<std::string> ReadError();
     EXPORT int32_t DeleteError(const std::string &err);
     static void UpdateAlbumInfo(const std::vector<std::string> &subtypes = {},
-        const std::vector<std::string> &userAlbumIds = {});
+        const std::vector<std::string> &userAlbumIds = {}, const std::vector<std::string> &sourceAlbumIds = {});
 
 private:
     int32_t FillMetadata(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,

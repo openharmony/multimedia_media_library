@@ -30,7 +30,7 @@ public:
     EXPORT static void UpdateUserAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &userAlbumIds = {});
     EXPORT static void UpdateSourceAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const std::vector<std::string> &userAlbumIds = {});
+        const std::vector<std::string> &sourceAlbumIds = {});
 
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);
     EXPORT static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
