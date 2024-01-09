@@ -29,6 +29,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
+#include "multistages_capture_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 
@@ -677,6 +678,9 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     rdbPredicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     vector<string> whereArgs = rdbPredicates.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicates);
+
+    // notify deferred processing session to restore image
+    MultiStagesCaptureManager::GetInstance().RestoreImages(rdbPredicates);
 
     ValuesBucket rdbValues;
     rdbValues.PutInt(MediaColumn::MEDIA_DATE_TRASHED, 0);

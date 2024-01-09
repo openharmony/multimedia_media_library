@@ -78,6 +78,7 @@ enum class EXPORT OperationObject : uint32_t {
     ANALYSIS_PHOTO_MAP,
     PAH_FORM_MAP,
     SEARCH_TOTAL,  // search
+    PAH_MULTISTAGES_CAPTURE,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -122,6 +123,10 @@ enum class EXPORT OperationType : uint32_t {
     SUBMIT_CACHE,
     BATCH_UPDATE_FAV,
     BATCH_UPDATE_USER_COMMENT,
+    SET_PHOTO_QUALITY,
+    ADD_IMAGE,
+    PROCESS_IMAGE,
+    SET_LOCATION,
 };
 
 class MediaLibraryCommand {

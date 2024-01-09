@@ -75,6 +75,8 @@ config("napi_config") {
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "../../../../../distributedhardware/device_manager/interfaces/inner_kits/native_cpp/include",
     "//third_party/e2fsprogs/e2fsprogs/lib",
+    "${MEDIALIB_CAMERA_FRAMEWORK_PATH}/interfaces/kits/js/camera_napi/include",
+    "${MEDIALIB_CAMERA_FRAMEWORK_PATH}/interfaces/inner_api/native/camera/include",
   ]
 
   if (defined(medialibrary_mtp_enable)) {
@@ -142,6 +144,8 @@ ohos_shared_library("medialibrary_nutils") {
     "ace_engine:ace_uicontent",
     "app_file_service:fileuri_native",
     "c_utils:utils",
+    "camera_framework:camera_framework",
+    "camera_framework:camera_napi",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
