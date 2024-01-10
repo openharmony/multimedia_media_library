@@ -99,7 +99,7 @@ static void CreateAstcBackground(AsyncTaskData *data)
         return;
     }
 
-    auto rdbStore = rdbStoreRaw->GetRaw()
+    auto rdbStore = rdbStoreRaw->GetRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Can not get rdbStore");
         BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
