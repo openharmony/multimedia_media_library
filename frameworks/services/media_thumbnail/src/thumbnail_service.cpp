@@ -92,7 +92,14 @@ static void CreateAstcBackground(AsyncTaskData *data)
     BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
         BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    auto rdbStoreRaw = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStoreRaw == nullptr) {
+        MEDIA_ERR_LOG("Can not get rdbStoreRaw");
+        BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
+        return;
+    }
+
+    auto rdbStore = rdbStoreRaw->GetRaw()
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Can not get rdbStore");
         BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
