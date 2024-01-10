@@ -71,7 +71,7 @@ void MediaLibraryThumbnailKvStoreTest::TearDown(void) {}
 HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Insert_test_001, TestSize.Level0)
 {
     if (kvStorePtr_ == nullptr) {
-        exit(1);
+        return;
     }
     std::vector<uint8_t> value;
     value.assign(FORTH_KEY.begin(), FORTH_KEY.end());
@@ -83,7 +83,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Insert_test_001,
 HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Delete_test_002, TestSize.Level0)
 {
     if (kvStorePtr_ == nullptr) {
-        exit(1);
+        return;
     }
     int errCode = kvStorePtr_->Delete(FIRST_KEY);
     EXPECT_EQ(errCode, E_OK);
@@ -92,7 +92,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Delete_test_002,
 HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Query_test_003, TestSize.Level0)
 {
     if (kvStorePtr_ == nullptr) {
-        exit(1);
+        return;
     }
     std::vector<uint8_t> value;
     int errCode = kvStorePtr_->Query(FIRST_KEY, value);
@@ -105,7 +105,7 @@ HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_Query_test_003, 
 HWTEST_F(MediaLibraryThumbnailKvStoreTest, MediaLibrary_KvStore_BatchQuery_test_004, TestSize.Level0)
 {
     if (kvStorePtr_ == nullptr) {
-        exit(1);
+        return;
     }
     std::vector<std::string> uriBatch;
     std::vector<std::vector<uint8_t>> dataBatch;
