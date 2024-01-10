@@ -21,6 +21,8 @@
 #include "location_column.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_rdb_utils.h"
+#include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "uri.h"
@@ -1481,6 +1483,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_001, TestSize.Leve
     valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
     valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY);
     valuesBucket.Put(ALBUM_NAME, "3");
+    valuesBucket.Put(COVER_URI, "file://media/Photo/1/11/11.jpg");
     valuesBucket.Put(COUNT, 1);
     valuesBucket.Put(DATE_MODIFIED, 0);
     int albumId = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
@@ -1493,6 +1496,47 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_001, TestSize.Leve
     int mapId = MediaLibraryDataManager::GetInstance()->Insert(insertMapCmd, mapValues);
     EXPECT_GT(mapId, 0);
     MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_001::mapId = %{public}d. End", mapId);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_002::Start");
+    Uri analysisAlbumUri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(analysisAlbumUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.Put(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY);
+    valuesBucket.Put(ALBUM_NAME, "4");
+    valuesBucket.Put(COVER_URI, "file://media/Photo/1/12/12.jpg");
+    valuesBucket.Put(COUNT, 1);
+    valuesBucket.Put(DATE_MODIFIED, 0);
+    int albumId = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    Uri insertMapUri(PAH_INSERT_ANA_PHOTO_MAP);
+    MediaLibraryCommand insertMapCmd(insertMapUri);
+    DataShare::DataShareValuesBucket mapValues;
+    mapValues.Put(MAP_ALBUM, albumId);
+    mapValues.Put(MAP_ASSET, 12);
+    int mapId = MediaLibraryDataManager::GetInstance()->Insert(insertMapCmd, mapValues);
+    EXPECT_GT(mapId, 0);
+
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(rdbStore, {"12"}, {
+        PhotoAlbumSubType::CLASSIFY, PhotoAlbumSubType::PORTRAIT
+    });
+    Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand queryCmd(queryAlbumUri);
+    DataShare::DataSharePredicates predicatesQuery;
+    predicatesQuery.EqualTo(ALBUM_NAME, "4");
+    vector<string> columns = {COUNT};
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryCmd, columns, predicatesQuery, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    resultSet->GoToFirstRow();
+    int count = -1;
+    resultSet->GetInt(0, count);
+    EXPECT_EQ(count, 0);
+    MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_002::mapId = %{public}d. End", mapId);
 }
 
 void CreatTestImage()
