@@ -104,7 +104,8 @@ public:
 
     EXPORT static bool DeleteOriginImage(ThumbRdbOpt &opts);
     // Steps
-    EXPORT static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true);
+    EXPORT static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true,
+        const std::string &targetPath = "");
     static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
 
     static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
@@ -154,7 +155,8 @@ private:
     EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     static Size ConvertDecodeSize(const Size &sourceSize, Size &desiredSize, const bool isThumbnail);
-    EXPORT static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
+    EXPORT static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize,
+        const std::string &targetPath);
     EXPORT static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
     static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
         const bool isThumbnail, Size &desiredSize, uint32_t &errCode);
