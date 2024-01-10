@@ -22,6 +22,7 @@
 #include <shared_mutex>
 
 #include "ability_context.h"
+#include "cloud_thumbnail_observer.h"
 #include "context/context.h"
 #include "dir_asset.h"
 #include "datashare_predicates.h"
@@ -30,6 +31,7 @@
 #include "imedia_scanner_callback.h"
 #include "medialibrary_command.h"
 #include "medialibrary_data_manager_utils.h"
+#include "medialibrary_helper_container.h"
 #include "medialibrary_db_const.h"
 #include "rdb_predicates.h"
 #include "rdb_store.h"
@@ -137,6 +139,7 @@ private:
     static std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
     std::atomic<int> refCnt_ {0};
     std::shared_ptr<MediaDataShareExtAbility> extension_;
+    std::shared_ptr<CloudThumbnailObserver> cloudDataObserver_;
 };
 
 // Scanner callback objects
