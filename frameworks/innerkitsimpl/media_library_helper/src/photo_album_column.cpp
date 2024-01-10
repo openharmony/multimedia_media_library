@@ -42,6 +42,7 @@ const string PhotoAlbumColumns::ALBUM_IMAGE_COUNT = "image_count";
 const string PhotoAlbumColumns::ALBUM_VIDEO_COUNT = "video_count";
 const string PhotoAlbumColumns::ALBUM_LATITUDE = "latitude";
 const string PhotoAlbumColumns::ALBUM_LONGITUDE = "longitude";
+const string PhotoAlbumColumns::ALBUM_BUNDLE_NAME = "bundle_name";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
@@ -94,7 +95,8 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     HIDDEN_COVER + " TEXT DEFAULT '', " +
     ALBUM_ORDER + " INT," +
     ALBUM_IMAGE_COUNT + " INT DEFAULT 0, " +
-    ALBUM_VIDEO_COUNT + " INT DEFAULT 0)";
+    ALBUM_VIDEO_COUNT + " INT DEFAULT 0, " +
+    ALBUM_BUNDLE_NAME + " TEXT)";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +
@@ -285,15 +287,17 @@ static void GetAllImagesPredicates(RdbPredicates &predicates, const bool hiddenS
     predicates.EndWrap();
 }
 
-static void GetAllSourcePredicates(RdbPredicates &predicates, const bool hiddenState)
+void PhotoAlbumColumns::GetSourceAlbumPredicates(const int32_t albumId, RdbPredicates &predicates,
+    const bool hiddenState)
 {
-    predicates.BeginWrap();
+    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
+    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.EndWrap();
 }
 
 void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype, RdbPredicates &predicates,
@@ -320,9 +324,6 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
         }
         case PhotoAlbumSubType::IMAGES: {
             return GetAllImagesPredicates(predicates, hiddenState);
-        }
-        case PhotoAlbumSubType::SOURCE: {
-            return GetAllSourcePredicates(predicates, hiddenState);
         }
         default: {
             predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(0));

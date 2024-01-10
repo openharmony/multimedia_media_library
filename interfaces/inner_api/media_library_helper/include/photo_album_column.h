@@ -41,6 +41,7 @@ public:
     static const std::string ALBUM_VIDEO_COUNT EXPORT;
     static const std::string ALBUM_LATITUDE EXPORT;
     static const std::string ALBUM_LONGITUDE EXPORT;
+    static const std::string ALBUM_BUNDLE_NAME EXPORT;
 
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH EXPORT;
@@ -89,6 +90,8 @@ public:
     EXPORT static void GetAnalysisAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
     EXPORT static void GetPortraitAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
+        const bool hiddenState);
+    EXPORT static void GetSourceAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
 };
 } // namespace OHOS::Media

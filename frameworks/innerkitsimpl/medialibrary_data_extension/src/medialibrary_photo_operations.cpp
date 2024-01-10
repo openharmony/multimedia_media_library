@@ -177,6 +177,11 @@ static int32_t GetPredicatesByAlbumId(const string &albumId, RdbPredicates &pred
         return E_SUCCESS;
     }
 
+    if (PhotoAlbum::IsSourceAlbum(type, subType)) {
+        PhotoAlbumColumns::GetSourceAlbumPredicates(stoi(albumId), predicates, false);
+        return E_SUCCESS;
+    }
+
     if ((type != PhotoAlbumType::SYSTEM) || (subType == PhotoAlbumSubType::USER_GENERIC) ||
         (subType == PhotoAlbumSubType::ANY)) {
         MEDIA_ERR_LOG("album id %{private}s type:%d subtype:%d", albumId.c_str(), type, subType);
@@ -593,6 +598,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         return E_HAS_DB_ERROR;
     }
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw());
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore->GetRaw());
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw());
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
@@ -677,6 +683,8 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
             std::to_string(PhotoAlbumSubType::IMAGES),
         });
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
 
     MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(
