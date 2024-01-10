@@ -103,7 +103,7 @@ static void CreateAstcBackground(AsyncTaskData *data)
     ThumbRdbOpt opts = {
         .store = rdbStore,
         .table = PhotoColumn::PHOTOS_TABLE,
-    }
+    };
     ThumbnailGenerateHelper::CreateAstcBatch(opts);
     IThumbnailHelper::AddAsyncTask(IThumbnailHelper::StopLongTimeTask, opts, thumbnailData, false);
 }
