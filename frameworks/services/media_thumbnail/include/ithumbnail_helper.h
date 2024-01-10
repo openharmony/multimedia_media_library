@@ -84,7 +84,8 @@ protected:
     static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
-    static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const std::string &suffix);
+    static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const std::string &suffix,
+        bool isLoadFromSourcePath);
     static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
     static bool GenMonthAndYearPixelMap(ThumbnailData &data, const ThumbnailType type);
 };

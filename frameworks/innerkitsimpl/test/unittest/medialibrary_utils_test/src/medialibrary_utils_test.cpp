@@ -505,18 +505,19 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Leve
     data.source = nullptr;
     data.mediaType = MEDIA_TYPE_VIDEO;
     bool isThumbnail = true;
-    bool ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail);
+    std::string path = "";
+    bool ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
     EXPECT_EQ(ret, false);
     data.mediaType = MEDIA_TYPE_AUDIO;
-    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail);
+    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
     EXPECT_EQ(ret, false);
     data.mediaType = MEDIA_TYPE_MEDIA;
     data.path = "Documents/";
-    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail);
+    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
     EXPECT_EQ(ret, false);
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     data.source = make_shared<PixelMap>();
-    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail);
+    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
     EXPECT_EQ(ret, true);
 }
 
@@ -644,7 +645,8 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     desiredSize.height = 20;
     data.path = "/storage/cloud/files";
     data.source = make_shared<PixelMap>();
-    bool ret = ThumbnailUtils::LoadImageFile(data, isThumbnail, desiredSize);
+    std::string sourcePath = "";
+    bool ret = ThumbnailUtils::LoadImageFile(data, isThumbnail, desiredSize, sourcePath);
     EXPECT_EQ(ret, false);
     ret = ThumbnailUtils::LoadVideoFile(data, isThumbnail, desiredSize);
     EXPECT_EQ(ret, false);
