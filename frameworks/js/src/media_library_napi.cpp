@@ -6321,8 +6321,11 @@ napi_value MediaLibraryNapi::JSApplyChanges(napi_env env, napi_callback_info inf
 }
 
 static napi_value initRequest(OHOS::AAFwk::Want &request, shared_ptr<DeleteCallback> &callback,
-                              napi_env env, napi_value args[])
+                              napi_env env, napi_value args[], size_t argsLen)
 {
+    if (argsLen < ARGS_THREE) {
+        return nullptr;
+    }
     napi_value result = nullptr;
     napi_create_object(env, &result);
     request.SetElementName(DELETE_UI_PACKAGE_NAME, DELETE_UI_EXT_ABILITY_NAME);
@@ -6388,7 +6391,7 @@ napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_inf
     OHOS::Ace::ModalUIExtensionConfig config;
     config.isProhibitBack = true;
     OHOS::AAFwk::Want request;
-    napi_value initRequestResult = initRequest(request, callback, env, args);
+    napi_value initRequestResult = initRequest(request, callback, env, args, sizeof(args));
     NAPI_ASSERT(env, initRequestResult != nullptr, "initRequest fail");
 
     int32_t sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
