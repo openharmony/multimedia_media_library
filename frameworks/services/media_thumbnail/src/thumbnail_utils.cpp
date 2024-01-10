@@ -1042,8 +1042,10 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
         values.PutNull(MEDIA_DATA_DB_THUMBNAIL);
     }
     if (withLcd) {
-        values.PutNull(MEDIA_DATA_DB_LCD);
         values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+        if (opts.table == MEDIALIBRARY_TABLE) {
+            values.PutNull(MEDIA_DATA_DB_LCD);
+        }
         if (opts.table == PhotoColumn::PHOTOS_TABLE) {
             values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, 0);
         }
