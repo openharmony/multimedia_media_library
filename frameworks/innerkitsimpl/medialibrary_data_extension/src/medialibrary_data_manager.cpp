@@ -200,6 +200,11 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
+
+    cloudDataObserver_ = std::make_shared<CloudThumbnailObserver>();
+    auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
+    shareHelper->RegisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_, true);
+
     refCnt_++;
     return E_OK;
 }
@@ -232,6 +237,8 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
         return;
     }
 
+    auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
+    shareHelper->UnregisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_);
     rdbStore_ = nullptr;
     MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 

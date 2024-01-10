@@ -518,5 +518,27 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     }
     return E_OK;
 }
+
+int32_t ThumbnailService::CreateAstcFromFieldId(const string &id)
+{
+    ThumbnailData data;
+    int err = 0;
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+#ifdef DISTRIBUTED
+        .kvStore = kvStorePtr_,
+#endif
+        .table = PhotoColumn::PHOTOS_TABLE
+    };
+
+    ThumbnailUtils::QueryThumbnailDataFromFieldId(opts, id, data, err);
+    if (err != E_OK) {
+        return err;
+    }
+
+    IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateAstc, opts, data, true);
+    return E_OK;
+}
+
 } // namespace Media
 } // namespace OHOS
