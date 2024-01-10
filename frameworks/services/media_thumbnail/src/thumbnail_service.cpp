@@ -16,12 +16,14 @@
 
 #include "thumbnail_service.h"
 
+#include "background_task_mgr_helper.h"
 #include "ipc_skeleton.h"
 #include "display_manager.h"
 #include "media_column.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_unistore_manager.h"
 #include "media_log.h"
 #include "result_set_utils.h"
 #include "thumbnail_aging_helper.h"
@@ -30,6 +32,7 @@
 #include "thumbnail_helper_factory.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
+#include "resource_type.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -84,6 +87,27 @@ static bool GetDefaultWindowSize(Size &size)
     return true;
 }
 
+static void CreateAstcBackground(AsyncTaskData *data)
+{
+    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
+        BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
+    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Can not get rdbStore");
+        BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
+        return;
+    }
+
+    ThumbnailData thumbnailData;
+    ThumbRdbOpt opts = {
+        .store = rdbStore,
+        .table = PhotoColumn::PHOTOS_TABLE,
+    }
+    ThumbnailGenerateHelper::CreateAstcBatch(opts);
+    IThumbnailHelper::AddAsyncTask(IThumbnailHelper::StopLongTimeTask, opts, thumbnailData, false);
+}
+
 bool ThumbnailService::CheckSizeValid()
 {
     if (!isScreenSizeInit_) {
@@ -111,6 +135,19 @@ void ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
         MEDIA_ERR_LOG("GetDefaultWindowSize failed");
     } else {
         isScreenSizeInit_ = true;
+    }
+
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return;
+    }
+    shared_ptr<MediaLibraryAsyncTask> astcBackgroundTask =
+        make_shared<MediaLibraryAsyncTask>(CreateAstcBackground, nullptr);
+    if (astcBackgroundTask != nullptr) {
+        asyncWorker->AddTask(astcBackgroundTask, false);
+    } else {
+        MEDIA_ERR_LOG("Can not create astc batch task");
     }
 }
 
