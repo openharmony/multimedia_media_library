@@ -68,6 +68,7 @@ enum AnalysisType : int32_t {
 enum PhotoAlbumType : int32_t {
     USER = 0,
     SYSTEM = 1024,
+    SOURCE = 2048,
     SMART = 4096
 };
 
@@ -83,9 +84,9 @@ enum PhotoAlbumSubType : int32_t {
     CAMERA,
     IMAGES,
     SYSTEM_END = IMAGES,
+    SOURCE_GENERIC = 2049,
     ANALYSIS_START = 4097,
     CLASSIFY = ANALYSIS_START,
-    SOURCE,
     GEOGRAPHY_LOCATION = 4099,
     GEOGRAPHY_CITY,
     SHOOTING_MODE,

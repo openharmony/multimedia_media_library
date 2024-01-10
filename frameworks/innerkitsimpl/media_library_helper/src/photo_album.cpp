@@ -222,17 +222,23 @@ bool PhotoAlbum::IsTrashAlbum(const PhotoAlbumType albumType, const PhotoAlbumSu
     return (albumType == PhotoAlbumType::SYSTEM) && (albumSubType == PhotoAlbumSubType::TRASH);
 }
 
+bool PhotoAlbum::IsSourceAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::SOURCE) && (albumSubType == PhotoAlbumSubType::SOURCE_GENERIC);
+}
+
 bool PhotoAlbum::CheckPhotoAlbumType(const PhotoAlbumType albumType)
 {
     return (albumType == PhotoAlbumType::USER) || (albumType == PhotoAlbumType::SYSTEM) ||
-        (albumType == PhotoAlbumType::SMART);
+        (albumType == PhotoAlbumType::SMART) || (albumType == PhotoAlbumType::SOURCE);
 }
 
 bool PhotoAlbum::CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType)
 {
     return (albumSubType == PhotoAlbumSubType::USER_GENERIC) || (albumSubType == PhotoAlbumSubType::ANY) ||
         ((albumSubType >= PhotoAlbumSubType::SYSTEM_START) && (albumSubType <= PhotoAlbumSubType::SYSTEM_END)) ||
-        ((albumSubType >= PhotoAlbumSubType::ANALYSIS_START) && (albumSubType <= PhotoAlbumSubType::ANALYSIS_END));
+        ((albumSubType >= PhotoAlbumSubType::ANALYSIS_START) && (albumSubType <= PhotoAlbumSubType::ANALYSIS_END)) ||
+        (albumSubType == PhotoAlbumSubType::SOURCE_GENERIC);
 }
 }  // namespace Media
 }  // namespace OHOS

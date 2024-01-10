@@ -687,6 +687,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     }
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
 
     auto watch = MediaLibraryNotify::GetInstance();

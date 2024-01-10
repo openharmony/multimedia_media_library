@@ -73,39 +73,39 @@ const std::string COUNT_VALUE_UPDATE =
     MediaColumn::MEDIA_HIDDEN + " = 0 )";
 
 const std::string INSERT_PHOTO_MAP =
-    " INSERT INTO " + ANALYSIS_PHOTO_MAP_TABLE +
+    " INSERT INTO " + PhotoMap::TABLE +
     " (" + PhotoMap::ALBUM_ID + " , " + PhotoMap::ASSET_ID + " )" +
     " VALUES " +
-    " ( ( SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE +
+    " ( ( SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE +
     " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " AND " +
-    PhotoAlbumColumns::ALBUM_TYPE + " = "+ std::to_string(OHOS::Media::PhotoAlbumType::SMART) + " AND " +
-    PhotoAlbumColumns::ALBUM_SUBTYPE + " = "+ std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE) + ")," +
+    PhotoAlbumColumns::ALBUM_TYPE + " = "+ std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + " = "+ std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + ")," +
     " NEW." + MediaColumn::MEDIA_ID + " );";
 
 const std::string SOURCE_ALBUM_WHERE =
     " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
-    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SMART) +
-    " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE);
+    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) +
+    " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC);
 
 const std::string SOURCE_ALBUM_WHERE_UPDATE =
     " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = OLD." + MediaColumn::MEDIA_PACKAGE_NAME +
-    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SMART) +
-    " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE);
+    " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) +
+    " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC);
 
 const std::string WHEN_SOURCE_PHOTO_COUNT =
     " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND ( SELECT COUNT(1) FROM " +
-        ANALYSIS_ALBUM_TABLE + SOURCE_ALBUM_WHERE + " )";
+    PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
 
 const std::string WHEN_UPDATE_AND_DELETE = " WHEN OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL ";
 
 const std::string TRIGGER_CODE_UPDATE_AND_DELETE =
     WHEN_UPDATE_AND_DELETE +
-    " BEGIN UPDATE " + ANALYSIS_ALBUM_TABLE +
+    " BEGIN UPDATE " + PhotoAlbumColumns::TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COUNT + " = " + COUNT_VALUE_UPDATE + SOURCE_ALBUM_WHERE_UPDATE + ";" +
-    " UPDATE " + ANALYSIS_ALBUM_TABLE +
+    " UPDATE " + PhotoAlbumColumns::TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = '' " + SOURCE_ALBUM_WHERE_UPDATE +
     " AND " + PhotoAlbumColumns::ALBUM_COUNT + " = 0;" +
-    " UPDATE " + ANALYSIS_ALBUM_TABLE +
+    " UPDATE " + PhotoAlbumColumns::TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = " + COVER_URI_VALUE_UPDATE + SOURCE_ALBUM_WHERE_UPDATE +
     " AND " + PhotoAlbumColumns::ALBUM_COUNT + " > 0;" + " END;";
 
@@ -124,27 +124,39 @@ const std::string CLEAR_SYSTEM_SOURCE_ALBUM = "DELETE FROM " + PhotoAlbumColumns
     PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SYSTEM) + " AND " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = 1032";
 
+const std::string SOURCE_ALBUM_TO_CLEAR_WHERE = " WHERE " +
+    PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SMART) + " AND " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + " = 4098";
+
+const std::string CLEAR_SOURCE_ALBUM_ANALYSIS_PHOTO_MAP = "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
+    PhotoMap::ALBUM_ID + " in (SELECT " + PhotoMap::ALBUM_ID + " FROM "+ ANALYSIS_ALBUM_TABLE +
+    SOURCE_ALBUM_TO_CLEAR_WHERE + " ) ";
+
+const std::string CLEAR_ANALYSIS_SOURCE_ALBUM = "DELETE FROM " + ANALYSIS_ALBUM_TABLE + SOURCE_ALBUM_TO_CLEAR_WHERE;
+
 const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
     "CREATE TRIGGER insert_photo_insert_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
     WHEN_SOURCE_PHOTO_COUNT + " = 0 " +
-    " BEGIN INSERT INTO " + ANALYSIS_ALBUM_TABLE + "(" +
+    " BEGIN INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_TYPE + " , " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " , " +
     PhotoAlbumColumns::ALBUM_NAME + " , "
     + PhotoAlbumColumns::ALBUM_COVER_URI + " , " +
-    PhotoAlbumColumns::ALBUM_COUNT +
+    PhotoAlbumColumns::ALBUM_COUNT + " , " +
+    PhotoAlbumColumns::ALBUM_BUNDLE_NAME +
     " ) VALUES ( " +
-    std::to_string(OHOS::Media::PhotoAlbumType::SMART) + " , " +
-    std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE) +
-    " , NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " , " +
+    std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " , " +
+    std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + " , " +
+    "NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " , " +
     COVER_URI_VALUE_INSERT + " , " +
-    COUNT_VALUE_INSERT +
+    COUNT_VALUE_INSERT + " , " +
+    "NEW." + MediaColumn::MEDIA_OWNER_PACKAGE +
     ");" + INSERT_PHOTO_MAP + "END;";
 
 const std::string INSERT_PHOTO_UPDATE_SOURCE_ALBUM =
     "CREATE TRIGGER insert_photo_update_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
     WHEN_SOURCE_PHOTO_COUNT + "> 0 " +
-    " BEGIN UPDATE " + ANALYSIS_ALBUM_TABLE +
+    " BEGIN UPDATE " + PhotoAlbumColumns::TABLE +
     " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = " + COVER_URI_VALUE_INSERT + "," +
     PhotoAlbumColumns::ALBUM_COUNT + " = " + COUNT_VALUE_INSERT +
     SOURCE_ALBUM_WHERE + ";" +
@@ -157,6 +169,9 @@ const std::string UPDATE_PHOTO_UPDATE_SOURCE_ALBUM =
 const std::string DELETE_PHOTO_UPDATE_SOURCE_ALBUM =
     "CREATE TRIGGER delete_photo_update_source_album AFTER DELETE ON " +
     PhotoColumn::PHOTOS_TABLE + TRIGGER_CODE_UPDATE_AND_DELETE;
+
+const std::string ADD_SOURCE_ALBUM_BUNDLE_NAME = "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+    PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " TEXT";
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_SOURCE_ALBUM_H

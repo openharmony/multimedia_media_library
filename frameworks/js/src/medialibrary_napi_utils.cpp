@@ -972,14 +972,16 @@ static int32_t GetAllImagesPredicates(DataSharePredicates &predicates, const boo
     return E_SUCCESS;
 }
 
-static int32_t GetAllSourcePredicates(DataSharePredicates &predicates, const bool hiddenOnly)
+int32_t MediaLibraryNapiUtils::GetSourceAlbumPredicates(const int32_t albumId, DataSharePredicates &predicates,
+    const bool hiddenOnly)
 {
-    predicates.BeginWrap();
+    string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
+    predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.EndWrap();
     return E_SUCCESS;
 }
 
@@ -1007,9 +1009,6 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
         }
         case PhotoAlbumSubType::IMAGES: {
             return GetAllImagesPredicates(predicates, hiddenOnly);
-        }
-        case PhotoAlbumSubType::SOURCE: {
-            return GetAllSourcePredicates(predicates, hiddenOnly);
         }
         default: {
             NAPI_ERR_LOG("Unsupported photo album subtype: %{public}d", subType);

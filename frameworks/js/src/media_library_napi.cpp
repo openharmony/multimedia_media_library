@@ -5364,6 +5364,7 @@ napi_value MediaLibraryNapi::CreateAlbumTypeEnum(napi_env env)
     CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "USER", PhotoAlbumType::USER), JS_INNER_FAIL);
     CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "SYSTEM", PhotoAlbumType::SYSTEM), JS_INNER_FAIL);
     CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "SMART", PhotoAlbumType::SMART), JS_INNER_FAIL);
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "SOURCE", PhotoAlbumType::SOURCE), JS_INNER_FAIL);
 
     CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sAlbumType_), JS_INNER_FAIL);
     return result;
@@ -5375,6 +5376,8 @@ napi_value MediaLibraryNapi::CreateAlbumSubTypeEnum(napi_env env)
     CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
 
     CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "USER_GENERIC", PhotoAlbumSubType::USER_GENERIC),
+        JS_INNER_FAIL);
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "SOURCE_GENERIC", PhotoAlbumSubType::SOURCE_GENERIC),
         JS_INNER_FAIL);
     for (size_t i = 0; i < systemAlbumSubType.size(); i++) {
         CHECK_ARGS(env, AddIntegerNamedProperty(env, result, systemAlbumSubType[i],

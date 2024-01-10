@@ -83,6 +83,7 @@ public:
     EXPORT static bool CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSmartPortraitPhotoAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
     EXPORT static bool IsSmartClassifyAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
+    EXPORT static bool IsSourceAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType);
 
 private:
     int32_t albumId_;

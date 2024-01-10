@@ -1019,12 +1019,14 @@ int32_t MediaScannerDb::DeleteError(const std::string &err)
 }
 
 void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
-    const std::vector<std::string> &userAlbumIds)
+    const std::vector<std::string> &userAlbumIds, const std::vector<std::string> &sourceAlbumIds)
 {
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), subtypes);
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), userAlbumIds);
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), sourceAlbumIds);
 }
 
 std::string MediaScannerDb::MakeFileUri(const std::string &mediaTypeUri, const Metadata &metadata)
