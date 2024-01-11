@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,20 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_DATABASE_ADAPTER_H
-#define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_DATABASE_ADAPTER_H
+#ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_EXIF_UTILS_H
+#define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_EXIF_UTILS_H
 
-#include "medialibrary_photo_operations.h"
+#include <string>
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-class DatabaseAdapter {
+class ExifUtils {
 public:
-    EXPORT static std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
-        const std::vector<std::string> &columns);
-    static int32_t Update(MediaLibraryCommand &cmd);
+    EXPORT static int32_t WriteGpsExifInfo(const std::string &path, double longitude, double latitude);
+
+private:
+    EXPORT static std::string LocationValueToString(double value);
 };
+
 } // namespace Media
 } // namespace OHOS
-#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_DATABASE_ADAPTER_H
+#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_EXIF_UTILS_H

@@ -79,6 +79,15 @@ napi_status MediaLibraryNapiUtils::GetInt32(napi_env env, napi_value arg, int32_
     return napi_ok;
 }
 
+napi_status MediaLibraryNapiUtils::GetDouble(napi_env env, napi_value arg, double &value)
+{
+    napi_valuetype valueType = napi_undefined;
+    CHECK_STATUS_RET(napi_typeof(env, arg, &valueType), "Failed to get type");
+    CHECK_COND_RET(valueType == napi_number, napi_number_expected, "Type is not as expected number");
+    CHECK_STATUS_RET(napi_get_value_double(env, arg, &value), "Failed to get double value");
+    return napi_ok;
+}
+
 napi_status MediaLibraryNapiUtils::GetParamBool(napi_env env, napi_value arg, bool &value)
 {
     napi_valuetype valueType = napi_undefined;

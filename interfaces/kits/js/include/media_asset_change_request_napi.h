@@ -17,12 +17,14 @@
 #define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_ASSET_CHANGE_REQUEST_NAPI_H
 
 #include <vector>
+#include <buffer_handle_parcel.h>
 
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
 #include "file_asset_napi.h"
 #include "media_asset_edit_data.h"
 #include "media_change_request_napi.h"
+#include "output/deferred_photo_proxy.h"
 #include "unique_fd.h"
 #include "values_bucket.h"
 
@@ -39,6 +41,8 @@ enum class AssetChangeOperation {
     SET_HIDDEN,
     SET_TITLE,
     SET_USER_COMMENT,
+    SET_PHOTO_QUALITY_AND_PHOTOID,
+    SET_LOCATION,
 };
 
 enum class AddResourceMode {
@@ -65,6 +69,7 @@ public:
     int32_t SubmitCache(bool isCreated);
     int32_t CopyToMediaLibrary(AddResourceMode mode);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
+    sptr<CameraStandard::DeferredPhotoProxy> GetPhotoProxyObj();
 
 private:
     EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -83,6 +88,7 @@ private:
     EXPORT static napi_value JSSetUserComment(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetWriteCacheHandler(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSAddResource(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetLocation(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
     int32_t PutMediaAssetEditData(DataShare::DataShareValuesBucket& valuesBucket);
@@ -91,6 +97,7 @@ private:
     void SetNewFileAsset(int32_t id, const std::string& uri);
 
     static thread_local napi_ref constructor_;
+    sptr<CameraStandard::DeferredPhotoProxy> photoProxy_ = nullptr;
     std::shared_ptr<FileAsset> fileAsset_ = nullptr;
     std::shared_ptr<MediaAssetEditData> editData_ = nullptr;
     DataShare::DataShareValuesBucket creationValuesBucket_;

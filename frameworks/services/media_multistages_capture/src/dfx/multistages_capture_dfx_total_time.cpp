@@ -30,7 +30,6 @@ MultiStagesCaptureDfxTotalTime::~MultiStagesCaptureDfxTotalTime() {}
 MultiStagesCaptureDfxTotalTime& MultiStagesCaptureDfxTotalTime::GetInstance()
 {
     static MultiStagesCaptureDfxTotalTime instance;
-    
     return instance;
 }
 
