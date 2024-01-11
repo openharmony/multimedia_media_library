@@ -99,7 +99,6 @@ const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
 const std::string PhotoColumn::PHOTO_DATE_DAY_FORMAT = "%Y%m%d";
 
-
 const std::string PhotoColumn::PHOTOS_TABLE = "Photos";
 
 const std::string PhotoColumn::PHOTO_URI_PREFIX = "file://media/Photo/";

@@ -13,20 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_DATABASE_ADAPTER_H
-#define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_DATABASE_ADAPTER_H
+#ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_FILE_UTILS_H
+#define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_FILE_UTILS_H
 
-#include "medialibrary_photo_operations.h"
+#include <string>
 
 namespace OHOS {
 namespace Media {
-#define EXPORT __attribute__ ((visibility ("default")))
-class DatabaseAdapter {
+class FileUtils {
 public:
-    EXPORT static std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
-        const std::vector<std::string> &columns);
-    static int32_t Update(MediaLibraryCommand &cmd);
+    FileUtils();
+    ~FileUtils();
+    static int32_t SaveImage(const std::string &filePath, void *output, size_t writeSize);
 };
 } // namespace Media
 } // namespace OHOS
-#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_DATABASE_ADAPTER_H
+#endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_FILE_UTILS_H

@@ -50,6 +50,6 @@ private:
     napi_env env_ = nullptr;
 };
 
-} // OHOS
 } // Media
+} // OHOS
 #endif // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_ASSET_DATA_HANDLER_NAPI_H
