@@ -20,8 +20,6 @@
 #include <chrono>
 #include <thread>
 
-#include "image_source.h"
-#include "media_exif.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -37,13 +35,11 @@
 #include "values_bucket.h"
 #define private public
 #define protected public
-#include "exif_utils.h"
 #include "multistages_capture_dfx_first_visit.h"
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
 #include "multistages_capture_dfx_request_policy.h"
 #include "multistages_capture_dfx_trigger_ratio.h"
-#include "multistages_capture_manager.h"
 #undef private
 #undef protected
 
@@ -257,7 +253,7 @@ int32_t PrepareForFirstVisit()
     // update multi-stages capture db info
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
     ValuesBucket values;
-    values.Put(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
+    values.Put(PhotoColumn::PHOTO_QUALITY, 1);
     values.Put(PhotoColumn::PHOTO_ID, PHOTO_ID_FOR_TEST);
     values.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, 1);
     cmd.SetValueBucket(values);
@@ -516,75 +512,5 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_trigger_ratio_001, TestSize.Lev
     MEDIA_INFO_LOG("dfx_trigger_ratio_001 End");
 }
 
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_get_photo_id_001, TestSize.Level1)
-{
-    auto fileId = PrepareForFirstVisit();
-    EXPECT_GT(fileId, 0);
-
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
-
-    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
-    vector<shared_ptr<MultiStagesPhotoInfo>> photosInfo = instance.GetPhotosInfo(predicates);
-    EXPECT_EQ(photosInfo.size(), 1);
-    EXPECT_EQ(photosInfo[0]->photoId, PHOTO_ID_FOR_TEST);
-    EXPECT_EQ(photosInfo[0]->photoQuality, static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
-    EXPECT_EQ(photosInfo[0]->fileId, fileId);
-}
-
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_get_photo_id_not_exist_002, TestSize.Level1)
-{
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
-    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, 2);
-    vector<shared_ptr<MultiStagesPhotoInfo>> photosInfo = instance.GetPhotosInfo(predicates);
-    EXPECT_EQ(photosInfo.size(), 0);
-}
-
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_photo_id_add_and_rmv_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("manager_photo_id_add_and_rmv_001 Start");
-    string photoId = "202312251533001";
-    int32_t fileId = 1;
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
-    instance.AddPhotoInProgress(fileId, photoId, false);
-    EXPECT_EQ(instance.fileId2PhotoId_.at(fileId), photoId);
-    EXPECT_EQ(instance.photoIdInProcess_.at(photoId)->fileId, fileId);
-    EXPECT_EQ(instance.photoIdInProcess_.at(photoId)->state, MultiStagesCaptureManager::PhotoState::NORMAL);
-
-    string photoId2 = "202312251533002";
-    int32_t fileId2 = 2;
-    instance.AddPhotoInProgress(fileId2, photoId2, true);
-    EXPECT_EQ(instance.fileId2PhotoId_.at(fileId2), photoId2);
-    EXPECT_EQ(instance.photoIdInProcess_.at(photoId2)->fileId, fileId2);
-    EXPECT_EQ(instance.photoIdInProcess_.at(photoId2)->state, MultiStagesCaptureManager::PhotoState::TRASHED);
-
-    instance.RemovePhotoInProgress(photoId, false);
-    EXPECT_EQ(instance.fileId2PhotoId_.count(fileId), 0);
-    EXPECT_EQ(instance.photoIdInProcess_.count(photoId), 0);
-
-    instance.RemovePhotoInProgress(photoId2, false);
-    EXPECT_EQ(instance.fileId2PhotoId_.count(fileId2), 0);
-    EXPECT_EQ(instance.photoIdInProcess_.count(photoId2), 0);
-    MEDIA_INFO_LOG("manager_photo_id_add_and_rmv_001 End");
-}
-
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string_001, TestSize.Level1)
-{
-    double latitude = 31.2592678069444;
-    EXPECT_EQ(ExifUtils::LocationValueToString(latitude), "31, 15, 33.364105");
-
-    double longitude = 121.617393493611;
-    EXPECT_EQ(ExifUtils::LocationValueToString(longitude), "121, 37, 2.616577");
-}
-
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string_002, TestSize.Level1)
-{
-    double latitude = -31.2592678069444;
-    EXPECT_EQ(ExifUtils::LocationValueToString(latitude), "31, 15, 33.364105");
-
-    double longitude = -121.617393493611;
-    EXPECT_EQ(ExifUtils::LocationValueToString(longitude), "121, 37, 2.616577");
-}
 }
 }

@@ -306,37 +306,6 @@ void FileAsset::SetFavorite(bool isFavorite)
     member_[MEDIA_DATA_DB_IS_FAV] = isFavorite;
 }
 
-int64_t FileAsset::GetLatitude()
-{
-    return GetInt64Member(MEDIA_DATA_DB_LATITUDE);
-}
-
-void FileAsset::SetLatitude(int64_t latitude)
-{
-    member_[MEDIA_DATA_DB_LATITUDE] = latitude;
-}
-
-int64_t FileAsset::GetLongitude()
-{
-    return GetInt64Member(MEDIA_DATA_DB_LONGITUDE);
-}
-
-void FileAsset::SetLongitude(int64_t longitude)
-{
-    member_[MEDIA_DATA_DB_LONGITUDE] = longitude;
-}
-
-void FileAsset::SetPhotoIdAndQuality(const string &photoId, int photoQuality)
-{
-    member_[MEDIA_DATA_DB_PHOTO_ID] = photoId;
-    member_[MEDIA_DATA_DB_PHOTO_QUALITY] = photoQuality;
-}
-
-pair<string, int> FileAsset::GetPhotoIdAndQuality() const
-{
-    return make_pair(GetStrMember(MEDIA_DATA_DB_PHOTO_ID), GetInt32Member(MEDIA_DATA_DB_PHOTO_QUALITY));
-}
-
 int64_t FileAsset::GetDateTrashed() const
 {
     return GetInt64Member(MEDIA_DATA_DB_DATE_TRASHED);

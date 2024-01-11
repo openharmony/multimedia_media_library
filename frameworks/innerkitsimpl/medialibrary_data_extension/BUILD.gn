@@ -37,7 +37,6 @@ config("media_data_extension_public_config") {
 
   include_multistages_capture = [
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include",
-    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/deferred_processing",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/dfx",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/utils",
   ]
@@ -150,17 +149,12 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   media_multistages_capture_source = [
-    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/deferred_processing_adapter.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_proc_session_callback.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_first_visit.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_request_policy.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_result.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_total_time.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/dfx/multistages_capture_dfx_trigger_ratio.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/database_adapter.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/exif_utils.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/utils/file_utils.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_capture_manager.cpp",
   ]
 
   sources = [
@@ -227,7 +221,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "app_file_service:sandbox_helper_native",
     "background_task_mgr:bgtaskmgr_innerkits",
     "c_utils:utils",
-    "camera_framework:camera_framework",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",

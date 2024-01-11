@@ -50,5 +50,10 @@ int32_t DatabaseAdapter::Update(MediaLibraryCommand &cmd)
     }
     return E_OK;
 }
+    
+int32_t DatabaseAdapter::Delete(MediaLibraryCommand &cmd)
+{
+    return 0;
+}
 } // namespace Media
 } // namespace OHOS

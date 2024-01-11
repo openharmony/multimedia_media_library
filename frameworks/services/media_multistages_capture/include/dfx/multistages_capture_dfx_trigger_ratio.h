@@ -24,7 +24,7 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
-enum class MultiStagesCaptureTriggerType : int32_t {
+enum class MultiStagesCaptureTriggerType {
     THIRD_PART,
     AUTO,
 };

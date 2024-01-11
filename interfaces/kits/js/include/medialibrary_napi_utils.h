@@ -453,7 +453,6 @@ public:
 
     static napi_status GetUInt32(napi_env env, napi_value arg, uint32_t &value);
     static napi_status GetInt32(napi_env env, napi_value arg, int32_t &value);
-    static napi_status GetDouble(napi_env env, napi_value arg, double &value);
     static napi_status GetParamBool(napi_env env, napi_value arg, bool &result);
     static napi_status GetUInt32Array(napi_env env, napi_value arg, std::vector<uint32_t> &param);
     static napi_status GetParamFunction(napi_env env, napi_value arg, napi_ref &callbackRef);
@@ -558,8 +557,6 @@ public:
         bool &isCallback);
 
     static napi_value GetInt32Arg(napi_env env, napi_value arg, int32_t &value);
-
-    static napi_value GetDoubleArg(napi_env env, napi_value arg, double &value);
 
     static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
 

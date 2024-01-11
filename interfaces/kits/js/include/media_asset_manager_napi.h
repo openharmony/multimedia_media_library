@@ -96,6 +96,6 @@ public:
     static napi_env env_;
     std::mutex sMediaAssetMutex_;
 };
-} // Media
 } // OHOS
-#endif // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_ASSET_MANAGER_NAPI_H
+} // Media
+#endif // INTERFACES KITS JS MEDIALIBRARY INCLUDE_MEDIA_ASSET_MANAGER_NAPL_H

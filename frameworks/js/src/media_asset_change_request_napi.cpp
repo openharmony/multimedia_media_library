@@ -41,10 +41,8 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "modal_ui_extension_config.h"
-#include "output/deferred_photo_proxy_napi.h"
 #include "permission_utils.h"
 #include "ui_content.h"
-#include "unique_fd.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
 #include "want.h"
@@ -94,7 +92,6 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setTitle", JSSetTitle),
             DECLARE_NAPI_FUNCTION("setUserComment", JSSetUserComment),
             DECLARE_NAPI_FUNCTION("getWriteCacheHandler", JSGetWriteCacheHandler),
-            DECLARE_NAPI_FUNCTION("setLocation", JSSetLocation),
             DECLARE_NAPI_FUNCTION("addResource", JSAddResource),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -163,11 +160,6 @@ void MediaAssetChangeRequestNapi::Destructor(napi_env env, void* nativeObject, v
 shared_ptr<FileAsset> MediaAssetChangeRequestNapi::GetFileAssetInstance() const
 {
     return fileAsset_;
-}
-
-sptr<CameraStandard::DeferredPhotoProxy> MediaAssetChangeRequestNapi::GetPhotoProxyObj()
-{
-    return photoProxy_;
 }
 
 void MediaAssetChangeRequestNapi::RecordChangeOperation(AssetChangeOperation changeOperation)
@@ -797,55 +789,6 @@ napi_value MediaAssetChangeRequestNapi::JSSetTitle(napi_env env, napi_callback_i
     RETURN_NAPI_UNDEFINED(env);
 }
 
-napi_value MediaAssetChangeRequestNapi::JSSetLocation(napi_env env, napi_callback_info info)
-{
-    if (!MediaLibraryNapiUtils::IsSystemApp()) {
-        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-        return nullptr;
-    }
-    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
-    double latitude;
-    double longitude;
-    MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO);
-    MediaLibraryNapiUtils::GetDouble(env, asyncContext->argv[0], latitude);
-    MediaLibraryNapiUtils::GetDouble(env, asyncContext->argv[1], longitude);
-    asyncContext->objectInfo->fileAsset_->SetLongitude(longitude);
-    asyncContext->objectInfo->fileAsset_->SetLatitude(latitude);
-    asyncContext->objectInfo->assetChangeOperations_.push_back(AssetChangeOperation::SET_LOCATION);
-    napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_undefined(env, &result), JS_INNER_FAIL);
-    return result;
-}
-
-static int SaveImage(const string &fileName, void *output, size_t writeSize)
-{
-    Uri fileUri(fileName);
-    int fd = UserFileClient::OpenFile(fileUri, "rw");
-    if (fd < 0) {
-        NAPI_ERR_LOG("fd.Get() < 0 fd %{public}d status %{public}d", fd, errno);
-        return E_ERR;
-    }
-
-    int ret = write(fd, output, writeSize);
-    close(fd);
-    if (ret < 0) {
-        NAPI_ERR_LOG("write err %{public}d", errno);
-        return ret;
-    }
-    return E_OK;
-}
-
-static int SavePhotoProxyImage(const string &fileUri, sptr<CameraStandard::DeferredPhotoProxy> photoProxyPtr)
-{
-    void* imageAddr = photoProxyPtr->GetFileDataAddr();
-    size_t imageSize = photoProxyPtr->GetFileSize();
-    if (imageAddr == nullptr || imageSize == 0) {
-        NAPI_ERR_LOG("imageAddr is nullptr or imageSize(%{public}zu)==0", imageSize);
-        return E_ERR;
-    }
-    return SaveImage(fileUri, imageAddr, imageSize);
-}
-
 napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -978,39 +921,26 @@ napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callbac
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0], resourceType) == napi_ok,
         "Failed to get resourceType");
-    CHECK_COND_WITH_MESSAGE(env, resourceType == static_cast<int>(fileAsset->GetMediaType()) ||
-        resourceType == static_cast<int>(ResourceType::PHOTO_PROXY), "Failed to check resourceType");
+    CHECK_COND_WITH_MESSAGE(
+        env, resourceType == static_cast<int>(fileAsset->GetMediaType()), "Failed to check resourceType");
 
     napi_valuetype valueType;
     napi_value value = asyncContext->argv[PARAM1];
     CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
-    if (valueType == napi_string) {
-        // addResource by file uri
+    if (valueType == napi_string) { // addResource by file uri
         CHECK_COND(env, ParseFileUri(env, value, fileAsset->GetMediaType(), asyncContext), OHOS_INVALID_PARAM_CODE);
         changeRequest->realPath_ = asyncContext->realPath;
         changeRequest->addResourceMode_ = AddResourceMode::FILE_URI;
-    } else {
-        // addResource by data buffer
+    } else { // addResource by data buffer
         bool isArrayBuffer = false;
-        CHECK_COND_WITH_MESSAGE(env, napi_is_arraybuffer(env, value, &isArrayBuffer) == napi_ok,
+        CHECK_COND_WITH_MESSAGE(env, napi_is_arraybuffer(env, value, &isArrayBuffer) == napi_ok && isArrayBuffer,
             "Failed to check data type");
-        if (isArrayBuffer) {
-            CHECK_COND_WITH_MESSAGE(env, napi_get_arraybuffer_info(env, value, &(changeRequest->dataBuffer_),
-                &(changeRequest->dataBufferSize_)) == napi_ok, "Failed to get data buffer");
-            CHECK_COND_WITH_MESSAGE(env, changeRequest->dataBufferSize_ > 0, "Failed to check size of data buffer");
-            changeRequest->addResourceMode_ = AddResourceMode::DATA_BUFFER;
-        } else {
-            // addResource by photoProxy
-            if (!MediaLibraryNapiUtils::IsSystemApp()) {
-                NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
-                RETURN_NAPI_UNDEFINED(env);
-            }
-            CameraStandard::DeferredPhotoProxyNapi* napiPhotoProxyPtr = nullptr;
-            CHECK_ARGS(env, napi_unwrap(env, asyncContext->argv[PARAM1], reinterpret_cast<void**>(&napiPhotoProxyPtr)),
-                JS_INNER_FAIL);
-            changeRequest->photoProxy_ = napiPhotoProxyPtr->deferredPhotoProxy_;
-            changeRequest->addResourceMode_ = AddResourceMode::PHOTO_PROXY;
-        }
+        CHECK_COND_WITH_MESSAGE(env,
+            napi_get_arraybuffer_info(env, value, &(changeRequest->dataBuffer_), &(changeRequest->dataBufferSize_)) ==
+                napi_ok,
+            "Failed to get data buffer");
+        CHECK_COND_WITH_MESSAGE(env, changeRequest->dataBufferSize_ > 0, "Failed to check size of data buffer");
+        changeRequest->addResourceMode_ = AddResourceMode::DATA_BUFFER;
     }
 
     changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE);
@@ -1288,47 +1218,10 @@ static bool CreateFromFileUriExecute(MediaAssetChangeRequestAsyncContext& contex
     return SubmitCacheExecute(context);
 }
 
-static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& context)
-{
-    string uri;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    std::string fileUri = fileAsset->GetUri();
-    DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause(PhotoColumn::MEDIA_ID + " = ? ");
-    predicates.SetWhereArgs({ to_string(fileAsset->GetId()) });
-    DataShare::DataShareValuesBucket valuesBucket;
-    valuesBucket.Put(PhotoColumn::PHOTO_ID, context.objectInfo->GetPhotoProxyObj()->GetPhotoId());
-    NAPI_INFO_LOG("photoId: %{public}s", context.objectInfo->GetPhotoProxyObj()->GetPhotoId().c_str());
-    valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE,
-        context.objectInfo->GetPhotoProxyObj()->GetDeferredProcType());
-    int err = SavePhotoProxyImage(fileUri, context.objectInfo->GetPhotoProxyObj());
-    if (err < 0) {
-        context.SaveError(err);
-        NAPI_ERR_LOG("Failed to saveImage , err: %{public}d", err);
-        return false;
-    }
-
-    uri = PAH_ADD_IMAGE;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(uri);
-    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
-    if (changedRows < 0) {
-        context.SaveError(changedRows);
-        NAPI_ERR_LOG("Failed to set, err: %{public}d", changedRows);
-        return false;
-    }
-    return true;
-}
-
 static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     if (!HasWritePermission()) {
         return CreateBySecurityComponent(context);
-    }
-
-    AddResourceMode mode = context.objectInfo->GetAddResourceMode();
-    if (mode == AddResourceMode::PHOTO_PROXY) {
-        return AddPhotoProxyResourceExecute(context);
     }
 
     int32_t cacheFd = OpenWriteCacheHandler(context);
@@ -1339,6 +1232,7 @@ static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
     UniqueFd uniqueFd(cacheFd);
 
     bool isWriteSuccess = false;
+    AddResourceMode mode = context.objectInfo->GetAddResourceMode();
     if (mode == AddResourceMode::DATA_BUFFER) {
         isWriteSuccess = WriteCacheByArrayBuffer(context, uniqueFd);
     } else if (mode == AddResourceMode::FILE_URI) {
@@ -1417,29 +1311,6 @@ static bool SetUserCommentExecute(MediaAssetChangeRequestAsyncContext& context)
     return UpdateAssetProperty(context, PAH_EDIT_USER_COMMENT_PHOTO, predicates, valuesBucket);
 }
 
-static bool SetPhotoQualityExecute(MediaAssetChangeRequestAsyncContext& context)
-{
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    std::pair<std::string, int> photoQuality = fileAsset->GetPhotoIdAndQuality();
-    valuesBucket.Put(PhotoColumn::PHOTO_ID, photoQuality.first);
-    valuesBucket.Put(PhotoColumn::PHOTO_QUALITY, photoQuality.second);
-    return UpdateAssetProperty(context, PAH_SET_PHOTO_QUALITY, predicates, valuesBucket);
-}
-
-static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
-{
-    DataShare::DataSharePredicates predicates;
-    DataShare::DataShareValuesBucket valuesBucket;
-    auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    valuesBucket.Put(PhotoColumn::PHOTO_LATITUDE, fileAsset->GetLatitude());
-    valuesBucket.Put(PhotoColumn::PHOTO_LONGITUDE, fileAsset->GetLongitude());
-    return UpdateAssetProperty(context, PAH_SET_LOCATION, predicates, valuesBucket);
-}
-
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
     { AssetChangeOperation::CREATE_FROM_URI, CreateFromFileUriExecute },
     { AssetChangeOperation::GET_WRITE_CACHE_HANDLER, SubmitCacheExecute },
@@ -1448,8 +1319,6 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_HIDDEN, SetHiddenExecute },
     { AssetChangeOperation::SET_TITLE, SetTitleExecute },
     { AssetChangeOperation::SET_USER_COMMENT, SetUserCommentExecute },
-    { AssetChangeOperation::SET_PHOTO_QUALITY_AND_PHOTOID, SetPhotoQualityExecute },
-    { AssetChangeOperation::SET_LOCATION, SetLocationExecute },
 };
 
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
