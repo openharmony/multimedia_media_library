@@ -105,6 +105,8 @@ void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, vo
 {
     FileAssetNapi *fileAssetObj = reinterpret_cast<FileAssetNapi*>(nativeObject);
     if (fileAssetObj != nullptr) {
+        NAPI_DEBUG_LOG("Destroying native asset object ID: %{public}d",
+            fileAssetObj != nullptr ? fileAssetObj->GetFileId() : -1);
         delete fileAssetObj;
         fileAssetObj = nullptr;
     }
