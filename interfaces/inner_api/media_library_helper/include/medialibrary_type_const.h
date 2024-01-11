@@ -123,11 +123,6 @@ enum class CleanType : int32_t {
     TYPE_NEED_CLEAN
 };
 
-enum class MultiStagesPhotoQuality : int32_t {
-    FULL = 0,
-    LOW,
-};
-
 const int32_t SUCCESS = 0;
 
 constexpr int32_t DEFAULT_INT32 = 0;

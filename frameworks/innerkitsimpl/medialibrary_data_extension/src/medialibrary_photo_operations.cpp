@@ -41,7 +41,6 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_uripermission_operations.h"
-#include "multistages_capture_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "photo_map_operations.h"
@@ -590,9 +589,6 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         PhotoColumn::PHOTOS_TABLE);
     vector<string> notifyUris = rdbPredicate.GetWhereArgs();
     MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
-
-    MultiStagesCaptureManager::GetInstance().RemoveImages(rdbPredicate, true);
-
     ValuesBucket values;
     values.Put(MediaColumn::MEDIA_DATE_TRASHED, MediaFileUtils::UTCTimeMilliSeconds());
     cmd.SetValueBucket(values);

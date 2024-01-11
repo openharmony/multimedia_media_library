@@ -14,9 +14,6 @@
  */
 
 #define MLOG_TAG "MediaAssetManagerNapi"
-
-#include "media_asset_manager_napi.h"
-
 #include <fcntl.h>
 #include <string>
 #include <unordered_map>
@@ -26,6 +23,7 @@
 #include "file_uri.h"
 #include "image_source.h"
 #include "image_source_napi.h"
+#include "media_asset_manager_napi.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "medialibrary_client_errno.h"
@@ -41,8 +39,8 @@ namespace Media {
 static const std::string MEDIA_ASSET_MANAGER_CLASS = "MediaAssetManager";
 static std::mutex multiStagesCaptureLock;
 
-const int32_t LOW_QUALITY_IMAGE = 1;
-const int32_t HIGH_QUALITY_IMAGE = 0;
+const std::string LOW_QUALITY_IMAGE = "80";
+const std::string HIGH_QUALITY_IMAGE = "100";
 
 thread_local unique_ptr<ChangeListenerNapi> g_multiStagesRequestListObj = nullptr;
 thread_local napi_ref constructor_ = nullptr;
@@ -113,36 +111,38 @@ void MediaAssetManagerNapi::SetMediaAssetManagerJsEnv(napi_env env)
 MultiStagesCapturePhotoStatus MediaAssetManagerNapi::queryPhotoStatus(int fileId)
 {
     DataShare::DataSharePredicates predicates;
+    std::vector<std::string> fetchColumn;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    std::vector<std::string> fetchColumn { PhotoColumn::PHOTO_QUALITY };
+    fetchColumn.push_back(PhotoColumn::PHOTO_QUALITY);
+    fetchColumn.push_back(PhotoColumn::MEDIA_FILE_PATH);
     Uri uri(PAH_QUERY_PHOTO);
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
-        NAPI_ERR_LOG("query resultSet is nullptr");
-        return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
-    }
     int columnIndexQuality = -1;
+    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
     resultSet->GetColumnIndex(PhotoColumn::PHOTO_QUALITY, columnIndexQuality);
-    int currentPhotoQuality = HIGH_QUALITY_IMAGE;
+    resultSet->GoToFirstRow();
+    int currentPhotoQuality;
     resultSet->GetInt(columnIndexQuality, currentPhotoQuality);
-    if (currentPhotoQuality == LOW_QUALITY_IMAGE) {
-        NAPI_DEBUG_LOG("query photo status : lowQuality");
+    if (currentPhotoQuality == std::stoi(HIGH_QUALITY_IMAGE)) {
+        NAPI_INFO_LOG("query photo status : highQuality");
+        return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    } else if (currentPhotoQuality == std::stoi(LOW_QUALITY_IMAGE)) {
+        NAPI_INFO_LOG("query photo status : lowQuality");
         return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
+    } else {
+        NAPI_INFO_LOG("query photo status error");
     }
-    NAPI_DEBUG_LOG("query photo status quality: %{public}d", currentPhotoQuality);
-    return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    NAPI_INFO_LOG("query photo status photoQuality is null : return lowQuality");
+    return MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS;
 }
 
 void MediaAssetManagerNapi::ProcessImage(const int fileId)
 {
-    std::string uriStr = PAH_PROCESS_IMAGE;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri uri(uriStr);
+    Uri updateAssetUri(PAH_PROCESS_IMAGE);
     DataShare::DataSharePredicates predicates;
-    int errCode = 0;
-    std::vector<std::string> columns { std::to_string(fileId) };
-    UserFileClient::Query(uri, predicates, columns, errCode);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
+    UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
 }
 
 void MediaAssetManagerNapi::AddImage(const int fileId, DeliveryMode deliveryMode)
@@ -392,6 +392,9 @@ void MediaAssetManagerNapi::onHandleRequestImage(const unique_ptr<RequestImageAs
                 MediaAssetManagerNapi::notifyDataPreparedWithoutRegister(asyncContext->photoUri,
                     asyncContext->argv[PARAM3], asyncContext->returnDataType, asyncContext->sourceMode);
             } else {
+                MediaAssetManagerNapi::RegisterTaskObserver(asyncContext->photoUri,
+                    asyncContext->fileId, asyncContext->argv[PARAM3],
+                    asyncContext->returnDataType, asyncContext->sourceMode);
                 MediaAssetManagerNapi::ProcessImage(asyncContext->fileId);
             }
             break;
@@ -400,6 +403,8 @@ void MediaAssetManagerNapi::onHandleRequestImage(const unique_ptr<RequestImageAs
             MediaAssetManagerNapi::notifyDataPreparedWithoutRegister(asyncContext->photoUri,
                 asyncContext->argv[PARAM3], asyncContext->returnDataType, asyncContext->sourceMode);
             if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
+                MediaAssetManagerNapi::RegisterTaskObserver(asyncContext->photoUri, asyncContext->fileId,
+                    asyncContext->argv[PARAM3], asyncContext->returnDataType, asyncContext->sourceMode);
                 MediaAssetManagerNapi::ProcessImage(asyncContext->fileId);
             }
             break;

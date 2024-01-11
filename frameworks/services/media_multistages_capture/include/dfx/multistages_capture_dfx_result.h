@@ -21,13 +21,6 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-static const int32_t MULTISTAGES_CAPTURE_RESULT_ERR_CODE_BASE = 10000;
-enum class MultiStagesCaptureResultErrCode : int32_t {
-    SUCCESS = MULTISTAGES_CAPTURE_RESULT_ERR_CODE_BASE,
-    SAVE_IMAGE_FAIL,
-    SQL_ERR,
-};
-
 class MultiStagesCaptureDfxResult {
 public:
     MultiStagesCaptureDfxResult();

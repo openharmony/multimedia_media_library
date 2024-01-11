@@ -20,12 +20,12 @@
 
 namespace OHOS {
 namespace Media {
-#define EXPORT __attribute__ ((visibility ("default")))
 class DatabaseAdapter {
 public:
-    EXPORT static std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
+    static std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     static int32_t Update(MediaLibraryCommand &cmd);
+    static int32_t Delete(MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS

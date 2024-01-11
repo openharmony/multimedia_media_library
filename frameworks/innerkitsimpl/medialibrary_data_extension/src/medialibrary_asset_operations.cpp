@@ -49,7 +49,6 @@
 #include "medialibrary_unistore_manager.h"
 #include "media_privacy_manager.h"
 #include "mimetype_utils.h"
-#include "multistages_capture_manager.h"
 #include "permission_utils.h"
 #include "rdb_errno.h"
 #include "rdb_predicates.h"
@@ -1963,10 +1962,6 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
         MEDIA_ERR_LOG("Failed to delete files in db, ids size: 0");
         return deletedRows;
     }
-
-    // notify deferred processing session to remove image
-    MultiStagesCaptureManager::GetInstance().RemoveImages(predicates, false);
-
     deletedRows = DeleteDbByIds(predicates.GetTableName(), ids, compatible);
     if (deletedRows <= 0) {
         MEDIA_ERR_LOG("Failed to delete files in db, deletedRows: %{public}d, ids size: %{public}zu",
