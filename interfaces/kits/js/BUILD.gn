@@ -144,8 +144,6 @@ ohos_shared_library("medialibrary_nutils") {
     "ace_engine:ace_uicontent",
     "app_file_service:fileuri_native",
     "c_utils:utils",
-    "camera_framework:camera_framework",
-    "camera_framework:camera_napi",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
@@ -184,6 +182,16 @@ ohos_shared_library("medialibrary_nutils") {
     external_deps += [
       "memmgr_plugin:libpurgeablemem_plugin",
       "memmgr_plugin:purgeable_pixelmap_builder",
+    ]
+  }
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.multimedia_camera_framework) &&
+      global_parts_info.multimedia_camera_framework) {
+    defines += [ "ABILITY_CAMERA_SUPPORT" ]
+    external_deps += [
+      "camera_framework:camera_framework",
+      "camera_framework:camera_napi",
     ]
   }
 

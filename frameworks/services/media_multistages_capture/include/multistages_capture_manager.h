@@ -19,6 +19,7 @@
 #include <string>
 #include <unordered_set>
 #include <unordered_map>
+#include <mutex>
 
 #include "deferred_processing_adapter.h"
 #include "medialibrary_type_const.h"

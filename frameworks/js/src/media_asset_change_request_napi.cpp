@@ -41,7 +41,9 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "modal_ui_extension_config.h"
+#ifdef ABILITY_CAMERA_SUPPORT
 #include "output/deferred_photo_proxy_napi.h"
+#endif
 #include "permission_utils.h"
 #include "ui_content.h"
 #include "unique_fd.h"
@@ -165,10 +167,12 @@ shared_ptr<FileAsset> MediaAssetChangeRequestNapi::GetFileAssetInstance() const
     return fileAsset_;
 }
 
+#ifdef ABILITY_CAMERA_SUPPORT
 sptr<CameraStandard::DeferredPhotoProxy> MediaAssetChangeRequestNapi::GetPhotoProxyObj()
 {
     return photoProxy_;
 }
+#endif
 
 void MediaAssetChangeRequestNapi::RecordChangeOperation(AssetChangeOperation changeOperation)
 {
@@ -817,6 +821,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetLocation(napi_env env, napi_callbac
     return result;
 }
 
+#ifdef ABILITY_CAMERA_SUPPORT
 static int SaveImage(const string &fileName, void *output, size_t writeSize)
 {
     Uri fileUri(fileName);
@@ -845,6 +850,7 @@ static int SavePhotoProxyImage(const string &fileUri, sptr<CameraStandard::Defer
     }
     return SaveImage(fileUri, imageAddr, imageSize);
 }
+#endif
 
 napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_callback_info info)
 {
@@ -1005,11 +1011,13 @@ napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callbac
                 NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
                 RETURN_NAPI_UNDEFINED(env);
             }
+            #ifdef ABILITY_CAMERA_SUPPORTED
             CameraStandard::DeferredPhotoProxyNapi* napiPhotoProxyPtr = nullptr;
             CHECK_ARGS(env, napi_unwrap(env, asyncContext->argv[PARAM1], reinterpret_cast<void**>(&napiPhotoProxyPtr)),
                 JS_INNER_FAIL);
             changeRequest->photoProxy_ = napiPhotoProxyPtr->deferredPhotoProxy_;
             changeRequest->addResourceMode_ = AddResourceMode::PHOTO_PROXY;
+            #endif
         }
     }
 
@@ -1290,6 +1298,7 @@ static bool CreateFromFileUriExecute(MediaAssetChangeRequestAsyncContext& contex
 
 static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    #ifdef ABILITY_CAMERA_SUPPORT
     string uri;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
     std::string fileUri = fileAsset->GetUri();
@@ -1317,6 +1326,7 @@ static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& co
         NAPI_ERR_LOG("Failed to set, err: %{public}d", changedRows);
         return false;
     }
+    #endif
     return true;
 }
 

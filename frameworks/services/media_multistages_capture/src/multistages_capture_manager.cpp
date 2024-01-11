@@ -30,8 +30,9 @@
 #include "result_set_utils.h"
 
 using namespace std;
+#ifdef ABILITY_CAMERA_SUPPORT
 using namespace OHOS::CameraStandard;
-
+#endif
 namespace OHOS {
 namespace Media {
 
@@ -180,9 +181,11 @@ void MultiStagesCaptureManager::AddImageInternal(int32_t fileId, const string &p
 {
     AddPhotoInProgress(fileId, photoId, discardable);
 
+    #ifdef ABILITY_CAMERA_SUPPORT
     DpsMetadata metadata;
     metadata.Set(CameraStandard::DEFERRED_PROCESSING_TYPE_KEY, deferredProcType);
     deferredProcSession_->AddImage(photoId, metadata, discardable);
+    #endif
 }
 
 void MultiStagesCaptureManager::AddImage(int32_t fileId, const string &photoId, int32_t deferredProcType)

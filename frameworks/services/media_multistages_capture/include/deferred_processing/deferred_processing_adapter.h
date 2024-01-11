@@ -20,27 +20,35 @@
 #include <map>
 #include <memory>
 
+#ifdef ABILITY_CAMERA_SUPPORT
 #include "deferred_proc_session/deferred_photo_proc_session.h"
-
+#endif
 namespace OHOS {
 namespace Media {
 // 延时子服务适配器
+#ifdef ABILITY_CAMERA_SUPPORT
 class DeferredProcessingAdapter : public RefBase {
+#else
+class DeferredProcessingAdapter {
+#endif
 public:
     DeferredProcessingAdapter();
     ~DeferredProcessingAdapter();
 
     void BeginSynchronize();
     void EndSynchronize();
+    #ifdef ABILITY_CAMERA_SUPPORT
     void AddImage(const std::string &imageId, CameraStandard::DpsMetadata &metadata, const bool isTrashed = false);
+    #endif
     void RemoveImage(const std::string &imageId, const bool isRestorable = true);
     void RestoreImage(const std::string &imageId);
     void ProcessImage(const std::string &appName, const std::string &imageId);
     bool CancelProcessImage(const std::string &imageId);
 private:
+    #ifdef ABILITY_CAMERA_SUPPORT
     sptr<CameraStandard::DeferredPhotoProcSession> deferredProcSession_;
+    #endif
 };
-
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_DEFERRED_PROCESSING_ADAPTER_H
