@@ -996,6 +996,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     MediaLibraryTracer tracer;
     tracer.Start("QueryRdb");
     tracer.Start("CheckWhereClause");
+    MEDIA_DEBUG_LOG("CheckWhereClause start %{public}s", cmd.GetUri().ToString().c_str());
     auto whereClause = predicates.GetWhereClause();
     if (!MediaLibraryCommonUtils::CheckWhereClause(whereClause)) {
         errCode = E_INVALID_VALUES;
@@ -1005,6 +1006,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return nullptr;
     }
+    MEDIA_DEBUG_LOG("CheckWhereClause end");
     tracer.Finish();
 
     cmd.SetDataSharePred(predicates);
