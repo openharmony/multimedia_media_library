@@ -200,8 +200,6 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
-    BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
-
     cloudDataObserver_ = std::make_shared<CloudThumbnailObserver>();
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     shareHelper->RegisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_, true);
@@ -783,21 +781,13 @@ int32_t MediaLibraryDataManager::DoAging()
 
     CacheAging(); // aging file in .cache
 
-    if (thumbnailService_ == nullptr) {
-        return E_THUMBNAIL_SERVICE_NULLPTR;
-    }
-    int32_t errorCode = thumbnailService_->LcdAging();
-    if (errorCode != 0) {
-        MEDIA_ERR_LOG("LcdAging exist error %{public}d", errorCode);
-    }
-
     shared_ptr<TrashAsyncTaskWorker> asyncWorker = TrashAsyncTaskWorker::GetInstance();
     if (asyncWorker == nullptr) {
         MEDIA_ERR_LOG("asyncWorker null");
         return E_FAIL;
     }
     asyncWorker->Init();
-    return errorCode;
+    return E_OK;
 }
 
 #ifdef DISTRIBUTED
@@ -1217,20 +1207,6 @@ int32_t MediaLibraryDataManager::DoTrashAging(shared_ptr<int> countPtr)
       *countPtr = *smartAlbumTrashPtr + *albumTrashtPtr + *audioTrashtPtr;
     }
     return E_SUCCESS;
-}
-
-int32_t MediaLibraryDataManager::DoStopLongTimeTask()
-{
-    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
-    if (refCnt_.load() <= 0) {
-        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
-        return E_FAIL;
-    }
-    ThumbRdbOpt opts;
-    ThumbnailData thumbnailData;
-
-    IThumbnailHelper::AddAsyncTask(IThumbnailHelper::StopLongTimeTask, opts, thumbnailData, false);
-    return E_OK;
 }
 
 int32_t MediaLibraryDataManager::RevertPendingByFileId(const std::string &fileId)
