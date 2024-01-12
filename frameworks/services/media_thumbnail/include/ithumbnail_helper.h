@@ -73,7 +73,6 @@ public:
     static void CreateLcd(AsyncTaskData *data);
     static void CreateThumbnail(AsyncTaskData *data);
     static void CreateAstc(AsyncTaskData *data);
-    static void StopLongTimeTask(AsyncTaskData* data);
     static void AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront);
     static int32_t UpdateAstcState(ThumbRdbOpt &opts);
 protected:

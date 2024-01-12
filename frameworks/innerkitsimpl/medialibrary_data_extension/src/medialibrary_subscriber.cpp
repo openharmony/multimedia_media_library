@@ -151,11 +151,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 
         MEDIA_DEBUG_LOG("DoBackgroundOperation success isScreenOff_ %{public}d, isPowerConnected_ %{public}d",
             isScreenOff_, isPowerConnected_);
-        
-        result = dataManager->DoStopLongTimeTask();
-        if (result != E_OK) {
-            MEDIA_ERR_LOG("DoStopLongTimeTask faild");
-        }
     }
 }
 
@@ -187,7 +182,6 @@ void MedialibrarySubscriber::StopBackgroundOperation()
 {
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     WriteThumbnailStat();
-    BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE

@@ -87,11 +87,6 @@ void IThumbnailHelper::CreateAstc(AsyncTaskData* data)
     DoCreateAstc(taskData->opts, taskData->thumbnailData, false);
 }
 
-void IThumbnailHelper::StopLongTimeTask(AsyncTaskData* data)
-{
-    BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
-}
-
 void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront)
 {
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
