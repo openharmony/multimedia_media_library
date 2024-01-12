@@ -95,14 +95,12 @@ static void CreateAstcBackground(AsyncTaskData *data)
     auto rdbStoreRaw = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStoreRaw == nullptr) {
         MEDIA_ERR_LOG("Can not get rdbStoreRaw");
-        BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
         return;
     }
 
     auto rdbStore = rdbStoreRaw->GetRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Can not get rdbStore");
-        BackgroundTaskMgr::BackgroundTaskMgrHelper::ResetAllEfficiencyResources();
         return;
     }
 
@@ -112,7 +110,6 @@ static void CreateAstcBackground(AsyncTaskData *data)
         .table = PhotoColumn::PHOTOS_TABLE,
     };
     ThumbnailGenerateHelper::CreateAstcBatch(opts);
-    IThumbnailHelper::AddAsyncTask(IThumbnailHelper::StopLongTimeTask, opts, thumbnailData, false);
 }
 
 bool ThumbnailService::CheckSizeValid()
