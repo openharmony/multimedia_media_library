@@ -26,6 +26,15 @@
 
 namespace OHOS {
 namespace Media {
+
+using RestoreBlock = struct {
+    napi_env env;
+    int32_t sceneCode;
+    std::string galleryAppName;
+    std::string mediaAppName;
+    napi_deferred nativeDeferred;
+};
+
 napi_value MediaLibraryBackupNapi::Init(napi_env env, napi_value exports)
 {
     NAPI_INFO_LOG("Init, MediaLibraryBackupNapi has been used.");
@@ -102,7 +111,35 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
         NAPI_INFO_LOG("Parameters error, sceneCode = %{public}d", sceneCode);
         return result;
     }
-    BackupRestoreService::GetInstance().StartRestore(sceneCode, galleryAppName, mediaAppName);
+    uv_loop_s *loop = nullptr;
+    napi_get_uv_event_loop(env, &loop);
+    uv_work_t *work = new (std::nothrow) uv_work_t;
+    if (work == nullptr) {
+        NAPI_ERR_LOG("Failed to new uv_work");
+        return result;
+    }
+    napi_deferred nativeDeferred = nullptr;
+    napi_create_promise(env, &nativeDeferred, &result);
+    RestoreBlock *block = new (std::nothrow) RestoreBlock {
+        env, sceneCode, galleryAppName, mediaAppName, nativeDeferred };
+    work->data = reinterpret_cast<void *>(block);
+    uv_queue_work(
+        loop,
+        work,
+        [](uv_work_t *work) {
+            RestoreBlock *block = reinterpret_cast<RestoreBlock *> (work->data);
+            BackupRestoreService::GetInstance().StartRestore(block->sceneCode, block->galleryAppName,
+                block->mediaAppName);
+        },
+        [](uv_work_t *work, int _status) {
+            RestoreBlock *block = reinterpret_cast<RestoreBlock *> (work->data);
+            napi_value resultCode = nullptr;
+            napi_create_int32(block->env, 1, &resultCode);
+            napi_resolve_deferred(block->env, block->nativeDeferred, resultCode);
+            delete block;
+            delete work;
+        }
+    );
     return result;
 }
 } // namespace Media
