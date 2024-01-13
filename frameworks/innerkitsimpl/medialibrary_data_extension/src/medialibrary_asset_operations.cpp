@@ -1850,18 +1850,6 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
         InvalidateThumbnail(fileId, type);
     }
     CreateThumbnail(uri, path, this->isCreateThumbSync);
-    if ((type == MEDIA_TYPE_IMAGE) && MediaLibraryFormMapOperations::GetFormIdWithEmptyUriState() == true) {
-        vector<int64_t> formIds;
-        MediaLibraryFormMapOperations::GetFormMapFormId("", formIds);
-        if (!formIds.empty()) {
-            string newUri = uri;
-            int pos = newUri.find("?");
-            if (pos > 0) {
-                newUri = newUri.substr(0, pos);
-            }
-            MediaLibraryFormMapOperations::PublishedChange(newUri, formIds, false);
-        }
-    }
     return E_OK;
 }
 
