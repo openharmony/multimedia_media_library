@@ -5775,6 +5775,7 @@ static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &contex
         context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_CITY;
         string onClause = PhotoAlbumColumns::ALBUM_NAME  + " = " + CITY_ID;
         context->predicates.InnerJoin(GEO_DICTIONARY_TABLE)->On({ onClause });
+        context->predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_COUNT, to_string(0));
     }
     return true;
 }
@@ -5813,7 +5814,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     if (albumSubType != ANY) {
         context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
     }
-    if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE) {
+    if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE || albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
         context->predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
     }
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
