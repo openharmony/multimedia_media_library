@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DEFERRED_PROC_SESSION_CALLBACK_H
 #define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DEFERRED_PROC_SESSION_CALLBACK_H
 
+#ifdef ABILITY_CAMERA_SUPPORT
 #include <memory>
 #include <string>
 
@@ -29,7 +30,7 @@ public:
     void OnError(const std::string &imageId, const CameraStandard::DpsErrorCode error) override;
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
 };
-
+#endif
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DEFERRED_PROC_SESSION_CALLBACK_H
