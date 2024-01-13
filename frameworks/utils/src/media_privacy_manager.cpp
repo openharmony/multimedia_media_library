@@ -164,11 +164,13 @@ static int32_t OpenFilterProxyFd(const string &path, const string &mode, const P
     int32_t ret = BindFilterProxyFdToOrigin(originFd, filterProxyFd);
     if (ret < 0) {
         close(originFd);
+        close(filterProxyFd);
         return ret;
     }
     ret = SendRangesToIoctl(originFd, filterProxyFd, ranges);
     if (ret < 0) {
         close(originFd);
+        close(filterProxyFd);
         return ret;
     }
     close(originFd);

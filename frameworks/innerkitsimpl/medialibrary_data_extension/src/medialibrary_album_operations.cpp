@@ -463,8 +463,8 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
         string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
         string whereClauseSatifyCount = COUNT + " > " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND (" +
         USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
-        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND ((" + USER_DISPLAY_LEVEL + " != 3 OR " +
-            USER_DISPLAY_LEVEL + " IS NULL) AND (" + whereClauseDisplay + " OR " + whereClauseRelatedMe + " OR " +
+        whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND ((" + USER_DISPLAY_LEVEL + " != 3 AND " +
+            USER_DISPLAY_LEVEL + " !=2) AND (" + whereClauseDisplay + " OR " + whereClauseRelatedMe + " OR " +
             whereClauseSatifyCount + ")) GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + ALBUM_NAME +
             " IS NOT NULL THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == SECOND_PAGE) {
