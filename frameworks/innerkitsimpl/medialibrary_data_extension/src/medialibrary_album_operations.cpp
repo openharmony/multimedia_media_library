@@ -655,23 +655,6 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     return changedRows;
 }
 
-void RecoverPhotoAssetsToPublish(const vector<string> &whereArgs)
-{
-    vector<int64_t> formIds;
-    MediaLibraryFormMapOperations::GetFormMapFormId("", formIds);
-    if (!formIds.empty()) {
-        size_t count = whereArgs.size() - THAN_AGR_SIZE;
-        for (size_t i = 0; i < count; i++) {
-            MediaFileUri fileUri = MediaFileUri(MediaFileUtils::Encode(whereArgs[i]));
-            string filePath = MediaLibraryFormMapOperations::GetFilePathById(fileUri.GetFileId());
-            if (MediaType(MediaFileUtils::GetMediaType(filePath)) == MEDIA_TYPE_IMAGE) {
-                MediaLibraryFormMapOperations::PublishedChange(MediaFileUtils::Encode(whereArgs[i]), formIds, false);
-                break;
-            }
-        }
-    }
-}
-
 int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
@@ -707,7 +690,6 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
             watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
         }
     }
-    RecoverPhotoAssetsToPublish(whereArgs);
     return changedRows;
 }
 
