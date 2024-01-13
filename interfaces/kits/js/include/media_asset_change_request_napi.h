@@ -24,7 +24,9 @@
 #include "file_asset_napi.h"
 #include "media_asset_edit_data.h"
 #include "media_change_request_napi.h"
+#ifdef ABILITY_CAMERA_SUPPORT
 #include "output/deferred_photo_proxy.h"
+#endif
 #include "unique_fd.h"
 #include "values_bucket.h"
 
@@ -69,7 +71,9 @@ public:
     int32_t SubmitCache(bool isCreated);
     int32_t CopyToMediaLibrary(AddResourceMode mode);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
+    #ifdef ABILITY_CAMERA_SUPPORT
     sptr<CameraStandard::DeferredPhotoProxy> GetPhotoProxyObj();
+    #endif
 
 private:
     EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -97,7 +101,9 @@ private:
     void SetNewFileAsset(int32_t id, const std::string& uri);
 
     static thread_local napi_ref constructor_;
+    #ifdef ABILITY_CAMERA_SUPPORT
     sptr<CameraStandard::DeferredPhotoProxy> photoProxy_ = nullptr;
+    #endif
     std::shared_ptr<FileAsset> fileAsset_ = nullptr;
     std::shared_ptr<MediaAssetEditData> editData_ = nullptr;
     DataShare::DataShareValuesBucket creationValuesBucket_;

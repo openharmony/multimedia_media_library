@@ -17,19 +17,25 @@
 
 #include "deferred_processing_adapter.h"
 
+#ifdef ABILITY_CAMERA_SUPPORT
 #include "camera_manager.h"
+#endif
 #include "ipc_skeleton.h"
 #include "media_log.h"
+#ifdef ABILITY_CAMERA_SUPPORT
 #include "multistages_capture_deferred_proc_session_callback.h"
-
+#endif
 using namespace std;
+#ifdef ABILITY_CAMERA_SUPPORT
 using namespace OHOS::CameraStandard;
+#endif
 
 namespace OHOS {
 namespace Media {
 
 DeferredProcessingAdapter::DeferredProcessingAdapter()
 {
+    #ifdef ABILITY_CAMERA_SUPPORT
     const static int32_t INVALID_UID = -1;
     const static int32_t BASE_USER_RANGE = 200000;
 
@@ -41,7 +47,7 @@ DeferredProcessingAdapter::DeferredProcessingAdapter()
     int32_t userId = uid / BASE_USER_RANGE;
     deferredProcSession_ = CameraManager::GetInstance()->CreateDeferredPhotoProcessingSession(userId,
         make_shared<MultiStagesCaptureDeferredProcSessionCallback>());
-
+    #endif
     MEDIA_INFO_LOG("DeferredProcessingAdapter init succ");
 }
 
@@ -50,43 +56,59 @@ DeferredProcessingAdapter::~DeferredProcessingAdapter() {}
 void DeferredProcessingAdapter::BeginSynchronize()
 {
     MEDIA_INFO_LOG("DeferredProcessingAdapter::BeginSynchronize");
+    #ifdef ABILITY_CAMERA_SUPPORT
     deferredProcSession_->BeginSynchronize();
+    #endif
 }
 
 void DeferredProcessingAdapter::EndSynchronize()
 {
     MEDIA_INFO_LOG("DeferredProcessingAdapter::EndSynchronize");
+    #ifdef ABILITY_CAMERA_SUPPORT
     deferredProcSession_->EndSynchronize();
+    #endif
 }
 
+#ifdef ABILITY_CAMERA_SUPPORT
 void DeferredProcessingAdapter::AddImage(const std::string &imageId, DpsMetadata &metadata, const bool isTrashed)
 {
     MEDIA_INFO_LOG("enter photoid: %{public}s, isTrashed: %{public}d", imageId.c_str(), isTrashed);
     deferredProcSession_->AddImage(imageId, metadata, isTrashed);
 }
+#endif
 
 void DeferredProcessingAdapter::RemoveImage(const std::string &imageId, bool isRestorable)
 {
     MEDIA_INFO_LOG("enter photoid: %{public}s, isRestorable: %{public}d", imageId.c_str(), isRestorable);
+    #ifdef ABILITY_CAMERA_SUPPORT
     deferredProcSession_->RemoveImage(imageId, isRestorable);
+    #endif
 }
 
 void DeferredProcessingAdapter::RestoreImage(const std::string &imageId)
 {
     MEDIA_INFO_LOG("enter photoid: %{public}s", imageId.c_str());
+    #ifdef ABILITY_CAMERA_SUPPORT
     deferredProcSession_->RestoreImage(imageId);
+    #endif
 }
 
 void DeferredProcessingAdapter::ProcessImage(const std::string &appName, const std::string &imageId)
 {
     MEDIA_INFO_LOG("enter appName: %{public}s, photoid: %{public}s", appName.c_str(), imageId.c_str());
+    #ifdef ABILITY_CAMERA_SUPPORT
     deferredProcSession_->ProcessImage(appName, imageId);
+    #endif
 }
 
 bool DeferredProcessingAdapter::CancelProcessImage(const std::string &imageId)
 {
     MEDIA_INFO_LOG("DeferredProcessingAdapter::CancelProcessImage photoid: %{public}s", imageId.c_str());
+    #ifdef ABILITY_CAMERA_SUPPORT
     return deferredProcSession_->CancelProcessImage(imageId);
+    #else
+    return false;
+    #endif
 }
 
 } // namespace Media
