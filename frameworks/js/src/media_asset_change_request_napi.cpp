@@ -1299,31 +1299,33 @@ static bool CreateFromFileUriExecute(MediaAssetChangeRequestAsyncContext& contex
 static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     #ifdef ABILITY_CAMERA_SUPPORT
-    string uri;
+    string uri = PAH_ADD_IMAGE;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri updateAssetUri(uri);
+
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
     std::string fileUri = fileAsset->GetUri();
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause(PhotoColumn::MEDIA_ID + " = ? ");
     predicates.SetWhereArgs({ to_string(fileAsset->GetId()) });
+
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_ID, context.objectInfo->GetPhotoProxyObj()->GetPhotoId());
     NAPI_INFO_LOG("photoId: %{public}s", context.objectInfo->GetPhotoProxyObj()->GetPhotoId().c_str());
     valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE,
         context.objectInfo->GetPhotoProxyObj()->GetDeferredProcType());
-    int err = SavePhotoProxyImage(fileUri, context.objectInfo->GetPhotoProxyObj());
-    if (err < 0) {
-        context.SaveError(err);
-        NAPI_ERR_LOG("Failed to saveImage , err: %{public}d", err);
-        return false;
-    }
-
-    uri = PAH_ADD_IMAGE;
-    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-    Uri updateAssetUri(uri);
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileAsset->GetId());
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
         context.SaveError(changedRows);
         NAPI_ERR_LOG("Failed to set, err: %{public}d", changedRows);
+        return false;
+    }
+
+    int err = SavePhotoProxyImage(fileUri, context.objectInfo->GetPhotoProxyObj());
+    if (err < 0) {
+        context.SaveError(err);
+        NAPI_ERR_LOG("Failed to saveImage , err: %{public}d", err);
         return false;
     }
     #endif
