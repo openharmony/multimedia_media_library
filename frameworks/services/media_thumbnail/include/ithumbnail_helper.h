@@ -81,6 +81,7 @@ protected:
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
     static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
+    static bool IsPureCloudImage(ThumbRdbOpt &opts);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const std::string &suffix,
