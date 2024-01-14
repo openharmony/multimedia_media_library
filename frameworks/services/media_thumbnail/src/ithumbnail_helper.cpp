@@ -509,5 +509,38 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data, bool
     }
     return true;
 }
+
+bool IThumbnailHelper::IsPureCloudImage(ThumbRdbOpt &opts)
+{
+    vector<string> columns = {
+        MEDIA_DATA_DB_ID,
+        PhotoColumn::PHOTO_POSITION
+    };
+    if (opts.row.empty() || opts.table.empty()) {
+        MEDIA_ERR_LOG("IsPureCloudImage opts.row is empty");
+        return false;
+    }
+    string strQueryCondition = MEDIA_DATA_DB_ID + " = " + opts.row;
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.SetWhereClause(strQueryCondition);
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("IsPureCloudImage opts.store is nullptr");
+        return false;
+    }
+    auto resultSet = opts.store->QueryByStep(rdbPredicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("IsPureCloudImage result set is null");
+        return false;
+    }
+    auto ret = resultSet->GoToFirstRow();
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("IsPureCloudImage go to first row failed");
+        return false;
+    }
+    int photoPosition = GetInt32Val(PhotoColumn::PHOTO_POSITION, resultSet);
+
+    // if current image is a pure cloud image, it's photo position column in database will be 2
+    return photoPosition == 2;
+}
 } // namespace Media
 } // namespace OHOS
