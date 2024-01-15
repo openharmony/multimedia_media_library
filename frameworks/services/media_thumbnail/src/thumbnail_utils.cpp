@@ -1198,6 +1198,18 @@ bool ThumbnailUtils::ScaleFastThumb(ThumbnailData &data, const Size &size)
     return true;
 }
 
+static string Desensitize(string &str)
+{
+    string result = str;
+    int index = result.find('/');
+    if (index == string::npos) {
+        return "*****";
+    }
+    
+    result.replace(0, index, index, '*');
+    return result;
+}
+
 static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
 {
     string tempFileName = fileName + ".tmp";
@@ -1210,7 +1222,8 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
             UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
         }
         if (fd.Get() < 0) {
-            MEDIA_ERR_LOG("save failed! filePath %{private}s status %{public}d", tempFileName.c_str(), errno);
+            string fileNameToPrint = Desensitize(tempFileName);
+            MEDIA_ERR_LOG("save failed! filePath %{pulibc}s status %{public}d", fileNameToPrint.c_str(), errno);
             return -errno;
         }
     }
