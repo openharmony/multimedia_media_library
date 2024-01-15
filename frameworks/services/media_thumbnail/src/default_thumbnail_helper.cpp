@@ -36,6 +36,10 @@ int32_t DefaultThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
     GetThumbnailInfo(opts, thumbnailData);
 
     string fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_THUMB_SUFFIX);
+    if (IsPureCloudImage(opts)) {
+        MEDIA_ERR_LOG("Default IsPureCloudImage fileId : %{pulic}s is pure cloud image", opts.row.c_str());
+        return E_OK;
+    }
     if (access(fileName.c_str(), F_OK) == 0) {
         MEDIA_DEBUG_LOG("CreateThumbnail key is same, no need generate");
         return E_OK;
