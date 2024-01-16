@@ -105,6 +105,8 @@ void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, vo
 {
     FileAssetNapi *fileAssetObj = reinterpret_cast<FileAssetNapi*>(nativeObject);
     if (fileAssetObj != nullptr) {
+        NAPI_DEBUG_LOG("Destroying native asset object ID: %{public}d",
+            fileAssetObj != nullptr ? fileAssetObj->GetFileId() : -1);
         delete fileAssetObj;
         fileAssetObj = nullptr;
     }
@@ -2603,9 +2605,6 @@ static inline int64_t GetCompatDate(const string inputKey, const int64_t date)
 
 napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("UserFileMgrGet");
-
     napi_value ret = nullptr;
     unique_ptr<FileAssetAsyncContext> asyncContext = make_unique<FileAssetAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, ret, "asyncContext context is null");

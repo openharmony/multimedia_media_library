@@ -33,6 +33,10 @@ namespace Media {
 int32_t LcdThumbnailHelper::CreateThumbnail(ThumbRdbOpt &opts, bool isSync)
 {
     ThumbnailData thumbnailData;
+    if (IsPureCloudImage(opts)) {
+        MEDIA_ERR_LOG("Lcd IsPureCloudImage fileId : %{pulic}s is pure cloud image", opts.row.c_str());
+        return E_OK;
+    }
     GetThumbnailInfo(opts, thumbnailData);
 
     string fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_LCD_SUFFIX);

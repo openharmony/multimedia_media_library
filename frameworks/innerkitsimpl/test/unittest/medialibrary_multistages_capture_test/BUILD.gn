@@ -52,7 +52,6 @@ ohos_unittest("medialibrary_multistages_capture_test") {
     "access_token:libnativetoken",
     "access_token:libtoken_setproc",
     "c_utils:utils",
-    "camera_framework:camera_framework",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
@@ -64,6 +63,13 @@ ohos_unittest("medialibrary_multistages_capture_test") {
     "relational_store:native_rdb",
     "user_file_service:file_access_extension_ability_kit",
   ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.multimedia_camera_framework) &&
+      global_parts_info.multimedia_camera_framework) {
+    defines = [ "ABILITY_CAMERA_SUPPORT" ]
+    external_deps += [ "camera_framework:camera_framework" ]
+  }
 
   sanitize = {
     cfi = true

@@ -75,7 +75,6 @@ public:
     void InterruptBgworker();
     EXPORT int32_t DoAging();
     EXPORT int32_t DoTrashAging(std::shared_ptr<int> countPtr = nullptr);
-    EXPORT int32_t DoStopLongTimeTask();
     /**
      * @brief Revert the pending state through the package name
      * @param bundleName packageName

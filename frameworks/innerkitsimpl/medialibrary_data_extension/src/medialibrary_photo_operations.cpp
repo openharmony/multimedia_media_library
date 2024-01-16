@@ -650,10 +650,15 @@ static void SendHideNotify(vector<string> &notifyUris, const int32_t hiddenState
         albumNotifyType = NotifyType::NOTIFY_ALBUM_ADD_ASSET;
         hiddenAlbumNotifyType = NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
     }
+    vector<int64_t> formIds;
     for (const auto &notifyUri : notifyUris) {
         watch->Notify(notifyUri, assetNotifyType);
         watch->Notify(notifyUri, albumNotifyType, 0, true);
         watch->Notify(notifyUri, hiddenAlbumNotifyType, hiddenAlbumId);
+        MediaLibraryFormMapOperations::GetFormMapFormId(notifyUri.c_str(), formIds);
+    }
+    if (!formIds.empty()) {
+        MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
     }
 }
 
