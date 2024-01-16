@@ -24,6 +24,10 @@ namespace Media {
     
 void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
 {
+    if (changeInfo.changeType_ != ChangeType::INSERT && changeInfo.changeType_ != ChangeType::UPDATE) {
+        return;
+    }
+    bool isUpdate = changeInfo.changeType_ == ChangeType::UPDATE;
     for (auto &uri : changeInfo.uris_) {
         string uriString = uri.ToString();
         auto pos = uriString.find_last_of('/');
@@ -35,7 +39,7 @@ void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
             MEDIA_ERR_LOG("cloud observer get no fieldId and uri : %{public}s", uriString.c_str());
             continue;
         }
-        ThumbnailService::GetInstance()->CreateAstcFromFieldId(idString);
+        ThumbnailService::GetInstance()->CreateAstcFromFieldId(idString, isUpdate);
     }
 }
 

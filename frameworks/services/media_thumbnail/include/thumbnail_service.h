@@ -58,7 +58,7 @@ public:
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
-    int32_t CreateAstcFromFieldId(const std::string &id);
+    int32_t CreateAstcFromFieldId(const std::string &id, bool isUpdate);
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();

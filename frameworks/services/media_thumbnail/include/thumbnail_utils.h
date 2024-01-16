@@ -137,7 +137,7 @@ public:
     EXPORT static bool ResizeLcd(int& width, int& height);
     static bool IsSupportGenAstc();
     EXPORT static void QueryThumbnailDataFromFieldId(ThumbRdbOpt &opts, const std::string &id,
-        ThumbnailData &data, int &err);
+        ThumbnailData &data, int &err, bool isUpdate);
     static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
 
 private:

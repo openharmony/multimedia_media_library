@@ -563,7 +563,7 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateAstcFromFieldId(const string &id)
+int32_t ThumbnailService::CreateAstcFromFieldId(const string &id, bool isUpdate)
 {
     ThumbnailData data;
     int err = 0;
