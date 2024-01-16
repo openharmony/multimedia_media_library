@@ -1773,11 +1773,13 @@ bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
 }
 
 void ThumbnailUtils::QueryThumbnailDataFromFieldId(ThumbRdbOpt &opts, const std::string &id,
-    ThumbnailData &data, int &err)
+    ThumbnailData &data, int &err, bool isUpdate)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, id);
-    predicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, to_string(false));
+    if (!isUpdate) {
+        predicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, to_string(false));
+    }
     vector<string> columns = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
