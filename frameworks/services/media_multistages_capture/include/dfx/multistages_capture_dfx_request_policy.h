@@ -20,15 +20,11 @@
 #include <string>
 #include <thread>
 
+#include "request_policy.h"
+
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-enum class RequestPolicy : int32_t {
-    HIGH_QUALITY = 0,
-    BALANCE_QUALITY = 1,
-    EMERGENCY_QUALITY = 2,
-};
-
 struct RequestCount {
     int32_t highQualityCount;
     int32_t balanceQualityCount;
