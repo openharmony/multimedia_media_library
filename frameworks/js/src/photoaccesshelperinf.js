@@ -173,6 +173,24 @@ function getPhotoAccessHelper(context) {
   return helper;
 }
 
+function startPhotoPicker(context, config) {
+  if (context === undefined) {
+    console.log('photoAccessHelper gContext undefined');
+    throw Error('photoAccessHelper gContext undefined');
+  }
+  if (config === undefined) {
+    console.log('photoAccessHelper config undefined');
+    throw Error('photoAccessHelper config undefined');
+  }
+  gContext = context;
+  let helper = photoAccessHelper.startPhotoPicker(gContext, config);
+  if (helper !== undefined) {
+    console.log('photoAccessHelper startPhotoPicker inner add createDeleteRequest');
+    helper.createDeleteRequest = createDeleteRequest;
+  }
+  return helper;
+}
+
 function getPhotoAccessHelperAsync(context, asyncCallback) {
   if (context === undefined) {
     console.log('photoAccessHelper gContext undefined');
@@ -316,11 +334,9 @@ function getPhotoPickerSelectResult(args) {
   };
 
   if (args.resultCode === 0) {
-    if (args.want && args.want.parameters) {
-      let uris = args.want.parameters['select-item-list'];
-      let isOrigin = args.want.parameters.isOriginal;
+    let uris = args.uris;
+      let isOrigin = args.isOrigin;
       selectResult.data = new PhotoSelectResult(uris, isOrigin);
-    }
   } else if (result.resultCode === -1) {
     selectResult.data = new PhotoSelectResult([], undefined);
   } else {
@@ -351,7 +367,7 @@ async function photoPickerSelect(...args) {
     if (context === undefined) {
       throw getErr(ErrCode.CONTEXT_NO_EXIST);
     }
-    let result = await context.startAbilityForResult(config, {windowMode: 1});
+    let result = await startPhotoPicker(context, config);
     console.log('[picker] result: ' + JSON.stringify(result));
     const selectResult = getPhotoPickerSelectResult(result);
     console.log('[picker] selectResult: ' + JSON.stringify(selectResult));
@@ -437,6 +453,7 @@ class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest 
 
 export default {
   getPhotoAccessHelper,
+  startPhotoPicker,
   getPhotoAccessHelperAsync,
   PhotoType: photoAccessHelper.PhotoType,
   PhotoKeys: photoAccessHelper.PhotoKeys,

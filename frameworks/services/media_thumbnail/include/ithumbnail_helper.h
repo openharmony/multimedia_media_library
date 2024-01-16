@@ -73,7 +73,6 @@ public:
     static void CreateLcd(AsyncTaskData *data);
     static void CreateThumbnail(AsyncTaskData *data);
     static void CreateAstc(AsyncTaskData *data);
-    static void StopLongTimeTask(AsyncTaskData* data);
     static void AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront);
     static int32_t UpdateAstcState(ThumbRdbOpt &opts);
 protected:
@@ -82,6 +81,7 @@ protected:
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
     static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
+    static bool IsPureCloudImage(ThumbRdbOpt &opts);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const std::string &suffix,

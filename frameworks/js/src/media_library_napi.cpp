@@ -14,6 +14,7 @@
  */
 
 #define MLOG_TAG "MediaLibraryNapi"
+#define ABILITY_WANT_PARAMS_UIEXTENSIONTARGETTYPE "ability.want.params.uiExtensionTargetType"
 
 #include "media_library_napi.h"
 
@@ -21,6 +22,8 @@
 #include <functional>
 #include <sys/sendfile.h>
 
+#include "ability_context.h"
+#include "context.h"
 #include "directory_ex.h"
 #include "file_ex.h"
 #include "hitrace_meter.h"
@@ -36,6 +39,9 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_peer_info.h"
 #include "medialibrary_tracer.h"
+#include "modal_ui_callback.h"
+#include "modal_ui_extension_config.h"
+#include "napi_base_context.h"
 #include "photo_album_column.h"
 #include "photo_album_napi.h"
 #include "result_set_utils.h"
@@ -46,9 +52,7 @@
 #include "uv.h"
 #include "form_map.h"
 #include "ui_content.h"
-#include "modal_ui_extension_config.h"
 #include "want.h"
-#include "ability_context.h"
 #include "js_native_api.h"
 #include "js_native_api_types.h"
 #include "delete_callback.h"
@@ -65,6 +69,7 @@ thread_local unique_ptr<ChangeListenerNapi> g_listObj = nullptr;
 const int32_t SECOND_ENUM = 2;
 const int32_t THIRD_ENUM = 3;
 const int32_t FORMID_MAX_LEN = 19;
+const int32_t SLEEP_TIME = 100;
 const int64_t MAX_INT64 = 9223372036854775807;
 const string DATE_FUNCTION = "DATE(";
 
@@ -266,6 +271,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
 
     const vector<napi_property_descriptor> staticProps = {
         DECLARE_NAPI_STATIC_FUNCTION("getPhotoAccessHelper", GetPhotoAccessHelper),
+        DECLARE_NAPI_STATIC_FUNCTION("startPhotoPicker", StartPhotoPicker),
         DECLARE_NAPI_STATIC_FUNCTION("getPhotoAccessHelperAsync", GetPhotoAccessHelperAsync),
         DECLARE_NAPI_STATIC_FUNCTION("createDeleteRequest", CreateDeleteRequest),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
@@ -5775,6 +5781,7 @@ static bool ParseLocationAlbumTypes(unique_ptr<MediaLibraryAsyncContext> &contex
         context->isLocationAlbum = PhotoAlbumSubType::GEOGRAPHY_CITY;
         string onClause = PhotoAlbumColumns::ALBUM_NAME  + " = " + CITY_ID;
         context->predicates.InnerJoin(GEO_DICTIONARY_TABLE)->On({ onClause });
+        context->predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_COUNT, to_string(0));
     }
     return true;
 }
@@ -5813,7 +5820,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     if (albumSubType != ANY) {
         context->predicates.And()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(albumSubType));
     }
-    if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE) {
+    if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE || albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
         context->predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
     }
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -6399,6 +6406,236 @@ napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_inf
 
     callback->SetSessionId(sessionId);
     return result;
+}
+
+static void StartPhotoPickerExecute(napi_env env, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    while (!context->pickerCallBack->ready) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
+    }
+}
+
+static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->error), JS_ERR_PARAMETER_INVALID);
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_value resultCode = nullptr;
+    napi_create_int32(env, context->pickerCallBack->resultCode, &resultCode);
+    status = napi_set_named_property(env, result, "resultCode", resultCode);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property resultCode failed");
+    }
+    const vector<string> &uris = context->pickerCallBack->uris;
+    napi_value jsUris = nullptr;
+    napi_create_array_with_length(env, uris.size(), &jsUris);
+    napi_value jsUri = nullptr;
+    for (size_t i = 0; i < uris.size(); i++) {
+        CHECK_ARGS_RET_VOID(env, napi_create_string_utf8(env, uris[i].c_str(),
+            NAPI_AUTO_LENGTH, &jsUri), JS_INNER_FAIL);
+        if ((jsUri == nullptr) || (napi_set_element(env, jsUris, i, jsUri) != napi_ok)) {
+            NAPI_ERR_LOG("failed to set uri array");
+            break;
+        }
+    }
+    status = napi_set_named_property(env, result, "uris", jsUris);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property uris failed");
+    }
+    napi_value isOrigin = nullptr;
+    napi_get_boolean(env, context->pickerCallBack->isOrigin, &isOrigin);
+    status = napi_set_named_property(env, result, "isOrigin", isOrigin);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_set_named_property isOrigin failed");
+    }
+    if (result != nullptr) {
+        jsContext->data = result;
+        jsContext->status = true;
+    } else {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_MEM_ALLOCATION,
+            "failed to create js object");
+    }
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void SetRequestStringParams(napi_env env, AAFwk::Want &request, napi_value config, std::string param)
+{
+    bool present = false;
+    napi_value value = nullptr;
+    string result;
+    napi_has_named_property(env, config, param.c_str(), &present);
+    if (present && napi_get_named_property(env, config, param.c_str(), &value) == napi_ok) {
+        char buffer[ARG_BUF_SIZE];
+        size_t res = 0;
+        if (napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res) != napi_ok) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            NAPI_ERR_LOG("get %{public}s value failed", param.c_str());
+            return;
+        }
+        result = string(buffer);
+        if (param == "action") {
+            request.SetAction(result);
+        } else if (param == "type") {
+            request.SetType(result);
+        } else {
+            request.SetParam(param, result);
+        }
+    } else {
+        NAPI_ERR_LOG("has no named property %{public}s", param.c_str());
+    }
+}
+
+static void SetRequestBooleanParams(napi_env env, AAFwk::Want &request, napi_value config, std::string param)
+{
+    bool present = false;
+    napi_value value = nullptr;
+    napi_has_named_property(env, config, param.c_str(), &present);
+    if (present && napi_get_named_property(env, config, param.c_str(), &value) == napi_ok) {
+        bool result = false;
+        if (napi_get_value_bool(env, value, &result) != napi_ok) {
+            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+            NAPI_ERR_LOG("get %{public}s value failed", param.c_str());
+            return;
+        }
+        request.SetParam(param, result);
+    } else {
+        NAPI_ERR_LOG("has no named property %{public}s", param.c_str());
+    }
+}
+
+static void SetRequestInfo(napi_env env, AAFwk::Want &request, napi_value config)
+{
+    std::string targetType = "photoPicker";
+    request.SetParam(ABILITY_WANT_PARAMS_UIEXTENSIONTARGETTYPE, targetType);
+    bool present = false;
+    napi_value parameters = nullptr;
+    napi_value value = nullptr;
+    SetRequestStringParams(env, request, config, "action");
+    SetRequestStringParams(env, request, config, "type");
+    napi_has_named_property(env, config, "parameters", &present);
+    if (present && napi_get_named_property(env, config, "parameters", &parameters) == napi_ok) {
+        SetRequestStringParams(env, request, parameters, "uri");
+        SetRequestStringParams(env, request, parameters, "filterMediaType");
+        SetRequestBooleanParams(env, request, parameters, "isPhotoTakingSupported");
+        SetRequestBooleanParams(env, request, parameters, "isEditSupported");
+        present = false;
+        napi_has_named_property(env, parameters, "maxSelectCount", &present);
+        if (present && napi_get_named_property(env, parameters, "maxSelectCount", &value) == napi_ok) {
+            int32_t result = 0;
+            if (napi_get_value_int32(env, value, &result) != napi_ok) {
+                NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+                NAPI_ERR_LOG("get maxSelectCount failed");
+                return;
+            }
+            request.SetParam("maxSelectCount", result);
+        } else {
+            NAPI_ERR_LOG("has no named property maxSelectCount");
+        }
+    }
+}
+
+static napi_value StartPickerExtension(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &AsyncContext)
+{
+    bool isStageMode = false;
+    std::shared_ptr<AbilityRuntime::AbilityContext> abilityContext = nullptr;
+    napi_status status = AbilityRuntime::IsStageContext(env, AsyncContext->argv[ARGS_ZERO], isStageMode);
+    if (status != napi_ok || !isStageMode) {
+        NAPI_ERR_LOG("is not StageMode context");
+        return nullptr;
+    } else {
+        auto context = AbilityRuntime::GetStageModeContext(env, AsyncContext->argv[ARGS_ZERO]);
+        if (context == nullptr) {
+            NAPI_ERR_LOG("Failed to get native stage context instance");
+            return nullptr;
+        }
+        abilityContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::AbilityContext>(context);
+        if (abilityContext == nullptr) {
+            NAPI_ERR_LOG("create abilityContext faild");
+            return nullptr;
+        }
+    }
+    auto uiContent = abilityContext->GetUIContent();
+    if (uiContent == nullptr) {
+        NAPI_ERR_LOG("get uiContent failed");
+        return nullptr;
+    }
+    AAFwk::Want request;
+    SetRequestInfo(env, request, AsyncContext->argv[ARGS_ONE]);
+    AsyncContext->pickerCallBack = make_shared<PickerCallBack>();
+    auto callback = std::make_shared<ModalUICallback>(uiContent, AsyncContext->pickerCallBack.get());
+    Ace::ModalUIExtensionCallbacks extensionCallback = {
+        std::bind(&ModalUICallback::OnRelease, callback, std::placeholders::_1),
+        std::bind(&ModalUICallback::OnResultForModal, callback, std::placeholders::_1, std::placeholders::_2),
+        std::bind(&ModalUICallback::OnReceive, callback, std::placeholders::_1),
+        std::bind(&ModalUICallback::OnError, callback, std::placeholders::_1, std::placeholders::_2,
+            std::placeholders::_3),
+        std::bind(&ModalUICallback::OnDestroy, callback),
+    };
+    Ace::ModalUIExtensionConfig config;
+    config.isProhibitBack = true;
+    int sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
+    if (sessionId == 0) {
+        NAPI_ERR_LOG("create modalUIExtension failed");
+        return nullptr;
+    }
+    callback->SetSessionId(sessionId);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+template <class AsyncContext>
+static napi_status AsyncContextSetStaticObjectInfo(napi_env env, napi_callback_info info,
+    AsyncContext &asyncContext, const size_t minArgs, const size_t maxArgs)
+{
+    napi_value thisVar = nullptr;
+    asyncContext->argc = maxArgs;
+    CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]), &thisVar,
+        nullptr), "Failed to get cb info");
+    CHECK_COND_RET(((asyncContext->argc >= minArgs) && (asyncContext->argc <= maxArgs)), napi_invalid_arg,
+        "Number of args is invalid");
+    if (minArgs > 0) {
+        CHECK_COND_RET(asyncContext->argv[ARGS_ZERO] != nullptr, napi_invalid_arg, "Argument list is empty");
+    }
+    CHECK_STATUS_RET(MediaLibraryNapiUtils::GetParamCallback(env, asyncContext), "Failed to get callback param!");
+    return napi_ok;
+}
+
+static napi_value ParseArgsStartPhotoPicker(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_TWO;
+    constexpr size_t maxArgs = ARGS_THREE;
+    CHECK_ARGS(env, AsyncContextSetStaticObjectInfo(env, info, context, minArgs, maxArgs),
+        JS_ERR_PARAMETER_INVALID);
+    NAPI_CALL(env, MediaLibraryNapiUtils::GetParamCallback(env, context));
+    CHECK_NULLPTR_RET(StartPickerExtension(env, info, context));
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value MediaLibraryNapi::StartPhotoPicker(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    auto pickerCallBack = make_shared<PickerCallBack>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    ParseArgsStartPhotoPicker(env, info, asyncContext);
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "StrartPhotoPicker",
+        StartPhotoPickerExecute, StartPhotoPickerAsyncCallbackComplete);
 }
 } // namespace Media
 } // namespace OHOS

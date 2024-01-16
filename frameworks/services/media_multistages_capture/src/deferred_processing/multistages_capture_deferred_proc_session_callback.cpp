@@ -103,6 +103,5 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnStateChanged(const DpsStat
 {
     MEDIA_INFO_LOG("status: %{public}d", state);
 }
-
 } // namespace Media
 } // namespace OHOS

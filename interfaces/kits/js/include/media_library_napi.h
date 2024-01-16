@@ -249,6 +249,7 @@ private:
     EXPORT static napi_value CreatePhotoSubTypeEnum(napi_env env);
 
     EXPORT static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
+    EXPORT static napi_value StartPhotoPicker(napi_env env, napi_callback_info info);
     EXPORT static napi_value GetPhotoAccessHelperAsync(napi_env env, napi_callback_info info);
     EXPORT static napi_value CreateDeleteRequest(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
@@ -322,6 +323,13 @@ private:
     static std::mutex sOnOffMutex_;
 };
 
+struct PickerCallBack {
+    bool ready = false;
+    bool isOrigin;
+    int32_t resultCode;
+    vector<string> uris;
+};
+
 constexpr int32_t DEFAULT_PRIVATEALBUMTYPE = 3;
 struct MediaLibraryAsyncContext : public NapiError {
     napi_async_work work;
@@ -372,6 +380,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool hiddenOnly = false;
     int32_t hiddenAlbumFetchMode = -1;
     std::string formId;
+    std::shared_ptr<PickerCallBack> pickerCallBack;
 };
 
 struct MediaLibraryInitContext : public NapiError  {

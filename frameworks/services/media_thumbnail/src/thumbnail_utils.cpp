@@ -1198,6 +1198,18 @@ bool ThumbnailUtils::ScaleFastThumb(ThumbnailData &data, const Size &size)
     return true;
 }
 
+static string Desensitize(string &str)
+{
+    string result = str;
+    int index = result.find('/');
+    if (index == string::npos) {
+        return "*****";
+    }
+    
+    result.replace(0, index, index, '*');
+    return result;
+}
+
 static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
 {
     string tempFileName = fileName + ".tmp";
@@ -1210,7 +1222,8 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
             UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
         }
         if (fd.Get() < 0) {
-            MEDIA_ERR_LOG("save failed! filePath %{private}s status %{public}d", tempFileName.c_str(), errno);
+            string fileNameToPrint = Desensitize(tempFileName);
+            MEDIA_ERR_LOG("save failed! filePath %{pulibc}s status %{public}d", fileNameToPrint.c_str(), errno);
             return -errno;
         }
     }
@@ -1772,14 +1785,12 @@ bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-void ThumbnailUtils::QueryThumbnailDataFromFieldId(ThumbRdbOpt &opts, const std::string &id,
-    ThumbnailData &data, int &err, bool isUpdate)
+void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
+    ThumbnailData &data, int &err)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, id);
-    if (!isUpdate) {
-        predicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, to_string(false));
-    }
+    predicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, to_string(false));
     vector<string> columns = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
