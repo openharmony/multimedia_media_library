@@ -27,11 +27,16 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
   ]
 
   sources = [
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_command.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_formmap_operations.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/ithumbnail_helper.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./src/medialibrary_formmap_operations_test.cpp",
     "./src/medialibrary_photo_operations_test.cpp",
   ]
 
@@ -52,6 +57,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
+    "data_share:datashare_consumer",
     "data_share:datashare_provider",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
@@ -59,6 +65,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "user_file_service:file_access_extension_ability_kit",
