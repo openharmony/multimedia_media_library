@@ -52,6 +52,7 @@
 #include "uv.h"
 #include "form_map.h"
 #include "ui_content.h"
+#include "ui_extension_context.h"
 #include "want.h"
 #include "js_native_api.h"
 #include "js_native_api_types.h"
@@ -6544,28 +6545,36 @@ static void SetRequestInfo(napi_env env, AAFwk::Want &request, napi_value config
     }
 }
 
-static napi_value StartPickerExtension(napi_env env, napi_callback_info info,
+Ace::UIContent *GetUIContent(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &AsyncContext)
 {
     bool isStageMode = false;
-    std::shared_ptr<AbilityRuntime::AbilityContext> abilityContext = nullptr;
     napi_status status = AbilityRuntime::IsStageContext(env, AsyncContext->argv[ARGS_ZERO], isStageMode);
     if (status != napi_ok || !isStageMode) {
         NAPI_ERR_LOG("is not StageMode context");
         return nullptr;
-    } else {
-        auto context = AbilityRuntime::GetStageModeContext(env, AsyncContext->argv[ARGS_ZERO]);
-        if (context == nullptr) {
-            NAPI_ERR_LOG("Failed to get native stage context instance");
-            return nullptr;
-        }
-        abilityContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::AbilityContext>(context);
-        if (abilityContext == nullptr) {
-            NAPI_ERR_LOG("create abilityContext faild");
-            return nullptr;
-        }
     }
-    auto uiContent = abilityContext->GetUIContent();
+    auto context = AbilityRuntime::GetStageModeContext(env, AsyncContext->argv[ARGS_ZERO]);
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Failed to get native stage context instance");
+        return nullptr;
+    }
+    auto abilityContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::AbilityContext>(context);
+    if (abilityContext == nullptr) {
+        auto uiExtensionContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::UIExtensionContext>(context);
+        if (uiExtensionContext == nullptr) {
+            NAPI_ERR_LOG("Fail to convert to abilityContext or uiExtensionContext");
+            return nullptr;
+        }
+        return uiExtensionContext->GetUIContent();
+    }
+    return abilityContext->GetUIContent();
+}
+
+static napi_value StartPickerExtension(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &AsyncContext)
+{
+    Ace::UIContent *uiContent = GetUIContent(env, info, AsyncContext);
     if (uiContent == nullptr) {
         NAPI_ERR_LOG("get uiContent failed");
         return nullptr;
