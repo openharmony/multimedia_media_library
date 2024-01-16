@@ -40,7 +40,8 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnError(const string &imageI
             break;
         case ERROR_IMAGE_PROC_INVALID_PHOTO_ID:
         case ERROR_IMAGE_PROC_FAILED:
-            MultiStagesCaptureManager::GetInstance().RemoveImage(imageId);
+            MultiStagesCaptureManager::GetInstance().RemoveImage(imageId, false);
+            MEDIA_WARN_LOG("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
             break;
         default:
             break;
