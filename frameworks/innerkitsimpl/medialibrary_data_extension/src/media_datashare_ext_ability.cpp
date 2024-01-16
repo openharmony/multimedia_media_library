@@ -594,9 +594,11 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
 {
     MediaLibraryCommand cmd(uri);
     if (cmd.GetOprnObject() == OperationObject::PAH_MULTISTAGES_CAPTURE) {
-        if (cmd.GetOprnType() == Media::OperationType::PROCESS_IMAGE && columns.size() == 1) {
+        if (cmd.GetOprnType() == Media::OperationType::PROCESS_IMAGE && columns.size() == 3) { // 3 means params number
             NativeRdb::ValuesBucket valuesBucket;
             valuesBucket.PutInt(PhotoColumn::MEDIA_ID, std::stoi(columns[0]));
+            valuesBucket.PutInt("delivery_mode", std::stoi(columns[1])); // 1 indicates delivery mode
+            valuesBucket.PutString("app_name", columns[2]); // 2 indicates app name
             MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, valuesBucket);
         }
         return nullptr;

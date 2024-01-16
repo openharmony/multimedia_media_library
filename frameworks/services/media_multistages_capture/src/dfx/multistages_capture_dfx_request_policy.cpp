@@ -40,13 +40,13 @@ MultiStagesCaptureDfxRequestPolicy& MultiStagesCaptureDfxRequestPolicy::GetInsta
 void MultiStagesCaptureDfxRequestPolicy::GetCount(const RequestPolicy policy, RequestCount &count)
 {
     switch (policy) {
-        case RequestPolicy::HIGH_QUALITY:
+        case RequestPolicy::HIGH_QUALITY_MODE:
             count.highQualityCount += 1;
             break;
-        case RequestPolicy::BALANCE_QUALITY:
+        case RequestPolicy::BALANCE_MODE:
             count.balanceQualityCount += 1;
             break;
-        case RequestPolicy::EMERGENCY_QUALITY:
+        case RequestPolicy::FAST_MODE:
             count.emergencyQualityCount += 1;
             break;
         default:

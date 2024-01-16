@@ -381,19 +381,19 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_request_policy_get_count_001, T
 {
     MEDIA_INFO_LOG("dfx_request_policy_get_count_001 Start");
     RequestCount requestCount { 0, 0, 0 };
-    MultiStagesCaptureDfxRequestPolicy::GetInstance().GetCount(RequestPolicy::HIGH_QUALITY, requestCount);
+    MultiStagesCaptureDfxRequestPolicy::GetInstance().GetCount(RequestPolicy::HIGH_QUALITY_MODE, requestCount);
     EXPECT_EQ(requestCount.highQualityCount, 1);
 
-    MultiStagesCaptureDfxRequestPolicy::GetInstance().GetCount(RequestPolicy::BALANCE_QUALITY, requestCount);
+    MultiStagesCaptureDfxRequestPolicy::GetInstance().GetCount(RequestPolicy::BALANCE_MODE, requestCount);
     EXPECT_EQ(requestCount.highQualityCount, 1);
     EXPECT_EQ(requestCount.balanceQualityCount, 1);
 
-    MultiStagesCaptureDfxRequestPolicy::GetInstance().GetCount(RequestPolicy::EMERGENCY_QUALITY, requestCount);
+    MultiStagesCaptureDfxRequestPolicy::GetInstance().GetCount(RequestPolicy::FAST_MODE, requestCount);
     EXPECT_EQ(requestCount.highQualityCount, 1);
     EXPECT_EQ(requestCount.balanceQualityCount, 1);
     EXPECT_EQ(requestCount.emergencyQualityCount, 1);
 
-    MultiStagesCaptureDfxRequestPolicy::GetInstance().GetCount(RequestPolicy::BALANCE_QUALITY, requestCount);
+    MultiStagesCaptureDfxRequestPolicy::GetInstance().GetCount(RequestPolicy::BALANCE_MODE, requestCount);
     EXPECT_EQ(requestCount.highQualityCount, 1);
     EXPECT_EQ(requestCount.balanceQualityCount, 2);
     EXPECT_EQ(requestCount.emergencyQualityCount, 1);
@@ -413,24 +413,24 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_request_policy_set_policy_002, 
     MultiStagesCaptureDfxRequestPolicy &requestPolicyInstance = MultiStagesCaptureDfxRequestPolicy::GetInstance();
 
     string callingPackageName = "com.examples.photos";
-    requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::HIGH_QUALITY);
+    requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::HIGH_QUALITY_MODE);
     // It will definitely be reported for the first time
     EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 0);
 
-    requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::HIGH_QUALITY);
+    requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::HIGH_QUALITY_MODE);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 1);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].highQualityCount, 1);
 
-    requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::HIGH_QUALITY);
+    requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::HIGH_QUALITY_MODE);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 1);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].highQualityCount, 2);
 
-    requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::BALANCE_QUALITY);
+    requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::BALANCE_MODE);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 1);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].highQualityCount, 2);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].balanceQualityCount, 1);
 
-    requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::EMERGENCY_QUALITY);
+    requestPolicyInstance.SetPolicy(callingPackageName, RequestPolicy::FAST_MODE);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 1);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].highQualityCount, 2);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName].balanceQualityCount, 1);
@@ -438,13 +438,13 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_request_policy_set_policy_002, 
 
     // add another caller request
     string callingPackageName2 = "com.examples.camera";
-    requestPolicyInstance.SetPolicy(callingPackageName2, RequestPolicy::HIGH_QUALITY);
+    requestPolicyInstance.SetPolicy(callingPackageName2, RequestPolicy::HIGH_QUALITY_MODE);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 2);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_[callingPackageName2].highQualityCount, 1);
 
     // Simulate scenarios exceeding 24 hours
     requestPolicyInstance.lastReportTime_ -= (24 * 60 * 60 * 1000L + 1);
-    requestPolicyInstance.SetPolicy(callingPackageName2, RequestPolicy::EMERGENCY_QUALITY);
+    requestPolicyInstance.SetPolicy(callingPackageName2, RequestPolicy::FAST_MODE);
     EXPECT_EQ(requestPolicyInstance.requestCountMap_.size(), 0);
 
     requestPolicyInstance.requestCountMap_.clear();
