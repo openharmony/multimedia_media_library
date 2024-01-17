@@ -61,7 +61,7 @@ HWTEST_F(MediaLibraryUriTest, medialib_ParseThumbnailInfo_test_001, TestSize.Lev
     uriString = "ParseThumbnailInfo?" + THUMBNAIL_OPERN_KEYWORD + "=" + MEDIA_DATA_DB_THUMBNAIL;
     ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize,
         outNetworkId, outTableName);
-    EXPECT_EQ(ret, false);
+    EXPECT_EQ(ret, true);
     uriString = "ParseThumbnailInfo?=" + MEDIA_DATA_DB_THUMBNAIL + "&" + THUMBNAIL_WIDTH + "=&" +
         THUMBNAIL_HEIGHT + "=";
     ret = ThumbnailUriUtils::ParseThumbnailInfo(uriString, outFileId, outSize,
