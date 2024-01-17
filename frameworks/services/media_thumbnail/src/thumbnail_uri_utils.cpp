@@ -91,6 +91,11 @@ bool ThumbnailUriUtils::CheckSize(Size &outSize, const string &outPath)
         outSize.height = DEFAULT_LCD_SIZE;
     }
 
+    if (outSize.width == 0 && outSize.height == 0) {
+        outSize.width = DEFAULT_THUMB_SIZE;
+        outSize.height = DEFAULT_THUMB_SIZE;
+    }
+
     if ((outSize.width <= 0 || outSize.height <= 0) && !IsOriginalImg(outSize, outPath)) {
         return false;
     }
