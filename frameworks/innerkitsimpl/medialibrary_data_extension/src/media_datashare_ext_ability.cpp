@@ -372,6 +372,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::GEO_DICTIONARY,
         OperationObject::GEO_KNOWLEDGE,
         OperationObject::GEO_PHOTO,
+        OperationObject::PAH_MULTISTAGES_CAPTURE,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
