@@ -1785,7 +1785,7 @@ bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-void ThumbnailUtils::QueryThumbnailDataFromFieldId(ThumbRdbOpt &opts, const std::string &id,
+void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
     ThumbnailData &data, int &err)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
