@@ -86,6 +86,7 @@ const std::string PhotoColumn::PHOTO_FIRST_VISIT_TIME = "first_visit_time";
 const std::string PhotoColumn::PHOTO_DEFERRED_PROC_TYPE = "deferred_proc_type";
 const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc";
 
+const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_INDEX = "date_month_index";
 const std::string PhotoColumn::PHOTO_DATE_DAY_INDEX = "date_day_index";
@@ -162,6 +163,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DEFERRED_PROC_TYPE + " INT DEFAULT 0, " +
     PHOTO_HAS_ASTC + " INT DEFAULT 0)";
 
+const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
+    PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
 
 const std::string PhotoColumn::CREATE_YEAR_INDEX = BaseColumn::CreateIndex() +
     PHOTO_DATE_YEAR_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_DATE_YEAR + " DESC)";

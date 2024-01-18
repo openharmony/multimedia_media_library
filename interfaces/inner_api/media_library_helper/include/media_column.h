@@ -107,6 +107,7 @@ public:
     static const std::string PHOTO_DEFERRED_PROC_TYPE EXPORT;
 
     // index in PhotoTable
+    static const std::string PHOTO_CLOUD_ID_INDEX EXPORT;
     static const std::string PHOTO_DATE_YEAR_INDEX EXPORT;
     static const std::string PHOTO_DATE_MONTH_INDEX EXPORT;
     static const std::string PHOTO_DATE_DAY_INDEX EXPORT;
@@ -124,6 +125,7 @@ public:
 
     // create PhotoTable sql
     static const std::string CREATE_PHOTO_TABLE EXPORT;
+    static const std::string CREATE_CLOUD_ID_INDEX EXPORT;
     static const std::string CREATE_YEAR_INDEX EXPORT;
     static const std::string CREATE_MONTH_INDEX EXPORT;
     static const std::string CREATE_DAY_INDEX EXPORT;
