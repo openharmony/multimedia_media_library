@@ -864,6 +864,7 @@ static const string &TriggerUpdateUserAlbumCount()
 static const vector<string> onCreateSqlStrs = {
     CREATE_MEDIA_TABLE,
     PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::INDEX_SCTHP_ADDTIME,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::CREATE_YEAR_INDEX,
@@ -1688,6 +1689,15 @@ void AddCleanFlagAndThumbStatus(RdbStore &store)
     }
 }
 
+void AddCloudIndex(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "DROP INDEX IF EXISTS" + PhotoColumn::PHOTO_CLOUD_ID_INDEX,
+        PhotoColumn::CREATE_CLOUD_ID_INDEX,
+    };
+    ExecSqls(sqls, store);
+}
+
 static void AddPhotoEditTimeColumn(RdbStore &store)
 {
     const string addEditTimeOnPhotos = "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE +
@@ -2186,6 +2196,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_PHOTO_CLEAN_FLAG_AND_THUMB_STATUS) {
         AddCleanFlagAndThumbStatus(store);
+    }
+
+    if (oldVersion < VERSION_ADD_CLOUD_ID_INDEX) {
+        AddCloudIndex(store);
     }
 
     UpgradeOtherTable(store, oldVersion);
