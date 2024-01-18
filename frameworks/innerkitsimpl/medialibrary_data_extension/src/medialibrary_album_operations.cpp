@@ -454,12 +454,14 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
     string whereClause;
     if (value == FIRST_PAGE) {
         string whereClauseRelatedMe = ALBUM_ID + " IN (SELECT " + MAP_ALBUM + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
+            " WHERE " + MAP_ASSET + " IN ( SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
+            " WHERE " + MediaColumn::MEDIA_ID + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
             " WHERE " + MAP_ASSET + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
-            MAP_ASSET + " IN (SELECT " + MAP_ASSET + " FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " + MAP_ALBUM +
-            " IN(SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + IS_ME + " = 1))" + " GROUP BY " +
-            MAP_ASSET + " HAVING count(" + MAP_ASSET + ") > 1)" + " AND " + MAP_ALBUM + " NOT IN (SELECT " + ALBUM_ID +
-            " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + IS_ME + " = 1)" + " GROUP BY " + MAP_ALBUM +
-            " HAVING count(" + MAP_ALBUM + ") > " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME) + ")";
+            MAP_ALBUM + " IN(SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + IS_ME + " = 1))" +
+            " GROUP BY " + MAP_ASSET + " HAVING count(" + MAP_ASSET + ") > 1) AND " + MediaColumn::MEDIA_DATE_TRASHED +
+            " = 0) AND " + MAP_ALBUM + " NOT IN (SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
+            IS_ME + " = 1)" + " GROUP BY " + MAP_ALBUM + " HAVING count(" + MAP_ALBUM + ") > " +
+            to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME) + ")";
         string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
         string whereClauseSatifyCount = COUNT + " > " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND (" +
         USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
