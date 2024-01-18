@@ -25,8 +25,11 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_tracer.h"
 #include "media_log.h"
+#include "multistages_capture_dfx_first_visit.h"
+#include "multistages_capture_dfx_request_policy.h"
 #include "multistages_capture_dfx_total_time.h"
 #include "multistages_capture_dfx_trigger_ratio.h"
+#include "request_policy.h"
 #include "result_set_utils.h"
 
 using namespace std;
@@ -307,17 +310,29 @@ void MultiStagesCaptureManager::ProcessImage(const NativeRdb::ValuesBucket &valu
     if (valuesBucket.GetObject(PhotoColumn::MEDIA_ID, valueObject)) {
         valueObject.GetInt(fileId);
     }
+    string photoId = fileId2PhotoId_[fileId];
+    if (photoId.size() == 0) {
+        MEDIA_ERR_LOG("processimage image id is invalid, fileId: %{public}d", fileId);
+        return;
+    }
+
+    int32_t deliveryMode = -1;
+    if (valuesBucket.GetObject("delivery_mode", valueObject)) {
+        valueObject.GetInt(deliveryMode);
+    }
     string appName = "";
     if (valuesBucket.GetObject("app_name", valueObject)) {
         valueObject.GetString(appName);
     }
-    string photoId = fileId2PhotoId_[fileId];
-    if (photoId.size() == 0) {
-        MEDIA_ERR_LOG("processimage image id is invalid");
-        return;
+    MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::THIRD_PART);
+    MultiStagesCaptureDfxRequestPolicy::GetInstance().SetPolicy(appName, static_cast<RequestPolicy>(deliveryMode));
+    MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId);
+    MEDIA_INFO_LOG("processimage, pkg name: %{public}s, photoid %{public}s, mode: %{public}d", appName.c_str(),
+        photoId.c_str(), deliveryMode);
+    if (deliveryMode == static_cast<int32_t>(RequestPolicy::HIGH_QUALITY_MODE) ||
+        deliveryMode == static_cast<int32_t>(RequestPolicy::BALANCE_MODE)) {
+        deferredProcSession_->ProcessImage(appName, photoId);
     }
-    MEDIA_INFO_LOG("processimage image id %{public}s", photoId.c_str());
-    deferredProcSession_->ProcessImage(appName, photoId);
 }
 
 vector<shared_ptr<MultiStagesPhotoInfo>> MultiStagesCaptureManager::GetPhotosInfo(const AbsRdbPredicates &predicates)

@@ -129,8 +129,7 @@ const std::string SOURCE_ALBUM_TO_CLEAR_WHERE = " WHERE " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = 4098";
 
 const std::string CLEAR_SOURCE_ALBUM_ANALYSIS_PHOTO_MAP = "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE + " WHERE " +
-    PhotoMap::ALBUM_ID + " in (SELECT " + PhotoMap::ALBUM_ID + " FROM "+ ANALYSIS_ALBUM_TABLE +
-    SOURCE_ALBUM_TO_CLEAR_WHERE + " ) ";
+    MAP_ALBUM + " in (SELECT " + ALBUM_ID + " FROM "+ ANALYSIS_ALBUM_TABLE + SOURCE_ALBUM_TO_CLEAR_WHERE + " ) ";
 
 const std::string CLEAR_ANALYSIS_SOURCE_ALBUM = "DELETE FROM " + ANALYSIS_ALBUM_TABLE + SOURCE_ALBUM_TO_CLEAR_WHERE;
 
@@ -172,6 +171,26 @@ const std::string DELETE_PHOTO_UPDATE_SOURCE_ALBUM =
 
 const std::string ADD_SOURCE_ALBUM_BUNDLE_NAME = "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
     PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " TEXT";
+
+const std::string PHOTOS_WHERE = MediaColumn::MEDIA_ID + " IN (SELECT " + MAP_ASSET + " FROM " +
+    ANALYSIS_PHOTO_MAP_TABLE + ") AND " + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL";
+
+const std::string INSERT_SOURCE_ALBUMS_FROM_PHOTOS = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
+    PhotoAlbumColumns::ALBUM_NAME + ", " +
+    PhotoAlbumColumns::ALBUM_BUNDLE_NAME + ", " +
+    PhotoAlbumColumns::ALBUM_TYPE + ", " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + ")" +
+    " SELECT DISTINCT " + MediaColumn::MEDIA_PACKAGE_NAME + ", " +
+    MediaColumn::MEDIA_OWNER_PACKAGE + ", " +
+    std::to_string(PhotoAlbumType::SOURCE) + ", " +
+    std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) +
+    " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + PHOTOS_WHERE;
+
+const std::string INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS = "INSERT INTO " + PhotoMap::TABLE + "(" +
+    PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ")" +
+    " SELECT PA." + PhotoAlbumColumns::ALBUM_ID + ", P." + MediaColumn::MEDIA_ID +
+    " FROM " + PhotoColumn::PHOTOS_TABLE + " AS P INNER JOIN " + PhotoAlbumColumns::TABLE + " AS PA" +
+    " ON P." + MediaColumn::MEDIA_PACKAGE_NAME + " = PA." + PhotoAlbumColumns::ALBUM_NAME + " WHERE " + PHOTOS_WHERE;
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_SOURCE_ALBUM_H

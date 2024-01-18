@@ -647,6 +647,8 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_queryThumbDataFromFileId_test_001, Test
     ThumbnailData data;
     int err = 0;
     ThumbnailUtils::QueryThumbnailDataFromFileId(opts, id, data, err);
+
+    // expect return err
     EXPECT_NE(err, 0);
 }
 

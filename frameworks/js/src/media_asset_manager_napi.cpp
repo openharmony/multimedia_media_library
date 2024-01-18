@@ -134,14 +134,14 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::queryPhotoStatus(int fileId
     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 
-void MediaAssetManagerNapi::ProcessImage(const int fileId)
+void MediaAssetManagerNapi::ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName)
 {
     std::string uriStr = PAH_PROCESS_IMAGE;
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(uriStr);
     DataShare::DataSharePredicates predicates;
     int errCode = 0;
-    std::vector<std::string> columns { std::to_string(fileId) };
+    std::vector<std::string> columns { std::to_string(fileId), std::to_string(deliveryMode), packageName };
     UserFileClient::Query(uri, predicates, columns, errCode);
 }
 
@@ -213,6 +213,27 @@ napi_status ParseArgGetRequestOption(napi_env env, napi_value arg, DeliveryMode 
     return napi_ok;
 }
 
+napi_status ParseArgGetCallingPakckageName(napi_env env, napi_value arg, std::string &callingPackageName)
+{
+    if (arg == nullptr) {
+        NAPI_ERR_LOG("arg is invalid");
+        return napi_invalid_arg;
+    }
+    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, arg);
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Failed to get context");
+        return napi_invalid_arg;
+    }
+    auto abilityContext = OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
+    if (abilityContext == nullptr) {
+        NAPI_ERR_LOG("abilityContext invalid");
+        return napi_invalid_arg;
+    }
+    auto abilityInfo = abilityContext->GetAbilityInfo();
+    callingPackageName = abilityInfo->bundleName;
+    return napi_ok;
+}
+
 napi_status ParseArgGetPhotoAsset(napi_env env, napi_value arg, int &fileId, std::string &uri,
     std::string &displayName)
 {
@@ -276,6 +297,11 @@ napi_status MediaAssetManagerNapi::ParseRequestImageArgs(napi_env env, napi_call
     if (asyncContext->argc != ARGS_FOUR) {
         NAPI_ERR_LOG("requestImage argc error");
         NapiError::ThrowError(env_, OHOS_INVALID_PARAM_CODE, "requestImage argc invalid");
+        return napi_invalid_arg;
+    }
+    if (ParseArgGetCallingPakckageName(env, asyncContext->argv[PARAM0], asyncContext->callingPkgName) != napi_ok) {
+        NAPI_ERR_LOG("requestImage ParseArgGetCallingPakckageName error");
+        NapiError::ThrowError(env_, OHOS_INVALID_PARAM_CODE, "requestImage ParseArgGetPhotoAsset error");
         return napi_invalid_arg;
     }
     if (ParseArgGetPhotoAsset(env, asyncContext->argv[PARAM1], asyncContext->fileId, asyncContext->photoUri,
@@ -391,21 +417,21 @@ void MediaAssetManagerNapi::onHandleRequestImage(const unique_ptr<RequestImageAs
             if (status == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
                 MediaAssetManagerNapi::notifyDataPreparedWithoutRegister(asyncContext->photoUri,
                     asyncContext->argv[PARAM3], asyncContext->returnDataType, asyncContext->sourceMode);
-            } else {
-                MediaAssetManagerNapi::ProcessImage(asyncContext->fileId);
             }
             break;
         case DeliveryMode::BALANCED_MODE:
             status = MediaAssetManagerNapi::queryPhotoStatus(asyncContext->fileId);
             MediaAssetManagerNapi::notifyDataPreparedWithoutRegister(asyncContext->photoUri,
                 asyncContext->argv[PARAM3], asyncContext->returnDataType, asyncContext->sourceMode);
-            if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
-                MediaAssetManagerNapi::ProcessImage(asyncContext->fileId);
-            }
             break;
-        default:
+        default: {
             NAPI_ERR_LOG("invalid delivery mode");
+            return;
+        }
     }
+
+    MediaAssetManagerNapi::ProcessImage(asyncContext->fileId, static_cast<int32_t>(asyncContext->deliveryMode),
+        asyncContext->callingPkgName);
 }
 
 void MediaAssetManagerNapi::notifyDataPreparedWithoutRegister(std::string &requestUri, napi_value napiMediaDataHandler,

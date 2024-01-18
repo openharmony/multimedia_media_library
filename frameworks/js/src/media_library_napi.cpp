@@ -42,6 +42,7 @@
 #include "modal_ui_callback.h"
 #include "modal_ui_extension_config.h"
 #include "napi_base_context.h"
+#include "napi_common_want.h"
 #include "photo_album_column.h"
 #include "photo_album_napi.h"
 #include "result_set_utils.h"
@@ -52,6 +53,7 @@
 #include "uv.h"
 #include "form_map.h"
 #include "ui_content.h"
+#include "ui_extension_context.h"
 #include "want.h"
 #include "js_native_api.h"
 #include "js_native_api_types.h"
@@ -6469,110 +6471,44 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
     delete context;
 }
 
-static void SetRequestStringParams(napi_env env, AAFwk::Want &request, napi_value config, std::string param)
+Ace::UIContent *GetUIContent(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &AsyncContext)
 {
-    bool present = false;
-    napi_value value = nullptr;
-    string result;
-    napi_has_named_property(env, config, param.c_str(), &present);
-    if (present && napi_get_named_property(env, config, param.c_str(), &value) == napi_ok) {
-        char buffer[ARG_BUF_SIZE];
-        size_t res = 0;
-        if (napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res) != napi_ok) {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-            NAPI_ERR_LOG("get %{public}s value failed", param.c_str());
-            return;
-        }
-        result = string(buffer);
-        if (param == "action") {
-            request.SetAction(result);
-        } else if (param == "type") {
-            request.SetType(result);
-        } else {
-            request.SetParam(param, result);
-        }
-    } else {
-        NAPI_ERR_LOG("has no named property %{public}s", param.c_str());
+    bool isStageMode = false;
+    napi_status status = AbilityRuntime::IsStageContext(env, AsyncContext->argv[ARGS_ZERO], isStageMode);
+    if (status != napi_ok || !isStageMode) {
+        NAPI_ERR_LOG("is not StageMode context");
+        return nullptr;
     }
-}
-
-static void SetRequestBooleanParams(napi_env env, AAFwk::Want &request, napi_value config, std::string param)
-{
-    bool present = false;
-    napi_value value = nullptr;
-    napi_has_named_property(env, config, param.c_str(), &present);
-    if (present && napi_get_named_property(env, config, param.c_str(), &value) == napi_ok) {
-        bool result = false;
-        if (napi_get_value_bool(env, value, &result) != napi_ok) {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-            NAPI_ERR_LOG("get %{public}s value failed", param.c_str());
-            return;
-        }
-        request.SetParam(param, result);
-    } else {
-        NAPI_ERR_LOG("has no named property %{public}s", param.c_str());
+    auto context = AbilityRuntime::GetStageModeContext(env, AsyncContext->argv[ARGS_ZERO]);
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Failed to get native stage context instance");
+        return nullptr;
     }
-}
-
-static void SetRequestInfo(napi_env env, AAFwk::Want &request, napi_value config)
-{
-    std::string targetType = "photoPicker";
-    request.SetParam(ABILITY_WANT_PARAMS_UIEXTENSIONTARGETTYPE, targetType);
-    bool present = false;
-    napi_value parameters = nullptr;
-    napi_value value = nullptr;
-    SetRequestStringParams(env, request, config, "action");
-    SetRequestStringParams(env, request, config, "type");
-    napi_has_named_property(env, config, "parameters", &present);
-    if (present && napi_get_named_property(env, config, "parameters", &parameters) == napi_ok) {
-        SetRequestStringParams(env, request, parameters, "uri");
-        SetRequestStringParams(env, request, parameters, "filterMediaType");
-        SetRequestBooleanParams(env, request, parameters, "isPhotoTakingSupported");
-        SetRequestBooleanParams(env, request, parameters, "isEditSupported");
-        present = false;
-        napi_has_named_property(env, parameters, "maxSelectCount", &present);
-        if (present && napi_get_named_property(env, parameters, "maxSelectCount", &value) == napi_ok) {
-            int32_t result = 0;
-            if (napi_get_value_int32(env, value, &result) != napi_ok) {
-                NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
-                NAPI_ERR_LOG("get maxSelectCount failed");
-                return;
-            }
-            request.SetParam("maxSelectCount", result);
-        } else {
-            NAPI_ERR_LOG("has no named property maxSelectCount");
+    auto abilityContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::AbilityContext>(context);
+    if (abilityContext == nullptr) {
+        auto uiExtensionContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::UIExtensionContext>(context);
+        if (uiExtensionContext == nullptr) {
+            NAPI_ERR_LOG("Fail to convert to abilityContext or uiExtensionContext");
+            return nullptr;
         }
+        return uiExtensionContext->GetUIContent();
     }
+    return abilityContext->GetUIContent();
 }
 
 static napi_value StartPickerExtension(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &AsyncContext)
 {
-    bool isStageMode = false;
-    std::shared_ptr<AbilityRuntime::AbilityContext> abilityContext = nullptr;
-    napi_status status = AbilityRuntime::IsStageContext(env, AsyncContext->argv[ARGS_ZERO], isStageMode);
-    if (status != napi_ok || !isStageMode) {
-        NAPI_ERR_LOG("is not StageMode context");
-        return nullptr;
-    } else {
-        auto context = AbilityRuntime::GetStageModeContext(env, AsyncContext->argv[ARGS_ZERO]);
-        if (context == nullptr) {
-            NAPI_ERR_LOG("Failed to get native stage context instance");
-            return nullptr;
-        }
-        abilityContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::AbilityContext>(context);
-        if (abilityContext == nullptr) {
-            NAPI_ERR_LOG("create abilityContext faild");
-            return nullptr;
-        }
-    }
-    auto uiContent = abilityContext->GetUIContent();
+    Ace::UIContent *uiContent = GetUIContent(env, info, AsyncContext);
     if (uiContent == nullptr) {
         NAPI_ERR_LOG("get uiContent failed");
         return nullptr;
     }
     AAFwk::Want request;
-    SetRequestInfo(env, request, AsyncContext->argv[ARGS_ONE]);
+    AppExecFwk::UnwrapWant(env, AsyncContext->argv[ARGS_ONE], request);
+    std::string targetType = "photoPicker";
+    request.SetParam(ABILITY_WANT_PARAMS_UIEXTENSIONTARGETTYPE, targetType);
     AsyncContext->pickerCallBack = make_shared<PickerCallBack>();
     auto callback = std::make_shared<ModalUICallback>(uiContent, AsyncContext->pickerCallBack.get());
     Ace::ModalUIExtensionCallbacks extensionCallback = {
