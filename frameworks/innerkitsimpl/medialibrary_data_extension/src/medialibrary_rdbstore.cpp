@@ -864,6 +864,7 @@ static const string &TriggerUpdateUserAlbumCount()
 static const vector<string> onCreateSqlStrs = {
     CREATE_MEDIA_TABLE,
     PhotoColumn::CREATE_PHOTO_TABLE,
+    PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::INDEX_SCTHP_ADDTIME,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
     PhotoColumn::CREATE_YEAR_INDEX,
@@ -873,7 +874,6 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_SCHPT_DAY_INDEX,
     PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
-    PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -1337,9 +1337,11 @@ static void MoveSourceAlbumToPhotoAlbumAndAddColumns(RdbStore &store)
         DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        ADD_SOURCE_ALBUM_BUNDLE_NAME,
+        INSERT_SOURCE_ALBUMS_FROM_PHOTOS,
+        INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS,
         CLEAR_SOURCE_ALBUM_ANALYSIS_PHOTO_MAP,
         CLEAR_ANALYSIS_SOURCE_ALBUM,
-        ADD_SOURCE_ALBUM_BUNDLE_NAME,
         INSERT_PHOTO_INSERT_SOURCE_ALBUM,
         INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
@@ -1647,13 +1649,11 @@ void FixIndexOrder(RdbStore &store)
         "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_YEAR_INDEX,
         "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_MONTH_INDEX,
         "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_DATE_DAY_INDEX,
-        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_CLOUD_ID_INDEX,
         "DROP INDEX IF EXISTS idx_media_type",
         "DROP INDEX IF EXISTS idx_sthp_dateadded",
         PhotoColumn::CREATE_YEAR_INDEX,
         PhotoColumn::CREATE_MONTH_INDEX,
         PhotoColumn::CREATE_DAY_INDEX,
-        PhotoColumn::CREATE_CLOUD_ID_INDEX,
         PhotoColumn::INDEX_SCTHP_ADDTIME,
         PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
         PhotoColumn::CREATE_SCHPT_DAY_INDEX,
@@ -1687,6 +1687,15 @@ void AddCleanFlagAndThumbStatus(RdbStore &store)
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Upgrade rdb need clean and thumb status error %{private}d", result);
     }
+}
+
+void AddCloudIndex(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "DROP INDEX IF EXISTS" + PhotoColumn::PHOTO_CLOUD_ID_INDEX,
+        PhotoColumn::CREATE_CLOUD_ID_INDEX,
+    };
+    ExecSqls(sqls, store);
 }
 
 static void AddPhotoEditTimeColumn(RdbStore &store)
@@ -2187,6 +2196,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_PHOTO_CLEAN_FLAG_AND_THUMB_STATUS) {
         AddCleanFlagAndThumbStatus(store);
+    }
+
+    if (oldVersion < VERSION_ADD_CLOUD_ID_INDEX) {
+        AddCloudIndex(store);
     }
 
     UpgradeOtherTable(store, oldVersion);

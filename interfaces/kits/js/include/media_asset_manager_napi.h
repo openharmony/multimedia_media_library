@@ -47,6 +47,7 @@ struct RequestImageAsyncContext {
     std::string photoUri;
     std::string displayName;
     std::string photoPath;
+    std::string callingPkgName;
     DeliveryMode deliveryMode;
     SourceMode sourceMode;
     ReturnDataType returnDataType;
@@ -87,7 +88,7 @@ private:
     static napi_value JSRequestImageData(napi_env env, napi_callback_info info);
     static void RegisterTaskObserver(const std::string &photoUri, const int fileId, napi_value napiMediaDataHandler,
         ReturnDataType returnDataType, SourceMode sourceMode);
-    static void ProcessImage(const int fileId);
+    static void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
     static void AddImage(const int fileId, DeliveryMode deliveryMode);
     static void onHandleRequestImage(const unique_ptr<RequestImageAsyncContext> &asyncContext);
     static void GetByteArrayNapiObject(std::string requestUri, napi_value& arrayBuffer, bool isSource);
