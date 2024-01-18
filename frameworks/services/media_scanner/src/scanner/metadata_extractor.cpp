@@ -81,6 +81,20 @@ static string GetCastShootingMode(string &shootingModeTag)
     return "";
 }
 
+static string GetCompatibleUserComment(const string& userComment)
+{
+    const string startFlag = "<mgzn-content>";
+    const string endFlag = "<mgzn-worksdes>";
+    size_t posStart = userComment.find(startFlag);
+    size_t posEnd = userComment.find(endFlag);
+    if (posStart == string::npos || posEnd == string::npos || posStart >= posEnd) {
+        return userComment;
+    }
+
+    posStart += startFlag.length();
+    return userComment.substr(posStart, posEnd - posStart);
+}
+
 int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageSource, std::unique_ptr<Metadata> &data)
 {
     if (imageSource == nullptr) {
@@ -110,7 +124,7 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
 
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, propertyStr);
     if (err == 0) {
-        data->SetUserComment(propertyStr);
+        data->SetUserComment(GetCompatibleUserComment(propertyStr));
     }
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_PHOTO_MODE, propertyStr);
     if (err == 0 && !propertyStr.empty()) {
