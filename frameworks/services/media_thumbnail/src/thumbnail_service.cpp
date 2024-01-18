@@ -560,7 +560,7 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateAstcFromFieldId(const string &id)
+int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
 {
     ThumbnailData data;
     int err = 0;
@@ -572,7 +572,7 @@ int32_t ThumbnailService::CreateAstcFromFieldId(const string &id)
         .table = PhotoColumn::PHOTOS_TABLE
     };
 
-    ThumbnailUtils::QueryThumbnailDataFromFieldId(opts, id, data, err);
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, id, data, err);
     if (err != E_OK) {
         return err;
     }

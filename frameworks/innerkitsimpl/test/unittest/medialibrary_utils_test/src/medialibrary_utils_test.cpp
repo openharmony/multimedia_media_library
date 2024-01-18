@@ -636,6 +636,20 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_checkResultSetCount_test_001, TestSize.
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(MediaLibraryUtilsTest, medialib_queryThumbDataFromFileId_test_001, TestSize.Level0)
+{
+    string table = "Photos";
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = table
+    };
+    const string id = "1";
+    ThumbnailData data;
+    int err = 0;
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, id, data, err);
+    EXPECT_NE(err, 0);
+}
+
 HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0)
 {
     ThumbnailData data;

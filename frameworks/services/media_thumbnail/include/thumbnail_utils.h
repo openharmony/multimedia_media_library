@@ -136,7 +136,7 @@ public:
     EXPORT static bool ResizeThumb(int& width, int& height);
     EXPORT static bool ResizeLcd(int& width, int& height);
     static bool IsSupportGenAstc();
-    EXPORT static void QueryThumbnailDataFromFieldId(ThumbRdbOpt &opts, const std::string &id,
+    EXPORT static void QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
         ThumbnailData &data, int &err);
     static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
 
