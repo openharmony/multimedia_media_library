@@ -24,6 +24,7 @@
 #include "media_column.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
+#include "medialibrary_notify.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_rdbstore.h"
@@ -50,6 +51,7 @@ void IThumbnailHelper::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outDat
         outData.path = opts.path;
         outData.id = opts.row;
         outData.dateAdded = opts.dateAdded;
+        outData.fileUri = opts.fileUri;
         return;
     }
     string filesTableName = opts.table;
@@ -392,6 +394,27 @@ bool IThumbnailHelper::GenMonthAndYearPixelMap(ThumbnailData &data, const Thumbn
     return RevertFastThumbnailPixelFormat(data, size, PixelFormat::RGB_565);
 }
 
+bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
+{
+    int32_t err = UpdateAstcState(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
+        return false;
+    }
+
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("watch is nullptr");
+        return false;
+    }
+    if (data.isThumbAdded) {
+        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
+    } else {
+        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_UPDATE);
+    }
+    return true;
+}
+
 int32_t IThumbnailHelper::UpdateAstcState(ThumbRdbOpt &opts)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -422,39 +445,42 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
-    if (opts.table != AudioColumn::AUDIOS_TABLE) {
-        if (ThumbnailUtils::IsSupportGenAstc()) {
-            if (!GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {
-                VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-                    {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-                PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-                return false;
-            }
-            int32_t err = UpdateAstcState(opts);
-            if (err != E_OK) {
-                MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
-            }
-        }
-        if (!GenThumbnail(opts, data, ThumbnailType::MTH_ASTC)) {
-            return false;
-        }
-        if (!GenThumbnail(opts, data, ThumbnailType::MTH)) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-                {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-            return false;
-        }
-        if (!GenThumbnail(opts, data, ThumbnailType::YEAR)) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-                {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-            return false;
-        }
-        if (!GenThumbnail(opts, data, ThumbnailType::YEAR_ASTC)) {
-            return false;
-        }
+    if (opts.table == AudioColumn::AUDIOS_TABLE) {
+        MEDIA_DEBUG_LOG("AUDIOS_TABLE, no need to create all thumbnail");
+        return true;
     }
 
+    if (ThumbnailUtils::IsSupportGenAstc() && !GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
+            {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
+    if (!GenThumbnail(opts, data, ThumbnailType::MTH_ASTC)) {
+        return false;
+    }
+    if (!GenThumbnail(opts, data, ThumbnailType::MTH)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
+    if (!GenThumbnail(opts, data, ThumbnailType::YEAR)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
+    if (!GenThumbnail(opts, data, ThumbnailType::YEAR_ASTC)) {
+        return false;
+    }
+
+    // After all thumbnails are generated, the value of column "has_astc" in rdb
+    // needs to be updated, and application should receive a notification at the same time.
+    if (!UpdateThumbnailState(opts, data)) {
+        MEDIA_ERR_LOG("UpdateThumbnailState fail");
+        return false;
+    }
     return true;
 }
 
@@ -503,9 +529,12 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data, bool
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
-    int32_t err = UpdateAstcState(opts);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
+
+    data.fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::DEFAULT_PHOTO_URI + "/", data.id,
+        MediaFileUtils::GetExtraUri(data.displayName, data.path));
+    if (!UpdateThumbnailState(opts, data)) {
+        MEDIA_ERR_LOG("UpdateThumbnailState fail");
+        return false;
     }
     return true;
 }

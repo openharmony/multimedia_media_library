@@ -131,5 +131,15 @@ string ThumbnailUriUtils::GetDateAddedFromUri(const string &uri)
     }
     return "";
 }
+
+string ThumbnailUriUtils::GetFileUriFromUri(const string &uri)
+{
+    auto index = uri.rfind('?');
+    if (index == std::string::npos) {
+        MEDIA_ERR_LOG("GetFileUriFromUri find index for last string failed: %{private}s", uri.c_str());
+        return "";
+    }
+    return uri.substr(0, index);
+}
 } // namespace Media
 } // namespace OHOS

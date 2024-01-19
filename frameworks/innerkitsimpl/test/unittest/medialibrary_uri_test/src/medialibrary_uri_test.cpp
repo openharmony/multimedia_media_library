@@ -98,5 +98,21 @@ HWTEST_F(MediaLibraryUriTest, medialib_GetDateAddedFromUri_test_001, TestSize.Le
     output = ThumbnailUriUtils::GetDateAddedFromUri(uriString);
     EXPECT_EQ(output, testDateAdded);
 }
+
+HWTEST_F(MediaLibraryUriTest, medialib_GetFileUriFromUri_test_001, TestSize.Level0)
+{
+    string testFileUri = "file://media/Photo/5664/IMG_1705635971_5359";
+    string uriString = testFileUri + "&" + THUMBNAIL_OPERN_KEYWORD;
+    string output = ThumbnailUriUtils::GetFileUriFromUri(uriString);
+    EXPECT_EQ(output, "");
+
+    uriString = testFileUri;
+    output = ThumbnailUriUtils::GetFileUriFromUri(uriString);
+    EXPECT_EQ(output, "");
+
+    uriString = testFileUri + "?" + THUMBNAIL_OPERN_KEYWORD;
+    output = ThumbnailUriUtils::GetFileUriFromUri(uriString);
+    EXPECT_EQ(output, testFileUri);
+}
 } // namespace Media
 } // namespace OHOS
