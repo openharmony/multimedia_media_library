@@ -1715,7 +1715,7 @@ int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailTy
         return E_ERR;
     }
 
-    std::vector<uint_8> value;
+    std::vector<uint8_t> value;
     int status = kvStore->Query(key, value);
     data.isThumbAdded = status != E_OK;
 

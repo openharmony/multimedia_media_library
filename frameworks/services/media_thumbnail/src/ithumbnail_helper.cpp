@@ -415,7 +415,7 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const Thumb
     return true;
 }
 
-int32_t IThumbnailHelper::UpdateAstcState(ThumbRdbOpt &opts)
+int32_t IThumbnailHelper::UpdateAstcState(const ThumbRdbOpt &opts)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
