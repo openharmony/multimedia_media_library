@@ -134,9 +134,9 @@ string ThumbnailUriUtils::GetDateAddedFromUri(const string &uri)
 
 string ThumbnailUriUtils::GetFileUriFromUri(const string &uri)
 {
-    auto index = uri.rfind('?');
+    auto index = uri.find('?');
     if (index == std::string::npos) {
-        MEDIA_ERR_LOG("GetFileUriFromUri find index for last string failed: %{private}s", uri.c_str());
+        MEDIA_ERR_LOG("GetFileUriFromUri find index for string failed: %{private}s", uri.c_str());
         return "";
     }
     return uri.substr(0, index);
