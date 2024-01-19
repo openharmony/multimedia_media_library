@@ -546,28 +546,6 @@ const std::string CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER = "CREATE TRIGGER 
     " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
     " WHERE (old." + ALBUM_ID + " = " + ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM + ")" +
     ")); END;";
-
-const std::string UPDATE_AESTHETICS_SCORE_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
-    AESTHETICS_SCORE + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE subtype = 1 AND AESTHETICS_SCORE = -1)";
-const std::string UPDATE_LABEL_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
-    LABEL + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE subtype = 1 AND LABEL = -1)";
-const std::string UPDATE_FACE_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
-    FACE + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE subtype = 1 AND FACE = -1)";
-const std::string UPDATE_OBJECT_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
-    OBJECT + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE subtype = 1 AND OBJECT = -1)";
-const std::string UPDATE_RECOMMENDATION_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
-    RECOMMENDATION + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE subtype = 1 AND RECOMMENDATION = -1)";
-const std::string UPDATE_SEGMENTATION_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
-    SEGMENTATION + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE subtype = 1 AND SEGMENTATION = -1)";
-const std::string UPDATE_COMPOSITION_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
-    COMPOSITION + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
-    " WHERE subtype = 1 AND COMPOSITION = -1)";
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIALIBRARY_VISION_COLUMN_H

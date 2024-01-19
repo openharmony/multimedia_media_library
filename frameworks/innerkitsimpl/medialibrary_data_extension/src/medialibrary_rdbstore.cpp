@@ -1397,13 +1397,6 @@ static void UpdateSpecForAddScreenshot(RdbStore &store)
     static const vector<string> executeSqlStrs = {
         DROP_INSERT_VISION_TRIGGER,
         CREATE_VISION_INSERT_TRIGGER_FOR_UPDATE_SPEC,
-        UPDATE_AESTHETICS_SCORE_TOTAL_VALUE,
-        UPDATE_LABEL_TOTAL_VALUE,
-        UPDATE_FACE_TOTAL_VALUE,
-        UPDATE_OBJECT_TOTAL_VALUE,
-        UPDATE_RECOMMENDATION_TOTAL_VALUE,
-        UPDATE_SEGMENTATION_TOTAL_VALUE,
-        UPDATE_COMPOSITION_TOTAL_VALUE,
     };
     MEDIA_INFO_LOG("update media analysis service specifications for add screenshot");
     ExecSqls(executeSqlStrs, store);
