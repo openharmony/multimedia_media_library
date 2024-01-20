@@ -301,11 +301,7 @@ static bool RevertFastThumbnailPixelFormat(ThumbnailData &data, const Size &size
 
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
-    bool isThumb = false;
     if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
-        isThumb = true;
-    }
-    if (isThumb) {
         if (type == ThumbnailType::THUMB && !TryLoadSource(opts, data, THUMBNAIL_THUMB_SUFFIX, true)) {
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
                 {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -335,11 +331,8 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
             return false;
         }
     } else {
-        // generate MTH and YEAR pixelMap
-        if (!GenMonthAndYearPixelMap(data, type)) {
-            MEDIA_ERR_LOG("GenMonthAndYearPixelMap failed in GenThumbnail");
-            return false;
-        }
+        MEDIA_ERR_LOG("invalid thumbnail type: %{public}d", type);
+        return false;
     }
 
     int err = ThumbnailUtils::TrySaveFile(data, type);
@@ -377,21 +370,6 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
         return false;
     }
     return true;
-}
-
-bool IThumbnailHelper::GenMonthAndYearPixelMap(ThumbnailData &data, const ThumbnailType type)
-{
-    Size size;
-    if (type == ThumbnailType::MTH) {
-        size = {DEFAULT_MTH_SIZE, DEFAULT_MTH_SIZE };
-    } else if (type == ThumbnailType::YEAR) {
-        size = { DEFAULT_YEAR_SIZE, DEFAULT_YEAR_SIZE };
-    } else {
-        MEDIA_ERR_LOG("invalid thumbnail type");
-        return false;
-    }
-    ThumbnailUtils::GenTargetPixelmap(data, size);
-    return RevertFastThumbnailPixelFormat(data, size, PixelFormat::RGB_565);
 }
 
 bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
@@ -457,18 +435,6 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
         return false;
     }
     if (!GenThumbnail(opts, data, ThumbnailType::MTH_ASTC)) {
-        return false;
-    }
-    if (!GenThumbnail(opts, data, ThumbnailType::MTH)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return false;
-    }
-    if (!GenThumbnail(opts, data, ThumbnailType::YEAR)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     if (!GenThumbnail(opts, data, ThumbnailType::YEAR_ASTC)) {
