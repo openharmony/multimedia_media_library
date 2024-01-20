@@ -336,9 +336,9 @@ function getPhotoPickerSelectResult(args) {
 
   if (args.resultCode === 0) {
     let uris = args.uris;
-      let isOrigin = args.isOrigin;
-      selectResult.data = new PhotoSelectResult(uris, isOrigin);
-  } else if (result.resultCode === -1) {
+    let isOrigin = args.isOrigin;
+    selectResult.data = new PhotoSelectResult(uris, isOrigin);
+  } else if (args.resultCode === -1) {
     selectResult.data = new PhotoSelectResult([], undefined);
   } else {
     selectResult.error = getErr(ErrCode.RESULT_ERROR);
