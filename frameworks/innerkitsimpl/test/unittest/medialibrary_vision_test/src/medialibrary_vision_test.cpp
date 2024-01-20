@@ -1726,6 +1726,7 @@ HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_1, TestSize.Level0)
 
 void InsertTotalTest()
 {
+    MEDIA_INFO_LOG("InsertTotalTest");
     Uri totalUri(URI_TOTAL);
     MediaLibraryCommand cmd(totalUri);
     DataShare::DataShareValuesBucket valuesBucket;
