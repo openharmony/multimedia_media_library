@@ -71,7 +71,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatch(ThumbRdbOpt &opts)
         MEDIA_INFO_LOG("No need create Astc.");
         return E_OK;
     }
-    
+
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
         IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateAstc, opts, infos[i], false);
@@ -144,7 +144,7 @@ int32_t ThumbnailGenerateHelper::GetNoAstcData(ThumbRdbOpt &opts, vector<Thumbna
 {
     int32_t err = E_ERR;
     if (!ThumbnailUtils::QueryNoAstcInfos(opts, outDatas, err)) {
-        MEDIA_ERR_LOG("Failed to QueryNoThumbnailInfos %{private}d", err);
+        MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
         return err;
     }
     return E_OK;

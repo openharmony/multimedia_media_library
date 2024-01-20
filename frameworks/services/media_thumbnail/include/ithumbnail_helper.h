@@ -74,7 +74,6 @@ public:
     static void CreateThumbnail(AsyncTaskData *data);
     static void CreateAstc(AsyncTaskData *data);
     static void AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront);
-    static int32_t UpdateAstcState(ThumbRdbOpt &opts);
 protected:
     static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
@@ -88,6 +87,8 @@ private:
         bool isLoadFromSourcePath);
     static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
     static bool GenMonthAndYearPixelMap(ThumbnailData &data, const ThumbnailType type);
+    static bool UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
+    static int32_t UpdateAstcState(const ThumbRdbOpt &opts);
 };
 } // namespace Media
 } // namespace OHOS

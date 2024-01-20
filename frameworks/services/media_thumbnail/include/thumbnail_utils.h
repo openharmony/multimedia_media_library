@@ -43,6 +43,7 @@ struct ThumbRdbOpt {
     EXPORT std::string row;
     EXPORT std::string uri;
     EXPORT std::string dateAdded;
+    EXPORT std::string fileUri;
     EXPORT Size screenSize;
 };
 
@@ -60,6 +61,7 @@ struct ThumbnailData {
     EXPORT int mediaType {-1};
     EXPORT int64_t dateModified {0};
     EXPORT float degrees;
+    EXPORT bool isThumbAdded {false};
     EXPORT std::shared_ptr<PixelMap> source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
@@ -67,6 +69,8 @@ struct ThumbnailData {
     EXPORT std::vector<uint8_t> yearAstc;
     EXPORT std::vector<uint8_t> lcd;
     EXPORT std::string dateAdded;
+    EXPORT std::string displayName;
+    EXPORT std::string fileUri;
     EXPORT std::string id;
     EXPORT std::string cloudId;
     EXPORT std::string udid;

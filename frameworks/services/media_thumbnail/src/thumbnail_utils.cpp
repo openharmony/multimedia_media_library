@@ -717,14 +717,10 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_NAME,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
-    rdbPredicates.NotEqualTo(PhotoColumn::PHOTO_LAST_VISIT_TIME, "0");
-    // Filter data that Only exists in Cloud to avoid cosuming data of downloading the original image
-    // meaning of Position: 1--only in local, 2--only in cloud, 3--both in local and cloud
-    rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->
-            EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
@@ -1602,6 +1598,11 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         ParseStringResult(resultSet, index, data.dateAdded, err);
     }
 
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_NAME, index);
+    if (err == NativeRdb::E_OK) {
+        ParseStringResult(resultSet, index, data.displayName, err);
+    }
+
     err = resultSet->GetColumnIndex(MEDIA_DATA_DB_MEDIA_TYPE, index);
     if (err == NativeRdb::E_OK) {
         data.mediaType = MediaType::MEDIA_TYPE_ALL;
@@ -1714,9 +1715,13 @@ int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailTy
         return E_ERR;
     }
 
-    int status = kvStore->Insert(key, type == ThumbnailType::MTH_ASTC ? data.monthAstc : data.yearAstc);
-    MEDIA_INFO_LOG("type:%{public}d, field_id:%{public}s, status:%{public}d",
-        type, key.c_str(), status);
+    std::vector<uint8_t> value;
+    int status = kvStore->Query(key, value);
+    data.isThumbAdded = status != E_OK;
+
+    status = kvStore->Insert(key, type == ThumbnailType::MTH_ASTC ? data.monthAstc : data.yearAstc);
+    MEDIA_INFO_LOG("type:%{public}d, field_id:%{public}s, status:%{public}d, isThumbAdded:%{public}d",
+        type, key.c_str(), status, data.isThumbAdded);
     return status;
 }
 
