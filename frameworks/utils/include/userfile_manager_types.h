@@ -82,8 +82,8 @@ enum PhotoAlbumSubType : int32_t {
     TRASH,
     SCREENSHOT,
     CAMERA,
-    IMAGES,
-    SYSTEM_END = IMAGES,
+    IMAGE,
+    SYSTEM_END = IMAGE,
     SOURCE_GENERIC = 2049,
     ANALYSIS_START = 4097,
     CLASSIFY = ANALYSIS_START,
@@ -102,7 +102,7 @@ const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
     std::to_string(PhotoAlbumSubType::TRASH),
     std::to_string(PhotoAlbumSubType::SCREENSHOT),
     std::to_string(PhotoAlbumSubType::CAMERA),
-    std::to_string(PhotoAlbumSubType::IMAGES),
+    std::to_string(PhotoAlbumSubType::IMAGE),
 };
 
 enum class PhotoSubType : int32_t {

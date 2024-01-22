@@ -707,7 +707,7 @@ static void UpdateSysAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore)
     tracer.Start("UpdateSysAlbumHiddenState");
 
     auto albumResult = GetSystemAlbum(rdbStore, {
-        to_string(PhotoAlbumSubType::IMAGES),
+        to_string(PhotoAlbumSubType::IMAGE),
         to_string(PhotoAlbumSubType::VIDEO),
         to_string(PhotoAlbumSubType::FAVORITE),
         to_string(PhotoAlbumSubType::SCREENSHOT),
