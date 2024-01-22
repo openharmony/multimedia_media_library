@@ -279,26 +279,6 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
     return true;
 }
 
-static bool RevertFastThumbnailPixelFormat(ThumbnailData &data, const Size &size, PixelFormat format)
-{
-    if (data.source->GetPixelFormat() != format) {
-        Media::InitializationOptions option = {
-            .size = size,
-            .pixelFormat = format,
-        };
-        data.source = PixelMap::Create(*(data.source), option);
-        if (data.source == nullptr) {
-            MEDIA_ERR_LOG("Can not revert fastThumbnail");
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-                {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-            return false;
-        }
-    }
-
-    return true;
-}
-
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
     bool isThumb = false;
@@ -367,10 +347,6 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
     }
 
     ThumbnailUtils::GenTargetPixelmap(data, size);
-    if (!RevertFastThumbnailPixelFormat(data, size, PixelFormat::RGBA_8888)) {
-        MEDIA_ERR_LOG("GenMonthAndYearAstcData revert to RGBA_8888 failed");
-        return false;
-    }
     if (!ThumbnailUtils::CompressImage(data.source,
         (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, false, nullptr, true)) {
         MEDIA_ERR_LOG("CompressImage to astc failed");
@@ -390,8 +366,7 @@ bool IThumbnailHelper::GenMonthAndYearPixelMap(ThumbnailData &data, const Thumbn
         MEDIA_ERR_LOG("invalid thumbnail type");
         return false;
     }
-    ThumbnailUtils::GenTargetPixelmap(data, size);
-    return RevertFastThumbnailPixelFormat(data, size, PixelFormat::RGB_565);
+    return ThumbnailUtils::GenTargetPixelmap(data, size);
 }
 
 bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
