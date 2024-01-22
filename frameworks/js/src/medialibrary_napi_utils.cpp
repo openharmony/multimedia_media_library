@@ -1019,7 +1019,7 @@ int32_t MediaLibraryNapiUtils::GetSystemAlbumPredicates(const PhotoAlbumSubType 
         case PhotoAlbumSubType::CAMERA: {
             return GetCameraPredicates(predicates, hiddenOnly);
         }
-        case PhotoAlbumSubType::IMAGES: {
+        case PhotoAlbumSubType::IMAGE: {
             return GetAllImagesPredicates(predicates, hiddenOnly);
         }
         default: {

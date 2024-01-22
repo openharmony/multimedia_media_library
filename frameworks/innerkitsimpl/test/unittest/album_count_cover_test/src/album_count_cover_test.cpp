@@ -702,7 +702,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
 
     // 1. Query album info, count should be 0, cover should be empty
     MEDIA_INFO_LOG("Step: Check initialized info of system albums");
-    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGES);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
@@ -713,7 +713,7 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
     if (fileAsset == nullptr) {
         return;
     }
-    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGES);
+    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
 
     // 3. Create another photo.
     sleep(SLEEP_INTERVAL);
@@ -723,30 +723,30 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_004, TestSize.Level0)
     if (fileAsset2 == nullptr) {
         return;
     }
-    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGES);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
 
     // 4. Hide a photo.
     MEDIA_INFO_LOG("Step: Hide a photo");
     HideFileAsset(fileAsset2, true);
-    AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::IMAGES);
+    AlbumInfo(1, fileAsset->GetUri(), 1, fileAsset2->GetUri(), 1).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
     AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 5. Un-hide a photo.
     MEDIA_INFO_LOG("Step: Un-hide a photo");
     HideFileAsset(fileAsset2, false);
-    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGES);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
 
     // 6. Trash a photo.
     MEDIA_INFO_LOG("Step: Trash a photo");
     TrashFileAsset(fileAsset2, true);
-    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGES);
+    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
     AlbumInfo(1, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
 
     // 7. Un-trash a photo.
     MEDIA_INFO_LOG("Step: Un-trash a photo");
     TrashFileAsset(fileAsset2, false);
-    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGES);
+    AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::IMAGE);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
     MEDIA_INFO_LOG("album_count_cover_004 end");
 }

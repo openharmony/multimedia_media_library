@@ -1134,7 +1134,7 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     if (fileAsset->GetTimePending() == 0 || fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
             MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
-            to_string(PhotoAlbumSubType::IMAGES),
+            to_string(PhotoAlbumSubType::IMAGE),
             to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::SCREENSHOT),
             to_string(PhotoAlbumSubType::CAMERA),
