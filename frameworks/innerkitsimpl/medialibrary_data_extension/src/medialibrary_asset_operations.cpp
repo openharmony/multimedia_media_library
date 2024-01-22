@@ -896,12 +896,6 @@ int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
         return E_OK;
     }
 
-    string userComment;
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, userComment);
-    if (err != 0) {
-        MEDIA_ERR_LOG("Image does not exit exif, no need to modify");
-        return E_OK;
-    }
     err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_USER_COMMENT, newUserComment, filePath);
     if (err != 0) {
         MEDIA_ERR_LOG("Modify image property user comment failed");
