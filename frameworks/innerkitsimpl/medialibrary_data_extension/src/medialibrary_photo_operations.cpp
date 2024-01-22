@@ -689,7 +689,7 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
             std::to_string(PhotoAlbumSubType::HIDDEN),
             std::to_string(PhotoAlbumSubType::SCREENSHOT),
             std::to_string(PhotoAlbumSubType::CAMERA),
-            std::to_string(PhotoAlbumSubType::IMAGES),
+            std::to_string(PhotoAlbumSubType::IMAGE),
         });
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
@@ -1224,7 +1224,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
 
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
-        to_string(PhotoAlbumSubType::IMAGES),
+        to_string(PhotoAlbumSubType::IMAGE),
         to_string(PhotoAlbumSubType::VIDEO),
         to_string(PhotoAlbumSubType::SCREENSHOT),
         to_string(PhotoAlbumSubType::CAMERA),
