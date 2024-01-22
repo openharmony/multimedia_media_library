@@ -1897,6 +1897,21 @@ static void UpdateGeoTables(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdatePhotosMdirtyTrigger(RdbStore& store)
+{
+    string dropSql = "DROP TRIGGER IF EXISTS photos_mdirty_trigger";
+    if (store.ExecuteSql(dropSql) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to drop old photos_mdirty_trigger: %{private}s", dropSql.c_str());
+        UpdateFail(__FILE__, __LINE__);
+    }
+
+    if (store.ExecuteSql(PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER) != NativeRdb::E_OK) {
+        UpdateFail(__FILE__, __LINE__);
+        MEDIA_ERR_LOG("Failed to upgrade new photos_mdirty_trigger, %{private}s",
+            PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER.c_str());
+    }
+}
+
 void AddMultiStagesCaptureColumns(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2053,6 +2068,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_SCHPT_HIDDEN_TIME_INDEX) {
         AddSCHPTHiddenTimeIndex(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTOS_MDIRTY_TRIGGER) {
+        UpdatePhotosMdirtyTrigger(store);
     }
 }
 
