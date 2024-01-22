@@ -16,6 +16,7 @@
 #include "media_column.h"
 
 #include <string>
+#include <vector>
 
 #include "base_column.h"
 #include "userfile_manager_types.h"
@@ -238,6 +239,7 @@ const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         " AND new.date_modified = old.date_modified AND old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
                         " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
+                        " AND " + PhotoColumn::CheckUploadPhotoColumns() +
                         " BEGIN " +
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
@@ -271,6 +273,50 @@ bool PhotoColumn::IsPhotoColumn(const std::string &columnName)
     }
     return (PHOTO_COLUMNS.find(columnName) != PHOTO_COLUMNS.end()) ||
         (MEDIA_COLUMNS.find(columnName) != MEDIA_COLUMNS.end());
+}
+
+std::string PhotoColumn::CheckUploadPhotoColumns()
+{
+    // Since date_modified has been checked in mdirty and fdirty, omit it here.
+    const std::vector<std::string> uploadPhotoColumns = {
+        MEDIA_FILE_PATH,
+        MEDIA_SIZE,
+        MEDIA_NAME,
+        MEDIA_TYPE,
+        MEDIA_MIME_TYPE,
+        MEDIA_OWNER_PACKAGE,
+        MEDIA_DEVICE_NAME,
+        MEDIA_DATE_ADDED,
+        MEDIA_DATE_TAKEN,
+        MEDIA_DURATION,
+        MEDIA_IS_FAV,
+        MEDIA_DATE_TRASHED,
+        MEDIA_DATE_DELETED,
+        MEDIA_HIDDEN,
+        PHOTO_META_DATE_MODIFIED,
+        PHOTO_ORIENTATION,
+        PHOTO_LATITUDE,
+        PHOTO_LONGITUDE,
+        PHOTO_HEIGHT,
+        PHOTO_WIDTH,
+        PHOTO_SUBTYPE,
+        PHOTO_USER_COMMENT,
+        PHOTO_DATE_YEAR,
+        PHOTO_DATE_MONTH,
+        PHOTO_DATE_DAY,
+    };
+
+    std::string result = "(";
+    int size = uploadPhotoColumns.size();
+    for (int i = 0; i < size; i++) {
+        std::string column = uploadPhotoColumns[i];
+        if (i != size - 1) {
+            result += "new." + column + " <> old." + column + " OR ";
+        } else {
+            result += "new." + column + " <> old." + column + ")";
+        }
+    }
+    return result;
 }
 
 const std::string AudioColumn::AUDIO_ALBUM = "audio_album";
