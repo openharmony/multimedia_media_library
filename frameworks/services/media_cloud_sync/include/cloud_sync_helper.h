@@ -32,6 +32,7 @@ public:
     virtual ~CloudSyncHelper();
 
     void StartSync();
+    int32_t StartDownloadFile(const std::string &path);
 
 private:
     CloudSyncHelper();
