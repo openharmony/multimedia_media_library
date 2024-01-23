@@ -39,8 +39,6 @@ public:
     static void GetFormMapFormId(const std::string &uri, std::vector<int64_t> &formIds);
     static std::string GetUriByFileId(const int32_t &fileId, const std::string &path);
     static std::string GetFilePathById(const std::string &fileId);
-    static bool GetFormIdWithEmptyUriState();
-    static bool isHaveEmptyUri;
 
 private:
     static void ModifyFormMapMessage(const std::string &uri, const int64_t &formId, const bool &isSave);
