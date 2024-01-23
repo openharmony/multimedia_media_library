@@ -657,6 +657,7 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
+    MEDIA_INFO_LOG("insert success, rowId = %{public}d", (int)outRowId);
     return static_cast<int32_t>(outRowId);
 }
 
