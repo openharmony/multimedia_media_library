@@ -1218,6 +1218,11 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
             UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
         }
         if (fd.Get() < 0) {
+            string dir = MediaFileUtils::GetParentPath(tempFileName);
+            if (access(dir.c_str(), F_OK) != 0) {
+                string dirToPrint = Desensitize(dir);
+                MEDIA_ERR_LOG("parent path does not exist, path %{public}s", dirToPrint.c_str());
+            }
             string fileNameToPrint = Desensitize(tempFileName);
             MEDIA_ERR_LOG("save failed! filePath %{pulibc}s status %{public}d", fileNameToPrint.c_str(), errno);
             return -errno;
