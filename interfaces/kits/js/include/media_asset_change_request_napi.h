@@ -73,6 +73,7 @@ public:
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
     #ifdef ABILITY_CAMERA_SUPPORT
     sptr<CameraStandard::DeferredPhotoProxy> GetPhotoProxyObj();
+    void ReleasePhotoProxyObj();
     #endif
 
 private:
