@@ -63,6 +63,7 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &
 
     string fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_LCD_SUFFIX);
     if (access(fileName.c_str(), F_OK) != 0) {
+        MEDIA_ERR_LOG("get lcd thumbnail pixelmap, doCreateThumbnail %{public}s", fileName.c_str());
         if (!DoCreateLcd(opts, thumbnailData)) {
             return E_THUMBNAIL_LOCAL_CREATE_FAIL;
         }

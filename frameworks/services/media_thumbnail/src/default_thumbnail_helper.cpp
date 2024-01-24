@@ -72,6 +72,7 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Si
         fileName.replace(thmIdx, suffixStr.length(), "THM.jpg");
     }
     if (access(fileName.c_str(), F_OK) != 0) {
+        MEDIA_ERR_LOG("get default thumbnail pixelmap, doCreateThumbnail %{public}s", fileName.c_str());
         if (!DoCreateThumbnail(opts, thumbnailData)) {
             return E_THUMBNAIL_LOCAL_CREATE_FAIL;
         }
