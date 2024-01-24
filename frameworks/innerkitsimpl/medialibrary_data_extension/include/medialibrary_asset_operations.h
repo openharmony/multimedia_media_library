@@ -87,6 +87,7 @@ public:
         std::string &filePath);
     EXPORT static int32_t DeleteFromDisk(NativeRdb::AbsRdbPredicates &predicates, const bool isAging,
         const bool compatible = false);
+    static std::string GetEditDataSourcePath(const std::string &path);
 
 protected:
     static std::shared_ptr<FileAsset> GetFileAssetFromDb(const std::string &column, const std::string &value,
@@ -141,7 +142,6 @@ protected:
         bool isForceScan = false);
 
     static std::string GetEditDataDirPath(const std::string &path);
-    static std::string GetEditDataSourcePath(const std::string &path);
     static std::string GetEditDataPath(const std::string &path);
     static std::string GetAssetCacheDir();
 
