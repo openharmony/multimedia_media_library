@@ -31,6 +31,12 @@ public:
         const std::vector<std::string> &userAlbumIds = {});
     EXPORT static void UpdateSourceAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &sourceAlbumIds = {});
+    static void UpdateUserAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::vector<std::string> &uris);
+    static void UpdateAnalysisAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::vector<std::string> &uris);
+    static void UpdateSourceAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::vector<std::string> &uris);
 
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);
     EXPORT static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
@@ -38,7 +44,8 @@ public:
         const std::vector<std::string> &userAlbumIds = {});
     EXPORT static void UpdateAnalysisAlbumByFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &fileIds, const std::vector<int> &albumTypes);
-    EXPORT static void UpdateAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    EXPORT static void UpdateAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::vector<std::string> &uris = {});
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIALIBRARY_RDB_UTILS_H

@@ -1251,9 +1251,8 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;
     }
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
+
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {notifyData->notifyUri});
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
