@@ -322,7 +322,7 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
         case PhotoAlbumSubType::CAMERA: {
             return GetCameraPredicates(predicates, hiddenState);
         }
-        case PhotoAlbumSubType::IMAGES: {
+        case PhotoAlbumSubType::IMAGE: {
             return GetAllImagesPredicates(predicates, hiddenState);
         }
         default: {

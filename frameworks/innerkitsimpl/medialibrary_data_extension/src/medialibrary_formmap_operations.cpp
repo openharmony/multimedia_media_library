@@ -55,16 +55,10 @@ using namespace OHOS::RdbDataShareAdapter;
 namespace OHOS {
 namespace Media {
 std::mutex MediaLibraryFormMapOperations::mutex_;
-bool MediaLibraryFormMapOperations::isHaveEmptyUri = false;
 const string MEDIA_LIBRARY_PROXY_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata";
 const string MEDIA_LIBRARY_PROXY_DATA_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_data";
 const string MEDIA_LIBRARY_PROXY_IMAGE_URI = "datashareproxy://com.ohos.medialibrary.medialibrarydata/image_uri";
 const string NO_PICTURES = "";
-
-bool MediaLibraryFormMapOperations::GetFormIdWithEmptyUriState()
-{
-    return isHaveEmptyUri;
-}
 
 static void ReadThumbnailFile(const string &path, vector<uint8_t> &buffer)
 {
@@ -204,9 +198,9 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, const v
             MEDIA_INFO_LOG("Published formId is %{private}s, size of value is %{private}zu!",
                 to_string(formId).c_str(), NO_PICTURES.size());
             data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_DATA_URI, formId, tempData));
-            std::vector<OperationResult> results = dataShareHelper->Publish(data, BUNDLE_NAME);
+            data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_IMAGE_URI, formId, tempData));
+            dataShareHelper->Publish(data, BUNDLE_NAME);
             MediaLibraryFormMapOperations::ModifyFormMapMessage(NO_PICTURES, formId, isSave);
-            isHaveEmptyUri = true;
         }
     } else {
         MediaFileUri fileUri = MediaFileUri(newUri);
@@ -223,11 +217,9 @@ void MediaLibraryFormMapOperations::PublishedChange(const string newUri, const v
                 MEDIA_INFO_LOG("Published formId: %{private}s!, value size: %{private}zu, image uri: %{private}s",
                     to_string(formId).c_str(), buffer.size(), newUri.c_str());
                 data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_DATA_URI, formId, tempData));
-                std::vector<OperationResult> dataResults = dataShareHelper->Publish(data, BUNDLE_NAME);
                 data.datas_.emplace_back(PublishedDataItem(MEDIA_LIBRARY_PROXY_IMAGE_URI, formId, uriData));
-                std::vector<OperationResult> uriResults = dataShareHelper->Publish(data, BUNDLE_NAME);
+                dataShareHelper->Publish(data, BUNDLE_NAME);
                 MediaLibraryFormMapOperations::ModifyFormMapMessage(newUri, formId, isSave);
-                isHaveEmptyUri = false;
             }
         }
     }
@@ -289,9 +281,7 @@ int32_t MediaLibraryFormMapOperations::HandleStoreFormIdOperation(MediaLibraryCo
     ValuesBucket value;
     value.PutString(FormMap::FORMMAP_URI, uri);
 
-    if (uri.empty()) {
-        isHaveEmptyUri = true;
-    } else {
+    if (!uri.empty()) {
         MediaFileUri mediaUri(uri);
         CHECK_AND_RETURN_RET_LOG(MediaLibraryFormMapOperations::CheckQueryIsInDb(OperationObject::UFM_PHOTO,
             mediaUri.GetFileId()), E_GET_PRAMS_FAIL, "the fileId is not exist");
