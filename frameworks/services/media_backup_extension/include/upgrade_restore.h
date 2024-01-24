@@ -43,6 +43,8 @@ private:
     bool IsValidDir(const std::string &path);
     void RestoreBatch(int32_t offset);
     void RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type);
+    bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
+        std::string &relativePath) override;
     void AnalyzeSource() override;
     void AnalyzeGallerySource();
     void AnalyzeExternalSource();
@@ -50,8 +52,8 @@ private:
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> externalRdb_;
-    std::string filePath_;
     std::string galleryDbPath_;
+    std::string filePath_;
     std::string externalDbPath_;
     std::string appDataPath_;
     std::string galleryAppName_;
