@@ -1230,10 +1230,12 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
     }
     int ret = write(fd.Get(), output, writeSize);
     if (ret < 0) {
+        MEDIA_ERR_LOG("write failed errno %{public}d", errno);
         return -errno;
     }
     int32_t errCode = fsync(fd.Get());
     if (errCode < 0) {
+        MEDIA_ERR_LOG("fsync failed errno %{public}d", errno);
         return -errno;
     }
     close(fd.Release());
@@ -1344,6 +1346,7 @@ int ThumbnailUtils::SaveThumbDataToLocalDir(ThumbnailData &data,
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
             {KEY_OPT_FILE, fileName}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        MEDIA_ERR_LOG("SaveThumbDataToLocalDir create dir path %{public}s err %{public}d", data.path.c_str(), ret);
         return ret;
     }
     ret = ToSaveFile(data, type, fileName, output, writeSize);
@@ -1351,6 +1354,7 @@ int ThumbnailUtils::SaveThumbDataToLocalDir(ThumbnailData &data,
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
             {KEY_OPT_FILE, fileName}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        MEDIA_ERR_LOG("SaveThumbDataToLocalDir ToSaveFile path %{public}s err %{public}d", data.path.c_str(), ret);
         return ret;
     }
     return E_OK;
