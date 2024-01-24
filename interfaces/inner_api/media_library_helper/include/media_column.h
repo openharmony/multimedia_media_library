@@ -157,6 +157,7 @@ public:
     static const std::string QUERY_MEDIA_VOLUME EXPORT;
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
+    EXPORT static std::string CheckUploadPhotoColumns();
 };
 
 class AudioColumn : public MediaColumn {

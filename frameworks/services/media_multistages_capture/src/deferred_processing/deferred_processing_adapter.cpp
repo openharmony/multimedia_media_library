@@ -45,7 +45,7 @@ DeferredProcessingAdapter::DeferredProcessingAdapter()
         return;
     }
     int32_t userId = uid / BASE_USER_RANGE;
-    deferredProcSession_ = CameraManager::GetInstance()->CreateDeferredPhotoProcessingSession(userId,
+    deferredProcSession_ = CameraManager::CreateDeferredPhotoProcessingSession(userId,
         make_shared<MultiStagesCaptureDeferredProcSessionCallback>());
     #endif
     MEDIA_INFO_LOG("DeferredProcessingAdapter init succ");

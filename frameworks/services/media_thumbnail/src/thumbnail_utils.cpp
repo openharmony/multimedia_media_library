@@ -1212,6 +1212,11 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
             UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
         }
         if (fd.Get() < 0) {
+            string dir = MediaFileUtils::GetParentPath(tempFileName);
+            if (access(dir.c_str(), F_OK) != 0) {
+                string dirToPrint = Desensitize(dir);
+                MEDIA_ERR_LOG("parent path does not exist, path %{public}s", dirToPrint.c_str());
+            }
             string fileNameToPrint = Desensitize(tempFileName);
             MEDIA_ERR_LOG("save failed! filePath %{pulibc}s status %{public}d", fileNameToPrint.c_str(), errno);
             return -errno;
@@ -1234,6 +1239,13 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
     }
     errCode = MediaFileUtils::ModifyAsset(tempFileName, fileName);
     if (errCode != E_OK) {
+        int32_t lastErrno = errno;
+        if (!MediaFileUtils::DeleteFile(tempFileName)) {
+            MEDIA_WARN_LOG("Delete tmp thumb error: %{public}d, name: %{private}s", errno, tempFileName.c_str());
+        }
+        if (errCode == E_FILE_EXIST || (errCode == E_FILE_OPER_FAIL && lastErrno == EEXIST)) {
+            return E_OK;
+        }
         return errCode;
     }
     return ret;
@@ -1257,13 +1269,11 @@ int ThumbnailUtils::ToSaveFile(ThumbnailData &data, const ThumbnailType &type, c
 {
     int ret = SaveFile(fileName, output, writeSize);
     if (ret < 0) {
-        DeleteThumbFile(data, type);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
             {KEY_OPT_FILE, fileName}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return ret;
     } else if (ret != writeSize) {
-        DeleteThumbFile(data, type);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_NO_SPACE},
             {KEY_OPT_FILE, fileName}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);

@@ -657,6 +657,7 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
+    MEDIA_INFO_LOG("insert success, rowId = %{public}d", (int)outRowId);
     return static_cast<int32_t>(outRowId);
 }
 
@@ -899,7 +900,7 @@ int32_t MediaLibraryAssetOperations::SetUserComment(MediaLibraryCommand &cmd,
     string userComment;
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, userComment);
     if (err != 0) {
-        MEDIA_ERR_LOG("Image does not exit exif, no need to modify");
+        MEDIA_ERR_LOG("Image does not exist user comment in exif, no need to modify");
         return E_OK;
     }
     err = imageSource->ModifyImageProperty(0, PHOTO_DATA_IMAGE_USER_COMMENT, newUserComment, filePath);
@@ -1134,7 +1135,7 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     if (fileAsset->GetTimePending() == 0 || fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
         MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
             MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
-            to_string(PhotoAlbumSubType::IMAGES),
+            to_string(PhotoAlbumSubType::IMAGE),
             to_string(PhotoAlbumSubType::VIDEO),
             to_string(PhotoAlbumSubType::SCREENSHOT),
             to_string(PhotoAlbumSubType::CAMERA),
