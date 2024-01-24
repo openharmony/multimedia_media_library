@@ -77,7 +77,7 @@ static const std::string MEDIA_FILEDESCRIPTOR = "fd";
 static const std::string MEDIA_FILEMODE = "mode";
 
 thread_local napi_ref FileAssetNapi::sConstructor_ = nullptr;
-thread_local FileAsset *FileAssetNapi::sFileAsset_ = nullptr;
+thread_local std::shared_ptr<FileAsset> FileAssetNapi::sFileAsset_ = nullptr;
 shared_ptr<ThumbnailManager> FileAssetNapi::thumbnailManager_ = nullptr;
 
 constexpr int32_t IS_TRASH = 1;
@@ -95,6 +95,12 @@ using CompleteCallback = napi_async_complete_callback;
 
 thread_local napi_ref FileAssetNapi::userFileMgrConstructor_ = nullptr;
 thread_local napi_ref FileAssetNapi::photoAccessHelperConstructor_ = nullptr;
+
+class TransferFileAsset {
+public:
+    std::shared_ptr<FileAsset> fileAsset = nullptr;
+    ~TransferFileAsset() = default;
+};
 
 FileAssetNapi::FileAssetNapi()
     : env_(nullptr) {}
@@ -244,6 +250,33 @@ napi_value FileAssetNapi::PhotoAccessHelperInit(napi_env env, napi_value exports
     return exports;
 }
 
+inline void *DetachFileAssetFunc(napi_env env, void *value, void *)
+{
+    if (value == nullptr) {
+        NAPI_ERR_LOG("detach value is null");
+        return nullptr;
+    }
+    auto fileAssetNapi = reinterpret_cast<FileAssetNapi*>(value);
+    std::shared_ptr<FileAsset> detachFileAsset = fileAssetNapi->GetFileAssetInstance();
+    TransferFileAsset *transferFileAsset = new TransferFileAsset();
+    return transferFileAsset;
+}
+
+napi_value AttachFileAssetFunc(napi_env env, void *value, void *)
+{
+    if (value == nullptr) {
+        NAPI_ERR_LOG("attach value is null");
+        return nullptr;
+    }
+    auto transferFileAsset = reinterpret_cast<TransferFileAsset*>(value);
+    std::shared_ptr<FileAsset> fileAsset = std::move(transferFileAsset->fileAsset);
+    delete transferFileAsset;
+    NAPI_ASSERT(env, fileAsset != nullptr, "AttachFileAssetFunc fileAsset is null");
+    napi_value result = FileAssetNapi::AttachCreateFileAsset(env, fileAsset);
+    NAPI_ASSERT(env, result != nullptr, "AttachFileAssetFunc result is null");
+    return result;
+}
+
 // Constructor callback
 napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_info info)
 {
@@ -260,7 +293,8 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
             if (sFileAsset_ != nullptr) {
                 obj->UpdateFileAssetInfo();
             }
-
+            napi_coerce_to_native_binding_object(
+                env, thisVar, DetachFileAssetFunc, AttachFileAssetFunc, obj.get(), nullptr);
             status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
                                FileAssetNapi::FileAssetNapiDestructor, nullptr, nullptr);
             if (status == napi_ok) {
@@ -274,6 +308,43 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
 
     return result;
 }
+
+napi_value FileAssetNapi::AttachCreateFileAsset(napi_env env, std::shared_ptr<FileAsset> &iAsset)
+{
+    if (iAsset == nullptr) {
+        return nullptr;
+    }
+    napi_value constructor = nullptr;
+    napi_ref constructorRef = nullptr;
+    napi_value exports = nullptr;
+    if (iAsset->GetResultNapiType() == ResultNapiType::TYPE_USERFILE_MGR) {
+        if (userFileMgrConstructor_ == nullptr) {
+            NAPI_INFO_LOG("AttachCreateFileAsset userFileMgrConstructor_ is null");
+            napi_create_object(env, &exports);
+            FileAssetNapi::UserFileMgrInit(env, exports);
+        }
+        constructorRef = userFileMgrConstructor_;
+    } else if (iAsset->GetResultNapiType() == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
+        if (photoAccessHelperConstructor_ == nullptr) {
+            NAPI_INFO_LOG("AttachCreateFileAsset photoAccessHelperConstructor_ is null");
+            napi_create_object(env, &exports);
+            FileAssetNapi::PhotoAccessHelperInit(env, exports);
+        }
+        constructorRef = photoAccessHelperConstructor_;
+    }
+    if (constructorRef == nullptr) {
+        NAPI_ASSERT(env, false, "AttachCreateFileAsset constructorRef is null");
+    }
+    napi_status status = napi_get_reference_value(env, constructorRef, &constructor);
+    NAPI_ASSERT(env, status == napi_ok, "AttachCreateFileAsset napi_get_reference_value failed");
+    sFileAsset_ = iAsset;
+    napi_value result = nullptr;
+    status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    NAPI_ASSERT(env, status == napi_ok, "AttachCreateFileAsset napi_new_instance failed");
+    sFileAsset_ = nullptr;
+    return result;
+}
+
 
 napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &iAsset)
 {
@@ -293,7 +364,7 @@ napi_value FileAssetNapi::CreateFileAsset(napi_env env, unique_ptr<FileAsset> &i
 
     NAPI_CALL(env, napi_get_reference_value(env, constructorRef, &constructor));
 
-    sFileAsset_ = iAsset.release();
+    sFileAsset_ = std::move(iAsset);
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_new_instance(env, constructor, 0, nullptr, &result));
@@ -2542,7 +2613,7 @@ napi_value FileAssetNapi::JSIsTrash(napi_env env, napi_callback_info info)
 
 void FileAssetNapi::UpdateFileAssetInfo()
 {
-    fileAssetPtr = std::shared_ptr<FileAsset>(sFileAsset_);
+    fileAssetPtr = sFileAsset_;
 }
 
 shared_ptr<FileAsset> FileAssetNapi::GetFileAssetInstance() const
