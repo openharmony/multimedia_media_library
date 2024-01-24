@@ -1491,7 +1491,6 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
         isDelete = true;
     }
     string fileName = GetThumbnailPath(tmpData.path, "");
-    MediaFileUtils::DeleteFile(MediaFileUtils::GetParentPath(fileName));
     return isDelete;
 }
 
