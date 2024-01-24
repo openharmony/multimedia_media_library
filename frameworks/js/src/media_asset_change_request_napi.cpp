@@ -172,6 +172,12 @@ sptr<CameraStandard::DeferredPhotoProxy> MediaAssetChangeRequestNapi::GetPhotoPr
 {
     return photoProxy_;
 }
+
+void MediaAssetChangeRequestNapi::ReleasePhotoProxyObj()
+{
+    photoProxy_.clear();
+    photoProxy_ = nullptr;
+}
 #endif
 
 void MediaAssetChangeRequestNapi::RecordChangeOperation(AssetChangeOperation changeOperation)
@@ -1323,6 +1329,7 @@ static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& co
     }
 
     int err = SavePhotoProxyImage(fileUri, context.objectInfo->GetPhotoProxyObj());
+    context.objectInfo->ReleasePhotoProxyObj();
     if (err < 0) {
         context.SaveError(err);
         NAPI_ERR_LOG("Failed to saveImage , err: %{public}d", err);
