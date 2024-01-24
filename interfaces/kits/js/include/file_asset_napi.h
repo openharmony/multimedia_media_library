@@ -54,6 +54,7 @@ public:
     EXPORT static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
     EXPORT static napi_value CreateFileAsset(napi_env env, std::unique_ptr<FileAsset> &iAsset);
     EXPORT static napi_value CreatePhotoAsset(napi_env env, std::shared_ptr<FileAsset> &fileAsset);
+    EXPORT static napi_value AttachCreateFileAsset(napi_env env, std::shared_ptr<FileAsset> &iAsset);
 
     std::string GetFileDisplayName() const;
     std::string GetRelativePath() const;
@@ -157,7 +158,7 @@ private:
     static thread_local napi_ref sConstructor_;
     static thread_local napi_ref userFileMgrConstructor_;
     static thread_local napi_ref photoAccessHelperConstructor_;
-    static thread_local FileAsset *sFileAsset_;
+    static thread_local std::shared_ptr<FileAsset> sFileAsset_;
     std::shared_ptr<FileAsset> fileAssetPtr = nullptr;
     static std::shared_ptr<ThumbnailManager> thumbnailManager_;
     std::unordered_map<std::string, std::variant<int32_t, int64_t, std::string, double>> member_;
