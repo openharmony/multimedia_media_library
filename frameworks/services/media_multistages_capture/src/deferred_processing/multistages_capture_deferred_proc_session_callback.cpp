@@ -20,6 +20,7 @@
 #include "database_adapter.h"
 #include "file_utils.h"
 #include "media_log.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_errno.h"
 #include "multistages_capture_manager.h"
@@ -63,11 +64,11 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
     // 1. 分段式拍照已经处理完成，保存全质量图
     MEDIA_INFO_LOG("photoid: %{public}s, bytes: %{public}ld enter", imageId.c_str(), bytes);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = MEDIA_DATA_DB_PHOTO_ID + " = ? ";
+    string where = PhotoColumn::PHOTO_ID + " = ? ";
     vector<string> whereArgs { imageId };
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    vector<string> columns { MEDIA_DATA_DB_ID, MEDIA_DATA_DB_FILE_PATH };
+    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME };
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
         MEDIA_INFO_LOG("result set is empty");
@@ -75,8 +76,11 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
         MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR));
         return;
     }
-    string data = GetStringVal(MEDIA_DATA_DB_FILE_PATH, resultSet);
-    int fileId = GetInt32Val(MEDIA_DATA_DB_ID, resultSet);
+    string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0 && !data.empty()) {
+        data = MediaLibraryAssetOperations::GetEditDataSourcePath(data);
+    }
+    int fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     int ret = FileUtils::SaveImage(data, (void*)addr, bytes);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save high quality image failed. ret=%{public}d", ret);
