@@ -601,14 +601,12 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", updatedRows);
         return E_HAS_DB_ERROR;
     }
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw());
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore->GetRaw());
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw());
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
             notifyUris.size(), updatedRows);
     }
     TrashPhotosSendNotify(notifyUris);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw(), notifyUris);
     return updatedRows;
 }
 
