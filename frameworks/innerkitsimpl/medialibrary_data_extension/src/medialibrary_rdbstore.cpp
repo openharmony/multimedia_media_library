@@ -885,6 +885,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_DEVICE_TABLE,
     CREATE_CATEGORY_SMARTALBUMMAP_TABLE,
     CREATE_ASSET_UNIQUE_NUMBER_TABLE,
+    CREATE_ALBUM_REFRESH_TABLE,
     CREATE_IMAGE_VIEW,
     CREATE_VIDEO_VIEW,
     CREATE_AUDIO_VIEW,
@@ -1912,6 +1913,14 @@ static void UpdatePhotosMdirtyTrigger(RdbStore& store)
     }
 }
 
+static void UpdateAlbumRefreshTable(RdbStore &store)
+{
+    const vector<string> sqls = {
+        CREATE_ALBUM_REFRESH_TABLE,
+    };
+    ExecSqls(sqls, store);
+}
+
 void AddMultiStagesCaptureColumns(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2072,6 +2081,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_PHOTOS_MDIRTY_TRIGGER) {
         UpdatePhotosMdirtyTrigger(store);
+    }
+
+    if (oldVersion < VERSION_ALBUM_REFRESH) {
+        UpdateAlbumRefreshTable(store);
     }
 }
 

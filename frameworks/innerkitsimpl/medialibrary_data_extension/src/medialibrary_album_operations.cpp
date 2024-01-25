@@ -234,12 +234,33 @@ static void QuerySqlDebug(const string &sql, const vector<string> &selectionArgs
 }
 #endif
 
+static int32_t RefreshAlbums()
+{
+    if (MediaLibraryRdbUtils::IsNeedRefreshAlbum()) {
+        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+        if (rdbStore == nullptr) {
+            MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
+            return E_HAS_DB_ERROR;
+        }
+        if (rdbStore->GetRaw() == nullptr) {
+            MEDIA_ERR_LOG("RdbStore is nullptr!");
+            return E_HAS_DB_ERROR;
+        }
+        return MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore->GetRaw());
+    }
+    return E_OK;
+}
+
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
         MEDIA_ERR_LOG("uniStore is nullptr!");
+        return nullptr;
+    }
+
+    if (RefreshAlbums() != E_OK) {
         return nullptr;
     }
 
@@ -597,6 +618,9 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
+    if (RefreshAlbums() != E_OK) {
+        return nullptr;
+    }
     if (cmd.GetAbsRdbPredicates()->GetOrder().empty()) {
         cmd.GetAbsRdbPredicates()->OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
     }
