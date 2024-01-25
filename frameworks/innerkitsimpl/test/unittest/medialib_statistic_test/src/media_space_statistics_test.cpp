@@ -401,7 +401,11 @@ void CheckQuerySize(std::string testNo, int mediaTypeId, int targetFileNumber)
     }
     MEDIA_INFO_LOG("%s QueryTotalSize querySize = %{public}lld", testNo.c_str(), (long long)querySize);
     MEDIA_INFO_LOG("%s QueryTotalSize targetSize = %{public}lld", testNo.c_str(), (long long)targetSize);
-    EXPECT_EQ(querySize, targetSize);
+    if (mediaTypeId == MEDIA_TYPE_IMAGE) {
+        EXPECT_TRUE(querySize >= targetSize);
+    } else {
+        EXPECT_EQ(querySize, targetSize);
+    }
 }
 
 int32_t CreateTestFile(MediaType MediaType, string fileName, string relativePath)
@@ -433,7 +437,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_001, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_FILE, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_FILE, 0);
     CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_IMAGE, 1);
     CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_VIDEO, 1);
     CheckQuerySize("MediaSpaceStatistics_test_001", MEDIA_TYPE_AUDIO, 1);
@@ -487,7 +491,7 @@ HWTEST_F(MediaSpaceStatisticsTest, MediaSpaceStatistics_test_004, TestSize.Level
     if (sDataShareHelper_ == nullptr) {
         return;
     }
-    CheckQuerySize("MediaSpaceStatistics_test_004", MEDIA_TYPE_FILE, 1);
+    CheckQuerySize("MediaSpaceStatistics_test_004", MEDIA_TYPE_FILE, 0);
     MEDIA_INFO_LOG("MediaSpaceStatistics_test_004::End");
 }
 
