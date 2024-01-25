@@ -259,6 +259,7 @@ inline void *DetachFileAssetFunc(napi_env env, void *value, void *)
     auto fileAssetNapi = reinterpret_cast<FileAssetNapi*>(value);
     std::shared_ptr<FileAsset> detachFileAsset = fileAssetNapi->GetFileAssetInstance();
     TransferFileAsset *transferFileAsset = new TransferFileAsset();
+    transferFileAsset->fileAsset = detachFileAsset;
     return transferFileAsset;
 }
 
