@@ -276,7 +276,9 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
         return false;
     }
     std::string oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
-    if (!ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
+    if (sceneCode_ == UPGRADE_RESTORE_ID ?
+        !BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath) :
+        !ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
         MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
         return false;
     }
@@ -349,6 +351,29 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
     return values;
+}
+
+bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
+    std::string &newPath, std::string &relativePath)
+{
+    int32_t pos = 0;
+    int32_t count = 0;
+    constexpr int32_t prefixLevel = 4;
+    for (size_t i = 0; i < srcPath.length(); i++) {
+        if (srcPath[i] == '/') {
+            count++;
+            if (count == prefixLevel) {
+                pos = i;
+                break;
+            }
+        }
+    }
+    if (count < prefixLevel) {
+        return false;
+    }
+    newPath = prefix + srcPath;
+    relativePath = srcPath.substr(pos);
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

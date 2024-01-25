@@ -43,7 +43,7 @@ protected:
 
     virtual bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
     virtual void AnalyzeSource() = 0;
-    bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
+    virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
