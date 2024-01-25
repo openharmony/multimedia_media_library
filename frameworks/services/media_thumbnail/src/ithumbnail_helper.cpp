@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "image_type.h"
 #define MLOG_TAG "Thumbnail"
 
 #include "ithumbnail_helper.h"
@@ -351,7 +350,7 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
 
 bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
-    int32_t err = UpdateAstcState(opts);
+    int32_t err = UpdateAstcState(opts, data);
     if (err != E_OK) {
         MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
         return false;
@@ -370,7 +369,7 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const Thumb
     return true;
 }
 
-int32_t IThumbnailHelper::UpdateAstcState(const ThumbRdbOpt &opts)
+int32_t IThumbnailHelper::UpdateAstcState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
@@ -382,7 +381,7 @@ int32_t IThumbnailHelper::UpdateAstcState(const ThumbRdbOpt &opts)
         return E_ERR;
     }
     string updateAstcStateSql = "UPDATE " + PhotoColumn::PHOTOS_TABLE +
-        " SET has_astc = has_astc | 1 WHERE file_id = " + opts.row;
+        " SET has_astc = has_astc | 1 WHERE file_id = " + data.id;
     return uniStore->ExecuteSql(updateAstcStateSql);
 }
 
