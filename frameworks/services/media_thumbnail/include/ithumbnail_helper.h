@@ -86,7 +86,6 @@ private:
     static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const std::string &suffix,
         bool isLoadFromSourcePath);
     static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
-    static bool GenMonthAndYearPixelMap(ThumbnailData &data, const ThumbnailType type);
     static bool UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
     static int32_t UpdateAstcState(const ThumbRdbOpt &opts);
 };

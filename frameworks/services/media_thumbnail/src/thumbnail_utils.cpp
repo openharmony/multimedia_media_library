@@ -90,12 +90,6 @@ static string GetThumbnailSuffix(ThumbnailType type)
 {
     string suffix;
     switch (type) {
-        case ThumbnailType::YEAR:
-            suffix = THUMBNAIL_YEAR_SUFFIX;
-            break;
-        case ThumbnailType::MTH:
-            suffix = THUMBNAIL_MTH_SUFFIX;
-            break;
         case ThumbnailType::THUMB:
             suffix = THUMBNAIL_THUMB_SUFFIX;
             break;
@@ -1294,12 +1288,6 @@ int ThumbnailUtils::TrySaveFile(ThumbnailData &data, ThumbnailType type)
     uint8_t *output;
     int writeSize;
     switch (type) {
-        case ThumbnailType::MTH:
-        case ThumbnailType::YEAR:
-            suffix = (type == ThumbnailType::MTH) ? THUMBNAIL_MTH_SUFFIX : THUMBNAIL_YEAR_SUFFIX;
-            output = const_cast<uint8_t *>(data.source->GetPixels());
-            writeSize = data.source->GetByteCount();
-            break;
         case ThumbnailType::THUMB:
             suffix = THUMBNAIL_THUMB_SUFFIX;
             output = data.thumbnail.data();
