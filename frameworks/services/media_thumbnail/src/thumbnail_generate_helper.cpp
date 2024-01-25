@@ -72,6 +72,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatch(ThumbRdbOpt &opts)
         return E_OK;
     }
 
+    MEDIA_INFO_LOG("no astc data size: %{public}d", static_cast<int>(infos.size()));
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
         IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateAstc, opts, infos[i], false);
