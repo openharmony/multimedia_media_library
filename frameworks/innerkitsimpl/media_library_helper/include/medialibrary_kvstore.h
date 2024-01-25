@@ -44,7 +44,7 @@ public:
     EXPORT int32_t Insert(const std::string &key, const std::vector<uint8_t> &value);
     EXPORT int32_t Delete(const std::string &key);
     EXPORT int32_t Query(const std::string &key, std::vector<uint8_t> &value);
-    EXPORT int32_t BatchQuery(const std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values);
+    EXPORT int32_t BatchQuery(std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values);
     EXPORT bool Close();
 private:
     bool GetKvStoreOption(DistributedKv::Options &options, const KvStoreRoleType &roleType, const std::string &baseDir);
