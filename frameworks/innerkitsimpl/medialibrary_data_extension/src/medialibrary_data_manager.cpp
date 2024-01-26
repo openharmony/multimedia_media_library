@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include "medialibrary_async_worker.h"
 #define MLOG_TAG "DataManager"
 
 #include "medialibrary_data_manager.h"
@@ -40,6 +39,7 @@
 #include "media_scanner_manager.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_common_utils.h"
@@ -54,6 +54,8 @@
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_location_operations.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_rdb_utils.h"
+#include "medialibrary_rdbstore.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_sync_operation.h"
@@ -200,6 +202,8 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
+    InitRefreshAlbum();
+
     cloudDataObserver_ = std::make_shared<CloudThumbnailObserver>();
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     shareHelper->RegisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_, true);
@@ -282,6 +286,21 @@ int32_t MediaLibraryDataManager::InitMediaLibraryRdbStore()
     }
 
     return E_OK;
+}
+
+void MediaLibraryDataManager::InitRefreshAlbum()
+{
+    bool isNeedRefresh = false;
+    int32_t ret = MediaLibraryRdbUtils::IsNeedRefreshByCheckTable(rdbStore_, isNeedRefresh);
+    if (ret != E_OK) {
+        MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+        return;
+    }
+
+    if (isNeedRefresh) {
+        MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+        MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore_);
+    }
 }
 
 shared_ptr<MediaDataShareExtAbility> MediaLibraryDataManager::GetOwner()
