@@ -44,7 +44,7 @@ static Type stringToNum(const string &str)
     return num;
 }
 
-double GetLongitudeLatitude(string inputStr)
+double GetLongitudeLatitude(string inputStr, const string& ref = "")
 {
     auto pos = inputStr.find(',');
     if (pos == string::npos) {
@@ -61,7 +61,7 @@ double GetLongitudeLatitude(string inputStr)
 
     inputStr = inputStr.substr(pos + OFFSET_NUM);
     ret += stringToNum<double>(inputStr) / DEGREES2SECONDS;
-    return ret;
+    return (ref.compare("W") == 0 || ref.compare("S") == 0) ? -ret : ret;
 }
 
 static time_t convertTimeStr2TimeStamp(string &timeStr)
@@ -112,7 +112,7 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
     exifJson[PHOTO_DATA_IMAGE_GPS_LONGITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
 
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
-    exifJson[PHOTO_DATA_IMAGE_GPS_LONGITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
+    exifJson[PHOTO_DATA_IMAGE_GPS_LATITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
 
     for (auto &exifKey : exifInfoKeys) {
         err = imageSource->GetImagePropertyString(0, exifKey, propertyStr);
@@ -182,15 +182,19 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
     }
 
     double dbleTempMeta = -1;
+    uint32_t refErr = 0;
+    string refStr;
     err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
-    if (err == 0) {
-        dbleTempMeta = GetLongitudeLatitude(propertyStr);
+    refErr = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE_REF, refStr);
+    if (err == 0 && refErr == 0) {
+        dbleTempMeta = GetLongitudeLatitude(propertyStr, refStr);
         data->SetLongitude(dbleTempMeta);
     }
 
     err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE, propertyStr);
-    if (err == 0) {
-        dbleTempMeta = GetLongitudeLatitude(propertyStr);
+    refErr = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE_REF, refStr);
+    if (err == 0 && refErr == 0) {
+        dbleTempMeta = GetLongitudeLatitude(propertyStr, refStr);
         data->SetLatitude(dbleTempMeta);
     }
     ExtractImageExif(imageSource, data);
