@@ -408,6 +408,11 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
     if ((data_->GetFileDateModified() == MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim)) &&
         (data_->GetFileSize() == statInfo.st_size) && (!isForceScan_)) {
         scannedIds_.insert(make_pair(data_->GetTableName(), data_->GetFileId()));
+        if (path_.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+            MEDIA_ERR_LOG("no need to scan, date_modified:%{public}ld, size:%{public}ld, time_pending:%{public}ld",
+                static_cast<long>(data_->GetFileDateModified()), static_cast<long>(data_->GetFileSize()),
+                static_cast<long>(data_->GetTimePending()));
+        }
         return E_SCANNED;
     }
 
