@@ -1627,7 +1627,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, Test
         { { PhotoColumn::PHOTO_HEIGHT, "12345"} });
     TestPhotoUpdateParamsVerifyFunctionFailed(PhotoColumn::MEDIA_ID, to_string(fileId),
         { { PhotoColumn::PHOTO_WIDTH, "12345"} });
-
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_006");
 }
 
