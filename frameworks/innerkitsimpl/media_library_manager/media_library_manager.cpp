@@ -407,6 +407,8 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
                 sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
                 fd = open(sandboxPath.c_str(), O_RDONLY);
             }
+        } else {
+            MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s", path.c_str());
         }
         if (fd > 0) {
             return fd;
@@ -414,6 +416,8 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         if (IsAsciiString(path)) {
             uriStr += "&" + THUMBNAIL_PATH + "=" + path;
         }
+    } else {
+        MEDIA_ERR_LOG("OpenThumbnail path is empty");
     }
     Uri openUri(uriStr);
     return sDataShareHelper_->OpenFile(openUri, "R");
@@ -541,6 +545,7 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
 
     PostProc postProc;
     if (size.width != DEFAULT_ORIGINAL && !isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
+        MEDIA_ERR_LOG("DecodeThumbnail error");
         return nullptr;
     }
 
@@ -589,9 +594,13 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
     bool isOldVersion = uriStr[thumbLatIdx] == '/';
     UriParams uriParams;
     if (!GetParamsFromUri(uriStr, isOldVersion, uriParams)) {
+        MEDIA_ERR_LOG("GetThumbnail failed, get params from uri failed, uri :%{public}s", uriStr.c_str());
         return nullptr;
     }
     auto pixelmap = QueryThumbnail(uriParams.fileUri, uriParams.size, uriParams.path, uriParams.isAstc);
+    if (pixelmap == nullptr) {
+        MEDIA_ERR_LOG("pixelmap is null, uri :%{public}s", uriStr.c_str());
+    }
     return pixelmap;
 }
 
