@@ -411,6 +411,13 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
+
+    // for some device that do not support KvStore, no need to generate the month and year astc.
+    if (MediaLibraryKvStoreManager::GetInstance()
+        .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC) == nullptr) {
+        MEDIA_DEBUG_LOG("kvStore is nullptr, no need to create month and year astc");
+        return true;
+    }
     if (!GenThumbnail(opts, data, ThumbnailType::MTH_ASTC)) {
         return false;
     }
