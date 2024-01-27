@@ -20,6 +20,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_async_worker.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
@@ -234,21 +235,45 @@ static void QuerySqlDebug(const string &sql, const vector<string> &selectionArgs
 }
 #endif
 
-static int32_t RefreshAlbums()
+static void RefreshAlbumAsyncTask(AsyncTaskData *data)
 {
-    if (MediaLibraryRdbUtils::IsNeedRefreshAlbum()) {
-        auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
-        if (rdbStore == nullptr) {
-            MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
-            return E_HAS_DB_ERROR;
-        }
-        if (rdbStore->GetRaw() == nullptr) {
-            MEDIA_ERR_LOG("RdbStore is nullptr!");
-            return E_HAS_DB_ERROR;
-        }
-        return MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore->GetRaw());
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
+        return;
     }
-    return E_OK;
+    if (rdbStore->GetRaw() == nullptr) {
+        MEDIA_ERR_LOG("RdbStore is nullptr!");
+        return;
+    }
+    int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore->GetRaw());
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("RefreshAllAlbums failed ret:%{public}d", ret);
+    }
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+        return;
+    }
+    watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
+}
+
+static void RefreshAlbums()
+{
+    if (MediaLibraryRdbUtils::IsNeedRefreshAlbum() && !MediaLibraryRdbUtils::IsInRefreshTask()) {
+        shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+        if (asyncWorker == nullptr) {
+            MEDIA_ERR_LOG("Can not get asyncWorker");
+            return;
+        }
+        shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(
+            RefreshAlbumAsyncTask, nullptr);
+        if (notifyAsyncTask != nullptr) {
+            asyncWorker->AddTask(notifyAsyncTask, true);
+        } else {
+            MEDIA_ERR_LOG("Start UpdateAlbumsAndSendNotifyInTrash failed");
+        }
+    }
 }
 
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
@@ -259,10 +284,7 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
         MEDIA_ERR_LOG("uniStore is nullptr!");
         return nullptr;
     }
-
-    if (RefreshAlbums() != E_OK) {
-        return nullptr;
-    }
+    RefreshAlbums();
 
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
         MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{private}s", QUERY_MEDIA_VOLUME.c_str());
@@ -618,9 +640,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
-    if (RefreshAlbums() != E_OK) {
-        return nullptr;
-    }
+    RefreshAlbums();
     if (cmd.GetAbsRdbPredicates()->GetOrder().empty()) {
         cmd.GetAbsRdbPredicates()->OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
     }
