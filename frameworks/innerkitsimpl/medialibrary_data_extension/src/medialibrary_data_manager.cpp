@@ -292,14 +292,9 @@ void MediaLibraryDataManager::InitRefreshAlbum()
 {
     bool isNeedRefresh = false;
     int32_t ret = MediaLibraryRdbUtils::IsNeedRefreshByCheckTable(rdbStore_, isNeedRefresh);
-    if (ret != E_OK) {
+    if (ret != E_OK || isNeedRefresh) {
+        // Only set flag here, should not do any task in InitDataMgr
         MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
-        return;
-    }
-
-    if (isNeedRefresh) {
-        MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
-        MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore_);
     }
 }
 
