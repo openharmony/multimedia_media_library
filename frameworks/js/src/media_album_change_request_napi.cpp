@@ -224,11 +224,6 @@ bool MediaAlbumChangeRequestNapi::CheckChangeOperations(napi_env env)
         return false;
     }
 
-    if (!CheckPortraitMergeAlbum()) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Missing setAlbumName after mergeAlbum");
-        return false;
-    }
-
     return true;
 }
 
