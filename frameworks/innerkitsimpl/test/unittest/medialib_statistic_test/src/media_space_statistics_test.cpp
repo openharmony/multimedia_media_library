@@ -144,7 +144,7 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
         return;
     }
 
-    // // make sure board is empty
+    // make sure board is empty
     ClearAllFile();
 
     // create base file
