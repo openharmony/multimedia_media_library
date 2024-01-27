@@ -16,11 +16,11 @@
 #ifndef OHOS_MEDIALIBRARY_RDB_UTILS_H
 #define OHOS_MEDIALIBRARY_RDB_UTILS_H
 
+#include <atomic>
 #include <memory>
 #include <string>
 
 #include "rdb_store.h"
-
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
@@ -66,8 +66,10 @@ public:
 
     EXPORT static bool IsNeedRefreshAlbum();
     EXPORT static void SetNeedRefreshAlbum(bool isNeedRefresh);
+    EXPORT static bool IsInRefreshTask();
 private:
     static std::atomic<bool> isNeedRefreshAlbum;
+    static std::atomic<bool> isInRefreshTask;
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIALIBRARY_RDB_UTILS_H
