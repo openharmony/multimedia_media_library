@@ -138,6 +138,26 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
     return E_OK;
 }
 
+static void ExtractLocationMetadata(unique_ptr<ImageSource>& imageSource, unique_ptr<Metadata>& data)
+{
+    string propertyStr;
+    string refStr;
+    double tempLocation = -1;
+    uint32_t err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
+    uint32_t refErr = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE_REF, refStr);
+    if (err == 0 && refErr == 0) {
+        tempLocation = GetLongitudeLatitude(propertyStr, refStr);
+        data->SetLongitude(tempLocation);
+    }
+
+    err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE, propertyStr);
+    refErr = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE_REF, refStr);
+    if (err == 0 && refErr == 0) {
+        tempLocation = GetLongitudeLatitude(propertyStr, refStr);
+        data->SetLatitude(tempLocation);
+    }
+}
+
 int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
 {
     uint32_t err = 0;
@@ -181,22 +201,7 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
         data->SetOrientation(intTempMeta);
     }
 
-    double dbleTempMeta = -1;
-    uint32_t refErr = 0;
-    string refStr;
-    err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
-    refErr = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE_REF, refStr);
-    if (err == 0 && refErr == 0) {
-        dbleTempMeta = GetLongitudeLatitude(propertyStr, refStr);
-        data->SetLongitude(dbleTempMeta);
-    }
-
-    err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE, propertyStr);
-    refErr = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE_REF, refStr);
-    if (err == 0 && refErr == 0) {
-        dbleTempMeta = GetLongitudeLatitude(propertyStr, refStr);
-        data->SetLatitude(dbleTempMeta);
-    }
+    ExtractLocationMetadata(imageSource, data);
     ExtractImageExif(imageSource, data);
     return E_OK;
 }
