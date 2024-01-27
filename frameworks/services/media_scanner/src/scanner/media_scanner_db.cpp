@@ -92,8 +92,8 @@ static void SetValuesFromMetaDataAndType(const Metadata &metadata, ValuesBucket 
             values.PutInt(MEDIA_DATA_DB_HEIGHT, metadata.GetFileHeight());
             values.PutInt(MEDIA_DATA_DB_WIDTH, metadata.GetFileWidth());
             values.PutInt(MEDIA_DATA_DB_ORIENTATION, metadata.GetOrientation());
-            values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLongitude());
-            values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLatitude());
+            values.PutDouble(MEDIA_DATA_DB_LATITUDE, metadata.GetLatitude());
+            values.PutDouble(MEDIA_DATA_DB_LONGITUDE, metadata.GetLongitude());
             SetVirtualPath(metadata, values);
             if (metadata.GetPhotoSubType() != 0) {
                 values.PutInt(PhotoColumn::PHOTO_SUBTYPE, metadata.GetPhotoSubType());
