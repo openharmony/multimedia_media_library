@@ -481,22 +481,22 @@ void GetDisplayLevelAlbumPredicates(const int32_t value, DataShare::DataSharePre
             MAP_ALBUM + " IN(SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + IS_ME + " = 1))" +
             " GROUP BY " + MAP_ASSET + " HAVING count(" + MAP_ASSET + ") > 1) AND " + MediaColumn::MEDIA_DATE_TRASHED +
             " = 0) AND " + MAP_ALBUM + " NOT IN (SELECT " + ALBUM_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
-            IS_ME + " = 1)" + " GROUP BY " + MAP_ALBUM + " HAVING count(" + MAP_ALBUM + ") > " +
+            IS_ME + " = 1)" + " GROUP BY " + MAP_ALBUM + " HAVING count(" + MAP_ALBUM + ") >= " +
             to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT_RELATED_ME) + ")";
         string whereClauseDisplay = USER_DISPLAY_LEVEL + " = 1";
-        string whereClauseSatifyCount = COUNT + " > " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND (" +
+        string whereClauseSatifyCount = COUNT + " >= " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND (" +
         USER_DISPLAY_LEVEL + " != 2 OR " + USER_DISPLAY_LEVEL + " IS NULL)";
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (((" + USER_DISPLAY_LEVEL + " != 3 AND " +
             USER_DISPLAY_LEVEL + " !=2) OR " + USER_DISPLAY_LEVEL + " IS NULL) AND ((" +
             whereClauseDisplay + ") OR (" + whereClauseRelatedMe + ") OR (" + whereClauseSatifyCount + "))) GROUP BY " +
-            GROUP_TAG + " ORDER BY CASE WHEN " + ALBUM_NAME + " IS NOT NULL THEN 0 ELSE 1 END, " + COUNT + " DESC";
+            GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION + " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == SECOND_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 2 OR (" +
-            COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND " + COUNT + " > " +
+            COUNT + " < " + to_string(PORTRAIT_FIRST_PAGE_MIN_COUNT) + " AND " + COUNT + " >= " +
             to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " AND (" + USER_DISPLAY_LEVEL + " != 1 OR " +
             USER_DISPLAY_LEVEL + " IS NULL) AND (" + USER_DISPLAY_LEVEL + " != 3 OR " + USER_DISPLAY_LEVEL +
-            " IS NULL))) GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + ALBUM_NAME +
-            " IS NOT NULL THEN 0 ELSE 1 END, " + COUNT + " DESC";
+            " IS NULL))) GROUP BY " + GROUP_TAG + " ORDER BY CASE WHEN " + RENAME_OPERATION +
+            " = 1 THEN 0 ELSE 1 END, " + COUNT + " DESC";
     } else if (value == FAVORITE_PAGE) {
         whereClause = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND (" + USER_DISPLAY_LEVEL + " = 3 )GROUP BY " +
             GROUP_TAG + " ORDER BY " + RANK;
@@ -1261,8 +1261,9 @@ int32_t UpdateForMergeAlbums(const MergeAlbumInfo &updateAlbumInfo, const int32_
         to_string(updateAlbumInfo.isMe) + "," + COVER_URI + " = " + updateAlbumInfo.coverUri + "," +
         USER_DISPLAY_LEVEL + " = " + to_string(updateAlbumInfo.userDisplayLevel) + "," + RANK + " = " +
         to_string(updateAlbumInfo.rank) + "," + USER_OPERATION + " = " + to_string(updateAlbumInfo.userOperation) +
-        "," + RENAME_OPERATION + " = " + to_string(updateAlbumInfo.renameOperation) +
-        " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
+        "," + RENAME_OPERATION + " = " + to_string(updateAlbumInfo.renameOperation) + "," + ALBUM_NAME + " = '" +
+        updateAlbumInfo.albumName +
+        "' WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
         " = " + to_string(currentAlbumId) + " OR " + ALBUM_ID + " = " + to_string(targetAlbumId) + ")";
     vector<string> updateSqls = { updateForMergeAlbums};
     return ExecSqls(updateSqls, uniStore);
@@ -1277,9 +1278,9 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
         return E_DB_FAIL;
     }
     const std::string queryAlbumInfo = "SELECT " + ALBUM_ID + "," + GROUP_TAG + "," + COUNT + "," + IS_ME + "," +
-        COVER_URI + "," + USER_DISPLAY_LEVEL + "," + RANK + "," + USER_OPERATION + "," + RENAME_OPERATION + " FROM " +
-        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) + " OR " +
-        ALBUM_ID + " = " + to_string(targetAlbumId);
+        COVER_URI + "," + USER_DISPLAY_LEVEL + "," + RANK + "," + USER_OPERATION + "," + RENAME_OPERATION + "," +
+        ALBUM_NAME + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) +
+        " OR " + ALBUM_ID + " = " + to_string(targetAlbumId);
 
     auto resultSet = uniStore->QuerySql(queryAlbumInfo);
     if (resultSet == nullptr) {
@@ -1295,7 +1296,8 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
             GetStringValueFromResultSet(resultSet, COVER_URI, albumInfo.coverUri) != E_OK ||
             GetIntValueFromResultSet(resultSet, USER_DISPLAY_LEVEL, albumInfo.userDisplayLevel) != E_OK ||
             GetIntValueFromResultSet(resultSet, RANK, albumInfo.rank) != E_OK ||
-            GetIntValueFromResultSet(resultSet, RENAME_OPERATION, albumInfo.renameOperation) != E_OK) {
+            GetIntValueFromResultSet(resultSet, RENAME_OPERATION, albumInfo.renameOperation) != E_OK ||
+            GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumInfo.albumName) != E_OK) {
                 MEDIA_ERR_LOG("GetMergeAlbumsInfo db fail");
                 return E_HAS_DB_ERROR;
             }
@@ -1349,7 +1351,7 @@ int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const string &cur
     return E_OK;
 }
 
-int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo)
+int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int32_t currentAlbumId)
 {
     MergeAlbumInfo updateAlbumInfo;
     if (GetMergeAlbumCoverUri(updateAlbumInfo, mergeAlbumInfo[0].coverUri, mergeAlbumInfo[1].coverUri) != E_OK) {
@@ -1360,6 +1362,8 @@ int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo)
     updateAlbumInfo.isMe = (mergeAlbumInfo[0].isMe == 1 || mergeAlbumInfo[1].isMe == 1) ? 1 : 0;
     updateAlbumInfo.userOperation = 1;
     updateAlbumInfo.renameOperation = 1;
+    updateAlbumInfo.albumName =
+        mergeAlbumInfo[0].albumId == currentAlbumId ? mergeAlbumInfo[0].albumName : mergeAlbumInfo[1].albumName;
     int currentLevel = mergeAlbumInfo[0].userDisplayLevel;
     int targetLevel = mergeAlbumInfo[1].userDisplayLevel;
     if ((currentLevel == targetLevel) && (currentLevel == FIRST_PAGE || currentLevel == SECOND_PAGE ||
@@ -1414,7 +1418,7 @@ int32_t MergeAlbum(const ValuesBucket &values)
         MEDIA_ERR_LOG("invalid mergeAlbumInfo size");
         return E_INVALID_VALUES;
     }
-    return UpdateMergeAlbumsInfo(mergeAlbumInfo);
+    return UpdateMergeAlbumsInfo(mergeAlbumInfo, currentAlbumId);
 }
 
 static int32_t UpdateDisplayLevel(const int32_t value, const int32_t albumId)
@@ -1530,11 +1534,11 @@ int32_t SetIsMe(const ValuesBucket &values, const DataSharePredicates &predicate
         return E_DB_FAIL;
     }
 
-    std::string clearIsMeAlbum = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 0" + " WHERE " +
-        IS_ME + " = 1";
-    std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1" + " WHERE " +
-        GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " +
-        targetAlbumId + ")";
+    std::string clearIsMeAlbum = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 0, " + RENAME_OPERATION +
+        " = 0, " + USER_DISPLAY_LEVEL + " = 0 " + " WHERE " + IS_ME + " = 1";
+    std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " + RENAME_OPERATION +
+        " = 1, " + USER_DISPLAY_LEVEL + " = 1 " + " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " +
+        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
     vector<string> updateSqls = { clearIsMeAlbum, updateForSetIsMe};
     int32_t err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
