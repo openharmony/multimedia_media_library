@@ -29,7 +29,7 @@ std::atomic<uint32_t> MediaLibraryKvStoreManager::insertImageCount_ = 0;
 MediaLibraryKvStoreManager::~MediaLibraryKvStoreManager()
 {
     timer_.Shutdown();
-};
+}
 
 int32_t MediaLibraryKvStoreManager::InitKvStore(const KvStoreRoleType &roleType, const KvStoreValueType &valueType)
 {
