@@ -15,6 +15,7 @@
 
 #include "medialibrary_kvstore_manager.h"
 
+#include <atomic>
 #include <shared_mutex>
 
 #include "medialibrary_errno.h"
@@ -22,6 +23,14 @@
 
 namespace OHOS::Media {
 std::mutex MediaLibraryKvStoreManager::mutex_;
+Utils::Timer MediaLibraryKvStoreManager::timer_("close_kvStore");
+std::atomic<uint32_t> MediaLibraryKvStoreManager::insertImageCount_ = 0;
+
+MediaLibraryKvStoreManager::~MediaLibraryKvStoreManager()
+{
+    timer_.Shutdown();
+}
+
 int32_t MediaLibraryKvStoreManager::InitKvStore(const KvStoreRoleType &roleType, const KvStoreValueType &valueType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -53,6 +62,7 @@ int32_t MediaLibraryKvStoreManager::InitKvStore(const KvStoreRoleType &roleType,
 std::shared_ptr<MediaLibraryKvStore> MediaLibraryKvStoreManager::GetKvStore(
     const KvStoreRoleType &roleType, const KvStoreValueType &valueType)
 {
+    RegisterTimer(roleType, valueType);
     KvStoreSharedPtr ptr;
     if (kvStoreMap_.Find(valueType, ptr)) {
         return ptr;
@@ -96,5 +106,28 @@ bool MediaLibraryKvStoreManager::CloseKvStore(const KvStoreValueType &valueType)
         return true;
     }
     return false;
+}
+
+void MediaLibraryKvStoreManager::RegisterTimer(const KvStoreRoleType &roleType, const KvStoreValueType &valueType)
+{
+    if (roleType != KvStoreRoleType::OWNER || valueType != KvStoreValueType::YEAR_ASTC) {
+        return;
+    }
+
+    Utils::Timer::TimerCallback timerCallback = [this]() {
+        MEDIA_INFO_LOG("KvStore timerCallback, CloseAllKvStore");
+        insertImageCount_ = 0;
+        CloseAllKvStore();
+    };
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (insertImageCount_ == 0 || insertImageCount_ >= KVSTORE_INSERT_COUNT) {
+        timer_.Shutdown();
+        insertImageCount_ = 0;
+        timer_.Setup();
+        timer_.Register(timerCallback, CLOSE_KVSTORE_TIME_INTERVAL, true);
+        MEDIA_INFO_LOG("KvStore timer Setup");
+    }
+    insertImageCount_++;
 }
 } // namespace OHOS::Media
