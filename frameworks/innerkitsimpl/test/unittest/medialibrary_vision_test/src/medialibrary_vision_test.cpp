@@ -2163,6 +2163,7 @@ HWTEST_F(MediaLibraryVisionTest, MergeAlbum_Test, TestSize.Level0)
 
 int MergeAlbumTest(int albumId, int targetAlbumId)
 {
+    MEDIA_INFO_LOG("MergeAlbumTest");
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     Uri updateAlbumUri(PAH_PORTRAIT_MERGE_ALBUM);
