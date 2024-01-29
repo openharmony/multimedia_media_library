@@ -115,7 +115,7 @@ void MediaLibraryKvStoreManager::RegisterTimer(const KvStoreRoleType &roleType, 
     }
 
     Utils::Timer::TimerCallback timerCallback = [this]() {
-        MEDIA_INFO_LOG("KvStore timerCallbach, CloseAllKvStore");
+        MEDIA_INFO_LOG("KvStore timerCallback, CloseAllKvStore");
         timerId_ = 0;
         insertImageCount_ = 0;
         CloseAllKvStore();
