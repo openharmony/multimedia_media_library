@@ -19,11 +19,14 @@
 #include <safe_map.h>
 
 #include "medialibrary_kvstore.h"
+#include "timer.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 using KvStoreSharedPtr = std::shared_ptr<MediaLibraryKvStore>;
+constexpr size_t KVSTORE_INSERT_COUNT = 10;
+constexpr size_t CLOSE_KVSTORE_TIME_INTERVAL = 270000;
 
 class MediaLibraryKvStoreManager {
 public:
@@ -41,10 +44,15 @@ public:
 
 private:
     MediaLibraryKvStoreManager() = default;
-    ~MediaLibraryKvStoreManager() = default;
+    ~MediaLibraryKvStoreManager();
+
+    void RegisterTimer(const KvStoreRoleType &roleType, const KvStoreValueType &valueType);
 
     SafeMap<KvStoreValueType, KvStoreSharedPtr> kvStoreMap_;
     static std::mutex mutex_;
+    static Utils::Timer timer_;
+    static uint32_t timerId_;
+    static volatile uint32_t insertImageCount_;
 };
 } // namespace Media
 } // namespace OHOS
