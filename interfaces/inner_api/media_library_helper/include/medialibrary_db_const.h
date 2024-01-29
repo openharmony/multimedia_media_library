@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 55;
+const int32_t MEDIA_RDB_VERSION = 56;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -81,6 +81,7 @@ enum {
     VERSION_MOVE_SOURCE_ALBUM_TO_PHOTO_ALBUM_AND_ADD_COLUMNS = 53,
     VERSION_ADD_CLOUD_ID_INDEX = 54,
     VERSION_UPDATE_PHOTOS_MDIRTY_TRIGGER = 55,
+    VERSION_ALBUM_REFRESH = 56,
 };
 
 enum {
@@ -615,6 +616,14 @@ const std::string CREATE_ASSET_UNIQUE_NUMBER_TABLE = "CREATE TABLE IF NOT EXISTS
 const std::string IMAGE_ASSET_TYPE = "image";
 const std::string VIDEO_ASSET_TYPE = "video";
 const std::string AUDIO_ASSET_TYPE = "audio";
+
+/*
+ * Album Refresh Table
+ */
+const std::string ALBUM_REFRESH_TABLE = "RefreshAlbum";
+const std::string REFRESHED_ALBUM_ID = "refresh_album_id";
+const std::string CREATE_ALBUM_REFRESH_TABLE = "CREATE TABLE IF NOT EXISTS " + ALBUM_REFRESH_TABLE + " ("
+    + REFRESHED_ALBUM_ID + " INT PRIMARY KEY)";
 
 // fetch columns from fileAsset in medialibrary.d.ts
 static const std::vector<std::string> FILE_ASSET_COLUMNS = {

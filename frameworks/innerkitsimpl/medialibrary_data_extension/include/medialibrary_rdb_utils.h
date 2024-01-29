@@ -23,6 +23,14 @@
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+
+struct AlbumCounts {
+    int count;
+    int hiddenCount;
+    int imageCount;
+    int videoCount;
+};
+
 class MediaLibraryRdbUtils {
 public:
     EXPORT static void UpdateSystemAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -46,6 +54,20 @@ public:
         const std::vector<std::string> &fileIds, const std::vector<int> &albumTypes);
     EXPORT static void UpdateAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &uris = {});
+
+    EXPORT static int32_t RefreshAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    EXPORT static int32_t IsNeedRefreshByCheckTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        bool &signal);
+
+    EXPORT static void UpdateSystemAlbumCountInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::vector<std::string> &subtypes = {});
+    EXPORT static void UpdateUserAlbumCountInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::vector<std::string> &userAlbumIds = {});
+
+    EXPORT static bool IsNeedRefreshAlbum();
+    EXPORT static void SetNeedRefreshAlbum(bool isNeedRefresh);
+private:
+    static std::atomic<bool> isNeedRefreshAlbum;
 };
 } // namespace OHOS::Media
 #endif // OHOS_MEDIALIBRARY_RDB_UTILS_H
