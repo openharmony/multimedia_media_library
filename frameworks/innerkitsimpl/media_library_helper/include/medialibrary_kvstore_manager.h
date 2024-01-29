@@ -51,8 +51,7 @@ private:
     SafeMap<KvStoreValueType, KvStoreSharedPtr> kvStoreMap_;
     static std::mutex mutex_;
     static Utils::Timer timer_;
-    static uint32_t timerId_;
-    static volatile uint32_t insertImageCount_;
+    static std::atomic<uint32_t> insertImageCount_;
 };
 } // namespace Media
 } // namespace OHOS
