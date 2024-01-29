@@ -134,7 +134,7 @@ void MediaLibraryKvStoreManager::RegisterTimer(const KvStoreRoleType &roleType, 
             timer_.Shutdown();
             insertImageCount_ = 0;
             timer_.Setup();
-            timer_..Register(timerCallback, CLOSE_KVSTORE_TIME_INTERVAL, true);
+            timer_.Register(timerCallback, CLOSE_KVSTORE_TIME_INTERVAL, true);
         }
     }
 }
