@@ -280,7 +280,7 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
 
     for (const string &dir : DELETE_DIR_LIST) {
         if (!MediaFileUtils::DeleteDir(dir)) {
-            MEDIA_ERR_LOG("Delete dir %{private}s failed", dir.c_str());
+            MEDIA_ERR_LOG("Delete dir %{public}s failed", dir.c_str());
         }
     }
     for (auto &dir : PRESET_ROOT_DIRS) {
@@ -1036,7 +1036,7 @@ static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const 
     int64_t pendingTime = fileAsset->GetTimePending();
     if (pendingTime != 0) {
         if (mode == MEDIA_FILEMODE_READONLY) {
-            MEDIA_ERR_LOG("FileAsset [%{private}s] pending status is %{private}ld and open mode is READ_ONLY",
+            MEDIA_ERR_LOG("FileAsset [%{private}s] pending status is %{public}ld and open mode is READ_ONLY",
                 fileAsset->GetUri().c_str(), (long) pendingTime);
             return E_IS_PENDING_ERROR;
         }
@@ -1097,7 +1097,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     int32_t fd = OpenFileWithPrivacy(path, lowerMode);
     tracer.Finish();
     if (fd < 0) {
-        MEDIA_ERR_LOG("open file fd %{private}d, errno %{private}d", fd, errno);
+        MEDIA_ERR_LOG("open file fd %{public}d, errno %{public}d", fd, errno);
         return E_HAS_FS_ERROR;
     }
     tracer.Start("AddWatchList");
@@ -1149,13 +1149,13 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
         return E_OK;
     } else if (fileAsset->GetTimePending() == UNCREATE_FILE_TIMEPENDING ||
         fileAsset->GetTimePending() == UNOPEN_FILE_COMPONENT_TIMEPENDING) {
-        MEDIA_ERR_LOG("This asset [%{private}d] pending status cannot close", fileAsset->GetId());
+        MEDIA_ERR_LOG("This asset [%{public}d] pending status cannot close", fileAsset->GetId());
         return E_IS_PENDING_ERROR;
     } else if (fileAsset->GetTimePending() > 0) {
-        MEDIA_WARN_LOG("This asset [%{private}d] is in pending", fileAsset->GetId());
+        MEDIA_WARN_LOG("This asset [%{public}d] is in pending", fileAsset->GetId());
         return E_OK;
     } else {
-        MEDIA_ERR_LOG("This asset [%{private}d] pending status is invalid", fileAsset->GetId());
+        MEDIA_ERR_LOG("This asset [%{public}d] pending status is invalid", fileAsset->GetId());
         return E_INVALID_VALUES;
     }
 }
@@ -1583,7 +1583,7 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type)
 int32_t MediaLibraryAssetOperations::CreateAssetBucket(int32_t fileId, int32_t &bucketNum)
 {
     if (fileId < 0) {
-        MEDIA_ERR_LOG("input fileId [%{private}d] is invalid", fileId);
+        MEDIA_ERR_LOG("input fileId [%{public}d] is invalid", fileId);
         return E_INVALID_FILEID;
     }
     int start = ASSET_DIR_START_NUM;
