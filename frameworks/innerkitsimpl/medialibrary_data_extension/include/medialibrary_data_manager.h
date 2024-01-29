@@ -130,6 +130,7 @@ private:
     int32_t DeleteInRdbPredicatesAnalysis(MediaLibraryCommand &cmd, NativeRdb::RdbPredicates &rdbPredicate);
     int32_t UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
         const DataShare::DataSharePredicates &predicates);
+    void InitRefreshAlbum();
     std::shared_mutex mgrSharedMutex_;
 #ifdef DISTRIBUTED
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
