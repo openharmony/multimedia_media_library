@@ -22,6 +22,15 @@
 
 namespace OHOS::Media {
 std::mutex MediaLibraryKvStoreManager::mutex_;
+Utils::Timer MediaLibraryKvStoreManager::timer_("close_kvstore");
+uint32_t MediaLibraryKvStoreManager::timerId_ = 0;
+volatile uint32_t MediaLibraryKvStoreManager::insertImageCount_ = 0;
+
+MediaLibraryKvStoreManager::~MediaLibraryKvStoreManager()
+{
+    timer_.Shutdown();
+}
+
 int32_t MediaLibraryKvStoreManager::InitKvStore(const KvStoreRoleType &roleType, const KvStoreValueType &valueType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -53,6 +62,7 @@ int32_t MediaLibraryKvStoreManager::InitKvStore(const KvStoreRoleType &roleType,
 std::shared_ptr<MediaLibraryKvStore> MediaLibraryKvStoreManager::GetKvStore(
     const KvStoreRoleType &roleType, const KvStoreValueType &valueType)
 {
+    RegisterTimer(roleType, valueType);
     KvStoreSharedPtr ptr;
     if (kvStoreMap_.Find(valueType, ptr)) {
         return ptr;
@@ -96,5 +106,36 @@ bool MediaLibraryKvStoreManager::CloseKvStore(const KvStoreValueType &valueType)
         return true;
     }
     return false;
+}
+
+void MediaLibraryKvStoreManager::RegisterTimer(const KvStoreRoleType &roleType, const KvStoreValueType &valueType)
+{
+    if (roleType != KvStoreRoleType::OWNER || valueType != KvStoreValueType::YEAR_ASTC) {
+        return;
+    }
+
+    Utils::Timer::TimerCallback timerCallback = [this]() {
+        MEDIA_INFO_LOG("KvStore timerCallbach, CloseAllKvStore");
+        timerId_ = 0;
+        insertImageCount_ = 0;
+        CloseAllKvStore();
+    };
+
+    insertImageCount_++;
+    if (timerId_ == 0) {
+        timer_.Setup();
+        timerId_ = timer_.Register(timerCallback, CLOSE_KVSTORE_TIME_INTERVAL, true);
+        MEDIA_INFO_LOG("KvStore timer Setup, timerId_ %{public}d", MediaLibraryKvStoreManager::timerId_);
+    } else {
+        if (insertImageCount_ < KVSTORE_INSERT_COUNT) {
+            // In order to avoid using the timer frequently, try reset the timer after inserting ten pieces of data
+            return;
+        } else {
+            timer_.Shutdown();
+            insertImageCount_ = 0;
+            timer_.Setup();
+            timer_..Register(timerCallback, CLOSE_KVSTORE_TIME_INTERVAL, true);
+        }
+    }
 }
 } // namespace OHOS::Media
