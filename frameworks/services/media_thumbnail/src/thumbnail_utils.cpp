@@ -1191,7 +1191,7 @@ bool ThumbnailUtils::ScaleFastThumb(ThumbnailData &data, const Size &size)
 static string Desensitize(string &str)
 {
     string result = str;
-    int index = result.find('/');
+    auto index = result.find('/');
     if (index == string::npos) {
         return "*****";
     }
