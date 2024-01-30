@@ -153,7 +153,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         }
         std::string cloudPath;
         int32_t uniqueId = MediaLibraryAssetOperations::CreateAssetUniqueId(fileInfos[i].fileType);
-        int32_t errCode = MediaLibraryAssetOperations::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
+        int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
