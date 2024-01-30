@@ -647,6 +647,7 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
     }
 
     if (!fileAsset.GetPath().empty() && MediaFileUtils::IsFileExists(fileAsset.GetPath())) {
+        MEDIA_ERR_LOG("file %{private}s exists now", fileAsset.GetPath().c_str());
         return E_FILE_EXIST;
     }
     FillAssetInfo(cmd, fileAsset);
