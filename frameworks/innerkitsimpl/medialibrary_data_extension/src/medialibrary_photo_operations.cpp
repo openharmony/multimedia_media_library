@@ -1112,10 +1112,15 @@ int32_t MediaLibraryPhotoOperations::CommitEditOpenExecute(const shared_ptr<File
             "Can not create dir %{private}s", sourceDirPath.c_str());
         string sourcePath = GetEditDataSourcePath(path);
         CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Can not get edit source path");
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(path, sourcePath) == E_SUCCESS, E_HAS_FS_ERROR,
-            "Move file failed, srcPath:%{private}s, newPath:%{private}s", path.c_str(), sourcePath.c_str());
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(path), E_HAS_FS_ERROR,
-            "Create file failed, path:%{private}s", path.c_str());
+        if (!MediaFileUtils::IsFileExists(sourcePath)) {
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(path, sourcePath) == E_SUCCESS, E_HAS_FS_ERROR,
+                "Move file failed, srcPath:%{private}s, newPath:%{private}s", path.c_str(), sourcePath.c_str());
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(path), E_HAS_FS_ERROR,
+                "Create file failed, path:%{private}s", path.c_str());
+        } else {
+            MEDIA_WARN_LOG("Unexpected source file already exists for a not-edited asset, display name: %{private}s",
+                fileAsset->GetDisplayName().c_str());
+        }
     }
 
     return OpenFileWithPrivacy(path, "rw");
