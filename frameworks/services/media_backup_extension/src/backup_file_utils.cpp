@@ -22,9 +22,15 @@
 #include "medialibrary_errno.h"
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "medialibrary_asset_operations.h"
 
 namespace OHOS {
 namespace Media {
+const string DEFAULT_IMAGE_NAME = "IMG_";
+const string DEFAULT_VIDEO_NAME = "VID_";
+
+constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
+
 int32_t BackupFileUtils::FillMetadata(std::unique_ptr<Metadata> &data)
 {
     int32_t err = GetFileMetadata(data);
@@ -104,6 +110,60 @@ string BackupFileUtils::GarbleFileName(std::string &fileName)
     } else {
         return fileName.replace(0, 1, GARBLE);
     }
+}
+
+int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, const string &extension,
+    string &filePath)
+{
+    int32_t bucketNum = 0;
+    int32_t errCode = MediaLibraryAssetOperations::CreateAssetBucket(fileId, bucketNum);
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    string realName;
+    errCode = CreateAssetRealName(fileId, mediaType, extension, realName);
+    if (errCode != E_OK) {
+        return errCode;
+    }
+
+    string dirPath = RESTORE_CLOUD_DIR + "/" + to_string(bucketNum);
+    if (!MediaFileUtils::IsFileExists(dirPath)) {
+        bool ret = MediaFileUtils::CreateDirectory(dirPath);
+        errCode = ret? E_OK: E_CHECK_DIR_FAIL;
+    }
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Create Dir Failed! dirPath=%{private}s", dirPath.c_str());
+        return errCode;
+    }
+
+    filePath = dirPath + "/" + realName;
+    return E_OK;
+}
+
+int32_t BackupFileUtils::CreateAssetRealName(int32_t fileId, int32_t mediaType,
+    const string &extension, string &name)
+{
+    string fileNumStr = to_string(fileId);
+    if (fileId <= ASSET_MAX_COMPLEMENT_ID) {
+        size_t fileIdLen = fileNumStr.length();
+        fileNumStr = ("00" + fileNumStr).substr(fileIdLen - 1);
+    }
+
+    string mediaTypeStr;
+    switch (mediaType) {
+        case MediaType::MEDIA_TYPE_IMAGE:
+            mediaTypeStr = DEFAULT_IMAGE_NAME;
+            break;
+        case MediaType::MEDIA_TYPE_VIDEO:
+            mediaTypeStr = DEFAULT_VIDEO_NAME;
+            break;
+        default:
+            MEDIA_ERR_LOG("This mediatype %{public}d can not get real name", mediaType);
+            return E_INVALID_VALUES;
+    }
+    name = mediaTypeStr + to_string(MediaFileUtils::UTCTimeSeconds()) + "_" + fileNumStr + "." + extension;
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS
