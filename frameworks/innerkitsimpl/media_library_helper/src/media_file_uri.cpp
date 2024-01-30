@@ -245,6 +245,11 @@ std::string MediaFileUri::GetTableName()
     };
 
     std::string uriString = ToString();
+    size_t questionPosition = uriString.find_first_of('?');
+    if (questionPosition != string::npos) {
+        uriString = uriString.substr(0, questionPosition);
+    }
+
     for (const auto &iter : tableNameMap) {
         if (uriString.find(iter.first) != std::string::npos) {
             return iter.second;
