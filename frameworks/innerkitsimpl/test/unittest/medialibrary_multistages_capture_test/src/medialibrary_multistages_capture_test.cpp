@@ -518,6 +518,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_trigger_ratio_001, TestSize.Lev
 
 HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_get_photo_id_001, TestSize.Level1)
 {
+    MEDIA_INFO_LOG("manager_get_photo_id_001 Start");
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
 
@@ -530,6 +531,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_get_photo_id_001, TestSize.
     EXPECT_EQ(photosInfo[0]->photoId, PHOTO_ID_FOR_TEST);
     EXPECT_EQ(photosInfo[0]->photoQuality, static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
     EXPECT_EQ(photosInfo[0]->fileId, fileId);
+    MEDIA_INFO_LOG("manager_get_photo_id_001 End");
 }
 
 HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_get_photo_id_not_exist_002, TestSize.Level1)
