@@ -16,10 +16,12 @@
 #include "medialibrary_backup_test.h"
 
 #include "backup_database_utils.h"
+#include "backup_file_utils.h"
 #include "external_source.h"
 #include "gallery_source.h"
 #include "media_log.h"
 #include "upgrade_restore.h"
+#include "media_file_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -314,6 +316,22 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_contains_screen_video, Tes
     ASSERT_FALSE(resultSet == nullptr);
     ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_contains_screen_video end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_create_asset_path_by_id, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_create_asset_path_by_id start");
+    int32_t uniqueId = 2;
+    int32_t fileType = 1;
+    std::string extension = "jpg";
+    std::string cloudPath;
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    std::string dir = RESTORE_CLOUD_DIR + "/" + to_string(uniqueId) + "/IMG_" +
+        to_string(MediaFileUtils::UTCTimeSeconds()) + "_00" + to_string(uniqueId) + "." + extension;
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileType, extension, cloudPath);
+    MEDIA_INFO_LOG("dir: %{public}s, cloudPath: %{public}s", dir.c_str(), cloudPath.c_str());
+    ASSERT_TRUE(dir == cloudPath);
+    MEDIA_INFO_LOG("medialib_backup_test_create_asset_path_by_id end");
 }
 } // namespace Media
 } // namespace OHOS
