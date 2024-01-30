@@ -540,6 +540,7 @@ void MediaAssetManagerNapi::GetImageSourceNapiObject(std::string fileUri, napi_v
         return;
     }
     auto nativeImageSourcePtr = ImageSource::CreateImageSource(fd, opts, errCode);
+    close(fd);
     if (nativeImageSourcePtr == nullptr) {
         NAPI_ERR_LOG("get ImageSource::CreateImageSource failed nullptr");
         NapiError::ThrowError(env_, JS_INNER_FAIL, "CreateImageSource error");
@@ -567,6 +568,7 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(std::string requestUri, napi_
     lseek(imageFd, 0, SEEK_SET);
     char buf[imgLen];
     size_t readRet = read(imageFd, buf, imgLen);
+    close(imageFd);
     if (readRet != imgLen) {
         NAPI_ERR_LOG("read image failed");
         NapiError::ThrowError(localEnv, JS_INNER_FAIL, "open Image file error");
