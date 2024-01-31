@@ -19,11 +19,15 @@
 #include <memory>
 #include "appexecfwk_errors.h"
 #include "background_task_mgr_helper.h"
+#ifdef HAS_BATTERY_MANAGER_PART
+#include "battery_srv_client.h"
+#endif
 #include "bundle_info.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
 #include "want.h"
 #include "post_event_utils.h"
+#include "power_mgr_client.h"
 
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
@@ -39,8 +43,8 @@ using namespace OHOS::AAFwk;
 namespace OHOS {
 namespace Media {
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
-    EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED,
-    EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED,
+    EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
+    EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING,
     EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF,
     EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON,
     EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED
@@ -49,8 +53,16 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
     : EventFwk::CommonEventSubscriber(subscriberInfo)
 {
-    isScreenOff_ = false;
-    isPowerConnected_ = false;
+    auto& powerMgrClient = PowerMgr::PowerMgrClient::GetInstance();
+    isScreenOff_ = !powerMgrClient.IsScreenOn();
+#ifdef HAS_BATTERY_MANAGER_PART
+    auto& batteryClient = PowerMgr::BatterySrvClient::GetInstance();
+    auto chargeState = batteryClient.GetChargingStatus();
+    isCharging_ = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE) ||
+        (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL);
+#endif
+    MEDIA_INFO_LOG("MedialibrarySubscriber isScreenOff_:%{public}d, isCharging_:%{public}d",
+        isScreenOff_, isCharging_);
 }
 
 bool MedialibrarySubscriber::Subscribe(void)
@@ -73,14 +85,14 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF) == 0) {
         isScreenOff_ = true;
         DoBackgroundOperation();
-    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED) == 0) {
-        isPowerConnected_ = true;
+    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING) == 0) {
+        isCharging_ = true;
         DoBackgroundOperation();
     } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON) == 0) {
         isScreenOff_ = false;
         StopBackgroundOperation();
-    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED) == 0) {
-        isPowerConnected_ = false;
+    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING) == 0) {
+        isCharging_ = false;
         StopBackgroundOperation();
     } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED) == 0) {
         string packageName = want.GetElement().GetBundleName();
@@ -106,53 +118,58 @@ void MedialibrarySubscriber::Init()
 
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
-    if (isScreenOff_ && isPowerConnected_) {
-        BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
-            BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
-        BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
-        Init();
-        std::shared_ptr<MediaLibraryDataManager> dataManager = MediaLibraryDataManager::GetInstance();
-        if (dataManager == nullptr) {
-            return;
-        }
-        auto err = dataManager->GetAgingDataSize(lockTime_, agingCount_);
-        if (err < 0) {
-            MEDIA_ERR_LOG("GetAgingDataSize faild, err:%{public}d", err);
-        }
-
-        auto result = dataManager->GenerateThumbnails();
-        if (result != E_OK) {
-            MEDIA_ERR_LOG("GenerateThumbnails faild");
-        }
-
-        result = dataManager->DoAging();
-        if (result != E_OK) {
-            MEDIA_ERR_LOG("DoAging faild");
-        }
-
-        shared_ptr<int> trashCountPtr = make_shared<int>();
-        result = dataManager->DoTrashAging(trashCountPtr);
-        if (result != E_OK) {
-            MEDIA_ERR_LOG("DoTrashAging faild");
-        }
-        dataManager->RegisterTimer();
-
-        VariantMap map = {{KEY_COUNT, *trashCountPtr}};
-        PostEventUtils::GetInstance().PostStatProcess(StatType::AGING_STAT, map);
-
-        auto watch = MediaLibraryInotify::GetInstance();
-        if (watch != nullptr) {
-            watch->DoAging();
-        }
-        auto scannerManager = MediaScannerManager::GetInstance();
-        if (scannerManager == nullptr) {
-            return;
-        }
-        scannerManager->ScanError();
-
-        MEDIA_DEBUG_LOG("DoBackgroundOperation success isScreenOff_ %{public}d, isPowerConnected_ %{public}d",
-            isScreenOff_, isPowerConnected_);
+    MEDIA_INFO_LOG("Enter isScreenOff_ %{public}d, isCharging_ %{public}d",
+        isScreenOff_, isCharging_);
+    if (!isScreenOff_ || !isCharging_) {
+        MEDIA_INFO_LOG("The screen is not off or the device is not charging, will return.");
+        return;
     }
+
+    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
+        BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
+    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
+    Init();
+    std::shared_ptr<MediaLibraryDataManager> dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        return;
+    }
+    auto err = dataManager->GetAgingDataSize(lockTime_, agingCount_);
+    if (err < 0) {
+        MEDIA_ERR_LOG("GetAgingDataSize faild, err:%{public}d", err);
+    }
+
+    auto result = dataManager->GenerateThumbnails();
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("GenerateThumbnails faild");
+    }
+
+    result = dataManager->DoAging();
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("DoAging faild");
+    }
+
+    shared_ptr<int> trashCountPtr = make_shared<int>();
+    result = dataManager->DoTrashAging(trashCountPtr);
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("DoTrashAging faild");
+    }
+    dataManager->RegisterTimer();
+
+    VariantMap map = {{KEY_COUNT, *trashCountPtr}};
+    PostEventUtils::GetInstance().PostStatProcess(StatType::AGING_STAT, map);
+
+    auto watch = MediaLibraryInotify::GetInstance();
+    if (watch != nullptr) {
+        watch->DoAging();
+    }
+    auto scannerManager = MediaScannerManager::GetInstance();
+    if (scannerManager == nullptr) {
+        return;
+    }
+    scannerManager->ScanError();
+
+    MEDIA_INFO_LOG("Do success isScreenOff_ %{public}d, isCharging_ %{public}d",
+        isScreenOff_, isCharging_);
 }
 
 void MedialibrarySubscriber::WriteThumbnailStat()
