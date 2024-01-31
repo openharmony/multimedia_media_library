@@ -83,9 +83,15 @@ void UpgradeRestore::RestorePhoto(void)
     AnalyzeSource();
     InitGarbageAlbum();
     RestoreFromGallery();
+    MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
+        (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
     if (sceneCode_ == UPGRADE_RESTORE_ID) {
         RestoreFromExternal(true);
+        MEDIA_INFO_LOG("migrate from camera number: %{public}lld, file number: %{public}lld",
+            (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
         RestoreFromExternal(false);
+        MEDIA_INFO_LOG("migrate from others number: %{public}lld, file number: %{public}lld",
+            (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
     }
     (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
@@ -148,6 +154,7 @@ void UpgradeRestore::RestoreFromGallery()
 
 void UpgradeRestore::RestoreBatch(int32_t offset)
 {
+    MEDIA_INFO_LOG("start restore from gallery, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfos(offset);
     InsertPhoto(UPGRADE_RESTORE_ID, infos, SourceType::GALLERY);
 }
@@ -159,7 +166,7 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
         QUERY_MAX_ID_CAMERA_SCREENSHOT : QUERY_MAX_ID_OTHERS, MAX_ID);
     int32_t type = isCamera ? SourceType::EXTERNAL_CAMERA : SourceType::EXTERNAL_OTHERS;
     int32_t totalNumber = QueryNotSyncTotalNumber(maxId, isCamera);
-    MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
+    MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         ffrt::submit([this, offset, maxId, isCamera, type]() {
                 RestoreExternalBatch(offset, maxId, isCamera, type);
@@ -170,6 +177,7 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
 
 void UpgradeRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type)
 {
+    MEDIA_INFO_LOG("start restore from external, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfosFromExternal(offset, maxId, isCamera);
     InsertPhoto(UPGRADE_RESTORE_ID, infos, type);
 }
@@ -219,7 +227,7 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo tmpInfo;
-        if (ParseResultSet(resultSet, tmpInfo)) {
+        if (ParseResultSetFromGallery(resultSet, tmpInfo)) {
             result.emplace_back(tmpInfo);
         }
     }
@@ -293,12 +301,21 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.hidden = (localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
     info.fileType = (mediaType == GALLERY_VIDEO_TYPE) ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
-    info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet);
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
-    info.dateAdded = GetInt64Val(DATE_ADDED, resultSet);
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
     return true;
+}
+
+bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
+{
+    bool isSuccess = ParseResultSet(resultSet, info);
+    if (!isSuccess) {
+        MEDIA_ERR_LOG("ParseResultSetFromGallery fail");
+        return isSuccess;
+    }
+    info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet);
+    return isSuccess;
 }
 
 bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
@@ -311,7 +328,6 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
     if (info.showDateToken == 0) {
         info.showDateToken = GetInt64Val(DATE_MODIFIED, resultSet);
     }
-    info.dateAdded = GetInt64Val(DATE_ADDED, resultSet);
     return isSuccess;
 }
 
