@@ -55,8 +55,9 @@ static MediaFileExtAbility* MediaFileExtCreator(const unique_ptr<Runtime>& runti
 
 __attribute__((constructor)) void RegisterFileExtCreator()
 {
-    MEDIA_INFO_LOG("MediaFileExtCreator::%s", __func__);
+    MEDIA_INFO_LOG("MediaFileExtAbility::%s", __func__);
     FileAccessExtAbility::SetCreator(MediaFileExtCreator);
+    MEDIA_INFO_LOG("MediaFileExtAbility::%s End", __func__);
 }
 
 void MediaFileExtAbility::Init(const shared_ptr<AbilityLocalRecord> &record,
