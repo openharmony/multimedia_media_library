@@ -87,7 +87,7 @@ private:
         bool isLoadFromSourcePath);
     static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
     static bool UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
-    static int32_t UpdateAstcState(const ThumbRdbOpt &opts);
+    static int32_t UpdateAstcState(const ThumbRdbOpt &opts, const ThumbnailData &data);
 };
 } // namespace Media
 } // namespace OHOS
