@@ -15,6 +15,8 @@
 
 #include "medialibrary_kvstore.h"
 
+#include <algorithm>
+
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
 #include "media_log.h"
@@ -108,13 +110,14 @@ int32_t MediaLibraryKvStore::Query(const std::string &key, std::vector<uint8_t> 
 }
 
 int32_t MediaLibraryKvStore::BatchQuery(
-    const std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values)
+    std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values)
 {
     if (kvStorePtr_ == nullptr) {
         MEDIA_ERR_LOG("kvStorePtr_ is nullptr");
         return E_HAS_DB_ERROR;
     }
 
+    std::sort(batchKeys.begin(), batchKeys.end(), [](std::string a, std::string b) {return a > b;});
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryKvStore::BatchQuery");
     DataQuery dataQuery;
