@@ -53,6 +53,7 @@ protected:
     void InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
     bool IsSameFile(const FileInfo &fileInfo) const;
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
+    int32_t BatchInsertWithRetry(std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;

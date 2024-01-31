@@ -45,38 +45,49 @@ void GallerySource::Init(const string &dbPath)
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     galleryStorePtr_ = store;
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(1, 1, ") +
+    InitGalleryMedia();
+    InitGarbageAlbum();
+}
+
+void GallerySource::InitGalleryMedia()
+{
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(1, 1, ") +
         "'/storage/emulated/0/tencent/MicroMsg/WeiXin/fake_wechat.jpg', 'fake_wechat.jpg', 'fake_wechat', " +
         " null, 2419880, 0, 0, 1, 1432973383179, 1432973383, 2976, 3968, 'fake_wechat', 0, 65537, -1803300197, "
         " -924335728, 0)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(2, 2, '/storage/emulated/0/Pictures/favorite.jpg', ") +
-        "'favorite.jpg', 'favorite', 1, 7440437, 0, 0, 1, 1495957457427, 15464937461, 3840, 5120, " +
-        "'favorite', 0, 65537, 218866788, -1617409521, 0)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(3, -4, ") +
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(2, 2, ") +
+        "'/storage/emulated/0/Pictures/favorite.jpg', 'favorite.jpg', 'favorite', 1, 7440437, 0, 0, 1, " +
+        "1495957457427, 15464937461, 3840, 5120, 'favorite', 0, 65537, 218866788, -1617409521, 0)");
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(3, -4, ") +
         "'/storage/emulated/0/Pictures/hiddenAlbum/bins/0/xxx','hidden.jpg', 'hidden', null, 2716337, 0, 0, 1, " +
         "1495961420646, 1546937461, 2976, 3968, 'hidden', 0, 65537, 218866788, 1385117028, null)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(4, 4, ") +
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(4, 4, ") +
         "'/storage/emulated/0/Pictures/.Gallery2/recycle/bins/0/xx', 'trashed.jpg', 'trashed', null, 2454477, " +
         "1698397634260, 0, 1, 1495959683996, 1546937461, 2976, 3968, 'trashed', 0, 65537, 218866788, -1739773001, 2)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(5, 5, ") +
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(5, 5, ") +
         "'/storage/emulated/0/Pictures/orientation.jpg', 'orientation.jpg', 'orientation', null, 2781577, 0, 0," +
         " 1, 1495962070277, 1698397638, 2448, 3264, 'orientation', 270, 65537, 218866788, -1617409521, 0)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(6, 6, ") +
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(6, 6, ") +
         "'/storage/emulated/0/BaiduMap/cache/fake_garbage_baidu.jpg', 'fake_garbage_baidu.jpg', " +
         "'fake_garbage_baidu', null, 2160867, 0, 0, 1, 1495954569032, 1546937461, 2976, 3968, " +
         "'fake_garbage_baidu', 0, 65537, 1151084355, -1617409521, 0)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(7, 7, ") +
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(7, 7, ") +
         "'/storage/emulated/0/Pictures/zero_size.jpg', 'zero_size.jpg', 'zero_size', null, 0, 0, 0," +
         " 1, 1495962070277, 1698397638, 2448, 3264, 'zero_size', 0, 65537, 218866788, -1617409521, 0)");
-    store->ExecuteSql(string("INSERT INTO gallery_media VALUES(8, 8, ") +
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(8, 8, ") +
         "'/storage/emulated/0/Pictures/Screenshots/SVID_screen_video.mp4', 'SVID_screen_video.mp4', "+
         "'SVID_screen_video', null, 94270, 0, 3508, 3, 1476702882, 1698397638, 1280, 606, 'SVID_screen_video', " +
         "0, 65537, 218866788, 1028075469, 0)");
-    store->ExecuteSql(string("INSERT INTO garbage_album VALUES('baidu', '/BaiduMap/cache', ") +
+}
+
+void GallerySource::InitGarbageAlbum()
+{
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO garbage_album VALUES('baidu', '/BaiduMap/cache', ") +
         "null, null, 1, 1151084355);");
-    store->ExecuteSql(string("INSERT INTO garbage_album VALUES('ctrip', '/CTRIP/avatar', ") +
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO garbage_album VALUES('ctrip', '/CTRIP/avatar', ") +
         "null, null, 1, -1457303569);");
-    store->ExecuteSql("INSERT INTO garbage_album VALUES(null, null, 'wechat', '/tencent/MicroMsg/WeiXin', 0, null);");
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO garbage_album VALUES(null, null, 'wechat', ") +
+        "'/tencent/MicroMsg/WeiXin', 0, null);");
 }
 } // namespace Media
 } // namespace OHOS

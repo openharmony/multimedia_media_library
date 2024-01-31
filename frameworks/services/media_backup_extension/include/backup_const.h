@@ -31,6 +31,8 @@ constexpr int32_t CLONE_RESTORE_ID = 2;
 constexpr int32_t GARBLE_LOW_LENGTH = 3;
 constexpr int32_t GARBLE_MID_LENGTH = 10;
 constexpr int32_t GARBLE_HIGH_LENGTH = 20;
+constexpr int32_t RETRY_TIME = 5;
+constexpr int32_t SLEEP_INTERVAL = 1;
 
 const std::string BACKUP_RESTORE_DIR = "/data/storage/el2/backup/restore";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
@@ -75,6 +77,8 @@ constexpr int32_t INDEX_NICK_NAME = 3;
 
 constexpr int32_t NICK = 0;
 constexpr int32_t CACHE = 1;
+
+constexpr int32_t SQLITE3_DATABASE_LOCKER = -5;
 
 enum SourceType {
     GALLERY = 0,
