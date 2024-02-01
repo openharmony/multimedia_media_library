@@ -416,15 +416,16 @@ int32_t ThumbnailService::GenerateThumbnails()
             .table = tableName
         };
 
-        err = ThumbnailGenerateHelper::CreateThumbnailBatch(opts);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
-        }
-
         if ((tableName == PhotoColumn::PHOTOS_TABLE) && ThumbnailUtils::IsSupportGenAstc()) {
+            // CreateAstcBatch contains thumbnails created.
             err = ThumbnailGenerateHelper::CreateAstcBatch(opts);
             if (err != E_OK) {
                 MEDIA_ERR_LOG("CreateAstcBatch failed : %{public}d", err);
+            }
+        } else {
+            err = ThumbnailGenerateHelper::CreateThumbnailBatch(opts);
+            if (err != E_OK) {
+                MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
             }
         }
 
