@@ -252,12 +252,14 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(sceneCode, fileInfos, sourceType);
     int64_t rowNum = 0;
-    if (mediaLibraryRdb_->BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values) != E_OK) {
-        MEDIA_ERR_LOG("InsertSql failed, rowNum: %{public}lld.", rowNum);
+    int32_t errCode = mediaLibraryRdb_->BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
+    if (errCode == SQLITE3_DATABASE_LOCKER) {
+        errCode = BatchInsertWithRetry(values, rowNum);
+    } else if (errCode != E_OK) {
+        MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
         return;
     }
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("%{public}ld assets insert.", (long)rowNum);
     migrateDatabaseNumber_ += rowNum;
     int32_t fileMoveCount = 0;
     for (size_t i = 0; i < fileInfos.size(); i++) {
@@ -275,8 +277,31 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     }
     migrateFileNumber_ += fileMoveCount;
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("insert %{public}ld assets const %{public}ld and move file cost %{public}ld.", (long)rowNum,
-        (long)(startMove - startInsert), (long)(end - startMove));
+    MEDIA_INFO_LOG("insert %{public}ld assets cost %{public}ld and move %{public}ld file cost %{public}ld.",
+        (long)rowNum, (long)(startMove - startInsert), (long)fileMoveCount, (long)(end - startMove));
+}
+
+int32_t BaseRestore::BatchInsertWithRetry(std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum)
+{
+    int32_t errCode = E_ERR;
+    if (mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
+        return errCode;
+    }
+    for (size_t i = 0; i < RETRY_TIME; i++) {
+        sleep(SLEEP_INTERVAL);
+        MEDIA_WARN_LOG("try batchInsert time: %{public}d", (int)i);
+        errCode = mediaLibraryRdb_->BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
+        if (errCode == SQLITE3_DATABASE_LOCKER) {
+            continue;
+        }
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("try batchInsert failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
+            return errCode;
+        }
+        return errCode;
+    }
+    return errCode;
 }
 
 NativeRdb::ValuesBucket BaseRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
