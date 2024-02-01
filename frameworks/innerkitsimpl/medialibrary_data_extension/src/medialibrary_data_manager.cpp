@@ -143,8 +143,9 @@ static DataShare::DataShareExtAbility *MediaDataShareCreator(const unique_ptr<Ru
 
 __attribute__((constructor)) void RegisterDataShareCreator()
 {
-    MEDIA_DEBUG_LOG("MediaLibraryDataMgr::%{public}s", __func__);
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::%{public}s", __func__);
     DataShare::DataShareExtAbility::SetCreator(MediaDataShareCreator);
+    MEDIA_DEBUG_LOG("MediaLibraryDataManager::%{public}s End", __func__);
 }
 
 static void MakeRootDirs(AsyncTaskData *data)
