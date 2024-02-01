@@ -634,7 +634,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &
         QueryAlbumId(rdbStore, predicates, albumIds);
     }
     if (albumIds.size() > 0) {
-        UpdateUserAlbumInternal(rdbStore, albumIds);
+        UpdateAnalysisAlbumInternal(rdbStore, albumIds);
     }
 }
 

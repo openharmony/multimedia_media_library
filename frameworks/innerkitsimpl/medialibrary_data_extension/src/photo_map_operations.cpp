@@ -216,6 +216,7 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
     }
     op.Finish();
     bool isValid = false;
+    vector<string> albumIdList;
     for (const auto &value : values) {
         int32_t albumId = value.Get(PhotoMap::ALBUM_ID, isValid);
         if (!isValid || albumId <= 0) {
@@ -223,13 +224,10 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
                 isValid, albumId);
             continue;
         }
-        vector<string> albumIdList;
+        albumIdList.push_back(to_string(albumId));
         GetPortraitAlbumIds(to_string(albumId), albumIdList);
-        if (albumIdList.size() == 0) {
-            albumIdList.push_back(to_string(albumId));
-        }
-        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), albumIdList);
     }
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), albumIdList);
     return changedRows;
 }
 
