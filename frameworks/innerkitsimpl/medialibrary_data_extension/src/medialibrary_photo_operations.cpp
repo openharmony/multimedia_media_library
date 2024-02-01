@@ -1233,10 +1233,10 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
         to_string(PhotoAlbumSubType::CAMERA),
         to_string(PhotoAlbumSubType::FAVORITE),
     });
-    ScanFile(path, true, true, true);
     int32_t errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
         fileAsset->GetId());
+    ScanFile(path, true, true, true);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
 }
@@ -1405,6 +1405,30 @@ int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
     return E_OK;
 }
 
+int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
+    const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
+{
+    string editData;
+    int32_t id = fileAsset->GetId();
+    int32_t errCode = ParseMediaAssetEditData(cmd, editData);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to parse MediaAssetEditData");
+    errCode = SaveSourceAndEditData(fileAsset, editData);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to save source and editData");
+
+    string assetPath = fileAsset->GetFilePath();
+    errCode = MoveCacheFile(cachePath, assetPath);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
+        "Failed to move %{private}s to %{private}s, errCode: %{public}d",
+        cachePath.c_str(), assetPath.c_str(), errCode);
+
+    errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
+    ScanFile(assetPath, true, true, true);
+    NotifyFormMap(id, assetPath, false);
+    MediaLibraryVisionOperations::EditCommitOperation(cmd);
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd,
     const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
 {
@@ -1420,38 +1444,25 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
         pending == 0 || pending == UNCREATE_FILE_TIMEPENDING || pending == UNOPEN_FILE_COMPONENT_TIMEPENDING,
         E_IS_PENDING_ERROR, "FileAsset is in pending: %{public}ld", static_cast<long>(pending));
 
-    string editData;
+    string assetPath = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+
     int32_t id = fileAsset->GetId();
     bool isEdit = (pending == 0);
     if (isEdit) {
-        int32_t errCode = ParseMediaAssetEditData(cmd, editData);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to parse MediaAssetEditData");
-
         if (!PhotoEditingRecord::GetInstance()->StartCommitEdit(id)) {
             return E_IS_IN_REVERT;
         }
-        errCode = SaveSourceAndEditData(fileAsset, editData);
-        if (errCode != E_OK) {
-            PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
-            return errCode;
-        }
+        int32_t errCode = SubmitEditCacheExecute(cmd, fileAsset, cachePath);
+        PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
+        return errCode;
     }
 
-    string assetPath = fileAsset->GetFilePath();
-    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
     int32_t errCode = MoveCacheFile(cachePath, assetPath);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
-        "Failed to move %{private}s to %{private}s, errCode: %{public}d", cachePath.c_str(), assetPath.c_str(),
-        errCode);
+        "Failed to move %{private}s to %{private}s, errCode: %{public}d",
+        cachePath.c_str(), assetPath.c_str(), errCode);
     ScanFile(assetPath, true, true, true);
-    NotifyFormMap(id, assetPath, false);
-
-    if (isEdit) {
-        int32_t errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
-        PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
-        MediaLibraryVisionOperations::EditCommitOperation(cmd);
-    }
     return E_OK;
 }
 
