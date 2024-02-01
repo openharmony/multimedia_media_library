@@ -33,7 +33,7 @@ public:
         const std::vector<std::string> &sourceAlbumIds = {});
     static void UpdateUserAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &uris);
-    static void UpdateAnalysisAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    EXPORT static void UpdateAnalysisAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &uris);
     static void UpdateSourceAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &uris);
