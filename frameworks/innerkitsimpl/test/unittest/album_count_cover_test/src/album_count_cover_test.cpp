@@ -151,7 +151,7 @@ string GetFilePath(int fileId)
     return path;
 }
 
-int32_t MakePhotoUnpending(int fileId)
+int32_t MakePhotoUnpending(int fileId, bool isRefresh)
 {
     if (fileId < 0) {
         MEDIA_ERR_LOG("this file id %{private}d is invalid", fileId);
@@ -185,25 +185,58 @@ int32_t MakePhotoUnpending(int fileId)
             errCode, changedRows);
         return errCode;
     }
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+
+    if (isRefresh) {
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+        MediaLibraryRdbUtils::UpdateUserAlbumInternal(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    }
     return E_OK;
 }
 
-int32_t SetDefaultPhotoApi10(int mediaType, const std::string &displayName)
+int32_t SetDefaultPhotoApi10(int mediaType, const std::string &displayName, bool isFresh = true)
 {
     int fileId = CreatePhotoApi10(mediaType, displayName);
     if (fileId < 0) {
         MEDIA_ERR_LOG("create photo failed, res=%{public}d", fileId);
         return fileId;
     }
-    int32_t errCode = MakePhotoUnpending(fileId);
+    int32_t errCode = MakePhotoUnpending(fileId, isFresh);
     if (errCode != E_OK) {
         return errCode;
     }
     return fileId;
+}
+
+void UpdateRefreshFlag()
+{
+    MediaLibraryRdbUtils::UpdateSystemAlbumCountInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateUserAlbumCountInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+}
+
+void CheckIfNeedRefresh(bool isNeedRefresh)
+{
+    bool signal = false;
+    int32_t ret = MediaLibraryRdbUtils::IsNeedRefreshByCheckTable(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), signal);
+    EXPECT_EQ(ret, 0);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("IsNeedRefreshByCheckTable false");
+        return;
+    }
+    EXPECT_EQ(isNeedRefresh, signal);
+
+    EXPECT_EQ(isNeedRefresh, MediaLibraryRdbUtils::IsNeedRefreshAlbum());
+}
+
+void RefreshTable()
+{
+    int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    EXPECT_EQ(ret, 0);
 }
 
 unique_ptr<PhotoAlbum> QueryAlbumInfo(const RdbPredicates &predicates, const bool hiddenOnly)
@@ -327,18 +360,18 @@ void AlbumInfo::CheckAlbum(const unique_ptr<PhotoAlbum> &album, const bool hidde
         containsHidden == containsHidden_, containsHidden, containsHidden_);
 }
 
-unique_ptr<FileAsset> CreateImageAsset(const string &displayName)
+unique_ptr<FileAsset> CreateImageAsset(const string &displayName, bool isFreshAlbum = true)
 {
-    int32_t fileId = SetDefaultPhotoApi10(MEDIA_TYPE_IMAGE, displayName);
+    int32_t fileId = SetDefaultPhotoApi10(MEDIA_TYPE_IMAGE, displayName, isFreshAlbum);
     MEDIA_ERR_LOG("Expect result %{public}d of CreateImageAsset, left: %{public}d, right: %{public}d",
         fileId > 0, fileId, 0);
     EXPECT_GT(fileId, 0);
     return QueryFileAssetInfo(fileId);
 }
 
-unique_ptr<FileAsset> CreateVideoAsset(const string &displayName)
+unique_ptr<FileAsset> CreateVideoAsset(const string &displayName, bool isFreshAlbum = true)
 {
-    int32_t fileId = SetDefaultPhotoApi10(MEDIA_TYPE_VIDEO, displayName);
+    int32_t fileId = SetDefaultPhotoApi10(MEDIA_TYPE_VIDEO, displayName, isFreshAlbum);
     MEDIA_ERR_LOG("Expect result %{public}d of CreateVideoAsset, left: %{public}d, right: %{public}d",
         fileId > 0, fileId, 0);
     EXPECT_GT(fileId, 0);
@@ -994,5 +1027,60 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_007, TestSize.Level0)
     AlbumInfo(2, fileAsset2->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
     AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
     MEDIA_INFO_LOG("album_count_cover_007 end");
+}
+
+/**
+ * @tc.name: album_count_cover_008
+ * @tc.desc: Sys system refresh test.
+ *   1. Check initialized info of system albums.
+ *   2. Create a video but not fresh.
+ *   3. Only set refresh table but not set flags.
+ *   4. SetFlags but not refresh.
+ *   5. Check if is need refresh.
+ *   6. Refresh and query again.
+ * @tc.type: FUNC
+ * @tc.require: issueI8YPJA
+ */
+HWTEST_F(AlbumCountCoverTest, album_count_cover_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("album_count_cover_008 begin");
+    // Clear all tables.
+    MEDIA_INFO_LOG("Step: Clear all tables.");
+    ClearEnv();
+
+    // 1. Query album info, count should be 0, cover should be empty
+    MEDIA_INFO_LOG("Step: Check initialized info of system albums.");
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::HIDDEN);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::TRASH);
+
+    // 2. Create a photo but not fresh.
+    MEDIA_INFO_LOG("Step: Create a video but not fresh.");
+    auto fileAsset = CreateVideoAsset("Test_Videos_001.mp4", false);
+    EXPECT_NE(fileAsset, nullptr);
+    if (fileAsset == nullptr) {
+        return;
+    }
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+
+    // 3. Only set refresh table but not set flags.
+    MEDIA_INFO_LOG("Step: Only set refresh table but not set flags.");
+    UpdateRefreshFlag();
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+
+    // 4. SetFlags but not refresh.
+    MEDIA_INFO_LOG("Step: SetFlags but not refresh.");
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+    AlbumInfo(0, "", 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+
+    // 5. Check if is need refresh.
+    MEDIA_INFO_LOG("Step: Check if is need refresh.");
+    CheckIfNeedRefresh(true);
+
+    // 6. Refresh and query again.
+    MEDIA_INFO_LOG("Step: Refresh and query again.");
+    RefreshTable();
+    AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(false);
 }
 } // namespace OHOS::Media

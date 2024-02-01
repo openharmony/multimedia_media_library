@@ -14,6 +14,7 @@
  */
 
 #include "cloud_thumbnail_observer.h"
+#include "medialibrary_rdb_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -21,9 +22,9 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-    
 void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
 {
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
     if (changeInfo.changeType_ != ChangeType::INSERT) {
         MEDIA_DEBUG_LOG("change type is %{public}d, not insert", changeInfo.changeType_);
         return;
