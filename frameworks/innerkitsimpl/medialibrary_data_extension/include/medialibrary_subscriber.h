@@ -36,7 +36,7 @@ public:
 private:
     static const std::vector<std::string> events_;
     bool isScreenOff_;
-    bool isPowerConnected_;
+    bool isCharging_;
     int32_t agingCount_;
     int64_t lockTime_;
     EXPORT void DoBackgroundOperation();

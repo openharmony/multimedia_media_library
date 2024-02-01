@@ -59,6 +59,7 @@
           "image_framework",
           "napi",
           "player_framework",
+          "power_manager",
           "relational_store",
           "safwk",
           "samgr",
