@@ -32,6 +32,7 @@ public:
     std::vector<FileInfo> QueryFileInfosFromExternal(int32_t offset, int32_t maxId, bool isCamera);
     int32_t QueryNotSyncTotalNumber(int32_t offset, bool isCamera);
     void InitGarbageAlbum();
+    void HandleClone();
 
 private:
     void RestorePhoto(void) override;
@@ -49,6 +50,8 @@ private:
     void AnalyzeSource() override;
     void AnalyzeGallerySource();
     void AnalyzeExternalSource();
+    void HandleCloneBatch(int32_t offset, int32_t maxId);
+    void UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

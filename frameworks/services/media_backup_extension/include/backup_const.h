@@ -22,6 +22,7 @@
 namespace OHOS {
 namespace Media {
 constexpr int32_t QUERY_COUNT = 500;
+constexpr int32_t PRE_CLONE_PHOTO_BATCH_COUNT = 100;
 constexpr int32_t CONNECT_SIZE = 10;
 constexpr int32_t MILLISECONDS = 1000;
 constexpr int32_t GALLERY_HIDDEN_ID = -4;
@@ -43,6 +44,7 @@ const std::string GARBLE_CLONE_DIR = "/data/storage/el2/backup/restore/storage/c
 const std::string GARBLE = "***";
 
 // DB field for update scene
+const std::string ID = "_id";
 const std::string GALLERY_LOCAL_MEDIA_ID = "local_media_id";
 const std::string GALLERY_FILE_DATA = "_data";
 const std::string GALLERY_TITLE = "title";
@@ -77,8 +79,6 @@ constexpr int32_t INDEX_NICK_NAME = 3;
 
 constexpr int32_t NICK = 0;
 constexpr int32_t CACHE = 1;
-
-constexpr int32_t SQLITE3_DATABASE_LOCKER = -5;
 
 enum SourceType {
     GALLERY = 0,
@@ -146,6 +146,10 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + " FROM gallery_media \
     WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
     SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0 ORDER BY showDateToken ASC ";
+
+const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
+    WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
+    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 ";
 } // namespace Media
 } // namespace OHOS
 
