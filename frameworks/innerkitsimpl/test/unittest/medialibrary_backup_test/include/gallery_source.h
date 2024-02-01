@@ -28,7 +28,8 @@ class GalleryOpenCall;
 class GallerySource {
 public:
     void Init(const std::string &path);
-    void InitGalleryMedia();
+    void InitGalleryMediaOne();
+    void InitGalleryMediaTwo();
     void InitGarbageAlbum();
     std::shared_ptr<NativeRdb::RdbStore> galleryStorePtr_;
 };

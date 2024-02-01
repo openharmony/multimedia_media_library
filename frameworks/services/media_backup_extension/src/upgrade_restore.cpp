@@ -18,14 +18,14 @@
 #include "upgrade_restore.h"
 
 #include "backup_database_utils.h"
+#include "ffrt.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
-#include "medialibrary_errno.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
-#include "ffrt.h"
 
 namespace OHOS {
 namespace Media {
@@ -82,6 +82,7 @@ void UpgradeRestore::RestorePhoto(void)
 {
     AnalyzeSource();
     InitGarbageAlbum();
+    HandleClone();
     RestoreFromGallery();
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
         (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
@@ -116,14 +117,13 @@ void UpgradeRestore::AnalyzeGallerySource()
     int32_t galleryVideoCount = BackupDatabaseUtils::QueryGalleryVideoCount(galleryRdb_);
     int32_t galleryHiddenCount = BackupDatabaseUtils::QueryGalleryHiddenCount(galleryRdb_);
     int32_t galleryTrashedCount = BackupDatabaseUtils::QueryGalleryTrashedCount(galleryRdb_);
-    int32_t galleryCloneCount = BackupDatabaseUtils::QueryGalleryCloneCount(galleryRdb_);
     int32_t gallerySDCardCount = BackupDatabaseUtils::QueryGallerySDCardCount(galleryRdb_);
     int32_t galleryScreenVideoCount = BackupDatabaseUtils::QueryGalleryScreenVideoCount(galleryRdb_);
     MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, \
         galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, \
-        galleryCloneCount: %{public}d, gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d",
+        gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d",
         galleryAllCount, galleryImageCount, galleryVideoCount, galleryHiddenCount, galleryTrashedCount,
-        galleryCloneCount, gallerySDCardCount, galleryScreenVideoCount);
+        gallerySDCardCount, galleryScreenVideoCount);
 }
 
 void UpgradeRestore::AnalyzeExternalSource()
@@ -137,9 +137,79 @@ void UpgradeRestore::AnalyzeExternalSource()
     MEDIA_INFO_LOG("external analyze result: {externalImageCount: %{public}d, externalVideoCount: %{public}d",
         externalImageCount, externalVideoCount);
 }
+
 void UpgradeRestore::InitGarbageAlbum()
 {
     BackupDatabaseUtils::InitGarbageAlbum(galleryRdb_, cacheSet_, nickMap_);
+}
+
+void UpgradeRestore::HandleClone()
+{
+    int32_t cloneCount = BackupDatabaseUtils::QueryGalleryCloneCount(galleryRdb_);
+    MEDIA_INFO_LOG("clone number: %{public}d", cloneCount);
+    if (cloneCount == 0) {
+        return;
+    }
+    int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_MAX_ID, MAX_ID);
+    std::string queryMayClonePhotoNumber = "SELECT count(1) AS count FROM files WHERE (is_pending = 0) AND\
+        (storage_id IN (0, 65537)) AND " + COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
+    int32_t totalNumber = BackupDatabaseUtils::QueryInt(externalRdb_, queryMayClonePhotoNumber, COUNT);
+    MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
+    for (int32_t offset = 0; offset < totalNumber; offset += PRE_CLONE_PHOTO_BATCH_COUNT) {
+        ffrt::submit([this, offset, maxId]() {
+                HandleCloneBatch(offset, maxId);
+            }, { &offset });
+    }
+    ffrt::wait();
+}
+
+void UpgradeRestore::HandleCloneBatch(int32_t offset, int32_t maxId)
+{
+    MEDIA_INFO_LOG("start handle clone batch, offset: %{public}d", offset);
+    if (externalRdb_ == nullptr || galleryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("rdb is nullptr, Maybe init failed.");
+        return;
+    }
+    std::string queryExternalMayClonePhoto = "SELECT _id, _data FROM files WHERE (is_pending = 0) AND\
+        (storage_id IN (0, 65537)) AND " + COMPARE_ID + std::to_string(maxId) + " AND " +
+        QUERY_NOT_SYNC + "limit " + std::to_string(offset) + ", " + std::to_string(PRE_CLONE_PHOTO_BATCH_COUNT);
+    auto resultSet = externalRdb_->QuerySql(queryExternalMayClonePhoto);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query resultSql is null.");
+        return;
+    }
+    int32_t number = 0;
+    UpdateCloneWithRetry(resultSet, number);
+    MEDIA_INFO_LOG("%{public}d rows change clone flag", number);
+}
+
+void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number)
+{
+    int32_t errCode = E_ERR;
+    TransactionOperations transactionOprn(galleryRdb_);
+    errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("can not get rdb before update clone");
+        return;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t id = GetInt32Val(ID, resultSet);
+        std::string data = GetStringVal(GALLERY_FILE_DATA, resultSet);
+        int32_t changeRows = 0;
+        NativeRdb::ValuesBucket valuesBucket;
+        valuesBucket.Put(GALLERY_LOCAL_MEDIA_ID, id);
+        std::unique_ptr<NativeRdb::AbsRdbPredicates> predicates =
+            make_unique<NativeRdb::AbsRdbPredicates>("gallery_media");
+        predicates->SetWhereClause("local_media_id = -3 AND _data = ?"); // -3 means clone data
+        predicates->SetWhereArgs({data});
+        errCode = BackupDatabaseUtils::Update(galleryRdb_, changeRows, valuesBucket, predicates);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", errCode);
+            continue;
+        }
+        number += changeRows;
+    }
+    transactionOprn.Finish();
 }
 
 void UpgradeRestore::RestoreFromGallery()
@@ -290,15 +360,11 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
         MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
         return false;
     }
-
-    int32_t localMediaId = GetInt32Val(GALLERY_LOCAL_MEDIA_ID, resultSet);
     info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
     info.title = GetStringVal(GALLERY_TITLE, resultSet);
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
-    info.recycledTime = GetInt64Val(GALLERY_RECYCLED_TIME, resultSet);
-    info.hidden = (localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
     info.fileType = (mediaType == GALLERY_VIDEO_TYPE) ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
@@ -309,12 +375,15 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
 
 bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
+    int32_t localMediaId = GetInt32Val(GALLERY_LOCAL_MEDIA_ID, resultSet);
+    info.hidden = (localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
+    info.recycledTime = GetInt64Val(GALLERY_RECYCLED_TIME, resultSet);
+    info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet);
     bool isSuccess = ParseResultSet(resultSet, info);
     if (!isSuccess) {
         MEDIA_ERR_LOG("ParseResultSetFromGallery fail");
         return isSuccess;
     }
-    info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet);
     return isSuccess;
 }
 
@@ -325,9 +394,7 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
         MEDIA_ERR_LOG("ParseResultSetFromExternal fail");
         return isSuccess;
     }
-    if (info.showDateToken == 0) {
-        info.showDateToken = GetInt64Val(DATE_MODIFIED, resultSet);
-    }
+    info.showDateToken = GetInt64Val(DATE_MODIFIED, resultSet);
     return isSuccess;
 }
 
