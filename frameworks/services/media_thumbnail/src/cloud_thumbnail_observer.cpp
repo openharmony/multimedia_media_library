@@ -36,13 +36,23 @@ void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
             continue;
         }
         string idString = uriString.substr(pos + 1);
-        if (idString.empty()) {
+        if (idString.empty() || !isNumber(idString)) {
             MEDIA_ERR_LOG("cloud observer get no fieldId and uri : %{public}s", uriString.c_str());
             continue;
         }
         ThumbnailService::GetInstance()->CreateAstcFromFileId(idString);
     }
 }
+
+bool CloudThumbnailObserver::isNumber(const string& fileId)
+{
+    for (char const& ch : fileId) {
+        if (std::isdigit(ch) == 0) {
+            return false;
+        }
+    }
+    return true;
+} 
 
 } // namespace Media
 } // namespace OHOS

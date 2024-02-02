@@ -32,6 +32,8 @@ public:
     ~CloudThumbnailObserver() = default;
 
     void OnChange(const ChangeInfo &changeInfo) override;
+
+    bool isNumber(const string& fileId);
 };
 
 } // namespace Media
