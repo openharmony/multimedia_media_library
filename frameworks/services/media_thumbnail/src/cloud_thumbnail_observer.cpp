@@ -37,7 +37,7 @@ void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
         }
         string idString = uriString.substr(pos + 1);
         if (idString.empty() || !isNumber(idString)) {
-            MEDIA_ERR_LOG("cloud observer get no fieldId and uri : %{public}s", uriString.c_str());
+            MEDIA_DEBUG_LOG("cloud observer get no fieldId and uri : %{public}s", uriString.c_str());
             continue;
         }
         ThumbnailService::GetInstance()->CreateAstcFromFileId(idString);
