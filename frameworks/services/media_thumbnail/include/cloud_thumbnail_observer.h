@@ -33,7 +33,7 @@ public:
 
     void OnChange(const ChangeInfo &changeInfo) override;
 
-    bool isNumber(const string& fileId);
+    bool isNumber(const std::string& fileId);
 };
 
 } // namespace Media
