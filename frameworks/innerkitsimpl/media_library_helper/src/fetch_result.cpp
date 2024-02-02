@@ -430,6 +430,9 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
         if (resultset_) {
             resultset_->GetInt(0, count);
         }
+        if (count == 0) {
+            MEDIA_INFO_LOG("query result count is 0");
+        }
         fileAsset->SetCount(count);
     }
     SetAssetUri(fileAsset);
