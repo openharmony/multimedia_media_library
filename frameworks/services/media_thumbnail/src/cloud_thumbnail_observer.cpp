@@ -44,7 +44,7 @@ void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
     }
 }
 
-bool CloudThumbnailObserver::isNumber(const string& fileId)
+bool CloudThumbnailObserver::isNumber(const std::string& fileId)
 {
     for (char const& ch : fileId) {
         if (std::isdigit(ch) == 0) {
