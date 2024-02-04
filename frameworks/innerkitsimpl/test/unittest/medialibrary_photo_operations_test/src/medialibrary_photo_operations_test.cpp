@@ -2204,7 +2204,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
 
     int32_t fileId1 = 1000;
     int32_t fileId2 = 1001;
-
     auto instance = PhotoEditingRecord::GetInstance();
     EXPECT_EQ(instance->IsInEditOperation(fileId1), false);
     EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
@@ -2217,6 +2216,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
     EXPECT_EQ(instance->StartCommitEdit(fileId2), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId1), false);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId2), false);
     EXPECT_EQ(instance->StartRevert(fileId1), false);
     EXPECT_EQ(instance->StartRevert(fileId2), false);
     instance->EndCommitEdit(fileId1);
@@ -2225,6 +2226,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
     EXPECT_EQ(instance->StartRevert(fileId1), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId2), false);
     EXPECT_EQ(instance->StartRevert(fileId2), false);
     instance->EndCommitEdit(fileId2);
     EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
@@ -2233,6 +2236,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
     EXPECT_EQ(instance->StartRevert(fileId2), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId2), true);
 
     instance->EndCommitEdit(fileId1);
     instance->EndCommitEdit(fileId2);
@@ -2240,6 +2245,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
     instance->EndRevert(fileId2);
     EXPECT_EQ(instance->IsInEditOperation(fileId1), false);
     EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId1), false);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId2), false);
 
     MEDIA_INFO_LOG("end tdd photo_edit_record_test_001");
 }
