@@ -19,6 +19,7 @@
 #include <atomic>
 
 #include "backup_const.h"
+#include "medialibrary_rdb_transaction.h"
 #include "rdb_helper.h"
 #include "result_set.h"
 

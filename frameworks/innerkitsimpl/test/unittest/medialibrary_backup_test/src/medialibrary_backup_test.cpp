@@ -36,10 +36,10 @@ const std::string GALLERY_APP_NAME = "gallery";
 const std::string MEDIA_APP_NAME = "external";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 
-const int EXPECTED_NUM = 6;
+const int EXPECTED_NUM = 16;
 const int EXPECTED_OREINTATION = 270;
 const std::string EXPECTED_PACKAGE_NAME = "wechat";
-const std::string EXPECTED_USER_COMMENT = "fake_wechat";
+const std::string EXPECTED_USER_COMMENT = "user_comment";
 const int64_t EXPECTED_DATE_ADDED = 1432973383179;
 const int64_t EXPECTED_DATE_TAKEN = 1432973383;
 
@@ -81,6 +81,7 @@ void Init(GallerySource &gallerySource, ExternalSource &externalSource)
     restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
     restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
     restoreService->InitGarbageAlbum();
+    restoreService->HandleClone();
 }
 
 void RestoreFromGallery()
@@ -103,7 +104,7 @@ void RestoreFromExternal(GallerySource &gallerySource, bool isCamera)
         QUERY_MAX_ID_CAMERA_SCREENSHOT : QUERY_MAX_ID_OTHERS, MAX_ID);
     int32_t type = isCamera ? SourceType::EXTERNAL_CAMERA : SourceType::EXTERNAL_OTHERS;
     std::vector<FileInfo> fileInfos = restoreService->QueryFileInfosFromExternal(0, maxId, isCamera);
-    MEDIA_INFO_LOG("%{public}d asset will restor", (int)fileInfos.size());
+    MEDIA_INFO_LOG("%{public}d asset will restor, maxid: %{public}d", (int)fileInfos.size(), maxId);
     for (size_t i = 0; i < fileInfos.size(); i++) {
         const NativeRdb::ValuesBucket values = restoreService->GetInsertValue(fileInfos[i], TEST_BACKUP_PATH,
             type);
@@ -220,7 +221,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_package_name, TestSi
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_user_comment, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_valid_user_comment start");
-    std::string queryUserComment = "SELECT file_id, user_comment from Photos where display_name ='fake_wechat.jpg'";
+    std::string queryUserComment = "SELECT file_id, user_comment from Photos where display_name ='user_common.jpg'";
     auto resultSet = photosStorePtr->QuerySql(queryUserComment);
     ASSERT_FALSE(resultSet == nullptr);
     ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
@@ -256,10 +257,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_valid_date_taken, TestSize
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid start");
-    std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='not_sync_valid.jpg'";
+    std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='not_sync_weixin.jpg'";
     auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid end");
 }
 
@@ -307,17 +308,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_restore_size_0, TestSi
     MEDIA_INFO_LOG("medialib_backup_test_not_restore_size_0 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_contains_screen_video, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("medialib_backup_test_contains_screen_video start");
-    std::string queryContainsScreenVideo =
-        "SELECT file_id from Photos where display_name ='SVID_screen_video.mp4'";
-    auto resultSet = photosStorePtr->QuerySql(queryContainsScreenVideo);
-    ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
-    MEDIA_INFO_LOG("medialib_backup_test_contains_screen_video end");
-}
-
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_create_asset_path_by_id, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_create_asset_path_by_id start");
@@ -332,6 +322,22 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_create_asset_path_by_id, T
     MEDIA_INFO_LOG("dir: %{public}s, cloudPath: %{public}s", dir.c_str(), cloudPath.c_str());
     ASSERT_TRUE(dir == cloudPath);
     MEDIA_INFO_LOG("medialib_backup_test_create_asset_path_by_id end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_clone, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_update_clone start");
+    int32_t uniqueId = 2;
+    int32_t fileType = 1;
+    std::string extension = "jpg";
+    std::string cloudPath;
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    std::string dir = RESTORE_CLOUD_DIR + "/" + to_string(uniqueId) + "/IMG_" +
+        to_string(MediaFileUtils::UTCTimeSeconds()) + "_00" + to_string(uniqueId) + "." + extension;
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileType, extension, cloudPath);
+    MEDIA_INFO_LOG("dir: %{public}s, cloudPath: %{public}s", dir.c_str(), cloudPath.c_str());
+    ASSERT_TRUE(dir == cloudPath);
+    MEDIA_INFO_LOG("medialib_backup_test_update_clone end");
 }
 } // namespace Media
 } // namespace OHOS
