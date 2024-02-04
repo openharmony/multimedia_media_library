@@ -22,6 +22,17 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+
+static inline bool isFileIdValid(const std::string& fileId)
+{
+    for (char const& ch : fileId) {
+        if (std::isdigit(ch) == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
 {
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
@@ -36,23 +47,12 @@ void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
             continue;
         }
         string idString = uriString.substr(pos + 1);
-        if (idString.empty() || !isNumber(idString)) {
-            MEDIA_DEBUG_LOG("cloud observer get no fieldId and uri : %{public}s", uriString.c_str());
+        if (idString.empty() || !isFileIdValid(idString)) {
+            MEDIA_DEBUG_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
         ThumbnailService::GetInstance()->CreateAstcFromFileId(idString);
     }
 }
-
-bool CloudThumbnailObserver::isNumber(const std::string& fileId)
-{
-    for (char const& ch : fileId) {
-        if (std::isdigit(ch) == 0) {
-            return false;
-        }
-    }
-    return true;
-} 
-
 } // namespace Media
 } // namespace OHOS
