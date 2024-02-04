@@ -1025,8 +1025,8 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
         return E_INVALID_URI;
     }
 
-    if (PhotoEditingRecord::GetInstance()->IsInEditOperation(stoi(id))) {
-        MEDIA_ERR_LOG("File %{public}s is in editing, can not rqeuest source", id.c_str());
+    if (PhotoEditingRecord::GetInstance()->IsInRevertOperation(stoi(id))) {
+        MEDIA_ERR_LOG("File %{public}s is in revert, can not request source", id.c_str());
         return E_IS_IN_COMMIT;
     }
 
@@ -1545,6 +1545,12 @@ void PhotoEditingRecord::EndRevert(int32_t fileId)
 {
     unique_lock<shared_mutex> lock(addMutex_);
     revertingPhotoSet_.erase(fileId);
+}
+
+bool PhotoEditingRecord::IsInRevertOperation(int32_t fileId)
+{
+    shared_lock<shared_mutex> lock(addMutex_);
+    return revertingPhotoSet_.count(fileId) > 0;
 }
 
 bool PhotoEditingRecord::IsInEditOperation(int32_t fileId)
