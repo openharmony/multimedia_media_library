@@ -28,6 +28,8 @@ class ExternalOpenCall;
 class ExternalSource {
 public:
     void Init(const std::string &path);
+    void InitStepOne();
+    void InitStepTwo();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> externalStorePtr_;
