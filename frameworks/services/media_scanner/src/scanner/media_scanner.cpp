@@ -20,15 +20,18 @@
 #include "directory_ex.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
+#include "rdb_predicates.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
 #include "media_log.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_rdb_utils.h"
 #include "medialibrary_notify.h"
 #include "mimetype_utils.h"
 #include "post_event_utils.h"
 #include "photo_map_column.h"
+#include "photo_album_column.h"
 #include "vision_column.h"
 
 namespace OHOS {
@@ -184,31 +187,31 @@ string GetUriWithoutSeg(const string &oldUri)
     return oldUri;
 }
 
-static std::string CreateExtUriForAsset(std::unique_ptr<Metadata> &data)
+static string GetAlbumId(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const string &albumName)
 {
-    const std::string &filePath = data->GetFilePath();
-    const std::string &displayName = data->GetFileName();
-    auto mediaType = data->GetFileMediaType();
-    if (filePath.empty() || displayName.empty() || mediaType < 0) {
-        MEDIA_ERR_LOG("param invalid, filePath %{private}s or displayName %{private}s invalid failed.",
-            filePath.c_str(), displayName.c_str());
+    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore nullptr");
         return "";
     }
-
-    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
-    return MediaFileUtils::GetUriByExtrConditions(ML_FILE_URI_PREFIX + MediaFileUri::GetMediaTypeUri(mediaType,
-        MEDIA_API_VERSION_V10) + "/", to_string(data->GetFileId()), extrUri);
-}
-
-static int32_t MaintainAnanlysisTable(std::unique_ptr<Metadata> &data,
-    shared_ptr<NativeRdb::RdbStore> &rdbStorePtr)
-{
-    string updateCountAndCoverUriSql = "UPDATE " + ANALYSIS_ALBUM_TABLE +
-        " SET cover_uri = '" + CreateExtUriForAsset(data) +
-        "' , count = COALESCE(count, 0) + 1 WHERE album_name = " +
-        data->GetShootingMode() + " AND album_subtype = " + to_string(PhotoAlbumSubType::SHOOTING_MODE);
-    int32_t result = rdbStorePtr->ExecuteSql(updateCountAndCoverUriSql);
-    return result;
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_ID};
+    auto albumResult = rdbStore->Query(predicates, columns);
+    if (albumResult == nullptr || albumResult->GoToNextRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("query fails, no target shootingmode");
+        return "";
+    }
+    int32_t index = 0;
+    if (albumResult->GetColumnIndex(PhotoAlbumColumns::ALBUM_ID, index) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("get column index fails");
+        return "";
+    }
+    string album_id = "";
+    if (albumResult->GetString(index, album_id) != NativeRdb::E_OK) {
+        return "";
+    }
+    return album_id;
 }
 
 static int32_t MaintainShootingModeMap(std::unique_ptr<Metadata> &data,
@@ -240,7 +243,13 @@ static int32_t MaintainAlbumRelationship(std::unique_ptr<Metadata> &data)
     if (ret != E_OK) {
         return ret;
     }
-    return MaintainAnanlysisTable(data, rdbStorePtr);
+    string album_id = GetAlbumId(rdbStorePtr, data->GetShootingMode());
+    if (album_id.empty()) {
+        MEDIA_ERR_LOG("Failed to query album_id,Album cover and count update fails");
+        return E_ERR;
+    }
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStorePtr, {album_id});
+    return E_OK;
 }
 
 int32_t MediaScannerObj::Commit()
