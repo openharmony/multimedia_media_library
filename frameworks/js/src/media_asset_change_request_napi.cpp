@@ -30,6 +30,7 @@
 #include "delete_callback.h"
 #include "directory_ex.h"
 #include "file_uri.h"
+#include "image_packer.h"
 #include "ipc_skeleton.h"
 #include "js_native_api.h"
 #include "js_native_api_types.h"
@@ -854,7 +855,40 @@ static int SavePhotoProxyImage(const string &fileUri, sptr<CameraStandard::Defer
         NAPI_ERR_LOG("imageAddr is nullptr or imageSize(%{public}zu)==0", imageSize);
         return E_ERR;
     }
-    return SaveImage(fileUri, imageAddr, imageSize);
+
+    NAPI_INFO_LOG("start pack PixelMap");
+    Media::InitializationOptions opts;
+    opts.pixelFormat = Media::PixelFormat::RGBA_8888;
+    opts.size = {
+        .width = photoProxyPtr->GetWidth(),
+        .height = photoProxyPtr->GetHeight()
+    };
+    auto pixelMap = Media::PixelMap::Create(opts);
+    if (pixelMap == nullptr) {
+        NAPI_ERR_LOG("Create pixelMap failed.");
+        return E_ERR;
+    }
+    pixelMap->SetPixelsAddr(imageAddr, nullptr, imageSize, Media::AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    auto pixelSize = static_cast<uint32_t>(pixelMap->GetByteCount());
+
+    // encode rgba to jpeg
+    auto buffer = new (std::nothrow) uint8_t[pixelSize];
+    int64_t packedSize = 0L;
+    Media::ImagePacker imagePacker;
+    Media::PackOption packOption;
+    packOption.format = "image/jpeg";
+    imagePacker.StartPacking(buffer, pixelSize, packOption);
+    imagePacker.AddImage(*pixelMap);
+    imagePacker.FinalizePacking(packedSize);
+    if (buffer == nullptr) {
+        NAPI_ERR_LOG("packet pixelMap failed");
+        return E_ERR;
+    }
+    NAPI_INFO_LOG("pack pixelMap success, packedSize: %{public}lld", packedSize);
+
+    auto ret = SaveImage(fileUri, buffer, packedSize);
+    delete[] buffer;
+    return ret;
 }
 #endif
 
