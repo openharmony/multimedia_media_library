@@ -252,11 +252,8 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(sceneCode, fileInfos, sourceType);
     int64_t rowNum = 0;
-    int32_t errCode = mediaLibraryRdb_->BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
-    if (errCode == SQLITE3_DATABASE_LOCKER) {
-        errCode = BatchInsertWithRetry(values, rowNum);
-    } else if (errCode != E_OK) {
-        MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
+    int32_t errCode = BatchInsertWithRetry(values, rowNum);
+    if (errCode != E_OK) {
         return;
     }
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
@@ -284,23 +281,18 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
 int32_t BaseRestore::BatchInsertWithRetry(std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum)
 {
     int32_t errCode = E_ERR;
-    if (mediaLibraryRdb_ == nullptr) {
-        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
+    TransactionOperations transactionOprn(mediaLibraryRdb_);
+    errCode = transactionOprn.Start();
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("can not get rdb before batch insert");
         return errCode;
     }
-    for (size_t i = 0; i < RETRY_TIME; i++) {
-        sleep(SLEEP_INTERVAL);
-        MEDIA_WARN_LOG("try batchInsert time: %{public}d", (int)i);
-        errCode = mediaLibraryRdb_->BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
-        if (errCode == SQLITE3_DATABASE_LOCKER) {
-            continue;
-        }
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("try batchInsert failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
-            return errCode;
-        }
+    errCode = mediaLibraryRdb_->BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
         return errCode;
     }
+    transactionOprn.Finish();
     return errCode;
 }
 
