@@ -65,6 +65,16 @@ int32_t BackupDatabaseUtils::QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbSt
     return result;
 }
 
+int32_t BackupDatabaseUtils::Update(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t &changeRows,
+    NativeRdb::ValuesBucket &valuesBucket, std::unique_ptr<NativeRdb::AbsRdbPredicates> &predicates)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdb_ is nullptr, Maybe init failed.");
+        return E_FAIL;
+    }
+    return rdbStore->Update(changeRows, valuesBucket, *predicates);
+}
+
 int32_t BackupDatabaseUtils::InitGarbageAlbum(std::shared_ptr<NativeRdb::RdbStore> galleryRdb,
     std::set<std::string> &cacheSet, std::unordered_map<std::string, std::string> &nickMap)
 {
@@ -142,7 +152,9 @@ int32_t BackupDatabaseUtils::QueryGalleryTrashedCount(std::shared_ptr<NativeRdb:
 int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_CLONE_COUNT =
-        "SELECT count(1) AS count FROM gallery_media WHERE local_media_id = -3 AND _size > 0";
+        string("SELECT count(1) AS count FROM gallery_media WHERE local_media_id = -3 AND _size > 0 ") +
+        "AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( " +
+        "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)";
     return QueryInt(galleryRdb, QUERY_GALLERY_CLONE_COUNT, COUNT);
 }
 
