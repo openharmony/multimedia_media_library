@@ -241,7 +241,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",
-    "power_manager:powermgr_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "safwk:system_ability_fwk",
@@ -294,6 +293,12 @@ ohos_shared_library("medialibrary_data_extension") {
       defined(global_parts_info.powermgr_battery_manager)) {
     external_deps += [ "battery_manager:batterysrv_client" ]
     cflags_cc += [ "-DHAS_BATTERY_MANAGER_PART" ]
+  }
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.powermgr_power_manager)) {
+    external_deps += [ "power_manager:powermgr_client" ]
+    cflags_cc += [ "-DHAS_POWER_MANAGER_PART" ]
   }
 
   subsystem_name = "multimedia"
