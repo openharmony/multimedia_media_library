@@ -80,6 +80,7 @@ public:
     EXPORT void EndCommitEdit(int32_t fileId);
     EXPORT bool StartRevert(int32_t fileId);
     EXPORT void EndRevert(int32_t fileId);
+    EXPORT bool IsInRevertOperation(int32_t fileId);
     EXPORT bool IsInEditOperation(int32_t fileId);
 
 private:
