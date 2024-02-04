@@ -27,7 +27,9 @@
 #include "common_event_support.h"
 #include "want.h"
 #include "post_event_utils.h"
+#ifdef HAS_POWER_MANAGER_PART
 #include "power_mgr_client.h"
+#endif
 
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
@@ -53,8 +55,10 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
     : EventFwk::CommonEventSubscriber(subscriberInfo)
 {
+#ifdef HAS_POWER_MANAGER_PART
     auto& powerMgrClient = PowerMgr::PowerMgrClient::GetInstance();
     isScreenOff_ = !powerMgrClient.IsScreenOn();
+#endif
 #ifdef HAS_BATTERY_MANAGER_PART
     auto& batteryClient = PowerMgr::BatterySrvClient::GetInstance();
     auto chargeState = batteryClient.GetChargingStatus();
