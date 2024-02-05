@@ -1004,6 +1004,39 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &
     }
 }
 
+int32_t MediaLibraryRdbUtils::GetAlbumIdsForPortrait(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    vector<string> &portraitAlbumIds)
+{
+    std::stringstream labelIds;
+    unordered_set<string> resultAlbumIds;
+    for (int i = 0; i < portraitAlbumIds.size(); i++) {
+        labelIds << portraitAlbumIds[i];
+        if (i != portraitAlbumIds.size() - 1) {
+            labelIds << ",";
+        }
+        resultAlbumIds.insert(portraitAlbumIds[i]);
+    }
+
+    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.SetWhereClause(GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " IN (" + labelIds.str() + ") AND " + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) +")");
+    vector<string> columns = {
+        ALBUM_ID,
+    };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string albumId = to_string(GetIntValFromColumn(resultSet, ALBUM_ID));
+        if (resultAlbumIds.find(albumId) == resultAlbumIds.end()) {
+            resultAlbumIds.insert(albumId);
+            portraitAlbumIds.push_back(albumId);
+        }
+    }
+    return E_OK;
+}
+
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore> &rdbStore,
     const vector<string> &anaAlbumAlbumIds)
 {
@@ -1015,7 +1048,11 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore
         PhotoAlbumColumns::ALBUM_COVER_URI,
         PhotoAlbumColumns::ALBUM_COUNT,
     };
-    auto albumResult = GetAnalysisAlbum(rdbStore, anaAlbumAlbumIds, columns);
+    vector<string> tempAlbumId = anaAlbumAlbumIds;
+    if (tempAlbumId.size() > 0) {
+        GetAlbumIdsForPortrait(rdbStore, tempAlbumId);
+    }
+    auto albumResult = GetAnalysisAlbum(rdbStore, tempAlbumId, columns);
     if (albumResult == nullptr) {
         return;
     }
