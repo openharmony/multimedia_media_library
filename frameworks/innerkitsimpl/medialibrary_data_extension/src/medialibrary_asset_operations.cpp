@@ -1134,14 +1134,6 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     // if pending == UNOPEN_FILE_COMPONENT_TIMEPENDING, not allowed to close
     // if pending is timestamp, do nothing
     if (fileAsset->GetTimePending() == 0 || fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
-            to_string(PhotoAlbumSubType::IMAGE),
-            to_string(PhotoAlbumSubType::VIDEO),
-            to_string(PhotoAlbumSubType::SCREENSHOT),
-            to_string(PhotoAlbumSubType::CAMERA),
-            to_string(PhotoAlbumSubType::FAVORITE),
-        });
         if (fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
             ScanFile(path, isCreateThumbSync, false);
         } else {
