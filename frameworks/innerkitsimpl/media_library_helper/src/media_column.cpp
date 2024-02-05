@@ -96,6 +96,7 @@ const std::string PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX = "idx_schpt_media_t
 const std::string PhotoColumn::PHOTO_SCHPT_DAY_INDEX = "idx_schpt_date_day";
 const std::string PhotoColumn::PHOTO_HIDDEN_TIME_INDEX = "hidden_time_index";
 const std::string PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX = "idx_schpt_hidden_time";
+const std::string PhotoColumn::PHOTO_FAVORITE_INDEX = "idx_photo_is_favorite";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -181,10 +182,12 @@ const std::string PhotoColumn::CREATE_SCHPT_DAY_INDEX = BaseColumn::CreateIndex(
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
     "," + MEDIA_DATE_TRASHED + "," + PHOTO_DATE_DAY + " DESC);";
 
+const std::string PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX = "DROP INDEX IF EXISTS " + PHOTO_SCHPT_MEDIA_TYPE_INDEX;
+
 const std::string PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX = BaseColumn::CreateIndex() +
     PHOTO_SCHPT_MEDIA_TYPE_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
-    "," + MEDIA_DATE_TRASHED + "," + MEDIA_TYPE + " DESC);";
+    "," + MEDIA_DATE_TRASHED + "," + MEDIA_TYPE + "," + MEDIA_DATE_ADDED + " DESC);";
 
 const std::string PhotoColumn::CREATE_HIDDEN_TIME_INDEX = BaseColumn::CreateIndex() +
     PHOTO_HIDDEN_TIME_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_HIDDEN_TIME + " DESC)";
@@ -193,6 +196,11 @@ const std::string PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX =
     BaseColumn::CreateIndex() + PHOTO_SCHPT_HIDDEN_TIME_INDEX + " ON " + PHOTOS_TABLE +
     " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
     "," + MEDIA_DATE_TRASHED + "," + PHOTO_HIDDEN_TIME + " DESC);";
+
+const std::string PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX =
+    BaseColumn::CreateIndex() + PHOTO_FAVORITE_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
+    "," + MEDIA_DATE_TRASHED + "," + MEDIA_IS_FAV + "," + MEDIA_DATE_ADDED + " DESC);";
 
 const std::string PhotoColumn::QUERY_MEDIA_VOLUME = "SELECT sum(" + MediaColumn::MEDIA_SIZE + ") AS " +
     MediaColumn::MEDIA_SIZE + "," +
