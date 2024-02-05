@@ -225,7 +225,6 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
             continue;
         }
         albumIdList.push_back(to_string(albumId));
-        GetPortraitAlbumIds(to_string(albumId), albumIdList);
     }
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), albumIdList);
     return changedRows;
