@@ -686,7 +686,6 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
             std::to_string(PhotoAlbumSubType::VIDEO),
             std::to_string(PhotoAlbumSubType::HIDDEN),
             std::to_string(PhotoAlbumSubType::SCREENSHOT),
-            std::to_string(PhotoAlbumSubType::CAMERA),
             std::to_string(PhotoAlbumSubType::IMAGE),
         });
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(
@@ -1231,7 +1230,6 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
         to_string(PhotoAlbumSubType::IMAGE),
         to_string(PhotoAlbumSubType::VIDEO),
         to_string(PhotoAlbumSubType::SCREENSHOT),
-        to_string(PhotoAlbumSubType::CAMERA),
         to_string(PhotoAlbumSubType::FAVORITE),
     });
     int32_t errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
