@@ -67,6 +67,8 @@ public:
     EXPORT static bool IsNeedRefreshAlbum();
     EXPORT static void SetNeedRefreshAlbum(bool isNeedRefresh);
     EXPORT static bool IsInRefreshTask();
+    EXPORT static int32_t GetAlbumIdsForPortrait(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        std::vector<std::string> &portraitAlbumIds);
 private:
     static std::atomic<bool> isNeedRefreshAlbum;
     static std::atomic<bool> isInRefreshTask;
