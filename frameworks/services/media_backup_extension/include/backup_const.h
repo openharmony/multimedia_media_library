@@ -34,6 +34,7 @@ constexpr int32_t GARBLE_MID_LENGTH = 10;
 constexpr int32_t GARBLE_HIGH_LENGTH = 20;
 constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
+constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
 
 const std::string BACKUP_RESTORE_DIR = "/data/storage/el2/backup/restore";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
