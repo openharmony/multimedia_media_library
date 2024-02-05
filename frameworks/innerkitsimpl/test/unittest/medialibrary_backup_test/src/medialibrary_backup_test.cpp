@@ -260,7 +260,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.L
     std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='not_sync_weixin.jpg'";
     auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid end");
 }
 
