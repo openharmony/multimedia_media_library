@@ -1173,6 +1173,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsert(MediaLibraryCommand &cmd)
     fileAsset->SetId(id);
     int32_t ret = CommitEditInsertExecute(fileAsset, editData);
     PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
+    MEDIA_INFO_LOG("commit edit finished, fileId=%{public}d", id);
     return ret;
 }
 

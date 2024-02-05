@@ -411,6 +411,8 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         if (fd > 0) {
             return fd;
         }
+        MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, path :%{public}s fd %{public}d errno %{public}d",
+            path.c_str(), fd, errno);
         if (IsAsciiString(path)) {
             uriStr += "&" + THUMBNAIL_PATH + "=" + path;
         }
