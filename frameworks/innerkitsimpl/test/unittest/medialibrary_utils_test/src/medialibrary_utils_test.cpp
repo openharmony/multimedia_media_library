@@ -652,6 +652,17 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_queryThumbDataFromFileId_test_001, Test
     EXPECT_NE(err, 0);
 }
 
+HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Level0)
+{
+    Size targetSize;
+    targetSize.width = 20;
+    targetSize.height = 20;
+    ThumbnailData data;
+    data.source = make_shared<PixelMap>();
+    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data, targetSize);
+    EXPECT_EQ(ret, false);
+}
+
 HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0)
 {
     ThumbnailData data;

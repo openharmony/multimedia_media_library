@@ -62,6 +62,7 @@ constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
 constexpr int32_t MIN_COMPRESS_BUF_SIZE = 8192;
 constexpr int32_t MAX_FIELD_LENGTH = 10;
 constexpr int32_t MAX_TIMEID_LENGTH = 10;
+constexpr int32_t DECODE_SCALE_BASE = 2;
 const std::string KVSTORE_KEY_TEMPLATE = "0000000000";
 
 #ifdef DISTRIBUTED
@@ -262,33 +263,78 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
     return true;
 }
 
+bool ThumbnailUtils::ScaleTargetPixelMap(ThumbnailData &data, const Size &targetSize)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ImageSource::ScaleTargetPixelMap");
+
+    PostProc postProc;
+    if (!postProc.ScalePixelMapEx(targetSize, *data.source, Media::AntiAliasingOption::HIGH)) {
+        MEDIA_ERR_LOG("thumbnail scale failed [%{private}s]", data.id.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
+    return true;
+}
+
+bool GenDecodeOpts(const Size &sourceSize, const Size &targetSize, DecodeOptions &decodeOpts)
+{
+    int32_t decodeScale = 1;
+    if (targetSize.width == 0) {
+        MEDIA_ERR_LOG("Failed to generate decodeOpts, scale size contains zero");
+        return false;
+    }
+    int32_t scaleFactor = sourceSize.width / targetSize.width;
+    while (scaleFactor /= DECODE_SCALE_BASE) {
+        decodeScale *= DECODE_SCALE_BASE;
+    }
+    decodeOpts.desiredSize = {
+        std::ceil(sourceSize.width / decodeScale),
+        std::ceil(sourceSize.height / decodeScale),
+    };
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    return true;
+}
+
+unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ImageSource::CreateImageSource");
+
+    SourceOptions opts;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
+    if (err != E_OK || !imageSource) {
+        MEDIA_ERR_LOG("Failed to create image source, path: %{private}s, err: %{public}d", path.c_str(), err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
+            {KEY_ERR_CODE, static_cast<int32_t>(err)}, {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return imageSource;
+    }
+    return imageSource;
+}
+
 bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize,
     const std::string &targetPath)
 {
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 
-    MediaLibraryTracer tracer;
-    tracer.Start("ImageSource::CreateImageSource");
-
-    uint32_t err = 0;
-    SourceOptions opts;
+    uint32_t err = E_OK;
     std::string path = targetPath.empty() ? data.path : targetPath;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
+
+    unique_ptr<ImageSource> imageSource = LoadImageSource(path, err);
     if (err != E_OK || !imageSource) {
-        MEDIA_ERR_LOG("Failed to create image source, path: %{private}s err: %{public}d", path.c_str(), err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-            {KEY_ERR_CODE, static_cast<int32_t>(err)}, {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
-    tracer.Finish();
 
+    MediaLibraryTracer tracer;
     tracer.Start("imageSource->CreatePixelMap");
     ImageInfo imageInfo;
     err = imageSource->GetImageInfo(0, imageInfo);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get image info, path: %{private}s err: %{public}d", path.c_str(), err);
+        MEDIA_ERR_LOG("Failed to get image info, path: %{private}s, err: %{public}d", path.c_str(), err);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
             {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -296,17 +342,23 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     }
 
     DecodeOptions decodeOpts;
-    decodeOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
-    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    Size targetSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
+    if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
+        MEDIA_ERR_LOG("Failed to generate decodeOpts, pixelmap path %{private}s", path.c_str());
+        return false;
+    }
     data.source = imageSource->CreatePixelMap(decodeOpts, err);
     if ((err != E_OK) || (data.source == nullptr)) {
-        MEDIA_ERR_LOG("Failed to create pixelmap path %{private}s err %{public}d",
-            path.c_str(), err);
+        MEDIA_ERR_LOG("Failed to create pixelmap, path %{private}s, err %{public}d", path.c_str(), err);
         if (err != E_OK) {
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
                 {KEY_ERR_CODE, static_cast<int32_t>(err)}, {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
             PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         }
+        return false;
+    }
+    if (!ScaleTargetPixelMap(data, targetSize)) {
+        MEDIA_ERR_LOG("Failed to scale target, pixelmap path %{private}s", path.c_str());
         return false;
     }
     tracer.Finish();
