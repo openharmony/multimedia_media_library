@@ -58,6 +58,8 @@ constexpr int32_t SUPPORT_QUERY_ISME_MIN_COUNT = 80;
 constexpr int32_t PERCENTAGE_FOR_SUPPORT_QUERY_ISME = 100;
 constexpr int32_t QUERY_PROB_IS_ME_VALUE = 1;
 constexpr int32_t QUERY_IS_ME_VALUE = 2;
+constexpr int32_t FACE_ANALYSISED_STATE = 3;
+constexpr int32_t FACE_NO_NEED_ANALYSIS_STATE = -2;
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -557,7 +559,8 @@ bool IsSupportQueryIsMe()
         return false;
     }
     const std::string queryAnalyzedPic = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM " + VISION_TOTAL_TABLE + " WHERE " +
-        STATUS + " = 1";
+        FACE + " = " + to_string(FACE_ANALYSISED_STATE) + " OR " +
+        FACE + " = " + to_string(FACE_NO_NEED_ANALYSIS_STATE);
     auto resultSetAnalyzed = uniStore->QuerySql(queryAnalyzedPic);
     if (resultSetAnalyzed == nullptr || resultSetAnalyzed->GoToFirstRow() != NativeRdb::E_OK) {
         return false;
@@ -1381,9 +1384,14 @@ int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int3
     updateAlbumInfo.groupTag = "'" + mergeAlbumInfo[0].groupTag + "|" + mergeAlbumInfo[1].groupTag + "'";
     updateAlbumInfo.isMe = (mergeAlbumInfo[0].isMe == 1 || mergeAlbumInfo[1].isMe == 1) ? 1 : 0;
     updateAlbumInfo.userOperation = 1;
-    updateAlbumInfo.renameOperation = 1;
     updateAlbumInfo.albumName =
         mergeAlbumInfo[0].albumId == currentAlbumId ? mergeAlbumInfo[0].albumName : mergeAlbumInfo[1].albumName;
+    if (updateAlbumInfo.albumName == "") {
+        updateAlbumInfo.albumName =
+            mergeAlbumInfo[0].albumId != currentAlbumId ? mergeAlbumInfo[0].albumName : mergeAlbumInfo[1].albumName;
+    }
+    updateAlbumInfo.renameOperation =
+        (mergeAlbumInfo[0].albumName != "" || mergeAlbumInfo[1].albumName != "") ? 1 : 0;
     int currentLevel = mergeAlbumInfo[0].userDisplayLevel;
     int targetLevel = mergeAlbumInfo[1].userDisplayLevel;
     if ((currentLevel == targetLevel) && (currentLevel == FIRST_PAGE || currentLevel == SECOND_PAGE ||
@@ -1438,7 +1446,14 @@ int32_t MergeAlbum(const ValuesBucket &values)
         MEDIA_ERR_LOG("invalid mergeAlbumInfo size");
         return E_INVALID_VALUES;
     }
-    return UpdateMergeAlbumsInfo(mergeAlbumInfo, currentAlbumId);
+    err = UpdateMergeAlbumsInfo(mergeAlbumInfo, currentAlbumId);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("MergeAlbum failed");
+        return err;
+    }
+    vector<int32_t> changeAlbumIds = { currentAlbumId };
+    NotifyPortraitAlbum(changeAlbumIds);
+    return err;
 }
 
 static int32_t UpdateDisplayLevel(const int32_t value, const int32_t albumId)
@@ -1534,6 +1549,35 @@ int32_t SetDisplayLevel(const ValuesBucket &values, const DataSharePredicates &p
     return err;
 }
 
+void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryUnistore> uniStore)
+{
+    std::string queryIsMe = "SELECT COUNT(DISTINCT album_id)," + ALBUM_NAME + "," + USER_DISPLAY_LEVEL +
+        " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + IS_ME + " = 1 ";
+    auto resultSet = uniStore->QuerySql(queryIsMe);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query isMe!");
+        return;
+    }
+    int count;
+    if (resultSet->GetInt(0, count) != E_OK) {
+        return;
+    }
+    std::string clearIsMeAlbum = "";
+    if (count > 0) {
+        string albumName = "";
+        int userDisplayLevel;
+        GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumName);
+        GetIntValueFromResultSet(resultSet, USER_DISPLAY_LEVEL, userDisplayLevel);
+        int renameOperation = albumName != "" ? 1 : 0;
+        int updateDisplayLevel = (userDisplayLevel != FAVORITE_PAGE &&
+            userDisplayLevel != FIRST_PAGE) ? 0 : userDisplayLevel;
+        clearIsMeAlbum= "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 0, " + RENAME_OPERATION +
+            " = " + to_string(renameOperation) + ", " + USER_DISPLAY_LEVEL + " = " + to_string(updateDisplayLevel) +
+            " WHERE " + IS_ME + " = 1";
+        updateSqls.push_back(clearIsMeAlbum);
+    }
+}
+
 /**
  * set target album is me
  * @param values is_me
@@ -1553,13 +1597,24 @@ int32_t SetIsMe(const ValuesBucket &values, const DataSharePredicates &predicate
         MEDIA_ERR_LOG("uniStore is nullptr! failed update for merge albums");
         return E_DB_FAIL;
     }
+    vector<string> updateSqls;
+    SetMyOldAlbum(updateSqls, uniStore);
+    std::string queryTargetIsMe = "SELECT " + USER_DISPLAY_LEVEL + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " = " + targetAlbumId;
+    auto tartGetResultSet = uniStore->QuerySql(queryTargetIsMe);
+    if (tartGetResultSet == nullptr || tartGetResultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to query isMe!");
+        return -E_HAS_DB_ERROR;
+    }
+    int tartgetUserDisplayLevel;
+    GetIntValueFromResultSet(tartGetResultSet, USER_DISPLAY_LEVEL, tartgetUserDisplayLevel);
+    int updateTargetDisplayLevel = (tartgetUserDisplayLevel != FAVORITE_PAGE) ? 1 : tartgetUserDisplayLevel;
 
-    std::string clearIsMeAlbum = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 0, " + RENAME_OPERATION +
-        " = 0, " + USER_DISPLAY_LEVEL + " = 0 " + " WHERE " + IS_ME + " = 1";
     std::string updateForSetIsMe = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_ME + " = 1, " + RENAME_OPERATION +
-        " = 1, " + USER_DISPLAY_LEVEL + " = 1 " + " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " +
-        ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
-    vector<string> updateSqls = { clearIsMeAlbum, updateForSetIsMe};
+        " = 1, " + USER_DISPLAY_LEVEL + " = " + to_string(updateTargetDisplayLevel) + " WHERE " + GROUP_TAG +
+        " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
+        " = " + targetAlbumId + ")";
+    updateSqls.push_back(updateForSetIsMe);
     int32_t err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
