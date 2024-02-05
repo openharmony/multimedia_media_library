@@ -2204,7 +2204,6 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
 
     int32_t fileId1 = 1000;
     int32_t fileId2 = 1001;
-
     auto instance = PhotoEditingRecord::GetInstance();
     EXPECT_EQ(instance->IsInEditOperation(fileId1), false);
     EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
@@ -2217,6 +2216,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
     EXPECT_EQ(instance->StartCommitEdit(fileId2), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId1), false);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId2), false);
     EXPECT_EQ(instance->StartRevert(fileId1), false);
     EXPECT_EQ(instance->StartRevert(fileId2), false);
     instance->EndCommitEdit(fileId1);
@@ -2225,6 +2226,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
     EXPECT_EQ(instance->StartRevert(fileId1), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId2), false);
     EXPECT_EQ(instance->StartRevert(fileId2), false);
     instance->EndCommitEdit(fileId2);
     EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
@@ -2233,6 +2236,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
     EXPECT_EQ(instance->StartRevert(fileId2), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId1), true);
     EXPECT_EQ(instance->IsInEditOperation(fileId2), true);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId1), true);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId2), true);
 
     instance->EndCommitEdit(fileId1);
     instance->EndCommitEdit(fileId2);
@@ -2240,6 +2245,8 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_edit_record_test_001, TestSize.L
     instance->EndRevert(fileId2);
     EXPECT_EQ(instance->IsInEditOperation(fileId1), false);
     EXPECT_EQ(instance->IsInEditOperation(fileId2), false);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId1), false);
+    EXPECT_EQ(instance->IsInRevertOperation(fileId2), false);
 
     MEDIA_INFO_LOG("end tdd photo_edit_record_test_001");
 }
@@ -2504,7 +2511,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, T
     EXPECT_GE(fd, 0);
     close(fd);
 
-    // modify by cache
+    // submit cache
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(CACHE_FILE_NAME, fileName);
@@ -2517,9 +2524,9 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, T
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_003");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_001, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd photo_oprn_modify_by_cache_test_001");
+    MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_001");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -2539,7 +2546,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_001, T
     EXPECT_GE(fd, 0);
     close(fd);
 
-    // modify by cache
+    // edit by cache
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(CACHE_FILE_NAME, fileName);
@@ -2552,12 +2559,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_001, T
     int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
     EXPECT_EQ(ret, fileId);
 
-    MEDIA_INFO_LOG("end tdd photo_oprn_modify_by_cache_test_001");
+    MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_001");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_002, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd photo_oprn_modify_by_cache_test_002");
+    MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_002");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_VIDEO, "photo.mp4");
@@ -2577,7 +2584,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_002, T
     EXPECT_GE(fd, 0);
     close(fd);
 
-    // modify by cache
+    // edit by cache
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(CACHE_FILE_NAME, fileName);
@@ -2590,12 +2597,12 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_002, T
     int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
     EXPECT_LT(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd photo_oprn_modify_by_cache_test_002");
+    MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_002");
 }
 
-HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_003, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd photo_oprn_modify_by_cache_test_003");
+    MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_003");
 
     // create asset
     int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
@@ -2615,7 +2622,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_003, T
     EXPECT_GE(fd, 0);
     close(fd);
 
-    // modify by cache
+    // edit by cache
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(CACHE_FILE_NAME, fileName);
@@ -2625,7 +2632,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_modify_by_cache_test_003, T
     int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
     EXPECT_LT(ret, 0);
 
-    MEDIA_INFO_LOG("end tdd photo_oprn_modify_by_cache_test_003");
+    MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_003");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, TestSize.Level0)
