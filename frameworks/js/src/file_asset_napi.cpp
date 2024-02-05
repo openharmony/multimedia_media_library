@@ -4625,6 +4625,7 @@ static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
             context->SaveError(E_FAIL);
             return;
         }
+        NAPI_INFO_LOG("commit edit asset copy file finished, fileUri:%{public}s", fileUri.c_str());
         string insertUriStr = PAH_COMMIT_EDIT_PHOTOS;
         MediaLibraryNapiUtils::UriAppendKeyValue(insertUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
         Uri insertUri(insertUriStr);
