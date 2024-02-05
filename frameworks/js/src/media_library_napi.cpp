@@ -5938,6 +5938,7 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
     int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri);
     if (index < 0) {
         context->SaveError(index);
+        NAPI_ERR_LOG("InsertExt fail, index: %{public}d.", index);
     } else {
         if (context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
             if (context->isCreateByComponent) {
