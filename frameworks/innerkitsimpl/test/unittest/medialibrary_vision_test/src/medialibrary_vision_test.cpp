@@ -2374,7 +2374,6 @@ void SetFavorite(string tagId, int value)
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
     valuesBucket.Put(USER_DISPLAY_LEVEL, value);
-
     MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
 }
 
