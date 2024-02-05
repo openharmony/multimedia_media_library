@@ -26,6 +26,7 @@
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
+#include "backup_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -364,6 +365,10 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.title = GetStringVal(GALLERY_TITLE, resultSet);
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
+    if (info.fileSize < GARBAGE_PHOTO_SIZE) {
+        MEDIA_WARN_LOG("maybe garbage path = %{public}s.",
+            BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str());
+    }
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
     info.fileType = (mediaType == GALLERY_VIDEO_TYPE) ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
