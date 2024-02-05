@@ -1518,7 +1518,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_002, TestSize.Leve
     int count = -1;
     resultSet->GetInt(0, count);
     EXPECT_EQ(count, 0);
-    MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_002::mapId = %{public}d. End", mapId);
+    MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_002::count = %{public}d. End", count);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Level0)
