@@ -218,7 +218,6 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getAlbums", GetPhotoAlbums),
             DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex),
             DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
-            DECLARE_NAPI_FUNCTION("getHiddenAlbums", UfmGetHiddenAlbums),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -5831,6 +5830,8 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::VIDEO),
         }));
+    } else {
+        context->predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
     }
 
     napi_value result = nullptr;
@@ -6289,15 +6290,6 @@ napi_value ParseArgsGetHiddenAlbums(napi_env env, napi_callback_info info,
     context->fetchColumn.push_back(PhotoAlbumColumns::HIDDEN_COUNT);
     context->fetchColumn.push_back(PhotoAlbumColumns::HIDDEN_COVER);
     return result;
-}
-
-napi_value MediaLibraryNapi::UfmGetHiddenAlbums(napi_env env, napi_callback_info info)
-{
-    auto asyncContext = make_unique<MediaLibraryAsyncContext>();
-    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    CHECK_NULLPTR_RET(ParseArgsGetHiddenAlbums(env, info, asyncContext));
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UfmGetHiddenAlbums",
-        JSGetPhotoAlbumsExecute, JSGetPhotoAlbumsCompleteCallback);
 }
 
 napi_value MediaLibraryNapi::PahGetHiddenAlbums(napi_env env, napi_callback_info info)
