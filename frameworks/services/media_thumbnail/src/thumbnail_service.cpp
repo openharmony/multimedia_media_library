@@ -23,6 +23,7 @@
 #include "medialibrary_async_worker.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_kvstore_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "media_log.h"
 #include "result_set_utils.h"
@@ -148,7 +149,9 @@ void ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
     }
     shared_ptr<MediaLibraryAsyncTask> astcBackgroundTask =
         make_shared<MediaLibraryAsyncTask>(CreateAstcBackground, nullptr);
-    if (astcBackgroundTask != nullptr) {
+    auto kvStore = MediaLibraryKvStoreManager::GetInstance()
+        .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
+    if (astcBackgroundTask != nullptr && kvStore != nullptr) {
         asyncWorker->AddTask(astcBackgroundTask, false);
     } else {
         MEDIA_ERR_LOG("Can not create astc batch task");
