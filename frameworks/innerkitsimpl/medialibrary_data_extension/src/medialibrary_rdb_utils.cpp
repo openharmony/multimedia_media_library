@@ -15,6 +15,7 @@
 
 #include "medialibrary_rdb_utils.h"
 
+#include <functional>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -537,10 +538,9 @@ static int32_t SetAlbumCoverHiddenUri(const shared_ptr<NativeRdb::RdbStore> &rdb
 }
 
 static int32_t FillOneAlbumCountAndCoverUri(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const shared_ptr<ResultSet> &albumResult, vector<string> &sqlVector)
+    const shared_ptr<ResultSet> &albumResult, PhotoAlbumSubType subtype, string &sql)
 {
     AlbumCounts albumCounts = { 0, 0, 0, 0 };
-    auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
     int32_t ret = SetAlbumCounts(rdbStore, albumResult, subtype, albumCounts);
     if (ret != E_SUCCESS) {
         return ret;
@@ -576,7 +576,7 @@ static int32_t FillOneAlbumCountAndCoverUri(const shared_ptr<NativeRdb::RdbStore
         coverHiddenUriSql += " = '" + coverHiddenUri + "'";
     }
 
-    string updateSql = "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
+    sql = "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
         PhotoAlbumColumns::ALBUM_COUNT + " = " + to_string(albumCounts.count) + ", " +
         PhotoAlbumColumns::ALBUM_IMAGE_COUNT + " = " +  to_string(albumCounts.imageCount) + ", " +
         PhotoAlbumColumns::ALBUM_VIDEO_COUNT + " = " + to_string(albumCounts.videoCount) + ", " +
@@ -584,31 +584,37 @@ static int32_t FillOneAlbumCountAndCoverUri(const shared_ptr<NativeRdb::RdbStore
         PhotoAlbumColumns::CONTAINS_HIDDEN + " = " + to_string((albumCounts.hiddenCount == 0) ? 0 : 1) + ", " +
         coverUriSql + ", " + coverHiddenUriSql + " WHERE " +
         PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId) + ";";
-    sqlVector.push_back(updateSql);
     return E_SUCCESS;
 }
 
 static int32_t RefreshAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const shared_ptr<ResultSet> &albumResult)
+    const shared_ptr<ResultSet> &albumResult, function<void(PhotoAlbumSubType, int)> refreshProcessHandler)
 {
-    vector<string> sqlVector;
     while (albumResult->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t ret = FillOneAlbumCountAndCoverUri(rdbStore, albumResult, sqlVector);
+        auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
+        int32_t albumId = GetAlbumId(albumResult);
+        string sql;
+        int32_t ret = FillOneAlbumCountAndCoverUri(rdbStore, albumResult, subtype, sql);
         if (ret != E_SUCCESS) {
             return ret;
         }
-    }
-    string updateRefreshTableSql = "DELETE FROM " + ALBUM_REFRESH_TABLE;
-    sqlVector.push_back(updateRefreshTableSql);
 
-    for (const auto &sql : sqlVector) {
-        int32_t ret = rdbStore->ExecuteSql(sql);
+        ret = rdbStore->ExecuteSql(sql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to execute sql:%{private}s", sql.c_str());
             return E_HAS_DB_ERROR;
         }
         MEDIA_DEBUG_LOG("Execute sql %{private}s success", sql.c_str());
+        refreshProcessHandler(subtype, albumId);
     }
+
+    string updateRefreshTableSql = "DELETE FROM " + ALBUM_REFRESH_TABLE;
+    int32_t ret = rdbStore->ExecuteSql(updateRefreshTableSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to execute sql:%{private}s", updateRefreshTableSql.c_str());
+        return E_HAS_DB_ERROR;
+    }
+    MEDIA_DEBUG_LOG("Delete AlbumRefreshTable success");
     return E_SUCCESS;
 }
 
@@ -669,7 +675,8 @@ shared_ptr<AbsSharedResultSet> QueryAlbumById(const shared_ptr<NativeRdb::RdbSto
     return resultSet;
 }
 
-int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore)
+int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    function<void(PhotoAlbumSubType, int)> refreshProcessHandler, function<void()> refreshCallback)
 {
     isInRefreshTask = true;
 
@@ -682,6 +689,7 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
     }
 
     int ret = E_SUCCESS;
+    bool isRefresh = false;
     while (IsNeedRefreshAlbum()) {
         SetNeedRefreshAlbum(false);
         vector<string> albumIds;
@@ -698,10 +706,11 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
             ret = E_HAS_DB_ERROR;
             break;
         }
-        ret = RefreshAlbums(rdbStore, resultSet);
+        ret = RefreshAlbums(rdbStore, resultSet, refreshProcessHandler);
         if (ret != E_SUCCESS) {
             break;
         }
+        isRefresh = true;
     }
 
     if (ret != E_SUCCESS) {
@@ -712,6 +721,9 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
         SetNeedRefreshAlbum(false);
     }
     isInRefreshTask = false;
+    if (isRefresh) {
+        refreshCallback();
+    }
 
     return ret;
 }
