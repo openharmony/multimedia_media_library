@@ -161,6 +161,7 @@ private:
     EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     static Size ConvertDecodeSize(const Size &sourceSize, Size &desiredSize, const bool isThumbnail);
+    EXPORT static bool ScaleTargetPixelMap(ThumbnailData &data, const Size &targetSize);
     EXPORT static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize,
         const std::string &targetPath);
     EXPORT static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
