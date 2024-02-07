@@ -1009,7 +1009,7 @@ int32_t MediaLibraryRdbUtils::GetAlbumIdsForPortrait(const shared_ptr<NativeRdb:
 {
     std::stringstream labelIds;
     unordered_set<string> resultAlbumIds;
-    for (int i = 0; i < portraitAlbumIds.size(); i++) {
+    for (size_t i = 0; i < portraitAlbumIds.size(); i++) {
         labelIds << portraitAlbumIds[i];
         if (i != portraitAlbumIds.size() - 1) {
             labelIds << ",";
