@@ -362,6 +362,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
             UserFileClient::Init(env, info);
             if (!UserFileClient::IsValid()) {
                 NAPI_ERR_LOG("UserFileClient creation failed");
+                helperLock.unlock();
                 return result;
             }
         }
@@ -478,6 +479,7 @@ static void GetMediaLibraryAsyncExecute(napi_env env, void *data)
         if (!UserFileClient::IsValid()) {
             NAPI_ERR_LOG("UserFileClient creation failed");
             asyncContext->error = ERR_INVALID_OUTPUT;
+            helperLock.unlock();
             return;
         }
     }
