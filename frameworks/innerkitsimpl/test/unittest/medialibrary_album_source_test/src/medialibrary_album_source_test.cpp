@@ -36,6 +36,7 @@
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_rdb_transaction.h"
+#include "medialibrary_rdb_utils.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
@@ -87,9 +88,6 @@ void InitSourceAlbumTrigger()
     static const vector<string> executeSqlStrs = {
         INSERT_PHOTO_INSERT_SOURCE_ALBUM,
         INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
-        UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
-        DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
-        PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER
     };
     MEDIA_INFO_LOG("start add source album trigger");
     ExecSqls(executeSqlStrs);
@@ -246,6 +244,7 @@ void UpdateDisplayName(int64_t &fileId, string &displayName)
 void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptPhotoCount,
     string exceptCoverUri)
 {
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(g_rdbStore->GetRaw());
     vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI,
         PhotoAlbumColumns::ALBUM_BUNDLE_NAME};
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,
@@ -380,33 +379,11 @@ HWTEST_F(MediaLibraryAlbumSourceTest, insert_photo_update_source_album_test_001,
 /**
  * @tc.number: update_photo_update_source_album_test_001
  * @tc.name: update_photo_update_source_album_test_001
- * @tc.desc: insert two normal photo, update a photo diaplayName
+ * @tc.desc: insert two normal photo, logic delete two photo
  */
 HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_001");
-    string packageName = "app_003";
-    // insert photo
-    InsertResult result = InsertPhoto(packageName);
-    // insert photo
-    InsertPhoto(packageName);
-    // update photo name
-    string modifyDisplayName = "testModify001.png";
-    UpdateDisplayName(result.fileId, modifyDisplayName);
-    // verify
-    result.displayName = modifyDisplayName;
-    ValidPhotoAlbumValue(packageName, ONE, TWO, GetCoverUri(result));
-    MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_001");
-}
-
-/**
- * @tc.number: update_photo_update_source_album_test_002
- * @tc.name: update_photo_update_source_album_test_002
- * @tc.desc: insert two normal photo, logic delete two photo
- */
-HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_002, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_002");
     string packageName = "app_004";
     // insert photo
     InsertResult result1 = InsertPhoto(packageName);
@@ -422,17 +399,17 @@ HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_002,
     UpdatePhotoTrashed(result1.fileId, true);
     // verify
     ValidPhotoAlbumValue(packageName, ONE, ZERO, "");
-    MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_002");
+    MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_001");
 }
 
 /**
- * @tc.number: update_photo_update_source_album_test_003
- * @tc.name: update_photo_update_source_album_test_003
+ * @tc.number: update_photo_update_source_album_test_002
+ * @tc.name: update_photo_update_source_album_test_002
  * @tc.desc: insert two normal photo, hide two photo
  */
-HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_002, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_003");
+    MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_002");
     string packageName = "app_005";
     // insert photo
     InsertResult result1 = InsertPhoto(packageName);
@@ -448,17 +425,17 @@ HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_003,
     HidePhoto(result1.fileId, true);
     // verify
     ValidPhotoAlbumValue(packageName, ONE, ZERO, "");
-    MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_003");
+    MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_002");
 }
 
 /**
- * @tc.number: update_photo_update_source_album_test_004
- * @tc.name: update_photo_update_source_album_test_004
+ * @tc.number: update_photo_update_source_album_test_003
+ * @tc.name: update_photo_update_source_album_test_003
  * @tc.desc: insert a normal photo, hide photo, cancel hide
  */
-HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_003, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_004");
+    MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_003");
     string packageName = "app_006";
     // insert photo
     InsertResult result = InsertPhoto(packageName);
@@ -470,17 +447,17 @@ HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_004,
     HidePhoto(result.fileId, ZERO);
     // verify
     ValidPhotoAlbumValue(packageName, ONE, ONE, GetCoverUri(result));
-    MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_004");
+    MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_003");
 }
 
 /**
- * @tc.number: update_photo_update_source_album_test_005
- * @tc.name: update_photo_update_source_album_test_005
+ * @tc.number: update_photo_update_source_album_test_004
+ * @tc.name: update_photo_update_source_album_test_004
  * @tc.desc: insert a normal photo, logic delete photo, cancel delete
  */
-HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_004, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_005");
+    MEDIA_INFO_LOG("start tdd update_photo_update_source_album_test_004");
     string packageName = "app_007";
     // insert photo
     InsertResult result = InsertPhoto(packageName);
@@ -492,7 +469,7 @@ HWTEST_F(MediaLibraryAlbumSourceTest, update_photo_update_source_album_test_005,
     UpdatePhotoTrashed(result.fileId, false);
     // verify
     ValidPhotoAlbumValue(packageName, ONE, ONE, GetCoverUri(result));
-    MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_005");
+    MEDIA_INFO_LOG("end tdd update_photo_update_source_album_test_004");
 }
 
 /**
