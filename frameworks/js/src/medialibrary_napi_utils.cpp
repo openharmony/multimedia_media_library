@@ -446,6 +446,7 @@ napi_status MediaLibraryNapiUtils::ParseAlbumFetchOptCallback(napi_env env, napi
     // Parse the argument into fetchOption if any
     CHECK_STATUS_RET(GetPredicate(env, context->argv[PARAM0], "predicates", context, ALBUM_FETCH_OPT),
         "invalid predicate");
+    context->predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
     return napi_ok;
 }
 
