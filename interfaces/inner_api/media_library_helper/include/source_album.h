@@ -139,27 +139,19 @@ const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
     " BEGIN INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_TYPE + " , " +
     PhotoAlbumColumns::ALBUM_SUBTYPE + " , " +
-    PhotoAlbumColumns::ALBUM_NAME + " , "
-    + PhotoAlbumColumns::ALBUM_COVER_URI + " , " +
-    PhotoAlbumColumns::ALBUM_COUNT + " , " +
+    PhotoAlbumColumns::ALBUM_NAME + " , " +
     PhotoAlbumColumns::ALBUM_BUNDLE_NAME +
     " ) VALUES ( " +
     std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " , " +
     std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + " , " +
     "NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " , " +
-    COVER_URI_VALUE_INSERT + " , " +
-    COUNT_VALUE_INSERT + " , " +
     "NEW." + MediaColumn::MEDIA_OWNER_PACKAGE +
     ");" + INSERT_PHOTO_MAP + "END;";
 
 const std::string INSERT_PHOTO_UPDATE_SOURCE_ALBUM =
     "CREATE TRIGGER insert_photo_update_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
     WHEN_SOURCE_PHOTO_COUNT + "> 0 " +
-    " BEGIN UPDATE " + PhotoAlbumColumns::TABLE +
-    " SET " + PhotoAlbumColumns::ALBUM_COVER_URI + " = " + COVER_URI_VALUE_INSERT + "," +
-    PhotoAlbumColumns::ALBUM_COUNT + " = " + COUNT_VALUE_INSERT +
-    SOURCE_ALBUM_WHERE + ";" +
-    INSERT_PHOTO_MAP + " END;";
+    " BEGIN " + INSERT_PHOTO_MAP + " END;";
 
 const std::string UPDATE_PHOTO_UPDATE_SOURCE_ALBUM =
     "CREATE TRIGGER update_photo_update_source_album AFTER UPDATE ON " +
@@ -191,6 +183,33 @@ const std::string INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS = "INSERT INTO " + PhotoMa
     " SELECT PA." + PhotoAlbumColumns::ALBUM_ID + ", P." + MediaColumn::MEDIA_ID +
     " FROM " + PhotoColumn::PHOTOS_TABLE + " AS P INNER JOIN " + PhotoAlbumColumns::TABLE + " AS PA" +
     " ON P." + MediaColumn::MEDIA_PACKAGE_NAME + " = PA." + PhotoAlbumColumns::ALBUM_NAME + " WHERE " + PHOTOS_WHERE;
+
+const std::string ADD_SOURCE_ALBUM_LOCAL_LANGUAGE = "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+    PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE + " TEXT";
+
+const std::string SOURCE_ALBUM_INDEX = "source_album_index";
+const std::string CREATE_SOURCE_ALBUM_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + SOURCE_ALBUM_INDEX + " ON " +
+    PhotoAlbumColumns::TABLE + " (" + PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " +
+    PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + ") ";
+
+const std::string INSERT_SOURCE_ALBUMS_FROM_PHOTOS_FULL = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
+    PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + ", " +
+    PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ")" +
+    " SELECT " + MediaColumn::MEDIA_PACKAGE_NAME + ", " + MediaColumn::MEDIA_OWNER_PACKAGE + ", " +
+    std::to_string(PhotoAlbumType::SOURCE) + ", " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) +
+    " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+    MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND " + MediaColumn::MEDIA_OWNER_PACKAGE + " IS NOT NULL " +
+    " GROUP BY " + MediaColumn::MEDIA_PACKAGE_NAME + ", " + MediaColumn::MEDIA_OWNER_PACKAGE;
+
+const std::string INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS_FULL = "INSERT INTO " + PhotoMap::TABLE + "(" +
+    PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + ")" +
+    " SELECT PA." + PhotoAlbumColumns::ALBUM_ID + ", P." + MediaColumn::MEDIA_ID +
+    " FROM " + PhotoColumn::PHOTOS_TABLE + " AS P INNER JOIN " + PhotoAlbumColumns::TABLE + " AS PA" +
+    " ON P." + MediaColumn::MEDIA_PACKAGE_NAME + " = PA." + PhotoAlbumColumns::ALBUM_NAME +
+    " AND P." + MediaColumn::MEDIA_OWNER_PACKAGE + " = PA." + PhotoAlbumColumns::ALBUM_BUNDLE_NAME +
+    " WHERE PA." + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SOURCE) +
+    " AND PA." + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC);
+
 } // namespace Media
 } // namespace OHOS
 #endif // INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_SOURCE_ALBUM_H
