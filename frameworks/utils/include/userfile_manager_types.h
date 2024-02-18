@@ -103,6 +103,7 @@ const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
     std::to_string(PhotoAlbumSubType::SCREENSHOT),
     std::to_string(PhotoAlbumSubType::CAMERA),
     std::to_string(PhotoAlbumSubType::IMAGE),
+    std::to_string(PhotoAlbumSubType::SOURCE_GENERIC),
 };
 
 enum class PhotoSubType : int32_t {
