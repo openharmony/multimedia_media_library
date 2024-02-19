@@ -2025,8 +2025,8 @@ static void HandleCompatTrashAudio(MediaLibraryAsyncContext *context, const stri
     DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
     predicates.SetWhereArgs({ deleteId });
-    Uri uri(URI_UPDATE_AUDIO);
-    int32_t changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
+    Uri uri(URI_DELETE_AUDIO);
+    int32_t changedRows = UserFileClient::Delete(uri, predicates);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         return;
