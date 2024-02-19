@@ -237,6 +237,37 @@ static void QuerySqlDebug(const string &sql, const vector<string> &selectionArgs
 }
 #endif
 
+static void NotifySystemAlbumFunc(PhotoAlbumSubType subtype, int32_t albumId)
+{
+    const static set<PhotoAlbumSubType> NEED_FLUSH_PHOTO_ALBUM = {
+        PhotoAlbumSubType::IMAGE,
+        PhotoAlbumSubType::VIDEO,
+    };
+    if (NEED_FLUSH_PHOTO_ALBUM.find(subtype) != NEED_FLUSH_PHOTO_ALBUM.end()) {
+        auto watch = MediaLibraryNotify::GetInstance();
+        if (watch == nullptr) {
+            MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+            return;
+        }
+        if (albumId > 0) {
+            watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ALBUM_URI_PREFIX,
+                to_string(albumId)), NotifyType::NOTIFY_ADD);
+        } else {
+            watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
+        }
+    }
+}
+
+static void RefreshCallbackFunc()
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+        return;
+    }
+    watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
+}
+
 static void RefreshAlbumAsyncTask(AsyncTaskData *data)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -248,16 +279,11 @@ static void RefreshAlbumAsyncTask(AsyncTaskData *data)
         MEDIA_ERR_LOG("RdbStore is nullptr!");
         return;
     }
-    int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore->GetRaw());
+    int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(rdbStore->GetRaw(),
+        NotifySystemAlbumFunc, RefreshCallbackFunc);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("RefreshAllAlbums failed ret:%{public}d", ret);
     }
-    auto watch = MediaLibraryNotify::GetInstance();
-    if (watch == nullptr) {
-        MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
-        return;
-    }
-    watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ALBUM_ADD_ASSET);
 }
 
 static void RefreshAlbums()

@@ -17,10 +17,12 @@
 #define OHOS_MEDIALIBRARY_RDB_UTILS_H
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <string>
 
 #include "rdb_store.h"
+#include "userfile_manager_types.h"
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
@@ -55,7 +57,9 @@ public:
     EXPORT static void UpdateAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &uris = {});
 
-    EXPORT static int32_t RefreshAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    EXPORT static int32_t RefreshAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        std::function<void(PhotoAlbumSubType, int)> refreshProcessHandler,
+        std::function<void()> refreshCallback);
     EXPORT static int32_t IsNeedRefreshByCheckTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         bool &signal);
 
