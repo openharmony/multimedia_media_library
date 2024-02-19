@@ -129,9 +129,13 @@ int32_t MediaLibraryKvStore::BatchQuery(
         return static_cast<int32_t>(status);
     }
 
+    if (!resultSet->MoveToNext()) {
+        MEDIA_ERR_LOG("ResultSet is null");
+        return E_HAS_DB_ERROR;
+    }
     auto begin = batchKeys.crbegin();
     auto end = batchKeys.crend();
-    while (resultSet->MoveToNext() && begin != end) {
+    while (begin != end) {
         Entry entry;
         status = resultSet->GetEntry(entry);
         if (status != Status::SUCCESS) {
@@ -139,13 +143,22 @@ int32_t MediaLibraryKvStore::BatchQuery(
             return static_cast<int32_t>(status);
         }
 
-        if (entry.key.ToString() < *begin) {
-            // This may happen if image is hidden or trashed by user.
-            continue;
-        } else {
-            ++begin;
+        int result = std::strcmp(entry.key.ToString().c_str(), (*begin).c_str());
+        if (result == 0) {
             std::vector<uint8_t>&& value = entry.value;
             values.emplace_back(std::move(value));
+            if (!resultSet->MoveToNext()) {
+                break;
+            }
+            ++begin;
+        } else if (result < 0) {
+            // This may happen if image is hidden or trashed by user.
+            if (!resultSet->MoveToNext()) {
+                break;
+            }
+        } else {
+            // This may happen if image is not generated.
+            ++begin;
         }
     }
     status = kvStorePtr_->CloseResultSet(resultSet);
