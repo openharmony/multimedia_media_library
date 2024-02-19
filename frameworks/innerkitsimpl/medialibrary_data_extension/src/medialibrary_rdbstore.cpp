@@ -937,8 +937,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_ANALYSIS_ALBUM_MAP,
     INSERT_PHOTO_INSERT_SOURCE_ALBUM,
     INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
-    UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
-    DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+    CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
     CREATE_DICTIONARY_INDEX,
     CREATE_KNOWLEDGE_INDEX,
@@ -1351,6 +1350,27 @@ static void MoveSourceAlbumToPhotoAlbumAndAddColumns(RdbStore &store)
     };
     MEDIA_INFO_LOG("start move source album to photo album & add columns");
     ExecSqls(executeSqlStrs, store);
+}
+
+static void ModifySourceAlbumTriggers(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        ADD_SOURCE_ALBUM_LOCAL_LANGUAGE,
+        CREATE_SOURCE_ALBUM_INDEX,
+        INSERT_SOURCE_ALBUMS_FROM_PHOTOS_FULL,
+        INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS_FULL,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+    };
+    MEDIA_INFO_LOG("start modify source album triggers");
+    ExecSqls(executeSqlStrs, store);
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MEDIA_INFO_LOG("end modify source album triggers");
 }
 
 static void AddAnalysisAlbum(RdbStore &store)
@@ -2164,6 +2184,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_MOVE_SOURCE_ALBUM_TO_PHOTO_ALBUM_AND_ADD_COLUMNS) {
         MoveSourceAlbumToPhotoAlbumAndAddColumns(store);
+    }
+
+    if (oldVersion < VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS) {
+        ModifySourceAlbumTriggers(store);
     }
 }
 
