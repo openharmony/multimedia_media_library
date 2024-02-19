@@ -16,6 +16,9 @@
 
 #include "medialibrary_album_operations.h"
 
+#include <filesystem>
+#include <system_error>
+
 #include "directory_ex.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -304,6 +307,41 @@ static void RefreshAlbums()
     }
 }
 
+static int64_t GetTotalThumbnailSize()
+{
+    filesystem::path thumbnailPath = ROOT_MEDIA_DIR + ".thumbs";
+    error_code err {};
+    bool pathExists = filesystem::exists(thumbnailPath, err);
+    if (err) {
+        MEDIA_ERR_LOG("Check path exist fail: %{public}d, %{public}s, returning thumbnail size 0",
+            err.value(), err.message().c_str());
+        return 0;
+    }
+    if (!pathExists) {
+        MEDIA_ERR_LOG("Wrong thumbnail path, returning thumbnail size 0");
+        return 0;
+    }
+
+    int64_t size = 0;
+    filesystem::recursive_directory_iterator entries {thumbnailPath, err};
+    if (err) {
+        MEDIA_ERR_LOG("iterate over directory entries fail: %{public}d, %{public}s, returning thumbnail size 0",
+            err.value(), err.message().c_str());
+        return 0;
+    }
+    MEDIA_INFO_LOG("Iterating over thumbnail directory: %{private}s", thumbnailPath.string().c_str());
+    for (const auto& entry : entries) {
+        if (filesystem::is_regular_file(entry) &&
+            (entry.path().string().find(".jpg") != string::npos ||
+            entry.path().string().find(".astc") != string::npos)) {
+            int64_t increment = static_cast<int64_t>(filesystem::file_size(entry));
+            size += increment;
+        }
+    }
+    MEDIA_INFO_LOG("Thumbnail total size: %{public}lld", static_cast<long long>(size));
+    return size;
+}
+
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
@@ -315,9 +353,12 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     RefreshAlbums();
 
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
-        MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{private}s", QUERY_MEDIA_VOLUME.c_str());
-        return uniStore->QuerySql(QUERY_MEDIA_VOLUME + " UNION " + PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " +
-            AudioColumn::QUERY_MEDIA_VOLUME);
+        string thumbnailQuery = "SELECT cast(" + to_string(GetTotalThumbnailSize()) +
+            " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;
+        string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME;
+        string sql = thumbnailQuery + " UNION " + mediaVolumeQuery;
+        MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{private}s", sql.c_str());
+        return uniStore->QuerySql(sql);
     }
 
     string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
