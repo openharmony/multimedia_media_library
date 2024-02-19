@@ -35,6 +35,7 @@
 #include "rdb_predicates.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -235,7 +236,8 @@ void CheckIfNeedRefresh(bool isNeedRefresh)
 void RefreshTable()
 {
     int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        [] (PhotoAlbumSubType a, int b) {}, [] () {});
     EXPECT_EQ(ret, 0);
 }
 
