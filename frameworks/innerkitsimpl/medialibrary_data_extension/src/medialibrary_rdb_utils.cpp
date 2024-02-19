@@ -929,6 +929,7 @@ static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
 
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subtype));
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(GetAlbumId(albumResult)));
     int32_t changedRows = 0;
     err = rdbStore->Update(changedRows, values, predicates);
     if (err < 0) {
