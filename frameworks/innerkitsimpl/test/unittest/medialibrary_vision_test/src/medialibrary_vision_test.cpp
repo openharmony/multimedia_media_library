@@ -47,6 +47,8 @@ constexpr int32_t FAVORITE_PAGE = 3;
 constexpr int32_t UNFAVORITE_PAGE = 0;
 constexpr int32_t DISMISS_ASSET_ALBUM_ID = -2;
 constexpr int32_t TEST_COUNT = -1;
+constexpr int32_t FACE_FINISH_STATE = 3;
+constexpr int32_t TAG_IS_ME_NUMBER = 500;
 void CleanVisionData()
 {
     DataShare::DataSharePredicates predicates;
@@ -1736,10 +1738,11 @@ void InsertTotalTest()
     MEDIA_INFO_LOG("InsertTotalTest");
     Uri totalUri(URI_TOTAL);
     MediaLibraryCommand cmd(totalUri);
-    DataShare::DataShareValuesBucket valuesBucket;
-    for (int i = TAG_ID2_COUNT; i < TAG_ID1_COUNT; i++) {
+    for (int i = TAG_ID2_COUNT; i < TAG_IS_ME_NUMBER; i++) {
+        DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(FILE_ID, i);
         valuesBucket.Put(STATUS, 1);
+        valuesBucket.Put(FACE, FACE_FINISH_STATE);
         MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     }
 }
