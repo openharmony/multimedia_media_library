@@ -40,6 +40,15 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
     sceneCode_ = sceneCode;
 }
 
+UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode,
+    const std::string &dualDirName)
+{
+    galleryAppName_ = galleryAppName;
+    mediaAppName_ = mediaAppName;
+    sceneCode_ = sceneCode;
+    dualDirName_ = dualDirName;
+}
+
 int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
 {
     appDataPath_ = backupRetoreDir;
