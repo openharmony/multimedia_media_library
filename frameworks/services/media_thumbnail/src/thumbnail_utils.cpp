@@ -279,13 +279,25 @@ bool ThumbnailUtils::ScaleTargetPixelMap(ThumbnailData &data, const Size &target
     return true;
 }
 
+bool NeedAutoResize(const Size &size)
+{
+    // Only small thumbnails need to be scaled after decoding, others should resized while decoding.
+    return size.width > SHORT_SIDE_THRESHOLD && size.height > SHORT_SIDE_THRESHOLD;
+}
+
 bool GenDecodeOpts(const Size &sourceSize, const Size &targetSize, DecodeOptions &decodeOpts)
 {
-    int32_t decodeScale = 1;
     if (targetSize.width == 0) {
         MEDIA_ERR_LOG("Failed to generate decodeOpts, scale size contains zero");
         return false;
     }
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    if (NeedAutoResize(targetSize)) {
+        decodeOpts.desiredSize = targetSize;
+        return true;
+    }
+
+    int32_t decodeScale = 1;
     int32_t scaleFactor = sourceSize.width / targetSize.width;
     while (scaleFactor /= DECODE_SCALE_BASE) {
         decodeScale *= DECODE_SCALE_BASE;
@@ -294,7 +306,6 @@ bool GenDecodeOpts(const Size &sourceSize, const Size &targetSize, DecodeOptions
         std::ceil(sourceSize.width / decodeScale),
         std::ceil(sourceSize.height / decodeScale),
     };
-    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     return true;
 }
 
@@ -357,7 +368,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
         }
         return false;
     }
-    if (!ScaleTargetPixelMap(data, targetSize)) {
+    if (!NeedAutoResize(targetSize) && !ScaleTargetPixelMap(data, targetSize)) {
         MEDIA_ERR_LOG("Failed to scale target, pixelmap path %{private}s", path.c_str());
         return false;
     }
