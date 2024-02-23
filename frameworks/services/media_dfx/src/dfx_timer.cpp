@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "DfxTimer"
 
 #include "dfx_timer.h"
 
@@ -43,7 +44,7 @@ DfxTimer::~DfxTimer()
             std::string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
             MEDIA_WARN_LOG("timeout! bundleName: %{public}s, type: %{public}s, object: %{public}s, cost %{public}lld",
                 bundleName.c_str(), type_.c_str(), object_.c_str(), (long long) (end_ - start_));
-            DfxManager::GetInstance()->HandleTimeOutOperation(bundleName, type_, object_, end_ - start_);
+            DfxManager::GetInstance()->HandleTimeOutOperation(bundleName, type_, object_, (int) (end_ - start_));
         } else {
             MEDIA_WARN_LOG("timeout! type: %{public}s, object: %{public}s, cost %{public}lld ms", type_.c_str(),
                 object_.c_str(), (long long) (end_ - start_));
@@ -58,6 +59,7 @@ void DfxTimer::End()
         MEDIA_WARN_LOG("timeout! type: %{public}s, object: %{public}s, cost %{public}lld ms", type_.c_str(),
             object_.c_str(), (long long) (end_ - start_));
     }
+    isEnd_ = true;
 }
 
 } // namespace Media

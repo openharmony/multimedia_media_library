@@ -13,24 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_DFX_REPORTER_H
-#define OHOS_MEDIA_DFX_REPORTER_H
+#ifndef OHOS_MEDIA_DFX_ANALYZER_H
+#define OHOS_MEDIA_DFX_ANALYZER_H
 
-#include <string>
+#include <map>
+
+#include "dfx_const.h"
 
 namespace OHOS {
 namespace Media {
-class DfxReporter {
+class DfxAnalyzer {
 public:
-    DfxReporter();
-    ~DfxReporter();
-
-    void ReportTimeOutOperation(std::string &bundleName, std::string &type, std::string &object, int32_t time);
-    int32_t ReportHighMemoryImageThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    int32_t ReportHighMemoryVideoThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    static void ReportThumbnailError();
+    DfxAnalyzer();
+    ~DfxAnalyzer();
+    void FlushThumbnail(std::unordered_map<std::string, ThumbnailErrorInfo>  &thumbnailErrorMap);
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_DFX_REPORTER_H
+#endif  // OHOS_MEDIA_DFX_ANALYZER_H

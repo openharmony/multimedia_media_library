@@ -166,9 +166,12 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   media_dfx_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_analyzer.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_collector.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_timer.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_worker.cpp",
   ]
 
   sources = [
@@ -252,6 +255,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",
+    "preferences:native_preferences",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "safwk:system_ability_fwk",

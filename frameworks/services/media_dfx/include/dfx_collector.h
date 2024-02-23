@@ -13,24 +13,29 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_DFX_REPORTER_H
-#define OHOS_MEDIA_DFX_REPORTER_H
+#ifndef OHOS_MEDIA_DFX_COLLECTOR_H
+#define OHOS_MEDIA_DFX_COLLECTOR_H
 
+#include <map>
+#include <mutex>
 #include <string>
+
+#include "dfx_const.h"
 
 namespace OHOS {
 namespace Media {
-class DfxReporter {
+class DfxCollector {
 public:
-    DfxReporter();
-    ~DfxReporter();
+    DfxCollector();
+    ~DfxCollector();
+    void CollectThumbnailError(const std::string &path, const std::string method, int32_t errorCode);
+    std::unordered_map<std::string, ThumbnailErrorInfo> GetThumbnailError();
 
-    void ReportTimeOutOperation(std::string &bundleName, std::string &type, std::string &object, int32_t time);
-    int32_t ReportHighMemoryImageThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    int32_t ReportHighMemoryVideoThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    static void ReportThumbnailError();
+private:
+    std::mutex thumbnailErrorLock_;
+    std::unordered_map<std::string, ThumbnailErrorInfo> thumbnailErrorMap_;
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_DFX_REPORTER_H
+#endif  // OHOS_MEDIA_DFX_COLLECTOR_H

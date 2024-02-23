@@ -19,6 +19,8 @@
 #include <mutex>
 #include <string>
 
+#include "dfx_collector.h"
+#include "dfx_analyzer.h"
 #include "dfx_reporter.h"
 
 namespace OHOS {
@@ -28,8 +30,11 @@ public:
     DfxManager();
     ~DfxManager();
     static std::shared_ptr<DfxManager> GetInstance();
-    void HandleTimeOutOperation(std::string &bundleName, std::string &type, std::string &object, int64_t time);
-    void HandleHighMemoryThumbnail(std::string &path, int32_t mediaType, int32_t width, int32_t height);
+    void HandleTimeOutOperation(std::string &bundleName, std::string &type, std::string &object, int32_t time);
+    int32_t HandleHighMemoryThumbnail(std::string &path, int32_t mediaType, int32_t width, int32_t height);
+    void HandleThumbnailError(const std::string &path, const std::string &method, int32_t errCode);
+    void HandleFiveMinuteTask();
+    int64_t HandleReportXml();
 
 private:
     void Init();
@@ -38,6 +43,8 @@ private:
     static std::mutex instanceLock_;
     static std::shared_ptr<DfxManager> dfxManagerInstance_;
     std::atomic<bool> isInitSuccess_;
+    std::shared_ptr<DfxCollector> dfxCollector_;
+    std::shared_ptr<DfxAnalyzer> dfxAnalyzer_;
     std::shared_ptr<DfxReporter> dfxReporter_;
 };
 } // namespace Media

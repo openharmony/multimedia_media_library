@@ -13,24 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_DFX_REPORTER_H
-#define OHOS_MEDIA_DFX_REPORTER_H
+#ifndef MEDIALIBRARY_DFX_TEST_H
+#define MEDIALIBRARY_DFX_TEST_H
 
-#include <string>
+#include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-class DfxReporter {
+class MediaLibraryDfxTest : public testing::Test {
 public:
-    DfxReporter();
-    ~DfxReporter();
-
-    void ReportTimeOutOperation(std::string &bundleName, std::string &type, std::string &object, int32_t time);
-    int32_t ReportHighMemoryImageThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    int32_t ReportHighMemoryVideoThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    static void ReportThumbnailError();
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
 } // namespace Media
 } // namespace OHOS
-
-#endif  // OHOS_MEDIA_DFX_REPORTER_H
+#endif // MEDIALIBRARY_DFX_TEST_H
