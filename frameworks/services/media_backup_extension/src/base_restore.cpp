@@ -40,6 +40,7 @@
 namespace OHOS {
 namespace Media {
 const std::string DATABASE_PATH = "/data/storage/el2/database/rdb/media_library.db";
+const std::string singleDirName = "A";
 
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
@@ -106,6 +107,16 @@ bool BaseRestore::ConvertPathToRealPath(const std::string &srcPath, const std::s
         return false;
     }
     relativePath = srcPath.substr(pos);
+    if (!dualDirName_.empty() && relativePath.find(dualDirName_) != string::npos) {
+        std::size_t posStart = relativePath.find_first_of("/");
+        std::size_t posEnd = relativePath.find_first_of("/", posStart + 1);
+        if (posEnd != string::npos) {
+            string temp = relativePath.substr(posStart + 1, posEnd - posStart -1);
+            if (temp == dualDirName_) {
+                relativePath.replace(relativePath.find(dualDirName_), dualDirName_.length(), singleDirName);
+            }
+        }
+    }
     newPath = prefix + relativePath;
     return true;
 }

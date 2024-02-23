@@ -43,6 +43,7 @@ void ExternalSource::Init(const string &dbPath)
     externalStorePtr_ = store;
     InitStepOne();
     InitStepTwo();
+    InitStepThree();
 }
 
 void ExternalSource::InitStepOne()
@@ -96,15 +97,37 @@ void ExternalSource::InitStepTwo()
     externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(15,") +
         "'/storage/emulated/0/tencent/MicroMsg/WeiXin/fake_wechat.jpg', 2419880, 1706950426, 1432973383, " +
         "'fake_wechat', 'fake_wechat.jpg', 0, NULL, -924335728, 1, 65537, 3968, 2976, 0, 0)");
-    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(16,") +
+    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(21,") +
         "'/storage/emulated/0/DCIM/Camera/camera_not_sync.jpg', 1780813, 1706950561, 1546937461, 'camera_not_sync', " +
         "'camera_not_sync.jpg', 0, NULL, -1739773001, 1, 65537, 3264, 2448, 0, 0)");
-    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(17,") +
+    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(22,") +
         "'/storage/emulated/0/CTRIP/avatar/not_sync_garbage_ctrip.jpg', 2767543, 1706950561, 1546937461, " +
         "'not_sync_garbage_ctrip', 'not_sync_garbage_ctrip.jpg', 0, NULL, 876554266, 1, 65537, 3264, 2448, 0, 0)");
-    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(18,") +
+    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(23,") +
         "'/storage/emulated/0/tencent/MicroMsg/WeiXin/not_sync_weixin.jpg', 3503265, 1706950561, 1546937461, " +
         "'not_sync_weixin', 'not_sync_weixin.jpg', 0, NULL, -924335728, 1, 65537, 3968, 2976, 0, 0)");
+}
+
+void ExternalSource::InitStepThree()
+{
+    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(16,") +
+        "'/storage/emulated/0/A/media/Rocket/test/a_media_normal_video.mp4', 10865209, 1708600079, 1708600079," +
+        "'a_media_normal_video', 'a_media_normal_video.mp4', 0, 52221, -1122816831, 3, 65537, 352, 640, 0, 0)");
+    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(17,") +
+        "'/storage/emulated/0/A/media/Rocket/test/a_media_favorite.mp4', 10865209, 1708600079, 1708600079," +
+        "'a_media_favorite', 'a_media_favorite.mp4', 0, 52221, -1122816831, 3, 65537, 352, 640, 0, 1)");
+    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(18,") +
+        "'/storage/emulated/0/A/media/Baidu/a_media_favorite_baidu.mp4', 10865209, 1708600079, 1708600079," +
+        "'a_media_favorite_baidu', 'a_media_favorite_baidu.mp4', 0, 52221, -1122816831, 3, 65537, 352, 640, 0, 1)");
+    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(19,") +
+        "'/storage/emulated/0/A/media/Baidu/a_media_normal_image.jpg', 418436, 1708602162, 1708602162," +
+        "'a_media_normal_image', 'a_media_normal_image.jpg', 0, 0, -1960413976, 1, 65537, 2000, 3556, 0, 0)");
+    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(20,") +
+        "'/storage/emulated/0/A/media/Baidu/a_media_not_sync.jpg', 418436, 1708602162, 1708602162," +
+        "'a_media_not_sync', 'a_media_not_sync.jpg', 0, 0, -1960413976, 1, 65537, 2000, 3556, 0, 0)");
+    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(20,") +
+        "'/storage/emulated/0/A/media/Baidu/a_media_zero_size.jpg', 0, 1708602162, 1708602162," +
+        "'a_media_zero_size', 'a_media_zero_size.jpg', 0, 0, -1960413976, 1, 65537, 0, 0, 0, 0)");
 }
 } // namespace Media
 } // namespace OHOS
