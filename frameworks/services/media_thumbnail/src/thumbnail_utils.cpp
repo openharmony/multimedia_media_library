@@ -199,11 +199,6 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
     string path = data.path;
     int32_t err = SetSource(avMetadataHelper, path);
     if (err != 0) {
-        MEDIA_ERR_LOG("Av meta data helper set source failed path %{private}s err %{public}d",
-            path.c_str(), err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     PixelMapParams param;
@@ -211,7 +206,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
     data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
         param);
     if (data.source == nullptr) {
-        MEDIA_ERR_LOG("Av meta data fetchFrameAtTime failed!");
+        DfxManager::GetInstance()->HandleThumbnailError(path, AV_FETCH_FRAME, err);
         return false;
     }
     int width = data.source->GetWidth();
@@ -228,9 +223,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
         data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
             param);
         if (data.source == nullptr) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-                {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+            DfxManager::GetInstance()->HandleThumbnailError(path, AV_FETCH_FRAME, err);
             return false;
         }
     }
@@ -240,7 +233,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
         std::istringstream iss(videoOrientation);
         iss >> data.degrees;
     }
-    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_IMAGE, width, height);
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, width, height);
     return true;
 }
 
@@ -317,10 +310,7 @@ unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err)
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
     if (err != E_OK || !imageSource) {
-        MEDIA_ERR_LOG("Failed to create image source, path: %{private}s, err: %{public}d", path.c_str(), err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-            {KEY_ERR_CODE, static_cast<int32_t>(err)}, {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        DfxManager::GetInstance()->HandleThumbnailError(path, CREATE_IMAGE_SOURCE, err);
         return imageSource;
     }
     return imageSource;
@@ -345,10 +335,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     ImageInfo imageInfo;
     err = imageSource->GetImageInfo(0, imageInfo);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get image info, path: %{private}s, err: %{public}d", path.c_str(), err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        DfxManager::GetInstance()->HandleThumbnailError(path, GET_IMAGE_INFO, err);
         return false;
     }
 
@@ -360,12 +347,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     }
     data.source = imageSource->CreatePixelMap(decodeOpts, err);
     if ((err != E_OK) || (data.source == nullptr)) {
-        MEDIA_ERR_LOG("Failed to create pixelmap, path %{private}s, err %{public}d", path.c_str(), err);
-        if (err != E_OK) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-                {KEY_ERR_CODE, static_cast<int32_t>(err)}, {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        }
+        DfxManager::GetInstance()->HandleThumbnailError(path, CREATE_IMAGE_SOURCE, err);
         return false;
     }
     if (!NeedAutoResize(targetSize) && !ScaleTargetPixelMap(data, targetSize)) {
@@ -379,7 +361,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     if (err == E_OK) {
         data.degrees = static_cast<float>(intTempMeta);
     }
-    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, imageInfo.size.width,
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_IMAGE, imageInfo.size.width,
         imageInfo.size.height);
     return true;
 }
@@ -1214,9 +1196,6 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
         ret = LoadImageFile(data, isThumbnail, desiredSize, targetPath);
     }
     if (!ret || (data.source == nullptr)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     tracer.Finish();
@@ -1226,9 +1205,6 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
         PostProc postProc;
         if (!postProc.CenterScale(desiredSize, *data.source)) {
             MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-                {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             return false;
         }
     }
@@ -1441,10 +1417,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     int64_t length = static_cast<int64_t>(st.st_size);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
     if (ret != 0) {
-        MEDIA_ERR_LOG("SetSource fail");
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        DfxManager::GetInstance()->HandleThumbnailError(path, AV_SET_SOURCE, ret);
         (void)close(fd);
         return E_ERR;
     }
