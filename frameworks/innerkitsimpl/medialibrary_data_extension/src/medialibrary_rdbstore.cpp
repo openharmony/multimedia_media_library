@@ -46,6 +46,8 @@
 #include "vision_column.h"
 #include "form_map.h"
 #include "search_column.h"
+#include "dfx_const.h"
+#include "dfx_timer.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -158,6 +160,7 @@ void GetAllNetworkId(vector<string> &networkIds)
 
 int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 {
+    DfxTimer dfxTimer(RDB_INSERT, NULL_STRING, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryRdbStore::Insert");
     if (rdbStore_ == nullptr) {
@@ -178,6 +181,7 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPredicates &predicates,
     int32_t &deletedRows)
 {
+    DfxTimer dfxTimer(RDB_DELETE, NULL_STRING, RDB_TIME_OUT, false);
     int32_t ret = NativeRdb::E_ERROR;
     string tableName = predicates.GetTableName();
     ValuesBucket valuesBucket;
@@ -337,7 +341,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredica
 
     /* add filter */
     MediaLibraryRdbUtils::AddQueryFilter(const_cast<AbsRdbPredicates &>(predicates));
-
+    DfxTimer dfxTimer(RDB_QUERY, NULL_STRING, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QueryByPredicates");
     auto resultSet = rdbStore_->Query(predicates, columns);
@@ -355,7 +359,7 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const string &sql)
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-
+    DfxTimer dfxTimer(RDB_EXECUTE_SQL, NULL_STRING, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->ExecuteSql");
     int32_t ret = rdbStore_->ExecuteSql(sql);
@@ -448,6 +452,7 @@ int32_t MediaLibraryRdbStore::Update(ValuesBucket &values,
         values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     }
 
+    DfxTimer dfxTimer(RDB_UPDATE, NULL_STRING, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryRdbStore::Update by predicates");
     int32_t changedRows = -1;

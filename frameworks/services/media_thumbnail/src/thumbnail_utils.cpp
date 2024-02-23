@@ -45,6 +45,7 @@
 #include "thumbnail_const.h"
 #include "unique_fd.h"
 #include "post_event_utils.h"
+#include "dfx_manager.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -210,9 +211,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
     data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
         param);
     if (data.source == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        MEDIA_ERR_LOG("Av meta data fetchFrameAtTime failed!");
         return false;
     }
     int width = data.source->GetWidth();
@@ -241,6 +240,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
         std::istringstream iss(videoOrientation);
         iss >> data.degrees;
     }
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_IMAGE, width, height);
     return true;
 }
 
@@ -368,6 +368,8 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     if (err == E_OK) {
         data.degrees = static_cast<float>(intTempMeta);
     }
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, imageInfo.size.width,
+        imageInfo.size.height);
     return true;
 }
 
