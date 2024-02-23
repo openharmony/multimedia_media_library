@@ -21,6 +21,8 @@
 #include "thumbnail_const.h"
 #include "thumbnail_utils.h"
 #include "thumbnail_utils.h"
+#include "dfx_timer.h"
+#include "dfx_const.h"
 
 #include "lcd_thumbnail_helper.h"
 
@@ -71,7 +73,9 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &
             fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_LCD_SUFFIX);
         }
     }
+    DfxTimer dfxTimer(OPEN_COULD_LCD, NULL_STRING, CLOUD_LCD_TIME_OUT, false);
     auto fd = open(fileName.c_str(), O_RDONLY);
+    dfxTimer.End();
     if (fd >= 0) {
         if (opts.table == PhotoColumn::PHOTOS_TABLE) {
             ThumbnailUtils::UpdateVisitTime(opts, thumbnailData, err);
