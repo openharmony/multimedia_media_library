@@ -23,6 +23,7 @@
 #include "thumbnail_utils.h"
 #include "dfx_timer.h"
 #include "dfx_const.h"
+#include "dfx_manager.h"
 
 #include "default_thumbnail_helper.h"
 
@@ -88,6 +89,7 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Si
     if (fd >= 0) {
         return fd;
     }
+    DfxManager::GetInstance()->HandleThumbnailError(fileName, OPEN_COULD_DEFAULT, -errno);
     return -errno;
 }
 } // namespace Media

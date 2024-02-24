@@ -12,9 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "DfxManager"
 
 #include "dfx_manager.h"
 
+#include "dfx_worker.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "userfile_manager_types.h"
@@ -50,32 +52,68 @@ DfxManager::~DfxManager()
 void DfxManager::Init()
 {
     MEDIA_INFO_LOG("Init DfxManager");
+    dfxCollector_ = make_shared<DfxCollector>();
+    dfxAnalyzer_ = make_shared<DfxAnalyzer>();
     dfxReporter_ = make_shared<DfxReporter>();
+    DfxWorker::GetInstance()->Init();
     isInitSuccess_ = true;
 }
 
-void DfxManager::HandleTimeOutOperation(std::string &bundleName, std::string &type, std::string &object, int64_t time)
+void DfxManager::HandleTimeOutOperation(std::string &bundleName, std::string &type, std::string &object, int32_t time)
 {
-    if (isInitSuccess_) {
+    if (!isInitSuccess_) {
         MEDIA_WARN_LOG("DfxManager not init");
         return;
     }
     dfxReporter_->ReportTimeOutOperation(bundleName, type, object, time);
 }
 
-void DfxManager::HandleHighMemoryThumbnail(std::string &path, int32_t mediaType, int32_t width,
+int32_t DfxManager::HandleHighMemoryThumbnail(std::string &path, int32_t mediaType, int32_t width,
     int32_t height)
 {
-    if (isInitSuccess_) {
+    if (!isInitSuccess_) {
         MEDIA_WARN_LOG("DfxManager not init");
-        return;
+        return NOT_INIT;
     }
     string suffix = MediaFileUtils::GetExtensionFromPath(path);
     if (mediaType == MEDIA_TYPE_IMAGE) {
-        dfxReporter_->ReportHighMemoryImageThumbnail(path, suffix, width, height);
+        return dfxReporter_->ReportHighMemoryImageThumbnail(path, suffix, width, height);
     } else {
-        dfxReporter_->ReportHighMemoryVideoThumbnail(path, suffix, width, height);
+        return dfxReporter_->ReportHighMemoryVideoThumbnail(path, suffix, width, height);
     }
+}
+
+void DfxManager::HandleThumbnailError(const std::string &path, const std::string &method, int32_t errorCode)
+{
+    std::string safePath = path;
+    safePath = safePath.replace(0, CLOUD_APTH.length(), GARBLE);
+    MEDIA_ERR_LOG("Failed to %{public}s, path: %{public}s, err: %{public}d", safePath.c_str(), method.c_str(),
+        errorCode);
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+    dfxCollector_->CollectThumbnailError(safePath, method, errorCode);
+}
+
+void DfxManager::HandleFiveMinuteTask()
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+    std::unordered_map<std::string, ThumbnailErrorInfo> result = dfxCollector_->GetThumbnailError();
+    dfxAnalyzer_->FlushThumbnail(result);
+}
+
+int64_t DfxManager::HandleReportXml()
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return MediaFileUtils::UTCTimeMilliSeconds();
+    }
+    dfxReporter_->ReportThumbnailError();
+    return MediaFileUtils::UTCTimeMilliSeconds();
 }
 } // namespace Media
 } // namespace OHOS
