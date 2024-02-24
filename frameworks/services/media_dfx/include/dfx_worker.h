@@ -13,24 +13,33 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_DFX_REPORTER_H
-#define OHOS_MEDIA_DFX_REPORTER_H
+#ifndef OHOS_MEDIA_DFX_WORKER_H
+#define OHOS_MEDIA_DFX_WORKER_H
 
-#include <string>
+#include <thread>
 
 namespace OHOS {
 namespace Media {
-class DfxReporter {
+class DfxWorker {
 public:
-    DfxReporter();
-    ~DfxReporter();
+    DfxWorker();
+    ~DfxWorker();
+    static std::shared_ptr<DfxWorker> GetInstance();
+    void Init();
+    void End();
 
-    void ReportTimeOutOperation(std::string &bundleName, std::string &type, std::string &object, int32_t time);
-    int32_t ReportHighMemoryImageThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    int32_t ReportHighMemoryVideoThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    static void ReportThumbnailError();
+private:
+    void InitCycleThread();
+
+private:
+    int64_t lastReportTime_;
+    static std::shared_ptr<DfxWorker> dfxWorkerInstance_;
+    std::thread cycleThread_;
+    bool isEnd_;
+    int32_t shortTime_;
+    int32_t longTime_;
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_DFX_REPORTER_H
+#endif  // OHOS_MEDIA_DFX_WORKER_H

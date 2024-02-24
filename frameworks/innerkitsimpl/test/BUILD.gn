@@ -24,6 +24,7 @@ group("test") {
     "unittest/medialibrary_backup_test:unittest",
     "unittest/medialibrary_common_utils_test:unittest",
     "unittest/medialibrary_datamanager_test:unittest",
+    "unittest/medialibrary_dfx_test:unittest",
     "unittest/medialibrary_helper_test:unittest",
     "unittest/medialibrary_location_test:unittest",
     "unittest/medialibrary_manager_utils_test:unittest",

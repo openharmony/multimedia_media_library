@@ -23,6 +23,7 @@
 #include "thumbnail_utils.h"
 #include "dfx_timer.h"
 #include "dfx_const.h"
+#include "dfx_manager.h"
 
 #include "lcd_thumbnail_helper.h"
 
@@ -82,6 +83,7 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &
         }
         return fd;
     }
+    DfxManager::GetInstance()->HandleThumbnailError(fileName, OPEN_COULD_LCD, -errno);
     return -errno;
 }
 } // namespace Media
