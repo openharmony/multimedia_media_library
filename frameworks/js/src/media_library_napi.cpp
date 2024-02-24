@@ -52,7 +52,9 @@
 #include "userfile_client.h"
 #include "uv.h"
 #include "form_map.h"
+#ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
+#endif
 #include "ui_extension_context.h"
 #include "want.h"
 #include "js_native_api.h"
@@ -6372,6 +6374,7 @@ napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_inf
     napi_value args[ARGS_FOUR] = {nullptr};
     napi_value thisVar = nullptr;
     napi_value result = nullptr;
+#ifdef HAS_ACE_ENGINE_PART
     napi_create_object(env, &result);
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), JS_ERR_PARAMETER_INVALID);
     auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
@@ -6402,6 +6405,7 @@ napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_inf
     NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
 
     callback->SetSessionId(sessionId);
+#endif
     return result;
 }
 
