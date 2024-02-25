@@ -110,10 +110,10 @@ int64_t DfxManager::HandleReportXml()
 {
     if (!isInitSuccess_) {
         MEDIA_WARN_LOG("DfxManager not init");
-        return MediaFileUtils::UTCTimeMilliSeconds();
+        return MediaFileUtils::UTCTimeSeconds();
     }
     dfxReporter_->ReportThumbnailError();
-    return MediaFileUtils::UTCTimeMilliSeconds();
+    return MediaFileUtils::UTCTimeSeconds();
 }
 } // namespace Media
 } // namespace OHOS

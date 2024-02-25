@@ -69,7 +69,8 @@ void DfxWorker::InitCycleThread()
     lastReportTime_ = prefs->GetLong(LAST_REPORT_TIME, 0);
     while (!isEnd_) {
         DfxManager::GetInstance()->HandleFiveMinuteTask();
-        if (MediaFileUtils::UTCTimeMilliSeconds() - lastReportTime_ > longTime_) {
+        if (MediaFileUtils::UTCTimeSeconds() - lastReportTime_ > longTime_) {
+            MEDIA_INFO_LOG("Report Xml");
             lastReportTime_ = DfxManager::GetInstance()->HandleReportXml();
             prefs->PutLong(LAST_REPORT_TIME, lastReportTime_);
             prefs->Flush();
