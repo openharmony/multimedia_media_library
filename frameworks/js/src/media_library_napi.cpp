@@ -6370,11 +6370,11 @@ static napi_value initRequest(OHOS::AAFwk::Want &request, shared_ptr<DeleteCallb
 
 napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_info info)
 {
+#ifdef HAS_ACE_ENGINE_PART
     size_t argc = ARGS_FOUR;
     napi_value args[ARGS_FOUR] = {nullptr};
     napi_value thisVar = nullptr;
     napi_value result = nullptr;
-#ifdef HAS_ACE_ENGINE_PART
     napi_create_object(env, &result);
     CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), JS_ERR_PARAMETER_INVALID);
     auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
@@ -6405,8 +6405,11 @@ napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_inf
     NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
 
     callback->SetSessionId(sessionId);
-#endif
     return result;
+#else
+    NapiError::ThrowError(env, JS_INNER_FAIL, "ace_engine is not support");
+    return nullptr;
+#endif
 }
 
 static void StartPhotoPickerExecute(napi_env env, void *data)
