@@ -28,7 +28,7 @@ class DfxCollector {
 public:
     DfxCollector();
     ~DfxCollector();
-    void CollectThumbnailError(const std::string &path, const std::string method, int32_t errorCode);
+    void CollectThumbnailError(const std::string &path, int32_t method, int32_t errorCode);
     std::unordered_map<std::string, ThumbnailErrorInfo> GetThumbnailError();
 
 private:

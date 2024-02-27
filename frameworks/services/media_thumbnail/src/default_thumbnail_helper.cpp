@@ -84,12 +84,12 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Si
                 isAstc ? THUMBNAIL_THUMBASTC_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
         }
     }
-    DfxTimer dfxTimer(OPEN_COULD_DEFAULT, NULL_STRING, CLOUD_DEFAULT_TIME_OUT, false);
+    DfxTimer dfxTimer(DfxType::CLOUD_DEFAULT_OPEN, INVALID_DFX, CLOUD_DEFAULT_TIME_OUT, false);
     auto fd = open(fileName.c_str(), O_RDONLY);
     if (fd >= 0) {
         return fd;
     }
-    DfxManager::GetInstance()->HandleThumbnailError(fileName, OPEN_COULD_DEFAULT, -errno);
+    DfxManager::GetInstance()->HandleThumbnailError(fileName, DfxType::CLOUD_DEFAULT_OPEN, -errno);
     return -errno;
 }
 } // namespace Media

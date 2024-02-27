@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "dfx_const.h"
+#include "dfx_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "hisysevent.h"
@@ -38,11 +39,11 @@ DfxReporter::~DfxReporter()
 {
 }
 
-void DfxReporter::ReportTimeOutOperation(std::string &bundleName, std::string &type, std::string &object, int32_t time)
+void DfxReporter::ReportTimeOutOperation(std::string &bundleName, int32_t type, int32_t object, int32_t time)
 {
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
-        "MEDIALIB_TIMEOUT_OPT_ERROR",
+        "MEDIALIB_TIMEOUT_ERROR",
         HiviewDFX::HiSysEvent::EventType::FAULT,
         "BUNDLE_NAME", bundleName,
         "OPERATION_TYPE", type,
@@ -78,24 +79,6 @@ int32_t DfxReporter::ReportHighMemoryVideoThumbnail(std::string &path, std::stri
     }
     return COMMON_VIDEO;
 }
-vector<string> SplitString(std::string &input);
-vector<string> SplitString(std::string &input)
-{
-    vector<string> result;
-    if (input == "") {
-        return result;
-    }
-    string pattern = SPLIT_CHAR;
-    string strs = input + pattern;
-    size_t pos = strs.find(pattern);
-    while (pos != strs.npos) {
-        string temp = strs.substr(0, pos);
-        result.push_back(temp);
-        strs = strs.substr(pos + 1, strs.size());
-        pos = strs.find(pattern);
-    }
-    return result;
-}
 
 void DfxReporter::ReportThumbnailError()
 {
@@ -108,21 +91,23 @@ void DfxReporter::ReportThumbnailError()
     }
     map<string, NativePreferences::PreferencesValue> errorMap = prefs->GetAll();
     for (auto &erroInfo : errorMap) {
+        string key = erroInfo.first;
         string value = erroInfo.second;
-        vector<string> thumbnailInfo = SplitString(value);
+        vector<string> thumbnailInfo = DfxUtils::Split(key, SPLIT_CHAR);
         int ret = HiSysEventWrite(
             MEDIA_LIBRARY,
-            "MEDIALIB_THUMBNAIL_OPT_ERROR",
+            "MEDIALIB_THUMBNAIL_ERROR",
             HiviewDFX::HiSysEvent::EventType::FAULT,
             "PATH", thumbnailInfo[0],
-            "METHOD", thumbnailInfo[1],
+            "METHOD", stoi(thumbnailInfo[1]),
             "ERROR_CODE", stoi(thumbnailInfo[2]),
-            "TIME", stoi(thumbnailInfo[3]));
+            "TIME", stol(value));
         if (ret != 0) {
             MEDIA_ERR_LOG("ReportThumbnailError error:%{public}d", ret);
         }
     }
     prefs->Clear();
+    prefs->FlushSync();
 }
 } // namespace Media
 } // namespace OHOS

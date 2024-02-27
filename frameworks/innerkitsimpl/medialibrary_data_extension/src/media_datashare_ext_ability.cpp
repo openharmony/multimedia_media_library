@@ -533,8 +533,8 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     } else if (err < 0) {
         return err;
     }
-    string object = to_string(static_cast<int32_t>(command.GetOprnObject()));
-    string type = to_string(static_cast<int32_t>(command.GetOprnType()));
+    int32_t object = static_cast<int32_t>(command.GetOprnObject());
+    int32_t type = static_cast<int32_t>(command.GetOprnType());
     DfxTimer dfxTimer(type, object, OPEN_FILE_TIME_OUT, true);
     if (command.GetUri().ToString().find(MEDIA_DATA_DB_THUMBNAIL) != string::npos) {
         command.SetOprnObject(OperationObject::THUMBNAIL);
@@ -560,8 +560,8 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     if (err < 0) {
         return err;
     }
-    string object = to_string(static_cast<int32_t>(cmd.GetOprnObject()));
-    string type = to_string(static_cast<int32_t>(cmd.GetOprnType()));
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     return MediaLibraryDataManager::GetInstance()->Insert(cmd, value);
 }
@@ -574,8 +574,8 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
         return err;
     }
 
-    string object = to_string(static_cast<int32_t>(cmd.GetOprnObject()));
-    string type = to_string(static_cast<int32_t>(cmd.GetOprnType()));
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     return MediaLibraryDataManager::GetInstance()->InsertExt(cmd, value, result);
 }
@@ -589,8 +589,8 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
         return err;
     }
 
-    string object = to_string(static_cast<int32_t>(cmd.GetOprnObject()));
-    string type = to_string(static_cast<int32_t>(cmd.GetOprnType()));
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     return MediaLibraryDataManager::GetInstance()->Update(cmd, value, predicates);
 }
@@ -603,8 +603,8 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
         return err;
     }
 
-    string object = to_string(static_cast<int32_t>(cmd.GetOprnObject()));
-    string type = to_string(static_cast<int32_t>(cmd.GetOprnType()));
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     return MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
@@ -613,8 +613,8 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, vector<string> &columns, DatashareBusinessError &businessError)
 {
     MediaLibraryCommand cmd(uri);
-    string object = to_string(static_cast<int32_t>(cmd.GetOprnObject()));
-    string type = to_string(static_cast<int32_t>(cmd.GetOprnType()));
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     if (cmd.GetOprnObject() == OperationObject::PAH_MULTISTAGES_CAPTURE) {
         if (cmd.GetOprnType() == Media::OperationType::PROCESS_IMAGE && columns.size() == 3) { // 3 means params number
@@ -664,8 +664,8 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShare
     if (err < 0) {
         return err;
     }
-    string object = to_string(static_cast<int32_t>(cmd.GetOprnObject()));
-    string type = to_string(static_cast<int32_t>(cmd.GetOprnType()));
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     return MediaLibraryDataManager::GetInstance()->BatchInsert(cmd, values);
 }
