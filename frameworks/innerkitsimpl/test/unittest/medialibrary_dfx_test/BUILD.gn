@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Copyright (C) 2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -34,6 +34,7 @@ ohos_unittest("medialibrary_dfx_test") {
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_timer.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_worker.cpp",
     "./src/medialibrary_dfx_test.cpp",
   ]

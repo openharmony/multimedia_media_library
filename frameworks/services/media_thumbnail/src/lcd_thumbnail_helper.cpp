@@ -74,7 +74,7 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &
             fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_LCD_SUFFIX);
         }
     }
-    DfxTimer dfxTimer(OPEN_COULD_LCD, NULL_STRING, CLOUD_LCD_TIME_OUT, false);
+    DfxTimer dfxTimer(DfxType::CLOUD_LCD_OPEN, INVALID_DFX, CLOUD_LCD_TIME_OUT, false);
     auto fd = open(fileName.c_str(), O_RDONLY);
     dfxTimer.End();
     if (fd >= 0) {
@@ -83,7 +83,7 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &
         }
         return fd;
     }
-    DfxManager::GetInstance()->HandleThumbnailError(fileName, OPEN_COULD_LCD, -errno);
+    DfxManager::GetInstance()->HandleThumbnailError(fileName, DfxType::CLOUD_LCD_OPEN, -errno);
     return -errno;
 }
 } // namespace Media
