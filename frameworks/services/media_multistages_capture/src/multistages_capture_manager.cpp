@@ -78,6 +78,10 @@ void MultiStagesCaptureManager::AddPhotoInProgress(int32_t fileId, const string 
 // 2. 删除到回收站,isTrashed=false, state NORMAL => TRASHED
 void MultiStagesCaptureManager::UpdatePhotoInProgress(const string &photoId)
 {
+    if (photoIdInProcess_.count(photoId) == 0) {
+        MEDIA_INFO_LOG("photo id (%{public}s) not in progress", photoId.c_str());
+        return;
+    }
     shared_ptr<LowQualityPhotoInfo> photo = photoIdInProcess_.at(photoId);
     photo->state = (photo->state == PhotoState::NORMAL) ? PhotoState::TRASHED : PhotoState::NORMAL;
     photoIdInProcess_[photoId] = photo;
@@ -86,6 +90,10 @@ void MultiStagesCaptureManager::UpdatePhotoInProgress(const string &photoId)
 void MultiStagesCaptureManager::RemovePhotoInProgress(const string &photoId, bool isRestorable)
 {
     if (!isRestorable) {
+        if (photoIdInProcess_.count(photoId) == 0) {
+            MEDIA_INFO_LOG("photo id (%{public}s) not in progress.", photoId.c_str());
+            return;
+        }
         int32_t fileId = photoIdInProcess_.at(photoId)->fileId;
         fileId2PhotoId_.erase(fileId);
         photoIdInProcess_.erase(photoId);
