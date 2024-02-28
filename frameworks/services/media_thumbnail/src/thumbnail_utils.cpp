@@ -1503,19 +1503,17 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
             return isDelete;
         }
     }
-    if (DeleteThumbFile(tmpData, ThumbnailType::YEAR)) {
+    if (!opts.dateAdded.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
         isDelete = true;
     }
-    if (DeleteThumbFile(tmpData, ThumbnailType::MTH)) {
+    if (!opts.dateAdded.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC)) {
         isDelete = true;
     }
     if (DeleteThumbFile(tmpData, ThumbnailType::THUMB)) {
         isDelete = true;
     }
-    if (ThumbnailUtils::IsSupportGenAstc()) {
-        if (DeleteThumbFile(tmpData, ThumbnailType::THUMB_ASTC)) {
-            isDelete = true;
-        }
+    if (ThumbnailUtils::IsSupportGenAstc() && DeleteThumbFile(tmpData, ThumbnailType::THUMB_ASTC)) {
+        isDelete = true;
     }
     if (DeleteThumbFile(tmpData, ThumbnailType::LCD)) {
         isDelete = true;
@@ -1875,5 +1873,32 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
     resultSet->Close();
 }
 
+bool ThumbnailUtils::DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type)
+{
+    string key;
+    if (!GenerateKvStoreKey(opts.row, opts.dateAdded, key)) {
+        MEDIA_ERR_LOG("GenerateKvStoreKey failed");
+        return false;
+    }
+
+    std::shared_ptr<MediaLibraryKvStore> kvStore;
+    if (type == ThumbnailType::MTH_ASTC) {
+        kvStore = MediaLibraryKvStoreManager::GetInstance()
+            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
+    } else if (type == ThumbnailType::YEAR_ASTC) {
+        kvStore = MediaLibraryKvStoreManager::GetInstance()
+            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC);
+    } else {
+        MEDIA_ERR_LOG("invalid thumbnailType");
+        return false;
+    }
+    if (kvStore == nullptr) {
+        MEDIA_ERR_LOG("kvStore is nullptr");
+        return false;
+    }
+
+    int status = kvStore->Delete(key);
+    return status == E_OK;
+}
 } // namespace Media
 } // namespace OHOS
