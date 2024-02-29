@@ -456,13 +456,15 @@ int32_t ThumbnailService::InvalidateDistributeThumbnail(const string &udid)
 }
 #endif
 
-void ThumbnailService::InvalidateThumbnail(const std::string &id, const std::string &tableName, const std::string &path)
+void ThumbnailService::InvalidateThumbnail(const std::string &id,
+    const std::string &tableName, const std::string &path, const std::string &dateAdded)
 {
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .path = path,
         .table = tableName,
         .row = id,
+        .dateAdded = dateAdded,
     };
     ThumbnailData thumbnailData;
     ThumbnailUtils::DeleteOriginImage(opts);
@@ -540,7 +542,7 @@ int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
         return err;
     }
 
-    IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateAstc, opts, data, true);
+    IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateAstc, opts, data, false);
     return E_OK;
 }
 
