@@ -183,6 +183,7 @@ private:
 
     static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
     static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
+    static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
 };
 } // namespace Media
 } // namespace OHOS
