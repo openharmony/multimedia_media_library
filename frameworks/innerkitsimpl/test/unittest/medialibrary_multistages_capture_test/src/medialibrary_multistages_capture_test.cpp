@@ -568,6 +568,11 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_photo_id_add_and_rmv_001, T
     instance.RemovePhotoInProgress(photoId2, false);
     EXPECT_EQ(instance.fileId2PhotoId_.count(fileId2), 0);
     EXPECT_EQ(instance.photoIdInProcess_.count(photoId2), 0);
+
+    // remove photo id not in progress
+    string invalidPhotoId = "202312251533003";
+    instance.RemovePhotoInProgress(invalidPhotoId, false);
+    instance.RemovePhotoInProgress(invalidPhotoId, true);
     MEDIA_INFO_LOG("manager_photo_id_add_and_rmv_001 End");
 }
 
