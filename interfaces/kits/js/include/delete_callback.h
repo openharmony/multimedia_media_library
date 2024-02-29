@@ -22,7 +22,9 @@
 #include <node_api.h>
 
 #include "want.h"
+#ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
+#endif
 #include "medialibrary_client_errno.h"
 
 namespace OHOS {
@@ -39,7 +41,11 @@ const int32_t DEFAULT_SESSION_ID = 0;
 
 class DeleteCallback {
 public:
+#ifdef HAS_ACE_ENGINE_PART
     explicit DeleteCallback(napi_env env, Ace::UIContent *uiContent);
+#else
+    explicit DeleteCallback(napi_env env);
+#endif
     void OnRelease(int32_t releaseCode);
     void OnResult(int32_t resultCode, const OHOS::AAFwk::Want &result);
     void OnReceive(const OHOS::AAFwk::WantParams &request);
@@ -54,7 +60,9 @@ private:
     std::vector<std::string> uris_;
     napi_env env_ = nullptr;
     napi_ref callbackRef = nullptr;
+#ifdef HAS_ACE_ENGINE_PART
     Ace::UIContent *uiContent = nullptr;
+#endif
     void SendMessageBack();
     void CloseModalUIExtension();
 };

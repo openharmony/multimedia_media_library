@@ -25,11 +25,18 @@ using namespace OHOS::DataShare;
 
 namespace OHOS {
 namespace Media {
+#ifdef HAS_ACE_ENGINE_PART
 DeleteCallback::DeleteCallback(napi_env env, Ace::UIContent *uiContent)
 {
     this->env_ = env;
     this->uiContent = uiContent;
 }
+#else
+DeleteCallback::DeleteCallback(napi_env env)
+{
+    this->env_ = env;
+}
+#endif
 
 void DeleteCallback::OnRelease(int32_t releaseCode)
 {
@@ -112,9 +119,11 @@ void DeleteCallback::SendMessageBack()
 
 void DeleteCallback::CloseModalUIExtension()
 {
+#ifdef HAS_ACE_ENGINE_PART
     if (this->uiContent != nullptr) {
         uiContent->CloseModalUIExtension(this->sessionId_);
     }
+#endif
 }
 }
 }

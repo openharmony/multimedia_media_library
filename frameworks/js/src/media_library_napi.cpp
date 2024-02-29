@@ -52,7 +52,9 @@
 #include "userfile_client.h"
 #include "uv.h"
 #include "form_map.h"
+#ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
+#endif
 #include "ui_extension_context.h"
 #include "want.h"
 #include "js_native_api.h"
@@ -6368,6 +6370,7 @@ static napi_value initRequest(OHOS::AAFwk::Want &request, shared_ptr<DeleteCallb
 
 napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_info info)
 {
+#ifdef HAS_ACE_ENGINE_PART
     size_t argc = ARGS_FOUR;
     napi_value args[ARGS_FOUR] = {nullptr};
     napi_value thisVar = nullptr;
@@ -6403,6 +6406,10 @@ napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_inf
 
     callback->SetSessionId(sessionId);
     return result;
+#else
+    NapiError::ThrowError(env, JS_INNER_FAIL, "ace_engine is not support");
+    return nullptr;
+#endif
 }
 
 static void StartPhotoPickerExecute(napi_env env, void *data)
