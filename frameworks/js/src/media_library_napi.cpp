@@ -5828,6 +5828,14 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE || albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
         context->predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
     }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void RestrictAlbumSubtypeOptions(unique_ptr<MediaLibraryAsyncContext> &context)
+{
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         context->predicates.And()->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
             to_string(PhotoAlbumSubType::USER_GENERIC),
@@ -5837,10 +5845,6 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     } else {
         context->predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
     }
-
-    napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
-    return result;
 }
 
 static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
@@ -5877,6 +5881,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
         default:
             return nullptr;
     }
+    RestrictAlbumSubtypeOptions(context);
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
         CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
