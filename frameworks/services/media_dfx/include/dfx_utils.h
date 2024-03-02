@@ -13,24 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_DFX_REPORTER_H
-#define OHOS_MEDIA_DFX_REPORTER_H
+#ifndef OHOS_MEDIA_DFX_UTILS_H
+#define OHOS_MEDIA_DFX_UTILS_H
 
 #include <string>
+#include <vector>
 
 namespace OHOS {
 namespace Media {
-class DfxReporter {
+class DfxUtils {
 public:
-    DfxReporter();
-    ~DfxReporter();
+    static std::vector<std::string> Split(std::string &input, const std::string &pattern);
+    static std::string GetSafePath(const std::string &path);
 
-    void ReportTimeOutOperation(std::string &bundleName, int32_t type, int32_t object, int32_t time);
-    int32_t ReportHighMemoryImageThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    int32_t ReportHighMemoryVideoThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    static void ReportThumbnailError();
+private:
+    static std::string GetSafeDiaplayName(std::string &displayName);
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_DFX_REPORTER_H
+#endif  // OHOS_MEDIA_DFX_UTILS_H

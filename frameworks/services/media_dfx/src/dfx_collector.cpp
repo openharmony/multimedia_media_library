@@ -34,7 +34,7 @@ DfxCollector::~DfxCollector()
 {
 }
 
-void DfxCollector::CollectThumbnailError(const std::string &path, const std::string method, int32_t errorCode)
+void DfxCollector::CollectThumbnailError(const std::string &path, int32_t method, int32_t errorCode)
 {
     lock_guard<mutex> lock(thumbnailErrorLock_);
     ThumbnailErrorInfo thunmbailErrorInfo = { method, errorCode, MediaFileUtils::UTCTimeSeconds() };

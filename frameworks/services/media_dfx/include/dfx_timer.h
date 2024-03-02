@@ -22,13 +22,13 @@ namespace OHOS {
 namespace Media {
 class DfxTimer {
 public:
-    DfxTimer(const std::string &type, const std::string &object, int64_t timeOut, bool isReport);
+    DfxTimer(int32_t type, int32_t object, int64_t timeOut, bool isReport);
     ~DfxTimer();
     void End();
 
 private:
-    std::string type_;
-    std::string object_;
+    int32_t type_;
+    int32_t object_;
     int64_t start_;
     int64_t end_;
     int64_t timeOut_;
