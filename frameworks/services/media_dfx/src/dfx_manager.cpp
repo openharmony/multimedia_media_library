@@ -17,6 +17,7 @@
 #include "dfx_manager.h"
 
 #include "dfx_worker.h"
+#include "dfx_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "userfile_manager_types.h"
@@ -59,7 +60,7 @@ void DfxManager::Init()
     isInitSuccess_ = true;
 }
 
-void DfxManager::HandleTimeOutOperation(std::string &bundleName, std::string &type, std::string &object, int32_t time)
+void DfxManager::HandleTimeOutOperation(std::string &bundleName, int32_t type, int32_t object, int32_t time)
 {
     if (!isInitSuccess_) {
         MEDIA_WARN_LOG("DfxManager not init");
@@ -83,12 +84,10 @@ int32_t DfxManager::HandleHighMemoryThumbnail(std::string &path, int32_t mediaTy
     }
 }
 
-void DfxManager::HandleThumbnailError(const std::string &path, const std::string &method, int32_t errorCode)
+void DfxManager::HandleThumbnailError(const std::string &path, int32_t method, int32_t errorCode)
 {
-    std::string safePath = path;
-    safePath = safePath.replace(0, CLOUD_APTH.length(), GARBLE);
-    MEDIA_ERR_LOG("Failed to %{public}s, path: %{public}s, err: %{public}d", safePath.c_str(), method.c_str(),
-        errorCode);
+    string safePath = DfxUtils::GetSafePath(path);
+    MEDIA_ERR_LOG("Failed to %{public}d, path: %{public}s, err: %{public}d", method, safePath.c_str(), errorCode);
     if (!isInitSuccess_) {
         MEDIA_WARN_LOG("DfxManager not init");
         return;

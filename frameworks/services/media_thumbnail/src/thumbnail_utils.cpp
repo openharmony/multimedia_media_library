@@ -206,7 +206,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
     data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
         param);
     if (data.source == nullptr) {
-        DfxManager::GetInstance()->HandleThumbnailError(path, AV_FETCH_FRAME, err);
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
     }
     int width = data.source->GetWidth();
@@ -223,7 +223,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
         data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
             param);
         if (data.source == nullptr) {
-            DfxManager::GetInstance()->HandleThumbnailError(path, AV_FETCH_FRAME, err);
+            DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
             return false;
         }
     }
@@ -310,7 +310,7 @@ unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err)
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
     if (err != E_OK || !imageSource) {
-        DfxManager::GetInstance()->HandleThumbnailError(path, CREATE_IMAGE_SOURCE, err);
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_CREATE, err);
         return imageSource;
     }
     return imageSource;
@@ -335,7 +335,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     ImageInfo imageInfo;
     err = imageSource->GetImageInfo(0, imageInfo);
     if (err != E_OK) {
-        DfxManager::GetInstance()->HandleThumbnailError(path, GET_IMAGE_INFO, err);
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_GET_INFO, err);
         return false;
     }
 
@@ -347,7 +347,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     }
     data.source = imageSource->CreatePixelMap(decodeOpts, err);
     if ((err != E_OK) || (data.source == nullptr)) {
-        DfxManager::GetInstance()->HandleThumbnailError(path, CREATE_IMAGE_SOURCE, err);
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_CREATE_PIXELMAP, err);
         return false;
     }
     if (!NeedAutoResize(targetSize) && !ScaleTargetPixelMap(data, targetSize)) {
@@ -1417,7 +1417,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     int64_t length = static_cast<int64_t>(st.st_size);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
     if (ret != 0) {
-        DfxManager::GetInstance()->HandleThumbnailError(path, AV_SET_SOURCE, ret);
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_SET_SOURCE, ret);
         (void)close(fd);
         return E_ERR;
     }

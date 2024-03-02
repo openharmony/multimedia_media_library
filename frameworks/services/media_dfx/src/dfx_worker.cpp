@@ -73,7 +73,7 @@ void DfxWorker::InitCycleThread()
             MEDIA_INFO_LOG("Report Xml");
             lastReportTime_ = DfxManager::GetInstance()->HandleReportXml();
             prefs->PutLong(LAST_REPORT_TIME, lastReportTime_);
-            prefs->Flush();
+            prefs->FlushSync();
         }
         this_thread::sleep_for(chrono::milliseconds(shortTime_));
     }

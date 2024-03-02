@@ -23,7 +23,7 @@
 
 namespace OHOS {
 namespace Media {
-DfxTimer::DfxTimer(const std::string &type, const std::string &object, int64_t timeOut, bool isReport)
+DfxTimer::DfxTimer(int32_t type, int32_t object, int64_t timeOut, bool isReport)
 {
     type_ = type;
     object_ = object;
@@ -42,12 +42,12 @@ DfxTimer::~DfxTimer()
     if (end_ - start_ > timeOut_) {
         if (isReport_) {
             std::string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-            MEDIA_WARN_LOG("timeout! bundleName: %{public}s, type: %{public}s, object: %{public}s, cost %{public}lld",
-                bundleName.c_str(), type_.c_str(), object_.c_str(), (long long) (end_ - start_));
+            MEDIA_WARN_LOG("timeout! bundleName: %{public}s, type: %{public}d, object: %{public}d, cost %{public}d",
+                bundleName.c_str(), type_, object_, (int) (end_ - start_));
             DfxManager::GetInstance()->HandleTimeOutOperation(bundleName, type_, object_, (int) (end_ - start_));
         } else {
-            MEDIA_WARN_LOG("timeout! type: %{public}s, object: %{public}s, cost %{public}lld ms", type_.c_str(),
-                object_.c_str(), (long long) (end_ - start_));
+            MEDIA_WARN_LOG("timeout! type: %{public}d, object: %{public}d, cost %{public}lld ms", type_,
+                object_, (long long) (end_ - start_));
         }
     }
 }
@@ -56,8 +56,8 @@ void DfxTimer::End()
 {
     end_ = MediaFileUtils::UTCTimeMilliSeconds();
     if (end_ - start_ > timeOut_) {
-        MEDIA_WARN_LOG("timeout! type: %{public}s, object: %{public}s, cost %{public}lld ms", type_.c_str(),
-            object_.c_str(), (long long) (end_ - start_));
+        MEDIA_WARN_LOG("timeout! type: %{public}d, object: %{public}d, cost %{public}d ms", type_, object_,
+            (int) (end_ - start_));
     }
     isEnd_ = true;
 }

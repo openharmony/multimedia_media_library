@@ -47,10 +47,11 @@ void DfxAnalyzer::FlushThumbnail(std::unordered_map<std::string, ThumbnailErrorI
         return;
     }
     for (auto entry: thumbnailErrorMap) {
-        string value = entry.first + SPLIT_CHAR + entry.second.method + SPLIT_CHAR +
-            to_string(entry.second.errCode) + SPLIT_CHAR + to_string(entry.second.time);
-        prefs->PutString(to_string(MediaFileUtils::UTCTimeMilliSeconds()), value);
-        prefs->Flush();
+        string key = entry.first + SPLIT_CHAR + to_string(entry.second.method) + SPLIT_CHAR +
+            to_string(entry.second.errCode);
+        string value = to_string(entry.second.time);
+        prefs->PutString(key, value);
+        prefs->FlushSync();
     }
     MEDIA_INFO_LOG("flush %{public}zu itmes", thumbnailErrorMap.size());
 }

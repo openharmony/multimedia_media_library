@@ -39,38 +39,49 @@ constexpr int32_t OTHER_FORMAT_IMAGE = 2;
 constexpr int32_t BIG_IMAGE = 3;
 constexpr int32_t BIG_VIDEO = 4;
 
+constexpr int32_t INVALID_DFX = -1;
+
+constexpr int32_t GARBLE_SMALL = 3;
+constexpr int32_t GARBLE_LARGE = 8;
+constexpr int32_t GARBLE_LAST_TWO = 2;
+constexpr int32_t GARBLE_LAST_ONE = 1;
+
+enum DfxType {
+    CLOUD_DEFAULT_OPEN = 0,
+    CLOUD_LCD_OPEN,
+    RDB_INSERT = 100,
+    RDB_DELETE,
+    RDB_UPDATE,
+    RDB_UPDATE_BY_CMD,
+    RDB_QUERY,
+    RDB_EXECUTE_SQL,
+    IMAGE_SOURCE_CREATE = 200,
+    IMAGE_SOURCE_GET_INFO,
+    IMAGE_SOURCE_CREATE_PIXELMAP,
+    AV_SET_SOURCE = 300,
+    AV_FETCH_FRAME
+};
+
 const std::string NULL_STRING = "";
 const std::string SPLIT_CHAR = "|";
 
 const std::string FIVE_MINUTE = "5";
 const std::string ONE_DAY = "24";
 
-const std::string OPEN_COULD_LCD = "open cloud lcd";
-const std::string OPEN_COULD_DEFAULT = "open cloud default";
-const std::string RDB_QUERY = "rdb query";
-const std::string RDB_INSERT = "rdb insert";
-const std::string RDB_DELETE = "rdb delete";
-const std::string RDB_UPDATE = "rdb update";
-const std::string RDB_UPDATE_BY_CMD = "rdb update by cmd";
-const std::string RDB_EXECUTE_SQL = "rdb execute sql";
-
-const std::string CREATE_IMAGE_SOURCE = "create image source";
-const std::string GET_IMAGE_INFO = "get image info";
-const std::string CREATE_PIXEL_MAP = "create pixel map";
-const std::string AV_SET_SOURCE = "av set source";
-const std::string AV_FETCH_FRAME = "av fetch frame";
-
 const std::string THUMBNAIL_ERROR_XML = "/data/storage/el2/base/preferences/thumbnail_error.xml";
 const std::string DFX_COMMON_XML = "/data/storage/el2/base/preferences/dfx_common.xml";
 const std::string LAST_REPORT_TIME = "last_report_time";
 
-const std::string CLOUD_APTH = "/storage/cloud/files/Photo";
+const std::string CLOUD_PHOTO_PATH = "/storage/cloud/files/Photo/";
+const std::string CLOUD_FILE_PATH = "/storage/cloud/files/";
 const std::string GARBLE = "*";
+const std::string SPLIT_PATH = "/";
+const std::string DOT = ".";
 
 struct ThumbnailErrorInfo {
-    std::string method;
+    int32_t method;
     int32_t errCode;
-    int32_t time;
+    int64_t time;
 };
 } // namespace Media
 } // namespace OHOS
