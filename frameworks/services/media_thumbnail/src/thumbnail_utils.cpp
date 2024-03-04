@@ -63,8 +63,10 @@ constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
 constexpr int32_t MIN_COMPRESS_BUF_SIZE = 8192;
 constexpr int32_t MAX_FIELD_LENGTH = 10;
 constexpr int32_t MAX_TIMEID_LENGTH = 10;
+constexpr int32_t MAX_DATE_ADDED_LENGTH = 13;
 constexpr int32_t DECODE_SCALE_BASE = 2;
-const std::string KVSTORE_KEY_TEMPLATE = "0000000000";
+const std::string KVSTORE_FIELD_ID_TEMPLATE = "0000000000";
+const std::string KVSTORE_DATE_ADDED_TEMPLATE = "0000000000000";
 
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
@@ -1771,18 +1773,25 @@ bool ThumbnailUtils::GenerateKvStoreKey(const std::string &fieldId, const std::s
         MEDIA_ERR_LOG("dateAdded is empty");
         return false;
     }
-    if (dateAdded.length() < MAX_TIMEID_LENGTH) {
-        MEDIA_ERR_LOG("dateAdded invalid");
-        return false;
-    }
 
     size_t length = fieldId.length();
     if (length >= MAX_FIELD_LENGTH) {
         MEDIA_ERR_LOG("fieldId too long");
         return false;
     }
-    string assembledFieldId = KVSTORE_KEY_TEMPLATE.substr(length) + fieldId;
-    key = dateAdded.substr(0, MAX_TIMEID_LENGTH) + assembledFieldId;
+    std::string assembledFieldId = KVSTORE_FIELD_ID_TEMPLATE.substr(length) + fieldId;
+
+    length = dateAdded.length();
+    std::string assembledDateAdded;
+    if (length > MAX_DATE_ADDED_LENGTH) {
+        MEDIA_ERR_LOG("dateAdded invalid, fieldId:%{public}s", fieldId.c_str());
+        return false;
+    } else if (length == MAX_DATE_ADDED_LENGTH) {
+        assembledDateAdded = dateAdded;
+    } else {
+        assembledDateAdded = KVSTORE_DATE_ADDED_TEMPLATE.substr(length) + dateAdded;
+    }
+    key = assembledDateAdded.substr(0, MAX_TIMEID_LENGTH) + assembledFieldId;
     return true;
 }
 
