@@ -323,19 +323,33 @@ static int64_t GetTotalThumbnailSize()
     }
 
     int64_t size = 0;
-    filesystem::recursive_directory_iterator entries {thumbnailPath, err};
+    filesystem::recursive_directory_iterator entryIter {thumbnailPath, err};
+    filesystem::recursive_directory_iterator endIter;
     if (err) {
-        MEDIA_ERR_LOG("iterate over directory entries fail: %{public}d, %{public}s, returning thumbnail size 0",
+        MEDIA_ERR_LOG("Accessing thumbnail directory fail: %{public}d, %{public}s, returning thumbnail size 0",
             err.value(), err.message().c_str());
         return 0;
     }
     MEDIA_INFO_LOG("Iterating over thumbnail directory: %{private}s", thumbnailPath.string().c_str());
-    for (const auto& entry : entries) {
-        if (filesystem::is_regular_file(entry) &&
+    while (entryIter != endIter) {
+        const auto& entry = *entryIter;
+        if (filesystem::is_regular_file(entry, err) &&
             (entry.path().string().find(".jpg") != string::npos ||
             entry.path().string().find(".astc") != string::npos)) {
-            int64_t increment = static_cast<int64_t>(filesystem::file_size(entry));
-            size += increment;
+            int64_t increment = static_cast<int64_t>(filesystem::file_size(entry, err));
+            if (err) {
+                MEDIA_ERR_LOG("Error when calculating: %{public}d, %{public}s, current entry: %{public}s, skipping",
+                    err.value(), err.message().c_str(), entry.path().string().c_str());
+            } else {
+                size += increment;
+                MEDIA_INFO_LOG("print entry: %{public}s, increment: %{public}lld", entry.path().string().c_str(), static_cast<long long>(increment));
+            }  
+        }
+        entryIter.increment(err);
+        if (err) {
+            MEDIA_ERR_LOG("Error when advancing: %{public}d, %{public}s, current entry: %{public}s, skipping",
+                err.value(), err.message().c_str(), entry.path().string().c_str());
+            break;
         }
     }
     MEDIA_INFO_LOG("Thumbnail total size: %{public}lld", static_cast<long long>(size));
