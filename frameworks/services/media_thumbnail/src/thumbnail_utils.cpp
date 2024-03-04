@@ -1784,7 +1784,7 @@ bool ThumbnailUtils::GenerateKvStoreKey(const std::string &fieldId, const std::s
     length = dateAdded.length();
     std::string assembledDateAdded;
     if (length > MAX_DATE_ADDED_LENGTH) {
-        MEDIA_ERR_LOG("dateAdded invalid");
+        MEDIA_ERR_LOG("dateAdded invalid, fieldId:%{public}s", fieldId.c_str());
         return false;
     } else if (length == MAX_DATE_ADDED_LENGTH) {
         assembledDateAdded = dateAdded;
