@@ -35,9 +35,12 @@
 #include "ipc_skeleton.h"
 #include "media_column.h"
 #include "media_datashare_ext_ability.h"
+#include "media_directory_type_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
+#include "media_smart_album_column.h"
+#include "media_smart_map_column.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_async_worker.h"
@@ -80,6 +83,8 @@
 #include "post_event_utils.h"
 #include "medialibrary_formmap_operations.h"
 #include "ithumbnail_helper.h"
+#include "vision_face_tag_column.h"
+#include "vision_photo_map_column.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;

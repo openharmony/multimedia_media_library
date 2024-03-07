@@ -19,9 +19,11 @@
 #include <fcntl.h>
 
 #include "file_access_extension_info.h"
+#include "media_device_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_smart_map_column.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_data_manager_utils.h"

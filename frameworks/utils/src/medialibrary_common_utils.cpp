@@ -20,9 +20,18 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_tracer.h"
+#include "media_device_column.h"
+#include "media_directory_type_column.h"
 #include "media_log.h"
+#include "media_smart_album_column.h"
 #include "openssl/sha.h"
+#include "vision_aesthetics_score_column.h"
 #include "vision_column.h"
+#include "vision_face_tag_column.h"
+#include "vision_image_face_column.h"
+#include "vision_label_column.h"
+#include "vision_recommendation_column.h"
+#include "vision_total_column.h"
 
 namespace OHOS {
 namespace Media {

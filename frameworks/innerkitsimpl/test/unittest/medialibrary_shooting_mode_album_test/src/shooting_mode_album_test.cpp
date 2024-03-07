@@ -21,6 +21,7 @@
 #include "fetch_result.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_smart_album_column.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"

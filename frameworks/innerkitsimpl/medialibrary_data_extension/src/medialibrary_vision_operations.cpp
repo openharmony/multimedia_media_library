@@ -21,8 +21,11 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
-#include "vision_column.h"
 #include "medialibrary_vision_operations.h"
+#include "vision_aesthetics_score_column.h"
+#include "vision_column.h"
+#include "vision_total_column.h"
+#include "vision_recommendation_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

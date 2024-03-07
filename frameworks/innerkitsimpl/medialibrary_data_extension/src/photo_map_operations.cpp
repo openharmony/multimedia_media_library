@@ -34,6 +34,9 @@
 #include "vision_column.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
+#include "vision_album_column.h"
+#include "vision_face_tag_column.h"
+#include "vision_photo_map_column.h"
 
 namespace OHOS::Media {
 using namespace std;

@@ -20,6 +20,7 @@
 #include "ipc_skeleton.h"
 #include "medialibrary_asset_operations.h"
 #include "media_column.h"
+#include "media_error_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_command.h"

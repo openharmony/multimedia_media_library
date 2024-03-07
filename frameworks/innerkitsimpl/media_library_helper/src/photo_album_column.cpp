@@ -22,6 +22,7 @@
 #include "medialibrary_type_const.h"
 #include "photo_map_column.h"
 #include "vision_column.h"
+#include "vision_face_tag_column.h"
 
 namespace OHOS::Media {
 using namespace std;
