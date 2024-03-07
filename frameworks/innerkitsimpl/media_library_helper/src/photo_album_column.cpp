@@ -166,12 +166,12 @@ void PhotoAlbumColumns::GetUserAlbumPredicates(const int32_t albumId, RdbPredica
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
 }
 
 void PhotoAlbumColumns::GetPortraitAlbumPredicates(const int32_t albumId, RdbPredicates &predicates,
@@ -200,35 +200,35 @@ void PhotoAlbumColumns::GetAnalysisAlbumPredicates(const int32_t albumId,
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
 }
 
 static void GetFavoritePredicates(RdbPredicates &predicates, const bool hiddenState)
 {
     predicates.BeginWrap();
     constexpr int32_t isFavorite = 1;
-    predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(isFavorite));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(isFavorite));
     predicates.EndWrap();
 }
 
 static void GetVideoPredicates(RdbPredicates &predicates, const bool hiddenState)
 {
     predicates.BeginWrap();
-    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
     predicates.EndWrap();
 }
 
@@ -239,8 +239,8 @@ static void GetHiddenPredicates(RdbPredicates &predicates)
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
     predicates.EndWrap();
 }
 
@@ -256,36 +256,36 @@ static void GetTrashPredicates(RdbPredicates &predicates)
 static void GetScreenshotPredicates(RdbPredicates &predicates, const bool hiddenState)
 {
     predicates.BeginWrap();
-    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)));
     predicates.EndWrap();
 }
 
 static void GetCameraPredicates(RdbPredicates &predicates, const bool hiddenState)
 {
     predicates.BeginWrap();
-    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::CAMERA)));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::CAMERA)));
     predicates.EndWrap();
 }
 
 static void GetAllImagesPredicates(RdbPredicates &predicates, const bool hiddenState)
 {
     predicates.BeginWrap();
-    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
     predicates.EndWrap();
 }
 
@@ -294,12 +294,12 @@ void PhotoAlbumColumns::GetSourceAlbumPredicates(const int32_t albumId, RdbPredi
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
-    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenState));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
 }
 
 void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype, RdbPredicates &predicates,
