@@ -46,6 +46,8 @@ constexpr int32_t GARBLE_LARGE = 8;
 constexpr int32_t GARBLE_LAST_TWO = 2;
 constexpr int32_t GARBLE_LAST_ONE = 1;
 
+constexpr int32_t LATEST_THUMBNAIL_ERROR_VERSION = 1;
+
 enum DfxType {
     CLOUD_DEFAULT_OPEN = 0,
     CLOUD_LCD_OPEN,
@@ -71,6 +73,7 @@ const std::string ONE_DAY = "24";
 const std::string THUMBNAIL_ERROR_XML = "/data/storage/el2/base/preferences/thumbnail_error.xml";
 const std::string DFX_COMMON_XML = "/data/storage/el2/base/preferences/dfx_common.xml";
 const std::string LAST_REPORT_TIME = "last_report_time";
+const std::string THUMBNAIL_ERROR_VERSION = "thumbnail_error_version";
 
 const std::string CLOUD_PHOTO_PATH = "/storage/cloud/files/Photo/";
 const std::string CLOUD_FILE_PATH = "/storage/cloud/files/";
