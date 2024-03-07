@@ -16,7 +16,10 @@
 
 #include "smart_album_napi.h"
 
+#include "media_file_asset_columns.h"
 #include "media_library_napi.h"
+#include "media_smart_album_column.h"
+#include "media_smart_map_column.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"

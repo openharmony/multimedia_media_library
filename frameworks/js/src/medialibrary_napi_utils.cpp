@@ -24,6 +24,7 @@
 #include "media_asset_change_request_napi.h"
 #include "media_assets_change_request_napi.h"
 #include "media_album_change_request_napi.h"
+#include "media_device_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_library_napi.h"
@@ -36,7 +37,9 @@
 #include "smart_album_napi.h"
 #include "tokenid_kit.h"
 #include "userfile_client.h"
+#include "vision_album_column.h"
 #include "vision_column.h"
+#include "vision_face_tag_column.h"
 
 using namespace std;
 using namespace OHOS::DataShare;

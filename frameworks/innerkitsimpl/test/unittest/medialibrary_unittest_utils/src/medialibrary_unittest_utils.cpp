@@ -21,6 +21,7 @@
 #include "fetch_result.h"
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "media_smart_map_column.h"
 #include "medialibrary_data_manager.h"
 #include "mimetype_utils.h"
 #include "result_set_utils.h"

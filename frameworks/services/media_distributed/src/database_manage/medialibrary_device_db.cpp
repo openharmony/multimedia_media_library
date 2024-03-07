@@ -15,6 +15,7 @@
 #define MLOG_TAG "Distributed"
 
 #include "medialibrary_device_db.h"
+#include "media_device_column.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 

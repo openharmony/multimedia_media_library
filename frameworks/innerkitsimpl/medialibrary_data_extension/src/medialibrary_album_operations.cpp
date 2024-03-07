@@ -44,6 +44,10 @@
 #include "medialibrary_formmap_operations.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
+#include "vision_album_column.h"
+#include "vision_face_tag_column.h"
+#include "vision_photo_map_column.h"
+#include "vision_total_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

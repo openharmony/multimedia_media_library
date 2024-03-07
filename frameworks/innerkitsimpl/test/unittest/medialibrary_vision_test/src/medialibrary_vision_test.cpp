@@ -26,7 +26,21 @@
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "uri.h"
+#include "vision_aesthetics_score_column.h"
+#include "vision_album_column.h"
+#include "vision_column_comm.h"
 #include "vision_column.h"
+#include "vision_composition_column.h"
+#include "vision_face_tag_column.h"
+#include "vision_image_face_column.h"
+#include "vision_label_column.h"
+#include "vision_object_column.h"
+#include "vision_ocr_column.h"
+#include "vision_photo_map_column.h"
+#include "vision_recommendation_column.h"
+#include "vision_saliency_detect_column.h"
+#include "vision_segmentation_column.h"
+#include "vision_total_column.h"
 
 using namespace std;
 using namespace testing::ext;

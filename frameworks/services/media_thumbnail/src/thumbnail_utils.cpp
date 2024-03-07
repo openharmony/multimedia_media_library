@@ -30,6 +30,11 @@
 #include "image_packer.h"
 #include "ipc_skeleton.h"
 #include "media_column.h"
+#ifdef DISTRIBUTED
+#include "media_device_column.h"
+#endif
+#include "media_exif.h"
+#include "media_remote_thumbnail_column.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -359,7 +364,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     tracer.Finish();
 
     int intTempMeta;
-    err = imageSource->GetImagePropertyInt(0, MEDIA_DATA_IMAGE_ORIENTATION, intTempMeta);
+    err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
     if (err == E_OK) {
         data.degrees = static_cast<float>(intTempMeta);
     }

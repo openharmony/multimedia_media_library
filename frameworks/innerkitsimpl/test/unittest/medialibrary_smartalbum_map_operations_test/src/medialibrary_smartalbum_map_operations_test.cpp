@@ -14,6 +14,8 @@
  */
 #define MLOG_TAG "FileExtUnitTest"
 
+#include "media_smart_album_column.h"
+#include "media_smart_map_column.h"
 #include "medialibrary_smartalbum_map_operations_test.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_unistore_manager.h"
