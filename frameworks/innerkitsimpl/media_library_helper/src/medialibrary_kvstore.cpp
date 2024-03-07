@@ -109,33 +109,47 @@ int32_t MediaLibraryKvStore::Query(const std::string &key, std::vector<uint8_t> 
     return static_cast<int32_t>(status);
 }
 
-int32_t MediaLibraryKvStore::BatchQuery(
-    std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values)
+void AddEmptyValue(std::vector<std::vector<uint8_t>> &values)
 {
-    if (kvStorePtr_ == nullptr) {
-        MEDIA_ERR_LOG("kvStorePtr_ is nullptr");
-        return E_HAS_DB_ERROR;
-    }
+    std::vector<uint8_t> value = {};
+    values.emplace_back(std::move(value));
+}
 
-    std::sort(batchKeys.begin(), batchKeys.end(), [](std::string a, std::string b) {return a > b;});
-    MediaLibraryTracer tracer;
-    tracer.Start("MediaLibraryKvStore::BatchQuery");
+void GenEmptyValues(std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values)
+{
+    for (size_t i = 0; i < batchKeys.size(); i++) {
+        std::vector<uint8_t> value = {};
+        values.emplace_back(std::move(value));
+    }
+}
+
+int32_t FillBatchValues(std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values,
+    std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr)
+{
     DataQuery dataQuery;
     dataQuery.Between(batchKeys.back(), batchKeys.front());
     std::shared_ptr<KvStoreResultSet> resultSet;
-    Status status = kvStorePtr_->GetResultSet(dataQuery, resultSet);
+    Status status = kvStorePtr->GetResultSet(dataQuery, resultSet);
     if (status != Status::SUCCESS || resultSet == nullptr) {
         MEDIA_ERR_LOG("GetResultSet error occur, status: %{public}d", status);
         return static_cast<int32_t>(status);
     }
 
     if (!resultSet->MoveToNext()) {
-        MEDIA_ERR_LOG("ResultSet is null");
-        return E_HAS_DB_ERROR;
+        // This may happen if all images in this group is not generated.
+        MEDIA_ERR_LOG("ResultSet is empty.");
+        GenEmptyValues(batchKeys, values);
+        return static_cast<int32_t>(status);
     }
     auto begin = batchKeys.crbegin();
     auto end = batchKeys.crend();
+    bool isEndOfResultSet = false;
     while (begin != end) {
+        if (isEndOfResultSet) {
+            AddEmptyValue(values);
+            ++begin;
+            continue;
+        }
         Entry entry;
         status = resultSet->GetEntry(entry);
         if (status != Status::SUCCESS) {
@@ -147,22 +161,37 @@ int32_t MediaLibraryKvStore::BatchQuery(
         if (result == 0) {
             std::vector<uint8_t>&& value = entry.value;
             values.emplace_back(std::move(value));
-            if (!resultSet->MoveToNext()) {
-                break;
-            }
             ++begin;
+            if (!resultSet->MoveToNext()) {
+                isEndOfResultSet = true;
+            }
         } else if (result < 0) {
             // This may happen if image is hidden or trashed by user.
             if (!resultSet->MoveToNext()) {
-                break;
+                isEndOfResultSet = true;
             }
         } else {
             // This may happen if image is not generated.
+            AddEmptyValue(values);
             ++begin;
         }
     }
-    status = kvStorePtr_->CloseResultSet(resultSet);
+    status = kvStorePtr->CloseResultSet(resultSet);
     return static_cast<int32_t>(status);
+}
+
+int32_t MediaLibraryKvStore::BatchQuery(
+    std::vector<std::string> &batchKeys, std::vector<std::vector<uint8_t>> &values)
+{
+    if (kvStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("kvStorePtr_ is nullptr");
+        return E_HAS_DB_ERROR;
+    }
+
+    std::sort(batchKeys.begin(), batchKeys.end(), [](std::string a, std::string b) {return a > b;});
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryKvStore::BatchQuery");
+    return FillBatchValues(batchKeys, values, kvStorePtr_);
 }
 
 bool MediaLibraryKvStore::Close()
