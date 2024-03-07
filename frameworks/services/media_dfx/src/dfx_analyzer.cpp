@@ -51,8 +51,8 @@ void DfxAnalyzer::FlushThumbnail(std::unordered_map<std::string, ThumbnailErrorI
             to_string(entry.second.errCode);
         string value = to_string(entry.second.time);
         prefs->PutString(key, value);
-        prefs->FlushSync();
     }
+    prefs->FlushSync();
     MEDIA_INFO_LOG("flush %{public}zu itmes", thumbnailErrorMap.size());
 }
 } // namespace Media

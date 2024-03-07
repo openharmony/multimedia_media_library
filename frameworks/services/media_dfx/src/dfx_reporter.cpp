@@ -25,6 +25,7 @@
 #include "hisysevent.h"
 #include "preferences.h"
 #include "preferences_helper.h"
+#include "medialibrary_data_manager_utils.h"
 
 using namespace std;
 namespace OHOS {
@@ -94,14 +95,24 @@ void DfxReporter::ReportThumbnailError()
         string key = erroInfo.first;
         string value = erroInfo.second;
         vector<string> thumbnailInfo = DfxUtils::Split(key, SPLIT_CHAR);
+        if (thumbnailInfo.empty() || thumbnailInfo.size() < 3) { // 3 means length of key
+            continue;
+        }
+        // 0 means index of path
+        string path = thumbnailInfo[0];
+        // 1 means index of method
+        int32_t method = MediaLibraryDataManagerUtils::IsNumber(thumbnailInfo[1]) ? stoi(thumbnailInfo[1]) : 0;
+        // 2 means index of error code
+        int32_t errorCode = MediaLibraryDataManagerUtils::IsNumber(thumbnailInfo[2]) ? stoi(thumbnailInfo[2]) : 0;
+        int64_t time = MediaLibraryDataManagerUtils::IsNumber(value) ? stol(value) : 0;
         int ret = HiSysEventWrite(
             MEDIA_LIBRARY,
             "MEDIALIB_THUMBNAIL_ERROR",
             HiviewDFX::HiSysEvent::EventType::FAULT,
-            "PATH", thumbnailInfo[0],
-            "METHOD", stoi(thumbnailInfo[1]),
-            "ERROR_CODE", stoi(thumbnailInfo[2]),
-            "TIME", stol(value));
+            "PATH", path,
+            "METHOD", method,
+            "ERROR_CODE", errorCode,
+            "TIME", time);
         if (ret != 0) {
             MEDIA_ERR_LOG("ReportThumbnailError error:%{public}d", ret);
         }
