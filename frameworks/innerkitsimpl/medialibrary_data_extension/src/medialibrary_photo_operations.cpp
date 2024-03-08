@@ -432,7 +432,6 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
         return E_HAS_DB_ERROR;
     }
     transactionOprn.Finish();
-    MediaLibraryObjectUtils::UpdateAnalysisProp(ANALYSIS_HAS_DATA);
     return outRow;
 }
 
@@ -518,7 +517,6 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET(ret == E_OK, ret);
     }
     cmd.SetResult(fileUri);
-    MediaLibraryObjectUtils::UpdateAnalysisProp(ANALYSIS_HAS_DATA);
     return outRow;
 }
 
