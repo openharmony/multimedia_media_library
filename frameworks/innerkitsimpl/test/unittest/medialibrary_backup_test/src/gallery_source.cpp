@@ -47,6 +47,7 @@ void GallerySource::Init(const string &dbPath)
     galleryStorePtr_ = store;
     InitGalleryMediaOne();
     InitGalleryMediaTwo();
+    InitGalleryMediaThree();
     InitGarbageAlbum();
 }
 
@@ -126,6 +127,26 @@ void GallerySource::InitGalleryMediaTwo()
         "'/storage/emulated/0/Movies/1080p.mp4', 6626209, 1706950426, 1703905397," +
         "'1080p', NULL, '1080p.mp4', 0, -1730634595, 4551, 3, 65537, 1920, 1080, NULL, " +
         "1989707826, 1703905305000, 0, 0)");
+}
+
+void GallerySource::InitGalleryMediaThree()
+{
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(18, 16, ") +
+        "'/storage/emulated/0/A/media/Rocket/test/a_media_normal_video.mp4', 10865209, 1708600079, 1708600079," +
+        "'a_media_normal_video', 'NULL', 'a_media_normal_video.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, " +
+        "NULL, 1264692236, 1708600079000, 0, 0)");
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(19, 17, ") +
+        "'/storage/emulated/0/A/media/Rocket/test/a_media_favorite.mp4', 10865209, 1708600079, 1708600079," +
+        "'a_media_favorite', 'NULL', 'a_media_favorite.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640, 1, " +
+        "1264692236, 1708600079000, 0, 0)");
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(20, 18, ") +
+        "'/storage/emulated/0/A/media/Baidu/a_media_favorite_baidu.mp4', 10865209, 1708600079, 1708600079," +
+        "'a_media_favorite_baidu', 'NULL', 'a_media_favorite_baidu.mp4', 0, -1122816831, 52221, 3, 65537, 352, 640," +
+        "1, 1264692236, 1708600079000, 0, 0)");
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_media VALUES(21, 19, ") +
+        "'/storage/emulated/0/A/media/Baidu/a_media_normal_image.jpg', 418436, 1708602162000, 1708602162," +
+        "'a_media_normal_image', 'NULL', 'a_media_normal_image.jpg', 0, -1960413976, 0, 1, 65537, 2000, 3556, NULL, " +
+        "1264692236, 1708602162000, 0, 0)");
 }
 
 void GallerySource::InitGarbageAlbum()
