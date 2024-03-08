@@ -30,7 +30,7 @@ private:
     int32_t type_;
     int32_t object_;
     int64_t start_;
-    int64_t end_;
+    int64_t timeCost_;
     int64_t timeOut_;
     bool isReport_;
     bool isEnd_;

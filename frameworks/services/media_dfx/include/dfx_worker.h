@@ -30,9 +30,11 @@ public:
 
 private:
     void InitCycleThread();
+    bool PrepareVersionUpdate();
 
 private:
     int64_t lastReportTime_;
+    int32_t thumbnailVersion_;
     static std::shared_ptr<DfxWorker> dfxWorkerInstance_;
     std::thread cycleThread_;
     bool isEnd_;
