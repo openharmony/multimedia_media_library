@@ -21,7 +21,9 @@
 #include "media_column.h"
 #include "userfilemgr_uri.h"
 #include "userfile_manager_types.h"
+#include "vision_album_column.h"
 #include "vision_column.h"
+#include "vision_face_tag_column.h"
 
 namespace OHOS {
 namespace Media {

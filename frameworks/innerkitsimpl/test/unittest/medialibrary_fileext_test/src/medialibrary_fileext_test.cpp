@@ -58,6 +58,46 @@ namespace {
     const string INVALID_URI = "file/test";
     const string INVALID_FILE_NAME = "te/st.jpg";
     const string INVALID_DIR_NAME = "te/st";
+    
+    // Unordered set contains list supported audio formats
+    const std::unordered_set<std::string> SUPPORTED_AUDIO_FORMATS_SET {
+        AUDIO_CONTAINER_TYPE_AAC,
+        AUDIO_CONTAINER_TYPE_MP3,
+        AUDIO_CONTAINER_TYPE_FLAC,
+        AUDIO_CONTAINER_TYPE_WAV,
+        AUDIO_CONTAINER_TYPE_OGG,
+        AUDIO_CONTAINER_TYPE_M4A
+    };
+
+    // Unordered set contains list supported video formats
+    const std::unordered_set<std::string> SUPPORTED_VIDEO_FORMATS_SET {
+        VIDEO_CONTAINER_TYPE_MP4,
+        VIDEO_CONTAINER_TYPE_3GP,
+        VIDEO_CONTAINER_TYPE_MPG,
+        VIDEO_CONTAINER_TYPE_MOV,
+        VIDEO_CONTAINER_TYPE_WEBM,
+        VIDEO_CONTAINER_TYPE_MKV,
+        VIDEO_CONTAINER_TYPE_H264,
+        VIDEO_CONTAINER_TYPE_MPEG,
+        VIDEO_CONTAINER_TYPE_TS,
+        VIDEO_CONTAINER_TYPE_M4V,
+        VIDEO_CONTAINER_TYPE_3G2
+    };
+
+    // Unordered set contains list supported image formats
+    const std::unordered_set<std::string> SUPPORTED_IMAGE_FORMATS_SET {
+        IMAGE_CONTAINER_TYPE_BMP,
+        IMAGE_CONTAINER_TYPE_BM,
+        IMAGE_CONTAINER_TYPE_GIF,
+        IMAGE_CONTAINER_TYPE_JPG,
+        IMAGE_CONTAINER_TYPE_JPEG,
+        IMAGE_CONTAINER_TYPE_JPE,
+        IMAGE_CONTAINER_TYPE_PNG,
+        IMAGE_CONTAINER_TYPE_WEBP,
+        IMAGE_CONTAINER_TYPE_RAW,
+        IMAGE_CONTAINER_TYPE_SVG,
+        IMAGE_CONTAINER_TYPE_HEIF
+    };
 } // namespace
 
 class ArkJsRuntime : public AbilityRuntime::JsRuntime {

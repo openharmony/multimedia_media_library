@@ -19,7 +19,9 @@
 #include "media_column.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
+#include "vision_album_column.h"
 #include "vision_column.h"
+#include "vision_photo_map_column.h"
 
 namespace OHOS {
 namespace Media {

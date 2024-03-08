@@ -26,6 +26,7 @@
 
 #include "epfs.h"
 #include "image_source.h"
+#include "media_container_types.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"

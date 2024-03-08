@@ -15,12 +15,13 @@
 #include "avmetadatahelper.h"
 #include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
-#include "thumbnail_service.h"
+#include "media_remote_thumbnail_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_utils_test.h"
+#include "thumbnail_service.h"
 #define private public
 #include "thumbnail_utils.h"
 #undef private

@@ -21,6 +21,7 @@
 #include <string>
 
 #include "media_log.h"
+#include "media_refresh_album_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_tracer.h"
@@ -28,7 +29,9 @@
 #include "photo_map_column.h"
 #include "result_set.h"
 #include "userfile_manager_types.h"
+#include "vision_album_column.h"
 #include "vision_column.h"
+#include "vision_face_tag_column.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -37,6 +40,17 @@ using namespace NativeRdb;
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_SUCCESS = 0;
 constexpr int32_t ALBUM_UPDATE_THRESHOLD = 1000;
+
+const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
+    std::to_string(PhotoAlbumSubType::FAVORITE),
+    std::to_string(PhotoAlbumSubType::VIDEO),
+    std::to_string(PhotoAlbumSubType::HIDDEN),
+    std::to_string(PhotoAlbumSubType::TRASH),
+    std::to_string(PhotoAlbumSubType::SCREENSHOT),
+    std::to_string(PhotoAlbumSubType::CAMERA),
+    std::to_string(PhotoAlbumSubType::IMAGE),
+    std::to_string(PhotoAlbumSubType::SOURCE_GENERIC),
+};
 
 atomic<bool> MediaLibraryRdbUtils::isNeedRefreshAlbum = false;
 atomic<bool> MediaLibraryRdbUtils::isInRefreshTask = false;

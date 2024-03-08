@@ -29,6 +29,8 @@
 #include "medialibrary_smartalbum_operations.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_smart_album_column.h"
+#include "media_smart_map_column.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
 

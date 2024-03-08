@@ -95,17 +95,6 @@ enum PhotoAlbumSubType : int32_t {
     ANY = std::numeric_limits<int32_t>::max()
 };
 
-const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
-    std::to_string(PhotoAlbumSubType::FAVORITE),
-    std::to_string(PhotoAlbumSubType::VIDEO),
-    std::to_string(PhotoAlbumSubType::HIDDEN),
-    std::to_string(PhotoAlbumSubType::TRASH),
-    std::to_string(PhotoAlbumSubType::SCREENSHOT),
-    std::to_string(PhotoAlbumSubType::CAMERA),
-    std::to_string(PhotoAlbumSubType::IMAGE),
-    std::to_string(PhotoAlbumSubType::SOURCE_GENERIC),
-};
-
 enum class PhotoSubType : int32_t {
     DEFAULT,
     SCREENSHOT,

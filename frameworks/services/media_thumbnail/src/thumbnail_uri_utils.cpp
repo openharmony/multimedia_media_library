@@ -19,12 +19,12 @@
 #include <algorithm>
 #include <map>
 
+#include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
+#include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
-#include "media_column.h"
-#include "media_log.h"
 #include "thumbnail_const.h"
 #include "userfile_manager_types.h"
 

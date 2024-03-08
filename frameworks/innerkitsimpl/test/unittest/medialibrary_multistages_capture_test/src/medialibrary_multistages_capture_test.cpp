@@ -28,6 +28,7 @@
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
