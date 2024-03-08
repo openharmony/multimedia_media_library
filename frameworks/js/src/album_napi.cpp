@@ -16,6 +16,7 @@
 
 #include "album_napi.h"
 
+#include "media_file_asset_columns.h"
 #include "media_file_utils.h"
 #include "media_library_napi.h"
 #include "medialibrary_client_errno.h"

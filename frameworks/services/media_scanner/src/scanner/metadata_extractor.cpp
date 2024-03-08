@@ -143,15 +143,15 @@ static void ExtractLocationMetadata(unique_ptr<ImageSource>& imageSource, unique
     string propertyStr;
     string refStr;
     double tempLocation = -1;
-    uint32_t err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
-    uint32_t refErr = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LONGITUDE_REF, refStr);
+    uint32_t err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
+    uint32_t refErr = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF, refStr);
     if (err == 0 && refErr == 0) {
         tempLocation = GetLongitudeLatitude(propertyStr, refStr);
         data->SetLongitude(tempLocation);
     }
 
-    err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE, propertyStr);
-    refErr = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_GPS_LATITUDE_REF, refStr);
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
+    refErr = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, refStr);
     if (err == 0 && refErr == 0) {
         tempLocation = GetLongitudeLatitude(propertyStr, refStr);
         data->SetLatitude(tempLocation);
@@ -182,7 +182,7 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
 
     string propertyStr;
     int64_t int64TempMeta = 0;
-    err = imageSource->GetImagePropertyString(0, MEDIA_DATA_IMAGE_DATE_TIME_ORIGINAL, propertyStr);
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, propertyStr);
     if (err == 0) {
         int64TempMeta = convertTimeStr2TimeStamp(propertyStr);
         if (int64TempMeta < 0) {
@@ -196,7 +196,7 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
     }
 
     int32_t intTempMeta = 0;
-    err = imageSource->GetImagePropertyInt(0, MEDIA_DATA_IMAGE_ORIENTATION, intTempMeta);
+    err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
     if (err == 0) {
         data->SetOrientation(intTempMeta);
     }

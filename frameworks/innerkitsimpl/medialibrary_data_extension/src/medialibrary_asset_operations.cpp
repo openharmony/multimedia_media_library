@@ -28,6 +28,7 @@
 #include "media_file_uri.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
+#include "media_unique_number_column.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"

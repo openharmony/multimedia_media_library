@@ -25,9 +25,12 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_remote_thumbnail_column.h"
+#include "media_smart_album_column.h"
 #ifdef DISTRIBUTED
 #include "medialibrary_device.h"
 #endif
+#include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_photo_operations.h"
@@ -44,6 +47,7 @@
 #include "result_set_utils.h"
 #include "source_album.h"
 #include "vision_column.h"
+#include "vision_db_sqls.h"
 #include "form_map.h"
 #include "search_column.h"
 #include "dfx_const.h"

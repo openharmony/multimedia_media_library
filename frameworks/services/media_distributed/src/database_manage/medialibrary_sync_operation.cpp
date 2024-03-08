@@ -18,6 +18,7 @@
 #include "datashare_helper.h"
 #include "device_manager.h"
 #include "media_column.h"
+#include "media_device_column.h"
 #include "media_log.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_errno.h"
