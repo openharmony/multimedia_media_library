@@ -38,26 +38,28 @@ DfxTimer::~DfxTimer()
     if (isEnd_) {
         return;
     }
-    end_ = MediaFileUtils::UTCTimeMilliSeconds();
-    if (end_ - start_ > timeOut_) {
+    timeCost_ = MediaFileUtils::UTCTimeMilliSeconds() - start_;
+    if (timeCost_ > timeOut_) {
         if (isReport_) {
             std::string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
             MEDIA_WARN_LOG("timeout! bundleName: %{public}s, type: %{public}d, object: %{public}d, cost %{public}d",
-                bundleName.c_str(), type_, object_, (int) (end_ - start_));
-            DfxManager::GetInstance()->HandleTimeOutOperation(bundleName, type_, object_, (int) (end_ - start_));
+                bundleName.c_str(), type_, object_, (int) (timeCost_));
+            if (timeCost_ > TO_MILLION) {
+                DfxManager::GetInstance()->HandleTimeOutOperation(bundleName, type_, object_, (int) (timeCost_));
+            }
         } else {
             MEDIA_WARN_LOG("timeout! type: %{public}d, object: %{public}d, cost %{public}lld ms", type_,
-                object_, (long long) (end_ - start_));
+                object_, (long long) (timeCost_));
         }
     }
 }
 
 void DfxTimer::End()
 {
-    end_ = MediaFileUtils::UTCTimeMilliSeconds();
-    if (end_ - start_ > timeOut_) {
+    timeCost_ = MediaFileUtils::UTCTimeMilliSeconds() - start_;
+    if (timeCost_ > timeOut_) {
         MEDIA_WARN_LOG("timeout! type: %{public}d, object: %{public}d, cost %{public}d ms", type_, object_,
-            (int) (end_ - start_));
+            (int) (timeCost_));
     }
     isEnd_ = true;
 }
