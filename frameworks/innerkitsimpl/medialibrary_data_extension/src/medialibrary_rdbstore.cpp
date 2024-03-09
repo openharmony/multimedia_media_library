@@ -47,7 +47,6 @@
 #include "result_set_utils.h"
 #include "source_album.h"
 #include "vision_column.h"
-#include "vision_db_sqls.h"
 #include "form_map.h"
 #include "search_column.h"
 #include "dfx_const.h"
