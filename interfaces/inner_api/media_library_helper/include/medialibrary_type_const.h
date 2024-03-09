@@ -134,25 +134,7 @@ constexpr int32_t DEFAULT_INT32 = 0;
 constexpr int64_t DEFAULT_INT64 = 0;
 const std::string DEFAULT_STR = "";
 const bool DEFAULT_BOOL = false;
-const int32_t DEFAULT_MEDIA_ID = 0;
-const int32_t DEFAULT_PARENT_ID = 0;
-const uint64_t DEFAULT_MEDIA_SIZE = 0;
-const uint64_t DEFAULT_MEDIA_DATE_ADDED = 0;
-const uint64_t DEFAULT_MEDIA_DATE_MODIFIED = 0;
-const std::string DEFAULT_MEDIA_URI = "";
-const MediaType DEFAULT_MEDIA_TYPE = MEDIA_TYPE_FILE;
-const std::string DEFAULT_MEDIA_NAME = "Unknown";
 const std::string DEFAULT_MEDIA_PATH = "";
-const std::string DEFAULT_MEDIA_MIMETYPE = "";
-const std::string DEFAULT_MEDIA_RELATIVE_PATH = "";
-
-const std::string DEFAULT_MEDIA_TITLE = "";
-const std::string DEFAULT_MEDIA_ARTIST = "";
-const std::string DEFAULT_MEDIA_ALBUM = "";
-const int32_t DEFAULT_MEDIA_WIDTH = 0;
-const int32_t DEFAULT_MEDIA_HEIGHT = 0;
-const int32_t DEFAULT_MEDIA_DURATION = 0;
-const int32_t DEFAULT_MEDIA_ORIENTATION = 0;
 
 const int32_t DEFAULT_ALBUM_ID = 0;
 const std::string DEFAULT_ALBUM_NAME = "Unknown";
