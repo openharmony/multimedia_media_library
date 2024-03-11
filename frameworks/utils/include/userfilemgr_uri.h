@@ -33,6 +33,7 @@ const std::string OPRN_TRASH = "trash";
 const std::string OPRN_PENDING = "update_pending";
 const std::string OPRN_SCAN = "scan";
 const std::string OPRN_INDEX = "index";
+const std::string OPRN_ANALYSIS_INDEX = "analysis_index";
 const std::string OPRN_HIDE = "hide";
 const std::string OPRN_BATCH_UPDATE_FAV = "batch_update_favorite";
 const std::string OPRN_BATCH_UPDATE_USER_COMMENT = "batch_update_user_comment";
@@ -219,6 +220,7 @@ const std::string PAH_SUBMIT_CACHE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "
 const std::string PAH_BATCH_UPDATE_FAVORITE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_FAV;
 const std::string PAH_BATCH_UPDATE_USER_COMMENT =
     MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_USER_COMMENT;
+const std::string PAH_GET_ANALYSIS_INDEX = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_ANALYSIS_INDEX;
 
 // MultiStages capture related operation uri
 const std::string PAH_SET_PHOTO_QUALITY = MEDIALIBRARY_DATA_URI + "/ "+ PAH_PHOTO + "/" + OPRN_SET_PHOTO_QUALITY;
