@@ -83,6 +83,8 @@ void MediaFileUri::ParseUri(const string &uri)
         uriType_ = API10_PHOTOALBUM_URI;
     } else if (MediaFileUtils::StartsWith(uri, AudioColumn::AUDIO_URI_PREFIX)) {
         uriType_ = API10_AUDIO_URI;
+    } else if (MediaFileUtils::StartsWith(uri, PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX)) {
+        uriType_ = API10_ANALYSISALBUM_URI;
     } else  {
         uriType_ = API9_URI;
     }
