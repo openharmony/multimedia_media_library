@@ -57,6 +57,27 @@ const string PhotoAlbumColumns::HIDDEN_COVER = "hidden_cover";
 const string PhotoAlbumColumns::ALBUM_ORDER = "album_order";
 const string PhotoAlbumColumns::REFERENCE_ALBUM_ID = "reference_album_id";
 
+// location album result
+const std::string LOCATION_ALBUM_ID = MediaColumn::MEDIA_ID + " AS " + ALBUM_ID;
+const std::string LOCATION_ALBUM_TYPE = std::to_string(PhotoAlbumType::SMART) + " AS " + ALBUM_TYPE;
+const std::string LOCATION_ALBUM_SUBTYPE = std::to_string(PhotoAlbumSubType::GEOGRAPHY_LOCATION) +
+    " AS " + ALBUM_SUBTYPE;
+const std::string LOCATION_COUNT = "COUNT(*) AS " + COUNT;
+const std::string LOCATION_DATE_MODIFIED = "MAX(date_modified) AS " + DATE_MODIFIED;
+const std::string CITY_ALBUM_NAME =  CITY_NAME + " AS " + ALBUM_NAME;
+const std::string LOCATION_COVER_URI =
+    " (SELECT '" + PhotoColumn::PHOTO_URI_PREFIX + "'||" + MediaColumn::MEDIA_ID + "||" +
+    "(SELECT SUBSTR(" + MediaColumn::MEDIA_FILE_PATH +
+    ", (SELECT LENGTH(" + MediaColumn::MEDIA_FILE_PATH +
+    ") - INSTR(reverseStr, '/') + 1) , (SELECT (SELECT LENGTH(" +
+    MediaColumn::MEDIA_FILE_PATH + ") - INSTR(reverseStr, '.')) - (SELECT LENGTH(" +
+    MediaColumn::MEDIA_FILE_PATH + ") - INSTR(reverseStr, '/')))) from (select " +
+    " (WITH RECURSIVE reverse_string(str, revstr) AS ( SELECT " +
+    MediaColumn::MEDIA_FILE_PATH + ", '' UNION ALL SELECT SUBSTR(str, 1, LENGTH(str) - 1), " +
+    "revstr || SUBSTR(str, LENGTH(str), 1) FROM reverse_string WHERE LENGTH(str) > 1 ) " +
+    " SELECT revstr || str FROM reverse_string WHERE LENGTH(str) = 1) as reverseStr)) ||'/'||" +
+    MediaColumn::MEDIA_NAME + ") AS " + COVER_URI;
+
 // default fetch columns
 const set<string> PhotoAlbumColumns::DEFAULT_FETCH_COLUMNS = {
     ALBUM_ID, ALBUM_TYPE, ALBUM_SUBTYPE, ALBUM_NAME, ALBUM_COVER_URI, ALBUM_COUNT, ALBUM_DATE_MODIFIED,

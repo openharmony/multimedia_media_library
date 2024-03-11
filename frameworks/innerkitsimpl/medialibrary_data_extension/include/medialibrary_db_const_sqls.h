@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MEDIALIBRARY_DB_CONST_SQLS_H
 #define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MEDIALIBRARY_DB_CONST_SQLS_H
 
+#include "location_db_sqls.h"
 #include "media_category_smart_album_map_column.h"
 #include "media_device_column.h"
 #include "media_directory_type_column.h"
@@ -26,6 +27,7 @@
 #include "media_smart_map_column.h"
 #include "media_unique_number_column.h"
 #include "medialibrary_db_const.h"
+#include "vision_db_sqls.h"
 
 namespace OHOS {
 namespace Media {
