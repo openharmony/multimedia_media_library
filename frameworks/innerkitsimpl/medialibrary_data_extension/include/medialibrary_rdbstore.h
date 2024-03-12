@@ -71,6 +71,7 @@ public:
     static void ResetAnalysisTables();
     static void ResetSearchTables();
     EXPORT static int32_t UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows);
+    static bool HasColumnInTable(RdbStore &store, const std::string &columnName, const std::string &tableName);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
