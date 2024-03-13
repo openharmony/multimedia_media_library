@@ -1717,7 +1717,7 @@ void AddCleanFlagAndThumbStatus(RdbStore &store)
 void AddCloudIndex(RdbStore &store)
 {
     const vector<string> sqls = {
-        "DROP INDEX IF EXISTS" + PhotoColumn::PHOTO_CLOUD_ID_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_CLOUD_ID_INDEX,
         PhotoColumn::CREATE_CLOUD_ID_INDEX,
     };
     ExecSqls(sqls, store);
@@ -1970,6 +1970,7 @@ static void AddMissingUpdates(RdbStore &store)
     bool hasShootingModeTag = MediaLibraryRdbStore::HasColumnInTable(store, PhotoColumn::PHOTO_SHOOTING_MODE_TAG,
         PhotoColumn::PHOTOS_TABLE);
     if (!hasShootingModeTag) {
+        MEDIA_INFO_LOG("start add shooting mode tag");
         const vector<string> sqls = {
             "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_SHOOTING_MODE_TAG +
                 " TEXT",
@@ -1986,7 +1987,9 @@ static void AddMissingUpdates(RdbStore &store)
     } else if (!hasLocalLanguage) {
         ModifySourceAlbumTriggers(store);
     }
+    MEDIA_INFO_LOG("start add cloud index");
     AddCloudIndex(store);
+    MEDIA_INFO_LOG("start update photos mdirty trigger");
     UpdatePhotosMdirtyTrigger(store);
     MEDIA_INFO_LOG("end add missing updates");
 }
@@ -2237,7 +2240,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS) {
         ModifySourceAlbumTriggers(store);
     }
+}
 
+static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
+{
     if (oldVersion < VERSION_ADD_MISSING_UPDATES) {
         AddMissingUpdates(store);
     }
@@ -2330,6 +2336,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeGalleryFeatureTable(store, oldVersion);
     UpgradeVisionTable(store, oldVersion);
     UpgradeAlbumTable(store, oldVersion);
+    UpgradeHistory(store, oldVersion);
 
     AlwaysCheck(store);
     if (!g_upgradeErr) {
@@ -2350,6 +2357,7 @@ bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &colum
         return false;
     }
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
+    MEDIA_DEBUG_LOG("%{private}s in %{private}s: %{public}d", columnName.c_str(), tableName.c_str(), count);
     return count > 0;
 }
 
