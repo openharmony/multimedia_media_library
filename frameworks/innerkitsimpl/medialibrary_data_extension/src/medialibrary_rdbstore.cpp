@@ -25,9 +25,12 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_remote_thumbnail_column.h"
+#include "media_smart_album_column.h"
 #ifdef DISTRIBUTED
 #include "medialibrary_device.h"
 #endif
+#include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_photo_operations.h"
@@ -46,6 +49,8 @@
 #include "vision_column.h"
 #include "form_map.h"
 #include "search_column.h"
+#include "dfx_const.h"
+#include "dfx_timer.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -158,6 +163,7 @@ void GetAllNetworkId(vector<string> &networkIds)
 
 int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 {
+    DfxTimer dfxTimer(DfxType::RDB_INSERT, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryRdbStore::Insert");
     if (rdbStore_ == nullptr) {
@@ -178,6 +184,7 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
 static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPredicates &predicates,
     int32_t &deletedRows)
 {
+    DfxTimer dfxTimer(DfxType::RDB_DELETE, INVALID_DFX, RDB_TIME_OUT, false);
     int32_t ret = NativeRdb::E_ERROR;
     string tableName = predicates.GetTableName();
     ValuesBucket valuesBucket;
@@ -233,6 +240,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
             MediaFileUtils::UTCTimeMilliSeconds());
     }
 
+    DfxTimer dfxTimer(DfxType::RDB_UPDATE_BY_CMD, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->UpdateByCmd");
     int32_t ret = rdbStore_->Update(changedRows, cmd.GetTableName(), cmd.GetValueBucket(),
@@ -337,7 +345,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredica
 
     /* add filter */
     MediaLibraryRdbUtils::AddQueryFilter(const_cast<AbsRdbPredicates &>(predicates));
-
+    DfxTimer dfxTimer(RDB_QUERY, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QueryByPredicates");
     auto resultSet = rdbStore_->Query(predicates, columns);
@@ -355,7 +363,7 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const string &sql)
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-
+    DfxTimer dfxTimer(RDB_EXECUTE_SQL, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->ExecuteSql");
     int32_t ret = rdbStore_->ExecuteSql(sql);
@@ -448,6 +456,7 @@ int32_t MediaLibraryRdbStore::Update(ValuesBucket &values,
         values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
     }
 
+    DfxTimer dfxTimer(DfxType::RDB_UPDATE, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryRdbStore::Update by predicates");
     int32_t changedRows = -1;
@@ -874,6 +883,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_SCHPT_DAY_INDEX,
     PhotoColumn::CREATE_HIDDEN_TIME_INDEX,
     PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+    PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
     PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER,
     PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER,
@@ -936,8 +946,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_ANALYSIS_ALBUM_MAP,
     INSERT_PHOTO_INSERT_SOURCE_ALBUM,
     INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
-    UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
-    DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+    CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
     CREATE_DICTIONARY_INDEX,
     CREATE_KNOWLEDGE_INDEX,
@@ -1350,6 +1359,27 @@ static void MoveSourceAlbumToPhotoAlbumAndAddColumns(RdbStore &store)
     };
     MEDIA_INFO_LOG("start move source album to photo album & add columns");
     ExecSqls(executeSqlStrs, store);
+}
+
+static void ModifySourceAlbumTriggers(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        ADD_SOURCE_ALBUM_LOCAL_LANGUAGE,
+        CREATE_SOURCE_ALBUM_INDEX,
+        INSERT_SOURCE_ALBUMS_FROM_PHOTOS_FULL,
+        INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS_FULL,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+    };
+    MEDIA_INFO_LOG("start modify source album triggers");
+    ExecSqls(executeSqlStrs, store);
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MEDIA_INFO_LOG("end modify source album triggers");
 }
 
 static void AddAnalysisAlbum(RdbStore &store)
@@ -1921,6 +1951,17 @@ static void UpdateAlbumRefreshTable(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdateFavoriteIndex(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Upgrade rdb UpdateFavoriteIndex");
+    const vector<string> sqls = {
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+    };
+    ExecSqls(sqls, store);
+}
+
 void AddMultiStagesCaptureColumns(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2086,6 +2127,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ALBUM_REFRESH) {
         UpdateAlbumRefreshTable(store);
     }
+
+    if (oldVersion < VERSION_ADD_FAVORITE_INDEX) {
+        UpdateFavoriteIndex(store);
+    }
 }
 
 static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
@@ -2148,6 +2193,10 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_MOVE_SOURCE_ALBUM_TO_PHOTO_ALBUM_AND_ADD_COLUMNS) {
         MoveSourceAlbumToPhotoAlbumAndAddColumns(store);
+    }
+
+    if (oldVersion < VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS) {
+        ModifySourceAlbumTriggers(store);
     }
 }
 

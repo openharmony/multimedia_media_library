@@ -15,11 +15,13 @@
 
 #include "medialibrary_rdb_utils.h"
 
+#include <functional>
 #include <iomanip>
 #include <sstream>
 #include <string>
 
 #include "media_log.h"
+#include "media_refresh_album_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_tracer.h"
@@ -27,7 +29,9 @@
 #include "photo_map_column.h"
 #include "result_set.h"
 #include "userfile_manager_types.h"
+#include "vision_album_column.h"
 #include "vision_column.h"
+#include "vision_face_tag_column.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -35,7 +39,18 @@ using namespace NativeRdb;
 
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_SUCCESS = 0;
-constexpr int32_t ALBUM_UPDATE_THRESHOLD = 10;
+constexpr int32_t ALBUM_UPDATE_THRESHOLD = 1000;
+
+const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
+    std::to_string(PhotoAlbumSubType::FAVORITE),
+    std::to_string(PhotoAlbumSubType::VIDEO),
+    std::to_string(PhotoAlbumSubType::HIDDEN),
+    std::to_string(PhotoAlbumSubType::TRASH),
+    std::to_string(PhotoAlbumSubType::SCREENSHOT),
+    std::to_string(PhotoAlbumSubType::CAMERA),
+    std::to_string(PhotoAlbumSubType::IMAGE),
+    std::to_string(PhotoAlbumSubType::SOURCE_GENERIC),
+};
 
 atomic<bool> MediaLibraryRdbUtils::isNeedRefreshAlbum = false;
 atomic<bool> MediaLibraryRdbUtils::isInRefreshTask = false;
@@ -537,10 +552,9 @@ static int32_t SetAlbumCoverHiddenUri(const shared_ptr<NativeRdb::RdbStore> &rdb
 }
 
 static int32_t FillOneAlbumCountAndCoverUri(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const shared_ptr<ResultSet> &albumResult, vector<string> &sqlVector)
+    const shared_ptr<ResultSet> &albumResult, PhotoAlbumSubType subtype, string &sql)
 {
     AlbumCounts albumCounts = { 0, 0, 0, 0 };
-    auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
     int32_t ret = SetAlbumCounts(rdbStore, albumResult, subtype, albumCounts);
     if (ret != E_SUCCESS) {
         return ret;
@@ -576,7 +590,7 @@ static int32_t FillOneAlbumCountAndCoverUri(const shared_ptr<NativeRdb::RdbStore
         coverHiddenUriSql += " = '" + coverHiddenUri + "'";
     }
 
-    string updateSql = "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
+    sql = "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
         PhotoAlbumColumns::ALBUM_COUNT + " = " + to_string(albumCounts.count) + ", " +
         PhotoAlbumColumns::ALBUM_IMAGE_COUNT + " = " +  to_string(albumCounts.imageCount) + ", " +
         PhotoAlbumColumns::ALBUM_VIDEO_COUNT + " = " + to_string(albumCounts.videoCount) + ", " +
@@ -584,31 +598,37 @@ static int32_t FillOneAlbumCountAndCoverUri(const shared_ptr<NativeRdb::RdbStore
         PhotoAlbumColumns::CONTAINS_HIDDEN + " = " + to_string((albumCounts.hiddenCount == 0) ? 0 : 1) + ", " +
         coverUriSql + ", " + coverHiddenUriSql + " WHERE " +
         PhotoAlbumColumns::ALBUM_ID + " = " + to_string(albumId) + ";";
-    sqlVector.push_back(updateSql);
     return E_SUCCESS;
 }
 
 static int32_t RefreshAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const shared_ptr<ResultSet> &albumResult)
+    const shared_ptr<ResultSet> &albumResult, function<void(PhotoAlbumSubType, int)> refreshProcessHandler)
 {
-    vector<string> sqlVector;
     while (albumResult->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t ret = FillOneAlbumCountAndCoverUri(rdbStore, albumResult, sqlVector);
+        auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
+        int32_t albumId = GetAlbumId(albumResult);
+        string sql;
+        int32_t ret = FillOneAlbumCountAndCoverUri(rdbStore, albumResult, subtype, sql);
         if (ret != E_SUCCESS) {
             return ret;
         }
-    }
-    string updateRefreshTableSql = "DELETE FROM " + ALBUM_REFRESH_TABLE;
-    sqlVector.push_back(updateRefreshTableSql);
 
-    for (const auto &sql : sqlVector) {
-        int32_t ret = rdbStore->ExecuteSql(sql);
+        ret = rdbStore->ExecuteSql(sql);
         if (ret != NativeRdb::E_OK) {
             MEDIA_ERR_LOG("Failed to execute sql:%{private}s", sql.c_str());
             return E_HAS_DB_ERROR;
         }
         MEDIA_DEBUG_LOG("Execute sql %{private}s success", sql.c_str());
+        refreshProcessHandler(subtype, albumId);
     }
+
+    string updateRefreshTableSql = "DELETE FROM " + ALBUM_REFRESH_TABLE;
+    int32_t ret = rdbStore->ExecuteSql(updateRefreshTableSql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to execute sql:%{private}s", updateRefreshTableSql.c_str());
+        return E_HAS_DB_ERROR;
+    }
+    MEDIA_DEBUG_LOG("Delete AlbumRefreshTable success");
     return E_SUCCESS;
 }
 
@@ -669,7 +689,8 @@ shared_ptr<AbsSharedResultSet> QueryAlbumById(const shared_ptr<NativeRdb::RdbSto
     return resultSet;
 }
 
-int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore)
+int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    function<void(PhotoAlbumSubType, int)> refreshProcessHandler, function<void()> refreshCallback)
 {
     isInRefreshTask = true;
 
@@ -682,6 +703,7 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
     }
 
     int ret = E_SUCCESS;
+    bool isRefresh = false;
     while (IsNeedRefreshAlbum()) {
         SetNeedRefreshAlbum(false);
         vector<string> albumIds;
@@ -698,10 +720,11 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
             ret = E_HAS_DB_ERROR;
             break;
         }
-        ret = RefreshAlbums(rdbStore, resultSet);
+        ret = RefreshAlbums(rdbStore, resultSet, refreshProcessHandler);
         if (ret != E_SUCCESS) {
             break;
         }
+        isRefresh = true;
     }
 
     if (ret != E_SUCCESS) {
@@ -712,6 +735,9 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
         SetNeedRefreshAlbum(false);
     }
     isInRefreshTask = false;
+    if (isRefresh) {
+        refreshCallback();
+    }
 
     return ret;
 }
@@ -781,6 +807,10 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     GetAlbumPredicates(subtype, albumResult, predicates, hiddenState);
     if (subtype == PhotoAlbumSubType::HIDDEN || hiddenState) {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
+    } else if (subtype == PhotoAlbumSubType::VIDEO || subtype == PhotoAlbumSubType::IMAGE) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
+    } else if (subtype == PhotoAlbumSubType::FAVORITE) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_FAVORITE_INDEX);
     } else {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_ADDED_INDEX);
     }
@@ -819,7 +849,7 @@ static void QueryAlbumId(const shared_ptr<RdbStore> &rdbStore, const RdbPredicat
     vector<string> &albumId)
 {
     const vector<string> columns = {
-        PhotoMap::ALBUM_ID
+        "Distinct " + PhotoMap::ALBUM_ID
     };
     auto resultSet = rdbStore->Query(predicates, columns);
     if (resultSet == nullptr) {
@@ -925,6 +955,7 @@ static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
 
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(subtype));
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(GetAlbumId(albumResult)));
     int32_t changedRows = 0;
     err = rdbStore->Update(changedRows, values, predicates);
     if (err < 0) {
@@ -943,17 +974,26 @@ void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<RdbStore> &rdbS
         UpdateUserAlbumInternal(rdbStore);
     }
     vector<string> albumIds;
-    for (const auto &arg : uris) {
-        string fileId = GetPhotoId(arg);
-        if (fileId.size() == 0) {
+    string idArgs;
+    for (int32_t i = 0; i < uris.size(); i++) {
+        string fileId = GetPhotoId(uris[i]);
+        if (fileId.size() > 0) {
+            idArgs.append(fileId).append(",");
+        }
+        if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
             continue;
         }
+        if (idArgs.size() == 0) {
+            continue;
+        }
+        idArgs = idArgs.substr(0, idArgs.size() - 1);
         RdbPredicates predicates(PhotoMap::TABLE);
-        predicates.SetWhereClause(PhotoMap::ASSET_ID + " = ? and " +
-            PhotoMap::ALBUM_ID + " in(select album_id from PhotoAlbum where album_type = " +
+        predicates.SetWhereClause(PhotoMap::ASSET_ID + " in(" + idArgs + ") and " +
+            PhotoMap::ALBUM_ID + " in(select " + PhotoAlbumColumns::ALBUM_ID + " from " +
+            PhotoAlbumColumns::TABLE + " where " + PhotoAlbumColumns::ALBUM_TYPE + " = " +
             to_string(PhotoAlbumType::USER) + ")");
-        predicates.SetWhereArgs({fileId});
         QueryAlbumId(rdbStore, predicates, albumIds);
+        idArgs.clear();
     }
     if (albumIds.size() > 0) {
         UpdateUserAlbumInternal(rdbStore, albumIds);
@@ -990,18 +1030,55 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &
         UpdateAnalysisAlbumInternal(rdbStore);
     }
     vector<string> albumIds;
-    for (const auto &arg : uris) {
-        string fileId = GetPhotoId(arg);
-        if (fileId.size() == 0) {
-            continue;
+    vector<string> idArgs;
+    for (int32_t i = 0; i < uris.size(); i++) {
+        string fileId = GetPhotoId(uris[i]);
+        if (fileId.size() > 0) {
+            idArgs.push_back(fileId);
         }
-        RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
-        predicates.EqualTo(PhotoMap::ASSET_ID, fileId);
-        QueryAlbumId(rdbStore, predicates, albumIds);
+        if (idArgs.size() == ALBUM_UPDATE_THRESHOLD || i == uris.size() - 1) {
+            RdbPredicates predicates(ANALYSIS_PHOTO_MAP_TABLE);
+            predicates.In(PhotoMap::ASSET_ID, idArgs);
+            QueryAlbumId(rdbStore, predicates, albumIds);
+            idArgs.clear();
+        }
     }
     if (albumIds.size() > 0) {
         UpdateAnalysisAlbumInternal(rdbStore, albumIds);
     }
+}
+
+int32_t MediaLibraryRdbUtils::GetAlbumIdsForPortrait(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    vector<string> &portraitAlbumIds)
+{
+    std::stringstream labelIds;
+    unordered_set<string> resultAlbumIds;
+    for (size_t i = 0; i < portraitAlbumIds.size(); i++) {
+        labelIds << portraitAlbumIds[i];
+        if (i != portraitAlbumIds.size() - 1) {
+            labelIds << ",";
+        }
+        resultAlbumIds.insert(portraitAlbumIds[i]);
+    }
+
+    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.SetWhereClause(GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " IN (" + labelIds.str() + ") AND " + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) +")");
+    vector<string> columns = {
+        ALBUM_ID,
+    };
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        string albumId = to_string(GetIntValFromColumn(resultSet, ALBUM_ID));
+        if (resultAlbumIds.find(albumId) == resultAlbumIds.end()) {
+            resultAlbumIds.insert(albumId);
+            portraitAlbumIds.push_back(albumId);
+        }
+    }
+    return E_OK;
 }
 
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore> &rdbStore,
@@ -1015,7 +1092,11 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore
         PhotoAlbumColumns::ALBUM_COVER_URI,
         PhotoAlbumColumns::ALBUM_COUNT,
     };
-    auto albumResult = GetAnalysisAlbum(rdbStore, anaAlbumAlbumIds, columns);
+    vector<string> tempAlbumId = anaAlbumAlbumIds;
+    if (tempAlbumId.size() > 0) {
+        GetAlbumIdsForPortrait(rdbStore, tempAlbumId);
+    }
+    auto albumResult = GetAnalysisAlbum(rdbStore, tempAlbumId, columns);
     if (albumResult == nullptr) {
         return;
     }
@@ -1081,17 +1162,26 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<RdbStore> &rd
         UpdateSourceAlbumInternal(rdbStore);
     }
     vector<string> albumIds;
-    for (const auto &arg : uris) {
-        string fileId = GetPhotoId(arg);
-        if (fileId.size() == 0) {
+    string idArgs;
+    for (int32_t i = 0; i < uris.size(); i++) {
+        string fileId = GetPhotoId(uris[i]);
+        if (fileId.size() > 0) {
+            idArgs.append(fileId).append(",");
+        }
+        if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
             continue;
         }
+        if (idArgs.size() == 0) {
+            continue;
+        }
+        idArgs = idArgs.substr(0, idArgs.size() - 1);
         RdbPredicates predicates(PhotoMap::TABLE);
-        predicates.SetWhereClause(PhotoMap::ASSET_ID + " = ? and " +
-            PhotoMap::ALBUM_ID + " in(select album_id from PhotoAlbum where album_type = " +
+        predicates.SetWhereClause(PhotoMap::ASSET_ID + " in(" + idArgs + ") and " +
+            PhotoMap::ALBUM_ID + " in(select " + PhotoAlbumColumns::ALBUM_ID + " from " +
+            PhotoAlbumColumns::TABLE + " where " + PhotoAlbumColumns::ALBUM_TYPE + " = " +
             to_string(PhotoAlbumType::SOURCE) + ")");
-        predicates.SetWhereArgs({fileId});
         QueryAlbumId(rdbStore, predicates, albumIds);
+        idArgs.clear();
     }
     if (albumIds.size() > 0) {
         UpdateSourceAlbumInternal(rdbStore, albumIds);
@@ -1231,15 +1321,9 @@ void MediaLibraryRdbUtils::UpdateAllAlbums(const shared_ptr<RdbStore> &rdbStore,
 
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
     MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore);
-    if (uris.size() > ALBUM_UPDATE_THRESHOLD) {
-        MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
-        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(rdbStore);
-        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
-    } else {
-        MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, uris);
-        MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, uris);
-        MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, uris);
-    }
+    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, uris);
+    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, uris);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, uris);
 }
 
 static int32_t UpdateAlbumReplacedSignal(const shared_ptr<RdbStore> &rdbStore,

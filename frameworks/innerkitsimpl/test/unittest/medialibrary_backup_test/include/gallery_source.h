@@ -30,6 +30,7 @@ public:
     void Init(const std::string &path);
     void InitGalleryMediaOne();
     void InitGalleryMediaTwo();
+    void InitGalleryMediaThree();
     void InitGarbageAlbum();
     std::shared_ptr<NativeRdb::RdbStore> galleryStorePtr_;
 };

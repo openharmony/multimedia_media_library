@@ -50,7 +50,7 @@ public:
     EXPORT int32_t CreateThumbnail(const std::string &uri, const std::string &path,
         bool isSync = false);
     void InvalidateThumbnail(const std::string &id, const std::string &tableName,
-        const std::string &path = "");
+        const std::string &path = "", const std::string &dateAdded = "");
     EXPORT void Init(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
 #ifdef DISTRIBUTED
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,

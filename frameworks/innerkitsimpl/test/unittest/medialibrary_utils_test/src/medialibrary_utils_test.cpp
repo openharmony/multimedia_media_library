@@ -15,12 +15,13 @@
 #include "avmetadatahelper.h"
 #include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
-#include "thumbnail_service.h"
+#include "media_remote_thumbnail_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_utils_test.h"
+#include "thumbnail_service.h"
 #define private public
 #include "thumbnail_utils.h"
 #undef private
@@ -650,6 +651,17 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_queryThumbDataFromFileId_test_001, Test
 
     // expect err
     EXPECT_NE(err, 0);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Level0)
+{
+    Size targetSize;
+    targetSize.width = 20;
+    targetSize.height = 20;
+    ThumbnailData data;
+    data.source = make_shared<PixelMap>();
+    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data, targetSize);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0)

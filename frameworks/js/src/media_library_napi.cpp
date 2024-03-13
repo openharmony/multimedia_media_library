@@ -28,10 +28,15 @@
 #include "file_ex.h"
 #include "hitrace_meter.h"
 #include "location_column.h"
+#include "media_device_column.h"
+#include "media_directory_type_column.h"
+#include "media_file_asset_columns.h"
 #include "media_change_request_napi.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
+#include "media_smart_album_column.h"
+#include "media_smart_map_column.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
@@ -52,7 +57,9 @@
 #include "userfile_client.h"
 #include "uv.h"
 #include "form_map.h"
+#ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
+#endif
 #include "ui_extension_context.h"
 #include "want.h"
 #include "js_native_api.h"
@@ -218,7 +225,6 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getAlbums", GetPhotoAlbums),
             DECLARE_NAPI_FUNCTION("getPhotoIndex", JSGetPhotoIndex),
             DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
-            DECLARE_NAPI_FUNCTION("getHiddenAlbums", UfmGetHiddenAlbums),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -362,6 +368,7 @@ napi_value MediaLibraryNapi::MediaLibraryNapiConstructor(napi_env env, napi_call
             UserFileClient::Init(env, info);
             if (!UserFileClient::IsValid()) {
                 NAPI_ERR_LOG("UserFileClient creation failed");
+                helperLock.unlock();
                 return result;
             }
         }
@@ -478,6 +485,7 @@ static void GetMediaLibraryAsyncExecute(napi_env env, void *data)
         if (!UserFileClient::IsValid()) {
             NAPI_ERR_LOG("UserFileClient creation failed");
             asyncContext->error = ERR_INVALID_OUTPUT;
+            helperLock.unlock();
             return;
         }
     }
@@ -2024,8 +2032,8 @@ static void HandleCompatTrashAudio(MediaLibraryAsyncContext *context, const stri
     DataSharePredicates predicates;
     predicates.SetWhereClause(MEDIA_DATA_DB_ID + " = ? ");
     predicates.SetWhereArgs({ deleteId });
-    Uri uri(URI_UPDATE_AUDIO);
-    int32_t changedRows = UserFileClient::Update(uri, predicates, valuesBucket);
+    Uri uri(URI_DELETE_AUDIO);
+    int32_t changedRows = UserFileClient::Delete(uri, predicates);
     if (changedRows < 0) {
         context->SaveError(changedRows);
         return;
@@ -5825,17 +5833,23 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE || albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
         context->predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
     }
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void RestrictAlbumSubtypeOptions(unique_ptr<MediaLibraryAsyncContext> &context)
+{
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         context->predicates.And()->In(PhotoAlbumColumns::ALBUM_SUBTYPE, vector<string>({
             to_string(PhotoAlbumSubType::USER_GENERIC),
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::VIDEO),
         }));
+    } else {
+        context->predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
     }
-
-    napi_value result = nullptr;
-    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
-    return result;
 }
 
 static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
@@ -5872,6 +5886,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
         default:
             return nullptr;
     }
+    RestrictAlbumSubtypeOptions(context);
     if (context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_LOCATION &&
         context->isLocationAlbum != PhotoAlbumSubType::GEOGRAPHY_CITY) {
         CHECK_NULLPTR_RET(AddDefaultPhotoAlbumColumns(env, context->fetchColumn));
@@ -5938,6 +5953,7 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
     int index = UserFileClient::InsertExt(createFileUri, context->valuesBucket, outUri);
     if (index < 0) {
         context->SaveError(index);
+        NAPI_ERR_LOG("InsertExt fail, index: %{public}d.", index);
     } else {
         if (context->resultNapiType == ResultNapiType::TYPE_PHOTOACCESS_HELPER) {
             if (context->isCreateByComponent) {
@@ -6290,15 +6306,6 @@ napi_value ParseArgsGetHiddenAlbums(napi_env env, napi_callback_info info,
     return result;
 }
 
-napi_value MediaLibraryNapi::UfmGetHiddenAlbums(napi_env env, napi_callback_info info)
-{
-    auto asyncContext = make_unique<MediaLibraryAsyncContext>();
-    asyncContext->resultNapiType = ResultNapiType::TYPE_USERFILE_MGR;
-    CHECK_NULLPTR_RET(ParseArgsGetHiddenAlbums(env, info, asyncContext));
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "UfmGetHiddenAlbums",
-        JSGetPhotoAlbumsExecute, JSGetPhotoAlbumsCompleteCallback);
-}
-
 napi_value MediaLibraryNapi::PahGetHiddenAlbums(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -6373,6 +6380,7 @@ static napi_value initRequest(OHOS::AAFwk::Want &request, shared_ptr<DeleteCallb
 
 napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_info info)
 {
+#ifdef HAS_ACE_ENGINE_PART
     size_t argc = ARGS_FOUR;
     napi_value args[ARGS_FOUR] = {nullptr};
     napi_value thisVar = nullptr;
@@ -6408,6 +6416,10 @@ napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_inf
 
     callback->SetSessionId(sessionId);
     return result;
+#else
+    NapiError::ThrowError(env, JS_INNER_FAIL, "ace_engine is not support");
+    return nullptr;
+#endif
 }
 
 static void StartPhotoPickerExecute(napi_env env, void *data)

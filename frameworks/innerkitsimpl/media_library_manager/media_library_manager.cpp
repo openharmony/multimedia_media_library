@@ -215,18 +215,26 @@ int32_t MediaLibraryManager::QueryTotalSize(MediaVolume &outMediaVolume)
     }
     MEDIA_INFO_LOG("count = %{public}d", (int)count);
     if (count >= 0) {
+        int thumbnailType = -1;
         while (queryResultSet->GoToNextRow() == NativeRdb::E_OK) {
             int mediatype = get<int32_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_MEDIA_TYPE,
                 queryResultSet, TYPE_INT32));
             int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE,
                 queryResultSet, TYPE_INT64));
-            outMediaVolume.SetSize(mediatype, size);
+            MEDIA_INFO_LOG("media_type: %{public}d, size: %{public}lld", mediatype, static_cast<long long>(size));
+            if (mediatype == MEDIA_TYPE_IMAGE || mediatype == thumbnailType) {
+                outMediaVolume.SetSize(MEDIA_TYPE_IMAGE, outMediaVolume.GetImagesSize() + size);
+            } else {
+                outMediaVolume.SetSize(mediatype, size);
+            }
         }
     }
-    MEDIA_INFO_LOG("Size:Files:%{public}" PRId64 " Videos:%{public}" PRId64 " Images:%{public} " PRId64
-        " Audio:%{public}" PRId64,
-        outMediaVolume.GetFilesSize(), outMediaVolume.GetVideosSize(),
-        outMediaVolume.GetImagesSize(), outMediaVolume.GetAudiosSize());
+    MEDIA_INFO_LOG("Size: Files:%{public}lld, Videos:%{public}lld, Images:%{public}lld, Audio:%{public}lld",
+        static_cast<long long>(outMediaVolume.GetFilesSize()),
+        static_cast<long long>(outMediaVolume.GetVideosSize()),
+        static_cast<long long>(outMediaVolume.GetImagesSize()),
+        static_cast<long long>(outMediaVolume.GetAudiosSize())
+    );
     return E_SUCCESS;
 }
 
@@ -413,6 +421,8 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         if (fd > 0) {
             return fd;
         }
+        MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, path :%{public}s fd %{public}d errno %{public}d",
+            path.c_str(), fd, errno);
         if (IsAsciiString(path)) {
             uriStr += "&" + THUMBNAIL_PATH + "=" + path;
         }
@@ -536,7 +546,6 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
     bool isEqualsRatio = IfSizeEqualsRatio(imageInfo.size, size);
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize = isEqualsRatio ? size : imageInfo.size;
-    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     if (pixelMap == nullptr) {
         MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);

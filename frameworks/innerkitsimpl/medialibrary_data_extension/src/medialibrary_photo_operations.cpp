@@ -432,7 +432,6 @@ int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
         return E_HAS_DB_ERROR;
     }
     transactionOprn.Finish();
-    MediaLibraryObjectUtils::UpdateAnalysisProp(ANALYSIS_HAS_DATA);
     return outRow;
 }
 
@@ -518,7 +517,6 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET(ret == E_OK, ret);
     }
     cmd.SetResult(fileUri);
-    MediaLibraryObjectUtils::UpdateAnalysisProp(ANALYSIS_HAS_DATA);
     return outRow;
 }
 
@@ -686,18 +684,17 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
             std::to_string(PhotoAlbumSubType::VIDEO),
             std::to_string(PhotoAlbumSubType::HIDDEN),
             std::to_string(PhotoAlbumSubType::SCREENSHOT),
-            std::to_string(PhotoAlbumSubType::CAMERA),
             std::to_string(PhotoAlbumSubType::IMAGE),
         });
-    MediaLibraryRdbUtils::UpdateUserAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateUserAlbumByUri(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
+    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
 
     MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
 }
@@ -1025,8 +1022,8 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
         return E_INVALID_URI;
     }
 
-    if (PhotoEditingRecord::GetInstance()->IsInEditOperation(stoi(id))) {
-        MEDIA_ERR_LOG("File %{public}s is in editing, can not rqeuest source", id.c_str());
+    if (PhotoEditingRecord::GetInstance()->IsInRevertOperation(stoi(id))) {
+        MEDIA_ERR_LOG("File %{public}s is in revert, can not request source", id.c_str());
         return E_IS_IN_COMMIT;
     }
 
@@ -1173,6 +1170,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsert(MediaLibraryCommand &cmd)
     fileAsset->SetId(id);
     int32_t ret = CommitEditInsertExecute(fileAsset, editData);
     PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
+    MEDIA_INFO_LOG("commit edit finished, fileId=%{public}d", id);
     return ret;
 }
 
@@ -1230,13 +1228,12 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
         to_string(PhotoAlbumSubType::IMAGE),
         to_string(PhotoAlbumSubType::VIDEO),
         to_string(PhotoAlbumSubType::SCREENSHOT),
-        to_string(PhotoAlbumSubType::CAMERA),
         to_string(PhotoAlbumSubType::FAVORITE),
     });
-    ScanFile(path, true, true, true);
     int32_t errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
         fileAsset->GetId());
+    ScanFile(path, true, true, true);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
 }
@@ -1405,6 +1402,30 @@ int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
     return E_OK;
 }
 
+int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
+    const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
+{
+    string editData;
+    int32_t id = fileAsset->GetId();
+    int32_t errCode = ParseMediaAssetEditData(cmd, editData);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to parse MediaAssetEditData");
+    errCode = SaveSourceAndEditData(fileAsset, editData);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to save source and editData");
+
+    string assetPath = fileAsset->GetFilePath();
+    errCode = MoveCacheFile(cachePath, assetPath);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
+        "Failed to move %{private}s to %{private}s, errCode: %{public}d",
+        cachePath.c_str(), assetPath.c_str(), errCode);
+
+    errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
+    ScanFile(assetPath, true, true, true);
+    NotifyFormMap(id, assetPath, false);
+    MediaLibraryVisionOperations::EditCommitOperation(cmd);
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd,
     const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
 {
@@ -1420,38 +1441,25 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
         pending == 0 || pending == UNCREATE_FILE_TIMEPENDING || pending == UNOPEN_FILE_COMPONENT_TIMEPENDING,
         E_IS_PENDING_ERROR, "FileAsset is in pending: %{public}ld", static_cast<long>(pending));
 
-    string editData;
+    string assetPath = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+
     int32_t id = fileAsset->GetId();
     bool isEdit = (pending == 0);
     if (isEdit) {
-        int32_t errCode = ParseMediaAssetEditData(cmd, editData);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to parse MediaAssetEditData");
-
         if (!PhotoEditingRecord::GetInstance()->StartCommitEdit(id)) {
             return E_IS_IN_REVERT;
         }
-        errCode = SaveSourceAndEditData(fileAsset, editData);
-        if (errCode != E_OK) {
-            PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
-            return errCode;
-        }
+        int32_t errCode = SubmitEditCacheExecute(cmd, fileAsset, cachePath);
+        PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
+        return errCode;
     }
 
-    string assetPath = fileAsset->GetFilePath();
-    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
     int32_t errCode = MoveCacheFile(cachePath, assetPath);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
-        "Failed to move %{private}s to %{private}s, errCode: %{public}d", cachePath.c_str(), assetPath.c_str(),
-        errCode);
+        "Failed to move %{private}s to %{private}s, errCode: %{public}d",
+        cachePath.c_str(), assetPath.c_str(), errCode);
     ScanFile(assetPath, true, true, true);
-    NotifyFormMap(id, assetPath, false);
-
-    if (isEdit) {
-        int32_t errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
-        PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
-        MediaLibraryVisionOperations::EditCommitOperation(cmd);
-    }
     return E_OK;
 }
 
@@ -1534,6 +1542,12 @@ void PhotoEditingRecord::EndRevert(int32_t fileId)
 {
     unique_lock<shared_mutex> lock(addMutex_);
     revertingPhotoSet_.erase(fileId);
+}
+
+bool PhotoEditingRecord::IsInRevertOperation(int32_t fileId)
+{
+    shared_lock<shared_mutex> lock(addMutex_);
+    return revertingPhotoSet_.count(fileId) > 0;
 }
 
 bool PhotoEditingRecord::IsInEditOperation(int32_t fileId)

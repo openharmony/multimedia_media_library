@@ -44,6 +44,7 @@
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_file_uri.h"
+#include "media_smart_map_column.h"
 #include "medialibrary_client_errno.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -60,7 +61,21 @@
 #include "unique_fd.h"
 #include "userfile_client.h"
 #include "userfilemgr_uri.h"
+#include "vision_aesthetics_score_column.h"
+#include "vision_album_column.h"
+#include "vision_column_comm.h"
 #include "vision_column.h"
+#include "vision_composition_column.h"
+#include "vision_face_tag_column.h"
+#include "vision_image_face_column.h"
+#include "vision_label_column.h"
+#include "vision_object_column.h"
+#include "vision_ocr_column.h"
+#include "vision_photo_map_column.h"
+#include "vision_recommendation_column.h"
+#include "vision_saliency_detect_column.h"
+#include "vision_segmentation_column.h"
+#include "vision_total_column.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -111,8 +126,6 @@ void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, vo
 {
     FileAssetNapi *fileAssetObj = reinterpret_cast<FileAssetNapi*>(nativeObject);
     if (fileAssetObj != nullptr) {
-        NAPI_DEBUG_LOG("Destroying native asset object ID: %{public}d",
-            fileAssetObj != nullptr ? fileAssetObj->GetFileId() : -1);
         delete fileAssetObj;
         fileAssetObj = nullptr;
     }
@@ -4625,6 +4638,7 @@ static void PhotoAccessHelperCommitEditExecute(napi_env env, void *data)
             context->SaveError(E_FAIL);
             return;
         }
+        NAPI_INFO_LOG("commit edit asset copy file finished, fileUri:%{public}s", fileUri.c_str());
         string insertUriStr = PAH_COMMIT_EDIT_PHOTOS;
         MediaLibraryNapiUtils::UriAppendKeyValue(insertUriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
         Uri insertUri(insertUriStr);

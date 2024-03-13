@@ -28,6 +28,7 @@
 #include "media_file_uri.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
+#include "media_unique_number_column.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
@@ -1134,14 +1135,6 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
     // if pending == UNOPEN_FILE_COMPONENT_TIMEPENDING, not allowed to close
     // if pending is timestamp, do nothing
     if (fileAsset->GetTimePending() == 0 || fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
-        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
-            to_string(PhotoAlbumSubType::IMAGE),
-            to_string(PhotoAlbumSubType::VIDEO),
-            to_string(PhotoAlbumSubType::SCREENSHOT),
-            to_string(PhotoAlbumSubType::CAMERA),
-            to_string(PhotoAlbumSubType::FAVORITE),
-        });
         if (fileAsset->GetTimePending() == UNCLOSE_FILE_TIMEPENDING) {
             ScanFile(path, isCreateThumbSync, false);
         } else {
@@ -1883,7 +1876,8 @@ static void DeleteFiles(AsyncTaskData *data)
         }
     }
     for (size_t i = 0; i < taskData->ids_.size(); i++) {
-        ThumbnailService::GetInstance()->InvalidateThumbnail(taskData->ids_[i], taskData->table_, taskData->paths_[i]);
+        ThumbnailService::GetInstance()->InvalidateThumbnail(
+            taskData->ids_[i], taskData->table_, taskData->paths_[i], taskData->dateAddeds_[i]);
     }
     if (taskData->table_ == PhotoColumn::PHOTOS_TABLE) {
         for (const auto &path : taskData->paths_) {
@@ -1892,11 +1886,13 @@ static void DeleteFiles(AsyncTaskData *data)
     }
 }
 
-int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates, vector<string> &outIds, vector<string> &outPaths)
+int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
+    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateAddeds)
 {
     vector<string> columns = {
         MediaColumn::MEDIA_ID,
-        MediaColumn::MEDIA_FILE_PATH
+        MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_DATE_ADDED
     };
     auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
     if (resultSet == nullptr) {
@@ -1906,6 +1902,8 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates, vector<string> &outId
         outIds.push_back(
             to_string(get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32))));
         outPaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet,
+            TYPE_STRING)));
+        outDateAddeds.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_ADDED, resultSet,
             TYPE_STRING)));
     }
     return E_OK;
@@ -1946,8 +1944,9 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     }
     vector<string> ids;
     vector<string> paths;
+    vector<string> dateAddeds;
     int32_t deletedRows = 0;
-    GetIdsAndPaths(predicates, ids, paths);
+    GetIdsAndPaths(predicates, ids, paths, dateAddeds);
     if (ids.empty()) {
         MEDIA_ERR_LOG("Failed to delete files in db, ids size: 0");
         return deletedRows;
@@ -1971,7 +1970,7 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     }
 
     const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
-    auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, predicates.GetTableName());
+    auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateAddeds, predicates.GetTableName());
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     if (deleteFilesTask == nullptr) {
         MEDIA_ERR_LOG("Failed to create async task for deleting files.");

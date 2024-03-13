@@ -19,6 +19,7 @@
 #include "media_file_uri.h"
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "media_smart_album_column.h"
 #include "medialibrary_tracer.h"
 #include "photo_album_column.h"
 

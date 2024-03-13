@@ -21,6 +21,9 @@
 #include "thumbnail_const.h"
 #include "thumbnail_utils.h"
 #include "thumbnail_utils.h"
+#include "dfx_timer.h"
+#include "dfx_const.h"
+#include "dfx_manager.h"
 
 #include "lcd_thumbnail_helper.h"
 
@@ -71,13 +74,16 @@ int32_t LcdThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &
             fileName = GetThumbnailPath(thumbnailData.path, THUMBNAIL_LCD_SUFFIX);
         }
     }
+    DfxTimer dfxTimer(DfxType::CLOUD_LCD_OPEN, INVALID_DFX, CLOUD_LCD_TIME_OUT, false);
     auto fd = open(fileName.c_str(), O_RDONLY);
+    dfxTimer.End();
     if (fd >= 0) {
         if (opts.table == PhotoColumn::PHOTOS_TABLE) {
             ThumbnailUtils::UpdateVisitTime(opts, thumbnailData, err);
         }
         return fd;
     }
+    DfxManager::GetInstance()->HandleThumbnailError(fileName, DfxType::CLOUD_LCD_OPEN, -errno);
     return -errno;
 }
 } // namespace Media

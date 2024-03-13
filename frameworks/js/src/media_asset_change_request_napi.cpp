@@ -30,6 +30,7 @@
 #include "delete_callback.h"
 #include "directory_ex.h"
 #include "file_uri.h"
+#include "image_packer.h"
 #include "ipc_skeleton.h"
 #include "js_native_api.h"
 #include "js_native_api_types.h"
@@ -45,7 +46,9 @@
 #include "output/deferred_photo_proxy_napi.h"
 #endif
 #include "permission_utils.h"
+#ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
+#endif
 #include "unique_fd.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
@@ -673,6 +676,7 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
             env, asyncContext, "ChangeRequestDeleteAssets", DeleteAssetsExecute, DeleteAssetsCompleteCallback);
     }
 
+#ifdef HAS_ACE_ENGINE_PART
     // Deletion control by ui extension
     CHECK_COND(env, HasWritePermission(), OHOS_PERMISSION_DENIED_CODE);
     CHECK_COND_WITH_MESSAGE(
@@ -703,6 +707,10 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
     CHECK_COND(env, sessionId != 0, JS_INNER_FAIL);
     callback->SetSessionId(sessionId);
     RETURN_NAPI_UNDEFINED(env);
+#else
+    NapiError::ThrowError(env, JS_INNER_FAIL, "ace_engine is not support");
+    return nullptr;
+#endif
 }
 
 napi_value MediaAssetChangeRequestNapi::JSSetEditData(napi_env env, napi_callback_info info)
@@ -854,7 +862,40 @@ static int SavePhotoProxyImage(const string &fileUri, sptr<CameraStandard::Defer
         NAPI_ERR_LOG("imageAddr is nullptr or imageSize(%{public}zu)==0", imageSize);
         return E_ERR;
     }
-    return SaveImage(fileUri, imageAddr, imageSize);
+
+    NAPI_INFO_LOG("start pack PixelMap");
+    Media::InitializationOptions opts;
+    opts.pixelFormat = Media::PixelFormat::RGBA_8888;
+    opts.size = {
+        .width = photoProxyPtr->GetWidth(),
+        .height = photoProxyPtr->GetHeight()
+    };
+    auto pixelMap = Media::PixelMap::Create(opts);
+    if (pixelMap == nullptr) {
+        NAPI_ERR_LOG("Create pixelMap failed.");
+        return E_ERR;
+    }
+    pixelMap->SetPixelsAddr(imageAddr, nullptr, imageSize, Media::AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    auto pixelSize = static_cast<uint32_t>(pixelMap->GetByteCount());
+
+    // encode rgba to jpeg
+    auto buffer = new (std::nothrow) uint8_t[pixelSize];
+    int64_t packedSize = 0L;
+    Media::ImagePacker imagePacker;
+    Media::PackOption packOption;
+    packOption.format = "image/jpeg";
+    imagePacker.StartPacking(buffer, pixelSize, packOption);
+    imagePacker.AddImage(*pixelMap);
+    imagePacker.FinalizePacking(packedSize);
+    if (buffer == nullptr) {
+        NAPI_ERR_LOG("packet pixelMap failed");
+        return E_ERR;
+    }
+    NAPI_INFO_LOG("pack pixelMap success, packedSize: %{public}lld", packedSize);
+
+    auto ret = SaveImage(fileUri, buffer, packedSize);
+    delete[] buffer;
+    return ret;
 }
 #endif
 

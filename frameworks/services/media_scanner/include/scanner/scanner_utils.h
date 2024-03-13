@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 
 #include "medialibrary_type_const.h"
+#include "media_container_types.h"
 #include "media_scanner_const.h"
 #include "shooting_mode_column.h"
 

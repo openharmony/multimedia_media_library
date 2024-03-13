@@ -36,7 +36,7 @@ const std::string GALLERY_APP_NAME = "gallery";
 const std::string MEDIA_APP_NAME = "external";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 
-const int EXPECTED_NUM = 16;
+const int EXPECTED_NUM = 20;
 const int EXPECTED_OREINTATION = 270;
 const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "user_comment";
@@ -260,7 +260,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.L
     std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='not_sync_weixin.jpg'";
     auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid end");
 }
 
@@ -338,6 +338,46 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_clone, TestSize.Lev
     MEDIA_INFO_LOG("dir: %{public}s, cloudPath: %{public}s", dir.c_str(), cloudPath.c_str());
     ASSERT_TRUE(dir == cloudPath);
     MEDIA_INFO_LOG("medialib_backup_test_update_clone end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_not_sync_valid, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_a_media_not_sync_valid start");
+    std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='a_media_not_sync.jpg'";
+    auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_a_media_not_sync_valid end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_favorite_video, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_a_media_favorite_video start");
+    std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='a_media_favorite.mp4'";
+    auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_a_media_favorite_video end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_favorite_image, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_a_media_favorite_video start");
+    std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='a_media_favorite.mp4'";
+    auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_a_media_favorite_video end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_a_media_zero_size start");
+    std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='a_media_zero_size.jpg'";
+    auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_a_media_zero_size end");
 }
 } // namespace Media
 } // namespace OHOS
