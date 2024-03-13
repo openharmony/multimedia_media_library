@@ -35,6 +35,7 @@
 #include "rdb_predicates.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -235,7 +236,8 @@ void CheckIfNeedRefresh(bool isNeedRefresh)
 void RefreshTable()
 {
     int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+        [] (PhotoAlbumSubType a, int b) {}, [] () {});
     EXPECT_EQ(ret, 0);
 }
 
@@ -499,7 +501,8 @@ int32_t InitPhotoTrigger()
     static const vector<string> executeSqlStrs = {
         PhotoColumn::INDEX_SCTHP_ADDTIME,
         PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
-        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX
     };
     MEDIA_INFO_LOG("start Init Photo Trigger");
     

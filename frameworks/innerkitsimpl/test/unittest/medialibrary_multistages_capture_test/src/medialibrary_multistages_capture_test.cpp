@@ -28,6 +28,7 @@
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
@@ -568,6 +569,11 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_photo_id_add_and_rmv_001, T
     instance.RemovePhotoInProgress(photoId2, false);
     EXPECT_EQ(instance.fileId2PhotoId_.count(fileId2), 0);
     EXPECT_EQ(instance.photoIdInProcess_.count(photoId2), 0);
+
+    // remove photo id not in progress
+    string invalidPhotoId = "202312251533003";
+    instance.RemovePhotoInProgress(invalidPhotoId, false);
+    instance.RemovePhotoInProgress(invalidPhotoId, true);
     MEDIA_INFO_LOG("manager_photo_id_add_and_rmv_001 End");
 }
 

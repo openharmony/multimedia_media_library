@@ -18,6 +18,8 @@
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "media_smart_album_column.h"
+#include "media_smart_map_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

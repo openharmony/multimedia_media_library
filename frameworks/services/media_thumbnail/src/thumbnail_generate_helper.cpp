@@ -18,6 +18,7 @@
 
 #include "ithumbnail_helper.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_kvstore_manager.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
 
@@ -67,7 +68,9 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatch(ThumbRdbOpt &opts)
         return err;
     }
 
-    if (infos.empty()) {
+    auto kvStore = MediaLibraryKvStoreManager::GetInstance()
+        .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
+    if (infos.empty() || kvStore == nullptr) {
         MEDIA_INFO_LOG("No need create Astc.");
         return E_OK;
     }

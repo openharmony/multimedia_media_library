@@ -16,6 +16,7 @@
 #include "medialibrary_helper_test.h"
 
 #include "dir_asset.h"
+#include "media_container_types.h"
 #include "medialibrary_type_const.h"
 #include "userfile_manager_types.h"
 

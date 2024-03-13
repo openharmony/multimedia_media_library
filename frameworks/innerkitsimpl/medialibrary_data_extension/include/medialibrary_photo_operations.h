@@ -63,6 +63,8 @@ private:
     static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t ParseMediaAssetEditData(MediaLibraryCommand &cmd, std::string &editData);
     static int32_t SaveSourceAndEditData(const std::shared_ptr<FileAsset> &fileAsset, const std::string &editData);
+    static int32_t SubmitEditCacheExecute(MediaLibraryCommand &cmd,
+        const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
@@ -78,6 +80,7 @@ public:
     EXPORT void EndCommitEdit(int32_t fileId);
     EXPORT bool StartRevert(int32_t fileId);
     EXPORT void EndRevert(int32_t fileId);
+    EXPORT bool IsInRevertOperation(int32_t fileId);
     EXPORT bool IsInEditOperation(int32_t fileId);
 
 private:

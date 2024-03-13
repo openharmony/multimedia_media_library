@@ -21,6 +21,9 @@
 #include "media_log.h"
 #include "thumbnail_const.h"
 #include "thumbnail_utils.h"
+#include "dfx_timer.h"
+#include "dfx_const.h"
+#include "dfx_manager.h"
 
 #include "default_thumbnail_helper.h"
 
@@ -81,10 +84,12 @@ int32_t DefaultThumbnailHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Si
                 isAstc ? THUMBNAIL_THUMBASTC_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
         }
     }
+    DfxTimer dfxTimer(DfxType::CLOUD_DEFAULT_OPEN, INVALID_DFX, CLOUD_DEFAULT_TIME_OUT, false);
     auto fd = open(fileName.c_str(), O_RDONLY);
     if (fd >= 0) {
         return fd;
     }
+    DfxManager::GetInstance()->HandleThumbnailError(fileName, DfxType::CLOUD_DEFAULT_OPEN, -errno);
     return -errno;
 }
 } // namespace Media

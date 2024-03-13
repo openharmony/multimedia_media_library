@@ -17,6 +17,7 @@
 #include <map>
 
 #include "medialibrary_device_operations.h"
+#include "media_device_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"

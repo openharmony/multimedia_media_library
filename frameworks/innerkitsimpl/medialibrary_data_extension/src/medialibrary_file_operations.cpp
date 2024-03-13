@@ -20,6 +20,9 @@
 #include "datashare_values_bucket.h"
 #include "file_asset.h"
 #include "hitrace_meter.h"
+#ifdef MEDIALIBRARY_COMPATIBILITY
+#include "media_file_asset_columns.h"
+#endif
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
@@ -188,6 +191,18 @@ static void SolvePendingInQuery(AbsRdbPredicates* predicates)
 }
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
+const std::string EMPTY_COLUMN_AS = "'' AS ";
+const std::string DEFAULT_INT_COLUMN_AS = "0 AS ";
+const std::string COMPAT_COLUMN_ARTIST = EMPTY_COLUMN_AS + MEDIA_DATA_DB_ARTIST;
+const std::string COMPAT_COLUMN_AUDIO_ALBUM = EMPTY_COLUMN_AS + MEDIA_DATA_DB_AUDIO_ALBUM;
+const std::string COMPAT_COLUMN_ORIENTATION = DEFAULT_INT_COLUMN_AS + MEDIA_DATA_DB_ORIENTATION;
+const std::string COMPAT_COLUMN_BUCKET_ID = DEFAULT_INT_COLUMN_AS + MEDIA_DATA_DB_BUCKET_ID;
+const std::string COMPAT_COLUMN_BUCKET_NAME = EMPTY_COLUMN_AS + MEDIA_DATA_DB_BUCKET_NAME;
+const std::string COMPAT_COLUMN_IS_TRASH = MEDIA_DATA_DB_DATE_TRASHED + " AS " + MEDIA_DATA_DB_IS_TRASH;
+const std::string COMPAT_COLUMN_WIDTH = DEFAULT_INT_COLUMN_AS + MEDIA_DATA_DB_WIDTH;
+const std::string COMPAT_COLUMN_HEIGHT = DEFAULT_INT_COLUMN_AS + MEDIA_DATA_DB_HEIGHT;
+const std::string COMPAT_COLUMN_URI = EMPTY_COLUMN_AS + MEDIA_DATA_DB_URI;
+
 static const vector<string> &PhotosCompatColumns()
 {
     /*

@@ -42,6 +42,8 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/include/utils",
   ]
 
+  include_dfx = [ "${MEDIALIB_SERVICES_PATH}/media_dfx/include" ]
+
   include_dirs = [
     "${MEDIALIB_INTERFACES_PATH}/innerkits/native/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
@@ -57,6 +59,7 @@ config("media_data_extension_public_config") {
   include_dirs += include_distributed
   include_dirs += include_scanner
   include_dirs += include_multistages_capture
+  include_dirs += include_dfx
 
   ldflags = [ "-Wl,--gc-sections" ]
 
@@ -162,6 +165,16 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/multistages_capture_manager.cpp",
   ]
 
+  media_dfx_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_analyzer.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_collector.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_manager.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_timer.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_worker.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
+  ]
+
   sources = [
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "src/media_datashare_ext_ability.cpp",
@@ -196,6 +209,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_cloud_sync_source
   sources += media_rdb_utils_source
   sources += media_multistages_capture_source
+  sources += media_dfx_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 
@@ -225,6 +239,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "access_token:libaccesstoken_sdk",
     "app_file_service:sandbox_helper_native",
     "background_task_mgr:bgtaskmgr_innerkits",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
@@ -241,6 +256,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",
+    "preferences:native_preferences",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "safwk:system_ability_fwk",

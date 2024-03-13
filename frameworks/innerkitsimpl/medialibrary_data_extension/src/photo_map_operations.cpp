@@ -34,6 +34,9 @@
 #include "vision_column.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
+#include "vision_album_column.h"
+#include "vision_face_tag_column.h"
+#include "vision_photo_map_column.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -225,7 +228,6 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
             continue;
         }
         albumIdList.push_back(to_string(albumId));
-        GetPortraitAlbumIds(to_string(albumId), albumIdList);
     }
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), albumIdList);
     return changedRows;

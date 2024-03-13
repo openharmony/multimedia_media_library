@@ -161,6 +161,7 @@ private:
     EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     static Size ConvertDecodeSize(const Size &sourceSize, Size &desiredSize, const bool isThumbnail);
+    EXPORT static bool ScaleTargetPixelMap(ThumbnailData &data, const Size &targetSize);
     EXPORT static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize,
         const std::string &targetPath);
     EXPORT static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
@@ -182,6 +183,7 @@ private:
 
     static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
     static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
+    static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
 };
 } // namespace Media
 } // namespace OHOS

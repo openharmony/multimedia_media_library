@@ -181,6 +181,7 @@ void MediaLibraryFormOperationsTest::TearDown()
 
 HWTEST_F(MediaLibraryFormOperationsTest, FormMapOperations_test_001, TestSize.Level0)
 {
+    // test for store form operation and remove form operation
     MediaLibraryCommand cmd(OperationObject::PAH_FORM_MAP, OperationType::UPDATE);
     cmd.SetTableName(FormMap::FORM_MAP_TABLE);
     NativeRdb::ValuesBucket values;

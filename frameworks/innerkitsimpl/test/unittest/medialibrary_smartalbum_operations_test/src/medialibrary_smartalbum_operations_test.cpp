@@ -15,6 +15,8 @@
 #define MLOG_TAG "FileExtUnitTest"
 
 #include "ability_context_impl.h"
+#include "media_smart_album_column.h"
+#include "media_smart_map_column.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_smartalbum_operations_test.h"

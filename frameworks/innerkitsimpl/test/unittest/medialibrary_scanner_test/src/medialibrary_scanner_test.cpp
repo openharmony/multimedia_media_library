@@ -14,6 +14,7 @@
  */
 #define MLOG_TAG "FileExtUnitTest"
 
+#include "media_container_types.h"
 #include "media_log.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_scanner_test.h"

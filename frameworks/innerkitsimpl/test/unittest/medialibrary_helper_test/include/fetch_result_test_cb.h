@@ -18,6 +18,7 @@
 
 #include "medialibrary_db_const.h"
 #include "rdb_open_callback.h"
+#include "medialibrary_db_const_sqls.h"
 
 namespace OHOS {
 namespace Media {

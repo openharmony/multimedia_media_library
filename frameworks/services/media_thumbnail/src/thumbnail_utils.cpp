@@ -30,6 +30,11 @@
 #include "image_packer.h"
 #include "ipc_skeleton.h"
 #include "media_column.h"
+#ifdef DISTRIBUTED
+#include "media_device_column.h"
+#endif
+#include "media_exif.h"
+#include "media_remote_thumbnail_column.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -45,6 +50,7 @@
 #include "thumbnail_const.h"
 #include "unique_fd.h"
 #include "post_event_utils.h"
+#include "dfx_manager.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -62,7 +68,10 @@ constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
 constexpr int32_t MIN_COMPRESS_BUF_SIZE = 8192;
 constexpr int32_t MAX_FIELD_LENGTH = 10;
 constexpr int32_t MAX_TIMEID_LENGTH = 10;
-const std::string KVSTORE_KEY_TEMPLATE = "0000000000";
+constexpr int32_t MAX_DATE_ADDED_LENGTH = 13;
+constexpr int32_t DECODE_SCALE_BASE = 2;
+const std::string KVSTORE_FIELD_ID_TEMPLATE = "0000000000";
+const std::string KVSTORE_DATE_ADDED_TEMPLATE = "0000000000000";
 
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
@@ -197,11 +206,6 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
     string path = data.path;
     int32_t err = SetSource(avMetadataHelper, path);
     if (err != 0) {
-        MEDIA_ERR_LOG("Av meta data helper set source failed path %{private}s err %{public}d",
-            path.c_str(), err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     PixelMapParams param;
@@ -209,9 +213,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
     data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
         param);
     if (data.source == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
     }
     int width = data.source->GetWidth();
@@ -228,9 +230,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
         data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
             param);
         if (data.source == nullptr) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-                {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+            DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
             return false;
         }
     }
@@ -240,6 +240,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
         std::istringstream iss(videoOrientation);
         iss >> data.degrees;
     }
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, width, height);
     return true;
 }
 
@@ -262,60 +263,113 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
     return true;
 }
 
+bool ThumbnailUtils::ScaleTargetPixelMap(ThumbnailData &data, const Size &targetSize)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ImageSource::ScaleTargetPixelMap");
+
+    PostProc postProc;
+    if (!postProc.ScalePixelMapEx(targetSize, *data.source, Media::AntiAliasingOption::HIGH)) {
+        MEDIA_ERR_LOG("thumbnail scale failed [%{private}s]", data.id.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
+    return true;
+}
+
+bool NeedAutoResize(const Size &size)
+{
+    // Only small thumbnails need to be scaled after decoding, others should resized while decoding.
+    return size.width > SHORT_SIDE_THRESHOLD && size.height > SHORT_SIDE_THRESHOLD;
+}
+
+bool GenDecodeOpts(const Size &sourceSize, const Size &targetSize, DecodeOptions &decodeOpts)
+{
+    if (targetSize.width == 0) {
+        MEDIA_ERR_LOG("Failed to generate decodeOpts, scale size contains zero");
+        return false;
+    }
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    if (NeedAutoResize(targetSize)) {
+        decodeOpts.desiredSize = targetSize;
+        return true;
+    }
+
+    int32_t decodeScale = 1;
+    int32_t scaleFactor = sourceSize.width / targetSize.width;
+    while (scaleFactor /= DECODE_SCALE_BASE) {
+        decodeScale *= DECODE_SCALE_BASE;
+    }
+    decodeOpts.desiredSize = {
+        std::ceil(sourceSize.width / decodeScale),
+        std::ceil(sourceSize.height / decodeScale),
+    };
+    return true;
+}
+
+unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ImageSource::CreateImageSource");
+
+    SourceOptions opts;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
+    if (err != E_OK || !imageSource) {
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_CREATE, err);
+        return imageSource;
+    }
+    return imageSource;
+}
+
 bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize,
     const std::string &targetPath)
 {
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 
-    MediaLibraryTracer tracer;
-    tracer.Start("ImageSource::CreateImageSource");
-
-    uint32_t err = 0;
-    SourceOptions opts;
+    uint32_t err = E_OK;
     std::string path = targetPath.empty() ? data.path : targetPath;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
+
+    unique_ptr<ImageSource> imageSource = LoadImageSource(path, err);
     if (err != E_OK || !imageSource) {
-        MEDIA_ERR_LOG("Failed to create image source, path: %{private}s err: %{public}d", path.c_str(), err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-            {KEY_ERR_CODE, static_cast<int32_t>(err)}, {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
-    tracer.Finish();
 
+    MediaLibraryTracer tracer;
     tracer.Start("imageSource->CreatePixelMap");
     ImageInfo imageInfo;
     err = imageSource->GetImageInfo(0, imageInfo);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get image info, path: %{private}s err: %{public}d", path.c_str(), err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_GET_INFO, err);
         return false;
     }
 
     DecodeOptions decodeOpts;
-    decodeOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
-    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    Size targetSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
+    if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
+        MEDIA_ERR_LOG("Failed to generate decodeOpts, pixelmap path %{private}s", path.c_str());
+        return false;
+    }
     data.source = imageSource->CreatePixelMap(decodeOpts, err);
     if ((err != E_OK) || (data.source == nullptr)) {
-        MEDIA_ERR_LOG("Failed to create pixelmap path %{private}s err %{public}d",
-            path.c_str(), err);
-        if (err != E_OK) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-                {KEY_ERR_CODE, static_cast<int32_t>(err)}, {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        }
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_CREATE_PIXELMAP, err);
+        return false;
+    }
+    if (!NeedAutoResize(targetSize) && !ScaleTargetPixelMap(data, targetSize)) {
+        MEDIA_ERR_LOG("Failed to scale target, pixelmap path %{private}s", path.c_str());
         return false;
     }
     tracer.Finish();
 
     int intTempMeta;
-    err = imageSource->GetImagePropertyInt(0, MEDIA_DATA_IMAGE_ORIENTATION, intTempMeta);
+    err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
     if (err == E_OK) {
         data.degrees = static_cast<float>(intTempMeta);
     }
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_IMAGE, imageInfo.size.width,
+        imageInfo.size.height);
     return true;
 }
 
@@ -1149,9 +1203,6 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
         ret = LoadImageFile(data, isThumbnail, desiredSize, targetPath);
     }
     if (!ret || (data.source == nullptr)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     tracer.Finish();
@@ -1161,9 +1212,6 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
         PostProc postProc;
         if (!postProc.CenterScale(desiredSize, *data.source)) {
             MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-                {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
             return false;
         }
     }
@@ -1376,10 +1424,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     int64_t length = static_cast<int64_t>(st.st_size);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
     if (ret != 0) {
-        MEDIA_ERR_LOG("SetSource fail");
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_SET_SOURCE, ret);
         (void)close(fd);
         return E_ERR;
     }
@@ -1414,7 +1459,6 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize.width = size.width;
     decodeOpts.desiredSize.height = size.height;
-    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     if (err != Media::SUCCESS) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
@@ -1465,19 +1509,17 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
             return isDelete;
         }
     }
-    if (DeleteThumbFile(tmpData, ThumbnailType::YEAR)) {
+    if (!opts.dateAdded.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
         isDelete = true;
     }
-    if (DeleteThumbFile(tmpData, ThumbnailType::MTH)) {
+    if (!opts.dateAdded.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC)) {
         isDelete = true;
     }
     if (DeleteThumbFile(tmpData, ThumbnailType::THUMB)) {
         isDelete = true;
     }
-    if (ThumbnailUtils::IsSupportGenAstc()) {
-        if (DeleteThumbFile(tmpData, ThumbnailType::THUMB_ASTC)) {
-            isDelete = true;
-        }
+    if (ThumbnailUtils::IsSupportGenAstc() && DeleteThumbFile(tmpData, ThumbnailType::THUMB_ASTC)) {
+        isDelete = true;
     }
     if (DeleteThumbFile(tmpData, ThumbnailType::LCD)) {
         isDelete = true;
@@ -1736,18 +1778,25 @@ bool ThumbnailUtils::GenerateKvStoreKey(const std::string &fieldId, const std::s
         MEDIA_ERR_LOG("dateAdded is empty");
         return false;
     }
-    if (dateAdded.length() < MAX_TIMEID_LENGTH) {
-        MEDIA_ERR_LOG("dateAdded invalid");
-        return false;
-    }
 
     size_t length = fieldId.length();
     if (length >= MAX_FIELD_LENGTH) {
         MEDIA_ERR_LOG("fieldId too long");
         return false;
     }
-    string assembledFieldId = KVSTORE_KEY_TEMPLATE.substr(length) + fieldId;
-    key = dateAdded.substr(0, MAX_TIMEID_LENGTH) + assembledFieldId;
+    std::string assembledFieldId = KVSTORE_FIELD_ID_TEMPLATE.substr(length) + fieldId;
+
+    length = dateAdded.length();
+    std::string assembledDateAdded;
+    if (length > MAX_DATE_ADDED_LENGTH) {
+        MEDIA_ERR_LOG("dateAdded invalid, fieldId:%{public}s", fieldId.c_str());
+        return false;
+    } else if (length == MAX_DATE_ADDED_LENGTH) {
+        assembledDateAdded = dateAdded;
+    } else {
+        assembledDateAdded = KVSTORE_DATE_ADDED_TEMPLATE.substr(length) + dateAdded;
+    }
+    key = assembledDateAdded.substr(0, MAX_TIMEID_LENGTH) + assembledFieldId;
     return true;
 }
 
@@ -1837,5 +1886,32 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
     resultSet->Close();
 }
 
+bool ThumbnailUtils::DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type)
+{
+    string key;
+    if (!GenerateKvStoreKey(opts.row, opts.dateAdded, key)) {
+        MEDIA_ERR_LOG("GenerateKvStoreKey failed");
+        return false;
+    }
+
+    std::shared_ptr<MediaLibraryKvStore> kvStore;
+    if (type == ThumbnailType::MTH_ASTC) {
+        kvStore = MediaLibraryKvStoreManager::GetInstance()
+            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
+    } else if (type == ThumbnailType::YEAR_ASTC) {
+        kvStore = MediaLibraryKvStoreManager::GetInstance()
+            .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC);
+    } else {
+        MEDIA_ERR_LOG("invalid thumbnailType");
+        return false;
+    }
+    if (kvStore == nullptr) {
+        MEDIA_ERR_LOG("kvStore is nullptr");
+        return false;
+    }
+
+    int status = kvStore->Delete(key);
+    return status == E_OK;
+}
 } // namespace Media
 } // namespace OHOS

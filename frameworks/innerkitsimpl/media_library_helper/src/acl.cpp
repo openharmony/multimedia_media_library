@@ -194,7 +194,6 @@ void InitSandboxGroupEntry(AclXattrEntry& entry, uint32_t id, uint16_t access)
     {
        entry.perm.SetE();
     }
-    
 }
 
 int32_t Acl::AclSetDefault()

@@ -26,7 +26,21 @@
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "uri.h"
+#include "vision_aesthetics_score_column.h"
+#include "vision_album_column.h"
+#include "vision_column_comm.h"
 #include "vision_column.h"
+#include "vision_composition_column.h"
+#include "vision_face_tag_column.h"
+#include "vision_image_face_column.h"
+#include "vision_label_column.h"
+#include "vision_object_column.h"
+#include "vision_ocr_column.h"
+#include "vision_photo_map_column.h"
+#include "vision_recommendation_column.h"
+#include "vision_saliency_detect_column.h"
+#include "vision_segmentation_column.h"
+#include "vision_total_column.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -47,6 +61,8 @@ constexpr int32_t FAVORITE_PAGE = 3;
 constexpr int32_t UNFAVORITE_PAGE = 0;
 constexpr int32_t DISMISS_ASSET_ALBUM_ID = -2;
 constexpr int32_t TEST_COUNT = -1;
+constexpr int32_t FACE_FINISH_STATE = 3;
+constexpr int32_t TAG_IS_ME_NUMBER = 500;
 void CleanVisionData()
 {
     DataShare::DataSharePredicates predicates;
@@ -1518,19 +1534,33 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_002, TestSize.Leve
     int count = -1;
     resultSet->GetInt(0, count);
     EXPECT_EQ(count, 0);
-    MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_002::mapId = %{public}d. End", mapId);
+    MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_002::count = %{public}d. End", count);
+}
+
+int32_t CreateSingleImage(string displayname)
+{
+    Uri createAssetUri("file://media/Photo/create");
+    string relativePath = "Pictures/";
+    MediaType mediaType = MEDIA_TYPE_IMAGE;
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, displayname);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, relativePath);
+    MediaLibraryCommand cmd(createAssetUri);
+    return MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 }
 
 HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_003::Start");
     int32_t albumId = CreateAnalysisAlbum("5");
-    InsertAnalysisMap(albumId, 3);
-    InsertAnalysisMap(albumId, 4);
-
+    int32_t id1 = CreateSingleImage("AnalysisAlbumMapTest1.jpg");
+    int32_t id2 = CreateSingleImage("AnalysisAlbumMapTest2.jpg");
+    InsertAnalysisMap(albumId, id1);
+    InsertAnalysisMap(albumId, id2);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, {
-        "file://media/Photo/3", "file://media/Photo/4"
+        "file://media/Photo/" + to_string(id1), "file://media/Photo/" + to_string(id2)
     });
     Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
     MediaLibraryCommand queryCmd(queryAlbumUri);
@@ -1544,7 +1574,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Leve
     resultSet->GoToFirstRow();
     int count = -1;
     resultSet->GetInt(0, count);
-    EXPECT_EQ(count, 0);
+    EXPECT_EQ(count, 2);
 }
 
 void CreatTestImage()
@@ -1736,10 +1766,11 @@ void InsertTotalTest()
     MEDIA_INFO_LOG("InsertTotalTest");
     Uri totalUri(URI_TOTAL);
     MediaLibraryCommand cmd(totalUri);
-    DataShare::DataShareValuesBucket valuesBucket;
-    for (int i = TAG_ID2_COUNT; i < TAG_ID1_COUNT; i++) {
+    for (int i = TAG_ID2_COUNT; i < TAG_IS_ME_NUMBER; i++) {
+        DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(FILE_ID, i);
         valuesBucket.Put(STATUS, 1);
+        valuesBucket.Put(FACE, FACE_FINISH_STATE);
         MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     }
 }
@@ -2374,7 +2405,6 @@ void SetFavorite(string tagId, int value)
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_SUBTYPE, PORTRAIT);
     valuesBucket.Put(USER_DISPLAY_LEVEL, value);
-
     MediaLibraryDataManager::GetInstance()->Update(queryCmd, valuesBucket, predicates);
 }
 
