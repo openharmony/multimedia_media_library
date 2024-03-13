@@ -1170,6 +1170,10 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService(
 
 void MediaLibraryDataManager::InitACLPermission()
 {
+    if (Acl::AclSetDB() != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl database permission");
+    }
+
     if (access(THUMB_DIR.c_str(), F_OK) == 0) {
         return;
     }

@@ -178,13 +178,52 @@ void InitSandboxEntry(AclXattrEntry &entry)
     entry.perm.SetE();
 }
 
+void InitSandboxGroupEntry(AclXattrEntry& entry, uint32_t id, uint16_t access)
+{
+    entry.tag = ACL_TAG::GROUP;
+    entry.id = id;
+    if (access & ACL_PERM::Value::READ)
+    {
+       entry.perm.SetR();
+    }
+    if (access & ACL_PERM::Value::WRITE)
+    {
+       entry.perm.SetW();
+    }
+    if (access & ACL_PERM::Value::EXECUTE)
+    {
+       entry.perm.SetE();
+    }
+    
+}
+
 int32_t Acl::AclSetDefault()
 {
     AclXattrEntry entry = {};
-    InitSandboxEntry(entry);
+    InitSandboxGroupEntry(entry, THUMB_ACL_GROUP, ACL_PERM::READ | ACL_PERM::Value::EXECUTE);
+    int32_t err = EntryInsertHelper(entry, THUMB_DIR);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl permission for the Photo dir");
+    }
+    return err;
+}
 
+int32_t Acl::SetDB()
+{
+    AclXattrEntry dbEntry = {};
+    InitSandboxGroupEntry(entry, MEDIA_DB_ACL_GROUP, ACL_PERM::READ | ACL_PERM::Value::WRITE | 
+        ACL_PERM::Value::EXECUTE);
+    int32_t err = EntryInsertHelper(entry, DB_DIR);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl permission for the database");
+    }
+    return err;
+}
+
+int32_t Acl::EntryInsertHelper(AclXattrEntry &entry, const std::string& path)
+{
     /* init acl from file's mode */
-    Acl acl = AclFromMode(THUMB_DIR);
+    Acl acl = AclFromMode(path);
     if (acl.IsEmpty()) {
         MEDIA_ERR_LOG("Failed to generate ACL from file's mode: %{public}s", std::strerror(errno));
         return E_ERR;
@@ -203,7 +242,7 @@ int32_t Acl::AclSetDefault()
         MEDIA_ERR_LOG("Failed to serialize ACL into binary: %{public}s", std::strerror(errno));
         return E_ERR;
     }
-    if (setxattr(THUMB_DIR.c_str(), ACL_XATTR_DEFAULT, buf, bufSize, 0) == -1) {
+    if (setxattr(path.c_str(), ACL_XATTR_DEFAULT, buf, bufSize, 0) == -1) {
         MEDIA_ERR_LOG("Failed to write into file's xattr: %{public}s", std::strerror(errno));
         return E_ERR;
     }
