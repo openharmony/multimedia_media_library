@@ -47,12 +47,12 @@ enum class ACL_TAG : uint16_t {
  */
 class ACL_PERM {
     uint16_t value = 0;
+public:
     enum Value : uint16_t {
         READ    = 0x04,
         WRITE   = 0x02,
         EXECUTE = 0x01,
     };
-public:
     ACL_PERM() = default;
     ACL_PERM(const uint16_t x)
     {
@@ -94,8 +94,10 @@ public:
 constexpr uint32_t ACL_EA_VERSION = 0x0002;
 constexpr uint32_t ACL_UNDEFINED_ID = (uint32_t)-1;
 constexpr uint32_t THUMB_ACL_GROUP = 2008;
+constexpr uint32_t MEDIA_DB_ACL_GROUP = 3008;
 
 EXPORT const std::string THUMB_DIR = "/storage/cloud/files/.thumbs/Photo";
+EXPORT const std::string DB_DIR = "/data/storage/el2/database/";
 /*
  * ACL data structure
  */
@@ -139,6 +141,8 @@ public:
     EXPORT char *Serialize(size_t &bufSize);
 
     EXPORT static int32_t AclSetDefault();
+    EXPORT static int32_t AclSetDB();
+    EXPORT static int32_t EntryInsertHelper(AclXattrEntry& entry, const std::string& path);
     EXPORT ~Acl();
 private:
     void CompareInsertEntry(const AclXattrEntry &entry);
