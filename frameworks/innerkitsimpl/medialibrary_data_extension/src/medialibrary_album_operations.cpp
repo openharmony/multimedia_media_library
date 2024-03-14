@@ -69,6 +69,7 @@ constexpr int32_t QUERY_PROB_IS_ME_VALUE = 1;
 constexpr int32_t QUERY_IS_ME_VALUE = 2;
 constexpr int32_t FACE_ANALYSISED_STATE = 3;
 constexpr int32_t FACE_NO_NEED_ANALYSIS_STATE = -2;
+constexpr int32_t LOCAL_MARK = 1;
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -444,6 +445,7 @@ static void PrepareUserAlbum(const string &albumName, const string &relativePath
     values.PutInt(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::USER);
     values.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::USER_GENERIC);
     values.PutLong(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    values.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, LOCAL_MARK);
 
     if (!relativePath.empty()) {
         values.PutString(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, relativePath);
