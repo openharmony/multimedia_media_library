@@ -619,6 +619,7 @@ HWTEST_F(PhotoAlbumTest, photoalbum_order_album_008, TestSize.Level0)
     int32_t currentOrder = GetAlbumOrder(3);
     int32_t maxAlbumOrder = -1;
     GetMaxAlbumOrder(maxAlbumOrder);
+    // Expectation vs EQ
     EXPECT_EQ(currentOrder, maxAlbumOrder);
     MEDIA_INFO_LOG("photoalbum_order_album_008 end");
 }
