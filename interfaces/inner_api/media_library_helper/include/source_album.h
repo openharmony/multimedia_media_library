@@ -212,7 +212,7 @@ const std::string INSERT_SOURCE_ALBUM_MAP_FROM_PHOTOS_FULL = "INSERT INTO " + Ph
     " WHERE PA." + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SOURCE) +
     " AND PA." + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC);
 
-const std::string ADD_SOURCE_ALBUM_IS_LOCAL = "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
+const std::string ADD_PHOTO_ALBUM_IS_LOCAL = "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
     PhotoAlbumColumns::ALBUM_IS_LOCAL + " INT";
 } // namespace Media
 } // namespace OHOS
