@@ -952,6 +952,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_KNOWLEDGE_INDEX,
     CREATE_CITY_NAME_INDEX,
     CREATE_LOCATION_KEY_INDEX,
+    ADD_IS_LOCAL_COLUMN_FOR_ALBUM,
+    ADD_PHOTO_ALBUM_IS_LOCAL,
 
     // search
     CREATE_SEARCH_TOTAL_TABLE,
@@ -2018,7 +2020,7 @@ void AddIsLocalAlbum(RdbStore &store)
 {
     const vector<string> sqls = {
         ADD_IS_LOCAL_COLUMN_FOR_ALBUM,
-        ADD_SOURCE_ALBUM_IS_LOCAL,
+        ADD_PHOTO_ALBUM_IS_LOCAL,
     };
     MEDIA_INFO_LOG("start add islocal column");
     ExecSqls(sqls, store);

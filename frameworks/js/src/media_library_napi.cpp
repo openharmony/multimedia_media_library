@@ -5489,9 +5489,8 @@ static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info inf
         NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
         return nullptr;
     }
-    const int32_t localMark = 1;
     context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
-    context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_IS_LOCAL, localMark);
+    context->valuesBucket.Put(PhotoAlbumColumns::ALBUM_IS_LOCAL, 1); // local album ID is 1.
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
