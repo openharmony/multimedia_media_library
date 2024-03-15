@@ -2644,6 +2644,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         PhotoColumn::PHOTO_USER_COMMENT,
         PhotoColumn::CAMERA_SHOT_KEY,
         PENDING_STATUS,
+        MEDIA_DATA_DB_DATE_TRASHED_MS,
     };
 
     if (SYSTEM_API_KEYS.find(key) != SYSTEM_API_KEYS.end() && !MediaLibraryNapiUtils::IsSystemApp()) {
@@ -2679,6 +2680,24 @@ static napi_value HandleGettingSpecialKey(napi_env env, const string &key, const
     return jsResult;
 }
 
+static napi_value HandleDateTransitionKey(napi_env env, const string &key, const shared_ptr<FileAsset> &fileAssetPtr)
+{
+    napi_value jsResult = nullptr;
+    if (fileAssetPtr->GetMemberMap().count(key) == 0) {
+        NapiError::ThrowError(env, JS_E_FILE_KEY);
+        return jsResult;
+    }
+
+    auto m = fileAssetPtr->GetMemberMap().at(key);
+    if (m.index() == MEMBER_TYPE_INT64) {
+        napi_create_int64(env, get<int64_t>(m), &jsResult);
+    } else {
+        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
+        return jsResult;
+    }
+    return jsResult;
+}
+
 static inline int64_t GetCompatDate(const string inputKey, const int64_t date)
 {
     if (inputKey == MEDIA_DATA_DB_DATE_ADDED || inputKey == MEDIA_DATA_DB_DATE_MODIFIED ||
@@ -2705,6 +2724,10 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
     napi_value jsResult = nullptr;
     auto obj = asyncContext->objectInfo;
     napi_get_undefined(env, &jsResult);
+    if (DATE_TRANSITION_MAP.count(inputKey) != 0) {
+        return HandleDateTransitionKey(env, DATE_TRANSITION_MAP.at(inputKey), obj->fileAssetPtr);
+    }
+
     if (obj->fileAssetPtr->GetMemberMap().count(inputKey) == 0) {
         // no exist throw error
         NapiError::ThrowError(env, JS_E_FILE_KEY);
