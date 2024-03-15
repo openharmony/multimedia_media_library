@@ -1447,6 +1447,7 @@ void MediaLibraryDataManager::UnregisterTimer()
     lock_guard<recursive_mutex> lock(timerMutex_);
     timer_.Unregister(timerId_);
     timer_.Shutdown();
+    timerId_ = 0;
 }
 }  // namespace Media
 }  // namespace OHOS
