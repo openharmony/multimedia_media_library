@@ -43,6 +43,7 @@ public:
     static const std::string ALBUM_LONGITUDE EXPORT;
     static const std::string ALBUM_BUNDLE_NAME EXPORT;
     static const std::string ALBUM_LOCAL_LANGUAGE EXPORT;
+    static const std::string ALBUM_IS_LOCAL EXPORT;
 
     // For api9 compatibility
     static const std::string ALBUM_RELATIVE_PATH EXPORT;
