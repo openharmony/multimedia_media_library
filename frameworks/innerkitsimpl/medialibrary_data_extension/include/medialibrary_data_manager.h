@@ -144,6 +144,7 @@ private:
     std::atomic<int> refCnt_ {0};
     std::shared_ptr<MediaDataShareExtAbility> extension_;
     std::shared_ptr<CloudThumbnailObserver> cloudDataObserver_;
+    static std::recursive_mutex timerMutex_;
     static Utils::Timer timer_;
     static uint32_t timerId_;
 };

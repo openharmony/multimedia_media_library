@@ -104,6 +104,7 @@ namespace Media {
 shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
+recursive_mutex MediaLibraryDataManager::timerMutex_;
 Utils::Timer MediaLibraryDataManager::timer_("download_cloud_files");
 uint32_t MediaLibraryDataManager::timerId_ = 0;
 
@@ -1427,20 +1428,25 @@ static void DownloadCloudFiles()
 
 void MediaLibraryDataManager::RegisterTimer()
 {
-    UnregisterTimer();
-    timerId_ = timer_.Register(DownloadCloudFiles, BATCH_DOWNLOAD_INTERVAL);
+    lock_guard<recursive_mutex> lock(timerMutex_);
+    if (timerId_ > 0) {
+        UnregisterTimer();
+    }
     timer_.Setup();
+    timerId_ = timer_.Register(DownloadCloudFiles, BATCH_DOWNLOAD_INTERVAL);
 }
 
 void MediaLibraryDataManager::StopTimer()
 {
+    lock_guard<recursive_mutex> lock(timerMutex_);
     timer_.Shutdown();
 }
 
 void MediaLibraryDataManager::UnregisterTimer()
 {
-    timer_.Shutdown();
+    lock_guard<recursive_mutex> lock(timerMutex_);
     timer_.Unregister(timerId_);
+    timer_.Shutdown();
 }
 }  // namespace Media
 }  // namespace OHOS
