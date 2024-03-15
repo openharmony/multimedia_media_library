@@ -382,6 +382,44 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_005, TestSize.Level0)
 }
 
 /**
+ * @tc.name: photoalbum_create_album_006
+ * @tc.desc: Create an mark album
+ * @tc.type: FUNC
+ * @tc.require: issueI97YYD
+ */
+HWTEST_F(PhotoAlbumTest, photoalbum_create_album_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("photoalbum_create_album_006 enter");
+    const string albumName = "photoalbum_create_album_006";
+    DataShareValuesBucket values;
+    values.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    values.Put(PhotoAlbumColumns::ALBUM_IS_LOCAL, 1);
+    Uri uri(URI_CREATE_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(uri);
+    int32_t result = MediaLibraryDataManager::GetInstance()->Insert(cmd, values);
+    EXPECT_GT(result, 0);
+
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_IS_LOCAL, 1);
+
+    const vector<string> columns = {
+        PhotoAlbumColumns::ALBUM_NAME,
+        PhotoAlbumColumns::ALBUM_IS_LOCAL,
+    };
+
+    shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, columns);
+    int32_t count = -1;
+    int32_t ret = resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to get count! err: %{public}d", ret);
+    MEDIA_INFO_LOG("Query count: %{public}d", count);
+    ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to GoToFirstRow! err: %{public}d", ret);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_IS_LOCAL, TYPE_INT32, 1);
+    MEDIA_INFO_LOG("photoalbum_create_album_006 exit");
+}
+
+/**
  * @tc.name: photoalbum_delete_album_001
  * @tc.desc: Delete a photo album.
  *           1. Create an album and then delete it.
