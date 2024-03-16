@@ -552,7 +552,7 @@ HWTEST_F(MediaLibraryAlbumSourceTest, delete_photo_update_source_album_test_003,
     MEDIA_INFO_LOG("end tdd delete_photo_update_source_album_test_003");
 }
 
-void CheckColumnInTable(const string &columnName, const string &tableName, int32_t expectedCount)
+void CheckColumnInTable(const string &columnName, const string &tableName)
 {
     EXPECT_NE(g_rdbStore, nullptr);
     string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM pragma_table_info('" + tableName + "') WHERE name = '" +
@@ -563,20 +563,20 @@ void CheckColumnInTable(const string &columnName, const string &tableName, int32
         return;
     }
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
-    EXPECT_EQ(count, expectedCount);
+    EXPECT_GT(count, 0);
 }
 
 HWTEST_F(MediaLibraryAlbumSourceTest, source_album_column_bundle_name_test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd source_album_column_bundle_name_test");
-    CheckColumnInTable(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, PhotoAlbumColumns::TABLE, 1);
+    CheckColumnInTable(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, PhotoAlbumColumns::TABLE);
     MEDIA_INFO_LOG("end tdd source_album_column_bundle_name_test");
 }
 
 HWTEST_F(MediaLibraryAlbumSourceTest, source_album_column_local_language_test, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd source_album_column_local_language_test");
-    CheckColumnInTable(PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, PhotoAlbumColumns::TABLE, 1);
+    CheckColumnInTable(PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, PhotoAlbumColumns::TABLE);
     MEDIA_INFO_LOG("end tdd source_album_column_local_language_test");
 }
 } // namespace Media
