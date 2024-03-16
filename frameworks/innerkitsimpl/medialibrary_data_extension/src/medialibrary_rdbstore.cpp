@@ -2014,6 +2014,16 @@ void AddAddressDescriptionColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddIsLocalAlbum(RdbStore &store)
+{
+    const vector<string> sqls = {
+        ADD_IS_LOCAL_COLUMN_FOR_ALBUM,
+        ADD_PHOTO_ALBUM_IS_LOCAL,
+    };
+    MEDIA_INFO_LOG("start add islocal column");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2200,6 +2210,13 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
+static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_IS_LOCAL_ALBUM) {
+        AddIsLocalAlbum(store);
+    }
+}
+
 static void CheckDateAdded(RdbStore &store)
 {
     vector<string> sqls = {
@@ -2279,6 +2296,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeOtherTable(store, oldVersion);
     UpgradeGalleryFeatureTable(store, oldVersion);
     UpgradeVisionTable(store, oldVersion);
+    UpgradeAlbumTable(store, oldVersion);
 
     AlwaysCheck(store);
     if (!g_upgradeErr) {

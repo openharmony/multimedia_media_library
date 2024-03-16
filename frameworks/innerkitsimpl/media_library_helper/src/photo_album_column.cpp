@@ -45,6 +45,7 @@ const string PhotoAlbumColumns::ALBUM_LATITUDE = "latitude";
 const string PhotoAlbumColumns::ALBUM_LONGITUDE = "longitude";
 const string PhotoAlbumColumns::ALBUM_BUNDLE_NAME = "bundle_name";
 const string PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE = "local_language";
+const string PhotoAlbumColumns::ALBUM_IS_LOCAL = "is_local";
 
 // For api9 compatibility
 const string PhotoAlbumColumns::ALBUM_RELATIVE_PATH = "relative_path";
@@ -120,7 +121,8 @@ const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     ALBUM_IMAGE_COUNT + " INT DEFAULT 0, " +
     ALBUM_VIDEO_COUNT + " INT DEFAULT 0, " +
     ALBUM_BUNDLE_NAME + " TEXT, " +
-    ALBUM_LOCAL_LANGUAGE + " TEXT)";
+    ALBUM_LOCAL_LANGUAGE + " TEXT, " +
+    ALBUM_IS_LOCAL + " INT) ";
 
 // Create indexes
 const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album_types" + " ON " + TABLE +

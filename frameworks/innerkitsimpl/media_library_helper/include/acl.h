@@ -143,6 +143,7 @@ public:
     EXPORT static int32_t AclSetDefault();
     EXPORT static int32_t AclSetDB();
     EXPORT static int32_t EntryInsertHelper(AclXattrEntry& entry, const std::string& path);
+    EXPORT static void listAttr(const std::string& path);
     EXPORT ~Acl();
 private:
     void CompareInsertEntry(const AclXattrEntry &entry);

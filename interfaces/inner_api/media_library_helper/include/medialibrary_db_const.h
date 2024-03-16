@@ -16,13 +16,15 @@
 #ifndef INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_DATA_ABILITY_CONST_H_
 #define INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_DATA_ABILITY_CONST_H_
 
+#include <map>
+
 #include "medialibrary_type_const.h"
 #include "media_column.h"
 #include "userfilemgr_uri.h"
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 58;
+const int32_t MEDIA_RDB_VERSION = 59;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -84,6 +86,7 @@ enum {
     VERSION_ALBUM_REFRESH = 56,
     VERSION_ADD_FAVORITE_INDEX = 57,
     VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS = 58,
+    VERSION_ADD_IS_LOCAL_ALBUM = 59,
 };
 
 enum {
@@ -171,9 +174,11 @@ const std::string MEDIA_DATA_DB_SIZE = "size";
 const std::string MEDIA_DATA_DB_PARENT_ID = "parent";
 const std::string MEDIA_DATA_DB_DATE_MODIFIED = "date_modified";
 const std::string MEDIA_DATA_DB_DATE_MODIFIED_S = "date_modified_s";
+const std::string MEDIA_DATA_DB_DATE_MODIFIED_MS = "date_modified_ms";
 const std::string MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND = "CAST(date_modified / 1000 AS BIGINT) AS date_modified_s";
 const std::string MEDIA_DATA_DB_DATE_ADDED = "date_added";
 const std::string MEDIA_DATA_DB_DATE_ADDED_S = "date_added_s";
+const std::string MEDIA_DATA_DB_DATE_ADDED_MS = "date_added_ms";
 const std::string MEDIA_DATA_DB_DATE_ADDED_TO_SECOND = "CAST(date_added / 1000 AS BIGINT) AS date_added_s";
 const std::string MEDIA_DATA_DB_MIME_TYPE = "mime_type";
 const std::string MEDIA_DATA_DB_TITLE = "title";
@@ -212,6 +217,7 @@ const std::string MEDIA_DATA_DB_IS_TRASH = "is_trash";
 const std::string MEDIA_DATA_DB_RECYCLE_PATH = "recycle_path";
 const std::string MEDIA_DATA_DB_DATE_TRASHED = "date_trashed";
 const std::string MEDIA_DATA_DB_DATE_TRASHED_S = "date_trashed_s";
+const std::string MEDIA_DATA_DB_DATE_TRASHED_MS = "date_trashed_ms";
 const std::string MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND = "CAST(date_trashed / 1000 AS BIGINT) AS date_trashed_s";
 const std::string MEDIA_DATA_DB_IS_PENDING = "is_pending";
 const std::string MEDIA_DATA_DB_TIME_PENDING = "time_pending";
@@ -226,6 +232,12 @@ const std::string MEDIA_DATA_DB_REFERENCE_ALBUM_ID = "reference_album_id";
 const std::string MEDIA_DATA_DB_ALBUM_NAME = "album_name";
 const std::string MEDIA_DATA_DB_COUNT = "count";
 const std::string MEDIA_DATA_BUNDLENAME = "bundle_name";
+
+const std::map<std::string, std::string> DATE_TRANSITION_MAP = {
+    { MEDIA_DATA_DB_DATE_MODIFIED_MS, MEDIA_DATA_DB_DATE_MODIFIED },
+    { MEDIA_DATA_DB_DATE_ADDED_MS, MEDIA_DATA_DB_DATE_ADDED },
+    { MEDIA_DATA_DB_DATE_TRASHED_MS, MEDIA_DATA_DB_DATE_TRASHED },
+};
 
 // ringtone uri constants
 const std::string MEDIA_DATA_DB_RINGTONE_URI = "ringtone_uri";
