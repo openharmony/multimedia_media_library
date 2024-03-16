@@ -2242,17 +2242,17 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
-static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
-{
-    if (oldVersion < VERSION_ADD_MISSING_UPDATES) {
-        AddMissingUpdates(store);
-    }
-}
-
 static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_IS_LOCAL_ALBUM) {
         AddIsLocalAlbum(store);
+    }
+}
+
+static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_MISSING_UPDATES) {
+        AddMissingUpdates(store);
     }
 }
 
@@ -2352,7 +2352,7 @@ bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &colum
         columnName + "'";
     auto resultSet = store.QuerySql(querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Can not get column count");
+        MEDIA_ERR_LOG("Get column count failed");
         UpdateFail(__FILE__, __LINE__);
         return false;
     }

@@ -88,6 +88,7 @@ void InitSourceAlbumTrigger()
     static const vector<string> executeSqlStrs = {
         INSERT_PHOTO_INSERT_SOURCE_ALBUM,
         INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        CREATE_SOURCE_ALBUM_INDEX,
     };
     MEDIA_INFO_LOG("start add source album trigger");
     ExecSqls(executeSqlStrs);
@@ -110,7 +111,8 @@ void ClearData()
         DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
         DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
-        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM
+        DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_SOURCE_ALBUM_INDEX,
     };
     MEDIA_INFO_LOG("start clear data");
     ExecSqls(executeSqlStrs);
@@ -548,6 +550,34 @@ HWTEST_F(MediaLibraryAlbumSourceTest, delete_photo_update_source_album_test_003,
     // verify
     ValidPhotoAlbumValue(packageName, ONE, ZERO, "");
     MEDIA_INFO_LOG("end tdd delete_photo_update_source_album_test_003");
+}
+
+void CheckColumnInTable(const string &columnName, const string &tableName, int32_t expectedCount)
+{
+    EXPECT_NE(g_rdbStore, nullptr);
+    string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM pragma_table_info('" + tableName + "') WHERE name = '" +
+        columnName + "'";
+    auto resultSet = g_rdbStore->QuerySql(querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Get column count failed");
+        return;
+    }
+    int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
+    EXPECT_EQ(count, expectedCount);
+}
+
+HWTEST_F(MediaLibraryAlbumSourceTest, source_album_column_bundle_name_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd source_album_column_bundle_name_test");
+    CheckColumnInTable(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, PhotoAlbumColumns::TABLE, 1);
+    MEDIA_INFO_LOG("end tdd source_album_column_bundle_name_test");
+}
+
+HWTEST_F(MediaLibraryAlbumSourceTest, source_album_column_local_language_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd source_album_column_local_language_test");
+    CheckColumnInTable(PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE, PhotoAlbumColumns::TABLE, 1);
+    MEDIA_INFO_LOG("end tdd source_album_column_local_language_test");
 }
 } // namespace Media
 } // namespace OHOS
