@@ -30,10 +30,22 @@ public:
     ~DfxCollector();
     void CollectThumbnailError(const std::string &path, int32_t method, int32_t errorCode);
     std::unordered_map<std::string, ThumbnailErrorInfo> GetThumbnailError();
+    std::unordered_map<std::string, CommonBehavior> GetCommonBehavior();
+    void AddCommonBahavior(std::string bundleName, int32_t type);
+    void CollectDeleteBehavior(std::string bundleName, int32_t type, int32_t size);
+    std::unordered_map<std::string, int32_t> GetDeleteBehavior(int32_t type);
 
 private:
     std::mutex thumbnailErrorLock_;
+    std::mutex commonBehaviorLock_;
+    std::mutex deleteToTrashLock_;
+    std::mutex deleteFromDiskLock_;
+    std::mutex removeLock_;
     std::unordered_map<std::string, ThumbnailErrorInfo> thumbnailErrorMap_;
+    std::unordered_map<std::string, CommonBehavior> commonBehaviorMap_;
+    std::unordered_map<std::string, int32_t> deleteToTrashMap_;
+    std::unordered_map<std::string, int32_t> deleteFromDiskMap_;
+    std::unordered_map<std::string, int32_t> removeMap_;
 };
 } // namespace Media
 } // namespace OHOS

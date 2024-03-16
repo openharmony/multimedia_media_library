@@ -1377,8 +1377,9 @@ static void ModifySourceAlbumTriggers(RdbStore &store)
     };
     MEDIA_INFO_LOG("start modify source album triggers");
     ExecSqls(executeSqlStrs, store);
+    std::unordered_map<int32_t, int32_t> updateResult;
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult);
     MEDIA_INFO_LOG("end modify source album triggers");
 }
 

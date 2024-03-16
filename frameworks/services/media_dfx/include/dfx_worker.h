@@ -17,9 +17,32 @@
 #define OHOS_MEDIA_DFX_WORKER_H
 
 #include <thread>
+#include <queue>
+#include <condition_variable>
 
 namespace OHOS {
 namespace Media {
+class DfxData {
+public:
+    DfxData() {};
+    virtual ~DfxData() {};
+};
+
+using DfxExecute = void (*)(DfxData *data);
+
+class DfxTask {
+public:
+    DfxTask(DfxExecute executor, DfxData *data) : executor_(executor), data_(data) {}
+    DfxTask() : DfxTask(nullptr, nullptr) {}
+    virtual ~DfxTask()
+    {
+        delete data_;
+        data_ = nullptr;
+    }
+
+    DfxExecute executor_;
+    DfxData *data_;
+};
 class DfxWorker {
 public:
     DfxWorker();
@@ -27,19 +50,32 @@ public:
     static std::shared_ptr<DfxWorker> GetInstance();
     void Init();
     void End();
+    void AddTask(const std::shared_ptr<DfxTask> &task);
 
 private:
     void InitCycleThread();
+    void InitDelayThread();
     bool PrepareVersionUpdate();
+    bool IsTaskQueueEmpty();
+    void WaitForTask();
+    std::shared_ptr<DfxTask> GetTask();
 
 private:
     int64_t lastReportTime_;
+    int64_t lastMiddleReportTime_;
     int32_t thumbnailVersion_;
     static std::shared_ptr<DfxWorker> dfxWorkerInstance_;
     std::thread cycleThread_;
+    std::thread delayThread_;
     bool isEnd_;
     int32_t shortTime_;
+    int32_t middleTime_;
     int32_t longTime_;
+    std::mutex taskLock_;
+    std::mutex workLock_;
+    std::condition_variable workCv_;
+    std::queue<std::shared_ptr<DfxTask>> taskQueue_;
+    bool isThreadRunning_;
 };
 } // namespace Media
 } // namespace OHOS

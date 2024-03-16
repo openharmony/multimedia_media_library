@@ -120,5 +120,76 @@ void DfxReporter::ReportThumbnailError()
     prefs->Clear();
     prefs->FlushSync();
 }
+
+void DfxReporter::ReportCommonBehavior()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(COMMON_BEHAVIOR_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    map<string, NativePreferences::PreferencesValue> errorMap = prefs->GetAll();
+    for (auto &erroInfo : errorMap) {
+        string bundleName = erroInfo.first;
+        int32_t times = static_cast<int32_t>(erroInfo.second);
+        int ret = HiSysEventWrite(
+            MEDIA_LIBRARY,
+            "MEDIALIB_COMMON_STATISTIC",
+            HiviewDFX::HiSysEvent::EventType::STATISTIC,
+            "BUNDLE_NAME", bundleName,
+            "TIMES", times);
+        if (ret != 0) {
+            MEDIA_ERR_LOG("ReportCommonBehavior error:%{public}d", ret);
+        }
+    }
+    prefs->Clear();
+    prefs->FlushSync();
+}
+
+void DfxReporter::ReportDeleteStatistic()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DELETE_BEHAVIOR_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    map<string, NativePreferences::PreferencesValue> errorMap = prefs->GetAll();
+    for (auto &erroInfo : errorMap) {
+        string bundleName = erroInfo.first;
+        int32_t times = static_cast<int32_t>(erroInfo.second);
+        int ret = HiSysEventWrite(
+            MEDIA_LIBRARY,
+            "MEDIALIB_DELETE_STATISTIC",
+            HiviewDFX::HiSysEvent::EventType::STATISTIC,
+            "BUNDLE_NAME", bundleName,
+            "TIMES", times);
+        if (ret != 0) {
+            MEDIA_ERR_LOG("ReportDeleteBehavior error:%{public}d", ret);
+        }
+    }
+    prefs->Clear();
+    prefs->FlushSync();
+}
+
+void DfxReporter::ReportDeleteBehavior(string bundleName, int32_t type, std::string path)
+{
+    if (bundleName == "" || path == "") {
+        return;
+    }
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_DELETE_BEHAVIOR",
+        HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
+        "BUNDLE_NAME", bundleName,
+        "TYPE", type,
+        "PATH", path);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportDeleteBehavior error:%{public}d", ret);
+    }
+}
 } // namespace Media
 } // namespace OHOS

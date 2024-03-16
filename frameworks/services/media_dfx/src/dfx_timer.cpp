@@ -52,6 +52,10 @@ DfxTimer::~DfxTimer()
                 object_, (long long) (timeCost_));
         }
     }
+    if (isReport_) {
+        DfxManager::GetInstance()->HandleCommonBehavior(MediaLibraryBundleManager::GetInstance()->GetClientBundleName(),
+            type_);
+    }
 }
 
 void DfxTimer::End()

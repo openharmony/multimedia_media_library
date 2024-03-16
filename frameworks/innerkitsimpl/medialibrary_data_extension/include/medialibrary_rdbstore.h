@@ -113,8 +113,8 @@ class DeleteFilesTask : public AsyncTaskData {
 public:
     DeleteFilesTask(const std::vector<std::string> &ids, const std::vector<std::string> &paths,
         const std::vector<std::string> &notifyUris, const std::vector<std::string> &dateAddeds,
-        const std::string &table) : ids_(ids), paths_(paths),
-        notifyUris_(notifyUris), dateAddeds_(dateAddeds), table_(table) {}
+        const std::string &table, int32_t deleteRows) : ids_(ids), paths_(paths),
+        notifyUris_(notifyUris), dateAddeds_(dateAddeds), table_(table), deleteRows_(deleteRows) {}
     virtual ~DeleteFilesTask() override = default;
 
     std::vector<std::string> ids_;
@@ -122,6 +122,7 @@ public:
     std::vector<std::string> notifyUris_;
     std::vector<std::string> dateAddeds_;
     std::string table_;
+    int32_t deleteRows_;
 };
 
 #ifdef DISTRIBUTED

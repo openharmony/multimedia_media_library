@@ -49,8 +49,9 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
         RestorePhoto();
         MEDIA_INFO_LOG("migrate database number: %{public}lld, file number: %{public}lld",
             (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
-        MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
-        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(mediaLibraryRdb_);
+        std::unordered_map<int32_t, int32_t>  updateResult;
+        MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_, updateResult);
+        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(mediaLibraryRdb_, updateResult);
         string notifyImage = MediaFileUtils::GetMediaTypeUri(MediaType::MEDIA_TYPE_IMAGE);
         Uri notifyImageUri(notifyImage);
         MediaLibraryDataManager::GetInstance()->NotifyChange(notifyImageUri);

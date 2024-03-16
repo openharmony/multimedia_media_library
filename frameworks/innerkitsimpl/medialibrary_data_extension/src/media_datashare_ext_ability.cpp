@@ -570,12 +570,13 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
 {
     MediaLibraryCommand cmd(uri);
     int32_t err = CheckPermFromUri(cmd, true);
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err < 0) {
+        DfxManager::GetInstance()->HandleNoPermmison(type, object, err);
         return err;
     }
 
-    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
-    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     return MediaLibraryDataManager::GetInstance()->InsertExt(cmd, value, result);
 }
@@ -585,12 +586,13 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
 {
     MediaLibraryCommand cmd(uri);
     int32_t err = CheckPermFromUri(cmd, true);
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err < 0) {
+        DfxManager::GetInstance()->HandleNoPermmison(type, object, err);
         return err;
     }
 
-    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
-    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     return MediaLibraryDataManager::GetInstance()->Update(cmd, value, predicates);
 }
@@ -599,12 +601,13 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
 {
     MediaLibraryCommand cmd(uri, Media::OperationType::DELETE);
     int err = CheckPermFromUri(cmd, true);
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err < 0) {
+        DfxManager::GetInstance()->HandleNoPermmison(type, object, err);
         return err;
     }
 
-    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
-    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     return MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
 }
@@ -628,6 +631,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     }
     int32_t err = CheckPermFromUri(cmd, false);
     if (err < 0) {
+        DfxManager::GetInstance()->HandleNoPermmison(type, object, err);
         auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
         if (uriPermissionClient.VerifyUriPermission(uri, AAFwk::Want::FLAG_AUTH_READ_URI_PERMISSION,
             IPCSkeleton::GetCallingTokenID())) {
@@ -661,11 +665,12 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShare
 {
     MediaLibraryCommand cmd(uri);
     int32_t err = CheckPermFromUri(cmd, true);
+    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
+    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err < 0) {
+        DfxManager::GetInstance()->HandleNoPermmison(type, object, err);
         return err;
     }
-    int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
-    int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     return MediaLibraryDataManager::GetInstance()->BatchInsert(cmd, values);
 }
