@@ -20,6 +20,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <map>
 
 #include "rdb_store.h"
 #include "userfile_manager_types.h"
@@ -40,22 +41,23 @@ public:
     EXPORT static void UpdateUserAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &userAlbumIds = {});
     EXPORT static void UpdateSourceAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const std::vector<std::string> &sourceAlbumIds = {});
+        std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &sourceAlbumIds = {});
     static void UpdateUserAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const std::vector<std::string> &uris);
+        std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &uris);
     EXPORT static void UpdateAnalysisAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const std::vector<std::string> &uris);
+        std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &uris);
     static void UpdateSourceAlbumByUri(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const std::vector<std::string> &uris);
+        std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &uris);
 
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);
-    EXPORT static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    EXPORT static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        std::unordered_map<int32_t, int32_t> &updateResult);
     EXPORT static void UpdateAnalysisAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const std::vector<std::string> &userAlbumIds = {});
+        std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &userAlbumIds = {});
     EXPORT static void UpdateAnalysisAlbumByFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &fileIds, const std::vector<int> &albumTypes);
     EXPORT static void UpdateAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const std::vector<std::string> &uris = {});
+        std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &uris = {});
 
     EXPORT static int32_t RefreshAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         std::function<void(PhotoAlbumSubType, int)> refreshProcessHandler,

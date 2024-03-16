@@ -48,5 +48,65 @@ std::unordered_map<std::string, ThumbnailErrorInfo> DfxCollector::GetThumbnailEr
     thumbnailErrorMap_.clear();
     return result;
 }
+
+void DfxCollector::AddCommonBahavior(string bundleName, int32_t type)
+{
+    lock_guard<mutex> lock(commonBehaviorLock_);
+    if (commonBehaviorMap_.count(bundleName) == 0) {
+        CommonBehavior commonBehavior = { 0 };
+        commonBehaviorMap_[bundleName] = commonBehavior;
+    }
+    commonBehaviorMap_[bundleName].times++;
+}
+
+std::unordered_map<string, CommonBehavior> DfxCollector::GetCommonBehavior()
+{
+    lock_guard<mutex> lock(commonBehaviorLock_);
+    std::unordered_map<string, CommonBehavior> result = commonBehaviorMap_;
+    commonBehaviorMap_.clear();
+    return result;
+}
+
+void DfxCollector::CollectDeleteBehavior(std::string bundleName, int32_t type, int32_t size)
+{
+    if (type == DfxType::DELETE_ASSETS_TO_TRASH) {
+        lock_guard<mutex> lock(deleteToTrashLock_);
+        if (deleteToTrashMap_.count(bundleName) == 0) {
+            deleteToTrashMap_[bundleName] = 0;
+        }
+        deleteToTrashMap_[bundleName]++;
+    } else if (type == DfxType::DELETE_ASSETS_FROM_DISK) {
+        lock_guard<mutex> lock(deleteFromDiskLock_);
+        if (deleteFromDiskMap_.count(bundleName) == 0) {
+            deleteFromDiskMap_[bundleName] = 0;
+        }
+        deleteFromDiskMap_[bundleName]++;
+    } else if (type == DfxType::REMOVE_ASSETS) {
+        lock_guard<mutex> lock(removeLock_);
+        if (removeMap_.count(bundleName) == 0) {
+            removeMap_[bundleName] = 0;
+        }
+        removeMap_[bundleName]++;
+    }
+}
+
+std::unordered_map<std::string, int32_t> DfxCollector::GetDeleteBehavior(int32_t type)
+{
+    std::unordered_map<std::string, int32_t> result;
+    if (type == DfxType::DELETE_ASSETS_TO_TRASH) {
+        lock_guard<mutex> lock(deleteToTrashLock_);
+        result = deleteToTrashMap_;
+        deleteToTrashMap_.clear();
+    } else if (type == DfxType::DELETE_ASSETS_FROM_DISK) {
+        lock_guard<mutex> lock(deleteFromDiskLock_);
+        result = deleteToTrashMap_;
+        deleteFromDiskMap_.clear();
+    } else if (type == DfxType::REMOVE_ASSETS) {
+        lock_guard<mutex> lock(removeLock_);
+        result = deleteToTrashMap_;
+        removeMap_.clear();
+    }
+    return result;
+}
 } // namespace Media
 } // namespace OHOS

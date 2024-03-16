@@ -64,6 +64,8 @@
 #include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_vision_operations.h"
+#include "dfx_manager.h"
+#include "dfx_const.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -1245,8 +1247,8 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;
     }
-
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {notifyData->notifyUri});
+    std::unordered_map<int32_t, int32_t>  updateResult;
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, updateResult, {notifyData->notifyUri});
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
@@ -1857,9 +1859,11 @@ static void DeleteFiles(AsyncTaskData *data)
     }
     auto *taskData = static_cast<DeleteFilesTask *>(data);
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
-        { to_string(PhotoAlbumSubType::TRASH) });
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(PhotoAlbumSubType::TRASH) });
 
+    std::unordered_map<int32_t, int32_t> updateResult;
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::DELETE_ASSETS_FROM_DISK, taskData->deleteRows_,
+        updateResult, taskData->notifyUris_);
     auto watch = MediaLibraryNotify::GetInstance();
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
     if (trashAlbumId <= 0) {
@@ -1970,7 +1974,8 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     }
 
     const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
-    auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateAddeds, predicates.GetTableName());
+    auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateAddeds, predicates.GetTableName(),
+        deletedRows);
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     if (deleteFilesTask == nullptr) {
         MEDIA_ERR_LOG("Failed to create async task for deleting files.");

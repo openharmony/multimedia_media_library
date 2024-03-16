@@ -28,7 +28,10 @@ public:
     void ReportTimeOutOperation(std::string &bundleName, int32_t type, int32_t object, int32_t time);
     int32_t ReportHighMemoryImageThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
     int32_t ReportHighMemoryVideoThumbnail(std::string &path, std::string &suffix, int32_t width, int32_t height);
-    static void ReportThumbnailError();
+    void ReportThumbnailError();
+    void ReportCommonBehavior();
+    void ReportDeleteStatistic();
+    void ReportDeleteBehavior(std::string bundleName, int32_t type, std::string path);
 };
 } // namespace Media
 } // namespace OHOS
