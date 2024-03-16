@@ -182,16 +182,13 @@ void InitSandboxGroupEntry(AclXattrEntry& entry, uint32_t id, uint16_t access)
 {
     entry.tag = ACL_TAG::GROUP;
     entry.id = id;
-    if (access & ACL_PERM::Value::READ)
-    {
+    if (access & ACL_PERM::Value::READ) {
        entry.perm.SetR();
     }
-    if (access & ACL_PERM::Value::WRITE)
-    {
+    if (access & ACL_PERM::Value::WRITE) {
        entry.perm.SetW();
     }
-    if (access & ACL_PERM::Value::EXECUTE)
-    {
+    if (access & ACL_PERM::Value::EXECUTE) {
        entry.perm.SetE();
     }
 }
@@ -207,19 +204,19 @@ int32_t Acl::AclSetDefault()
     return err;
 }
 
-int32_t Acl::SetDB()
+int32_t Acl::AclSetDB()
 {
     AclXattrEntry dbEntry = {};
-    InitSandboxGroupEntry(entry, MEDIA_DB_ACL_GROUP, ACL_PERM::READ | ACL_PERM::Value::WRITE | 
+    InitSandboxGroupEntry(dbEntry, MEDIA_DB_ACL_GROUP, ACL_PERM::READ | ACL_PERM::Value::WRITE |
         ACL_PERM::Value::EXECUTE);
-    int32_t err = EntryInsertHelper(entry, DB_DIR);
+    int32_t err = EntryInsertHelper(dbEntry, DB_DIR);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the database");
     }
     return err;
 }
 
-int32_t Acl::EntryInsertHelper(AclXattrEntry &entry, const std::string& path)
+int32_t Acl::EntryInsertHelper(AclXattrEntry& entry, con`st std::string& path)
 {
     /* init acl from file's mode */
     Acl acl = AclFromMode(path);
@@ -246,6 +243,71 @@ int32_t Acl::EntryInsertHelper(AclXattrEntry &entry, const std::string& path)
         return E_ERR;
     }
     return E_OK;
+}
+
+void Acl::listAttr(const std::string& path)
+{
+    char* buf;
+    char* key;
+    char* val;
+    size_t bufLen;
+    size_t keyLen;
+    size_t valLen;
+
+    bufLen = listxattr(path.c_str(), NULL, 0);
+    if (bufLen < 0) {
+        MEDIA_ERR_LOG("path:%{private}s listAttr fail", path.c_str());
+        return;
+    }
+
+    if (bufLen == 0) {
+        MEDIA_ERR_LOG("path:%{private}s listAttr fail", path.c_str());
+        return;
+    }
+
+    buf = static_cast<char*>(malloc(bufLen));
+    if (buf == NULL) {
+        MEDIA_ERR_LOG("path:%{private}s, malloc error", path.c_str());
+        return;
+    }
+
+    bufLen = listxattr(path.c_str(), buf, bufLen);
+    if (bufLen < 0) {
+        MEDIA_ERR_LOG("path:%{private}s, listAttr fail", path.c_str());
+    }
+
+    key = buf;
+    while (bufLen > 0) {
+        valLen = getxattr(path.c_str(), key, NULL, 0);
+        if (valLen == -1) {
+            MEDIA_ERR_LOG("path:%{private}s, get attr error", path.c_str());
+            return;
+        }
+        if (valLen > 0) {
+            
+            // one extra byte to append 0x00
+            val = static_cast<char*>(malloc(valLen + 1));
+            if (val == nullptr) {
+                MEDIA_ERR_LOG("path:%{private}s, malloc error", path.c_str());
+                return;
+            }
+            valLen = getxattr(path.c_str(), key, val, valLen);
+            if (valLen == -1) {
+                MEDIA_ERR_LOG("path:%{private}s, get attr error", path.c_str());
+                return;
+            } else {
+                val[valLen] = 0;
+                MEDIA_DEBUG_LOG("path:%{private}s, value:%{public}s", path.c_str(), val);
+            }
+            free(val);
+        } else if (valLen == 0) {
+            MEDIA_DEBUG_LOG("path:%{private}s, no value", path.c_str(), val);
+        }
+        keyLen = strlen(key) + 1;
+        bufLen -= keyLen;
+        key += keyLen;
+    }
+    free(buf);
 }
 
 Acl::~Acl()
