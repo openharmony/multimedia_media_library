@@ -1436,12 +1436,6 @@ void MediaLibraryDataManager::RegisterTimer()
     timerId_ = timer_.Register(DownloadCloudFiles, BATCH_DOWNLOAD_INTERVAL);
 }
 
-void MediaLibraryDataManager::StopTimer()
-{
-    lock_guard<recursive_mutex> lock(timerMutex_);
-    timer_.Shutdown();
-}
-
 void MediaLibraryDataManager::UnregisterTimer()
 {
     lock_guard<recursive_mutex> lock(timerMutex_);

@@ -97,7 +97,6 @@ public:
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
     EXPORT void RegisterTimer();
-    EXPORT void StopTimer();
     EXPORT void UnregisterTimer();
 
 private:
