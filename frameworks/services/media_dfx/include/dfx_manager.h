@@ -23,8 +23,26 @@
 #include "dfx_analyzer.h"
 #include "dfx_reporter.h"
 
+#include "ipc_skeleton.h"
+#include "dfx_worker.h"
+
 namespace OHOS {
 namespace Media {
+    
+class DeleteBehaviorTask : public DfxData {
+public:
+    DeleteBehaviorTask(std::string id, int32_t type, int32_t size, std::unordered_map<int32_t, int32_t> &updateResult,
+        std::vector<std::string> &uris, std::shared_ptr<DfxReporter> dfxReporter) : id_(id), type_(type),  size_(size),
+        updateResult_(updateResult), uris_(uris), dfxReporter_(dfxReporter) {}
+    virtual ~DeleteBehaviorTask() override = default;
+    std::string id_;
+    int32_t type_;
+    int32_t size_;
+    std::unordered_map<int32_t, int32_t> updateResult_;
+    std::vector<std::string> uris_;
+    std::shared_ptr<DfxReporter> dfxReporter_;
+};
+
 class DfxManager {
 public:
     DfxManager();
@@ -34,7 +52,13 @@ public:
     int32_t HandleHighMemoryThumbnail(std::string &path, int32_t mediaType, int32_t width, int32_t height);
     void HandleThumbnailError(const std::string &path, int32_t method, int32_t errCode);
     void HandleFiveMinuteTask();
+    int64_t HandleMiddleReport();
     int64_t HandleReportXml();
+    void HandleCommonBehavior(std::string bundleName, int32_t type);
+    void HandleDeleteBehavior(int32_t type, int32_t size, std::unordered_map<int32_t, int32_t> &updateResult,
+        std::vector<std::string> &uris);
+    void HandleDeleteBehaviors();
+    void HandleNoPermmison(int32_t type, int32_t object, int32_t error);
 
 private:
     void Init();
@@ -46,6 +70,7 @@ private:
     std::shared_ptr<DfxCollector> dfxCollector_;
     std::shared_ptr<DfxAnalyzer> dfxAnalyzer_;
     std::shared_ptr<DfxReporter> dfxReporter_;
+    std::shared_ptr<DfxWorker> dfxWorker_;
 };
 } // namespace Media
 } // namespace OHOS
