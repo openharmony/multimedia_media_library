@@ -248,7 +248,8 @@ static int32_t MaintainAlbumRelationship(std::unique_ptr<Metadata> &data)
         MEDIA_ERR_LOG("Failed to query album_id,Album cover and count update fails");
         return E_ERR;
     }
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStorePtr, {album_id});
+    std::unordered_map<int32_t, int32_t> updateResult;
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStorePtr, updateResult, {album_id});
     return E_OK;
 }
 

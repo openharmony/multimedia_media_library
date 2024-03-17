@@ -812,8 +812,9 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     if (changedRows < 0) {
         return changedRows;
     }
+    std::unordered_map<int32_t, int32_t>  updateResult;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, updateResult, whereArgs);
 
     auto watch = MediaLibraryNotify::GetInstance();
     size_t count = whereArgs.size() - THAN_AGR_SIZE;
