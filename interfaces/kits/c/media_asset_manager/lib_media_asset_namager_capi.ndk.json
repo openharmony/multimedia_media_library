@@ -1,0 +1,14 @@
+[
+  {
+    "first_introduced": "12",
+    "name": "OH_MediaAssetManager_Create"
+  },
+  {
+    "first_introduced": "12",
+    "name": "OH_MediaAssetManager_RequestImageToPath"
+  },
+  {
+    "first_introduced": "12",
+    "name": "OH_MediaAssetManager_RequestVideoToPath"
+  }
+]

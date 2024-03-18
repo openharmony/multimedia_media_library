@@ -84,7 +84,8 @@
             "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_js",
             "//foundation/multimedia/media_library/interfaces/kits/js:userfilemanager",
             "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelper",
-            "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelper_js"
+            "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelper_js",
+            "//foundation/multimedia/media_library/interfaces/kits/c:native_media_asset_manager"
           ],
           "service_group": [
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
@@ -116,6 +117,15 @@
                 ]
               },
               "name": "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/inner_api/media_library_helper/include",
+                  "header_files": [
+                    "media_asset_manager_impl.h"
+                  ]
+                },
+                "name": "//foundation/multimedia/media_library/frameworks/native/media_library_asset_manager:media_library_asset_manager"
             }
         ],
         "test": [

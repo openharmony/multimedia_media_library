@@ -1,0 +1,86 @@
+# Copyright (C) 2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/media_library/media_library.gni")
+
+ohos_shared_library("media_library_asset_manager") {
+  install_enable = true
+
+  sources = [
+    "./src/media_asset_data_handler_capi.cpp",
+    "./src/media_asset_manager_impl.cpp",
+  ]
+
+  include_dirs = [
+    "${MEDIALIB_UTILS_PATH}/include",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+  ]
+
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_manager:media_library_manager",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
+
+  external_deps = [
+    "ability_base:want",
+    "ability_base:zuri",
+    "access_token:libnativetoken",
+    "access_token:libtoken_setproc",
+    "c_utils:utils",
+    "common_event_service:cesfwk_innerkits",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "image_framework:image_native",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+
+  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
+
+  ldflags = [ "-Wl,--gc-sections" ]
+
+  cflags = [
+    "-Wall",
+    "-Werror",
+    "-Wno-unused-but-set-variable",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-Os",
+  ]
+
+  cflags_cc = [ "-Os" ]
+
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
+    }
+  }
+
+  defines = [ "MEDIALIBRARY_COMPATIBILITY=1" ]
+
+  part_name = "media_library"
+  subsystem_name = "multimedia"
+}
