@@ -24,6 +24,7 @@ enum class ReturnDataType {
     TYPE_IMAGE_SOURCE = 0,
     TYPE_ARRAY_BUFFER,
     TYPE_MOVING_PHOTO,
+    TYPE_TARGET_PATH,
 };
 
 enum class DeliveryMode {
@@ -45,11 +46,12 @@ enum class NotifyMode : int32_t {
 class NapiMediaAssetDataHandler {
 public:
     NapiMediaAssetDataHandler(napi_env env, napi_value dataHandler, ReturnDataType dataType, const std::string &uri,
-        SourceMode sourceMode);
+        const std::string &destUri, SourceMode sourceMode);
     ~NapiMediaAssetDataHandler() = default;
     napi_env GetEnv();
     ReturnDataType GetReturnDataType();
     std::string GetRequestUri();
+    std::string GetDestUri();
     SourceMode GetSourceMode();
     void SetNotifyMode(NotifyMode trigger);
     NotifyMode GetNotifyMode();
@@ -60,6 +62,7 @@ private:
     napi_ref dataHandlerRef_;
     ReturnDataType dataType_;
     std::string requestUri_;
+    std::string destUri_;
     SourceMode sourceMode_;
     NotifyMode notifyMode_;
 };
