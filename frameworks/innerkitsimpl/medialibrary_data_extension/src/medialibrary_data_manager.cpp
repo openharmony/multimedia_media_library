@@ -104,6 +104,7 @@ namespace Media {
 shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
+recursive_mutex MediaLibraryDataManager::timerMutex_;
 Utils::Timer MediaLibraryDataManager::timer_("download_cloud_files");
 uint32_t MediaLibraryDataManager::timerId_ = 0;
 
@@ -775,15 +776,15 @@ static void CacheAging()
     time_t now = time(nullptr);
     constexpr int thresholdSeconds = 7 * 24 * 60 * 60; // 7 days
     for (const auto& entry : filesystem::recursive_directory_iterator(cacheDir)) {
-        const char* filePath = entry.path().string().c_str();
+        string filePath = entry.path().string();
         if (!entry.is_regular_file()) {
-            MEDIA_WARN_LOG("skip %{private}s, not regular file", filePath);
+            MEDIA_WARN_LOG("skip %{private}s, not regular file", filePath.c_str());
             continue;
         }
 
         struct stat statInfo {};
-        if (stat(filePath, &statInfo) != 0) {
-            MEDIA_WARN_LOG("skip %{private}s when stat error, errno: %{public}d", filePath, errno);
+        if (stat(filePath.c_str(), &statInfo) != 0) {
+            MEDIA_WARN_LOG("skip %{private}s , stat errno: %{public}d", filePath.c_str(), errno);
             continue;
         }
         time_t timeModified = statInfo.st_mtime;
@@ -793,7 +794,7 @@ static void CacheAging()
         }
 
         if (!filesystem::remove(entry.path(), errCode)) {
-            MEDIA_WARN_LOG("Failed to remove %{private}s, errCode: %{public}d", filePath, errCode.value());
+            MEDIA_WARN_LOG("Failed to remove %{private}s, err: %{public}d", filePath.c_str(), errCode.value());
         }
     }
 }
@@ -1427,20 +1428,20 @@ static void DownloadCloudFiles()
 
 void MediaLibraryDataManager::RegisterTimer()
 {
-    UnregisterTimer();
-    timerId_ = timer_.Register(DownloadCloudFiles, BATCH_DOWNLOAD_INTERVAL);
+    lock_guard<recursive_mutex> lock(timerMutex_);
+    if (timerId_ > 0) {
+        UnregisterTimer();
+    }
     timer_.Setup();
-}
-
-void MediaLibraryDataManager::StopTimer()
-{
-    timer_.Shutdown();
+    timerId_ = timer_.Register(DownloadCloudFiles, BATCH_DOWNLOAD_INTERVAL);
 }
 
 void MediaLibraryDataManager::UnregisterTimer()
 {
-    timer_.Shutdown();
+    lock_guard<recursive_mutex> lock(timerMutex_);
     timer_.Unregister(timerId_);
+    timer_.Shutdown();
+    timerId_ = 0;
 }
 }  // namespace Media
 }  // namespace OHOS
