@@ -123,6 +123,18 @@
           ],
           "when": "inuse"
         }
+      },
+      {
+        "name": "ohos.permission.ACCESS_MEDIALIB_THUMB_DB",
+        "reason": "$string:permission_access_rdb_and_kvdb",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility",
+            "MediaBackupExtensionAbility"
+          ],
+          "when": "always"
+        }
       }
     ],
     "proxyDatas": [

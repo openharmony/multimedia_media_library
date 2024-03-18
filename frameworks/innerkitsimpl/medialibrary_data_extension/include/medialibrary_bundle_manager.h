@@ -29,11 +29,11 @@ public:
     MediaLibraryBundleManager() = default;
     ~MediaLibraryBundleManager() = default;
     static std::shared_ptr<MediaLibraryBundleManager> GetInstance();
+    void GetBundleNameByUID(const int32_t uid, std::string &bundleName);
     std::string GetClientBundleName();
     void Clear();
 
 private:
-    void GetBundleNameByUID(const int32_t uid, std::string &bundleName);
 
     // BundleMessage is the pair of bundleName and whether bundle is system app
     const static int CAPACITY = 50;
@@ -46,4 +46,4 @@ private:
 };
 } // Media
 } // OHOS
-#endif // OHOS_MEDIALIBRARY_BUNDLE_MANAGER_H
+#endif // OHOS_MEDIALIBRARY_BUNDLE_MANAGER_H

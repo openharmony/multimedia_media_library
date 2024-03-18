@@ -37,6 +37,8 @@
 #include "vision_album_column.h"
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
+#include "dfx_manager.h"
+#include "dfx_const.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -229,7 +231,8 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
         }
         albumIdList.push_back(to_string(albumId));
     }
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), albumIdList);
+    std::unordered_map<int32_t, int32_t> updateResult;
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), updateResult, albumIdList);
     return changedRows;
 }
 
@@ -287,9 +290,9 @@ int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
     if (deleteRow <= 0) {
         return deleteRow;
     }
-
+    std::unordered_map<int32_t, int32_t> updateResult;
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateAlbumIds);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, updateAlbumIds);
     auto watch = MediaLibraryNotify::GetInstance();
     for (size_t i = 1; i < whereArgsUri.size() - 1; i++) {
         watch->Notify(MediaFileUtils::Encode(whereArgsUri[i]), NotifyType::NOTIFY_ALBUM_DISMISS_ASSET, albumId);
@@ -323,6 +326,8 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     for (size_t i = 1; i < whereArgs.size(); i++) {
         watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, albumId);
     }
+    std::unordered_map<int32_t, int32_t> updateResult;
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::REMOVE_ASSETS, deleteRow, updateResult, whereArgs);
     return deleteRow;
 }
 

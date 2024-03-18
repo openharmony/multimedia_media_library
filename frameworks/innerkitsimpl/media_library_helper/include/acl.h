@@ -21,6 +21,8 @@
 #include <set>
 #include <string>
 
+#include "medialibrary_db_const.h"
+
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -97,7 +99,8 @@ constexpr uint32_t THUMB_ACL_GROUP = 2008;
 constexpr uint32_t MEDIA_DB_ACL_GROUP = 3008;
 
 EXPORT const std::string THUMB_DIR = "/storage/cloud/files/.thumbs/Photo";
-EXPORT const std::string DB_DIR = "/data/storage/el2/database/";
+EXPORT const std::string RDB_DIR = MEDIA_DB_DIR + "/rdb";
+EXPORT const std::string KVDB_DIR = MEDIA_DB_DIR + "/kvdb";
 /*
  * ACL data structure
  */
@@ -143,7 +146,6 @@ public:
     EXPORT static int32_t AclSetDefault();
     EXPORT static int32_t AclSetDB();
     EXPORT static int32_t EntryInsertHelper(AclXattrEntry& entry, const std::string& path);
-    EXPORT static void listAttr(const std::string& path);
     EXPORT ~Acl();
 private:
     void CompareInsertEntry(const AclXattrEntry &entry);

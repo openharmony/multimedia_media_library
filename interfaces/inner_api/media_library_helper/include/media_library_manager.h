@@ -147,11 +147,20 @@ public:
     EXPORT int32_t GetBatchAstcs(
         const std::vector<std::string> &uriBatch, std::vector<std::vector<uint8_t>> &astcBatch);
 
+    /**
+     * @brief Obtain pixelmap of astc
+     *
+     * @param uri a parameter for input which is uri
+     * @return if obtain success, return PixelMap; Otherwise return nullptr
+     */
+    EXPORT std::unique_ptr<PixelMap> GetAstc(const Uri &uri);
+
 private:
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);
     static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path, bool isAstc);
     static unique_ptr<PixelMap> DecodeThumbnail(UniqueFd &uniqueFd, const Size& size);
     static unique_ptr<PixelMap> GetPixelMapWithoutDecode(UniqueFd &uniqueFd, const Size& size);
+    static unique_ptr<PixelMap> DecodeAstc(UniqueFd &uniqueFd);
 
     static shared_ptr<DataShare::DataShareHelper> sDataShareHelper_;
     sptr<IRemoteObject> token_;

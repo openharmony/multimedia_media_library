@@ -653,5 +653,67 @@ int32_t MediaLibraryManager::GetBatchAstcs(const vector<string> &uriBatch, vecto
     }
     return E_OK;
 }
+
+unique_ptr<PixelMap> MediaLibraryManager::DecodeAstc(UniqueFd &uniqueFd)
+{
+    if (uniqueFd.Get() < 0) {
+        MEDIA_ERR_LOG("Fd is invalid, errCode is %{public}d", uniqueFd.Get());
+        return nullptr;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryManager::DecodeAstc");
+    SourceOptions opts;
+    uint32_t err = 0;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(uniqueFd.Get(), opts, err);
+    if (imageSource  == nullptr) {
+        MEDIA_ERR_LOG("CreateImageSource err %{public}d", err);
+        return nullptr;
+    }
+
+    DecodeOptions decodeOpts;
+    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    if (pixelMap == nullptr) {
+        MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);
+        return nullptr;
+    }
+    return pixelMap;
+}
+
+std::unique_ptr<PixelMap> MediaLibraryManager::GetAstc(const Uri &uri)
+{
+    // uri is file://media/image/<id>&oper=astc&width=<width>&height=<height>&path=<path>
+    MediaLibraryTracer tracer;
+    string uriStr = uri.ToString();
+    if (uriStr.empty()) {
+        MEDIA_ERR_LOG("GetAstc failed, uri is empty");
+        return nullptr;
+    }
+    auto astcIndex = uriStr.find("astc");
+    if (astcIndex == string::npos || astcIndex > uriStr.length()) {
+        MEDIA_ERR_LOG("GetAstc failed, oper is invalid");
+        return nullptr;
+    }
+    UriParams uriParams;
+    if (!GetParamsFromUri(uriStr, false, uriParams)) {
+        MEDIA_ERR_LOG("GetAstc failed, get params from uri failed, uri :%{public}s", uriStr.c_str());
+        return nullptr;
+    }
+    tracer.Start("GetAstc uri:" + uriParams.fileUri);
+    string openUriStr = uriParams.fileUri + "?" + MEDIA_OPERN_KEYWORD + "=" +
+        MEDIA_DATA_DB_THUMB_ASTC + "&" + MEDIA_DATA_DB_WIDTH + "=" + to_string(uriParams.size.width) +
+            "&" + MEDIA_DATA_DB_HEIGHT + "=" + to_string(uriParams.size.height);
+    tracer.Start("MediaLibraryManager::OpenThumbnail");
+    UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, uriParams.path, uriParams.size, true));
+    if (uniqueFd.Get() < 0) {
+        MEDIA_ERR_LOG("OpenThumbnail failed, errCode is %{public}d", uniqueFd.Get());
+        return nullptr;
+    }
+    tracer.Finish();
+    auto pixelmap = DecodeAstc(uniqueFd);
+    if (pixelmap == nullptr) {
+        MEDIA_ERR_LOG("pixelmap is null, uri :%{public}s", uriStr.c_str());
+    }
+    return pixelmap;
+}
 } // namespace Media
 } // namespace OHOS

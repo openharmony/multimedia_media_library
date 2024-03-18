@@ -108,7 +108,8 @@ void DoCheckShootingAlbumData(const string &name)
 
     int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet,
         TYPE_INT32));
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, {std::to_string(albumId)});
+    std::unordered_map<int32_t, int32_t> updateResult;
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore, updateResult, {std::to_string(albumId)});
     EXPECT_GT(albumId, 0);
     CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, PhotoAlbumType::SMART);
     CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, PhotoAlbumSubType::SHOOTING_MODE);

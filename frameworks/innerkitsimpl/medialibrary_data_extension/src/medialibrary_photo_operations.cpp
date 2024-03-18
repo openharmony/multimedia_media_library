@@ -54,6 +54,7 @@
 #include "values_bucket.h"
 #include "medialibrary_formmap_operations.h"
 #include "medialibrary_vision_operations.h"
+#include "dfx_manager.h"
 
 using namespace OHOS::DataShare;
 using namespace std;
@@ -599,12 +600,15 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", updatedRows);
         return E_HAS_DB_ERROR;
     }
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw(), notifyUris);
+    std::unordered_map<int32_t, int32_t>  updateResult;
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw(), updateResult, notifyUris);
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
             notifyUris.size(), updatedRows);
     }
     TrashPhotosSendNotify(notifyUris);
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::DELETE_ASSETS_TO_TRASH, updatedRows, updateResult,
+        notifyUris);
     return updatedRows;
 }
 
@@ -686,15 +690,16 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
             std::to_string(PhotoAlbumSubType::SCREENSHOT),
             std::to_string(PhotoAlbumSubType::IMAGE),
         });
+    std::unordered_map<int32_t, int32_t> updateResult;
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, notifyUris);
     MediaLibraryRdbUtils::UpdateSourceAlbumByUri(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, notifyUris);
 
     MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, notifyUris);
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
 }
