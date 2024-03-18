@@ -16,6 +16,7 @@ MEDIALIB_ROOT_PATH = "//foundation/multimedia/media_library"
 MEDIALIB_INNERKITS_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/innerkitsimpl"
 MEDIALIB_INTERFACES_PATH = "${MEDIALIB_ROOT_PATH}/interfaces"
 MEDIALIB_JS_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/js"
+MEDIALIB_NATIVE_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/native"
 MEDIALIB_UTILS_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/utils"
 
 MEDIALIB_SERVICES_PATH = "${MEDIALIB_ROOT_PATH}/frameworks/services"
@@ -23,7 +24,6 @@ MEDIALIB_CLOUD_SYNC_PATH = "${MEDIALIB_SERVICES_PATH}/media_cloud_sync"
 MEDIALIB_MTP_PATH = "${MEDIALIB_SERVICES_PATH}/media_mtp"
 MEDIALIB_CAMERA_FRAMEWORK_PATH = "${MEDIALIB_ROOT_PATH}/../camera_framework"
 MEDIALIB_GLOBAL_PATH = "//base/global"
-
 declare_args() {
   link_opt = false
 }
