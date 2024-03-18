@@ -1029,8 +1029,9 @@ void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
         to_string(PhotoAlbumSubType::SCREENSHOT),
         to_string(PhotoAlbumSubType::FAVORITE),
     });
+    std::unordered_map<int32_t, int32_t> updateResult;
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), sourceAlbumIds);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, sourceAlbumIds);
 }
 
 std::string MediaScannerDb::MakeFileUri(const std::string &mediaTypeUri, const Metadata &metadata)

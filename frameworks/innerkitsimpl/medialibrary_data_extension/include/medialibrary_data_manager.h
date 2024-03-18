@@ -97,7 +97,6 @@ public:
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
     EXPORT void RegisterTimer();
-    EXPORT void StopTimer();
     EXPORT void UnregisterTimer();
 
 private:
@@ -117,6 +116,7 @@ private:
     std::shared_ptr<NativeRdb::ResultSet> QuerySet(MediaLibraryCommand &cmd, const std::vector<std::string> &columns,
         const DataShare::DataSharePredicates &predicates, int &errCode);
     void InitACLPermission();
+    void InitDBACLPermission();
 #ifdef DISTRIBUTED
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();
@@ -144,6 +144,7 @@ private:
     std::atomic<int> refCnt_ {0};
     std::shared_ptr<MediaDataShareExtAbility> extension_;
     std::shared_ptr<CloudThumbnailObserver> cloudDataObserver_;
+    static std::recursive_mutex timerMutex_;
     static Utils::Timer timer_;
     static uint32_t timerId_;
 };

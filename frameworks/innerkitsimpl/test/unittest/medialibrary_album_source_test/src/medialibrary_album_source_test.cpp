@@ -244,7 +244,8 @@ void UpdateDisplayName(int64_t &fileId, string &displayName)
 void ValidPhotoAlbumValue(string packageName, int exceptResultCount, int exceptPhotoCount,
     string exceptCoverUri)
 {
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(g_rdbStore->GetRaw());
+    std::unordered_map<int32_t, int32_t>  updateResult;
+    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(g_rdbStore->GetRaw(), updateResult);
     vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI,
         PhotoAlbumColumns::ALBUM_BUNDLE_NAME};
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,

@@ -61,18 +61,25 @@ enum DfxType {
     IMAGE_SOURCE_GET_INFO,
     IMAGE_SOURCE_CREATE_PIXELMAP,
     AV_SET_SOURCE = 300,
-    AV_FETCH_FRAME
+    AV_FETCH_FRAME,
+    DELETE_ASSETS_TO_TRASH = 500,
+    DELETE_ASSETS_FROM_DISK,
+    REMOVE_ASSETS
 };
 
 const std::string NULL_STRING = "";
 const std::string SPLIT_CHAR = "|";
 
 const std::string FIVE_MINUTE = "5";
+const std::string SIX_HOUR = "6";
 const std::string ONE_DAY = "24";
 
 const std::string THUMBNAIL_ERROR_XML = "/data/storage/el2/base/preferences/thumbnail_error.xml";
+const std::string COMMON_BEHAVIOR_XML = "/data/storage/el2/base/preferences/common_behavior.xml";
+const std::string DELETE_BEHAVIOR_XML = "/data/storage/el2/base/preferences/delete_behavior.xml";
 const std::string DFX_COMMON_XML = "/data/storage/el2/base/preferences/dfx_common.xml";
 const std::string LAST_REPORT_TIME = "last_report_time";
+const std::string LAST_MIDDLE_REPORT_TIME = "last_middle_report_time";
 const std::string THUMBNAIL_ERROR_VERSION = "thumbnail_error_version";
 
 const std::string CLOUD_PHOTO_PATH = "/storage/cloud/files/Photo/";
@@ -85,6 +92,10 @@ struct ThumbnailErrorInfo {
     int32_t method;
     int32_t errCode;
     int64_t time;
+};
+
+struct CommonBehavior {
+    int32_t times;
 };
 } // namespace Media
 } // namespace OHOS

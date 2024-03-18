@@ -321,6 +321,10 @@ const std::string APP_ID = "app_id";
 
 // write cache
 const std::string CACHE_FILE_NAME = "cache_file_name";
+
+// db sandbox directory
+const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
+
 } // namespace Media
 } // namespace OHOS
 

@@ -55,5 +55,55 @@ void DfxAnalyzer::FlushThumbnail(std::unordered_map<std::string, ThumbnailErrorI
     prefs->FlushSync();
     MEDIA_INFO_LOG("flush %{public}zu itmes", thumbnailErrorMap.size());
 }
+
+void DfxAnalyzer::FlushCommonBehavior(std::unordered_map<string, CommonBehavior> &commonBehaviorMap)
+{
+    if (commonBehaviorMap.empty()) {
+        return;
+    }
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(COMMON_BEHAVIOR_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    string behaviors;
+    for (auto entry: commonBehaviorMap) {
+        string bundleName = entry.first;
+        if (bundleName == "") {
+            continue;
+        }
+        int32_t times = entry.second.times;
+        int32_t oldValue = prefs->GetInt(bundleName, 0);
+        prefs->PutInt(bundleName, times + oldValue);
+        behaviors += "{" + bundleName + ": " + to_string(times) + "}";
+    }
+    prefs->FlushSync();
+    MEDIA_INFO_LOG("common behavior: %{public}s", behaviors.c_str());
+}
+
+void DfxAnalyzer::FlushDeleteBehavior(std::unordered_map<string, int32_t> &deleteBehaviorMap)
+{
+    if (deleteBehaviorMap.empty()) {
+        return;
+    }
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DELETE_BEHAVIOR_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    string behaviors;
+    for (auto entry: deleteBehaviorMap) {
+        string bundleName = entry.first;
+        int32_t times = entry.second;
+        int32_t oldValue = prefs->GetInt(bundleName, 0);
+        prefs->PutInt(bundleName, times + oldValue);
+        behaviors += "{" + bundleName + ": " + to_string(times) + "}";
+    }
+    prefs->FlushSync();
+}
 } // namespace Media
 } // namespace OHOS
