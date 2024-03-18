@@ -345,5 +345,25 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test_006, Te
     ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
     EXPECT_EQ(ret, E_DB_FAIL);
 }
+
+/**
+ * @tc.number    : MediaLibraryManager_GetAstc_test_007
+ * @tc.name      : Get astc image to see if error occurs
+ * @tc.desc      : Input uri to obtain astc
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_test_007, TestSize.Level0)
+{
+    string uriStr1 = "file://media/Photo/64/test?oper=thumbnail&width=256&height=256&path=test";
+    auto pixelmap1 = mediaLibraryManager->GetAstc(Uri(uriStr1));
+    EXPECT_EQ(pixelmap1, nullptr);
+
+    string uriStr2 = "file://media/Photo/64/testoper=astc&width=256&height=256&path=test";
+    auto pixelmap2 = mediaLibraryManager->GetAstc(Uri(uriStr2));
+    EXPECT_EQ(pixelmap2, nullptr);
+
+    string uriStr3 = "file://media/Photo/64/test?oper=astc&width=256&height=256&path=test";
+    auto pixelmap3 = mediaLibraryManager->GetAstc(Uri(uriStr3));
+    EXPECT_EQ(pixelmap3, nullptr);
+}
 } // namespace Media
 } // namespace OHOS
