@@ -2353,7 +2353,6 @@ bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &colum
     auto resultSet = store.QuerySql(querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Get column count failed");
-        UpdateFail(__FILE__, __LINE__);
         return false;
     }
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
