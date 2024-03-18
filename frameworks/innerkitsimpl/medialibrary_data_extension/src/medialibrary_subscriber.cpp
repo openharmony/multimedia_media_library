@@ -204,7 +204,7 @@ void MedialibrarySubscriber::StopBackgroundOperation()
 {
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     WriteThumbnailStat();
-    MediaLibraryDataManager::GetInstance()->StopTimer();
+    MediaLibraryDataManager::GetInstance()->UnregisterTimer();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
