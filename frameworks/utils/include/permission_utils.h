@@ -54,6 +54,7 @@ public:
     static bool IsNativeSAApp();
     static bool CheckIsSystemAppByUid();
     static std::string GetPackageNameByBundleName(const std::string &bundleName);
+    static std::string GetAppIdByBundleName(const std::string &bundleName);
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();

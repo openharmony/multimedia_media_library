@@ -212,5 +212,23 @@ string PermissionUtils::GetPackageNameByBundleName(const string &bundleName)
     string abilityName = want.GetOperation().GetAbilityName();
     return bundleMgr_->GetAbilityLabel(bundleName, abilityName);
 }
+
+string PermissionUtils::GetAppIdByBundleName(const string &bundleName)
+{
+    int uid = IPCSkeleton::GetCallingUid();
+    if (uid <= INVALID_UID) {
+        MEDIA_ERR_LOG("Get INVALID_UID UID %{public}d", uid);
+        return "";
+    }
+    int32_t userId = uid / BASE_USER_RANGE;
+    MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
+
+    auto bundleMgr_ = GetSysBundleManager();
+    if (bundleMgr_ == nullptr) {
+        MEDIA_ERR_LOG("Get BundleManager failed");
+        return "";
+    }
+    return bundleMgr_->GetAppIdByBundleName(bundleName, userId);
+}
 }  // namespace Media
 }  // namespace OHOS
