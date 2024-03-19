@@ -1986,6 +1986,8 @@ static void AddMissingUpdates(RdbStore &store)
         ModifySourceAlbumTriggers(store);
     } else if (!hasLocalLanguage) {
         ModifySourceAlbumTriggers(store);
+    } else {
+        MEDIA_INFO_LOG("both columns exist, no need to start source album related updates");
     }
     MEDIA_INFO_LOG("start add cloud index");
     AddCloudIndex(store);
