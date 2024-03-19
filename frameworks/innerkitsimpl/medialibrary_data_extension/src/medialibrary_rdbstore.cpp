@@ -2122,6 +2122,16 @@ void AddStoryTables(RdbStore &store)
 }
 
 
+void AddOwnerAppId(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + MediaColumn::MEDIA_OWNER_APPID + " TEXT",
+        "ALTER TABLE " + AudioColumn::AUDIOS_TABLE + " ADD COLUMN " + MediaColumn::MEDIA_OWNER_APPID + " TEXT"
+    };
+    MEDIA_INFO_LOG("start add owner_appid column");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2238,6 +2248,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_FAVORITE_INDEX) {
         UpdateFavoriteIndex(store);
+    }
+
+    if (oldVersion < VERSION_ADD_OWNER_APPID) {
+        AddOwnerAppId(store);
     }
 }
 
