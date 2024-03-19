@@ -1329,6 +1329,7 @@ static void UpdateSourceAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
 
     auto albumResult = GetSourceAlbum(rdbStore, sourceAlbumIds, {
         PhotoAlbumColumns::ALBUM_ID,
+        PhotoAlbumColumns::ALBUM_SUBTYPE,
         PhotoAlbumColumns::CONTAINS_HIDDEN,
         PhotoAlbumColumns::HIDDEN_COUNT,
         PhotoAlbumColumns::HIDDEN_COVER,

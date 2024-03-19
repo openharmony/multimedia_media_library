@@ -1368,6 +1368,7 @@ static void ModifySourceAlbumTriggers(RdbStore &store)
         DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_SOURCE_ALBUM_INDEX,
         ADD_SOURCE_ALBUM_LOCAL_LANGUAGE,
         CREATE_SOURCE_ALBUM_INDEX,
         INSERT_SOURCE_ALBUMS_FROM_PHOTOS_FULL,
@@ -1717,7 +1718,7 @@ void AddCleanFlagAndThumbStatus(RdbStore &store)
 void AddCloudIndex(RdbStore &store)
 {
     const vector<string> sqls = {
-        "DROP INDEX IF EXISTS" + PhotoColumn::PHOTO_CLOUD_ID_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_CLOUD_ID_INDEX,
         PhotoColumn::CREATE_CLOUD_ID_INDEX,
     };
     ExecSqls(sqls, store);
@@ -1961,6 +1962,39 @@ static void UpdateFavoriteIndex(RdbStore &store)
         PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
     };
     ExecSqls(sqls, store);
+}
+
+static void AddMissingUpdates(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add missing updates");
+    vector<string> sqls;
+    bool hasShootingModeTag = MediaLibraryRdbStore::HasColumnInTable(store, PhotoColumn::PHOTO_SHOOTING_MODE_TAG,
+        PhotoColumn::PHOTOS_TABLE);
+    if (!hasShootingModeTag) {
+        MEDIA_INFO_LOG("start add shooting mode tag");
+        const vector<string> sqls = {
+            "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_SHOOTING_MODE_TAG +
+                " TEXT",
+        };
+        ExecSqls(sqls, store);
+    }
+    bool hasBundleName = MediaLibraryRdbStore::HasColumnInTable(store, PhotoAlbumColumns::ALBUM_BUNDLE_NAME,
+        PhotoAlbumColumns::TABLE);
+    bool hasLocalLanguage = MediaLibraryRdbStore::HasColumnInTable(store, PhotoAlbumColumns::ALBUM_LOCAL_LANGUAGE,
+        PhotoAlbumColumns::TABLE);
+    if (!hasBundleName) {
+        MoveSourceAlbumToPhotoAlbumAndAddColumns(store);
+        ModifySourceAlbumTriggers(store);
+    } else if (!hasLocalLanguage) {
+        ModifySourceAlbumTriggers(store);
+    } else {
+        MEDIA_INFO_LOG("both columns exist, no need to start source album related updates");
+    }
+    MEDIA_INFO_LOG("start add cloud index");
+    AddCloudIndex(store);
+    MEDIA_INFO_LOG("start update photos mdirty trigger");
+    UpdatePhotosMdirtyTrigger(store);
+    MEDIA_INFO_LOG("end add missing updates");
 }
 
 void AddMultiStagesCaptureColumns(RdbStore &store)
@@ -2218,6 +2252,13 @@ static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
+static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_MISSING_UPDATES) {
+        AddMissingUpdates(store);
+    }
+}
+
 static void CheckDateAdded(RdbStore &store)
 {
     vector<string> sqls = {
@@ -2298,6 +2339,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeGalleryFeatureTable(store, oldVersion);
     UpgradeVisionTable(store, oldVersion);
     UpgradeAlbumTable(store, oldVersion);
+    UpgradeHistory(store, oldVersion);
 
     AlwaysCheck(store);
     if (!g_upgradeErr) {
@@ -2305,6 +2347,20 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);
     }
     return NativeRdb::E_OK;
+}
+
+bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &columnName, const string &tableName)
+{
+    string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM pragma_table_info('" + tableName + "') WHERE name = '" +
+        columnName + "'";
+    auto resultSet = store.QuerySql(querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Get column count failed");
+        return false;
+    }
+    int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
+    MEDIA_DEBUG_LOG("%{private}s in %{private}s: %{public}d", columnName.c_str(), tableName.c_str(), count);
+    return count > 0;
 }
 
 #ifdef DISTRIBUTED
