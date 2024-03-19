@@ -182,7 +182,7 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
 
     string propertyStr;
     int64_t int64TempMeta = 0;
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, propertyStr);
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL_FOR_MEDIA, propertyStr);
     if (err == 0) {
         int64TempMeta = convertTimeStr2TimeStamp(propertyStr);
         if (int64TempMeta < 0) {
