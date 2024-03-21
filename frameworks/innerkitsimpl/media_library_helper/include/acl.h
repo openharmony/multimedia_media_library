@@ -60,15 +60,15 @@ public:
     {
         value = (x & READ) | (x & WRITE) | (x & EXECUTE);
     }
-    void SetR()
+    void SetRead()
     {
         value |= READ;
     }
-    void SetW()
+    void SetWrite()
     {
         value |= WRITE;
     }
-    void SetE()
+    void SetExecute()
     {
         value |= EXECUTE;
     }
@@ -144,8 +144,8 @@ public:
     EXPORT char *Serialize(size_t &bufSize);
 
     EXPORT static int32_t AclSetDefault();
-    EXPORT static int32_t AclSetDB();
-    EXPORT static int32_t EntryInsertHelper(AclXattrEntry& entry, const std::string& path);
+    EXPORT static int32_t AclSetDatabase();
+    EXPORT static int32_t EntryInsert(AclXattrEntry& entry, const std::string& path);
     EXPORT ~Acl();
 private:
     void CompareInsertEntry(const AclXattrEntry &entry);

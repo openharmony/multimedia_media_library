@@ -50,7 +50,7 @@
     },
     {
       "name": "permission_access_rdb_and_kvdb",
-      "value": "Allows querying rdb and fetch astch from kvdb"
+      "value": "Allows querying rdb and fetch astc from kvdb"
     }
   ]
 }

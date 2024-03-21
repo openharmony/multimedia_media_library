@@ -174,8 +174,8 @@ void InitSandboxEntry(AclXattrEntry &entry)
 {
     entry.tag = ACL_TAG::GROUP;
     entry.id = THUMB_ACL_GROUP;
-    entry.perm.SetR();
-    entry.perm.SetE();
+    entry.perm.SetRead();
+    entry.perm.SetExecute();
 }
 
 void InitSandboxGroupEntry(AclXattrEntry& entry, uint32_t id, uint16_t access)
@@ -183,13 +183,13 @@ void InitSandboxGroupEntry(AclXattrEntry& entry, uint32_t id, uint16_t access)
     entry.tag = ACL_TAG::GROUP;
     entry.id = id;
     if (access & ACL_PERM::Value::READ) {
-        entry.perm.SetR();
+        entry.perm.SetRead();
     }
     if (access & ACL_PERM::Value::WRITE) {
-        entry.perm.SetW();
+        entry.perm.SetWrite();
     }
     if (access & ACL_PERM::Value::EXECUTE) {
-        entry.perm.SetE();
+        entry.perm.SetExecute();
     }
 }
 
@@ -197,19 +197,19 @@ int32_t Acl::AclSetDefault()
 {
     AclXattrEntry entry = {};
     InitSandboxGroupEntry(entry, THUMB_ACL_GROUP, ACL_PERM::Value::READ | ACL_PERM::Value::EXECUTE);
-    int32_t err = EntryInsertHelper(entry, THUMB_DIR);
+    int32_t err = EntryInsert(entry, THUMB_DIR);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the Photo dir");
     }
     return err;
 }
 
-int32_t Acl::AclSetDB()
+int32_t Acl::AclSetDatabase()
 {
     AclXattrEntry rdbEntry = {};
     InitSandboxGroupEntry(rdbEntry, MEDIA_DB_ACL_GROUP, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
         ACL_PERM::Value::EXECUTE);
-    int32_t err = EntryInsertHelper(rdbEntry, RDB_DIR);
+    int32_t err = EntryInsert(rdbEntry, RDB_DIR);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the rdb");
     }
@@ -217,14 +217,14 @@ int32_t Acl::AclSetDB()
     AclXattrEntry kvdbEntry = {};
     InitSandboxGroupEntry(kvdbEntry, MEDIA_DB_ACL_GROUP, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
         ACL_PERM::Value::EXECUTE);
-    err |= EntryInsertHelper(kvdbEntry, KVDB_DIR);
+    err |= EntryInsert(kvdbEntry, KVDB_DIR);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the kvdb");
     }
     return err;
 }
 
-int32_t Acl::EntryInsertHelper(AclXattrEntry& entry, const std::string& path)
+int32_t Acl::EntryInsert(AclXattrEntry& entry, const std::string& path)
 {
     /* init acl from file's mode */
     Acl acl = AclFromMode(path);
