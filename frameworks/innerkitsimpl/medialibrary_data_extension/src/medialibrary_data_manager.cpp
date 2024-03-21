@@ -200,7 +200,7 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at MakeDirQuerySetMap");
 
     InitACLPermission();
-    InitDBACLPermission();
+    InitDatabaseACLPermission();
 
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
@@ -1191,7 +1191,7 @@ void MediaLibraryDataManager::InitACLPermission()
     }
 }
 
-void MediaLibraryDataManager::InitDBACLPermission()
+void MediaLibraryDataManager::InitDatabaseACLPermission()
 {
     if (access(RDB_DIR.c_str(), F_OK) != E_OK) {
         if (!MediaFileUtils::CreateDirectory(RDB_DIR)) {
@@ -1207,7 +1207,7 @@ void MediaLibraryDataManager::InitDBACLPermission()
         }
     }
 
-    if (Acl::AclSetDB() != E_OK) {
+    if (Acl::AclSetDatabase() != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl db permission for the media db dir");
     }
 }
