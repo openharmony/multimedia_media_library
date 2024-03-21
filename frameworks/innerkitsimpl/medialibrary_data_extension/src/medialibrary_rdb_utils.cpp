@@ -39,7 +39,7 @@ using namespace NativeRdb;
 
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_SUCCESS = 0;
-constexpr int32_t ALBUM_UPDATE_THRESHOLD = 1000;
+constexpr size_t ALBUM_UPDATE_THRESHOLD = 1000;
 
 const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
     std::to_string(PhotoAlbumSubType::FAVORITE),
@@ -1005,7 +1005,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<RdbStore> &rdbS
     }
     vector<string> albumIds;
     string idArgs;
-    for (int32_t i = 0; i < uris.size(); i++) {
+    for (size_t i = 0; i < uris.size(); i++) {
         string fileId = GetPhotoId(uris[i]);
         if (fileId.size() > 0) {
             idArgs.append(fileId).append(",");
@@ -1062,7 +1062,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &
     }
     vector<string> albumIds;
     vector<string> idArgs;
-    for (int32_t i = 0; i < uris.size(); i++) {
+    for (size_t i = 0; i < uris.size(); i++) {
         string fileId = GetPhotoId(uris[i]);
         if (fileId.size() > 0) {
             idArgs.push_back(fileId);
@@ -1195,7 +1195,7 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<RdbStore> &rd
     }
     vector<string> albumIds;
     string idArgs;
-    for (int32_t i = 0; i < uris.size(); i++) {
+    for (size_t i = 0; i < uris.size(); i++) {
         string fileId = GetPhotoId(uris[i]);
         if (fileId.size() > 0) {
             idArgs.append(fileId).append(",");
