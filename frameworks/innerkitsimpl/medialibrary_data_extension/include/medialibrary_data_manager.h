@@ -36,7 +36,6 @@
 #include "rdb_predicates.h"
 #include "rdb_store.h"
 #include "result_set_bridge.h"
-#include "timer.h"
 #include "uri.h"
 #include "values_bucket.h"
 #include "thumbnail_service.h"
@@ -96,8 +95,6 @@ public:
     EXPORT int GetThumbnail(const std::string &uri);
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
-    EXPORT void RegisterTimer();
-    EXPORT void UnregisterTimer();
 
 private:
     int32_t InitMediaLibraryRdbStore();
@@ -143,9 +140,6 @@ private:
     std::atomic<int> refCnt_ {0};
     std::shared_ptr<MediaDataShareExtAbility> extension_;
     std::shared_ptr<CloudThumbnailObserver> cloudDataObserver_;
-    static std::recursive_mutex timerMutex_;
-    static Utils::Timer timer_;
-    static uint32_t timerId_;
 };
 
 // Scanner callback objects
