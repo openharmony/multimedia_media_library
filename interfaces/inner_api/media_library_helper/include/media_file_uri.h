@@ -31,6 +31,7 @@ enum {
     API10_PHOTOALBUM_URI,
     API10_AUDIO_URI,
     API9_URI,
+    API10_ANALYSISALBUM_URI,
 };
 
 const std::string MEDIA_FILE_URI_EMPTY = "empty";

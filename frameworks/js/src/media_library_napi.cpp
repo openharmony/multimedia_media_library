@@ -4749,7 +4749,9 @@ static napi_value ParseArgsIndexof(napi_env env, napi_callback_info info,
     context->fetchColumn.emplace_back(photoUri.GetFileId());
     if (!album.empty()) {
         MediaFileUri albumUri(album);
-        CHECK_COND(env, albumUri.GetUriType() == API10_PHOTOALBUM_URI, JS_ERR_PARAMETER_INVALID);
+        CHECK_COND(env, albumUri.GetUriType() == API10_PHOTOALBUM_URI ||
+            albumUri.GetUriType() == API10_ANALYSISALBUM_URI, JS_ERR_PARAMETER_INVALID);
+        context->isAnalysisAlbum = (albumUri.GetUriType() == API10_ANALYSISALBUM_URI);
         context->fetchColumn.emplace_back(albumUri.GetFileId());
     } else {
         context->fetchColumn.emplace_back(album);
@@ -4833,7 +4835,7 @@ static void GetPhotoIndexExec(napi_env env, void *data, ResultNapiType type)
     MediaLibraryTracer tracer;
     tracer.Start("JsGetPhotoIndexExec");
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
-    string queryUri = UFM_GET_INDEX;
+    string queryUri = context->isAnalysisAlbum ? PAH_GET_ANALYSIS_INDEX : UFM_GET_INDEX;
     MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(queryUri);
     int errCode = 0;
