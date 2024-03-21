@@ -75,6 +75,18 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_001, Test
     EXPECT_EQ(ret, E_OK);
 }
 
+HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_002, TestSize.Level0)
+{
+    unique_ptr<Metadata> data = make_unique<Metadata>();
+    unique_ptr<MediaScannerDb> mediaScannerDb;
+    string path = "/storage/cloud/100/files/Documents/CreateImageLcdTest_001.jpg";
+    mediaScannerDb->GetFileBasicInfo(path, data);
+    data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_IMAGE));
+    data->SetFilePath(path);
+    int32_t ret = MetadataExtractor::ExtractImageMetadata(data);
+    EXPECT_EQ(ret, E_OK);
+}
+
 HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_001, TestSize.Level0)
 {
     unique_ptr<Metadata> data = make_unique<Metadata>();
