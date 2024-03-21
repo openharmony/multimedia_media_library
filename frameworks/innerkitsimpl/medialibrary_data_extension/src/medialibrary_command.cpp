@@ -81,6 +81,7 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_PENDING, OperationType::UPDATE_PENDING },
     { OPRN_SET_USER_COMMENT, OperationType::SET_USER_COMMENT },
     { OPRN_INDEX, OperationType::INDEX },
+    { OPRN_ANALYSIS_INDEX, OperationType::ANALYSIS_INDEX },
     { OPRN_COMMIT_EDIT, OperationType::COMMIT_EDIT },
     { OPRN_REVERT_EDIT, OperationType::REVERT_EDIT },
     { OPRN_HIDE, OperationType::HIDE },

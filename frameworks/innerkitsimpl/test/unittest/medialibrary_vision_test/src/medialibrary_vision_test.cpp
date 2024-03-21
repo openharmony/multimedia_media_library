@@ -1578,6 +1578,29 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Leve
     EXPECT_EQ(count, 2);
 }
 
+HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_AnalysisGetPhotoIndex_Test_001::Start");
+    int32_t albumId = CreateAnalysisAlbum("6");
+    int32_t id1 = CreateSingleImage("AnalysisGetPhotoIndex1.jpg");
+    int32_t id2 = CreateSingleImage("AnalysisGetPhotoIndex2.jpg");
+    InsertAnalysisMap(albumId, id1);
+    InsertAnalysisMap(albumId, id2);
+    
+    Uri queryIndexUri(PAH_GET_ANALYSIS_INDEX);
+    MediaLibraryCommand queryCmd(queryIndexUri);
+    DataShare::DataSharePredicates predicatesQuery;
+    predicatesQuery.OrderByAsc(FILE_ID);
+    vector<string> columns = {to_string(id2), to_string(albumId)};
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryCmd, columns, predicatesQuery, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    resultSet->GoToFirstRow();
+    int index = -1;
+    resultSet->GetInt(0, index);
+    EXPECT_EQ(index, 1);
+}
+
 void CreatTestImage()
 {
     Uri createAssetUri("file://media/Photo/create");

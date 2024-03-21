@@ -366,7 +366,6 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t imagePreviewIndex;
     int32_t parentSmartAlbumId = 0;
     int32_t smartAlbumId = -1;
-    int32_t isAnalysisAlbum = 0;
     int32_t isLocationAlbum = 0;
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
@@ -377,6 +376,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> fetchColumn;
     std::vector<std::string> uris;
     bool hiddenOnly = false;
+    bool isAnalysisAlbum = false;
     int32_t hiddenAlbumFetchMode = -1;
     std::string formId;
     std::shared_ptr<PickerCallBack> pickerCallBack;
