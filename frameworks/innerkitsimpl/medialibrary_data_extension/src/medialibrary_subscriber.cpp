@@ -157,7 +157,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (result != E_OK) {
         MEDIA_ERR_LOG("DoTrashAging faild");
     }
-    dataManager->RegisterTimer();
 
     VariantMap map = {{KEY_COUNT, *trashCountPtr}};
     PostEventUtils::GetInstance().PostStatProcess(StatType::AGING_STAT, map);
@@ -204,7 +203,6 @@ void MedialibrarySubscriber::StopBackgroundOperation()
 {
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
     WriteThumbnailStat();
-    MediaLibraryDataManager::GetInstance()->UnregisterTimer();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
