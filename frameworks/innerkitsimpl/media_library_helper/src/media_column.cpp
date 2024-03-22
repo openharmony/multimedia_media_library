@@ -244,9 +244,10 @@ const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
 const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         "CREATE TRIGGER photos_mdirty_trigger AFTER UPDATE ON " +
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
-                        " AND new.date_modified = old.date_modified AND old.dirty = " +
-                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
-                        " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
+                        " AND new.date_modified = old.date_modified AND ( old.dirty = " +
+                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) + " OR old.dirty =" +
+                        std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SDIRTY)) +
+                        ") AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
                         " AND " + PhotoColumn::CheckUploadPhotoColumns() +
                         " BEGIN " +
                         " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET dirty = " +
