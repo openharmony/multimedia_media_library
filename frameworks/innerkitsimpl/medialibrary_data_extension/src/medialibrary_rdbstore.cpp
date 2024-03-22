@@ -1181,6 +1181,22 @@ static string UpdateCloudPathSql(const string &table, const string &column)
         " WHERE " + column + " LIKE '" + LOCAL_PATH + "%';";
 }
 
+static void UpdateMdirtyTriggerForSdirty(RdbStore &store)
+{
+    const string dropMdirtyCreateTrigger = "DROP TRIGGER IF EXISTS photos_mdirty_trigger";
+    int32_t ret = store.ExecuteSql(dropMdirtyCreateTrigger);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("drop photos_mdirty_trigger fail, ret = %{public}d", ret);
+        UpdateFail(__FILE__, __LINE__);
+    }
+
+    ret = store.ExecuteSql(PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("add photos_mdirty_trigger fail, ret = %{public}d", ret);
+        UpdateFail(__FILE__, __LINE__);
+    }
+}
+
 static int32_t UpdateCloudPath(RdbStore &store)
 {
     const vector<string> updateCloudPath = {
@@ -2256,6 +2272,10 @@ static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_MISSING_UPDATES) {
         AddMissingUpdates(store);
+    }
+    
+    if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_SDIRTY) {
+        UpdateMdirtyTriggerForSdirty(store);
     }
 }
 
