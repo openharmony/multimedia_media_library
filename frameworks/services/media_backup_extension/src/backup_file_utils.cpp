@@ -194,7 +194,7 @@ int32_t BackupFileUtils::PreparePath(const std::string &path)
 {
     size_t index = path.rfind("/");
     if (index == std::string::npos || index == path.length() - 1) {
-        MEDIA_ERR_LOG("parse directory path failed: %{private}s", path.c_str());
+        MEDIA_ERR_LOG("Parse directory path failed: %{private}s", path.c_str());
         return E_CHECK_DIR_FAIL;
     }
     std::string dirPath = path.substr(0, index);
