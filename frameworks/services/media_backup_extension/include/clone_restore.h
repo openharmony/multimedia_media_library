@@ -25,20 +25,72 @@ public:
     CloneRestore() = default;
     virtual ~CloneRestore() = default;
     // upgradePath is useless now
+    void StartRestore(const std::string &backupRestorePath, const std::string &upgradePath) override;
     int32_t Init(const std::string &backupRestoreDir, const std::string &upgradeFilePath, bool isUpgrade) override;
+    NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
+        int32_t sourceType) const override;
 
 private:
     void RestorePhoto(void) override;
     void HandleRestData(void) override;
     int32_t QueryTotalNumber(void) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
-    bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
+    bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &fileInfo) override;
     void AnalyzeSource() override;
+    void RestoreAlbum(void);
+    void InsertPhoto(std::vector<FileInfo> &fileInfos);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
+        int32_t sourceType);
+    int32_t MoveSingleFile(FileInfo &fileInfo);
+    bool DoesFileExist(const std::string &filePath);
+    int32_t QueryAlbumTotalNumber(const std::string &tableName);
+    std::vector<AlbumInfo> QueryAlbumInfos(const std::string &tableName, int32_t offset);
+    bool ParseAlbumResultSet(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        AlbumInfo &albumInfo);
+    bool PrepareCommonColumnInfoMap(const std::string &tableName,
+        const std::unordered_map<std::string, std::string> &srcColumnInfoMap,
+        const std::unordered_map<std::string, std::string> &dstColumnInfoMap);
+    bool HasSameColumn(const std::unordered_map<std::string, std::string> &columnInfoMap, const std::string &columnName,
+        const std::string &columnType);
+    void GetValFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> &valMap,
+        const std::string &columnName, const std::string &columnType);
+    void PrepareCommonColumnVal(NativeRdb::ValuesBucket &values, const std::string &columnName,
+        const std::variant<int32_t, int64_t, double, std::string> &columnVal,
+        const std::unordered_map<std::string, std::string> &commonColumnInfoMap) const;
+    void GetQueryWhereClause(const std::string &tableName,
+        const std::unordered_map<std::string, std::string> &columnInfoMap);
+    void QueryTableAlbumSetMap(FileInfo &fileInfo);
+    void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
+    void BatchNotifyPhoto(const std::vector<FileInfo> &fileInfos);
+    void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<AlbumInfo> &albumInfos,
+        const std::string &tableName);
+    bool HasSameAlbum(const AlbumInfo &albumInfo, const std::string &tableName) const;
+    void BatchQueryAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
+    void BatchInsertMap(std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
+    NativeRdb::ValuesBucket GetInsertValue(const MapInfo &mapInfo) const;
+    NativeRdb::ValuesBucket GetInsertValue(const AlbumInfo &albumInfo, const std::string &tableName) const;
+    void BatchNotifyAlbum();
+    void CheckTableColumnStatus();
+    bool HasColumns(const std::unordered_map<std::string, std::string> &columnInfoMap,
+        const std::unordered_set<std::string> &columnSet);
+    bool HasColumn(const std::unordered_map<std::string, std::string> &columnInfoMap, const std::string &columnName);
+    void GetAlbumExtraQueryWhereClause(const std::string &tableName);
+    bool IsSameFile(FileInfo &fileInfo);
+    bool HasSameFile(FileInfo &fileInfo);
+    bool IsReadyForRestore(const std::string &tableName);
 
 private:
+    std::atomic<uint64_t> migrateDatabaseAlbumNumber_;
+    std::atomic<uint64_t> migrateDatabaseMapNumber_;
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::string filePath_;
     std::string dbPath_;
+    std::unordered_map<std::string, bool> tableColumnStatusMap_;
+    std::unordered_map<std::string, std::string> tableQueryWhereClauseMap_;
+    std::unordered_map<std::string, std::unordered_map<int32_t, int32_t>> tableAlbumIdMap_;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tableCommonColumnInfoMap_;
 };
 } // namespace Media
 } // namespace OHOS

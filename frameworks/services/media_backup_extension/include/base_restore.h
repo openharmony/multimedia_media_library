@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_BASE_RESTORE_H
 
 #include <atomic>
+#include <unordered_map>
 
 #include "backup_const.h"
 #include "medialibrary_rdb_transaction.h"
@@ -29,7 +30,7 @@ class BaseRestore {
 public:
     BaseRestore() = default;
     virtual ~BaseRestore() = default;
-    void StartRestore(const std::string &backupRetorePath, const std::string &upgradePath);
+    virtual void StartRestore(const std::string &backupRetorePath, const std::string &upgradePath);
     virtual int32_t Init(const std::string &backupRetorePath, const std::string &upgradePath, bool isUpgrade) = 0;
     virtual int32_t QueryTotalNumber(void) = 0;
     virtual std::vector<FileInfo> QueryFileInfos(int32_t offset) = 0;
@@ -52,16 +53,15 @@ protected:
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
     void InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
-    bool IsSameFile(const FileInfo &fileInfo) const;
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
-    int32_t BatchInsertWithRetry(std::vector<NativeRdb::ValuesBucket> &value, int64_t &rowNum);
+    int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
+        int64_t &rowNum);
+    int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir) const;
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
     std::atomic<uint64_t> migrateFileNumber_;
     std::string dualDirName_ = "";
-
-private:
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
 };
 } // namespace Media
