@@ -42,7 +42,7 @@ private:
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     int32_t MoveSingleFile(FileInfo &fileInfo);
-    bool DoesFileExist(const std::string &filePath);
+    bool IsFilePathExist(const std::string &filePath);
     int32_t QueryAlbumTotalNumber(const std::string &tableName);
     std::vector<AlbumInfo> QueryAlbumInfos(const std::string &tableName, int32_t offset);
     bool ParseAlbumResultSet(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
@@ -71,7 +71,6 @@ private:
     void BatchInsertMap(std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
     NativeRdb::ValuesBucket GetInsertValue(const MapInfo &mapInfo) const;
     NativeRdb::ValuesBucket GetInsertValue(const AlbumInfo &albumInfo, const std::string &tableName) const;
-    void BatchNotifyAlbum();
     void CheckTableColumnStatus();
     bool HasColumns(const std::unordered_map<std::string, std::string> &columnInfoMap,
         const std::unordered_set<std::string> &columnSet);
@@ -82,8 +81,8 @@ private:
     bool IsReadyForRestore(const std::string &tableName);
 
 private:
-    std::atomic<uint64_t> migrateDatabaseAlbumNumber_;
-    std::atomic<uint64_t> migrateDatabaseMapNumber_;
+    std::atomic<uint64_t> migrateDatabaseAlbumNumber_ = 0;
+    std::atomic<uint64_t> migrateDatabaseMapNumber_ = 0;
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::string filePath_;
     std::string dbPath_;

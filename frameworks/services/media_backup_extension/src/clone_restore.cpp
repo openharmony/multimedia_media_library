@@ -26,6 +26,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_rdb_utils.h"
+#include "medialibrary_type_const.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 
@@ -73,7 +74,7 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
             PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_META_DATE_MODIFIED,
             PhotoColumn::PHOTO_SYNC_STATUS, PhotoColumn::PHOTO_CLOUD_VERSION, PhotoColumn::PHOTO_POSITION,
             PhotoColumn::PHOTO_THUMB_STATUS, PhotoColumn::PHOTO_CLEAN_FLAG, // cloud related
-            PhotoColumn::PHOTO_HAS_ASTC, // atsc related
+            PhotoColumn::PHOTO_HAS_ASTC, // astc related
         }},
     { PhotoAlbumColumns::TABLE,  
         {
@@ -117,6 +118,13 @@ const vector<vector<string>> CLONE_TABLE_LISTS = {
     { PhotoAlbumColumns::TABLE, PhotoMap::TABLE },
     { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE },
 };
+const unordered_map<string, ResultSetDataType> COLUMN_TYPE_MAP = {
+    { "INT", ResultSetDataType::TYPE_INT32 },
+    { "INTEGER", ResultSetDataType::TYPE_INT32 },
+    { "BIGINT", ResultSetDataType::TYPE_INT64 },
+    { "DOUBLE", ResultSetDataType::TYPE_DOUBLE },
+    { "TEXT", ResultSetDataType::TYPE_STRING },
+};
 
 template<typename Key, typename Value>
 Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, const Value &defaultValue = Value())
@@ -140,7 +148,6 @@ void CloneRestore::StartRestore(const string &backupRetoreDir, const string &upg
             (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
         unordered_map<int32_t, int32_t> updateResult;
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_, updateResult);
-        BatchNotifyAlbum();
     }
     HandleRestData();
 }
@@ -193,7 +200,7 @@ void CloneRestore::RestoreAlbum(void)
 {
     for (const auto &tableName : CLONE_ALBUMS) {
         if (!IsReadyForRestore(tableName)) {
-            MEDIA_ERR_LOG("Column status %{public}s is not ready for restore album, quit", tableName.c_str());
+            MEDIA_ERR_LOG("Column status of %{private}s is not ready for restore album, quit", tableName.c_str());
             continue;
         }
         unordered_map<string, string> srcColumnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_, tableName);
@@ -240,7 +247,7 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     migrateDatabaseMapNumber_ += mapRowNum;
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
-    int32_t fileMoveCount = 0;
+    int64_t fileMoveCount = 0;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath) || fileInfos[i].cloudPath.empty()) {
             continue;
@@ -255,7 +262,7 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     migrateFileNumber_ += fileMoveCount;
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("insert %{public}ld assets cost %{public}ld, query cost %{public}ld, insert %{public}ld maps "
-        "cost %{public}ld, and move %{public}ld file cost %{public}ld.", (long)photoRowNum,
+        "cost %{public}ld, and move %{public}ld files cost %{public}ld.", (long)photoRowNum,
         (long)(startQuery - startInsertPhoto), (long)(startInsertMap - startQuery), (long)mapRowNum,
         (long)(startMove - startInsertMap), (long)fileMoveCount, (long)(end - startMove));
 }
@@ -281,10 +288,9 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
-        if (MediaFileUtils::IsFileExists(fileInfos[i].cloudPath) &&
-            BackupFileUtils::CreatePath(fileInfos[i].fileType, fileInfos[i].displayName, fileInfos[i].cloudPath) !=
-                E_OK) {
-            MEDIA_WARN_LOG("Destination file path %{public}s exists, create new path failed",
+        if (MediaFileUtils::IsFileExists(fileInfos[i].cloudPath) && BackupFileUtils::CreatePath(fileInfos[i].fileType,
+            fileInfos[i].displayName, fileInfos[i].cloudPath) != E_OK) {
+            MEDIA_ERR_LOG("Destination file path %{public}s exists, create new path failed",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
@@ -430,18 +436,18 @@ int32_t CloneRestore::MoveSingleFile(FileInfo &fileInfo)
         return E_FAIL;
     }
     
-    string srcEditDataPath = BACKUP_RESTORE_DIR + BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD_EDIT_DATA,
-        fileInfo.relativePath);
+    string srcEditDataPath = BACKUP_RESTORE_DIR +
+        BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD_EDIT_DATA, fileInfo.relativePath);
     string dstEditDataPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA,
         fileInfo.relativePath);
-    if (DoesFileExist(srcEditDataPath) && MoveDirectory(srcEditDataPath, dstEditDataPath) != E_OK) {
+    if (IsFilePathExist(srcEditDataPath) && MoveDirectory(srcEditDataPath, dstEditDataPath) != E_OK) {
         MEDIA_ERR_LOG("Move editData file failed");
         return E_FAIL;
     }
     return E_OK;
 }
 
-bool CloneRestore::DoesFileExist(const string &filePath)
+bool CloneRestore::IsFilePathExist(const string &filePath)
 {
     if (!MediaFileUtils::IsFileExists(filePath)) {
         MEDIA_ERR_LOG("%{private}s doesn't exist", filePath.c_str());
@@ -474,8 +480,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
 }
 
 bool CloneRestore::PrepareCommonColumnInfoMap(const string &tableName,
-    const unordered_map<string, string> &srcColumnInfoMap,
-    const unordered_map<string, string> &dstColumnInfoMap)
+    const unordered_map<string, string> &srcColumnInfoMap, const unordered_map<string, string> &dstColumnInfoMap)
 {
     auto neededColumns = GetValueFromMap(NEEDED_COLUMNS_MAP, tableName);
     auto excludedColumns = GetValueFromMap(EXCLUDED_COLUMNS_MAP, tableName);
@@ -517,29 +522,38 @@ void CloneRestore::GetValFromResultSet(const shared_ptr<NativeRdb::ResultSet> &r
     if (errCode || isNull) {
         return;
     }
-    if (columnType == "INTERGET" || columnType == "INT") {
-        // TODO USE GETINT32VAL DIRECTLY?
-        int32_t int32Val;
-        if (resultSet->GetInt(columnIndex, int32Val) == E_OK) {
-            valMap[columnName] = int32Val;
+    ResultSetDataType dataType = GetValueFromMap(COLUMN_TYPE_MAP, columnType, ResultSetDataType::TYPE_NULL);
+    switch (dataType) {
+        case ResultSetDataType::TYPE_INT32: {
+            int32_t int32Val;
+            if (resultSet->GetInt(columnIndex, int32Val) == E_OK) {
+                valMap[columnName] = int32Val;
+            }
+            break;
         }
-    } else if (columnType == "BIGINT") {
-        int64_t int64Val;
-        if (resultSet->GetLong(columnIndex, int64Val) == E_OK) {
-            valMap[columnName] = int64Val;
+        case ResultSetDataType::TYPE_INT64: {
+            int64_t int64Val;
+            if (resultSet->GetLong(columnIndex, int64Val) == E_OK) {
+                valMap[columnName] = int64Val;
+            }
+            break;
         }
-    } else if (columnType == "DOUBLE") {
-        double doubleVal;
-        if (resultSet->GetDouble(columnIndex, doubleVal) == E_OK) {
-            valMap[columnName] = doubleVal;
+        case ResultSetDataType::TYPE_DOUBLE: {
+            double doubleVal;
+            if (resultSet->GetDouble(columnIndex, doubleVal) == E_OK) {
+                valMap[columnName] = doubleVal;
+            }
+            break;
         }
-    } else if (columnType == "TEXT") {
-        string stringVal;
-        if (resultSet->GetString(columnIndex, stringVal) == E_OK) {
-            valMap[columnName] = stringVal;
+        case ResultSetDataType::TYPE_STRING: {
+            string stringVal;
+            if (resultSet->GetString(columnIndex, stringVal) == E_OK) {
+                valMap[columnName] = stringVal;
+            }
+            break;
         }
-    } else {
-        MEDIA_ERR_LOG("No such column type: %{public}s", columnType.c_str());
+        default:
+            MEDIA_ERR_LOG("No such column type: %{public}s", columnType.c_str());
     }
 }
 
@@ -552,16 +566,26 @@ void CloneRestore::PrepareCommonColumnVal(NativeRdb::ValuesBucket &values, const
         MEDIA_ERR_LOG("No such column %{public}s", columnName.c_str());
         return;
     }
-    if (columnType == "INTERGET" || columnType == "INT") {
-        values.PutInt(columnName, get<int32_t>(columnVal));
-    } else if (columnType == "BIGINT") {
-        values.PutLong(columnName, get<int64_t>(columnVal));
-    } else if (columnType == "DOUBLE") {
-        values.PutDouble(columnName, get<double>(columnVal));
-    } else if (columnType == "TEXT") {
-        values.PutString(columnName, get<string>(columnVal));
-    } else {
-        MEDIA_ERR_LOG("No such column type: %{public}s", columnType.c_str());
+    ResultSetDataType dataType = GetValueFromMap(COLUMN_TYPE_MAP, columnType, ResultSetDataType::TYPE_NULL);
+    switch (dataType) {
+        case ResultSetDataType::TYPE_INT32: {
+            values.PutInt(columnName, get<int32_t>(columnVal));
+            break;
+        }
+        case ResultSetDataType::TYPE_INT64: {
+            values.PutLong(columnName, get<int64_t>(columnVal));
+            break;
+        }
+        case ResultSetDataType::TYPE_DOUBLE: {
+            values.PutDouble(columnName, get<double>(columnVal));
+            break;
+        }
+        case ResultSetDataType::TYPE_STRING: {
+            values.PutString(columnName, get<string>(columnVal));
+            break;
+        }
+        default:
+            MEDIA_ERR_LOG("No such column type: %{public}s", columnType.c_str());
     }
 }
 
@@ -583,16 +607,16 @@ void CloneRestore::GetQueryWhereClause(const string &tableName, const unordered_
 
 void CloneRestore::GetAlbumExtraQueryWhereClause(const string &tableName)
 {
-    auto mapTableName = GetValueFromMap(CLONE_ALBUM_MAP, tableName);
+    string mapTableName = GetValueFromMap(CLONE_ALBUM_MAP, tableName);
     if (mapTableName.empty()) {
         MEDIA_ERR_LOG("Get map for table %{private}s failed", tableName.c_str());
         return;
     }
-    auto &albumQueryWhereClause = tableQueryWhereClauseMap_[tableName];
+    string &albumQueryWhereClause = tableQueryWhereClauseMap_[tableName];
     if (!albumQueryWhereClause.empty()) {
         albumQueryWhereClause += " AND ";
     }
-    albumQueryWhereClause += " EXISTS (SELECT " + PhotoMap::ASSET_ID + " FROM " + mapTableName + " WHERE " +
+    albumQueryWhereClause += "EXISTS (SELECT " + PhotoMap::ASSET_ID + " FROM " + mapTableName + " WHERE " +
         PhotoMap::ALBUM_ID + " = " + PhotoAlbumColumns::ALBUM_ID + " AND EXISTS (SELECT " + MediaColumn::MEDIA_ID +
         " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     string photoQueryWhereClause = GetValueFromMap(tableQueryWhereClauseMap_, PhotoColumn::PHOTOS_TABLE);
@@ -683,10 +707,8 @@ void CloneRestore::BatchNotifyPhoto(const vector<FileInfo> &fileInfos)
 
 bool CloneRestore::IsSameFile(FileInfo &fileInfo)
 {
-    string originPath = BACKUP_RESTORE_DIR + RESTORE_CLOUD_DIR;
     string srcPath = fileInfo.filePath;
-    string tmpPath = fileInfo.filePath;
-    string dstPath =  tmpPath.replace(0, originPath.length(), RESTORE_LOCAL_DIR);
+    string dstPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
     struct stat srcStatInfo {};
     struct stat dstStatInfo {};
 
@@ -721,7 +743,7 @@ bool CloneRestore::IsSameFile(FileInfo &fileInfo)
 bool CloneRestore::HasSameFile(FileInfo &fileInfo)
 {
     string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
-        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_NAME + " = " + fileInfo.displayName + " AND " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
         MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -791,12 +813,6 @@ bool CloneRestore::HasSameAlbum(const AlbumInfo &albumInfo, const string &tableN
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return false;
     }
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    if (fileId <= 0 || cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
-        return false;
-    }
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
     return count > 0;    
 }
@@ -841,7 +857,7 @@ void CloneRestore::BatchInsertMap(vector<FileInfo> &fileInfos, int64_t &totalRow
             }
         }
         int64_t rowNum = 0;
-        int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
+        int32_t errCode = BatchInsertWithRetry(mapTableName, values, rowNum);
         if (errCode != E_OK) {
             MEDIA_ERR_LOG("Batch insert map failed, errCode: %{public}d", errCode);
         }
@@ -855,11 +871,6 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const MapInfo &mapInfo) con
     values.PutInt(PhotoMap::ASSET_ID, mapInfo.fileId);
     values.PutInt(PhotoMap::ALBUM_ID, mapInfo.albumId);
     return values;
-}
-
-void CloneRestore::BatchNotifyAlbum()
-{
-    MEDIA_INFO_LOG("@clone, batch notify album");
 }
 
 void CloneRestore::CheckTableColumnStatus()

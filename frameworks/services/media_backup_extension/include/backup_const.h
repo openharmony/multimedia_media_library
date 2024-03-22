@@ -136,8 +136,8 @@ struct FileInfo {
 };
 
 struct AlbumInfo {
-    int32_t albumIdOld;
-    int32_t albumIdNew;
+    int32_t albumIdOld {-1};
+    int32_t albumIdNew {-1};
     std::string albumName;
     PhotoAlbumType albumType;
     PhotoAlbumSubType albumSubType;
@@ -145,8 +145,8 @@ struct AlbumInfo {
 };
 
 struct MapInfo {
-    int32_t albumId;
-    int32_t fileId;
+    int32_t albumId {-1};
+    int32_t fileId {-1};
 };
 
 // sql for external
