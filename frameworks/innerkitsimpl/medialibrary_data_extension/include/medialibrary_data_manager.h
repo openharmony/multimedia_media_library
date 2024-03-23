@@ -113,6 +113,8 @@ private:
     std::shared_ptr<NativeRdb::ResultSet> QuerySet(MediaLibraryCommand &cmd, const std::vector<std::string> &columns,
         const DataShare::DataSharePredicates &predicates, int &errCode);
     void InitACLPermission();
+    std::shared_ptr<NativeRdb::ResultSet> QueryInternal(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates);
 #ifdef DISTRIBUTED
     int32_t LcdDistributeAging();
     int32_t DistributeDeviceAging();

@@ -61,6 +61,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
+#include "medialibrary_story_operations.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
@@ -426,6 +427,12 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
 
+        case OperationObject::STORY_ALBUM:
+        case OperationObject::STORY_COVER:
+        case OperationObject::STORY_PLAY:
+        case OperationObject::USER_PHOTOGRAPHY:
+            return MediaLibraryStoryOperations::InsertOperation(cmd);
+
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
@@ -630,6 +637,14 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
         case OperationObject::GEO_PHOTO: {
             return MediaLibraryLocationOperations::DeleteOperation(cmd);
         }
+
+        case OperationObject::STORY_ALBUM:
+        case OperationObject::STORY_COVER:
+        case OperationObject::STORY_PLAY:
+        case OperationObject::USER_PHOTOGRAPHY: {
+            return MediaLibraryStoryOperations::DeleteOperation(cmd);
+        }
+            
         case OperationObject::SEARCH_TOTAL: {
             return MediaLibrarySearchOperations::DeleteOperation(cmd);
         }
@@ -707,6 +722,13 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::GEO_KNOWLEDGE: {
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
         }
+
+        case OperationObject::STORY_ALBUM:
+        case OperationObject::STORY_COVER:
+        case OperationObject::STORY_PLAY:
+        case OperationObject::USER_PHOTOGRAPHY:
+            return MediaLibraryStoryOperations::UpdateOperation(cmd);
+        
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             if (cmd.GetOprnType() == OperationType::ADD_IMAGE) {
                 MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, value.GetAll());
@@ -1028,31 +1050,55 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
     AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
 
-    shared_ptr<NativeRdb::ResultSet> queryResultSet;
     OperationObject oprnObject = cmd.GetOprnObject();
     auto it = QUERY_CONDITION_MAP.find(oprnObject);
     if (it != QUERY_CONDITION_MAP.end()) {
-        queryResultSet = MediaLibraryObjectUtils::QueryWithCondition(cmd, columns, it->second);
-    } else if (oprnObject == OperationObject::FILESYSTEM_ALBUM || oprnObject == OperationObject::MEDIA_VOLUME) {
-        queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
-    } else if (oprnObject == OperationObject::PHOTO_ALBUM) {
-        queryResultSet = MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
-    } else if (oprnObject == OperationObject::ANALYSIS_PHOTO_ALBUM && CheckIsPortraitAlbum(cmd)) {
-        queryResultSet = MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
-    } else if (oprnObject == OperationObject::PHOTO_MAP || oprnObject == OperationObject::ANALYSIS_PHOTO_MAP) {
-        queryResultSet = PhotoMapOperations::QueryPhotoAssets(
-            RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
-    } else if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
-        queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
-    } else if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::ANALYSIS_PHOTO_ALBUM) {
-        queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-    } else if (oprnObject == OperationObject::SEARCH_TOTAL) {
-        queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-    } else {
-        tracer.Start("QueryFile");
-        queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
+        return MediaLibraryObjectUtils::QueryWithCondition(cmd, columns, it->second);
     }
-    return queryResultSet;
+
+    return QueryInternal(cmd, columns, predicates);
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
+    const vector<string> &columns, const DataSharePredicates &predicates) {
+{
+    MediaLibraryTracer tracer;
+    switch (cmd.GetOprnObject()) {
+        case OperationObject::FILESYSTEM_ALBUM:
+        case OperationObject::MEDIA_VOLUME:
+            return MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
+        case OperationObject::PHOTO_ALBUM:
+            return MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
+        case OperationObject::ANALYSIS_PHOTO_ALBUM: {
+            if (CheckIsPortraitAlbum(cmd)) {
+                return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
+            }
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        }
+        case OperationObject::PHOTO_MAP:
+        case OperationObject::ANALYSIS_PHOTO_MAP: {
+            return PhotoMapOperations::QueryPhotoAssets(
+                RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
+        }
+        case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::FILESYSTEM_AUDIO:
+            return MediaLibraryAssetOperations::QueryOperation(cmd, columns);
+
+        case OperationObject::VISION_START ... OperationObject::ANALYSIS_PHOTO_ALBUM:
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        case OperationObject::SEARCH_TOTAL:
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+
+        case OperationObject::STORY_ALBUM:
+        case OperationObject::STORY_COVER:
+        case OperationObject::STORY_PLAY:
+        case OperationObject::USER_PHOTOGRAPHY:
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+
+        default:
+            tracer.Start("QueryFile");
+            return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
+    }
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand &cmd,
