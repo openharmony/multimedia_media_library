@@ -1060,7 +1060,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
-    const vector<string> &columns, const DataSharePredicates &predicates) {
+    const vector<string> &columns, const DataSharePredicates &predicates)
 {
     MediaLibraryTracer tracer;
     switch (cmd.GetOprnObject()) {
