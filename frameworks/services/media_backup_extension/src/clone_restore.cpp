@@ -35,7 +35,7 @@ namespace OHOS {
 namespace Media {
 const string MEDIA_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
-    { PhotoColumn::PHOTOS_TABLE, 
+    { PhotoColumn::PHOTOS_TABLE,
         {
             MediaColumn::MEDIA_ID,
             MediaColumn::MEDIA_FILE_PATH,
@@ -43,7 +43,7 @@ const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
             MediaColumn::MEDIA_TYPE,
             MediaColumn::MEDIA_NAME,
         }},
-    { PhotoAlbumColumns::TABLE,  
+    { PhotoAlbumColumns::TABLE,
         {
             PhotoAlbumColumns::ALBUM_ID,
             PhotoAlbumColumns::ALBUM_TYPE,
@@ -69,14 +69,14 @@ const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
         }},
 };
 const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
-    { PhotoColumn::PHOTOS_TABLE, 
+    { PhotoColumn::PHOTOS_TABLE,
         {
             PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_META_DATE_MODIFIED,
             PhotoColumn::PHOTO_SYNC_STATUS, PhotoColumn::PHOTO_CLOUD_VERSION, PhotoColumn::PHOTO_POSITION,
             PhotoColumn::PHOTO_THUMB_STATUS, PhotoColumn::PHOTO_CLEAN_FLAG, // cloud related
             PhotoColumn::PHOTO_HAS_ASTC, // astc related
         }},
-    { PhotoAlbumColumns::TABLE,  
+    { PhotoAlbumColumns::TABLE,
         {
             PhotoAlbumColumns::ALBUM_COVER_URI, PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::CONTAINS_HIDDEN,
             PhotoAlbumColumns::HIDDEN_COUNT, PhotoAlbumColumns::HIDDEN_COVER, PhotoAlbumColumns::ALBUM_IMAGE_COUNT,
@@ -91,11 +91,11 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
         }},
 };
 const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLAUSE_MAP = {
-    { PhotoColumn::PHOTOS_TABLE, 
+    { PhotoColumn::PHOTOS_TABLE,
         {
             { PhotoColumn::PHOTO_POSITION, PhotoColumn::PHOTO_POSITION + " IN (1, 3)" },
         }},
-    { PhotoAlbumColumns::TABLE,  
+    { PhotoAlbumColumns::TABLE,
         {
             { PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_NAME + " IS NOT NULL" },
             { PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_TYPE + " != " +
@@ -359,7 +359,7 @@ bool CloneRestore::ParseResultSet(const shared_ptr<NativeRdb::ResultSet> &result
     fileInfo.fileSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
     fileInfo.fileType =  GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
     fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
-    
+
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, PhotoColumn::PHOTOS_TABLE);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
         string columnName = it->first;
@@ -413,7 +413,7 @@ bool CloneRestore::ParseAlbumResultSet(const string &tableName, const shared_ptr
     albumInfo.albumName = GetStringVal(PhotoAlbumColumns::ALBUM_NAME, resultSet);
     albumInfo.albumType = static_cast<PhotoAlbumType>(GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet));
     albumInfo.albumSubType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
-    
+
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
         string columnName = it->first;
@@ -435,7 +435,7 @@ int32_t CloneRestore::MoveSingleFile(FileInfo &fileInfo)
         MEDIA_ERR_LOG("Move photo file failed");
         return E_FAIL;
     }
-    
+
     string srcEditDataPath = BACKUP_RESTORE_DIR +
         BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD_EDIT_DATA, fileInfo.relativePath);
     string dstEditDataPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA,
@@ -469,7 +469,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
 
-    unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, 
+    unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_,
         PhotoColumn::PHOTOS_TABLE);
     for (auto it = fileInfo.valMap.begin(); it != fileInfo.valMap.end(); ++it) {
         string columnName = it->first;
@@ -814,7 +814,7 @@ bool CloneRestore::HasSameAlbum(const AlbumInfo &albumInfo, const string &tableN
         return false;
     }
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
-    return count > 0;    
+    return count > 0;
 }
 
 void CloneRestore::BatchQueryAlbum(vector<AlbumInfo> &albumInfos, const string &tableName)
