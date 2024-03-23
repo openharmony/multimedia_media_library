@@ -84,13 +84,5 @@ void MediaCloudSyncCallback::OnSyncStateChanged(SyncType type, SyncPromptState s
     MEDIA_INFO_LOG("sync type %{public}d, state %{public}d", type, state);
 }
 
-int32_t CloudSyncHelper::StartDownloadFile(const std::string &path)
-{
-    int32_t err = CloudSyncManager::GetInstance().StartDownloadFile(path);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to download cloud file, path: %{private}s", path.c_str());
-    }
-    return err;
-}
 } // namespace Media
 } // namespace OHOS
