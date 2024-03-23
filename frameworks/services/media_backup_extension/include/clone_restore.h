@@ -81,8 +81,8 @@ private:
     bool IsReadyForRestore(const std::string &tableName);
 
 private:
-    std::atomic<uint64_t> migrateDatabaseAlbumNumber_ = 0;
-    std::atomic<uint64_t> migrateDatabaseMapNumber_ = 0;
+    std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
+    std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
     std::shared_ptr<NativeRdb::RdbStore> mediaRdb_;
     std::string filePath_;
     std::string dbPath_;
