@@ -79,7 +79,6 @@ void PermissionUtils::GetClientBundle(const int uid, string &bundleName)
     }
     auto result = bundleMgr_->GetBundleNameForUid(uid, bundleName);
     if (!result) {
-        MEDIA_ERR_LOG("GetBundleNameForUid fail");
         bundleName = "";
     }
 }

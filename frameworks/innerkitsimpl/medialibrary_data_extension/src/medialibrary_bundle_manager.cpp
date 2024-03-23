@@ -61,6 +61,9 @@ void MediaLibraryBundleManager::GetBundleNameByUID(const int32_t uid, string &bu
     }
 }
 
+/**
+ * if it is called by SA, bundlename is null. we should not log everytime
+ */
 std::string MediaLibraryBundleManager::GetClientBundleName()
 {
     lock_guard<mutex> lock(uninstallMutex_);
@@ -82,4 +85,4 @@ void MediaLibraryBundleManager::Clear()
     cacheMap_.clear();
 }
 } // Media
-} // OHOS
+} // OHOS

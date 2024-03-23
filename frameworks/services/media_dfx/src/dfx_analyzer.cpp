@@ -80,10 +80,12 @@ void DfxAnalyzer::FlushCommonBehavior(std::unordered_map<string, CommonBehavior>
         behaviors += "{" + bundleName + ": " + to_string(times) + "}";
     }
     prefs->FlushSync();
-    MEDIA_INFO_LOG("common behavior: %{public}s", behaviors.c_str());
+    if (!behaviors.empty()) {
+        MEDIA_INFO_LOG("common behavior: %{public}s", behaviors.c_str());
+    }
 }
 
-void DfxAnalyzer::FlushDeleteBehavior(std::unordered_map<string, int32_t> &deleteBehaviorMap)
+void DfxAnalyzer::FlushDeleteBehavior(std::unordered_map<string, int32_t> &deleteBehaviorMap, int32_t type)
 {
     if (deleteBehaviorMap.empty()) {
         return;
@@ -95,13 +97,11 @@ void DfxAnalyzer::FlushDeleteBehavior(std::unordered_map<string, int32_t> &delet
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return;
     }
-    string behaviors;
     for (auto entry: deleteBehaviorMap) {
         string bundleName = entry.first;
         int32_t times = entry.second;
         int32_t oldValue = prefs->GetInt(bundleName, 0);
-        prefs->PutInt(bundleName, times + oldValue);
-        behaviors += "{" + bundleName + ": " + to_string(times) + "}";
+        prefs->PutInt(bundleName + SPLIT_CHAR + to_string(type), times + oldValue);
     }
     prefs->FlushSync();
 }

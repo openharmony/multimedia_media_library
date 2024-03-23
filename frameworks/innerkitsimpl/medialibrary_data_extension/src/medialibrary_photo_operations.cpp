@@ -624,7 +624,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
             notifyUris.size(), updatedRows);
     }
     TrashPhotosSendNotify(notifyUris);
-    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::DELETE_ASSETS_TO_TRASH, updatedRows, updateResult,
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::TRASH_PHOTO, updatedRows, updateResult,
         notifyUris);
     return updatedRows;
 }
