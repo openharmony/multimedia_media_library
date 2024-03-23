@@ -136,9 +136,9 @@ Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, cons
     return it->second;
 }
 
-void CloneRestore::StartRestore(const string &backupRetoreDir, const string &upgradePath)
+void CloneRestore::StartRestore(const string &backupRestoreDir, const string &upgradePath)
 {
-    int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
+    int32_t errorCode = Init(backupRestoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         CheckTableColumnStatus();
         RestoreAlbum();
@@ -152,7 +152,7 @@ void CloneRestore::StartRestore(const string &backupRetoreDir, const string &upg
     HandleRestData();
 }
 
-int32_t CloneRestore::Init(const string &backupRetoreDir, const string &upgradePath, bool isUpgrade)
+int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgradePath, bool isUpgrade)
 {
     dbPath_ = BACKUP_RESTORE_DIR + MEDIA_DB_PATH;
     filePath_ = BACKUP_RESTORE_DIR + "/storage/cloud/files";
