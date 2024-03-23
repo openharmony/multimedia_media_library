@@ -295,7 +295,7 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
 {
     if (!MediaFileUtils::CreateDirectory(dstDir)) {
         MEDIA_ERR_LOG("Create dstDir %{private}s failed", dstDir.c_str());
-        return E_FAIL;    
+        return E_FAIL;
     }
     for (const auto &dirEntry : std::filesystem::directory_iterator{ srcDir }) {
         std::string srcFilePath = dirEntry.path();
