@@ -450,11 +450,11 @@ int32_t CloneRestore::MoveSingleFile(FileInfo &fileInfo)
 bool CloneRestore::IsFilePathExist(const string &filePath)
 {
     if (!MediaFileUtils::IsFileExists(filePath)) {
-        MEDIA_ERR_LOG("%{private}s doesn't exist", filePath.c_str());
+        MEDIA_DEBUG_LOG("%{private}s doesn't exist", filePath.c_str());
         return false;
     }
     if (MediaFileUtils::IsDirectory(filePath) && MediaFileUtils::IsDirEmpty(filePath)) {
-        MEDIA_ERR_LOG("%{private}s is an empty directory", filePath.c_str());
+        MEDIA_DEBUG_LOG("%{private}s is an empty directory", filePath.c_str());
         return false;
     }
     return true;
