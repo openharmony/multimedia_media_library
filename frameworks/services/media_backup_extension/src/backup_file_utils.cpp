@@ -15,7 +15,6 @@
 
 #include "backup_file_utils.h"
 
-#include "backup_const.h"
 #include "scanner_utils.h"
 #include "metadata_extractor.h"
 #include "mimetype_utils.h"
@@ -163,6 +162,46 @@ int32_t BackupFileUtils::CreateAssetRealName(int32_t fileId, int32_t mediaType,
             return E_INVALID_VALUES;
     }
     name = mediaTypeStr + to_string(MediaFileUtils::UTCTimeSeconds()) + "_" + fileNumStr + "." + extension;
+    return E_OK;
+}
+
+std::string BackupFileUtils::GetFullPathByPrefixType(PrefixType prefixType, const std::string &relativePath)
+{
+    std::string fullPath;
+    auto it = PREFIX_MAP.find(prefixType);
+    if (it == PREFIX_MAP.end()) {
+        MEDIA_ERR_LOG("Get path prefix failed: %{public}d", prefixType);
+        return fullPath;
+    }
+    fullPath = it->second + relativePath;
+    return fullPath;
+}
+
+int32_t BackupFileUtils::CreatePath(int32_t mediaType, const std::string &displayName, std::string &path)
+{
+    int32_t uniqueId = MediaLibraryAssetOperations::CreateAssetUniqueId(mediaType);
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, mediaType,
+        MediaFileUtils::GetExtensionFromPath(displayName), path);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Create path failed, errCode: %{public}d", errCode);
+        path.clear();
+        return errCode;
+    }
+    return E_OK;
+}
+
+int32_t BackupFileUtils::PreparePath(const std::string &path)
+{
+    size_t index = path.rfind("/");
+    if (index == std::string::npos || index == path.length() - 1) {
+        MEDIA_ERR_LOG("Parse directory path failed: %{private}s", path.c_str());
+        return E_CHECK_DIR_FAIL;
+    }
+    std::string dirPath = path.substr(0, index);
+    if (!MediaFileUtils::IsFileExists(dirPath) && !MediaFileUtils::CreateDirectory(dirPath)) {
+        MEDIA_ERR_LOG("Directory path doesn't exist and was created failed: %{public}s", dirPath.c_str());
+        return E_CHECK_DIR_FAIL;
+    }
     return E_OK;
 }
 } // namespace Media
