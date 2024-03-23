@@ -327,7 +327,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
         watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, albumId);
     }
     std::unordered_map<int32_t, int32_t> updateResult;
-    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::REMOVE_ASSETS, deleteRow, updateResult, whereArgs);
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_REMOVE_PHOTOS, deleteRow, updateResult, whereArgs);
     return deleteRow;
 }
 
