@@ -157,12 +157,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
-        if ((sceneCode == CLONE_RESTORE_ID) && (IsSameFile(fileInfos[i]))) {
-            (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
-            MEDIA_WARN_LOG("File %{public}s already exists.",
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
-            continue;
-        }
         std::string cloudPath;
         int32_t uniqueId = MediaLibraryAssetOperations::CreateAssetUniqueId(fileInfos[i].fileType);
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
@@ -218,39 +212,6 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
 }
 
-bool BaseRestore::IsSameFile(const FileInfo &fileInfo) const
-{
-    std::string originPath = BACKUP_RESTORE_DIR + RESTORE_CLOUD_DIR;
-    std::string srcPath = fileInfo.filePath;
-    std::string tmpPath = fileInfo.filePath;
-    std::string dstPath =  tmpPath.replace(0, originPath.length(), RESTORE_LOCAL_DIR);
-    struct stat srcStatInfo {};
-    struct stat dstStatInfo {};
-
-    if (access(srcPath.c_str(), F_OK) || access(dstPath.c_str(), F_OK)) {
-        return false;
-    }
-    if (stat(srcPath.c_str(), &srcStatInfo) != 0) {
-        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", srcPath.c_str(), errno);
-        return false;
-    }
-    if (stat(dstPath.c_str(), &dstStatInfo) != 0) {
-        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", dstPath.c_str(), errno);
-        return false;
-    }
-    if (fileInfo.fileSize != srcStatInfo.st_size) {
-        MEDIA_ERR_LOG("Internal error");
-        return false;
-    }
-    if (srcStatInfo.st_size != dstStatInfo.st_size) { /* file size */
-        return false;
-    }
-    if (srcStatInfo.st_mtime != dstStatInfo.st_mtime) { /* last motify time */
-        return false;
-    }
-    return true;
-}
-
 void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)
 {
     if (mediaLibraryRdb_ == nullptr) {
@@ -264,7 +225,7 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(sceneCode, fileInfos, sourceType);
     int64_t rowNum = 0;
-    int32_t errCode = BatchInsertWithRetry(values, rowNum);
+    int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, rowNum);
     if (errCode != E_OK) {
         return;
     }
@@ -290,7 +251,8 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         (long)rowNum, (long)(startMove - startInsert), (long)fileMoveCount, (long)(end - startMove));
 }
 
-int32_t BaseRestore::BatchInsertWithRetry(std::vector<NativeRdb::ValuesBucket> &values, int64_t &rowNum)
+int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
+    int64_t &rowNum)
 {
     int32_t errCode = E_ERR;
     TransactionOperations transactionOprn(mediaLibraryRdb_);
@@ -299,7 +261,7 @@ int32_t BaseRestore::BatchInsertWithRetry(std::vector<NativeRdb::ValuesBucket> &
         MEDIA_ERR_LOG("can not get rdb before batch insert");
         return errCode;
     }
-    errCode = mediaLibraryRdb_->BatchInsert(rowNum, PhotoColumn::PHOTOS_TABLE, values);
+    errCode = mediaLibraryRdb_->BatchInsert(rowNum, tableName, values);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("InsertSql failed, errCode: %{public}d, rowNum: %{public}ld.", errCode, (long)rowNum);
         return errCode;
@@ -327,6 +289,24 @@ NativeRdb::ValuesBucket BaseRestore::GetInsertValue(const FileInfo &fileInfo, co
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
 
     return values;
+}
+
+int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string &dstDir) const
+{
+    if (!MediaFileUtils::CreateDirectory(dstDir)) {
+        MEDIA_ERR_LOG("Create dstDir %{private}s failed", dstDir.c_str());
+        return E_FAIL;
+    }
+    for (const auto &dirEntry : std::filesystem::directory_iterator{ srcDir }) {
+        std::string srcFilePath = dirEntry.path();
+        std::string tmpFilePath = srcFilePath;
+        std::string dstFilePath = tmpFilePath.replace(0, srcDir.length(), dstDir);
+        if (MoveFile(srcFilePath, dstFilePath) != E_OK) {
+            MEDIA_ERR_LOG("Move file from %{private}s to %{private}s failed", srcFilePath.c_str(), dstFilePath.c_str());
+            return E_FAIL;
+        }
+    }
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

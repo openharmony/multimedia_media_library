@@ -17,11 +17,17 @@
 #define OHOS_MEDIA_BACKUP_DEFINES_H
 
 #include <string>
+#include <unordered_set>
+#include <variant>
 #include <vector>
+
+#include "photo_album_column.h"
+#include "photo_map_column.h"
+#include "vision_column.h"
 
 namespace OHOS {
 namespace Media {
-constexpr int32_t QUERY_COUNT = 500;
+constexpr int32_t QUERY_COUNT = 200;
 constexpr int32_t PRE_CLONE_PHOTO_BATCH_COUNT = 100;
 constexpr int32_t CONNECT_SIZE = 10;
 constexpr int32_t MILLISECONDS = 1000;
@@ -45,7 +51,7 @@ const std::string GARBLE_CLONE_DIR = "/data/storage/el2/backup/restore/storage/c
 const std::string GARBLE = "***";
 
 // DB field for update scene
-const std::string ID = "_id";
+const std::string GALLERY_ID = "_id";
 const std::string GALLERY_LOCAL_MEDIA_ID = "local_media_id";
 const std::string GALLERY_FILE_DATA = "_data";
 const std::string GALLERY_TITLE = "title";
@@ -62,13 +68,15 @@ const std::string GALLERY_WIDTH = "width";
 const std::string GALLERY_ORIENTATION = "orientation";
 
 // external column
-const std::string IS_FAVORITE = "is_favorite";
-const std::string DATE_MODIFIED = "date_modified";
-const std::string DATE_ADDED = "date_added";
+const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
+const std::string EXTERNAL_DATE_MODIFIED = "date_modified";
+const std::string EXTERNAL_DATE_ADDED = "date_added";
 
 // custom column
-const std::string COUNT = "count";
-const std::string MAX_ID = "max_id";
+const std::string CUSTOM_COUNT = "count";
+const std::string CUSTOM_MAX_ID = "max_id";
+const std::string PRAGMA_TABLE_NAME = "name";
+const std::string PRAGMA_TABLE_TYPE = "type";
 
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
@@ -88,6 +96,20 @@ enum SourceType {
     PHOTOS,
 };
 
+enum class PrefixType {
+    CLOUD = 0,
+    LOCAL,
+    CLOUD_EDIT_DATA,
+    LOCAL_EDIT_DATA,
+};
+
+const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
+    { PrefixType::CLOUD, "/storage/cloud/files" },
+    { PrefixType::LOCAL, "/storage/media/local/files" },
+    { PrefixType::CLOUD_EDIT_DATA, "/storage/cloud/files/.editData" },
+    { PrefixType::LOCAL_EDIT_DATA, "/storage/media/local/files/.editData" },
+};
+
 struct FileInfo {
     std::string filePath;
     std::string displayName;
@@ -95,6 +117,8 @@ struct FileInfo {
     std::string userComment;
     std::string relativePath;
     std::string cloudPath;
+    int32_t fileIdOld {-1};
+    int32_t fileIdNew {-1};
     int64_t fileSize {0};
     int64_t duration {0};
     int64_t recycledTime {0};
@@ -106,13 +130,30 @@ struct FileInfo {
     int32_t width {0};
     int64_t dateAdded {0};
     int32_t orientation {0};
+    bool isNew {false};
+    std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
+    std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
+};
+
+struct AlbumInfo {
+    int32_t albumIdOld {-1};
+    int32_t albumIdNew {-1};
+    std::string albumName;
+    PhotoAlbumType albumType;
+    PhotoAlbumSubType albumSubType;
+    std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
+};
+
+struct MapInfo {
+    int32_t albumId {-1};
+    int32_t fileId {-1};
 };
 
 // sql for external
 const std::string QUERY_FILE_COLUMN = "SELECT _id, " + GALLERY_FILE_DATA + ", " + GALLERY_DISPLAY_NAME + ", " +
-    IS_FAVORITE + ", " + GALLERY_FILE_SIZE + ", " + GALLERY_DURATION + ", " + GALLERY_MEDIA_TYPE + ", " +
-    DATE_MODIFIED + ", " + GALLERY_HEIGHT + ", " + GALLERY_WIDTH + ", " + GALLERY_TITLE + ", " + GALLERY_ORIENTATION +
-    ", " + DATE_ADDED + " FROM files WHERE ";
+    EXTERNAL_IS_FAVORITE + ", " + GALLERY_FILE_SIZE + ", " + GALLERY_DURATION + ", " + GALLERY_MEDIA_TYPE + ", " +
+    EXTERNAL_DATE_MODIFIED + ", " + GALLERY_HEIGHT + ", " + GALLERY_WIDTH + ", " + GALLERY_TITLE + ", " +
+    GALLERY_ORIENTATION + ", " + EXTERNAL_DATE_ADDED + " FROM files WHERE ";
 
 const std::string IN_CAMERA = " bucket_id IN (-1739773001, 0, 1028075469, 0) AND (is_pending = 0)";
 
