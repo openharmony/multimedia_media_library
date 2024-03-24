@@ -157,15 +157,24 @@ void DfxReporter::ReportDeleteStatistic()
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return;
     }
-    map<string, NativePreferences::PreferencesValue> errorMap = prefs->GetAll();
-    for (auto &erroInfo : errorMap) {
-        string bundleName = erroInfo.first;
-        int32_t times = static_cast<int32_t>(erroInfo.second);
+    map<string, NativePreferences::PreferencesValue> deleteMap = prefs->GetAll();
+    for (auto &info : deleteMap) {
+        string key = info.first;
+        vector<string> deleteInfo = DfxUtils::Split(key, SPLIT_CHAR);
+        if (deleteInfo.empty() || deleteInfo.size() < 2) { // 2 means length of key
+            continue;
+        }
+        // 0 means index of bundleName
+        string bundleName = deleteInfo[0];
+        // 1 means index of type
+        int32_t type = MediaLibraryDataManagerUtils::IsNumber(deleteInfo[1]) ? stoi(deleteInfo[1]) : 0;
+        int32_t times = static_cast<int32_t>(info.second);
         int ret = HiSysEventWrite(
             MEDIA_LIBRARY,
             "MEDIALIB_DELETE_STATISTIC",
             HiviewDFX::HiSysEvent::EventType::STATISTIC,
             "BUNDLE_NAME", bundleName,
+            "TYPE", type,
             "TIMES", times);
         if (ret != 0) {
             MEDIA_ERR_LOG("ReportDeleteBehavior error:%{public}d", ret);

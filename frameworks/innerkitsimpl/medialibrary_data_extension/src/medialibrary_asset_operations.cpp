@@ -1862,8 +1862,8 @@ static void DeleteFiles(AsyncTaskData *data)
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(PhotoAlbumSubType::TRASH) });
 
     std::unordered_map<int32_t, int32_t> updateResult;
-    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::DELETE_ASSETS_FROM_DISK, taskData->deleteRows_,
-        updateResult, taskData->notifyUris_);
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
+        updateResult, taskData->notifyUris_, taskData->bundleName_);
     auto watch = MediaLibraryNotify::GetInstance();
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
     if (trashAlbumId <= 0) {
@@ -1974,8 +1974,9 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     }
 
     const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
+    string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateAddeds, predicates.GetTableName(),
-        deletedRows);
+        deletedRows, bundleName);
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     if (deleteFilesTask == nullptr) {
         MEDIA_ERR_LOG("Failed to create async task for deleting files.");

@@ -47,24 +47,28 @@ constexpr int32_t GARBLE_LAST_TWO = 2;
 constexpr int32_t GARBLE_LAST_ONE = 1;
 
 constexpr int32_t LATEST_THUMBNAIL_ERROR_VERSION = 1;
+constexpr int32_t LATEST_DELETE_STATISTIC_VERSION = 1;
 
+/**
+ * the number from 0 ~ 1000 is reserved for operationtype
+ */
 enum DfxType {
-    CLOUD_DEFAULT_OPEN = 0,
+    ALBUM_REMOVE_PHOTOS = 17,
+    ALBUM_DELETE_ASSETS = 19,
+    TRASH_PHOTO = 20,
+    CLOUD_DEFAULT_OPEN = 1000,
     CLOUD_LCD_OPEN,
-    RDB_INSERT = 100,
+    RDB_INSERT = 1100,
     RDB_DELETE,
     RDB_UPDATE,
     RDB_UPDATE_BY_CMD,
     RDB_QUERY,
     RDB_EXECUTE_SQL,
-    IMAGE_SOURCE_CREATE = 200,
+    IMAGE_SOURCE_CREATE = 1200,
     IMAGE_SOURCE_GET_INFO,
     IMAGE_SOURCE_CREATE_PIXELMAP,
-    AV_SET_SOURCE = 300,
+    AV_SET_SOURCE = 1300,
     AV_FETCH_FRAME,
-    DELETE_ASSETS_TO_TRASH = 500,
-    DELETE_ASSETS_FROM_DISK,
-    REMOVE_ASSETS
 };
 
 const std::string NULL_STRING = "";
@@ -81,6 +85,7 @@ const std::string DFX_COMMON_XML = "/data/storage/el2/base/preferences/dfx_commo
 const std::string LAST_REPORT_TIME = "last_report_time";
 const std::string LAST_MIDDLE_REPORT_TIME = "last_middle_report_time";
 const std::string THUMBNAIL_ERROR_VERSION = "thumbnail_error_version";
+const std::string DELETE_STATISTIC_VERSION = "delete_statistic_version";
 
 const std::string CLOUD_PHOTO_PATH = "/storage/cloud/files/Photo/";
 const std::string CLOUD_FILE_PATH = "/storage/cloud/files/";

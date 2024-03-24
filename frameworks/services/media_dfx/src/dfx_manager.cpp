@@ -147,9 +147,11 @@ void DfxManager::HandleNoPermmison(int32_t type, int32_t object, int32_t error)
 }
 
 void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::unordered_map<int32_t, int32_t> &updateResult,
-    std::vector<std::string> &uris)
+    std::vector<std::string> &uris, string bundleName)
 {
-    string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    if (bundleName == "") {
+        bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    }
     dfxCollector_->CollectDeleteBehavior(bundleName, type, size);
     if (dfxWorker_ == nullptr) {
         MEDIA_ERR_LOG("Can not get dfxWork_");
@@ -176,20 +178,19 @@ void DfxManager::HandleFiveMinuteTask()
     HandleDeleteBehaviors();
     std::unordered_map<std::string, ThumbnailErrorInfo> result = dfxCollector_->GetThumbnailError();
     dfxAnalyzer_->FlushThumbnail(result);
-    MEDIA_INFO_LOG("analysis success");
 }
 
 void DfxManager::HandleDeleteBehaviors()
 {
     std::unordered_map<string, int32_t> deleteAssetToTrash =
-        dfxCollector_->GetDeleteBehavior(DfxType::DELETE_ASSETS_TO_TRASH);
-    dfxAnalyzer_->FlushDeleteBehavior(deleteAssetToTrash);
+        dfxCollector_->GetDeleteBehavior(DfxType::TRASH_PHOTO);
+    dfxAnalyzer_->FlushDeleteBehavior(deleteAssetToTrash, DfxType::TRASH_PHOTO);
     std::unordered_map<string, int32_t> deleteAssetFromDisk =
-        dfxCollector_->GetDeleteBehavior(DfxType::DELETE_ASSETS_FROM_DISK);
-    dfxAnalyzer_->FlushDeleteBehavior(deleteAssetToTrash);
+        dfxCollector_->GetDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS);
+    dfxAnalyzer_->FlushDeleteBehavior(deleteAssetToTrash, DfxType::ALBUM_DELETE_ASSETS);
     std::unordered_map<string, int32_t> removeAssets =
-        dfxCollector_->GetDeleteBehavior(DfxType::REMOVE_ASSETS);
-    dfxAnalyzer_->FlushDeleteBehavior(removeAssets);
+        dfxCollector_->GetDeleteBehavior(DfxType::ALBUM_REMOVE_PHOTOS);
+    dfxAnalyzer_->FlushDeleteBehavior(removeAssets, DfxType::ALBUM_REMOVE_PHOTOS);
 }
 
 int64_t DfxManager::HandleMiddleReport()

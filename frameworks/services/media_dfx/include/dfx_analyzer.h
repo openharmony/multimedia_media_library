@@ -28,7 +28,7 @@ public:
     ~DfxAnalyzer();
     void FlushThumbnail(std::unordered_map<std::string, ThumbnailErrorInfo>  &thumbnailErrorMap);
     void FlushCommonBehavior(std::unordered_map<std::string, CommonBehavior> &commonBehaviorMap);
-    void FlushDeleteBehavior(std::unordered_map<std::string, int32_t> &deleteBehaviorMap);
+    void FlushDeleteBehavior(std::unordered_map<std::string, int32_t> &deleteBehaviorMap, int32_t type);
 };
 } // namespace Media
 } // namespace OHOS
