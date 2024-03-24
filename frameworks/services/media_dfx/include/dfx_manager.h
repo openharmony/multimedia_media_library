@@ -56,7 +56,7 @@ public:
     int64_t HandleReportXml();
     void HandleCommonBehavior(std::string bundleName, int32_t type);
     void HandleDeleteBehavior(int32_t type, int32_t size, std::unordered_map<int32_t, int32_t> &updateResult,
-        std::vector<std::string> &uris);
+        std::vector<std::string> &uris, std::string bundleName = "");
     void HandleDeleteBehaviors();
     void HandleNoPermmison(int32_t type, int32_t object, int32_t error);
 

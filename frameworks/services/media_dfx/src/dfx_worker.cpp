@@ -66,6 +66,12 @@ void DfxWorker::InitCycleThread()
 {
     string name("DfxCycleThread");
     pthread_setname_np(pthread_self(), name.c_str());
+    Prepare();
+    InitLoop();
+}
+
+void DfxWorker::Prepare()
+{
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
@@ -76,11 +82,64 @@ void DfxWorker::InitCycleThread()
     lastReportTime_ = prefs->GetLong(LAST_REPORT_TIME, 0);
     lastMiddleReportTime_ = prefs->GetInt(LAST_MIDDLE_REPORT_TIME, 0);
     thumbnailVersion_ = prefs->GetInt(THUMBNAIL_ERROR_VERSION, 0);
-    bool isSuccess = PrepareVersionUpdate();
-    if (isSuccess) {
+    deleteStatisticVersion_ = prefs->GetInt(DELETE_STATISTIC_VERSION, 0);
+    if (IsThumbnailUpdate()) {
         thumbnailVersion_ = LATEST_THUMBNAIL_ERROR_VERSION;
         prefs->PutInt(THUMBNAIL_ERROR_VERSION, LATEST_THUMBNAIL_ERROR_VERSION);
+    }
+    if (IsDeleteStatisticUpdate()) {
+        deleteStatisticVersion_ = LATEST_DELETE_STATISTIC_VERSION;
+        prefs->PutInt(DELETE_STATISTIC_VERSION, LATEST_DELETE_STATISTIC_VERSION);
+    }
+    prefs->FlushSync();
+}
+
+bool DfxWorker::IsThumbnailUpdate()
+{
+    if (thumbnailVersion_ < LATEST_THUMBNAIL_ERROR_VERSION) {
+        MEDIA_INFO_LOG("update thumbnail version from %{public}d to %{public}d", thumbnailVersion_,
+            LATEST_THUMBNAIL_ERROR_VERSION);
+        int32_t errCode;
+        shared_ptr<NativePreferences::Preferences> prefs =
+            NativePreferences::PreferencesHelper::GetPreferences(THUMBNAIL_ERROR_XML, errCode);
+        if (!prefs) {
+            MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+            return false;
+        }
+        prefs->Clear();
         prefs->FlushSync();
+        return true;
+    }
+    return false;
+}
+
+bool DfxWorker::IsDeleteStatisticUpdate()
+{
+    if (deleteStatisticVersion_ < LATEST_DELETE_STATISTIC_VERSION) {
+        MEDIA_INFO_LOG("update delete statistic version from %{public}d to %{public}d", deleteStatisticVersion_,
+            LATEST_DELETE_STATISTIC_VERSION);
+        int32_t errCode;
+        shared_ptr<NativePreferences::Preferences> prefs =
+            NativePreferences::PreferencesHelper::GetPreferences(DELETE_BEHAVIOR_XML, errCode);
+        if (!prefs) {
+            MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+            return false;
+        }
+        prefs->Clear();
+        prefs->FlushSync();
+        return true;
+    }
+    return false;
+}
+
+void DfxWorker::InitLoop()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
     }
     while (!isEnd_) {
         DfxManager::GetInstance()->HandleFiveMinuteTask();
@@ -148,25 +207,6 @@ shared_ptr<DfxTask> DfxWorker::GetTask()
     shared_ptr<DfxTask> task = taskQueue_.front();
     taskQueue_.pop();
     return task;
-}
-
-bool DfxWorker::PrepareVersionUpdate()
-{
-    if (thumbnailVersion_ < LATEST_THUMBNAIL_ERROR_VERSION) {
-        MEDIA_INFO_LOG("update thumbnail version from %{public}d to %{public}d", thumbnailVersion_,
-            LATEST_THUMBNAIL_ERROR_VERSION);
-        int32_t errCode;
-        shared_ptr<NativePreferences::Preferences> prefs =
-            NativePreferences::PreferencesHelper::GetPreferences(THUMBNAIL_ERROR_XML, errCode);
-        if (!prefs) {
-            MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-            return false;
-        }
-        prefs->Clear();
-        prefs->FlushSync();
-        return true;
-    }
-    return false;
 }
 
 void DfxWorker::End()
