@@ -160,10 +160,10 @@ void UpgradeRestore::HandleClone()
     if (cloneCount == 0) {
         return;
     }
-    int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_MAX_ID, MAX_ID);
+    int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_MAX_ID, CUSTOM_MAX_ID);
     std::string queryMayClonePhotoNumber = "SELECT count(1) AS count FROM files WHERE (is_pending = 0) AND\
         (storage_id IN (0, 65537)) AND " + COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
-    int32_t totalNumber = BackupDatabaseUtils::QueryInt(externalRdb_, queryMayClonePhotoNumber, COUNT);
+    int32_t totalNumber = BackupDatabaseUtils::QueryInt(externalRdb_, queryMayClonePhotoNumber, CUSTOM_COUNT);
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
     for (int32_t offset = 0; offset < totalNumber; offset += PRE_CLONE_PHOTO_BATCH_COUNT) {
         ffrt::submit([this, offset, maxId]() {
@@ -203,7 +203,7 @@ void UpgradeRestore::UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::Resul
         return;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t id = GetInt32Val(ID, resultSet);
+        int32_t id = GetInt32Val(GALLERY_ID, resultSet);
         std::string data = GetStringVal(GALLERY_FILE_DATA, resultSet);
         int32_t changeRows = 0;
         NativeRdb::ValuesBucket valuesBucket;
@@ -243,7 +243,7 @@ void UpgradeRestore::RestoreFromExternal(bool isCamera)
 {
     MEDIA_INFO_LOG("start restore from %{public}s", (isCamera ? "camera" : "others"));
     int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, isCamera ?
-        QUERY_MAX_ID_CAMERA_SCREENSHOT : QUERY_MAX_ID_OTHERS, MAX_ID);
+        QUERY_MAX_ID_CAMERA_SCREENSHOT : QUERY_MAX_ID_OTHERS, CUSTOM_MAX_ID);
     int32_t type = isCamera ? SourceType::EXTERNAL_CAMERA : SourceType::EXTERNAL_OTHERS;
     int32_t totalNumber = QueryNotSyncTotalNumber(maxId, isCamera);
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
@@ -267,7 +267,7 @@ int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
     std::string queryCamera = isCamera ? IN_CAMERA : NOT_IN_CAMERA;
     std::string queryNotSyncByCount = QUERY_COUNT_FROM_FILES + queryCamera + " AND " +
         COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
-    return BackupDatabaseUtils::QueryInt(externalRdb_, queryNotSyncByCount, COUNT);
+    return BackupDatabaseUtils::QueryInt(externalRdb_, queryNotSyncByCount, CUSTOM_COUNT);
 }
 
 void UpgradeRestore::HandleRestData(void)
@@ -287,7 +287,7 @@ void UpgradeRestore::HandleRestData(void)
 
 int32_t UpgradeRestore::QueryTotalNumber(void)
 {
-    return BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_GALLERY_COUNT, COUNT);
+    return BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_GALLERY_COUNT, CUSTOM_COUNT);
 }
 
 std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
@@ -408,7 +408,7 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
         MEDIA_ERR_LOG("ParseResultSetFromExternal fail");
         return isSuccess;
     }
-    info.showDateToken = GetInt64Val(DATE_MODIFIED, resultSet);
+    info.showDateToken = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet);
     return isSuccess;
 }
 

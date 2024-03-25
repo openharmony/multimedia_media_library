@@ -55,7 +55,10 @@ public:
 private:
     void InitCycleThread();
     void InitDelayThread();
-    bool PrepareVersionUpdate();
+    void Prepare();
+    bool IsThumbnailUpdate();
+    bool IsDeleteStatisticUpdate();
+    void InitLoop();
     bool IsTaskQueueEmpty();
     void WaitForTask();
     std::shared_ptr<DfxTask> GetTask();
@@ -64,6 +67,7 @@ private:
     int64_t lastReportTime_;
     int64_t lastMiddleReportTime_;
     int32_t thumbnailVersion_;
+    int32_t deleteStatisticVersion_;
     static std::shared_ptr<DfxWorker> dfxWorkerInstance_;
     std::thread cycleThread_;
     std::thread delayThread_;

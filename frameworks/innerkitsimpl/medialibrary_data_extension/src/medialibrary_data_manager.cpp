@@ -24,7 +24,6 @@
 #include "abs_rdb_predicates.h"
 #include "acl.h"
 #include "background_task_mgr_helper.h"
-#include "cloud_sync_helper.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
 #include "device_manager.h"
@@ -62,6 +61,7 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_smartalbum_operations.h"
+#include "medialibrary_story_operations.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
@@ -104,13 +104,6 @@ namespace Media {
 shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
-recursive_mutex MediaLibraryDataManager::timerMutex_;
-Utils::Timer MediaLibraryDataManager::timer_("download_cloud_files");
-uint32_t MediaLibraryDataManager::timerId_ = 0;
-
-static constexpr int32_t LOCAL_FILES_COUNT_THRESHOLD = 10000;
-static constexpr int32_t DOWNLOAD_BATCH_SIZE = 5;
-static constexpr int32_t BATCH_DOWNLOAD_INTERVAL = 60 * 1000; // 1min
 
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
@@ -255,7 +248,6 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
         return;
     }
 
-    UnregisterTimer();
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     shareHelper->UnregisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_);
     rdbStore_ = nullptr;
@@ -435,6 +427,12 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::SEARCH_TOTAL: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
+
+        case OperationObject::STORY_ALBUM:
+        case OperationObject::STORY_COVER:
+        case OperationObject::STORY_PLAY:
+        case OperationObject::USER_PHOTOGRAPHY:
+            return MediaLibraryStoryOperations::InsertOperation(cmd);
 
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
@@ -640,6 +638,14 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
         case OperationObject::GEO_PHOTO: {
             return MediaLibraryLocationOperations::DeleteOperation(cmd);
         }
+
+        case OperationObject::STORY_ALBUM:
+        case OperationObject::STORY_COVER:
+        case OperationObject::STORY_PLAY:
+        case OperationObject::USER_PHOTOGRAPHY: {
+            return MediaLibraryStoryOperations::DeleteOperation(cmd);
+        }
+            
         case OperationObject::SEARCH_TOTAL: {
             return MediaLibrarySearchOperations::DeleteOperation(cmd);
         }
@@ -717,6 +723,13 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::GEO_KNOWLEDGE: {
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
         }
+
+        case OperationObject::STORY_ALBUM:
+        case OperationObject::STORY_COVER:
+        case OperationObject::STORY_PLAY:
+        case OperationObject::USER_PHOTOGRAPHY:
+            return MediaLibraryStoryOperations::UpdateOperation(cmd);
+        
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
             if (cmd.GetOprnType() == OperationType::ADD_IMAGE) {
                 MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, value.GetAll());
@@ -1038,31 +1051,60 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());
     AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
 
-    shared_ptr<NativeRdb::ResultSet> queryResultSet;
     OperationObject oprnObject = cmd.GetOprnObject();
     auto it = QUERY_CONDITION_MAP.find(oprnObject);
     if (it != QUERY_CONDITION_MAP.end()) {
-        queryResultSet = MediaLibraryObjectUtils::QueryWithCondition(cmd, columns, it->second);
-    } else if (oprnObject == OperationObject::FILESYSTEM_ALBUM || oprnObject == OperationObject::MEDIA_VOLUME) {
-        queryResultSet = MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
-    } else if (oprnObject == OperationObject::PHOTO_ALBUM) {
-        queryResultSet = MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
-    } else if (oprnObject == OperationObject::ANALYSIS_PHOTO_ALBUM && CheckIsPortraitAlbum(cmd)) {
-        queryResultSet = MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
-    } else if (oprnObject == OperationObject::PHOTO_MAP || oprnObject == OperationObject::ANALYSIS_PHOTO_MAP) {
-        queryResultSet = PhotoMapOperations::QueryPhotoAssets(
-            RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
-    } else if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
-        queryResultSet = MediaLibraryAssetOperations::QueryOperation(cmd, columns);
-    } else if (oprnObject >= OperationObject::VISION_OCR && oprnObject <= OperationObject::ANALYSIS_PHOTO_ALBUM) {
-        queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-    } else if (oprnObject == OperationObject::SEARCH_TOTAL) {
-        queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-    } else {
-        tracer.Start("QueryFile");
-        queryResultSet = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
+        return MediaLibraryObjectUtils::QueryWithCondition(cmd, columns, it->second);
     }
-    return queryResultSet;
+
+    return QueryInternal(cmd, columns, predicates);
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
+    const vector<string> &columns, const DataSharePredicates &predicates)
+{
+    MediaLibraryTracer tracer;
+    switch (cmd.GetOprnObject()) {
+        case OperationObject::FILESYSTEM_ALBUM:
+        case OperationObject::MEDIA_VOLUME:
+            return MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
+        case OperationObject::PHOTO_ALBUM:
+            return MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
+        case OperationObject::ANALYSIS_PHOTO_ALBUM: {
+            if (CheckIsPortraitAlbum(cmd)) {
+                return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
+            }
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        }
+        case OperationObject::PHOTO_MAP:
+        case OperationObject::ANALYSIS_PHOTO_MAP: {
+            return PhotoMapOperations::QueryPhotoAssets(
+                RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE), columns);
+        }
+        case OperationObject::FILESYSTEM_PHOTO:
+        case OperationObject::FILESYSTEM_AUDIO:
+            return MediaLibraryAssetOperations::QueryOperation(cmd, columns);
+
+        case OperationObject::VISION_START ... OperationObject::VISION_END: {
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        }
+        case OperationObject::GEO_DICTIONARY:
+        case OperationObject::GEO_KNOWLEDGE:
+        case OperationObject::GEO_PHOTO:
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        case OperationObject::SEARCH_TOTAL:
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+
+        case OperationObject::STORY_ALBUM:
+        case OperationObject::STORY_COVER:
+        case OperationObject::STORY_PLAY:
+        case OperationObject::USER_PHOTOGRAPHY:
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+
+        default:
+            tracer.Start("QueryFile");
+            return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
+    }
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryRdb(MediaLibraryCommand &cmd,
@@ -1333,137 +1375,5 @@ int32_t MediaLibraryDataManager::QueryNewThumbnailCount(const int64_t &time, int
     return thumbnailService_->QueryNewThumbnailCount(time, count);
 }
 
-class DownloadCloudFilesData : public AsyncTaskData {
-public:
-    DownloadCloudFilesData() = default;
-    ~DownloadCloudFilesData() override = default;
-
-    vector<string> paths;
-};
-
-static void DownloadCloudFilesExecutor(AsyncTaskData* data)
-{
-    auto *taskData = static_cast<DownloadCloudFilesData *>(data);
-
-    MEDIA_DEBUG_LOG("Try to download %{public}zu cloud files.", taskData->paths.size());
-    for (const auto &path : taskData->paths) {
-        CloudSyncHelper::GetInstance()->StartDownloadFile(path);
-    }
-}
-
-static int32_t AddDownloadTask(const vector<string> &photoPaths)
-{
-    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_ERR_LOG("Failed to get async worker instance!");
-        return E_FAIL;
-    }
-    auto *taskData = new (nothrow)DownloadCloudFilesData();
-    if (taskData == nullptr) {
-        MEDIA_ERR_LOG("Failed to alloc async data for downloading cloud files!");
-        return E_NO_MEMORY;
-    }
-    taskData->paths = photoPaths;
-    auto asyncTask = make_shared<MediaLibraryAsyncTask>(DownloadCloudFilesExecutor, taskData);
-    asyncWorker->AddTask(asyncTask, false);
-    return E_OK;
-}
-
-static shared_ptr<NativeRdb::ResultSet> QueryCloudFiles()
-{
-    const vector<string> photosType = {
-        to_string(MEDIA_TYPE_IMAGE),
-        to_string(MEDIA_TYPE_VIDEO)
-    };
-    const vector<string> columns = {
-        PhotoColumn::MEDIA_FILE_PATH
-    };
-
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, to_string(POSITION_CLOUD));
-    predicates.In(PhotoColumn::MEDIA_TYPE, photosType);
-    predicates.Limit(DOWNLOAD_BATCH_SIZE);
-    return MediaLibraryRdbStore::Query(predicates, columns);
-}
-
-static void FillPhotoPaths(shared_ptr<NativeRdb::ResultSet> &resultSet, vector<string> &photoPaths)
-{
-    string path;
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        path = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
-        if (path.empty()) {
-            MEDIA_WARN_LOG("Failed to get cloud file uri!");
-            continue;
-        }
-        photoPaths.push_back(path);
-    }
-}
-
-static bool NeedDownloadCloudFiles()
-{
-    const vector<string> localPositions = {
-        to_string(POSITION_LOCAL),
-        to_string((POSITION_LOCAL | POSITION_CLOUD)),
-    };
-    const vector<string> photosType = {
-        to_string(MEDIA_TYPE_IMAGE),
-        to_string(MEDIA_TYPE_VIDEO)
-    };
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.In(PhotoColumn::PHOTO_POSITION, localPositions);
-    predicates.In(PhotoColumn::MEDIA_TYPE, photosType);
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, { PhotoColumn::MEDIA_ID });
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query local files!");
-        return false;
-    }
-    int32_t count = 0;
-    int32_t err = resultSet->GetRowCount(count);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
-        return false;
-    }
-    return count <= LOCAL_FILES_COUNT_THRESHOLD;
-}
-
-static void DownloadCloudFiles()
-{
-    if (!NeedDownloadCloudFiles()) {
-        return;
-    }
-    vector<string> photoPaths;
-    auto resultSet = QueryCloudFiles();
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query cloud files!");
-        return;
-    }
-    FillPhotoPaths(resultSet, photoPaths);
-    if (photoPaths.empty()) {
-        MEDIA_DEBUG_LOG("No cloud photos exist, no need to download");
-        return;
-    }
-    int32_t err = AddDownloadTask(photoPaths);
-    if (err) {
-        MEDIA_WARN_LOG("Failed to add download task! err: %{public}d", err);
-    }
-}
-
-void MediaLibraryDataManager::RegisterTimer()
-{
-    lock_guard<recursive_mutex> lock(timerMutex_);
-    if (timerId_ > 0) {
-        UnregisterTimer();
-    }
-    timer_.Setup();
-    timerId_ = timer_.Register(DownloadCloudFiles, BATCH_DOWNLOAD_INTERVAL);
-}
-
-void MediaLibraryDataManager::UnregisterTimer()
-{
-    lock_guard<recursive_mutex> lock(timerMutex_);
-    timer_.Unregister(timerId_);
-    timer_.Shutdown();
-    timerId_ = 0;
-}
 }  // namespace Media
 }  // namespace OHOS

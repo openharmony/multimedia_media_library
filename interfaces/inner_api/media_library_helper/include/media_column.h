@@ -27,7 +27,8 @@ enum class DirtyTypes : int32_t {
     TYPE_MDIRTY,
     TYPE_FDIRTY,
     TYPE_DELETED,
-    TYPE_RETRY
+    TYPE_RETRY,
+    TYPE_SDIRTY
 };
 
 class MediaColumn {

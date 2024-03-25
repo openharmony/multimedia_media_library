@@ -6,6 +6,7 @@
         "/storage/cloud/files/Camera/",
         "/storage/cloud/files/Pictures/",
         "/storage/cloud/files/Videos/",
+        "/storage/cloud/files/.editData/",
         "/data/storage/el2/database/rdb/"
     ],
     "fullBackupOnly": true

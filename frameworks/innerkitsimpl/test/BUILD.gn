@@ -40,6 +40,7 @@ group("test") {
     "unittest/medialibrary_shooting_mode_album_test:unittest",
     "unittest/medialibrary_smartalbum_map_operations_test:unittest",
     "unittest/medialibrary_smartalbum_operations_test:unittest",
+    "unittest/medialibrary_story_test:unittest",
     "unittest/medialibrary_thumbnail_service_test:unittest",
     "unittest/medialibrary_uri_test:unittest",
     "unittest/medialibrary_utils_test:unittest",

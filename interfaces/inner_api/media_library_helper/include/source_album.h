@@ -136,7 +136,7 @@ const std::string CLEAR_SOURCE_ALBUM_ANALYSIS_PHOTO_MAP = "DELETE FROM " + ANALY
 const std::string CLEAR_ANALYSIS_SOURCE_ALBUM = "DELETE FROM " + ANALYSIS_ALBUM_TABLE + SOURCE_ALBUM_TO_CLEAR_WHERE;
 
 const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
-    "CREATE TRIGGER insert_photo_insert_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
+    "CREATE TRIGGER IF NOT EXISTS insert_photo_insert_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
     WHEN_SOURCE_PHOTO_COUNT + " = 0 " +
     " BEGIN INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_TYPE + " , " +
@@ -151,16 +151,16 @@ const std::string INSERT_PHOTO_INSERT_SOURCE_ALBUM =
     ");" + INSERT_PHOTO_MAP + "END;";
 
 const std::string INSERT_PHOTO_UPDATE_SOURCE_ALBUM =
-    "CREATE TRIGGER insert_photo_update_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
+    "CREATE TRIGGER IF NOT EXISTS insert_photo_update_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
     WHEN_SOURCE_PHOTO_COUNT + "> 0 " +
     " BEGIN " + INSERT_PHOTO_MAP + " END;";
 
 const std::string UPDATE_PHOTO_UPDATE_SOURCE_ALBUM =
-    "CREATE TRIGGER update_photo_update_source_album AFTER UPDATE ON " +
+    "CREATE TRIGGER IF NOT EXISTS update_photo_update_source_album AFTER UPDATE ON " +
     PhotoColumn::PHOTOS_TABLE + TRIGGER_CODE_UPDATE_AND_DELETE;
 
 const std::string DELETE_PHOTO_UPDATE_SOURCE_ALBUM =
-    "CREATE TRIGGER delete_photo_update_source_album AFTER DELETE ON " +
+    "CREATE TRIGGER IF NOT EXISTS delete_photo_update_source_album AFTER DELETE ON " +
     PhotoColumn::PHOTOS_TABLE + TRIGGER_CODE_UPDATE_AND_DELETE;
 
 const std::string ADD_SOURCE_ALBUM_BUNDLE_NAME = "ALTER TABLE " + PhotoAlbumColumns::TABLE + " ADD COLUMN " +
@@ -193,6 +193,7 @@ const std::string SOURCE_ALBUM_INDEX = "source_album_index";
 const std::string CREATE_SOURCE_ALBUM_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + SOURCE_ALBUM_INDEX + " ON " +
     PhotoAlbumColumns::TABLE + " (" + PhotoAlbumColumns::ALBUM_TYPE + ", " + PhotoAlbumColumns::ALBUM_SUBTYPE + ", " +
     PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + ") ";
+const std::string DROP_SOURCE_ALBUM_INDEX = "DROP INDEX IF EXISTS " + SOURCE_ALBUM_INDEX;
 
 const std::string INSERT_SOURCE_ALBUMS_FROM_PHOTOS_FULL = "INSERT INTO " + PhotoAlbumColumns::TABLE + "(" +
     PhotoAlbumColumns::ALBUM_NAME + ", " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + ", " +

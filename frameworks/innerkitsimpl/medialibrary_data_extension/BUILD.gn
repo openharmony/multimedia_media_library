@@ -198,6 +198,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "src/medialibrary_search_operations.cpp",
     "src/medialibrary_smartalbum_map_operations.cpp",
     "src/medialibrary_smartalbum_operations.cpp",
+    "src/medialibrary_story_operations.cpp",
     "src/medialibrary_subscriber.cpp",
     "src/medialibrary_uripermission_operations.cpp",
     "src/medialibrary_vision_operations.cpp",

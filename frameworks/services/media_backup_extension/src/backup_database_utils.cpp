@@ -118,35 +118,35 @@ int32_t BackupDatabaseUtils::InitGarbageAlbum(std::shared_ptr<NativeRdb::RdbStor
 int32_t BackupDatabaseUtils::QueryGalleryAllCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_ALL_COUNT = "SELECT count(1) AS count FROM gallery_media";
-    return QueryInt(galleryRdb, QUERY_GALLERY_ALL_COUNT, COUNT);
+    return QueryInt(galleryRdb, QUERY_GALLERY_ALL_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryGalleryImageCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_IMAGE_COUNT =
         "SELECT count(1) AS count FROM gallery_media WHERE media_type = 1 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_IMAGE_COUNT, COUNT);
+    return QueryInt(galleryRdb, QUERY_GALLERY_IMAGE_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryGalleryVideoCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_VIDEO_COUNT =
         "SELECT count(1) AS count FROM gallery_media WHERE media_type = 3 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_VIDEO_COUNT, COUNT);
+    return QueryInt(galleryRdb, QUERY_GALLERY_VIDEO_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryGalleryHiddenCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_HIDDEN_COUNT =
         "SELECT count(1) AS count FROM gallery_media WHERE local_media_id = -4 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_HIDDEN_COUNT, COUNT);
+    return QueryInt(galleryRdb, QUERY_GALLERY_HIDDEN_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryGalleryTrashedCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_TRASHED_COUNT =
         "SELECT count(1) AS count FROM gallery_media WHERE local_media_id = 0 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_TRASHED_COUNT, COUNT);
+    return QueryInt(galleryRdb, QUERY_GALLERY_TRASHED_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
@@ -155,14 +155,14 @@ int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::R
         string("SELECT count(1) AS count FROM gallery_media WHERE local_media_id = -3 AND _size > 0 ") +
         "AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( " +
         "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)";
-    return QueryInt(galleryRdb, QUERY_GALLERY_CLONE_COUNT, COUNT);
+    return QueryInt(galleryRdb, QUERY_GALLERY_CLONE_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryGallerySDCardCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_SD_CARD_COUNT =
         "SELECT count(1) AS count FROM gallery_media WHERE storage_id NOT IN (0, 65537) AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_SD_CARD_COUNT, COUNT);
+    return QueryInt(galleryRdb, QUERY_GALLERY_SD_CARD_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryGalleryScreenVideoCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
@@ -170,7 +170,7 @@ int32_t BackupDatabaseUtils::QueryGalleryScreenVideoCount(std::shared_ptr<Native
     static string QUERY_GALLERY_SCRENN_VIDEO_COUNT =
         "SELECT count(1) AS count FROM gallery_media \
         WHERE local_media_id = -3 AND bucket_id = 1028075469 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_SCRENN_VIDEO_COUNT, COUNT);
+    return QueryInt(galleryRdb, QUERY_GALLERY_SCRENN_VIDEO_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryGalleryCloudCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
@@ -178,21 +178,53 @@ int32_t BackupDatabaseUtils::QueryGalleryCloudCount(std::shared_ptr<NativeRdb::R
     static string QUERY_GALLERY_CLOUD_COUNT =
         "SELECT count(1) AS count FROM gallery_media \
         WHERE local_media_id = -1 AND _size > 0";
-    return QueryInt(galleryRdb, QUERY_GALLERY_CLOUD_COUNT, COUNT);
+    return QueryInt(galleryRdb, QUERY_GALLERY_CLOUD_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryExternalImageCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
 {
     static string QUERY_EXTERNAL_IMAGE_COUNT =
         "SELECT count(1) AS count FROM files WHERE  media_type = 1 AND _size > 0";
-    return QueryInt(externalRdb, QUERY_EXTERNAL_IMAGE_COUNT, COUNT);
+    return QueryInt(externalRdb, QUERY_EXTERNAL_IMAGE_COUNT, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryExternalVideoCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
 {
     static string QUERY_EXTERNAL_VIDEO_COUNT =
         "SELECT count(1) AS count FROM files WHERE  media_type = 3 AND _size > 0";
-    return QueryInt(externalRdb, QUERY_EXTERNAL_VIDEO_COUNT, COUNT);
+    return QueryInt(externalRdb, QUERY_EXTERNAL_VIDEO_COUNT, CUSTOM_COUNT);
+}
+
+std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::GetQueryResultSet(
+    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &querySql)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr");
+        return nullptr;
+    }
+    return rdbStore->QuerySql(querySql);
+}
+
+std::unordered_map<std::string, std::string> BackupDatabaseUtils::GetColumnInfoMap(
+    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName)
+{
+    std::unordered_map<std::string, std::string> columnInfoMap;
+    std::string querySql = "SELECT name, type FROM pragma_table_info('" + tableName + "')";
+    auto resultSet = GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is nullptr");
+        return columnInfoMap;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string columnName = GetStringVal(PRAGMA_TABLE_NAME, resultSet);
+        std::string columnType = GetStringVal(PRAGMA_TABLE_TYPE, resultSet);
+        if (columnName.empty() || columnType.empty()) {
+            MEDIA_ERR_LOG("Empty column name or type: %{public}s, %{public}s", columnName.c_str(), columnType.c_str());
+            continue;
+        }
+        columnInfoMap[columnName] = columnType;
+    }
+    return columnInfoMap;
 }
 } // namespace Media
 } // namespace OHOS
