@@ -78,6 +78,10 @@ enum class EXPORT OperationObject : uint32_t {
     ANALYSIS_PHOTO_MAP,
     PAH_FORM_MAP,
     SEARCH_TOTAL,  // search
+    STORY_ALBUM,
+    STORY_COVER,
+    STORY_PLAY,
+    USER_PHOTOGRAPHY,
     PAH_MULTISTAGES_CAPTURE,
 };
 

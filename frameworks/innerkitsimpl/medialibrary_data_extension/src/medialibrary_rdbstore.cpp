@@ -49,6 +49,7 @@
 #include "vision_column.h"
 #include "form_map.h"
 #include "search_column.h"
+#include "story_db_sqls.h"
 #include "dfx_const.h"
 #include "dfx_timer.h"
 
@@ -944,6 +945,10 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_GEO_DICTIONARY_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
     CREATE_ANALYSIS_ALBUM_MAP,
+    CREATE_STORY_ALBUM_TABLE,
+    CREATE_STORY_COVER_INFO_TABLE,
+    CREATE_STORY_PLAY_INFO_TABLE,
+    CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
     INSERT_PHOTO_INSERT_SOURCE_ALBUM,
     INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
     CREATE_SOURCE_ALBUM_INDEX,
@@ -2075,6 +2080,20 @@ void AddIsLocalAlbum(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddStoryTables(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        CREATE_STORY_ALBUM_TABLE,
+        CREATE_STORY_COVER_INFO_TABLE,
+        CREATE_STORY_PLAY_INFO_TABLE,
+        CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
+        "ALTER TABLE " + VISION_LABEL_TABLE + " ADD COLUMN " + SALIENCY_SUB_PROB + " TEXT",
+    };
+    MEDIA_INFO_LOG("start init story db");
+    ExecSqls(executeSqlStrs, store);
+}
+
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2279,6 +2298,13 @@ static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
     }
 }
 
+static void UpgradeStoryTable(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_STOYR_TABLE) {
+        AddStoryTables(store);
+    }
+}
+
 static void CheckDateAdded(RdbStore &store)
 {
     vector<string> sqls = {
@@ -2360,6 +2386,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeVisionTable(store, oldVersion);
     UpgradeAlbumTable(store, oldVersion);
     UpgradeHistory(store, oldVersion);
+    UpgradeStoryTable(store, oldVersion);
 
     AlwaysCheck(store);
     if (!g_upgradeErr) {
