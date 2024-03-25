@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 59;
+const int32_t MEDIA_RDB_VERSION = 62;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -87,6 +87,9 @@ enum {
     VERSION_ADD_FAVORITE_INDEX = 57,
     VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS = 58,
     VERSION_ADD_IS_LOCAL_ALBUM = 59,
+    VERSION_ADD_MISSING_UPDATES = 60,
+    VERSION_UPDATE_MDIRTY_TRIGGER_FOR_SDIRTY = 61,
+    VERSION_ADD_STOYR_TABLE = 62,
 };
 
 enum {
@@ -95,10 +98,6 @@ enum {
     MEDIA_API_VERSION_V10,
 };
 
-enum CloudFilePosition {
-    POSITION_LOCAL = 1 << 0,
-    POSITION_CLOUD =  1 << 1,
-};
 
 const std::string MEDIA_LIBRARY_VERSION = "1.0";
 

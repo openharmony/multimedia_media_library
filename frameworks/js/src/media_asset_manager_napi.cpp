@@ -565,16 +565,16 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(std::string requestUri, napi_
         return;
     }
     size_t imgLen = lseek(imageFd, 0, SEEK_END);
+    void* buffer = nullptr;
+    napi_create_arraybuffer(localEnv, imgLen, &buffer, &arrayBuffer);
     lseek(imageFd, 0, SEEK_SET);
-    char buf[imgLen];
-    size_t readRet = read(imageFd, buf, imgLen);
+    size_t readRet = read(imageFd, buffer, imgLen);
     close(imageFd);
     if (readRet != imgLen) {
         NAPI_ERR_LOG("read image failed");
         NapiError::ThrowError(localEnv, JS_INNER_FAIL, "open Image file error");
         return;
     }
-    napi_create_arraybuffer(localEnv, imgLen, (void**)&buf, &arrayBuffer);
 }
 } // namespace Media
 } // namespace OHOS

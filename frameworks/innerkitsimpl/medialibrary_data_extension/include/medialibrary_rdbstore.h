@@ -71,6 +71,7 @@ public:
     static void ResetAnalysisTables();
     static void ResetSearchTables();
     EXPORT static int32_t UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows);
+    EXPORT static bool HasColumnInTable(RdbStore &store, const std::string &columnName, const std::string &tableName);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
@@ -113,8 +114,9 @@ class DeleteFilesTask : public AsyncTaskData {
 public:
     DeleteFilesTask(const std::vector<std::string> &ids, const std::vector<std::string> &paths,
         const std::vector<std::string> &notifyUris, const std::vector<std::string> &dateAddeds,
-        const std::string &table, int32_t deleteRows) : ids_(ids), paths_(paths),
-        notifyUris_(notifyUris), dateAddeds_(dateAddeds), table_(table), deleteRows_(deleteRows) {}
+        const std::string &table, int32_t deleteRows, std::string bundleName) : ids_(ids), paths_(paths),
+        notifyUris_(notifyUris), dateAddeds_(dateAddeds), table_(table), deleteRows_(deleteRows),
+        bundleName_(bundleName) {}
     virtual ~DeleteFilesTask() override = default;
 
     std::vector<std::string> ids_;
@@ -123,6 +125,7 @@ public:
     std::vector<std::string> dateAddeds_;
     std::string table_;
     int32_t deleteRows_;
+    std::string bundleName_;
 };
 
 #ifdef DISTRIBUTED

@@ -241,11 +241,25 @@ static shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cm
     }
 }
 
+static shared_ptr<NativeRdb::ResultSet> HandleAnalysisIndex(MediaLibraryCommand &cmd,
+    const string &photoId, const string &albumId)
+{
+    string orderClause;
+    CHECK_AND_RETURN_RET_LOG(GetValidOrderClause(cmd.GetDataSharePred(), orderClause), nullptr, "invalid orderby");
+    CHECK_AND_RETURN_RET_LOG(albumId.size() > 0, nullptr, "null albumId");
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    PhotoAlbumColumns::GetAnalysisAlbumPredicates(stoi(albumId), predicates, false);
+    vector<string> columns;
+    columns.push_back(orderClause);
+    columns.push_back(MediaColumn::MEDIA_ID);
+    return MediaLibraryRdbStore::GetIndexOfUri(predicates, columns, photoId);
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
     RdbPredicates predicates = RdbUtils::ToPredicates(cmd.GetDataSharePred(), PhotoColumn::PHOTOS_TABLE);
-    if (cmd.GetOprnType() == OperationType::INDEX) {
+    if (cmd.GetOprnType() == OperationType::INDEX || cmd.GetOprnType() == OperationType::ANALYSIS_INDEX) {
         constexpr int32_t COLUMN_SIZE = 2;
         CHECK_AND_RETURN_RET_LOG(columns.size() >= COLUMN_SIZE, nullptr, "invalid id param");
         constexpr int32_t PHOTO_ID_INDEX = 0;
@@ -254,6 +268,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         string albumId;
         if (!columns[ALBUM_ID_INDEX].empty()) {
             albumId = columns[ALBUM_ID_INDEX];
+        }
+        if (cmd.GetOprnType() == OperationType::ANALYSIS_INDEX) {
+            return HandleAnalysisIndex(cmd, photoId, albumId);
         }
         return HandleIndexOfUri(cmd, predicates, photoId, albumId);
     }
@@ -607,7 +624,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
             notifyUris.size(), updatedRows);
     }
     TrashPhotosSendNotify(notifyUris);
-    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::DELETE_ASSETS_TO_TRASH, updatedRows, updateResult,
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::TRASH_PHOTO, updatedRows, updateResult,
         notifyUris);
     return updatedRows;
 }

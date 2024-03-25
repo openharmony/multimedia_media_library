@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,24 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_DFX_ANALYZER_H
-#define OHOS_MEDIA_DFX_ANALYZER_H
+#ifndef MEDIALIBRARY_STORY_TEST_H
+#define MEDIALIBRARY_STORY_TEST_H
 
-#include <map>
-
-#include "dfx_const.h"
+#include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Media {
-class DfxAnalyzer {
+class MediaLibraryStoryTest : public testing::Test {
 public:
-    DfxAnalyzer();
-    ~DfxAnalyzer();
-    void FlushThumbnail(std::unordered_map<std::string, ThumbnailErrorInfo>  &thumbnailErrorMap);
-    void FlushCommonBehavior(std::unordered_map<std::string, CommonBehavior> &commonBehaviorMap);
-    void FlushDeleteBehavior(std::unordered_map<std::string, int32_t> &deleteBehaviorMap, int32_t type);
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
 } // namespace Media
 } // namespace OHOS
-
-#endif  // OHOS_MEDIA_DFX_ANALYZER_H
+#endif // MEDIALIBRARY_STORY_TEST_H

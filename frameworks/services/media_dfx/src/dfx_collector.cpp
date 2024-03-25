@@ -69,19 +69,19 @@ std::unordered_map<string, CommonBehavior> DfxCollector::GetCommonBehavior()
 
 void DfxCollector::CollectDeleteBehavior(std::string bundleName, int32_t type, int32_t size)
 {
-    if (type == DfxType::DELETE_ASSETS_TO_TRASH) {
+    if (type == DfxType::TRASH_PHOTO) {
         lock_guard<mutex> lock(deleteToTrashLock_);
         if (deleteToTrashMap_.count(bundleName) == 0) {
             deleteToTrashMap_[bundleName] = 0;
         }
         deleteToTrashMap_[bundleName]++;
-    } else if (type == DfxType::DELETE_ASSETS_FROM_DISK) {
+    } else if (type == DfxType::ALBUM_DELETE_ASSETS) {
         lock_guard<mutex> lock(deleteFromDiskLock_);
         if (deleteFromDiskMap_.count(bundleName) == 0) {
             deleteFromDiskMap_[bundleName] = 0;
         }
         deleteFromDiskMap_[bundleName]++;
-    } else if (type == DfxType::REMOVE_ASSETS) {
+    } else if (type == DfxType::ALBUM_REMOVE_PHOTOS) {
         lock_guard<mutex> lock(removeLock_);
         if (removeMap_.count(bundleName) == 0) {
             removeMap_[bundleName] = 0;
@@ -93,17 +93,17 @@ void DfxCollector::CollectDeleteBehavior(std::string bundleName, int32_t type, i
 std::unordered_map<std::string, int32_t> DfxCollector::GetDeleteBehavior(int32_t type)
 {
     std::unordered_map<std::string, int32_t> result;
-    if (type == DfxType::DELETE_ASSETS_TO_TRASH) {
+    if (type == DfxType::TRASH_PHOTO) {
         lock_guard<mutex> lock(deleteToTrashLock_);
         result = deleteToTrashMap_;
         deleteToTrashMap_.clear();
-    } else if (type == DfxType::DELETE_ASSETS_FROM_DISK) {
+    } else if (type == DfxType::ALBUM_DELETE_ASSETS) {
         lock_guard<mutex> lock(deleteFromDiskLock_);
-        result = deleteToTrashMap_;
+        result = deleteFromDiskMap_;
         deleteFromDiskMap_.clear();
-    } else if (type == DfxType::REMOVE_ASSETS) {
+    } else if (type == DfxType::ALBUM_REMOVE_PHOTOS) {
         lock_guard<mutex> lock(removeLock_);
-        result = deleteToTrashMap_;
+        result = removeMap_;
         removeMap_.clear();
     }
     return result;

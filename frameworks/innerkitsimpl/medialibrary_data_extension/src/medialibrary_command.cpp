@@ -30,6 +30,10 @@
 #include "vision_column.h"
 #include "form_map.h"
 #include "search_column.h"
+#include "story_album_column.h"
+#include "story_cover_info_column.h"
+#include "story_play_info_column.h"
+#include "user_photography_info_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
@@ -81,6 +85,7 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_PENDING, OperationType::UPDATE_PENDING },
     { OPRN_SET_USER_COMMENT, OperationType::SET_USER_COMMENT },
     { OPRN_INDEX, OperationType::INDEX },
+    { OPRN_ANALYSIS_INDEX, OperationType::ANALYSIS_INDEX },
     { OPRN_COMMIT_EDIT, OperationType::COMMIT_EDIT },
     { OPRN_REVERT_EDIT, OperationType::REVERT_EDIT },
     { OPRN_HIDE, OperationType::HIDE },
@@ -354,6 +359,12 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
 
     // use in search
     { SEARCH_TOTAL_TABLE, OperationObject::SEARCH_TOTAL },
+
+    // use in story
+    { STORY_ALBUM_TABLE, OperationObject::STORY_ALBUM },
+    { STORY_COVER_INFO_TABLE, OperationObject::STORY_COVER },
+    { STORY_PLAY_INFO_TABLE, OperationObject::STORY_PLAY },
+    { USER_PHOTOGRAPHY_INFO_TABLE, OperationObject::USER_PHOTOGRAPHY },
 };
 
 void MediaLibraryCommand::ParseOprnObjectFromUri()
@@ -446,6 +457,12 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
 
     // search
     { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
+
+    // story
+    { OperationObject::STORY_ALBUM, { { OperationType::UNKNOWN_TYPE, STORY_ALBUM_TABLE } } },
+    { OperationObject::STORY_COVER, { { OperationType::UNKNOWN_TYPE, STORY_COVER_INFO_TABLE } } },
+    { OperationObject::STORY_PLAY, { { OperationType::UNKNOWN_TYPE, STORY_PLAY_INFO_TABLE } } },
+    { OperationObject::USER_PHOTOGRAPHY, { { OperationType::UNKNOWN_TYPE, USER_PHOTOGRAPHY_INFO_TABLE } } },
 };
 
 void MediaLibraryCommand::ParseTableName()
