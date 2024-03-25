@@ -33,6 +33,7 @@
 using namespace std;
 namespace OHOS {
 namespace Media {
+const int32_t CLONE_QUERY_COUNT = 100;
 const string MEDIA_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
     { PhotoColumn::PHOTOS_TABLE,
@@ -188,7 +189,7 @@ void CloneRestore::RestorePhoto(void)
     }
     int32_t totalNumber = QueryTotalNumber();
     MEDIA_INFO_LOG("QueryTotalNumber, totalNumber = %{public}d", totalNumber);
-    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+    for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
         vector<FileInfo> fileInfos = QueryFileInfos(offset);
         InsertPhoto(fileInfos);
         BatchNotifyPhoto(fileInfos);
@@ -213,7 +214,7 @@ void CloneRestore::RestoreAlbum(void)
         GetAlbumExtraQueryWhereClause(tableName);
         int32_t totalNumber = QueryAlbumTotalNumber(tableName);
         MEDIA_INFO_LOG("QueryAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
-        for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+        for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
             vector<AlbumInfo> albumInfos = QueryAlbumInfos(tableName, offset);
             InsertAlbum(albumInfos, tableName);
         }
@@ -326,12 +327,12 @@ int32_t CloneRestore::QueryTotalNumber(void)
 vector<FileInfo> CloneRestore::QueryFileInfos(int32_t offset)
 {
     vector<FileInfo> result;
-    result.reserve(QUERY_COUNT);
+    result.reserve(CLONE_QUERY_COUNT);
     string querySql = "SELECT * FROM " + PhotoColumn::PHOTOS_TABLE;
     if (tableQueryWhereClauseMap_.count(PhotoColumn::PHOTOS_TABLE)) {
         querySql += " WHERE " + tableQueryWhereClauseMap_.at(PhotoColumn::PHOTOS_TABLE);
     }
-    querySql += " LIMIT " + to_string(offset) + ", " + to_string(QUERY_COUNT);
+    querySql += " LIMIT " + to_string(offset) + ", " + to_string(CLONE_QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
@@ -386,12 +387,12 @@ int32_t CloneRestore::QueryAlbumTotalNumber(const string &tableName)
 vector<AlbumInfo> CloneRestore::QueryAlbumInfos(const string &tableName, int32_t offset)
 {
     vector<AlbumInfo> result;
-    result.reserve(QUERY_COUNT);
+    result.reserve(CLONE_QUERY_COUNT);
     string querySql = "SELECT * FROM " + tableName;
     if (tableQueryWhereClauseMap_.count(tableName)) {
         querySql += " WHERE " + tableQueryWhereClauseMap_.at(tableName);
     }
-    querySql += " LIMIT " + to_string(offset) + ", " + to_string(QUERY_COUNT);
+    querySql += " LIMIT " + to_string(offset) + ", " + to_string(CLONE_QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
@@ -430,7 +431,8 @@ void CloneRestore::AnalyzeSource()
 
 int32_t CloneRestore::MoveSingleFile(FileInfo &fileInfo)
 {
-    string localPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
+    string localPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL,
+        fileInfo.cloudPath);
     if (MoveFile(fileInfo.filePath, localPath) != E_OK) {
         MEDIA_ERR_LOG("Move photo file failed");
         return E_FAIL;
@@ -438,8 +440,8 @@ int32_t CloneRestore::MoveSingleFile(FileInfo &fileInfo)
 
     string srcEditDataPath = BACKUP_RESTORE_DIR +
         BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD_EDIT_DATA, fileInfo.relativePath);
-    string dstEditDataPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA,
-        fileInfo.relativePath);
+    string dstEditDataPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD,
+        PrefixType::LOCAL_EDIT_DATA, fileInfo.cloudPath);
     if (IsFilePathExist(srcEditDataPath) && MoveDirectory(srcEditDataPath, dstEditDataPath) != E_OK) {
         MEDIA_ERR_LOG("Move editData file failed");
         return E_FAIL;
