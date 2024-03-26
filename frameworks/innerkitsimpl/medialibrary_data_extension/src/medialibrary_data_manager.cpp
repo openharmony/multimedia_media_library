@@ -193,6 +193,7 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at MakeDirQuerySetMap");
 
     InitACLPermission();
+    InitDatabaseACLPermission();
 
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
@@ -1229,6 +1230,27 @@ void MediaLibraryDataManager::InitACLPermission()
 
     if (Acl::AclSetDefault() != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl read permission for the thumbs Photo dir");
+    }
+}
+
+void MediaLibraryDataManager::InitDatabaseACLPermission()
+{
+    if (access(RDB_DIR.c_str(), F_OK) != E_OK) {
+        if (!MediaFileUtils::CreateDirectory(RDB_DIR)) {
+            MEDIA_ERR_LOG("Failed create media rdb dir");
+            return;
+        }
+    }
+
+    if (access(KVDB_DIR.c_str(), F_OK) != E_OK) {
+        if (!MediaFileUtils::CreateDirectory(KVDB_DIR)) {
+            MEDIA_ERR_LOG("Failed create media kvdb dir");
+            return;
+        }
+    }
+
+    if (Acl::AclSetDatabase() != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl db permission for the media db dir");
     }
 }
 

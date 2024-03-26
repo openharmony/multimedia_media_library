@@ -21,6 +21,8 @@
 #include <set>
 #include <string>
 
+#include "medialibrary_db_const.h"
+
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -47,26 +49,26 @@ enum class ACL_TAG : uint16_t {
  */
 class ACL_PERM {
     uint16_t value = 0;
+public:
     enum Value : uint16_t {
         READ    = 0x04,
         WRITE   = 0x02,
         EXECUTE = 0x01,
     };
-public:
     ACL_PERM() = default;
     ACL_PERM(const uint16_t x)
     {
         value = (x & READ) | (x & WRITE) | (x & EXECUTE);
     }
-    void SetR()
+    void SetRead()
     {
         value |= READ;
     }
-    void SetW()
+    void SetWrite()
     {
         value |= WRITE;
     }
-    void SetE()
+    void SetExecute()
     {
         value |= EXECUTE;
     }
@@ -94,8 +96,11 @@ public:
 constexpr uint32_t ACL_EA_VERSION = 0x0002;
 constexpr uint32_t ACL_UNDEFINED_ID = (uint32_t)-1;
 constexpr uint32_t THUMB_ACL_GROUP = 2008;
+constexpr uint32_t MEDIA_DB_ACL_GROUP = 3008;
 
 EXPORT const std::string THUMB_DIR = "/storage/cloud/files/.thumbs/Photo";
+EXPORT const std::string RDB_DIR = MEDIA_DB_DIR + "/rdb";
+EXPORT const std::string KVDB_DIR = MEDIA_DB_DIR + "/kvdb";
 /*
  * ACL data structure
  */
@@ -139,6 +144,8 @@ public:
     EXPORT char *Serialize(size_t &bufSize);
 
     EXPORT static int32_t AclSetDefault();
+    EXPORT static int32_t AclSetDatabase();
+    EXPORT static int32_t EntryInsert(AclXattrEntry& entry, const std::string& path);
     EXPORT ~Acl();
 private:
     void CompareInsertEntry(const AclXattrEntry &entry);
