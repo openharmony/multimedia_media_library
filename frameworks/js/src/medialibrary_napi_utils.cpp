@@ -849,7 +849,7 @@ napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<st
             validFetchColumns.insert(column);
         } else if (column == MEDIA_DATA_DB_URI) {
             continue;
-        } else if (DATE_TRANSITION_MAP.count(column) == 0) {
+        } else if (DATE_TRANSITION_MAP.count(column) != 0) {
             validFetchColumns.insert(DATE_TRANSITION_MAP.at(column));
         } else {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
