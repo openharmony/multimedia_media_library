@@ -113,6 +113,7 @@ private:
     std::shared_ptr<NativeRdb::ResultSet> QuerySet(MediaLibraryCommand &cmd, const std::vector<std::string> &columns,
         const DataShare::DataSharePredicates &predicates, int &errCode);
     void InitACLPermission();
+    void InitDatabaseACLPermission();
     std::shared_ptr<NativeRdb::ResultSet> QueryInternal(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns, const DataShare::DataSharePredicates &predicates);
 #ifdef DISTRIBUTED

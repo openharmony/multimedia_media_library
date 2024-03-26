@@ -47,6 +47,10 @@
     {
       "name": "permission_get_bundle_info_privileged",
       "value": "Allows querying of the app's basic information and other sensitive information"
+    },
+    {
+      "name": "permission_access_rdb_and_kvdb",
+      "value": "Allows querying rdb and fetch astc from kvdb"
     }
   ]
 }
