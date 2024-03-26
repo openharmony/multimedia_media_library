@@ -32,16 +32,17 @@
 
 #include "hilog/log.h"
 
-#define MEDIA_HILOG(op, fmt, args...) \
+#define MEDIA_HILOG(op, type, fmt, args...) \
     do {                                  \
-        op(LOG_LABEL, MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, ##args);  \
+        op(LOG_CORE, type, LOG_DOMAIN, LOG_TAG, MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, \
+            ##args);  \
     } while (0)
 
-#define MEDIA_DEBUG_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Debug, fmt, ##__VA_ARGS__)
-#define MEDIA_ERR_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Error, fmt, ##__VA_ARGS__)
-#define MEDIA_WARN_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Warn, fmt, ##__VA_ARGS__)
-#define MEDIA_INFO_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Info, fmt, ##__VA_ARGS__)
-#define MEDIA_FATAL_LOG(fmt, ...) MEDIA_HILOG(OHOS::HiviewDFX::HiLog::Fatal, fmt, ##__VA_ARGS__)
+#define MEDIA_DEBUG_LOG(fmt, ...) MEDIA_HILOG(HILOG_IMPL, LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define MEDIA_ERR_LOG(fmt, ...) MEDIA_HILOG(HILOG_IMPL, LOG_ERROR, fmt, ##__VA_ARGS__)
+#define MEDIA_WARN_LOG(fmt, ...) MEDIA_HILOG(HILOG_IMPL, LOG_WARN, fmt, ##__VA_ARGS__)
+#define MEDIA_INFO_LOG(fmt, ...) MEDIA_HILOG(HILOG_IMPL, LOG_INFO, fmt, ##__VA_ARGS__)
+#define MEDIA_FATAL_LOG(fmt, ...) MEDIA_HILOG(HILOG_IMPL, LOG_FATAL, fmt, ##__VA_ARGS__)
 
 #define CHECK_AND_RETURN_RET_LOG(cond, ret, fmt, ...)  \
     do {                                               \

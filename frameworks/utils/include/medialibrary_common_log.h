@@ -32,16 +32,17 @@
 #define C_LOG_LABEL { LOG_CORE, C_LOG_DOMAIN, C_LOG_TAG }
 #endif
 
-#define COMMON_HILOG(op, fmt, args...) \
-    do { \
-        op(C_LOG_LABEL, C_MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, __LINE__, ##args); \
+#define COMMON_HILOG(op, type, fmt, args...) \
+    do {                                  \
+        op(LOG_CORE, type, C_LOG_DOMAIN, C_LOG_TAG, C_MLOG_TAG ":{%{public}s:%{public}d} " fmt, __FUNCTION__, \
+            __LINE__, ##args);  \
     } while (0)
 
-#define COMMON_DEBUG_LOG(fmt, ...) COMMON_HILOG(OHOS::HiviewDFX::HiLog::Debug, fmt, ##__VA_ARGS__)
-#define COMMON_ERR_LOG(fmt, ...) COMMON_HILOG(OHOS::HiviewDFX::HiLog::Error, fmt, ##__VA_ARGS__)
-#define COMMON_WARN_LOG(fmt, ...) COMMON_HILOG(OHOS::HiviewDFX::HiLog::Warn, fmt, ##__VA_ARGS__)
-#define COMMON_INFO_LOG(fmt, ...) COMMON_HILOG(OHOS::HiviewDFX::HiLog::Info, fmt, ##__VA_ARGS__)
-#define COMMON_FATAL_LOG(fmt, ...) COMMON_HILOG(OHOS::HiviewDFX::HiLog::Fatal, fmt, ##__VA_ARGS__)
+#define COMMON_DEBUG_LOG(fmt, ...) COMMON_HILOG(HILOG_IMPL, LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define COMMON_ERR_LOG(fmt, ...) COMMON_HILOG(HILOG_IMPL, LOG_ERROR, fmt, ##__VA_ARGS__)
+#define COMMON_WARN_LOG(fmt, ...) COMMON_HILOG(HILOG_IMPL, LOG_WARN, fmt, ##__VA_ARGS__)
+#define COMMON_INFO_LOG(fmt, ...) COMMON_HILOG(HILOG_IMPL, LOG_INFO, fmt, ##__VA_ARGS__)
+#define COMMON_FATAL_LOG(fmt, ...) COMMON_HILOG(HILOG_IMPL, LOG_FATAL, fmt, ##__VA_ARGS__)
 
 #define CHECK_AND_ERR_LOG(cond, fmt, ...) \
     do { \
