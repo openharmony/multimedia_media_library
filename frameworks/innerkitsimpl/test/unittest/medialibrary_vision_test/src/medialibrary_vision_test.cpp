@@ -31,12 +31,14 @@
 #include "vision_column_comm.h"
 #include "vision_column.h"
 #include "vision_composition_column.h"
+#include "vision_head_column.h"
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
 #include "vision_photo_map_column.h"
+#include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
 #include "vision_saliency_detect_column.h"
 #include "vision_segmentation_column.h"
@@ -82,6 +84,10 @@ void CleanVisionData()
     MediaLibraryCommand compositionCmd(compositionUri);
     Uri salUri(URI_SALIENCY);
     MediaLibraryCommand salCmd(salUri);
+    Uri headUri(URI_HEAD);
+    MediaLibraryCommand headCmd(headUri);
+    Uri poseUri(URI_POSE);
+    MediaLibraryCommand poseCmd(poseUri);
     Uri totalUri(URI_TOTAL);
     MediaLibraryCommand totalCmd(totalUri);
     MediaLibraryDataManager::GetInstance()->Delete(ocrCmd, predicates);
@@ -92,6 +98,8 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(segmentationCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(compositionCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(salCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(headCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(poseCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(totalCmd, predicates);
 }
 
@@ -1586,7 +1594,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_001, TestSize
     int32_t id2 = CreateSingleImage("AnalysisGetPhotoIndex2.jpg");
     InsertAnalysisMap(albumId, id1);
     InsertAnalysisMap(albumId, id2);
-    
+
     Uri queryIndexUri(PAH_GET_ANALYSIS_INDEX);
     MediaLibraryCommand queryCmd(queryIndexUri);
     DataShare::DataSharePredicates predicatesQuery;
@@ -2497,6 +2505,308 @@ HWTEST_F(MediaLibraryVisionTest, placeToFrontOf_Test_error_003, TestSize.Level0)
     int32_t result = placeToFrontOfTest(albumId2, albumId1);
     EXPECT_LT(result, 0);
     MEDIA_INFO_LOG("placeToFrontOf_Test_error_003::result = %{public}d. End", result);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertHead_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_InsertHead_Test_001::Start");
+    Uri headUri(URI_HEAD);
+    MediaLibraryCommand cmd(headUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 1);
+    valuesBucket.Put(HEAD_ID, 1);
+    valuesBucket.Put(HEAD_LABEL, 1);
+    valuesBucket.Put(HEAD_SCALE_X, 100);
+    valuesBucket.Put(HEAD_SCALE_Y, 200);
+    valuesBucket.Put(HEAD_SCALE_WIDTH, 500);
+    valuesBucket.Put(HEAD_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(HEAD_VERSION, "1.0");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 1);
+    valuesBucket1.Put(HEAD_ID, 1);
+    valuesBucket1.Put(HEAD_LABEL, 1);
+    valuesBucket1.Put(HEAD_SCALE_X, 500);
+    valuesBucket1.Put(HEAD_SCALE_Y, 600);
+    valuesBucket1.Put(HEAD_SCALE_WIDTH, 500);
+    valuesBucket1.Put(HEAD_SCALE_HEIGHT, 1000);
+    valuesBucket1.Put(PROB, 0.9);
+    valuesBucket1.Put(HEAD_VERSION, "1.0");
+    auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    EXPECT_LT(retVal1, 0);
+    MEDIA_INFO_LOG("Vision_InsertHead_Test_001::retVal = %{public}d. End", retVal);
+
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 1);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdateHead_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_UpdateHead_Test_001::Start");
+    Uri headUri(URI_HEAD);
+    MediaLibraryCommand cmd(headUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 2);
+    valuesBucket.Put(HEAD_ID, 1);
+    valuesBucket.Put(HEAD_LABEL, 1);
+    valuesBucket.Put(HEAD_SCALE_X, 100);
+    valuesBucket.Put(HEAD_SCALE_Y, 200);
+    valuesBucket.Put(HEAD_SCALE_WIDTH, 500);
+    valuesBucket.Put(HEAD_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(HEAD_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(HEAD_SCALE_X, 200);
+    updateValues.Put(HEAD_SCALE_Y, 300);
+    updateValues.Put(HEAD_VERSION, "2.0");
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("2");
+    predicates.In(FILE_ID, inValues);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ(retVal, 1);
+    MEDIA_INFO_LOG("Vision_UpdateHead_Test_001::retVal = %{public}d. End", retVal);
+
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(FILE_ID, 2);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_DeleteHead_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_DeleteHead_Test_001::Start");
+    Uri headUri(URI_HEAD);
+    MediaLibraryCommand cmd(headUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 3);
+    valuesBucket.Put(HEAD_ID, 1);
+    valuesBucket.Put(HEAD_LABEL, 1);
+    valuesBucket.Put(HEAD_SCALE_X, 100);
+    valuesBucket.Put(HEAD_SCALE_Y, 200);
+    valuesBucket.Put(HEAD_SCALE_WIDTH, 500);
+    valuesBucket.Put(HEAD_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(HEAD_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 3);
+    valuesBucket1.Put(HEAD_ID, 2);
+    valuesBucket1.Put(HEAD_LABEL, 1);
+    valuesBucket1.Put(HEAD_SCALE_X, 500);
+    valuesBucket1.Put(HEAD_SCALE_Y, 600);
+    valuesBucket1.Put(HEAD_SCALE_WIDTH, 500);
+    valuesBucket1.Put(HEAD_SCALE_HEIGHT, 1000);
+    valuesBucket1.Put(PROB, 0.9);
+    valuesBucket1.Put(HEAD_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 3);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ(retVal, 2);
+    MEDIA_INFO_LOG("Vision_DeleteHead_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryHead_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_QueryHead_Test_001::Start");
+    Uri headUri(URI_HEAD);
+    MediaLibraryCommand cmd(headUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 4);
+    valuesBucket.Put(HEAD_ID, 1);
+    valuesBucket.Put(HEAD_LABEL, 1);
+    valuesBucket.Put(HEAD_SCALE_X, 100);
+    valuesBucket.Put(HEAD_SCALE_Y, 200);
+    valuesBucket.Put(HEAD_SCALE_WIDTH, 500);
+    valuesBucket.Put(HEAD_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(HEAD_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 4);
+    valuesBucket1.Put(HEAD_ID, 2);
+    valuesBucket1.Put(HEAD_LABEL, 1);
+    valuesBucket1.Put(HEAD_SCALE_X, 500);
+    valuesBucket1.Put(HEAD_SCALE_Y, 600);
+    valuesBucket1.Put(HEAD_SCALE_WIDTH, 500);
+    valuesBucket1.Put(HEAD_SCALE_HEIGHT, 1000);
+    valuesBucket1.Put(PROB, 0.9);
+    valuesBucket1.Put(HEAD_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 4);
+    vector<string> columns;
+    columns.push_back(HEAD_ID);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 2);
+    MEDIA_INFO_LOG("Vision_QueryHead_Test_001::retVal = %{public}d. End", count);
+
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(FILE_ID, 4);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_InsertPose_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_InsertPose_Test_001::Start");
+    Uri poseUri(URI_POSE);
+    MediaLibraryCommand cmd(poseUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 1);
+    valuesBucket.Put(POSE_ID, 1);
+    valuesBucket.Put(POSE_LANDMARKS, "{{222}}");
+    valuesBucket.Put(POSE_SCALE_X, 100);
+    valuesBucket.Put(POSE_SCALE_Y, 200);
+    valuesBucket.Put(POSE_SCALE_WIDTH, 500);
+    valuesBucket.Put(POSE_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(POSE_VERSION, "1.0");
+    auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(retVal, 0);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 1);
+    valuesBucket1.Put(POSE_ID, 1);
+    valuesBucket1.Put(POSE_LANDMARKS, "{{333}}");
+    valuesBucket1.Put(POSE_SCALE_X, 500);
+    valuesBucket1.Put(POSE_SCALE_Y, 600);
+    valuesBucket1.Put(POSE_SCALE_WIDTH, 500);
+    valuesBucket1.Put(POSE_SCALE_HEIGHT, 1000);
+    valuesBucket1.Put(PROB, 0.9);
+    valuesBucket1.Put(POSE_VERSION, "1.0");
+    auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    EXPECT_LT(retVal1, 0);
+    MEDIA_INFO_LOG("Vision_InsertPose_Test_001::retVal = %{public}d. End", retVal);
+
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 1);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_UpdatePose_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_UpdatePose_Test_001::Start");
+    Uri poseUri(URI_POSE);
+    MediaLibraryCommand cmd(poseUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 2);
+    valuesBucket.Put(POSE_ID, 1);
+    valuesBucket.Put(POSE_LANDMARKS, "{{222}}");
+    valuesBucket.Put(POSE_SCALE_X, 100);
+    valuesBucket.Put(POSE_SCALE_Y, 200);
+    valuesBucket.Put(POSE_SCALE_WIDTH, 500);
+    valuesBucket.Put(POSE_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(POSE_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataShareValuesBucket updateValues;
+    updateValues.Put(POSE_SCALE_X, 200);
+    updateValues.Put(POSE_SCALE_Y, 300);
+    updateValues.Put(POSE_VERSION, "2.0");
+    DataShare::DataSharePredicates predicates;
+    vector<string> inValues;
+    inValues.push_back("2");
+    predicates.In(FILE_ID, inValues);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Update(cmd, updateValues, predicates);
+    EXPECT_EQ(retVal, 1);
+    MEDIA_INFO_LOG("Vision_UpdatePose_Test_001::retVal = %{public}d. End", retVal);
+
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(FILE_ID, 2);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_DeletePose_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_DeletePose_Test_001::Start");
+    Uri poseUri(URI_POSE);
+    MediaLibraryCommand cmd(poseUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 3);
+    valuesBucket.Put(POSE_ID, 1);
+    valuesBucket.Put(POSE_LANDMARKS, "{{222}}");
+    valuesBucket.Put(POSE_SCALE_X, 100);
+    valuesBucket.Put(POSE_SCALE_Y, 200);
+    valuesBucket.Put(POSE_SCALE_WIDTH, 500);
+    valuesBucket.Put(POSE_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(POSE_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 3);
+    valuesBucket1.Put(POSE_ID, 2);
+    valuesBucket1.Put(POSE_LANDMARKS, "{{333}}");
+    valuesBucket1.Put(POSE_SCALE_X, 500);
+    valuesBucket1.Put(POSE_SCALE_Y, 600);
+    valuesBucket1.Put(POSE_SCALE_WIDTH, 500);
+    valuesBucket1.Put(POSE_SCALE_HEIGHT, 1000);
+    valuesBucket1.Put(PROB, 0.9);
+    valuesBucket1.Put(POSE_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 3);
+    auto retVal = MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates);
+    EXPECT_EQ(retVal, 2);
+    MEDIA_INFO_LOG("Vision_DeletePose_Test_001::retVal = %{public}d. End", retVal);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryPose_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_QueryPose_Test_001::Start");
+    Uri poseUri(URI_POSE);
+    MediaLibraryCommand cmd(poseUri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(FILE_ID, 4);
+    valuesBucket.Put(POSE_ID, 1);
+    valuesBucket.Put(POSE_LANDMARKS, "{{222}}");
+    valuesBucket.Put(POSE_SCALE_X, 100);
+    valuesBucket.Put(POSE_SCALE_Y, 200);
+    valuesBucket.Put(POSE_SCALE_WIDTH, 500);
+    valuesBucket.Put(POSE_SCALE_HEIGHT, 1000);
+    valuesBucket.Put(PROB, 0.9);
+    valuesBucket.Put(POSE_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+
+    DataShare::DataShareValuesBucket valuesBucket1;
+    valuesBucket1.Put(FILE_ID, 4);
+    valuesBucket1.Put(POSE_ID, 2);
+    valuesBucket1.Put(POSE_LANDMARKS, "{{333}}");
+    valuesBucket1.Put(POSE_SCALE_X, 500);
+    valuesBucket1.Put(POSE_SCALE_Y, 600);
+    valuesBucket1.Put(POSE_SCALE_WIDTH, 500);
+    valuesBucket1.Put(POSE_SCALE_HEIGHT, 1000);
+    valuesBucket1.Put(PROB, 0.9);
+    valuesBucket1.Put(POSE_VERSION, "1.0");
+    MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(FILE_ID, 4);
+    vector<string> columns;
+    columns.push_back(POSE_ID);
+    int errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    int count;
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 2);
+    MEDIA_INFO_LOG("Vision_QueryPose_Test_001::retVal = %{public}d. End", count);
+
+    DataShare::DataSharePredicates predicates1;
+    predicates1.EqualTo(FILE_ID, 4);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
 }
 } // namespace Media
 } // namespace OHOS

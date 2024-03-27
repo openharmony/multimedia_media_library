@@ -5424,6 +5424,9 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
         { "ANALYSIS_COMPOSITION", AnalysisType::ANALYSIS_COMPOSITION },
         { "ANALYSIS_SALIENCY", AnalysisType::ANALYSIS_SALIENCY },
         { "ANALYSIS_DETAIL_ADDRESS", AnalysisType::ANALYSIS_DETAIL_ADDRESS },
+        { "ANALYSIS_HUMAN_FACE_TAG", AnalysisType::ANALYSIS_HUMAN_FACE_TAG },
+        { "ANALYSIS_HEAD_POSITION", AnalysisType::ANALYSIS_HEAD_POSITION },
+        { "ANALYSIS_BONE_POSE", AnalysisType::ANALYSIS_BONE_POSE },
     };
 
     napi_value result = nullptr;

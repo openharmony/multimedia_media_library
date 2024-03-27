@@ -29,6 +29,9 @@ const std::string RECOMMENDATION = "recommendation";
 const std::string SEGMENTATION = "segmentation";
 const std::string COMPOSITION = "composition";
 const std::string FACE = "face";
+const std::string FACE_TAG = "face_tag";
+const std::string HEAD = "head";
+const std::string POSE = "pose";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_TOTAL_COLUMN_H

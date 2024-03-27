@@ -22,11 +22,13 @@
 #include "vision_column.h"
 #include "vision_composition_column.h"
 #include "vision_face_tag_column.h"
+#include "vision_head_column.h"
 #include "vision_image_face_column.h"
 #include "vision_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
 #include "vision_photo_map_column.h"
+#include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
 #include "vision_saliency_detect_column.h"
 #include "vision_segmentation_column.h"
@@ -113,6 +115,30 @@ const std::string CREATE_TAB_ANALYSIS_COMPOSITION = "CREATE TABLE IF NOT EXISTS 
     COMPOSITION_SCALE_HEIGHT + " INT, " +
     COMPOSITION_VERSION + " TEXT) ";
 
+const std::string CREATE_TAB_ANALYSIS_HEAD = "CREATE TABLE IF NOT EXISTS " + VISION_HEAD_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INT, " +
+    HEAD_ID + " INT, " +
+    HEAD_LABEL + " INT, " +
+    HEAD_SCALE_X + " INT, " +
+    HEAD_SCALE_Y + " INT, " +
+    HEAD_SCALE_WIDTH + " INT, " +
+    HEAD_SCALE_HEIGHT + " INT, " +
+    PROB + " REAL, " +
+    HEAD_VERSION + " TEXT) ";
+
+const std::string CREATE_TAB_ANALYSIS_POSE = "CREATE TABLE IF NOT EXISTS " + VISION_POSE_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INT, " +
+    POSE_ID + " INT, " +
+    POSE_LANDMARKS + " BLOB, " +
+    POSE_SCALE_X + " INT, " +
+    POSE_SCALE_Y + " INT, " +
+    POSE_SCALE_WIDTH + " INT, " +
+    POSE_SCALE_HEIGHT + " INT, " +
+    PROB + " REAL, " +
+    POSE_VERSION + " TEXT) ";
+
 const std::string CREATE_TAB_ANALYSIS_TOTAL = "CREATE TABLE IF NOT EXISTS " + VISION_TOTAL_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     FILE_ID + " INT UNIQUE, " +
@@ -133,7 +159,9 @@ const std::string CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE = "CREATE TABLE IF NOT 
     RECOMMENDATION + " INT, " +
     SEGMENTATION + " INT, " +
     COMPOSITION + " INT, " +
-    SALIENCY + " INT) ";
+    SALIENCY + " INT, " +
+    HEAD + " INT, " +
+    POSE + " INT) ";
 
 const std::string CREATE_TAB_IMAGE_FACE = "CREATE TABLE IF NOT EXISTS " + VISION_IMAGE_FACE_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -244,8 +272,8 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE =
     " BEGIN " +
     " INSERT INTO " + VISION_TOTAL_TABLE +" (" + FILE_ID + ", " + STATUS + ", " + OCR + ", " + AESTHETICS_SCORE + ", " +
     LABEL + ", " + FACE + ", " + OBJECT + ", " + RECOMMENDATION + ", " + SEGMENTATION + ", " + COMPOSITION + "," +
-    SALIENCY + ") " +
-    " VALUES (" + " NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" + " END;";
+    SALIENCY + ", " + HEAD + ", " + POSE + ") " +
+    " VALUES (" + " NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" + " END;";
 
 const std::string DROP_INSERT_VISION_TRIGGER = "DROP TRIGGER IF EXISTS insert_vision_trigger";
 
@@ -328,6 +356,16 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_UPDATE_SPEC =
     SALIENCY + ") " +
     " VALUES (" + " NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" + " END;";
 
+const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_HEAD_AND_POSE =
+    "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +
+    PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
+    " WHEN NEW.MEDIA_TYPE = 1" +
+    " BEGIN " +
+    " INSERT INTO " + VISION_TOTAL_TABLE +" (" + FILE_ID + ", " + STATUS + ", " + OCR + ", " + AESTHETICS_SCORE + ", " +
+    LABEL + ", " + FACE + ", " + OBJECT + ", " + RECOMMENDATION + ", " + SEGMENTATION + ", " + COMPOSITION + "," +
+    SALIENCY + ", " + HEAD + ", " + POSE + ") " +
+    " VALUES (" + " NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" + " END;";
+
 const std::string ADD_FACE_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + FACE + " INT";
 const std::string UPDATE_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " + FACE +
     " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE subtype != 1)";
@@ -383,6 +421,27 @@ const std::string AC_UPDATE_COMPOSITION_TOTAL_NOT_SUPPORT_VALUE = "UPDATE " + VI
 const std::string COMPOSITION_INDEX = "composition_index";
 const std::string CREATE_COMPOSITION_INDEX = "CREATE UNIQUE INDEX " + COMPOSITION_INDEX + " ON " +
     VISION_COMPOSITION_TABLE + " (" + FILE_ID + "," + COMPOSITION_ID + ")";
+
+const std::string ADD_HEAD_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + HEAD + " INT";
+const std::string UPDATE_HEAD_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " + HEAD +
+    " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
+    " WHERE media_type = 1)";
+const std::string UPDATE_HEAD_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + HEAD + " = -1 WHERE " +
+    HEAD + " IS NULL";
+const std::string HEAD_INDEX = "head_index";
+const std::string CREATE_HEAD_INDEX = "CREATE UNIQUE INDEX " + HEAD_INDEX + " ON " + VISION_HEAD_TABLE + " (" +
+    FILE_ID + "," + HEAD_ID + ")";
+
+const std::string ADD_POSE_STATUS_COLUMN = "ALTER TABLE " + VISION_TOTAL_TABLE + " ADD COLUMN " + POSE + " INT";
+const std::string UPDATE_POSE_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " + POSE +
+    " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
+    " WHERE media_type = 1)";
+const std::string UPDATE_POSE_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + POSE + " = -1 WHERE " +
+    POSE + " IS NULL";
+const std::string POSE_INDEX = "pose_index";
+const std::string CREATE_POSE_INDEX = "CREATE UNIQUE INDEX " + POSE_INDEX + " ON " + VISION_POSE_TABLE + " (" +
+    FILE_ID + "," + POSE_ID + ")";
+
 const std::string ALTER_WIDTH_COLUMN = "ALTER TABLE tab_analysis_ocr ADD COLUMN width INT;";
 const std::string ALTER_HEIGHT_COLUMN = "ALTER TABLE tab_analysis_ocr ADD COLUMN height INT;";
 const std::string DROP_TABLE_ANALYSISALBUM = "DROP TABLE AnalysisAlbum;";
