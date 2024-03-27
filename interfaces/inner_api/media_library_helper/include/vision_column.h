@@ -31,6 +31,8 @@ const std::string VISION_OBJECT_TABLE = "tab_analysis_object";
 const std::string VISION_RECOMMENDATION_TABLE = "tab_analysis_recommendation";
 const std::string VISION_SEGMENTATION_TABLE = "tab_analysis_segmentation";
 const std::string VISION_COMPOSITION_TABLE = "tab_analysis_composition";
+const std::string VISION_HEAD_TABLE = "tab_analysis_head";
+const std::string VISION_POSE_TABLE = "tab_analysis_pose";
 const std::string VISION_TOTAL_TABLE = "tab_analysis_total";
 const std::string VISION_IMAGE_FACE_TABLE = "tab_analysis_image_face";
 const std::string VISION_FACE_TAG_TABLE = "tab_analysis_face_tag";
@@ -43,14 +45,16 @@ const std::string TARGET_ALBUM_ID = "target_album_id";
 const std::string URI_OCR = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_OCR;
 const std::string URI_LABEL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_LABEL;
 const std::string URI_AESTHETICS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ATTS;
-const std::string URI_OBJECT = MEDIALIBRARY_DATA_URI + "/" + VISION_OBJECT_TABLE;
-const std::string URI_RECOMMENDATION = MEDIALIBRARY_DATA_URI + "/" + VISION_RECOMMENDATION_TABLE;
-const std::string URI_SEGMENTATION = MEDIALIBRARY_DATA_URI + "/" + VISION_SEGMENTATION_TABLE;
-const std::string URI_COMPOSITION = MEDIALIBRARY_DATA_URI + "/" + VISION_COMPOSITION_TABLE;
+const std::string URI_OBJECT = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_OBJECT;
+const std::string URI_RECOMMENDATION = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_RECOMMENDATION;
+const std::string URI_SEGMENTATION = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_SEGMENTATION;
+const std::string URI_COMPOSITION = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_COMPOSITION;
 const std::string URI_TOTAL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_TOTAL;
 const std::string URI_SALIENCY = MEDIALIBRARY_DATA_URI + "/" + VISION_SALIENCY_TABLE;
 const std::string URI_IMAGE_FACE = MEDIALIBRARY_DATA_URI + "/" + VISION_IMAGE_FACE_TABLE;
 const std::string URI_FACE_TAG = MEDIALIBRARY_DATA_URI + "/" + VISION_FACE_TAG_TABLE;
+const std::string URI_HEAD = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_HEAD;
+const std::string URI_POSE = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_POSE;
 } // namespace Media
 } // namespace OHOS
 #endif // MEDIALIBRARY_VISION_COLUMN_H

@@ -931,6 +931,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_RECOMMENDATION,
     CREATE_TAB_ANALYSIS_SEGMENTATION,
     CREATE_TAB_ANALYSIS_COMPOSITION,
+    CREATE_TAB_ANALYSIS_HEAD,
+    CREATE_TAB_ANALYSIS_POSE,
     CREATE_TAB_IMAGE_FACE,
     CREATE_TAB_FACE_TAG,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
@@ -941,6 +943,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_OBJECT_INDEX,
     CREATE_RECOMMENDATION_INDEX,
     CREATE_COMPOSITION_INDEX,
+    CREATE_HEAD_INDEX,
+    CREATE_POSE_INDEX,
     CREATE_GEO_KNOWLEDGE_TABLE,
     CREATE_GEO_DICTIONARY_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
@@ -1456,6 +1460,26 @@ static void UpdateSpecForAddScreenshot(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddHeadAndPoseTables(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_TAB_ANALYSIS_HEAD,
+        CREATE_TAB_ANALYSIS_POSE,
+        DROP_INSERT_VISION_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_ADD_HEAD_AND_POSE,
+        ADD_HEAD_STATUS_COLUMN,
+        UPDATE_HEAD_TOTAL_VALUE,
+        UPDATE_HEAD_NOT_SUPPORT_VALUE,
+        ADD_POSE_STATUS_COLUMN,
+        UPDATE_POSE_TOTAL_VALUE,
+        UPDATE_POSE_NOT_SUPPORT_VALUE,
+        CREATE_HEAD_INDEX,
+        CREATE_POSE_INDEX,
+    };
+    MEDIA_INFO_LOG("start add head and pose tables");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void AddSearchTable(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -1525,6 +1549,8 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
         "DROP TABLE IF EXISTS tab_analysis_total",
         "DROP TABLE IF EXISTS tab_analysis_image_face",
         "DROP TABLE IF EXISTS tab_analysis_face_tag",
+        "DROP TABLE IF EXISTS tab_analysis_head",
+        "DROP TABLE IF EXISTS tab_analysis_pose",
     };
     MEDIA_INFO_LOG("start update analysis table");
     ExecSqls(executeSqlStrs, *rdbStore_);
@@ -1533,6 +1559,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     AddAestheticCompositionTables(*rdbStore_);
     AddSaliencyTables(*rdbStore_);
     UpdateSpecForAddScreenshot(*rdbStore_);
+    AddHeadAndPoseTables(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -2280,6 +2307,13 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
+static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_HEAD_AND_POSE_TABLE) {
+        AddHeadAndPoseTables(store);
+    }
+}
+
 static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_IS_LOCAL_ALBUM) {
@@ -2292,7 +2326,7 @@ static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_MISSING_UPDATES) {
         AddMissingUpdates(store);
     }
-    
+
     if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_SDIRTY) {
         UpdateMdirtyTriggerForSdirty(store);
     }
@@ -2384,6 +2418,7 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeOtherTable(store, oldVersion);
     UpgradeGalleryFeatureTable(store, oldVersion);
     UpgradeVisionTable(store, oldVersion);
+    UpgradeExtendedVisionTable(store, oldVersion);
     UpgradeAlbumTable(store, oldVersion);
     UpgradeHistory(store, oldVersion);
     UpgradeStoryTable(store, oldVersion);

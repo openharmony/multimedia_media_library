@@ -67,11 +67,13 @@
 #include "vision_column.h"
 #include "vision_composition_column.h"
 #include "vision_face_tag_column.h"
+#include "vision_head_column.h"
 #include "vision_image_face_column.h"
 #include "vision_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
 #include "vision_photo_map_column.h"
+#include "vision_pose_column.h"
 #include "vision_recommendation_column.h"
 #include "vision_saliency_detect_column.h"
 #include "vision_segmentation_column.h"
@@ -1947,6 +1949,13 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_DETAIL_ADDRESS, { PAH_QUERY_ANA_ADDRESS, { PhotoColumn::PHOTOS_TABLE + "." + LATITUDE,
         PhotoColumn::PHOTOS_TABLE + "." + LONGITUDE, LANGUAGE, COUNTRY, ADMIN_AREA, SUB_ADMIN_AREA,
         LOCALITY, SUB_LOCALITY, THOROUGHFARE, SUB_THOROUGHFARE, FEATURE_NAME, CITY_NAME, ADDRESS_DESCRIPTION } } },
+    { ANALYSIS_HUMAN_FACE_TAG, { PAH_QUERY_ANA_FACE_TAG, { TAG_ID, TAG_NAME, USER_OPERATION, GROUP_TAG,
+        RENAME_OPERATION, CENTER_FEATURES, USER_DISPLAY_LEVEL, TAG_ORDER, IS_ME, COVER_URI, COUNT, PORTRAIT_DATE_MODIFY,
+        ALBUM_TYPE, IS_REMOVED } } },
+    { ANALYSIS_HEAD_POSITION, { PAH_QUERY_ANA_HEAD, { HEAD_ID, HEAD_LABEL, HEAD_SCALE_X, HEAD_SCALE_Y, HEAD_SCALE_WIDTH,
+        HEAD_SCALE_HEIGHT, PROB } } },
+    { ANALYSIS_BONE_POSE, { PAH_QUERY_ANA_POSE, { POSE_ID, POSE_LANDMARKS, POSE_SCALE_X, POSE_SCALE_Y, POSE_SCALE_WIDTH,
+        POSE_SCALE_HEIGHT, PROB } } },
 };
 
 static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
