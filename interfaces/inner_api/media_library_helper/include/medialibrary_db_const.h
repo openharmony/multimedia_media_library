@@ -231,6 +231,7 @@ const std::string MEDIA_DATA_DB_REFERENCE_ALBUM_ID = "reference_album_id";
 const std::string MEDIA_DATA_DB_ALBUM_NAME = "album_name";
 const std::string MEDIA_DATA_DB_COUNT = "count";
 const std::string MEDIA_DATA_BUNDLENAME = "bundle_name";
+const std::string MEDIA_DATA_DB_IS_LOCAL = "is_local";
 
 const std::map<std::string, std::string> DATE_TRANSITION_MAP = {
     { MEDIA_DATA_DB_DATE_MODIFIED_MS, MEDIA_DATA_DB_DATE_MODIFIED },

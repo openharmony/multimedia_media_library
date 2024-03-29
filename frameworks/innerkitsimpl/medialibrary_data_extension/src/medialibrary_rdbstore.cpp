@@ -639,6 +639,7 @@ static int32_t InsertShootingModeAlbumValues(
     valuesBucket.PutInt(SMARTALBUM_DB_ALBUM_TYPE, shootingModeAlbum.albumType);
     valuesBucket.PutInt(COMPAT_ALBUM_SUBTYPE, shootingModeAlbum.albumSubType);
     valuesBucket.PutString(MEDIA_DATA_DB_ALBUM_NAME, shootingModeAlbum.albumName);
+    valuesBucket.PutInt(MEDIA_DATA_DB_IS_LOCAL, 1); // local album is 1.
     int64_t outRowId = -1;
     int32_t insertResult = store.Insert(outRowId, ANALYSIS_ALBUM_TABLE, valuesBucket);
     return insertResult;
