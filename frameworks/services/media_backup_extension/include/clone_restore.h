@@ -41,7 +41,7 @@ private:
     void InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
-    int32_t MoveSingleFile(FileInfo &fileInfo);
+    int32_t MoveAsset(FileInfo &fileInfo);
     bool IsFilePathExist(const std::string &filePath);
     int32_t QueryAlbumTotalNumber(const std::string &tableName);
     std::vector<AlbumInfo> QueryAlbumInfos(const std::string &tableName, int32_t offset);

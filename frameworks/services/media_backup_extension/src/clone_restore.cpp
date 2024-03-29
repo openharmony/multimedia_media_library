@@ -139,6 +139,7 @@ Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, cons
 
 void CloneRestore::StartRestore(const string &backupRestoreDir, const string &upgradePath)
 {
+    MEDIA_INFO_LOG("Start clone restore");
     int32_t errorCode = Init(backupRestoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         CheckTableColumnStatus();
@@ -151,6 +152,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_, updateResult);
     }
     HandleRestData();
+    MEDIA_INFO_LOG("End clone restore");
 }
 
 int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgradePath, bool isUpgrade)
@@ -175,6 +177,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
 
 void CloneRestore::RestorePhoto(void)
 {
+    MEDIA_INFO_LOG("Start clone restore: photos");
     if (!IsReadyForRestore(PhotoColumn::PHOTOS_TABLE)) {
         MEDIA_ERR_LOG("Column status is not ready for restore photo, quit");
         return;
@@ -199,6 +202,7 @@ void CloneRestore::RestorePhoto(void)
 
 void CloneRestore::RestoreAlbum(void)
 {
+    MEDIA_INFO_LOG("Start clone restore: albums");
     for (const auto &tableName : CLONE_ALBUMS) {
         if (!IsReadyForRestore(tableName)) {
             MEDIA_ERR_LOG("Column status of %{private}s is not ready for restore album, quit", tableName.c_str());
@@ -253,7 +257,7 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
         if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath) || fileInfos[i].cloudPath.empty()) {
             continue;
         }
-        if (MoveSingleFile(fileInfos[i]) != E_OK) {
+        if (MoveAsset(fileInfos[i]) != E_OK) {
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID).c_str());
             continue;
@@ -358,7 +362,7 @@ bool CloneRestore::ParseResultSet(const shared_ptr<NativeRdb::ResultSet> &result
 
     fileInfo.fileIdOld = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     fileInfo.fileSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
-    fileInfo.fileType =  GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+    fileInfo.fileType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
     fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
 
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, PhotoColumn::PHOTOS_TABLE);
@@ -429,7 +433,7 @@ void CloneRestore::AnalyzeSource()
     MEDIA_INFO_LOG("analyze source later");
 }
 
-int32_t CloneRestore::MoveSingleFile(FileInfo &fileInfo)
+int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
 {
     string localPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL,
         fileInfo.cloudPath);
@@ -849,6 +853,10 @@ void CloneRestore::BatchInsertMap(vector<FileInfo> &fileInfos, int64_t &totalRow
         }
         vector<NativeRdb::ValuesBucket> values;
         for (const auto &fileInfo : fileInfos) {
+            if (fileInfo.cloudPath.empty()) {
+                MEDIA_ERR_LOG("Invalid asset with empty cloudPath: %{public}d", fileInfo.fileIdOld);
+                continue;
+            }
             auto albumSet = GetValueFromMap(fileInfo.tableAlbumSetMap, tableName);
             for (auto albumIdNew : albumSet) {
                 MapInfo mapInfo;
@@ -882,7 +890,7 @@ void CloneRestore::CheckTableColumnStatus()
         bool columnStatusGlobal = true;
         for (const auto &tableName : tableList) {
             auto &columnInfoMap = tableColumnInfoMap[tableName];
-            columnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaLibraryRdb_, tableName);
+            columnInfoMap = BackupDatabaseUtils::GetColumnInfoMap(mediaRdb_, tableName);
             auto neededColumns = GetValueFromMap(NEEDED_COLUMNS_MAP, tableName);
             columnStatusGlobal = columnStatusGlobal && HasColumns(columnInfoMap, neededColumns);
         }
