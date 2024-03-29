@@ -405,6 +405,9 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DATE_MONTH",                PhotoColumn::PHOTO_DATE_MONTH),
     std::make_pair("DATE_DAY",                  PhotoColumn::PHOTO_DATE_DAY),
     std::make_pair("PENDING",                   PENDING_STATUS),
+    std::make_pair("DATE_ADDED_MS",             MEDIA_DATA_DB_DATE_ADDED_MS),
+    std::make_pair("DATE_MODIFIED_MS",          MEDIA_DATA_DB_DATE_MODIFIED_MS),
+    std::make_pair("DATE_TRASHED_MS",           MEDIA_DATA_DB_DATE_TRASHED_MS),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
