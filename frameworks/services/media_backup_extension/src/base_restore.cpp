@@ -58,6 +58,8 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
         string notifyVideo = MediaFileUtils::GetMediaTypeUri(MediaType::MEDIA_TYPE_VIDEO);
         Uri notifyVideoUri(notifyVideo);
         MediaLibraryDataManager::GetInstance()->NotifyChange(notifyVideoUri);
+        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, MediaType::MEDIA_TYPE_IMAGE);
+        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, MediaType::MEDIA_TYPE_VIDEO);
     }
     HandleRestData();
 }
@@ -86,6 +88,10 @@ int32_t BaseRestore::Init(void)
     }
     migrateDatabaseNumber_ = 0;
     migrateFileNumber_ = 0;
+    imageNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, MediaType::MEDIA_TYPE_IMAGE);
+    videoNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, MediaType::MEDIA_TYPE_VIDEO);
+    MEDIA_INFO_LOG("imageNumber: %{public}d", (int)imageNumber_);
+    MEDIA_INFO_LOG("videoNumber: %{public}d", (int)videoNumber_);
     return E_OK;
 }
 
@@ -158,7 +164,14 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
             continue;
         }
         std::string cloudPath;
-        int32_t uniqueId = MediaLibraryAssetOperations::CreateAssetUniqueId(fileInfos[i].fileType);
+        int32_t uniqueId;
+        if (fileInfos[i].fileType == MediaType::MEDIA_TYPE_IMAGE) {
+            uniqueId = imageNumber_;
+            imageNumber_++;
+        } else {
+            uniqueId = videoNumber_;
+            videoNumber_++;
+        }
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
@@ -222,8 +235,9 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         MEDIA_ERR_LOG("fileInfos are empty");
         return;
     }
-    int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(sceneCode, fileInfos, sourceType);
+    int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, rowNum);
     if (errCode != E_OK) {
@@ -238,7 +252,7 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         }
         std::string tmpPath = fileInfos[i].cloudPath;
         std::string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
-        if (MoveFile(fileInfos[i].filePath, localPath) != E_OK) {
+        if (!BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode)) {
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
@@ -247,8 +261,9 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     }
     migrateFileNumber_ += fileMoveCount;
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("insert %{public}ld assets cost %{public}ld and move %{public}ld file cost %{public}ld.",
-        (long)rowNum, (long)(startMove - startInsert), (long)fileMoveCount, (long)(end - startMove));
+    MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld and move " \
+        "%{public}ld file cost %{public}ld.", (long)(startInsert - startGenerate), (long)rowNum,
+        (long)(startMove - startInsert), (long)fileMoveCount, (long)(end - startMove));
 }
 
 int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
