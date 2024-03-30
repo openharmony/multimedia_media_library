@@ -61,6 +61,8 @@ protected:
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
     std::atomic<uint64_t> migrateFileNumber_;
+    std::atomic<uint32_t> imageNumber_;
+    std::atomic<uint32_t> videoNumber_;
     std::string dualDirName_ = "";
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
 };
