@@ -99,7 +99,7 @@ public:
 
     ~ArkJsRuntime() {};
 
-    void StartDebugMode(bool needBreakPoint, const std::string &processName, bool isDebug)  {};
+    void StartDebugMode(bool needBreakPoint, const std::string &processName, bool isDebug, bool isNativeStart)  {};
     void FinishPreload() {};
     bool LoadRepairPatch(const string& patchFile, const string& baseFile)
     {
