@@ -23,36 +23,79 @@ namespace OHOS {
 namespace Media {
 static const std::string MEDIA_ASSET_DATA_HANDLER_CLASS = "MediaAssetDataHandler";
 
-NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env,
-    napi_value jsMediaAssetDataHandler, ReturnDataType dataType)
+NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env, napi_value dataHandler, ReturnDataType dataType,
+    const std::string &uri, SourceMode sourceMode)
 {
-    thisVar_ = jsMediaAssetDataHandler;
     dataType_ = dataType;
     env_ = env;
-    napi_status status = napi_get_named_property(env_, jsMediaAssetDataHandler, "onDataPrepared", &ondataPreparedFunc_);
+    requestUri_ = uri;
+    sourceMode_ = sourceMode;
+    napi_status status = napi_create_reference(env_, dataHandler, PARAM1, &dataHandlerRef_);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("NapiMediaAssetDataHandler get onDataPrepared function failed");
-        NapiError::ThrowError(env_, OHOS_INVALID_PARAM_CODE, "handler is invalid");
+        NAPI_ERR_LOG("napi_create_reference failed");
+        NapiError::ThrowError(env_, OHOS_INVALID_PARAM_CODE, "napi_create_reference fail");
     }
 }
 
-ReturnDataType NapiMediaAssetDataHandler::GetHandlerType()
+ReturnDataType NapiMediaAssetDataHandler::GetReturnDataType()
 {
     return dataType_;
 }
 
-void NapiMediaAssetDataHandler::JsOnDataPreared(napi_value arg)
+napi_env NapiMediaAssetDataHandler::GetEnv()
 {
-    napi_value argv[] = {arg};
-    napi_value result = nullptr;
-    if (ondataPreparedFunc_ == nullptr) {
-        NAPI_ERR_LOG("NapiMediaAssetDataHandler JsOnDataPreared js function is null");
+    return env_;
+}
+
+std::string NapiMediaAssetDataHandler::GetRequestUri()
+{
+    return requestUri_;
+}
+
+SourceMode NapiMediaAssetDataHandler::GetSourceMode()
+{
+    return sourceMode_;
+}
+
+void NapiMediaAssetDataHandler::SetNotifyMode(NotifyMode notifyMode)
+{
+    notifyMode_ = notifyMode;
+}
+
+NotifyMode NapiMediaAssetDataHandler::GetNotifyMode()
+{
+    return notifyMode_;
+}
+
+void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_value arg)
+{
+    if (dataHandlerRef_ == nullptr) {
+        NAPI_ERR_LOG("NapiMediaAssetDataHandler JsOnDataPrepared js function is null");
         NapiError::ThrowError(env_, JS_INNER_FAIL, "handler is invalid");
         return;
     }
-    napi_status status = napi_call_function(env_, thisVar_, ondataPreparedFunc_, 1, argv, &result);
+
+    napi_value callback;
+    napi_status status = napi_get_reference_value(env_, dataHandlerRef_, &callback);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("call js function failed");
+        NAPI_ERR_LOG("NapiMediaAssetDataHandler JsOnDataPrepared napi_get_reference_value fail");
+        NapiError::ThrowError(env_, JS_INNER_FAIL, "napi_get_reference_value fail");
+        return;
+    }
+
+    napi_value jsOnDataPrepared;
+    status = napi_get_named_property(env_, callback, "onDataPrepared", &jsOnDataPrepared);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("NapiMediaAssetDataHandler JsOnDataPrepared napi_get_named_property fail");
+        NapiError::ThrowError(env_, JS_INNER_FAIL, "napi_get_named_property fail");
+        return;
+    }
+
+    napi_value argv[] = { arg };
+    napi_value promise;
+    status = napi_call_function(env_, nullptr, jsOnDataPrepared, 1, argv, &promise);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("call js function failed %{public}d", static_cast<int32_t>(status));
         NapiError::ThrowError(env_, JS_INNER_FAIL, "calling onDataPrepared failed");
     }
 }

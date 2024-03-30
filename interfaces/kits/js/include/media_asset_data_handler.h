@@ -36,20 +36,32 @@ enum class SourceMode {
     EDITED_MODE,
 };
 
-class NapiMediaAssetDataHandler {
-public:
-    NapiMediaAssetDataHandler(napi_env env, napi_value jsMediaAssetDataHandler, ReturnDataType dataType);
-    ~NapiMediaAssetDataHandler() = default;
-    ReturnDataType GetHandlerType();
-    void JsOnDataPreared(napi_value exports);
-
-private:
-    ReturnDataType dataType_;
-    napi_value ondataPreparedFunc_ = nullptr;
-    napi_value thisVar_ = nullptr;
-    napi_env env_ = nullptr;
+enum class NotifyMode : int32_t {
+    FAST_NOTIFY = 0,
+    WAIT_FOR_HIGH_QUALITY,
 };
 
+class NapiMediaAssetDataHandler {
+public:
+    NapiMediaAssetDataHandler(napi_env env, napi_value dataHandler, ReturnDataType dataType, const std::string &uri,
+        SourceMode sourceMode);
+    ~NapiMediaAssetDataHandler() = default;
+    napi_env GetEnv();
+    ReturnDataType GetReturnDataType();
+    std::string GetRequestUri();
+    SourceMode GetSourceMode();
+    void SetNotifyMode(NotifyMode trigger);
+    NotifyMode GetNotifyMode();
+    void JsOnDataPrepared(napi_value exports);
+
+private:
+    napi_env env_ = nullptr;
+    napi_ref dataHandlerRef_;
+    ReturnDataType dataType_;
+    std::string requestUri_;
+    SourceMode sourceMode_;
+    NotifyMode notifyMode_;
+};
 } // Media
 } // OHOS
 #endif // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_ASSET_DATA_HANDLER_NAPI_H

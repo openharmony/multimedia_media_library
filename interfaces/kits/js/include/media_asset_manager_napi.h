@@ -33,6 +33,7 @@
 
 namespace OHOS {
 namespace Media {
+using MediaAssetDataHandlerPtr = std::shared_ptr<NapiMediaAssetDataHandler>;
 enum class MultiStagesCapturePhotoStatus {
     QUERY_INNER_FAIL = 0,
     HIGH_QUALITY_STATUS,
@@ -42,26 +43,38 @@ enum class MultiStagesCapturePhotoStatus {
 struct RequestImageAsyncContext {
     size_t argc = ARGS_FOUR;
     napi_value argv[ARGS_FOUR] = {nullptr};
-    napi_value thisVar = nullptr;
     int fileId = -1; // default value of request file id
     std::string photoUri;
+    std::string photoId;
     std::string displayName;
     std::string photoPath;
     std::string callingPkgName;
+    std::string requestId;
+    napi_value dataHandler;
     DeliveryMode deliveryMode;
     SourceMode sourceMode;
     ReturnDataType returnDataType;
 };
 
+struct AssetHandler {
+    std::string photoId;
+    std::string requestId;
+    std::string requestUri;
+    MediaAssetDataHandlerPtr dataHandler;
+    napi_threadsafe_function threadSafeFunc;
+
+    AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
+        const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
+        : photoId(photoId), requestId(requestId), requestUri(uri), dataHandler(handler), threadSafeFunc(func) {}
+};
+
 class MultiStagesTaskObserver : public DataShare::DataShareObserver {
 public:
-    MultiStagesTaskObserver(std::string uri, int fileId, SourceMode sourceMode)
-        : requestUri_(uri), fileId_(fileId), sourceMode_(sourceMode) {};
+    MultiStagesTaskObserver(int fileId)
+        : fileId_(fileId) {};
     void OnChange(const ChangeInfo &changelnfo) override;
 private:
-    std::string requestUri_;
     int fileId_;
-    SourceMode sourceMode_;
 };
 
 class MediaAssetManagerNapi {
@@ -69,32 +82,30 @@ public:
     MediaAssetManagerNapi() = default;
     ~MediaAssetManagerNapi() = default;
     EXPORT static napi_value Init(napi_env env, napi_value exports);
-    static napi_env GetMediaAssetManagerJsEnv();
-    static void SetMediaAssetManagerJsEnv(napi_env env);
-    static MultiStagesCapturePhotoStatus queryPhotoStatus(int fileId);
-    static void notifyImageDataPrepared(const std::string requstUri, SourceMode sourceMode);
-    static void notifyDataPreparedWithoutRegister(std::string &requestUri, napi_value napiMediaDataHandler,
-        ReturnDataType returnDataType, SourceMode sourceMode);
-    static void RequestImage(std::string photoId);
+    static MultiStagesCapturePhotoStatus QueryPhotoStatus(int fileId, std::string &photoId);
+    static void NotifyImageDataPrepared(AssetHandler *assetHandler);
+    static void NotifyDataPreparedWithoutRegister(napi_env env,
+        const unique_ptr<RequestImageAsyncContext> &asyncContext);
     static void DeleteInProcessMapRecord(const std::string &requestUri);
+    static void OnDataPrepared(napi_env env, napi_value cb, void *context, void *data);
 
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
-    static void Destructor(napi_env env, void* nativeObject, void* finalizeHint);
+    static void Destructor(napi_env env, void *nativeObject, void *finalizeHint);
     static bool InitUserFileClient(napi_env env, napi_callback_info info);
     static napi_status ParseRequestImageArgs(napi_env env, napi_callback_info info,
         unique_ptr<RequestImageAsyncContext> &asyncContext);
     static napi_value JSRequestImage(napi_env env, napi_callback_info info);
     static napi_value JSRequestImageData(napi_env env, napi_callback_info info);
-    static void RegisterTaskObserver(const std::string &photoUri, const int fileId, napi_value napiMediaDataHandler,
-        ReturnDataType returnDataType, SourceMode sourceMode);
+    static void RegisterTaskObserver(napi_env env, const unique_ptr<RequestImageAsyncContext> &asyncContext);
     static void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
     static void AddImage(const int fileId, DeliveryMode deliveryMode);
-    static void onHandleRequestImage(const unique_ptr<RequestImageAsyncContext> &asyncContext);
-    static void GetByteArrayNapiObject(std::string requestUri, napi_value& arrayBuffer, bool isSource);
-    static void GetImageSourceNapiObject(std::string fileUri, napi_value& imageSourceNapiObj, bool isSource);
+    static void OnHandleRequestImage(napi_env env, const unique_ptr<RequestImageAsyncContext> &asyncContext);
+    static void GetByteArrayNapiObject(const std::string &requestUri, napi_value &arrayBuffer, bool isSource,
+        napi_env env);
+    static void GetImageSourceNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
+        napi_env env);
 public:
-    static napi_env env_;
     std::mutex sMediaAssetMutex_;
 };
 } // Media
