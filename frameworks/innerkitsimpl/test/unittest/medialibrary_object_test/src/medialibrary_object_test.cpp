@@ -20,10 +20,8 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_object_test.h"
 #define private public
-#define protected public
 #include "medialibrary_object_utils.h"
 #undef private
-#undef protected
 
 using namespace std;
 using namespace OHOS;
