@@ -226,5 +226,23 @@ std::unordered_map<std::string, std::string> BackupDatabaseUtils::GetColumnInfoM
     }
     return columnInfoMap;
 }
+
+void BackupDatabaseUtils::UpdateUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t number,
+    int32_t type)
+{
+    const string updateSql =
+        "UPDATE UniqueNumber SET unique_number = " + to_string(number) + " WHERE media_type = " + to_string(type);
+    int32_t erroCode = rdbStore->ExecuteSql(updateSql);
+    if (erroCode < 0) {
+        MEDIA_ERR_LOG("execute update unique number failed, ret=%{public}d", erroCode);
+    }
+}
+
+int32_t BackupDatabaseUtils::QueryUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t type)
+{
+    const string querySql =
+        "SELECT unqiue_number FROM UniqueNumber WHERE media_type = " + to_string(type);
+    return QueryInt(rdbStore, querySql, UNIQUE_NUMBER);
+}
 } // namespace Media
 } // namespace OHOS
