@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "BackupCloneTest"
+
 #include "medialibrary_backup_clone_test.h"
 
 #include "backup_database_utils.h"
@@ -287,11 +289,11 @@ vector<NativeRdb::ValuesBucket> GetInsertValues(vector<FileInfo> &fileInfos, int
 {
     vector<NativeRdb::ValuesBucket> values;
     for (auto &fileInfo : fileInfos) {
+        fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
         if (restoreService->HasSameFile(fileInfo)) {
             MEDIA_INFO_LOG("Has same file, skip");
             continue;
         }
-        fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
         NativeRdb::ValuesBucket value = restoreService->GetInsertValue(fileInfo, fileInfo.cloudPath,
             sourceType);
         fileInfo.isNew = true;

@@ -22,6 +22,8 @@
 
 namespace OHOS {
 namespace Media {
+const size_t MIN_GARBLE_SIZE = 2;
+const size_t GARBLE_START = 1;
 int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
     const std::string &dbPath, const std::string &bundleName, bool isMediaLibrary)
 {
@@ -243,6 +245,17 @@ int32_t BackupDatabaseUtils::QueryUniqueNumber(const std::shared_ptr<NativeRdb::
     const string querySql =
         "SELECT unqiue_number FROM UniqueNumber WHERE media_type = " + to_string(type);
     return QueryInt(rdbStore, querySql, UNIQUE_NUMBER);
+}
+
+std::string BackupDatabaseUtils::GarbleInfoName(const string &infoName)
+{
+    std::string garbledInfoName = infoName;
+    if (infoName.size() <= MIN_GARBLE_SIZE) {
+        return garbledInfoName;
+    }
+    size_t garbledSize = infoName.size() - MIN_GARBLE_SIZE;
+    garbledInfoName.replace(GARBLE_START, garbledSize, GARBLE);
+    return garbledInfoName;
 }
 } // namespace Media
 } // namespace OHOS
