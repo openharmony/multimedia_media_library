@@ -89,6 +89,8 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::PHOTO_DATE_YEAR] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetDateYear);
     memberFuncMap_[PhotoColumn::PHOTO_DATE_MONTH] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetDateMonth);
     memberFuncMap_[PhotoColumn::PHOTO_DATE_DAY] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetDateDay);
+    memberFuncMap_[PhotoColumn::MEDIA_OWNER_PACKAGE] = make_pair(ResultSetDataType::TYPE_STRING,
+        &Metadata::SetOwnerPackage);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -461,6 +463,16 @@ void Metadata::SetLastVisitTime(const VariantData &lastVisitTime)
 int64_t Metadata::GetLastVisitTime() const
 {
     return lastVisitTime_;
+}
+
+void Metadata::SetOwnerPackage(const VariantData &ownerPackage)
+{
+    ownerPackage_ = get<string>(ownerPackage);
+}
+
+const std::string Metadata::GetOwnerPackage() const
+{
+    return ownerPackage_;
 }
 } // namespace Media
 } // namespace OHOS
