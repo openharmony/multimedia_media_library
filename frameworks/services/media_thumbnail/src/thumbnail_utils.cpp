@@ -234,12 +234,6 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
             return false;
         }
     }
-    auto resultMap = avMetadataHelper->ResolveMetadata();
-    string videoOrientation = resultMap.at(AV_KEY_VIDEO_ORIENTATION);
-    if (!videoOrientation.empty()) {
-        std::istringstream iss(videoOrientation);
-        iss >> data.degrees;
-    }
     DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, width, height);
     return true;
 }
