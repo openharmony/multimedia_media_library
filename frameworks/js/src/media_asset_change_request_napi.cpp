@@ -891,7 +891,7 @@ static int SavePhotoProxyImage(const string &fileUri, sptr<CameraStandard::Defer
         NAPI_ERR_LOG("packet pixelMap failed");
         return E_ERR;
     }
-    NAPI_INFO_LOG("pack pixelMap success, packedSize: %{public}ld", packedSize);
+    NAPI_INFO_LOG("pack pixelMap success, packedSize: %{public}" PRId64, packedSize);
 
     auto ret = SaveImage(fileUri, buffer, packedSize);
     delete[] buffer;
