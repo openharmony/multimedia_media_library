@@ -244,7 +244,19 @@ const RecommendationType = {
   ID_CARD: 4,
 
   // Indicates that profile picture photos can be recommended
-  PROFILE_PICTURE: 5
+  PROFILE_PICTURE: 5,
+
+  // Indicates that passport photos can be recommended
+  PASSPORT: 6,
+
+  // Indicates that bank card photos can be recommended
+  BANK_CARD: 7,
+
+  // Indicates that driver license photos can be recommended
+  DRIVER_LICENSE: 8,
+
+  // Indicates that driving license photos can be recommended
+  DRIVING_LICENSE: 9
 }
 
 const PhotoViewMIMETypes = {
