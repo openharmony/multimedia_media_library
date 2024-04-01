@@ -575,7 +575,6 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
     }
 
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
-    napi_release_threadsafe_function(assetHandler->threadSafeFunc, napi_tsfn_release);
     NAPI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
     delete assetHandler;
 }
@@ -585,6 +584,7 @@ void MediaAssetManagerNapi::NotifyImageDataPrepared(AssetHandler *assetHandler)
     napi_status status = napi_call_threadsafe_function(assetHandler->threadSafeFunc, (void *)assetHandler,
         napi_tsfn_blocking);
     if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_call_threadsafe_function fail, %{public}d", static_cast<int32_t>(status));
         napi_release_threadsafe_function(assetHandler->threadSafeFunc, napi_tsfn_release);
         if (assetHandler != nullptr) {
             delete assetHandler;
