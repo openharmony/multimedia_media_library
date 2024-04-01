@@ -494,7 +494,7 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
                 MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING,
-                MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY
+                MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY, MediaColumn::MEDIA_OWNER_PACKAGE
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             columns = {
@@ -508,7 +508,7 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
             columns = {
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
                 MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING,
-                MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY
+                MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY, MediaColumn::MEDIA_OWNER_PACKAGE
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             whereClause = MediaColumn::MEDIA_FILE_PATH + " = ?";
@@ -1032,6 +1032,30 @@ void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
     std::unordered_map<int32_t, int32_t> updateResult;
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, sourceAlbumIds);
+}
+
+void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
+{
+    if (metadata.GetFileMediaType() == MEDIA_TYPE_IMAGE) {
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+            { to_string(PhotoAlbumSubType::IMAGE) }
+        );
+    } else if (metadata.GetFileMediaType() == MEDIA_TYPE_VIDEO) {
+        MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+            { to_string(PhotoAlbumSubType::VIDEO) }
+        );
+    }
+    if (!metadata.GetOwnerPackage().empty()) {
+        if (metadata.GetFileId() != FILE_ID_DEFAULT) {
+            std::string uri = PhotoColumn::PHOTO_URI_PREFIX + to_string(metadata.GetFileId());
+            std::unordered_map<int32_t, int32_t> updateResult;
+            MediaLibraryRdbUtils::UpdateSourceAlbumByUri(
+                MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
+                updateResult, {uri});
+        }
+    }
 }
 
 std::string MediaScannerDb::MakeFileUri(const std::string &mediaTypeUri, const Metadata &metadata)

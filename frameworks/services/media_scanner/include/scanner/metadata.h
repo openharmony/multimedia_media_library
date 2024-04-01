@@ -141,6 +141,8 @@ public:
     bool GetForAdd() const;
     void SetTableName(const std::string &tableName);
     std::string GetTableName();
+    void SetOwnerPackage(const VariantData &ownerPackage);
+    const std::string GetOwnerPackage() const;
 
     EXPORT void Init();
 
@@ -205,6 +207,9 @@ private:
 #endif
     bool forAdd_ = false;
     std::string tableName_;
+
+    // packageName
+    std::string ownerPackage_;
 };
 } // namespace Media
 } // namespace OHOS
