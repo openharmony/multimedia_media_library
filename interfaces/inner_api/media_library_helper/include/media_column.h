@@ -42,6 +42,7 @@ public:
     static const std::string MEDIA_TYPE EXPORT;
     static const std::string MEDIA_MIME_TYPE EXPORT;
     static const std::string MEDIA_OWNER_PACKAGE EXPORT;
+    static const std::string MEDIA_OWNER_APPID EXPORT;
     static const std::string MEDIA_PACKAGE_NAME EXPORT;
     static const std::string MEDIA_DEVICE_NAME EXPORT;
 

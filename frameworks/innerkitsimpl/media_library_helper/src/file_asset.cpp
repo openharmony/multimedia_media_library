@@ -392,6 +392,16 @@ void FileAsset::SetOwnerPackage(const string &ownerPackage)
     member_[MEDIA_DATA_DB_OWNER_PACKAGE] = ownerPackage;
 }
 
+const string FileAsset::GetOwnerAppId() const
+{
+    return GetStrMember(MEDIA_DATA_DB_OWNER_APPID);
+}
+
+void FileAsset::SetOwnerAppId(const string &ownerAppId)
+{
+    member_[MEDIA_DATA_DB_OWNER_APPID] = ownerAppId;
+}
+
 ResultNapiType FileAsset::GetResultNapiType() const
 {
     return resultNapiType_;

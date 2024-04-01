@@ -629,6 +629,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
     }
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
+    assetInfo.PutString(MediaColumn::MEDIA_OWNER_APPID, PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName()));
     if (!cmd.GetBundleName().empty()) {
         assetInfo.PutString(MediaColumn::MEDIA_PACKAGE_NAME,
             GetAssetPackageName(fileAsset, cmd.GetBundleName()));
@@ -1681,6 +1682,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_TYPE, { Forbidden } },
     { MediaColumn::MEDIA_MIME_TYPE, { Forbidden } },
     { MediaColumn::MEDIA_OWNER_PACKAGE, { Forbidden } },
+    { MediaColumn::MEDIA_OWNER_APPID, { Forbidden } },
     { MediaColumn::MEDIA_PACKAGE_NAME, { Forbidden } },
     { MediaColumn::MEDIA_DEVICE_NAME, { Forbidden } },
     { MediaColumn::MEDIA_DATE_MODIFIED, { Forbidden } },

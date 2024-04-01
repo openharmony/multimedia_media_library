@@ -61,6 +61,7 @@ const std::string CREATE_MEDIA_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBR
                                        MEDIA_DATA_DB_RECYCLE_PATH + " TEXT, " +
                                        MEDIA_DATA_DB_IS_FAV + " BOOL DEFAULT 0, " +
                                        MEDIA_DATA_DB_OWNER_PACKAGE + " TEXT, " +
+                                       MEDIA_DATA_DB_OWNER_APPID + " TEXT, " +
                                        MEDIA_DATA_DB_PACKAGE_NAME + " TEXT, " +
                                        MEDIA_DATA_DB_DEVICE_NAME + " TEXT, " +
                                        MEDIA_DATA_DB_IS_PENDING + " BOOL DEFAULT 0, " +

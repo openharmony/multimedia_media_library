@@ -167,6 +167,7 @@ int32_t MediaLibraryObjectUtils::InsertFileInDb(MediaLibraryCommand &cmd,
     assetInfo.PutInt(MEDIA_DATA_DB_PARENT_ID, dirAsset.GetAlbumId());
     assetInfo.PutString(MEDIA_DATA_DB_BUCKET_NAME, dirAsset.GetAlbumName());
     assetInfo.PutString(MEDIA_DATA_DB_OWNER_PACKAGE, cmd.GetBundleName());
+    assetInfo.PutString(MEDIA_DATA_DB_OWNER_APPID, PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName()));
     if (!cmd.GetBundleName().empty()) {
         assetInfo.PutString(MEDIA_DATA_DB_PACKAGE_NAME,
             PermissionUtils::GetPackageNameByBundleName(cmd.GetBundleName()));

@@ -45,6 +45,7 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_TYPE, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_MIME_TYPE, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_OWNER_PACKAGE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_OWNER_APPID, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_PACKAGE_NAME, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_DEVICE_NAME, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_DATE_ADDED, MEMBER_TYPE_INT64 },
