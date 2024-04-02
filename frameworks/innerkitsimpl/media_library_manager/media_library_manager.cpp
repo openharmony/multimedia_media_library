@@ -676,6 +676,11 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeAstc(UniqueFd &uniqueFd)
         MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);
         return nullptr;
     }
+    // Make the ashmem of pixelmap to be purgeable after the operation on ashmem.
+    // And then make the pixelmap subject to PurgeableManager's control.
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, imageSource, decodeOpts);
+#endif
     return pixelMap;
 }
 
