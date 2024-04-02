@@ -30,6 +30,7 @@
 #ifdef DISTRIBUTED
 #include "medialibrary_device.h"
 #endif
+#include "medialibrary_business_record_column.h"
 #include "medialibrary_db_const_sqls.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
@@ -973,7 +974,9 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_ALBUM_MAP_DELETE_SEARCH_TRIGGER,
     CREATE_ALBUM_UPDATE_SEARCH_TRIGGER,
     CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
-    CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER
+    CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
+    MedialibraryBusinessRecordColumn::CREATE_TABLE,
+    MedialibraryBusinessRecordColumn::CREATE_BUSINESS_KEY_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2121,6 +2124,21 @@ void AddStoryTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+void AddBussinessRecordAlbum(RdbStore &store)
+{
+    string updateDirtyForShootingMode = "UPDATE Photos SET dirty = 2 WHERE cloud_id is not null AND " +
+        PhotoColumn::PHOTO_SHOOTING_MODE + " is not null AND " +
+        PhotoColumn::PHOTO_SHOOTING_MODE + " != ''";
+    const vector<string> sqls = {
+        MedialibraryBusinessRecordColumn::CREATE_TABLE,
+        MedialibraryBusinessRecordColumn::CREATE_BUSINESS_KEY_INDEX,
+        updateDirtyForShootingMode,
+    };
+
+    MEDIA_INFO_LOG("start add bussiness record album");
+    ExecSqls(sqls, store);
+    UpdatePhotosMdirtyTrigger(store);
+}
 
 void AddOwnerAppId(RdbStore &store)
 {
@@ -2344,6 +2362,10 @@ static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_MDIRTY_TRIGGER_FOR_SDIRTY) {
         UpdateMdirtyTriggerForSdirty(store);
+    }
+
+    if (oldVersion < VERSION_SHOOTING_MODE_CLOUD) {
+        AddBussinessRecordAlbum(store);
     }
 }
 
