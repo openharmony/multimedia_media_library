@@ -91,7 +91,11 @@ enum {
     VERSION_UPDATE_MDIRTY_TRIGGER_FOR_SDIRTY = 61,
     VERSION_ADD_STOYR_TABLE = 62,
     VERSION_ADD_HEAD_AND_POSE_TABLE = 63,
+<<<<<<< Updated upstream
     VERSION_ADD_OWNER_APPID = 64,
+=======
+    VERSION_SHOOTING_MODE_CLOUD = 64,
+>>>>>>> Stashed changes
 };
 
 enum {
