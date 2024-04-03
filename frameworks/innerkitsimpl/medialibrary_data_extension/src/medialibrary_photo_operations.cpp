@@ -311,20 +311,17 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     if (errCode != E_OK || isCacheOperation) {
         return errCode;
     }
-
     bool isSkipEdit = true;
     errCode = OpenEditOperation(cmd, isSkipEdit);
     if (errCode != E_OK || !isSkipEdit) {
         return errCode;
     }
-
     string uriString = cmd.GetUriStringWithoutSegment();
     string id = MediaFileUtils::GetIdFromUri(uriString);
     if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
         return E_INVALID_URI;
     }
     string pendingStatus = cmd.GetQuerySetParam(MediaColumn::MEDIA_TIME_PENDING);
-
     shared_ptr<FileAsset> fileAsset = GetFileAssetByUri(uriString, true,  PHOTO_COLUMN_VECTOR, pendingStatus);
     if (fileAsset == nullptr) {
         MEDIA_ERR_LOG("Get FileAsset From Uri Failed, uri:%{public}s", uriString.c_str());
@@ -350,7 +347,6 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
             MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
         }
     }
-
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo);
     }
@@ -1004,7 +1000,8 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::MEDIA_FILE_PATH,
     PhotoColumn::PHOTO_EDIT_TIME,
     PhotoColumn::MEDIA_TIME_PENDING,
-    PhotoColumn::MEDIA_DATE_TRASHED
+    PhotoColumn::MEDIA_DATE_TRASHED,
+    PhotoColumn::PHOTO_SUBTYPE,
 };
 
 int32_t MediaLibraryPhotoOperations::RequestEditData(MediaLibraryCommand &cmd)
@@ -1063,39 +1060,36 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
     if (uriString.empty() || (!MediaLibraryDataManagerUtils::IsNumber(id))) {
         return E_INVALID_URI;
     }
-
-    if (PhotoEditingRecord::GetInstance()->IsInRevertOperation(stoi(id))) {
-        MEDIA_ERR_LOG("File %{public}s is in revert, can not request source", id.c_str());
-        return E_IS_IN_COMMIT;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(!PhotoEditingRecord::GetInstance()->IsInRevertOperation(stoi(id)),
+        E_IS_IN_COMMIT, "File %{public}s is in revert, can not request source", id.c_str());
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
-    if (fileAsset == nullptr) {
-        MEDIA_ERR_LOG("Get fileAsset from uri failed, uri:%{public}s", uriString.c_str());
-        return E_INVALID_URI;
-    }
-    if (fileAsset->GetTimePending() != 0) {
-        MEDIA_ERR_LOG("FileAsset is in PendingStatus %{public}ld", (long) fileAsset->GetTimePending());
-        return E_IS_PENDING_ERROR;
-    }
-    if (fileAsset->GetDateTrashed() != 0) {
-        MEDIA_ERR_LOG("FileAsset is in recycle");
-        return E_IS_RECYCLED;
-    }
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI,
+        "Get fileAsset from uri failed, uri:%{public}s", uriString.c_str());
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetTimePending() == 0, E_IS_PENDING_ERROR,
+        "FileAsset is in PendingStatus %{public}ld", (long) fileAsset->GetTimePending());
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetDateTrashed() == 0, E_IS_RECYCLED, "FileAsset is in recycle");
     string path = fileAsset->GetFilePath();
-    if (path.empty()) {
-        MEDIA_ERR_LOG("Can not get file path, uri=%{private}s", uriString.c_str());
-        return E_INVALID_URI;
+    CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_URI,
+        "Can not get file path, uri=%{private}s", uriString.c_str());
+    string movingPhotoVideoPath = "";
+    bool isMovingPhotoVideoRequest =
+        cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD) == OPEN_MOVING_PHOTO_VIDEO;
+    if (isMovingPhotoVideoRequest) {
+        CHECK_AND_RETURN_RET_LOG(
+            fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO), E_INVALID_VALUES,
+            "Non-moving photo requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
+            id.c_str(), fileAsset->GetPhotoSubType());
+        movingPhotoVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
     }
-
     if (fileAsset->GetPhotoEditTime() == 0) {
-        return OpenFileWithPrivacy(path, "r");
+        return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? movingPhotoVideoPath : path, "r");
     }
-
-    string sourcePath = GetEditDataSourcePath(path);
+    string sourcePath = isMovingPhotoVideoRequest ?
+        MediaFileUtils::GetMovingPhotoVideoPath(GetEditDataSourcePath(path)) :
+        GetEditDataSourcePath(path);
     if (sourcePath.empty() || !MediaFileUtils::IsFileExists(sourcePath)) {
-        return OpenFileWithPrivacy(path, "r");
+        return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? path : movingPhotoVideoPath, "r");
     } else {
         return OpenFileWithPrivacy(sourcePath, "r");
     }

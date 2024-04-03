@@ -22,20 +22,28 @@
 #include <unordered_map>
 #include <uuid/uuid.h>
 
+#include "access_token.h"
+#include "accesstoken_kit.h"
 #include "dataobs_mgr_client.h"
 #include "file_asset_napi.h"
 #include "file_uri.h"
 #include "image_source.h"
 #include "image_source_napi.h"
+#include "ipc_skeleton.h"
 #include "media_column.h"
 #include "media_file_utils.h"
+#include "media_file_uri.h"
 #include "medialibrary_client_errno.h"
 #include "media_library_napi.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
+#include "moving_photo_napi.h"
+#include "permission_utils.h"
 #include "userfile_client.h"
+
+using namespace OHOS::Security::AccessToken;
 
 namespace OHOS {
 namespace Media {
@@ -62,6 +70,7 @@ napi_value MediaAssetManagerNapi::Init(napi_env env, napi_value exports)
         .props = {
             DECLARE_NAPI_STATIC_FUNCTION("requestImage", JSRequestImage),
             DECLARE_NAPI_STATIC_FUNCTION("requestImageData", JSRequestImageData),
+            DECLARE_NAPI_STATIC_FUNCTION("requestMovingPhoto", JSRequestMovingPhoto),
         }};
         MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
         return exports;
@@ -97,6 +106,13 @@ void MediaAssetManagerNapi::Destructor(napi_env env, void *nativeObject, void *f
         delete mediaAssetManager;
         mediaAssetManager = nullptr;
     }
+}
+
+static bool HasReadPermission()
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetSelfTokenID();
+    int result = AccessTokenKit::VerifyAccessToken(tokenCaller, PERM_READ_IMAGEVIDEO);
+    return result == PermissionState::PERMISSION_GRANTED;
 }
 
 static void InsertInProcessMapRecord(const std::string &requestUri, const std::string &requestId,
@@ -139,7 +155,7 @@ static void DeleteInProcessMapRecord(const std::string &requestUri, const std::s
 }
 
 static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
-    const unique_ptr<RequestImageAsyncContext> &asyncContext)
+    const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
 {
     std::shared_ptr<NapiMediaAssetDataHandler> mediaAssetDataHandler = make_shared<NapiMediaAssetDataHandler>(
         env, asyncContext->dataHandler, asyncContext->returnDataType, asyncContext->photoUri, asyncContext->sourceMode);
@@ -152,7 +168,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
         NULL, NULL, NULL, MediaAssetManagerNapi::OnDataPrepared, &threadSafeFunc);
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_create_threadsafe_function fail");
-        NapiError::ThrowError(env, JS_INNER_FAIL, "napi_create_threadsafe_function fail");
+        asyncContext->SaveError(JS_INNER_FAIL);
         return nullptr;
     }
 
@@ -187,13 +203,21 @@ static void DeleteDataHandler(NotifyMode notifyMode, const std::string &requestU
     inProcessFastRequests.Erase(requestId);
 }
 
-MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId, std::string &photoId)
+MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId,
+    const string& photoUri, std::string &photoId, bool hasReadPermission)
 {
     photoId = "";
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
     std::vector<std::string> fetchColumn { PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_ID };
-    Uri uri(PAH_QUERY_PHOTO);
+    string queryUri;
+    if (hasReadPermission) {
+        queryUri = PAH_QUERY_PHOTO;
+    } else {
+        queryUri = photoUri;
+        MediaFileUri::RemoveAllFragment(queryUri);
+    }
+    Uri uri(queryUri);
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
@@ -247,12 +271,12 @@ napi_status GetDeliveryMode(napi_env env, const napi_value arg, const string &pr
     CHECK_STATUS_RET(napi_has_named_property(env, arg, propName.c_str(), &present),
         "Failed to check property name");
     if (!present) {
-        NAPI_ERR_LOG("delivery mode invalid argument ");
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "GetDeliveryMode failed");
+        NAPI_ERR_LOG("No delivery mode specified");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "No delivery mode specified");
         return napi_invalid_arg;
     }
     CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property), "Failed to get property");
-    napi_get_value_int32(env, property, &mode);
+    CHECK_STATUS_RET(napi_get_value_int32(env, property, &mode), "Failed to parse deliveryMode argument value");
 
     // delivery mode's valid range is 0 - 2
     if (mode < 0 || mode > 2) {
@@ -275,9 +299,13 @@ napi_status GetSourceMode(napi_env env, const napi_value arg, const string &prop
         // use default source mode
         sourceMode = SourceMode::EDITED_MODE;
         return napi_ok;
+    } else if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NAPI_ERR_LOG("Source mode is only available to system apps");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Source mode is only available to system apps");
+        return napi_invalid_arg;
     }
     CHECK_STATUS_RET(napi_get_named_property(env, arg, propName.c_str(), &property), "Failed to get property");
-    napi_get_value_int32(env, property, &mode);
+    CHECK_STATUS_RET(napi_get_value_int32(env, property, &mode), "Failed to parse sourceMode argument value");
 
     // source mode's valid range is 0 - 1
     if (mode < 0 || mode > 1) {
@@ -296,7 +324,7 @@ napi_status ParseArgGetRequestOption(napi_env env, napi_value arg, DeliveryMode 
     return napi_ok;
 }
 
-napi_status ParseArgGetCallingPakckageName(napi_env env, napi_value arg, std::string &callingPackageName)
+napi_status ParseArgGetCallingPackageName(napi_env env, napi_value arg, std::string &callingPackageName)
 {
     if (arg == nullptr) {
         NAPI_ERR_LOG("arg is invalid");
@@ -362,7 +390,7 @@ static std::string GenerateRequestId()
 }
 
 void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env,
-    const unique_ptr<RequestImageAsyncContext> &asyncContext)
+    const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
 {
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
     Uri uri(asyncContext->photoUri);
@@ -379,7 +407,7 @@ void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env,
 }
 
 napi_status MediaAssetManagerNapi::ParseRequestImageArgs(napi_env env, napi_callback_info info,
-    unique_ptr<RequestImageAsyncContext> &asyncContext)
+    unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
 {
     napi_value thisVar = nullptr;
     GET_JS_ARGS(env, info, asyncContext->argc, asyncContext->argv, thisVar);
@@ -388,8 +416,8 @@ napi_status MediaAssetManagerNapi::ParseRequestImageArgs(napi_env env, napi_call
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestImage argc invalid");
         return napi_invalid_arg;
     }
-    if (ParseArgGetCallingPakckageName(env, asyncContext->argv[PARAM0], asyncContext->callingPkgName) != napi_ok) {
-        NAPI_ERR_LOG("requestImage ParseArgGetCallingPakckageName error");
+    if (ParseArgGetCallingPackageName(env, asyncContext->argv[PARAM0], asyncContext->callingPkgName) != napi_ok) {
+        NAPI_ERR_LOG("requestImage ParseArgGetCallingPackageName error");
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestImage ParseArgGetPhotoAsset error");
         return napi_invalid_arg;
     }
@@ -410,6 +438,7 @@ napi_status MediaAssetManagerNapi::ParseRequestImageArgs(napi_env env, napi_call
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestImage ParseArgGetDataHandler error");
         return napi_invalid_arg;
     }
+    asyncContext->hasReadPermission = HasReadPermission();
     return napi_ok;
 }
 
@@ -442,7 +471,7 @@ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback
 
     MediaLibraryTracer tracer;
     tracer.Start("JSRequestImageData");
-    unique_ptr<RequestImageAsyncContext> asyncContext = make_unique<RequestImageAsyncContext>();
+    unique_ptr<MediaAssetManagerAsyncContext> asyncContext = make_unique<MediaAssetManagerAsyncContext>();
     asyncContext->returnDataType = ReturnDataType::TYPE_ARRAY_BUFFER;
     if (ParseRequestImageArgs(env, info, asyncContext) != napi_ok) {
         NAPI_ERR_LOG("failed to parse requestImagedata args");
@@ -478,7 +507,7 @@ napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_inf
     MediaLibraryTracer tracer;
     tracer.Start("JSRequestImage");
 
-    unique_ptr<RequestImageAsyncContext> asyncContext = make_unique<RequestImageAsyncContext>();
+    unique_ptr<MediaAssetManagerAsyncContext> asyncContext = make_unique<MediaAssetManagerAsyncContext>();
     asyncContext->returnDataType = ReturnDataType::TYPE_IMAGE_SOURCE;
     if (ParseRequestImageArgs(env, info, asyncContext) != napi_ok) {
         NAPI_ERR_LOG("failed to parse requestImage args");
@@ -498,7 +527,7 @@ napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_inf
 }
 
 void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env,
-    const unique_ptr<RequestImageAsyncContext> &asyncContext)
+    const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
 {
     MultiStagesCapturePhotoStatus status = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     switch (asyncContext->deliveryMode) {
@@ -506,7 +535,8 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env,
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             break;
         case DeliveryMode::HIGH_QUALITY:
-            status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId, asyncContext->photoId);
+            status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
+                asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission);
             if (status == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
                 MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             } else {
@@ -514,7 +544,8 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env,
             }
             break;
         case DeliveryMode::BALANCED_MODE:
-            status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId, asyncContext->photoId);
+            status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
+                asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission);
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
                 RegisterTaskObserver(env, asyncContext);
@@ -528,7 +559,7 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env,
 }
 
 void MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(napi_env env,
-    const unique_ptr<RequestImageAsyncContext> &asyncContext)
+    const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
 {
     AssetHandler *assetHandler = InsertDataHandler(NotifyMode::FAST_NOTIFY, env, asyncContext);
     if (assetHandler == nullptr) {
@@ -543,7 +574,6 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
 {
     AssetHandler *assetHandler = reinterpret_cast<AssetHandler *>(data);
     CHECK_NULL_PTR_RETURN_VOID(assetHandler, "assetHandler is nullptr");
-
     auto dataHandler = assetHandler->dataHandler;
     if (dataHandler == nullptr) {
         NAPI_ERR_LOG("data handler is nullptr");
@@ -559,6 +589,14 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
             delete assetHandler;
             return;
         }
+    }
+
+    if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_MOVING_PHOTO) {
+        napi_value movingPhotoJSObject = MovingPhotoNapi::NewMovingPhotoNapi(
+            env, dataHandler->GetRequestUri(), dataHandler->GetSourceMode());
+        dataHandler->JsOnDataPrepared(movingPhotoJSObject);
+        delete assetHandler;
+        return;
     }
 
     napi_value napiValueOfImage = nullptr;
@@ -598,15 +636,15 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
         NAPI_DEBUG_LOG("ignore notify change, type: %{public}d", changeInfo.changeType_);
         return;
     }
-    std::string photoId = "";
-    if (MediaAssetManagerNapi::QueryPhotoStatus(fileId_, photoId) !=
-        MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
-        NAPI_ERR_LOG("requested data not prepared");
-        return;
-    }
 
     for (auto &uri : changeInfo.uris_) {
         string uriString = uri.ToString();
+        std::string photoId = "";
+        if (MediaAssetManagerNapi::QueryPhotoStatus(fileId_, uriString, photoId, true) !=
+            MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
+            NAPI_ERR_LOG("requested data not prepared");
+            continue;
+        }
 
         std::map<std::string, AssetHandler *> assetHandlers;
         if (!inProcessUriMap.Find(uriString, assetHandlers)) {
@@ -692,6 +730,135 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(const std::string &requestUri
         NapiError::ThrowError(env, JS_INNER_FAIL, "open Image file error");
         return;
     }
+}
+
+static napi_value ParseArgsForRequestMovingPhoto(napi_env env, size_t argc, const napi_value argv[],
+    unique_ptr<MediaAssetManagerAsyncContext> &context)
+{
+    CHECK_COND_WITH_MESSAGE(env, (argc == ARGS_FOUR), "Invalid number of arguments");
+    CHECK_COND_WITH_MESSAGE(env,
+        (ParseArgGetCallingPackageName(env, argv[PARAM0], context->callingPkgName) == napi_ok),
+        "Failed to parse calling context");
+
+    FileAssetNapi *fileAssetNapi = nullptr;
+    CHECK_COND_WITH_MESSAGE(env,
+        (napi_unwrap(env, argv[PARAM1], reinterpret_cast<void**>(&fileAssetNapi)) == napi_ok),
+        "Failed to parse photo asset");
+    CHECK_COND_WITH_MESSAGE(env, fileAssetNapi != nullptr, "Failed to parse photo asset");
+    auto fileAssetPtr = fileAssetNapi->GetFileAssetInstance();
+    CHECK_COND_WITH_MESSAGE(env, fileAssetPtr != nullptr, "fileAsset is null");
+    CHECK_COND_WITH_MESSAGE(env,
+        fileAssetPtr->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO),
+        "Asset is not a moving photo");
+    context->photoUri = fileAssetPtr->GetUri();
+    context->fileId = fileAssetPtr->GetId();
+    context->returnDataType = ReturnDataType::TYPE_MOVING_PHOTO;
+    context->hasReadPermission = HasReadPermission();
+
+    CHECK_COND_WITH_MESSAGE(env,
+        ParseArgGetRequestOption(env, argv[PARAM2], context->deliveryMode, context->sourceMode) == napi_ok,
+        "Failed to parse request option");
+
+    if (ParseArgGetDataHandler(env, argv[PARAM3], context->dataHandler) != napi_ok) {
+        NAPI_ERR_LOG("requestMovingPhoto ParseArgGetDataHandler error");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMovingPhoto ParseArgGetDataHandler error");
+        return nullptr;
+    }
+    napi_status status = napi_create_reference(env, context->dataHandler, 1, &(context->dataHandlerRef));
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("requestMovingPhoto create data handler reference error");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMovingPhoto create data handler reference failed");
+        return nullptr;
+    }
+
+    RETURN_NAPI_TRUE(env);
+}
+
+static void RequestMovingPhotoExecute(napi_env env, void *data)
+{
+    auto* context = static_cast<MediaAssetManagerAsyncContext*>(data);
+    if (context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO) {
+        napi_get_reference_value(env, context->dataHandlerRef, &(context->dataHandler));
+    }
+    context->requestId = GenerateRequestId();
+    napi_value requestIdNapiValue;
+    napi_status status = napi_create_string_utf8(env, context->requestId.c_str(),
+        NAPI_AUTO_LENGTH, &requestIdNapiValue);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Failed to create request ID napi string object");
+        context->SaveError(JS_INNER_FAIL);
+        return;
+    }
+    context->requestIdNapiValue = requestIdNapiValue;
+    MultiStagesCapturePhotoStatus currentQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    unique_ptr<MediaAssetManagerAsyncContext> tmpPtr(context);
+    switch (context->deliveryMode) {
+        case DeliveryMode::FAST:
+            MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, tmpPtr);
+            break;
+        case DeliveryMode::HIGH_QUALITY:
+            currentQuality = MediaAssetManagerNapi::QueryPhotoStatus(context->fileId,
+                context->photoUri, context->photoId, context->hasReadPermission);
+            if (currentQuality == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
+                MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, tmpPtr);
+            } else {
+                MediaAssetManagerNapi::RegisterTaskObserver(env, tmpPtr);
+            }
+            break;
+        case DeliveryMode::BALANCED_MODE:
+            currentQuality = MediaAssetManagerNapi::QueryPhotoStatus(context->fileId,
+                context->photoUri, context->photoId, context->hasReadPermission);
+            MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, tmpPtr);
+            if (currentQuality == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
+                MediaAssetManagerNapi::RegisterTaskObserver(env, tmpPtr);
+            }
+            break;
+        default: {
+            NAPI_ERR_LOG("invalid delivery mode");
+            context->SaveError(OHOS_INVALID_PARAM_CODE);
+            tmpPtr.release();
+            return;
+        }
+    }
+    NAPI_DEBUG_LOG("current quality is %{public}d, delivery mode %{public}d",
+        static_cast<int32_t>(currentQuality), static_cast<int32_t>(context->deliveryMode));
+    tmpPtr.release();
+}
+
+static void RequestMovingPhotoComplete(napi_env env, napi_status status, void *data)
+{
+    MediaAssetManagerAsyncContext *context = static_cast<MediaAssetManagerAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    unique_ptr<JSAsyncContextOutput> outContext = make_unique<JSAsyncContextOutput>();
+    outContext->status = false;
+    napi_get_undefined(env, &outContext->data);
+
+    if (context->error != E_OK) {
+        context->HandleError(env, outContext->error);
+    } else {
+        outContext->status = true;
+        outContext->data = context->requestIdNapiValue;
+    }
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, nullptr,
+                                                   context->work, *outContext);
+    } else {
+        NAPI_ERR_LOG("Async work is nullptr");
+    }
+    delete context;
+}
+
+napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaAssetManagerAsyncContext> asyncContext = make_unique<MediaAssetManagerAsyncContext>();
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &(asyncContext->argc), asyncContext->argv, nullptr, nullptr),
+        JS_INNER_FAIL);
+    CHECK_NULLPTR_RET(ParseArgsForRequestMovingPhoto(env, asyncContext->argc, asyncContext->argv, asyncContext));
+    CHECK_COND(env, InitUserFileClient(env, info), JS_INNER_FAIL);
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestMovingPhoto",
+        RequestMovingPhotoExecute, RequestMovingPhotoComplete);
 }
 } // namespace Media
 } // namespace OHOS
