@@ -69,6 +69,10 @@ public:
         const std::vector<std::string> &subtypes = {});
     EXPORT static void UpdateUserAlbumCountInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &userAlbumIds = {});
+    EXPORT static void UpdateAnalysisAlbumCountInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        const std::vector<std::string> &subtypes = {});
+    EXPORT static void UpdateAllAlbumsForCloud(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    EXPORT static void UpdateAllAlbumsCountForCloud(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 
     EXPORT static bool IsNeedRefreshAlbum();
     EXPORT static void SetNeedRefreshAlbum(bool isNeedRefresh);
