@@ -25,6 +25,7 @@
 #include "vision_head_column.h"
 #include "vision_image_face_column.h"
 #include "vision_label_column.h"
+#include "vision_video_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
 #include "vision_photo_map_column.h"
@@ -55,6 +56,21 @@ const std::string CREATE_TAB_ANALYSIS_LABEL = "CREATE TABLE IF NOT EXISTS " + VI
     SIM_RESULT + " TEXT, " +
     LABEL_VERSION + " TEXT, " +
     SALIENCY_SUB_PROB + " TEXT) ";
+
+const std::string CREATE_TAB_ANALYSIS_VIDEO_LABEL = "CREATE TABLE IF NOT EXISTS " + VISION_VIDEO_LABEL_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INT UNIQUE, " +
+    CATEGORY_ID + " INT, " +
+    CONFIDENCE_PROBABILITY + " REAL, " +
+    SUB_CATEGORY + " TEXT, " +
+    SUB_CONFIDENCE_PROB + " REAL, " +
+    SUB_LABEL + " TEXT, " +
+    SUB_LABEL_PROB + " REAL, " +
+    SUB_LABEL_TYPE + " INT, " +
+    TRACKS + " TEXT, " +
+    VIDEO_PART_FEATURE + " BLOB, " +
+    FILTER_TAG + " TEXT, " +
+    ALGO_VERSION + " TEXT) ";
 
 const std::string CREATE_TAB_ANALYSIS_AESTHETICS = "CREATE TABLE IF NOT EXISTS " + VISION_AESTHETICS_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -268,7 +284,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER = "CREATE TRIGGER IF NOT EXISTS i
 const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE =
     "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +
     PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
-    " WHEN NEW.MEDIA_TYPE = 1" +
+    " WHEN (NEW.MEDIA_TYPE = 1 OR NEW.MEDIA_TYPE = 2)" +
     " BEGIN " +
     " INSERT INTO " + VISION_TOTAL_TABLE +" (" + FILE_ID + ", " + STATUS + ", " + OCR + ", " + AESTHETICS_SCORE + ", " +
     LABEL + ", " + FACE + ", " + OBJECT + ", " + RECOMMENDATION + ", " + SEGMENTATION + ", " + COMPOSITION + "," +
@@ -276,6 +292,16 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE =
     " VALUES (" + " NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" + " END;";
 
 const std::string DROP_INSERT_VISION_TRIGGER = "DROP TRIGGER IF EXISTS insert_vision_trigger";
+
+const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_VIDEO_LABEL =
+    "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +
+    PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
+    " WHEN (NEW.MEDIA_TYPE = 1 OR NEW.MEDIA_TYPE = 2)" +
+    " BEGIN " +
+    " INSERT INTO " + VISION_TOTAL_TABLE +" (" + FILE_ID + ", " + STATUS + ", " + OCR + ", " + AESTHETICS_SCORE + ", " +
+    LABEL + ", " + FACE + ", " + OBJECT + ", " + RECOMMENDATION + ", " + SEGMENTATION + ", " + COMPOSITION + "," +
+    SALIENCY + ", " + HEAD + ", " + POSE + ") " +
+    " VALUES (" + " NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" + " END;";
 
 const std::string CREATE_INSERT_VISION_TRIGGER_FOR_ADD_FACE =
     "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +

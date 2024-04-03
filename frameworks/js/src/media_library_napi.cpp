@@ -5410,6 +5410,7 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
     struct AnalysisProperty property[] = {
         { "ANALYSIS_AESTHETICS_SCORE", AnalysisType::ANALYSIS_AESTHETICS_SCORE },
         { "ANALYSIS_LABEL", AnalysisType::ANALYSIS_LABEL },
+        { "ANALYSIS_VIDEO_LABEL", AnalysisType::ANALYSIS_VIDEO_LABEL },
         { "ANALYSIS_OCR", AnalysisType::ANALYSIS_OCR },
         { "ANALYSIS_FACE", AnalysisType::ANALYSIS_FACE },
         { "ANALYSIS_OBJECT", AnalysisType::ANALYSIS_OBJECT },

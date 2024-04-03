@@ -70,6 +70,7 @@
 #include "vision_head_column.h"
 #include "vision_image_face_column.h"
 #include "vision_label_column.h"
+#include "vision_video_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
 #include "vision_photo_map_column.h"
@@ -1934,6 +1935,8 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
     { ANALYSIS_AESTHETICS_SCORE, { PAH_QUERY_ANA_ATTS, { AESTHETICS_SCORE, PROB } } },
     { ANALYSIS_LABEL, { PAH_QUERY_ANA_LABEL, { CATEGORY_ID, SUB_LABEL, PROB, FEATURE, SIM_RESULT,
         SALIENCY_SUB_PROB } } },
+    { ANALYSIS_VIDEO_LABEL, { PAH_QUERY_ANA_VIDEO_LABEL, { CATEGORY_ID, CONFIDENCE_PROBABILITY, SUB_CATEGORY,
+        SUB_CONFIDENCE_PROB, SUB_LABEL, SUB_LABEL_PROB, SUB_LABEL_TYPE, TRACKS, VIDEO_PART_FEATURE, FILTER_TAG} } },
     { ANALYSIS_OCR, { PAH_QUERY_ANA_OCR, { OCR_TEXT, OCR_TEXT_MSG, OCR_WIDTH, OCR_HEIGHT } } },
     { ANALYSIS_FACE, { PAH_QUERY_ANA_FACE, { FACE_ID, TAG_ID, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT, LANDMARKS,
         PITCH, YAW, ROLL, PROB, TOTAL_FACES, FEATURES } } },
