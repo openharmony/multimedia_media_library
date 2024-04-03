@@ -128,8 +128,8 @@ const unordered_map<string, ResultSetDataType> COLUMN_TYPE_MAP = {
     { "TEXT", ResultSetDataType::TYPE_STRING },
 };
 const unordered_map<string, string> ALBUM_URI_PREFIX_MAP = {
-    { PhotoAlbumColumns::TABLE, PhotoMap::TABLE },
-    { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE },
+    { PhotoAlbumColumns::TABLE, PhotoAlbumColumns::ALBUM_URI_PREFIX },
+    { ANALYSIS_ALBUM_TABLE, PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX },
 };
 
 template<typename Key, typename Value>
