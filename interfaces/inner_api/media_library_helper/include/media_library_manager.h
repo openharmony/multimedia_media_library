@@ -80,7 +80,7 @@ public:
     /**
      * @brief open photo or video
      *
-     * @param displayName file displayName
+     * @param uri uri of the asset
      * @param openMode openMode "rw", "w", "r"
      * @return fileDescriptor for success and <-1> for fail
      * @since 1.0
@@ -154,6 +154,14 @@ public:
      * @return if obtain success, return PixelMap; Otherwise return nullptr
      */
     EXPORT std::unique_ptr<PixelMap> GetAstc(const Uri &uri);
+
+    /**
+     * @brief Open video of moving photo to read
+     *
+     * @param uri asset uri of the moving photo
+     * @return read fd for success and <-1> for fail
+     */
+    EXPORT int32_t ReadMovingPhotoVideo(const string &uri);
 
 private:
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);

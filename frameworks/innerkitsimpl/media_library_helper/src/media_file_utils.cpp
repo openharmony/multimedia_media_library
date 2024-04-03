@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <unordered_map>
 
+#include "avmetadatahelper.h"
 #include "directory_ex.h"
 #include "media_column.h"
 #include "media_file_uri.h"
@@ -1294,5 +1295,88 @@ string MediaFileUtils::RemoveDocsFromRelativePath(const string &relativePath)
 int64_t MediaFileUtils::Timespec2Millisecond(const struct timespec &time)
 {
     return time.tv_sec * MSEC_TO_SEC + time.tv_nsec / MSEC_TO_NSEC;
+}
+
+string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
+{
+    size_t splitIndex = imagePath.find_last_of('.');
+    return (splitIndex == string::npos) ? "" : (imagePath.substr(0, splitIndex) + ".mp4");
+}
+
+bool MediaFileUtils::CheckMovingPhotoExtension(const string &extension)
+{
+    // image of moving photo must be image/jpeg or image/heif
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
+    return mimeType == "image/jpeg" || mimeType == "image/heif";
+}
+
+bool MediaFileUtils::CheckMovingPhotoVideoExtension(const string &extension)
+{
+    // video of moving photo must be video/mp4
+    return MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP) == "video/mp4";
+}
+
+bool MediaFileUtils::CheckMovingPhotoImage(const string &path)
+{
+    return CheckMovingPhotoExtension(GetExtensionFromPath(path));
+}
+
+bool MediaFileUtils::CheckMovingPhotoVideo(const string &path)
+{
+    string extension = GetExtensionFromPath(path);
+    if (!CheckMovingPhotoVideoExtension(extension)) {
+        MEDIA_ERR_LOG("Failed to check extension (%{public}s) of moving photo video", extension.c_str());
+        return false;
+    }
+
+    UniqueFd uniqueFd(open(path.c_str(), O_RDONLY));
+    return CheckMovingPhotoVideo(uniqueFd);
+}
+
+bool MediaFileUtils::CheckMovingPhotoVideo(const UniqueFd &uniqueFd)
+{
+    if (uniqueFd.Get() <= 0) {
+        MEDIA_ERR_LOG("Failed to open video of moving photo, errno = %{public}d", errno);
+        return false;
+    }
+    struct stat64 st;
+    if (fstat64(uniqueFd.Get(), &st) != 0) {
+        MEDIA_ERR_LOG("Failed to get file state, errno = %{public}d", errno);
+        return false;
+    }
+
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    if (avMetadataHelper == nullptr) {
+        MEDIA_WARN_LOG("Failed to create AVMetadataHelper, ignore checking duration");
+        return true;
+    }
+
+    int32_t err = avMetadataHelper->SetSource(uniqueFd.Get(), 0,
+        static_cast<int64_t>(st.st_size), AV_META_USAGE_META_ONLY);
+    if (err != 0) {
+        MEDIA_ERR_LOG("SetSource failed for the given file descriptor, err = %{public}d", err);
+        return false;
+    }
+
+    unordered_map<int32_t, string> resultMap = avMetadataHelper->ResolveMetadata();
+    if (resultMap.find(AV_KEY_DURATION) == resultMap.end()) {
+        MEDIA_ERR_LOG("AV_KEY_DURATION does not exist");
+        return false;
+    }
+    string durationStr = resultMap.at(AV_KEY_DURATION);
+    int32_t duration = std::atoi(durationStr.c_str());
+    if (!CheckMovingPhotoVideoDuration(duration)) {
+        MEDIA_ERR_LOG("Failed to check duration of moving photo video: %{public}d ms", duration);
+        return false;
+    }
+    return true;
+}
+
+bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
+{
+    // duration of moving photo video must be 2~3 s
+    constexpr int32_t MIN_DURATION_MS = 2000;
+    constexpr int32_t MAX_DURATION_MS = 3000;
+    return duration >= MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
 } // namespace OHOS::Media

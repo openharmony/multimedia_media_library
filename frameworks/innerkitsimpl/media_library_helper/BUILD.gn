@@ -82,6 +82,7 @@ ohos_shared_library("media_library") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "kv_store:distributeddata_inner",
+    "player_framework:media_client",
     "relational_store:native_rdb",
   ]
 

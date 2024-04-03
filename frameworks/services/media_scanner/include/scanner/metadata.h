@@ -133,10 +133,9 @@ public:
     void SetLastVisitTime(const VariantData &lastVisitTime);
     EXPORT int64_t GetLastVisitTime() const;
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
     void SetPhotoSubType(const VariantData &photoSubType);
     int32_t GetPhotoSubType() const;
-#endif
+
     void SetForAdd(bool forAdd);
     bool GetForAdd() const;
     void SetTableName(const std::string &tableName);
@@ -201,10 +200,10 @@ private:
 
     // pending
     int64_t timePending_;
-#ifdef MEDIALIBRARY_COMPATIBILITY
+
     // photo subtype
     int32_t photoSubType_ = 0;
-#endif
+
     bool forAdd_ = false;
     std::string tableName_;
 
