@@ -396,6 +396,7 @@ ohos_shared_library("photoaccesshelper") {
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "napi:ace_napi",
+    "player_framework:media_client",
   ]
 
   defines = []

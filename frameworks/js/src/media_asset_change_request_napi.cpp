@@ -46,6 +46,7 @@
 #include "output/deferred_photo_proxy_napi.h"
 #endif
 #include "permission_utils.h"
+#include "securec.h"
 #ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
 #endif
@@ -69,18 +70,59 @@ constexpr int32_t NO = 0;
 constexpr int32_t USER_COMMENT_MAX_LEN = 420;
 constexpr int32_t MAX_DELETE_NUMBER = 300;
 
-const std::string SUBTYPE = "subType";
 const std::string PAH_SUBTYPE = "subtype";
 const std::string CAMERA_SHOT_KEY = "cameraShotKey";
-const std::map<std::string, std::string> PHOTO_CREATE_OPTIONS_PARAM = { { SUBTYPE, PhotoColumn::PHOTO_SUBTYPE },
-    { CAMERA_SHOT_KEY, PhotoColumn::CAMERA_SHOT_KEY }, { PAH_SUBTYPE, PhotoColumn::PHOTO_SUBTYPE } };
+const std::map<std::string, std::string> PHOTO_CREATE_OPTIONS_PARAM = {
+    { PAH_SUBTYPE, PhotoColumn::PHOTO_SUBTYPE },
+    { CAMERA_SHOT_KEY, PhotoColumn::CAMERA_SHOT_KEY },
+};
 
 const std::string TITLE = "title";
-const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = { { TITLE, PhotoColumn::MEDIA_TITLE } };
+const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = {
+    { TITLE, PhotoColumn::MEDIA_TITLE },
+    { PAH_SUBTYPE, PhotoColumn::PHOTO_SUBTYPE },
+};
 
 const std::string DEFAULT_TITLE_TIME_FORMAT = "%Y%m%d_%H%M%S";
 const std::string DEFAULT_TITLE_IMG_PREFIX = "IMG_";
 const std::string DEFAULT_TITLE_VIDEO_PREFIX = "VID_";
+const std::string MOVING_PHOTO_VIDEO_EXTENSION = "mp4";
+
+uint32_t MediaDataSource::ReadData(const shared_ptr<AVSharedMemory>& mem, uint32_t length)
+{
+    if (readPos_ >= size_) {
+        return SOURCE_ERROR_EOF;
+    }
+
+    if (memcpy_s(mem->GetBase(), mem->GetSize(), (char*)buffer_ + readPos_, length) != E_OK) {
+        return SOURCE_ERROR_IO;
+    }
+    readPos_ += length;
+    return length;
+}
+
+int32_t MediaDataSource::ReadAt(const std::shared_ptr<AVSharedMemory>& mem, uint32_t length, int64_t pos)
+{
+    readPos_ = pos;
+    return ReadData(mem, length);
+}
+
+int32_t MediaDataSource::ReadAt(int64_t pos, uint32_t length, const std::shared_ptr<AVSharedMemory>& mem)
+{
+    readPos_ = pos;
+    return ReadData(mem, length);
+}
+
+int32_t MediaDataSource::ReadAt(uint32_t length, const std::shared_ptr<AVSharedMemory>& mem)
+{
+    return ReadData(mem, length);
+}
+
+int32_t MediaDataSource::GetSize(int64_t& size)
+{
+    size = size_;
+    return E_OK;
+}
 
 napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
 {
@@ -142,6 +184,22 @@ napi_value MediaAssetChangeRequestNapi::Constructor(napi_env env, napi_callback_
     return thisVar;
 }
 
+static void DeleteCache(const string& cacheFileName)
+{
+    if (cacheFileName.empty()) {
+        return;
+    }
+
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + cacheFileName;
+    MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri deleteCacheUri(uri);
+    DataShare::DataSharePredicates predicates;
+    int32_t ret = UserFileClient::Delete(deleteCacheUri, predicates);
+    if (ret < 0) {
+        NAPI_WARN_LOG("Failed to delete cache: %{private}s, error: %{public}d", cacheFileName.c_str(), ret);
+    }
+}
+
 void MediaAssetChangeRequestNapi::Destructor(napi_env env, void* nativeObject, void* finalizeHint)
 {
     auto* assetChangeRequest = reinterpret_cast<MediaAssetChangeRequestNapi*>(nativeObject);
@@ -149,17 +207,8 @@ void MediaAssetChangeRequestNapi::Destructor(napi_env env, void* nativeObject, v
         return;
     }
 
-    string cacheFileName = assetChangeRequest->cacheFileName_;
-    if (!cacheFileName.empty()) {
-        string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + cacheFileName;
-        MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-        Uri deleteCacheUri(uri);
-        DataShare::DataSharePredicates predicates;
-        int32_t ret = UserFileClient::Delete(deleteCacheUri, predicates);
-        if (ret < 0) {
-            NAPI_WARN_LOG("Failed to delete cache: %{private}s", cacheFileName.c_str());
-        }
-    }
+    DeleteCache(assetChangeRequest->cacheFileName_);
+    DeleteCache(assetChangeRequest->cacheMovingPhotoVideoName_);
 
     delete assetChangeRequest;
     assetChangeRequest = nullptr;
@@ -198,6 +247,48 @@ bool MediaAssetChangeRequestNapi::Contains(AssetChangeOperation changeOperation)
 {
     return std::find(assetChangeOperations_.begin(), assetChangeOperations_.end(), changeOperation) !=
            assetChangeOperations_.end();
+}
+
+bool MediaAssetChangeRequestNapi::IsMovingPhoto() const
+{
+    return fileAsset_ != nullptr &&
+        fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+}
+
+bool MediaAssetChangeRequestNapi::CheckMovingPhotoResource(ResourceType resourceType) const
+{
+    if (resourceType == ResourceType::INVALID_RESOURCE) {
+        NAPI_ERR_LOG("Invalid resource type");
+        return false;
+    }
+
+    bool isResourceTypeVaild =
+        std::find(addResourceTypes_.begin(), addResourceTypes_.end(), resourceType) == addResourceTypes_.end();
+    int addResourceTimes =
+        std::count(assetChangeOperations_.begin(), assetChangeOperations_.end(), AssetChangeOperation::ADD_RESOURCE);
+    return isResourceTypeVaild && addResourceTimes <= 1; // currently, add resource no more than once
+}
+
+bool MediaAssetChangeRequestNapi::CheckMovingPhotoWriteOperation()
+{
+    bool containsAddResource = Contains(AssetChangeOperation::ADD_RESOURCE);
+    if (!containsAddResource) {
+        return true;
+    }
+
+    bool isCreation = Contains(AssetChangeOperation::CREATE_FROM_SCRATCH);
+    if (!isCreation) {
+        NAPI_ERR_LOG("Moving photo is not supported to edit now");
+        return false;
+    }
+
+    int addResourceTimes =
+        std::count(assetChangeOperations_.begin(), assetChangeOperations_.end(), AssetChangeOperation::ADD_RESOURCE);
+    bool isImageExist = std::find(addResourceTypes_.begin(), addResourceTypes_.end(), ResourceType::IMAGE_RESOURCE) !=
+                        addResourceTypes_.end();
+    bool isVideoExist = std::find(addResourceTypes_.begin(), addResourceTypes_.end(), ResourceType::VIDEO_RESOURCE) !=
+                        addResourceTypes_.end();
+    return addResourceTimes == 2 && isImageExist && isVideoExist; // must add resource 2 times with image and video
 }
 
 bool MediaAssetChangeRequestNapi::CheckChangeOperations(napi_env env)
@@ -240,12 +331,23 @@ bool MediaAssetChangeRequestNapi::CheckChangeOperations(napi_env env)
         return false;
     }
 
+    bool isMovingPhoto = IsMovingPhoto();
+    if (isMovingPhoto && !CheckMovingPhotoWriteOperation()) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Invalid write operation for moving photo");
+        return false;
+    }
+
     return true;
 }
 
 void MediaAssetChangeRequestNapi::SetCacheFileName(string& fileName)
 {
     cacheFileName_ = fileName;
+}
+
+void MediaAssetChangeRequestNapi::SetCacheMovingPhotoVideoName(string& fileName)
+{
+    cacheMovingPhotoVideoName_ = fileName;
 }
 
 string MediaAssetChangeRequestNapi::GetFileRealPath() const
@@ -266,6 +368,31 @@ void* MediaAssetChangeRequestNapi::GetDataBuffer() const
 size_t MediaAssetChangeRequestNapi::GetDataBufferSize() const
 {
     return dataBufferSize_;
+}
+
+string MediaAssetChangeRequestNapi::GetMovingPhotoVideoPath() const
+{
+    return movingPhotoVideoRealPath_;
+}
+
+AddResourceMode MediaAssetChangeRequestNapi::GetMovingPhotoVideoMode() const
+{
+    return movingPhotoVideoResourceMode_;
+}
+
+void* MediaAssetChangeRequestNapi::GetMovingPhotoVideoBuffer() const
+{
+    return movingPhotoVideoDataBuffer_;
+}
+
+size_t MediaAssetChangeRequestNapi::GetMovingPhotoVideoSize() const
+{
+    return movingPhotoVideoBufferSize_;
+}
+
+string MediaAssetChangeRequestNapi::GetCacheMovingPhotoVideoName() const
+{
+    return cacheMovingPhotoVideoName_;
 }
 
 napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_info info)
@@ -294,10 +421,55 @@ static bool HasWritePermission()
     return result == PermissionState::PERMISSION_GRANTED;
 }
 
-static napi_status CheckCreateOption(MediaAssetChangeRequestAsyncContext& context)
+static bool CheckMovingPhotoCreationArgs(MediaAssetChangeRequestAsyncContext& context)
+{
+    bool isValid = false;
+    int32_t mediaType = context.valuesBucket.Get(MEDIA_DATA_DB_MEDIA_TYPE, isValid);
+    if (!isValid) {
+        NAPI_ERR_LOG("Failed to get media type");
+        return false;
+    }
+
+    if (mediaType != static_cast<int32_t>(MEDIA_TYPE_IMAGE)) {
+        NAPI_ERR_LOG("Failed to cehck media type (%{public}d) for moving photo", mediaType);
+        return false;
+    }
+
+    string extension = context.valuesBucket.Get(ASSET_EXTENTION, isValid);
+    if (isValid) {
+        return MediaFileUtils::CheckMovingPhotoExtension(extension);
+    }
+
+    string displayName = context.valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
+    return isValid && MediaFileUtils::CheckMovingPhotoExtension(MediaFileUtils::GetExtensionFromPath(displayName));
+}
+
+static napi_status CheckCreateOption(MediaAssetChangeRequestAsyncContext& context, bool isSystemApi)
 {
     bool isValid = false;
     int32_t subtype = context.valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid);
+    if (isValid) {
+        if (subtype < static_cast<int32_t>(PhotoSubType::DEFAULT) ||
+            subtype >= static_cast<int32_t>(PhotoSubType::SUBTYPE_END)) {
+            NAPI_ERR_LOG("Failed to check subtype: %{public}d", subtype);
+            return napi_invalid_arg;
+        }
+
+        // check media type and extension for moving photo
+        if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+            !CheckMovingPhotoCreationArgs(context)) {
+            NAPI_ERR_LOG("Failed to check creation args for moving photo");
+            return napi_invalid_arg;
+        }
+
+        // check subtype for public api
+        if (!isSystemApi && subtype != static_cast<int32_t>(PhotoSubType::DEFAULT) &&
+            subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            NAPI_ERR_LOG("Failed to check subtype: %{public}d", subtype);
+            return napi_invalid_arg;
+        }
+    }
+
     string cameraShotKey = context.valuesBucket.Get(PhotoColumn::CAMERA_SHOT_KEY, isValid);
     if (isValid) {
         if (cameraShotKey.size() < CAMERA_SHOT_KEY_SIZE) {
@@ -315,7 +487,7 @@ static napi_status CheckCreateOption(MediaAssetChangeRequestAsyncContext& contex
 }
 
 static napi_status ParseAssetCreateOptions(napi_env env, napi_value arg, MediaAssetChangeRequestAsyncContext& context,
-    const map<string, string>& createOptionsMap, bool needCheck)
+    const map<string, string>& createOptionsMap, bool isSystemApi)
 {
     for (const auto& iter : createOptionsMap) {
         string param = iter.first;
@@ -354,7 +526,7 @@ static napi_status ParseAssetCreateOptions(napi_env env, napi_value arg, MediaAs
             return napi_invalid_arg;
         }
     }
-    return needCheck ? CheckCreateOption(context) : napi_ok;
+    return CheckCreateOption(context, isSystemApi);
 }
 
 static napi_value ParseArgsCreateAssetSystem(
@@ -476,10 +648,12 @@ napi_value MediaAssetChangeRequestNapi::JSCreateAssetRequest(napi_env env, napi_
 
     bool isValid = false;
     string displayName = asyncContext->valuesBucket.Get(MEDIA_DATA_DB_NAME, isValid);
+    int32_t subtype = asyncContext->valuesBucket.Get(PhotoColumn::PHOTO_SUBTYPE, isValid); // default is 0
     auto emptyFileAsset = make_unique<FileAsset>();
     emptyFileAsset->SetDisplayName(displayName);
     emptyFileAsset->SetTitle(MediaFileUtils::GetTitleFromDisplayName(displayName));
     emptyFileAsset->SetMediaType(MediaFileUtils::GetMediaType(displayName));
+    emptyFileAsset->SetPhotoSubType(subtype);
     emptyFileAsset->SetTimePending(CREATE_ASSET_REQUEST_PENDING);
     emptyFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     napi_value fileAssetNapi = FileAssetNapi::CreateFileAsset(env, emptyFileAsset);
@@ -510,8 +684,6 @@ static napi_value ParseFileUri(napi_env env, napi_value arg, MediaType mediaType
     CHECK_COND(env, PathToRealPath(path, context->realPath), JS_ERR_NO_SUCH_FILE);
 
     CHECK_COND_WITH_MESSAGE(env, mediaType == MediaFileUtils::GetMediaType(context->realPath), "Invalid file type");
-    string fileName = MediaFileUtils::GetFileName(context->realPath);
-    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(fileName) == E_OK, "Invalid fileName");
     RETURN_NAPI_TRUE(env);
 }
 
@@ -528,12 +700,14 @@ static napi_value ParseArgsCreateAssetFromFileUri(napi_env env, napi_callback_in
 napi_value MediaAssetChangeRequestNapi::CreateAssetRequestFromRealPath(napi_env env, const string& realPath)
 {
     string displayName = MediaFileUtils::GetFileName(realPath);
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckDisplayName(displayName) == E_OK, "Invalid fileName");
     string title = MediaFileUtils::GetTitleFromDisplayName(displayName);
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
     auto emptyFileAsset = make_unique<FileAsset>();
     emptyFileAsset->SetDisplayName(displayName);
     emptyFileAsset->SetTitle(title);
     emptyFileAsset->SetMediaType(mediaType);
+    emptyFileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::DEFAULT));
     emptyFileAsset->SetTimePending(CREATE_ASSET_REQUEST_PENDING);
     emptyFileAsset->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
     napi_value fileAssetNapi = FileAssetNapi::CreateFileAsset(env, emptyFileAsset);
@@ -921,7 +1095,7 @@ napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_call
     RETURN_NAPI_UNDEFINED(env);
 }
 
-static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& context)
+static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& context, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
     auto fileAsset = changeRequest->GetFileAssetInstance();
@@ -931,7 +1105,9 @@ static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& contex
         return E_FAIL;
     }
 
-    string extension = MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
+    // specify mp4 extension for cache file of moving photo video
+    string extension = isMovingPhotoVideo ? MOVING_PHOTO_VIDEO_EXTENSION
+                                          : MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
     string cacheFileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + "." + extension;
     string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + cacheFileName;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
@@ -946,7 +1122,12 @@ static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& contex
         context.SaveError(ret);
         NAPI_ERR_LOG("Open cache file failed, ret: %{public}d", ret);
     }
-    changeRequest->SetCacheFileName(cacheFileName);
+
+    if (isMovingPhotoVideo) {
+        changeRequest->SetCacheMovingPhotoVideoName(cacheFileName);
+    } else {
+        changeRequest->SetCacheFileName(cacheFileName);
+    }
     return ret;
 }
 
@@ -984,11 +1165,35 @@ static void GetWriteCacheHandlerCompleteCallback(napi_env env, napi_status statu
     delete context;
 }
 
-static napi_value CheckWriteOperation(napi_env env, MediaAssetChangeRequestNapi* changeRequest)
+static ResourceType GetResourceType(int32_t value)
+{
+    ResourceType result = ResourceType::INVALID_RESOURCE;
+    switch (value) {
+        case static_cast<int32_t>(ResourceType::IMAGE_RESOURCE):
+        case static_cast<int32_t>(ResourceType::VIDEO_RESOURCE):
+        case static_cast<int32_t>(ResourceType::PHOTO_PROXY):
+            result = static_cast<ResourceType>(value);
+            break;
+        default:
+            break;
+    }
+    return result;
+}
+
+static napi_value CheckWriteOperation(napi_env env, MediaAssetChangeRequestNapi* changeRequest,
+    ResourceType resourceType = ResourceType::INVALID_RESOURCE)
 {
     if (changeRequest == nullptr) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "changeRequest is null");
         return nullptr;
+    }
+
+    if (changeRequest->IsMovingPhoto()) {
+        if (!changeRequest->CheckMovingPhotoResource(resourceType)) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check resource to add for moving photo");
+            return nullptr;
+        }
+        RETURN_NAPI_TRUE(env);
     }
 
     if (changeRequest->Contains(AssetChangeOperation::CREATE_FROM_URI) ||
@@ -1011,28 +1216,96 @@ napi_value MediaAssetChangeRequestNapi::JSGetWriteCacheHandler(napi_env env, nap
     auto changeRequest = asyncContext->objectInfo;
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+    CHECK_COND(env, !changeRequest->IsMovingPhoto(), JS_E_OPERATION_NOT_SUPPORT);
     CHECK_COND(env, CheckWriteOperation(env, changeRequest), JS_E_OPERATION_NOT_SUPPORT);
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ChangeRequestGetWriteCacheHandler",
         GetWriteCacheHandlerExecute, GetWriteCacheHandlerCompleteCallback);
 }
 
-napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callback_info info)
+static bool CheckMovingPhotoVideo(void* dataBuffer, size_t size)
+{
+    auto dataSource = make_shared<MediaDataSource>(dataBuffer, size);
+    auto avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    if (avMetadataHelper == nullptr) {
+        NAPI_WARN_LOG("Failed to create AVMetadataHelper, ignore checking duration of moving photo video");
+        return true;
+    }
+
+    int32_t err = avMetadataHelper->SetSource(dataSource);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("SetSource failed for dataSource, err = %{public}d", err);
+        return false;
+    }
+
+    unordered_map<int32_t, string> resultMap = avMetadataHelper->ResolveMetadata();
+    if (resultMap.find(AV_KEY_DURATION) == resultMap.end()) {
+        NAPI_ERR_LOG("AV_KEY_DURATION does not exist");
+        return false;
+    }
+
+    string durationStr = resultMap.at(AV_KEY_DURATION);
+    int32_t duration = std::atoi(durationStr.c_str());
+    if (!MediaFileUtils::CheckMovingPhotoVideoDuration(duration)) {
+        NAPI_ERR_LOG("Failed to check duration of moving photo video: %{public}d ms", duration);
+        return false;
+    }
+    return true;
+}
+
+napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResource(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
         "Failed to get object info");
     auto changeRequest = asyncContext->objectInfo;
+
+    napi_valuetype valueType;
+    napi_value value = asyncContext->argv[PARAM1];
+    CHECK_COND_WITH_MESSAGE(env, napi_typeof(env, value, &valueType) == napi_ok, "Failed to get napi type");
+    if (valueType == napi_string) { // addResource by file uri
+        CHECK_COND(env, ParseFileUri(env, value, MediaType::MEDIA_TYPE_VIDEO, asyncContext), OHOS_INVALID_PARAM_CODE);
+        CHECK_COND(env, MediaFileUtils::CheckMovingPhotoVideo(asyncContext->realPath), OHOS_INVALID_PARAM_CODE);
+        changeRequest->movingPhotoVideoRealPath_ = asyncContext->realPath;
+        changeRequest->movingPhotoVideoResourceMode_ = AddResourceMode::FILE_URI;
+    } else { // addResource by ArrayBuffer
+        bool isArrayBuffer = false;
+        CHECK_COND_WITH_MESSAGE(env, napi_is_arraybuffer(env, value, &isArrayBuffer) == napi_ok && isArrayBuffer,
+            "Failed to check data type");
+        CHECK_COND_WITH_MESSAGE(env,
+            napi_get_arraybuffer_info(env, value, &(changeRequest->movingPhotoVideoDataBuffer_),
+                &(changeRequest->movingPhotoVideoBufferSize_)) == napi_ok,
+            "Failed to get data buffer");
+        CHECK_COND_WITH_MESSAGE(env, changeRequest->movingPhotoVideoBufferSize_ > 0,
+            "Failed to check size of data buffer");
+        CHECK_COND(env, CheckMovingPhotoVideo(changeRequest->movingPhotoVideoDataBuffer_,
+            changeRequest->movingPhotoVideoBufferSize_), OHOS_INVALID_PARAM_CODE);
+        changeRequest->movingPhotoVideoResourceMode_ = AddResourceMode::DATA_BUFFER;
+    }
+
+    changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE);
+    changeRequest->addResourceTypes_.push_back(ResourceType::VIDEO_RESOURCE);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext,
+        ARGS_TWO, ARGS_TWO) == napi_ok, "Failed to get object info");
+    auto changeRequest = asyncContext->objectInfo;
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
-    CHECK_COND(env, CheckWriteOperation(env, changeRequest), JS_E_OPERATION_NOT_SUPPORT);
 
-    int32_t resourceType = -1;
-    CHECK_COND_WITH_MESSAGE(env,
-        MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0], resourceType) == napi_ok,
-        "Failed to get resourceType");
-    CHECK_COND_WITH_MESSAGE(env, resourceType == static_cast<int>(fileAsset->GetMediaType()) ||
-        resourceType == static_cast<int>(ResourceType::PHOTO_PROXY), "Failed to check resourceType");
+    int32_t resourceType = static_cast<int32_t>(ResourceType::INVALID_RESOURCE);
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0],
+        resourceType) == napi_ok, "Failed to get resourceType");
+    CHECK_COND(env, CheckWriteOperation(env, changeRequest, GetResourceType(resourceType)), JS_E_OPERATION_NOT_SUPPORT);
+    if (changeRequest->IsMovingPhoto() && resourceType == static_cast<int32_t>(ResourceType::VIDEO_RESOURCE)) {
+        return AddMovingPhotoVideoResource(env, info);
+    }
+    CHECK_COND_WITH_MESSAGE(env, resourceType == static_cast<int32_t>(fileAsset->GetMediaType()) ||
+        resourceType == static_cast<int32_t>(ResourceType::PHOTO_PROXY), "Failed to check resourceType");
 
     napi_valuetype valueType;
     napi_value value = asyncContext->argv[PARAM1];
@@ -1069,6 +1342,7 @@ napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callbac
     }
 
     changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_RESOURCE);
+    changeRequest->addResourceTypes_.push_back(GetResourceType(resourceType));
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -1089,12 +1363,13 @@ static bool IsCreation(MediaAssetChangeRequestAsyncContext& context)
     return isCreateFromScratch || isCreateFromUri;
 }
 
-int32_t MediaAssetChangeRequestNapi::CopyFileToMediaLibrary(const UniqueFd& destFd)
+int32_t MediaAssetChangeRequestNapi::CopyFileToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo)
 {
-    CHECK_COND_RET(!realPath_.empty(), E_FAIL, "Failed to check realPath_");
-    UniqueFd srcFd(open(realPath_.c_str(), O_RDONLY));
+    string srcRealPath = isMovingPhotoVideo ? movingPhotoVideoRealPath_ : realPath_;
+    CHECK_COND_RET(!srcRealPath.empty(), E_FAIL, "Failed to check real path of source");
+    UniqueFd srcFd(open(srcRealPath.c_str(), O_RDONLY));
     if (srcFd.Get() < 0) {
-        NAPI_ERR_LOG("Failed to open %{private}s, errno=%{public}d", realPath_.c_str(), errno);
+        NAPI_ERR_LOG("Failed to open %{private}s, errno=%{public}d", srcRealPath.c_str(), errno);
         return srcFd.Get();
     }
 
@@ -1119,12 +1394,13 @@ int32_t MediaAssetChangeRequestNapi::CopyFileToMediaLibrary(const UniqueFd& dest
     return E_OK;
 }
 
-int32_t MediaAssetChangeRequestNapi::CopyDataBufferToMediaLibrary(const UniqueFd& destFd)
+int32_t MediaAssetChangeRequestNapi::CopyDataBufferToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo)
 {
     size_t offset = 0;
-    size_t length = dataBufferSize_;
+    size_t length = isMovingPhotoVideo ? movingPhotoVideoBufferSize_ : dataBufferSize_;
+    void* dataBuffer = isMovingPhotoVideo ? movingPhotoVideoDataBuffer_ : dataBuffer_;
     while (offset < length) {
-        ssize_t written = write(destFd.Get(), (char*)dataBuffer_ + offset, length - offset);
+        ssize_t written = write(destFd.Get(), (char*)dataBuffer + offset, length - offset);
         if (written < 0) {
             NAPI_ERR_LOG("Failed to copy data buffer, return %{public}d", static_cast<int>(written));
             return written;
@@ -1132,6 +1408,35 @@ int32_t MediaAssetChangeRequestNapi::CopyDataBufferToMediaLibrary(const UniqueFd
         offset += written;
     }
     return E_OK;
+}
+
+int32_t MediaAssetChangeRequestNapi::CopyMovingPhotoVideo(const string& assetUri)
+{
+    if (assetUri.empty()) {
+        NAPI_ERR_LOG("Failed to check empty asset uri");
+        return E_INVALID_URI;
+    }
+
+    string videoUri = assetUri;
+    MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
+    Uri uri(videoUri);
+    int videoFd = UserFileClient::OpenFile(uri, MEDIA_FILEMODE_WRITEONLY);
+    if (videoFd < 0) {
+        NAPI_ERR_LOG("Failed to open video of moving photo with write-only mode");
+        return videoFd;
+    }
+
+    int32_t ret = E_ERR;
+    UniqueFd uniqueFd(videoFd);
+    if (movingPhotoVideoResourceMode_ == AddResourceMode::FILE_URI) {
+        ret = CopyFileToMediaLibrary(uniqueFd, true);
+    } else if (movingPhotoVideoResourceMode_ == AddResourceMode::DATA_BUFFER) {
+        ret = CopyDataBufferToMediaLibrary(uniqueFd, true);
+    } else {
+        NAPI_ERR_LOG("Invalid mode: %{public}d", movingPhotoVideoResourceMode_);
+        return E_INVALID_VALUES;
+    }
+    return ret;
 }
 
 int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(AddResourceMode mode)
@@ -1152,6 +1457,15 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(AddResourceMode mode)
     int id = UserFileClient::InsertExt(createAssetUri, creationValuesBucket_, assetUri);
     CHECK_COND_RET(id >= 0, id, "Failed to create asset by security component");
 
+    int32_t ret = E_ERR;
+    if (IsMovingPhoto()) {
+        ret = CopyMovingPhotoVideo(assetUri);
+        if (ret != E_OK) {
+            NAPI_ERR_LOG("Failed to copy data to moving photo video with error: %{public}d", ret);
+            return ret;
+        }
+    }
+
     AppFileService::ModuleFileUri::FileUri fileUri(assetUri);
     UniqueFd destFd(open(fileUri.GetRealPath().c_str(), O_WRONLY));
     if (destFd.Get() < 0) {
@@ -1159,14 +1473,13 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(AddResourceMode mode)
         return destFd.Get();
     }
 
-    int32_t ret = E_ERR;
     if (mode == AddResourceMode::FILE_URI) {
         ret = CopyFileToMediaLibrary(destFd);
     } else if (mode == AddResourceMode::DATA_BUFFER) {
         ret = CopyDataBufferToMediaLibrary(destFd);
     } else {
         NAPI_ERR_LOG("Invalid mode: %{public}d", mode);
-        return ret;
+        return E_INVALID_VALUES;
     }
 
     if (ret == E_OK) {
@@ -1242,6 +1555,9 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation)
         CHECK_COND_RET(
             isValid && MediaFileUtils::CheckDisplayName(displayName) == E_OK, E_FAIL, "Failed to check displayName");
         creationValuesBucket_.Put(CACHE_FILE_NAME, cacheFileName_);
+        if (IsMovingPhoto()) {
+            creationValuesBucket_.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+        }
         ret = UserFileClient::InsertExt(submitCacheUri, creationValuesBucket_, assetUri);
     } else {
         DataShare::DataShareValuesBucket valuesBucket;
@@ -1256,6 +1572,7 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation)
         SetNewFileAsset(ret, assetUri);
     }
     cacheFileName_.clear();
+    cacheMovingPhotoVideoName_.clear();
     return ret;
 }
 
@@ -1272,12 +1589,13 @@ static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
     return true;
 }
 
-static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAsyncContext& context, UniqueFd& destFd)
+static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAsyncContext& context,
+    UniqueFd& destFd, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
     size_t offset = 0;
-    size_t length = changeRequest->GetDataBufferSize();
-    void* dataBuffer = changeRequest->GetDataBuffer();
+    size_t length = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoSize() : changeRequest->GetDataBufferSize();
+    void* dataBuffer = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoBuffer() : changeRequest->GetDataBuffer();
     while (offset < length) {
         ssize_t written = write(destFd.Get(), (char*)dataBuffer + offset, length - offset);
         if (written < 0) {
@@ -1290,10 +1608,11 @@ static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAsyncContext& context
     return true;
 }
 
-static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context, UniqueFd& destFd)
+static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
+    UniqueFd& destFd, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
-    string realPath = changeRequest->GetFileRealPath();
+    string realPath = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoPath() : changeRequest->GetFileRealPath();
     UniqueFd srcFd(open(realPath.c_str(), O_RDONLY));
     if (srcFd.Get() < 0) {
         context.SaveError(srcFd.Get());
@@ -1380,6 +1699,38 @@ static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& co
     return true;
 }
 
+static bool AddResourceByMode(MediaAssetChangeRequestAsyncContext& context,
+    UniqueFd& uniqueFd, AddResourceMode mode, bool isMovingPhotoVideo = false)
+{
+    bool isWriteSuccess = false;
+    if (mode == AddResourceMode::DATA_BUFFER) {
+        isWriteSuccess = WriteCacheByArrayBuffer(context, uniqueFd, isMovingPhotoVideo);
+    } else if (mode == AddResourceMode::FILE_URI) {
+        isWriteSuccess = SendToCacheFile(context, uniqueFd, isMovingPhotoVideo);
+    } else {
+        context.SaveError(E_FAIL);
+        NAPI_ERR_LOG("Unsupported addResource mode");
+    }
+    return isWriteSuccess;
+}
+
+static bool AddMovingPhotoVideoExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    int32_t cacheVideoFd = OpenWriteCacheHandler(context, true);
+    if (cacheVideoFd < 0) {
+        NAPI_ERR_LOG("Failed to open cache moving photo video, err: %{public}d", cacheVideoFd);
+        return false;
+    }
+
+    UniqueFd uniqueFd(cacheVideoFd);
+    AddResourceMode mode = context.objectInfo->GetMovingPhotoVideoMode();
+    if (!AddResourceByMode(context, uniqueFd, mode, true)) {
+        NAPI_ERR_LOG("Faild to write cache file");
+        return false;
+    }
+    return true;
+}
+
 static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     if (!HasWritePermission()) {
@@ -1391,24 +1742,19 @@ static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
         return AddPhotoProxyResourceExecute(context);
     }
 
+    if (context.objectInfo->IsMovingPhoto() && !AddMovingPhotoVideoExecute(context)) {
+        NAPI_ERR_LOG("Faild to write cache file for video of moving photo");
+        return false;
+    }
+
     int32_t cacheFd = OpenWriteCacheHandler(context);
     if (cacheFd < 0) {
         NAPI_ERR_LOG("Failed to open write cache handler, err: %{public}d", cacheFd);
         return false;
     }
+
     UniqueFd uniqueFd(cacheFd);
-
-    bool isWriteSuccess = false;
-    if (mode == AddResourceMode::DATA_BUFFER) {
-        isWriteSuccess = WriteCacheByArrayBuffer(context, uniqueFd);
-    } else if (mode == AddResourceMode::FILE_URI) {
-        isWriteSuccess = SendToCacheFile(context, uniqueFd);
-    } else {
-        context.SaveError(E_FAIL);
-        NAPI_ERR_LOG("Unsupported addResource mode");
-    }
-
-    if (!isWriteSuccess) {
+    if (!AddResourceByMode(context, uniqueFd, mode)) {
         NAPI_ERR_LOG("Faild to write cache file");
         return false;
     }
@@ -1578,6 +1924,7 @@ napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
     CHECK_COND_WITH_MESSAGE(env, CheckChangeOperations(env), "Failed to check asset change request operations");
     asyncContext->assetChangeOperations = assetChangeOperations_;
     assetChangeOperations_.clear();
+    addResourceTypes_.clear();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ApplyMediaAssetChangeRequest",
         ApplyAssetChangeRequestExecute, ApplyAssetChangeRequestCompleteCallback);
 }
