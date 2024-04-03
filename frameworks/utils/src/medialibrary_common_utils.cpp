@@ -185,7 +185,9 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     SEGMENTATION,
     COMPOSITION,
     SALIENCY,
-    CATEGORY_ID
+    CATEGORY_ID,
+    HEAD,
+    POSE,
 };
 
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
