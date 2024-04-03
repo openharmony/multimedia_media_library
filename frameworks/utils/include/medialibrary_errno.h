@@ -73,6 +73,7 @@ constexpr int32_t E_GRANT_URI_PERM_FAIL =   MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 2
 constexpr int32_t E_IS_IN_COMMIT =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 30);
 constexpr int32_t E_IS_IN_REVERT =          MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 31);
 constexpr int32_t E_GET_PRAMS_FAIL =        MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 32);
+constexpr int32_t E_INVALID_MOVING_PHOTO =  MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 33);
 constexpr int32_t E_COMMON_END =            MEDIA_LIBRARY_ERR(E_COMMON_OFFSET, 1799);
 
 // medialibary directory and file type control { 2000, 2099 }
@@ -125,6 +126,7 @@ constexpr int32_t E_IMAGE = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 7);
 constexpr int32_t E_NO_RESULT = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 8);
 constexpr int32_t E_STOP = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 9);
 constexpr int32_t E_IS_PENDING = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 10);
+constexpr int32_t E_MOVING_PHOTO = MEDIA_LIBRARY_ERR(E_SCANNER_OFFSET, 11);
 
 // media file extension module error code { 3000, 3099 }
 constexpr int32_t E_MEDIA_FILE_OFFSET = 3000;

@@ -365,5 +365,31 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetAstc_test_007, TestSize
     auto pixelmap3 = mediaLibraryManager->GetAstc(Uri(uriStr3));
     EXPECT_EQ(pixelmap3, nullptr);
 }
+
+/**
+ * @tc.number    : MediaLibraryManager_test_008
+ * @tc.name      : Read video of moving photo to see if error occurs
+ * @tc.desc      : Input uri to read video of moving photo
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_008, TestSize.Level0)
+{
+    // read invalid uri
+    EXPECT_EQ(mediaLibraryManager->ReadMovingPhotoVideo(""), -1);
+    EXPECT_EQ(mediaLibraryManager->ReadMovingPhotoVideo("file://media/Photo"), -1);
+    EXPECT_EQ(mediaLibraryManager->ReadMovingPhotoVideo("file://media/Photo/1"), -1);
+    EXPECT_EQ(mediaLibraryManager->ReadMovingPhotoVideo("file://media/Photo/1/IMG_008/IMG_008.jpg"), -1);
+
+    string displayName = "movingPhoto.jpg";
+    string uri = mediaLibraryManager->CreateAsset(displayName);
+    MEDIA_INFO_LOG("createFile uri: %{public}s", uri.c_str());
+    EXPECT_NE(uri, "");
+
+    int32_t fd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
+    EXPECT_GE(fd, 0);
+    mediaLibraryManager->CloseAsset(uri, fd);
+
+    int32_t rfd = mediaLibraryManager->ReadMovingPhotoVideo(uri);
+    EXPECT_LE(rfd, 0);
+}
 } // namespace Media
 } // namespace OHOS

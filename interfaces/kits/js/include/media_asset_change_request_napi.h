@@ -19,6 +19,7 @@
 #include <vector>
 #include <buffer_handle_parcel.h>
 
+#include "avmetadatahelper.h"
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
 #include "file_asset_napi.h"
@@ -53,6 +54,24 @@ enum class AddResourceMode {
     PHOTO_PROXY,
 };
 
+class MediaDataSource : public IMediaDataSource {
+public:
+    MediaDataSource(void* buffer, size_t size) : buffer_(buffer), size_(size), readPos_(0) {}
+    ~MediaDataSource() = default;
+
+    int32_t ReadAt(const std::shared_ptr<AVSharedMemory>& mem, uint32_t length, int64_t pos = -1) override;
+    int32_t ReadAt(int64_t pos, uint32_t length, const std::shared_ptr<AVSharedMemory>& mem) override;
+    int32_t ReadAt(uint32_t length, const std::shared_ptr<AVSharedMemory>& mem) override;
+    int32_t GetSize(int64_t& size) override;
+
+private:
+    uint32_t ReadData(const std::shared_ptr<AVSharedMemory>& mem, uint32_t length);
+
+    void* buffer_;
+    size_t size_;
+    uint32_t readPos_;
+};
+
 class MediaAssetChangeRequestNapi : public MediaChangeRequestNapi {
 public:
     EXPORT MediaAssetChangeRequestNapi() = default;
@@ -62,12 +81,20 @@ public:
 
     std::shared_ptr<FileAsset> GetFileAssetInstance() const;
     bool Contains(AssetChangeOperation changeOperation) const;
+    bool IsMovingPhoto() const;
+    bool CheckMovingPhotoResource(ResourceType resourceType) const;
     std::string GetFileRealPath() const;
     AddResourceMode GetAddResourceMode() const;
     void* GetDataBuffer() const;
     size_t GetDataBufferSize() const;
+    std::string GetMovingPhotoVideoPath() const;
+    AddResourceMode GetMovingPhotoVideoMode() const;
+    void* GetMovingPhotoVideoBuffer() const;
+    size_t GetMovingPhotoVideoSize() const;
+    std::string GetCacheMovingPhotoVideoName() const;
     void RecordChangeOperation(AssetChangeOperation changeOperation);
     void SetCacheFileName(std::string& fileName);
+    void SetCacheMovingPhotoVideoName(std::string& fileName);
     int32_t SubmitCache(bool isCreated);
     int32_t CopyToMediaLibrary(AddResourceMode mode);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
@@ -93,12 +120,15 @@ private:
     EXPORT static napi_value JSSetUserComment(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetWriteCacheHandler(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSAddResource(napi_env env, napi_callback_info info);
+    EXPORT static napi_value AddMovingPhotoVideoResource(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetLocation(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
+    bool CheckMovingPhotoWriteOperation();
     int32_t PutMediaAssetEditData(DataShare::DataShareValuesBucket& valuesBucket);
-    int32_t CopyFileToMediaLibrary(const UniqueFd& destFd);
-    int32_t CopyDataBufferToMediaLibrary(const UniqueFd& destFd);
+    int32_t CopyFileToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo = false);
+    int32_t CopyDataBufferToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo = false);
+    int32_t CopyMovingPhotoVideo(const std::string& assetUri);
     void SetNewFileAsset(int32_t id, const std::string& uri);
 
     static thread_local napi_ref constructor_;
@@ -113,6 +143,12 @@ private:
     void* dataBuffer_;
     size_t dataBufferSize_;
     AddResourceMode addResourceMode_;
+    std::string movingPhotoVideoRealPath_;
+    std::string cacheMovingPhotoVideoName_;
+    void* movingPhotoVideoDataBuffer_;
+    size_t movingPhotoVideoBufferSize_;
+    AddResourceMode movingPhotoVideoResourceMode_;
+    std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
 };
 

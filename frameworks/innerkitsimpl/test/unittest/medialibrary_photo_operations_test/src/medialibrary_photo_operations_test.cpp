@@ -2386,8 +2386,10 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_001, TestSi
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_GE(fd, 0);
+    close(fd);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_open_cache_test_001");
 }
@@ -2402,10 +2404,13 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_002, TestSi
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_GE(fd, 0);
+    close(fd);
 
     MediaLibraryCommand duplicatedCmd(openCacheUri);
+    duplicatedCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t ret = MediaLibraryDataManager::GetInstance()->OpenFile(duplicatedCmd, "w");
     EXPECT_LT(ret, 0);
 
@@ -2422,6 +2427,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_open_cache_test_003, TestSi
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t ret = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_LT(ret, 0);
 
@@ -2439,6 +2445,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_001, T
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_GE(fd, 0);
     close(fd);
@@ -2470,6 +2477,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_002, T
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_GE(fd, 0);
     close(fd);
@@ -2508,6 +2516,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, T
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_GE(fd, 0);
     close(fd);
@@ -2523,6 +2532,77 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_003, T
     EXPECT_EQ(ret, fileId);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_003");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_004");
+
+    // open cache file
+    string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+    close(fd);
+
+    string videoFileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".mp4";
+    string videoUri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + videoFileName;
+    MediaFileUtils::UriAppendKeyValue(videoUri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openVideoCacheUri(videoUri);
+
+    MediaLibraryCommand videoCmd(openVideoCacheUri);
+    videoCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t videoFd = MediaLibraryDataManager::GetInstance()->OpenFile(videoCmd, "w");
+    EXPECT_GE(videoFd, 0);
+    close(videoFd);
+
+    // create by cache
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_NAME, "moving_photo.jpg");
+    valuesBucket.Put(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
+    valuesBucket.Put(CACHE_FILE_NAME, fileName);
+    valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, videoFileName);
+    MediaLibraryCommand submitCacheCmd(
+        OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
+    EXPECT_LE(ret, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_004");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_create_by_cache_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_create_by_cache_test_005");
+
+    // open cache file
+    string videoFileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".mp4";
+    string videoUri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + videoFileName;
+    MediaFileUtils::UriAppendKeyValue(videoUri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openVideoCacheUri(videoUri);
+
+    MediaLibraryCommand videoCmd(openVideoCacheUri);
+    videoCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t videoFd = MediaLibraryDataManager::GetInstance()->OpenFile(videoCmd, "w");
+    EXPECT_GE(videoFd, 0);
+    close(videoFd);
+
+    // create by cache
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_NAME, "moving_photo.jpg");
+    valuesBucket.Put(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, videoFileName);
+    MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
+    EXPECT_EQ(ret, E_INVALID_VALUES);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_create_by_cache_test_005");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_001, TestSize.Level0)
@@ -2543,6 +2623,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_001, Tes
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_GE(fd, 0);
     close(fd);
@@ -2581,6 +2662,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_002, Tes
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_GE(fd, 0);
     close(fd);
@@ -2619,6 +2701,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_003, Tes
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_GE(fd, 0);
     close(fd);
@@ -2647,6 +2730,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, Test
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_GE(fd, 0);
 
@@ -2675,6 +2759,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_002, Test
     Uri openCacheUri(uri);
 
     MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
     EXPECT_GE(fd, 0);
 

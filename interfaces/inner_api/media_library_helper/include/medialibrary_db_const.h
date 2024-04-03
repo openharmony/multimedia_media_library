@@ -324,6 +324,10 @@ const std::string APP_ID = "app_id";
 
 // write cache
 const std::string CACHE_FILE_NAME = "cache_file_name";
+const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name";
+
+// moving photo param
+const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO
 
 // db sandbox directory
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
