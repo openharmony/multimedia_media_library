@@ -70,7 +70,7 @@ const vector<string> WHERE_CLAUSE_LIST = { WHERE_CLAUSE_SHOOTING_MODE, WHERE_CLA
 const unordered_map<TestAlbumType, pair<string, string>> ALBUM_TABLE_MAP = {
     { TestAlbumType::SOURCE, { PhotoAlbumColumns::TABLE, PhotoMap::TABLE } },
     { TestAlbumType::USER, { PhotoAlbumColumns::TABLE, PhotoMap::TABLE } },
-    { TestAlbumType::SHOOTING_MODE_PORTRAIT, { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE} },
+    { TestAlbumType::SHOOTING_MODE_PORTRAIT, { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE } },
 };
 const unordered_map<TestAlbumType, pair<PhotoAlbumSubType, string>> ALBUM_CONDITION_MAP = {
     { TestAlbumType::SOURCE, { PhotoAlbumSubType::SOURCE_GENERIC, "" } },
@@ -274,8 +274,7 @@ vector<NativeRdb::ValuesBucket> GetInsertValues(vector<FileInfo> &fileInfos, int
             MEDIA_INFO_LOG("Has same file, skip");
             continue;
         }
-        NativeRdb::ValuesBucket value = restoreService->GetInsertValue(fileInfo, fileInfo.cloudPath,
-            sourceType);
+        NativeRdb::ValuesBucket value = restoreService->GetInsertValue(fileInfo, fileInfo.cloudPath, sourceType);
         fileInfo.isNew = true;
         values.emplace_back(value);
     }
