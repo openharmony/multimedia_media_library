@@ -334,6 +334,7 @@ static const map<string, OperationObject> OPRN_OBJ_MAP = {
     // use in Vision
     { PAH_ANA_OCR, OperationObject::VISION_OCR },
     { PAH_ANA_LABEL, OperationObject::VISION_LABEL },
+    { PAH_ANA_VIDEO_LABEL, OperationObject::VISION_VIDEO_LABEL },
     { PAH_ANA_ATTS, OperationObject::VISION_AESTHETICS },
     { PAH_ANA_TOTAL, OperationObject::VISION_TOTAL },
     { VISION_IMAGE_FACE_TABLE, OperationObject::VISION_IMAGE_FACE },
@@ -437,6 +438,7 @@ static const map<OperationObject, map<OperationType, string>> TABLE_NAME_MAP = {
 #endif
     { OperationObject::VISION_OCR, { { OperationType::UNKNOWN_TYPE, VISION_OCR_TABLE } } },
     { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
+    { OperationObject::VISION_VIDEO_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_LABEL_TABLE } } },
     { OperationObject::VISION_AESTHETICS, { { OperationType::UNKNOWN_TYPE, VISION_AESTHETICS_TABLE } } },
     { OperationObject::VISION_SALIENCY, { { OperationType::UNKNOWN_TYPE, VISION_SALIENCY_TABLE } } },
     { OperationObject::VISION_OBJECT, { { OperationType::UNKNOWN_TYPE, VISION_OBJECT_TABLE } } },
