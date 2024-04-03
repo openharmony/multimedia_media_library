@@ -21,13 +21,8 @@
 #include "smart_album_napi.h"
 #include "fetch_file_result_napi.h"
 #include "file_asset_napi.h"
-#include "media_album_change_request_napi.h"
-#include "media_asset_change_request_napi.h"
-#include "media_asset_edit_data_napi.h"
-#include "media_assets_change_request_napi.h"
 #include "media_library_napi.h"
 #include "media_scanner_napi.h"
 #include "napi/native_node_api.h"
-#include "media_asset_manager_napi.h"
 
 #endif  // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_NATIVE_MODULE_OHOS_MEDIALIBRARY_H_

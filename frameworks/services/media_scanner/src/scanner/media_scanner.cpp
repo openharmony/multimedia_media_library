@@ -506,7 +506,7 @@ int32_t MediaScannerObj::ScanFileInternal()
 
     err = GetMediaInfo();
     if (err != E_OK) {
-        MEDIA_ERR_LOG("failed to get media info");
+        MEDIA_ERR_LOG("failed to get media info, error: %{public}d", err);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_FILE, path_}, {KEY_OPT_TYPE, OptType::SCAN}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);

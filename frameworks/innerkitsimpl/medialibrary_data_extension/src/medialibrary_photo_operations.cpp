@@ -41,6 +41,7 @@
 #include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_uripermission_operations.h"
+#include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -296,7 +297,8 @@ int32_t MediaLibraryPhotoOperations::Update(MediaLibraryCommand &cmd)
 const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::MEDIA_FILE_PATH,
     PhotoColumn::MEDIA_TYPE,
-    PhotoColumn::MEDIA_TIME_PENDING
+    PhotoColumn::MEDIA_TIME_PENDING,
+    PhotoColumn::PHOTO_SUBTYPE,
 };
 
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
@@ -305,7 +307,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     tracer.Start("MediaLibraryPhotoOperations::Open");
 
     bool isCacheOperation = false;
-    int32_t errCode = OpenCache(cmd, isCacheOperation);
+    int32_t errCode = OpenCache(cmd, mode, isCacheOperation);
     if (errCode != E_OK || isCacheOperation) {
         return errCode;
     }
@@ -329,6 +331,17 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
         return E_INVALID_URI;
     }
 
+    bool isMovingPhotoVideo = false;
+    string movingPhotoOprnKey = cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD);
+    if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO) {
+        CHECK_AND_RETURN_RET_LOG(
+            fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO), E_INVALID_VALUES,
+            "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
+            id.c_str(), fileAsset->GetPhotoSubType());
+        fileAsset->SetPath(MediaFileUtils::GetMovingPhotoVideoPath(fileAsset->GetPath()));
+        isMovingPhotoVideo = true;
+    }
+
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         int32_t changedRows = 0;
         cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
@@ -339,7 +352,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     }
 
     if (uriString.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-        return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10);
+        return OpenAsset(fileAsset, mode, MediaLibraryApi::API_10, isMovingPhotoVideo);
     }
     return OpenAsset(fileAsset, mode, cmd.GetApi());
 }
@@ -531,7 +544,8 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     transactionOprn.Finish();
     string fileUri = CreateExtUriForV10Asset(fileAsset);
     if (isNeedGrant) {
-        int32_t ret = GrantUriPermission(fileUri, cmd.GetBundleName(), fileAsset.GetPath());
+        bool isMovingPhoto = fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+        int32_t ret = GrantUriPermission(fileUri, cmd.GetBundleName(), fileAsset.GetPath(), isMovingPhoto);
         CHECK_AND_RETURN_RET(ret == E_OK, ret);
     }
     cmd.SetResult(fileUri);
@@ -933,7 +947,7 @@ int32_t MediaLibraryPhotoOperations::UpdateV9(MediaLibraryCommand &cmd)
     return rowId;
 }
 
-int32_t MediaLibraryPhotoOperations::OpenCache(MediaLibraryCommand& cmd, bool& isCacheOperation)
+int32_t MediaLibraryPhotoOperations::OpenCache(MediaLibraryCommand& cmd, const string& mode, bool& isCacheOperation)
 {
     isCacheOperation = false;
     string uriString = cmd.GetUriStringWithoutSegment();
@@ -952,11 +966,17 @@ int32_t MediaLibraryPhotoOperations::OpenCache(MediaLibraryCommand& cmd, bool& i
 
     string cacheDir = GetAssetCacheDir();
     string path = cacheDir + "/" + fileName;
+
+    if (mode == MEDIA_FILEMODE_READONLY) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(path), E_HAS_FS_ERROR,
+            "Cache file does not exist, path=%{private}s", path.c_str());
+        return OpenFileWithPrivacy(path, mode);
+    }
     CHECK_AND_RETURN_RET_LOG(
         MediaFileUtils::CreateDirectory(cacheDir), E_HAS_FS_ERROR, "Cannot create dir %{private}s", cacheDir.c_str());
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateAsset(path) == E_SUCCESS, E_HAS_FS_ERROR,
         "Create cache file failed, path=%{private}s", path.c_str());
-    return OpenFileWithPrivacy(path, MEDIA_FILEMODE_WRITEONLY);
+    return OpenFileWithPrivacy(path, mode);
 }
 
 int32_t MediaLibraryPhotoOperations::OpenEditOperation(MediaLibraryCommand &cmd, bool &isSkip)
@@ -1355,8 +1375,18 @@ void MediaLibraryPhotoOperations::DeleteRevertMessage(const string &path)
     return;
 }
 
-static int32_t MoveCacheFile(const string& srcPath, const string& destPath)
+static int32_t MoveCache(const string& srcPath, const string& destPath)
 {
+    if (!MediaFileUtils::IsFileExists(srcPath)) {
+        MEDIA_ERR_LOG("srcPath: %{private}s does not exist!", srcPath.c_str());
+        return E_NO_SUCH_FILE;
+    }
+
+    if (destPath.empty()) {
+        MEDIA_ERR_LOG("Failed to check empty destPath");
+        return E_INVALID_VALUES;
+    }
+
     std::error_code errCode;
     filesystem::path dest(destPath);
     if (filesystem::exists(dest) && !filesystem::remove(dest, errCode)) {
@@ -1367,6 +1397,66 @@ static int32_t MoveCacheFile(const string& srcPath, const string& destPath)
     filesystem::path src(srcPath);
     filesystem::rename(src, dest, errCode);
     return errCode.value();
+}
+
+int32_t MediaLibraryPhotoOperations::MoveCacheFile(
+    MediaLibraryCommand& cmd, int32_t subtype, const string& cachePath, const string& destPath)
+{
+    if (subtype != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        return MoveCache(cachePath, destPath);
+    }
+
+    // write moving photo
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckMovingPhotoImage(cachePath), E_INVALID_MOVING_PHOTO,
+        "Failed to check image of moving photo");
+    string cacheMovingPhotoVideoName;
+    if (GetStringFromValuesBucket(cmd.GetValueBucket(), CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName)) {
+        string cacheVideoPath = GetAssetCacheDir() + "/" + cacheMovingPhotoVideoName;
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckMovingPhotoVideo(cacheVideoPath), E_INVALID_MOVING_PHOTO,
+            "Failed to check video of moving photo");
+        string destVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(destPath);
+        int32_t errCode = MoveCache(cacheVideoPath, destVideoPath);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
+            "Failed to move moving photo video from %{private}s to %{private}s, errCode: %{public}d",
+            cacheVideoPath.c_str(), destVideoPath.c_str(), errCode);
+    }
+    return MoveCache(cachePath, destPath);
+}
+
+bool MediaLibraryPhotoOperations::CheckCacheCmd(MediaLibraryCommand& cmd, int32_t subtype, const string& displayName)
+{
+    string cacheFileName;
+    if (!GetStringFromValuesBucket(cmd.GetValueBucket(), CACHE_FILE_NAME, cacheFileName)) {
+        MEDIA_ERR_LOG("Failed to get cache file name");
+        return false;
+    }
+    string cacheMimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(cacheFileName));
+    string assetMimeType = MimeTypeUtils::GetMimeTypeFromExtension(MediaFileUtils::GetExtensionFromPath(displayName));
+
+    if (cacheMimeType.compare(assetMimeType) != 0) {
+        MEDIA_ERR_LOG("cache mime type %{public}s mismatches the asset %{public}s",
+            cacheMimeType.c_str(), assetMimeType.c_str());
+        return false;
+    }
+
+    int32_t id = 0;
+    bool isCreation = !GetInt32FromValuesBucket(cmd.GetValueBucket(), PhotoColumn::MEDIA_ID, id);
+    if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) && isCreation) {
+        string movingPhotoVideoName;
+        bool containsVideo = GetStringFromValuesBucket(cmd.GetValueBucket(),
+            CACHE_MOVING_PHOTO_VIDEO_NAME, movingPhotoVideoName);
+        if (!containsVideo) {
+            MEDIA_ERR_LOG("Failed to get video when creating moving photo");
+            return false;
+        }
+
+        string videoExtension = MediaFileUtils::GetExtensionFromPath(movingPhotoVideoName);
+        if (!MediaFileUtils::CheckMovingPhotoVideoExtension(videoExtension)) {
+            MEDIA_ERR_LOG("Failed to check video of moving photo, extension: %{public}s", videoExtension.c_str());
+            return false;
+        }
+    }
+    return true;
 }
 
 int32_t MediaLibraryPhotoOperations::ParseMediaAssetEditData(MediaLibraryCommand& cmd, string& editData)
@@ -1427,6 +1517,12 @@ int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
 int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
     const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
 {
+    int32_t subtype = fileAsset->GetPhotoSubType();
+    if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        MEDIA_ERR_LOG("Moving photo is not supported to edit now");
+        return E_INVALID_VALUES;
+    }
+
     string editData;
     int32_t id = fileAsset->GetId();
     int32_t errCode = ParseMediaAssetEditData(cmd, editData);
@@ -1435,7 +1531,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to save source and editData");
 
     string assetPath = fileAsset->GetFilePath();
-    errCode = MoveCacheFile(cachePath, assetPath);
+    errCode = MoveCacheFile(cmd, subtype, cachePath, assetPath);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
         "Failed to move %{private}s to %{private}s, errCode: %{public}d",
         cachePath.c_str(), assetPath.c_str(), errCode);
@@ -1452,10 +1548,9 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
 {
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
-    CHECK_AND_RETURN_RET_LOG(
-        MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName()) ==
-            MediaFileUtils::GetExtensionFromPath(cachePath),
-        E_INVALID_VALUES, "displayName mismatches extension of cache file name");
+    int32_t subtype = fileAsset->GetPhotoSubType();
+    CHECK_AND_RETURN_RET_LOG(CheckCacheCmd(cmd, subtype, fileAsset->GetDisplayName()),
+        E_INVALID_VALUES, "Failed to check cache cmd");
     CHECK_AND_RETURN_RET_LOG(fileAsset->GetDateTrashed() == 0, E_IS_RECYCLED, "FileAsset is in recycle");
 
     int64_t pending = fileAsset->GetTimePending();
@@ -1477,7 +1572,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
         return errCode;
     }
 
-    int32_t errCode = MoveCacheFile(cachePath, assetPath);
+    int32_t errCode = MoveCacheFile(cmd, subtype, cachePath, assetPath);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
         "Failed to move %{private}s to %{private}s, errCode: %{public}d",
         cachePath.c_str(), assetPath.c_str(), errCode);
@@ -1491,9 +1586,15 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
     string fileName;
     CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, CACHE_FILE_NAME, fileName),
         E_INVALID_VALUES, "Failed to get fileName");
-    string cachePath = GetAssetCacheDir() + "/" + fileName;
+    string cacheDir = GetAssetCacheDir();
+    string cachePath = cacheDir + "/" + fileName;
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(cachePath), E_NO_SUCH_FILE,
         "cachePath: %{private}s does not exist!", cachePath.c_str());
+    string movingPhotoVideoName;
+    if (GetStringFromValuesBucket(values, CACHE_MOVING_PHOTO_VIDEO_NAME, movingPhotoVideoName)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(cacheDir + "/" + movingPhotoVideoName),
+            E_NO_SUCH_FILE, "cahce moving video path: %{private}s does not exist!", cachePath.c_str());
+    }
 
     int32_t id = 0;
     if (!GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id)) {
@@ -1503,12 +1604,14 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
         CHECK_AND_RETURN_RET_LOG(
             MediaFileUtils::GetExtensionFromPath(displayName) == MediaFileUtils::GetExtensionFromPath(fileName),
             E_INVALID_VALUES, "displayName mismatches extension of cache file name");
+        ValuesBucket reservedValues = values;
         id = CreateV10(cmd);
         CHECK_AND_RETURN_RET_LOG(id > 0, E_FAIL, "Failed to create asset");
+        cmd.SetValueBucket(reservedValues);
     }
 
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
-        PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
         PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "Failed to get FileAsset, fileId=%{public}d", id);

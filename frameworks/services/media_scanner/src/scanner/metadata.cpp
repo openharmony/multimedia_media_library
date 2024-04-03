@@ -91,6 +91,7 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::PHOTO_DATE_DAY] = make_pair(ResultSetDataType::TYPE_STRING, &Metadata::SetDateDay);
     memberFuncMap_[PhotoColumn::MEDIA_OWNER_PACKAGE] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetOwnerPackage);
+    memberFuncMap_[PhotoColumn::PHOTO_SUBTYPE] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetPhotoSubType);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -423,7 +424,6 @@ const string &Metadata::GetShootingModeTag() const
     return shootingModeTag_;
 }
 
-#ifdef MEDIALIBRARY_COMPATIBILITY
 void Metadata::SetPhotoSubType(const VariantData &photoSubType)
 {
     photoSubType_ = std::get<int32_t>(photoSubType);
@@ -433,7 +433,6 @@ int32_t Metadata::GetPhotoSubType() const
 {
     return photoSubType_;
 }
-#endif
 
 void Metadata::SetTableName(const string &tableName)
 {
