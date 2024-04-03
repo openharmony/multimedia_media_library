@@ -33,6 +33,23 @@ using namespace OHOS::CameraStandard;
 
 namespace OHOS {
 namespace Media {
+MultiStagesCaptureDeferredProcSessionCallback::MultiStagesCaptureDeferredProcSessionCallback()
+{}
+
+MultiStagesCaptureDeferredProcSessionCallback::~MultiStagesCaptureDeferredProcSessionCallback()
+{}
+
+int32_t MultiStagesCaptureDeferredProcSessionCallback::UpdatePhotoQuality(const string &photoId)
+{
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    NativeRdb::ValuesBucket updateValues;
+    updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    updateValues.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    updateCmd.SetValueBucket(updateValues);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
+    return DatabaseAdapter::Update(updateCmd);
+}
+
 void MultiStagesCaptureDeferredProcSessionCallback::OnError(const string &imageId, const DpsErrorCode error)
 {
     switch (error) {
@@ -40,10 +57,12 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnError(const string &imageI
             MultiStagesCaptureManager::GetInstance().SyncWithDeferredProcSession();
             break;
         case ERROR_IMAGE_PROC_INVALID_PHOTO_ID:
-        case ERROR_IMAGE_PROC_FAILED:
+        case ERROR_IMAGE_PROC_FAILED: {
             MultiStagesCaptureManager::GetInstance().RemoveImage(imageId, false);
-            MEDIA_WARN_LOG("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
+            UpdatePhotoQuality(imageId);
+            MEDIA_ERR_LOG("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
             break;
+        }
         default:
             break;
     }
@@ -91,16 +110,13 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
 
     // 2. 更新数据库 photoQuality 到高质量
-    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
-    NativeRdb::ValuesBucket updateValues;
-    updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
-    updateValues.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-    updateCmd.SetValueBucket(updateValues);
-    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, imageId);
-    DatabaseAdapter::Update(updateCmd);
+    UpdatePhotoQuality(imageId);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId);
     MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS));
+
+    // delete raw file
+    MultiStagesCaptureManager::GetInstance().RemoveImage(imageId, false);
     MEDIA_INFO_LOG("success photoid: %{public}s", imageId.c_str());
 }
 

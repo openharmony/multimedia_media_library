@@ -39,6 +39,7 @@
 #define private public
 #define protected public
 #include "exif_utils.h"
+#include "multistages_capture_deferred_proc_session_callback.h"
 #include "multistages_capture_dfx_first_visit.h"
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
@@ -597,6 +598,31 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, exif_utils_location_value_to_string
     double longitude = -121.617393493611;
     EXPECT_EQ(ExifUtils::LocationValueToString(longitude), "121, 37, 2.616577");
     MEDIA_INFO_LOG("exif_utils_location_value_to_string_002 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, session_callback_on_error_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("session_callback_on_error_001 Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    MultiStagesCaptureDeferredProcSessionCallback *callback = new MultiStagesCaptureDeferredProcSessionCallback();
+    callback->OnError(PHOTO_ID_FOR_TEST, CameraStandard::ERROR_IMAGE_PROC_FAILED);
+    delete callback;
+
+    vector<string> columns = { PhotoColumn::PHOTO_QUALITY };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    ASSERT_NE(g_rdbStore, nullptr);
+
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+
+    int32_t photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
+    EXPECT_GT(photoQuality, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+
+    MEDIA_INFO_LOG("session_callback_on_error_001 End");
 }
 }
 }
