@@ -79,6 +79,8 @@ private:
     bool IsSameFile(FileInfo &fileInfo);
     bool HasSameFile(FileInfo &fileInfo);
     bool IsReadyForRestore(const std::string &tableName);
+    void UpdateAlbumToNotifySet(const std::string &tableName, const std::unordered_set<int32_t> &albumSet);
+    void NotifyAlbum();
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
@@ -90,6 +92,7 @@ private:
     std::unordered_map<std::string, std::string> tableQueryWhereClauseMap_;
     std::unordered_map<std::string, std::unordered_map<int32_t, int32_t>> tableAlbumIdMap_;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tableCommonColumnInfoMap_;
+    std::unordered_set<std::string> albumToNotifySet_;
 };
 } // namespace Media
 } // namespace OHOS
