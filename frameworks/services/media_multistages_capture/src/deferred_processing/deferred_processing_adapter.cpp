@@ -47,6 +47,9 @@ DeferredProcessingAdapter::DeferredProcessingAdapter()
     int32_t userId = uid / BASE_USER_RANGE;
     deferredProcSession_ = CameraManager::CreateDeferredPhotoProcessingSession(userId,
         make_shared<MultiStagesCaptureDeferredProcSessionCallback>());
+    if (deferredProcSession_ == nullptr) {
+        MEDIA_ERR_LOG("CreateDeferredPhotoProcessingSession err");
+    }
     #endif
     MEDIA_INFO_LOG("DeferredProcessingAdapter init succ");
 }
@@ -57,6 +60,10 @@ void DeferredProcessingAdapter::BeginSynchronize()
 {
     MEDIA_INFO_LOG("DeferredProcessingAdapter::BeginSynchronize");
     #ifdef ABILITY_CAMERA_SUPPORT
+    if (deferredProcSession_ == nullptr) {
+        MEDIA_ERR_LOG("BeginSynchronize deferredProcSession_ is nullptr");
+        return;
+    }
     deferredProcSession_->BeginSynchronize();
     #endif
 }
@@ -65,6 +72,10 @@ void DeferredProcessingAdapter::EndSynchronize()
 {
     MEDIA_INFO_LOG("DeferredProcessingAdapter::EndSynchronize");
     #ifdef ABILITY_CAMERA_SUPPORT
+    if (deferredProcSession_ == nullptr) {
+        MEDIA_ERR_LOG("EndSynchronize deferredProcSession_ is nullptr");
+        return;
+    }
     deferredProcSession_->EndSynchronize();
     #endif
 }
@@ -73,6 +84,10 @@ void DeferredProcessingAdapter::EndSynchronize()
 void DeferredProcessingAdapter::AddImage(const std::string &imageId, DpsMetadata &metadata, const bool isTrashed)
 {
     MEDIA_INFO_LOG("enter photoid: %{public}s, isTrashed: %{public}d", imageId.c_str(), isTrashed);
+    if (deferredProcSession_ == nullptr) {
+        MEDIA_ERR_LOG("AddImage deferredProcSession_ is nullptr");
+        return;
+    }
     deferredProcSession_->AddImage(imageId, metadata, isTrashed);
 }
 #endif
@@ -81,6 +96,10 @@ void DeferredProcessingAdapter::RemoveImage(const std::string &imageId, bool isR
 {
     MEDIA_INFO_LOG("enter photoid: %{public}s, isRestorable: %{public}d", imageId.c_str(), isRestorable);
     #ifdef ABILITY_CAMERA_SUPPORT
+    if (deferredProcSession_ == nullptr) {
+        MEDIA_ERR_LOG("RemoveImage deferredProcSession_ is nullptr");
+        return;
+    }
     deferredProcSession_->RemoveImage(imageId, isRestorable);
     #endif
 }
@@ -89,6 +108,10 @@ void DeferredProcessingAdapter::RestoreImage(const std::string &imageId)
 {
     MEDIA_INFO_LOG("enter photoid: %{public}s", imageId.c_str());
     #ifdef ABILITY_CAMERA_SUPPORT
+    if (deferredProcSession_ == nullptr) {
+        MEDIA_ERR_LOG("RestoreImage deferredProcSession_ is nullptr");
+        return;
+    }
     deferredProcSession_->RestoreImage(imageId);
     #endif
 }
@@ -97,6 +120,10 @@ void DeferredProcessingAdapter::ProcessImage(const std::string &appName, const s
 {
     MEDIA_INFO_LOG("enter appName: %{public}s, photoid: %{public}s", appName.c_str(), imageId.c_str());
     #ifdef ABILITY_CAMERA_SUPPORT
+    if (deferredProcSession_ == nullptr) {
+        MEDIA_ERR_LOG("ProcessImage deferredProcSession_ is nullptr");
+        return;
+    }
     deferredProcSession_->ProcessImage(appName, imageId);
     #endif
 }
@@ -105,6 +132,10 @@ bool DeferredProcessingAdapter::CancelProcessImage(const std::string &imageId)
 {
     MEDIA_INFO_LOG("DeferredProcessingAdapter::CancelProcessImage photoid: %{public}s", imageId.c_str());
     #ifdef ABILITY_CAMERA_SUPPORT
+    if (deferredProcSession_ == nullptr) {
+        MEDIA_ERR_LOG("CancelProcessImage deferredProcSession_ is nullptr");
+        return false;
+    }
     return deferredProcSession_->CancelProcessImage(imageId);
     #else
     return false;
