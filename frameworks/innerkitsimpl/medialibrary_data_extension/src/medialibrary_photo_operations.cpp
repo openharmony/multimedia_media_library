@@ -597,13 +597,15 @@ static void TrashPhotosSendNotify(vector<string> &notifyUris)
     if (trashAlbumId <= 0) {
         return;
     }
-    vector<int64_t> formIds;
-    for (const auto &notifyUri : notifyUris) {
-        watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
-        watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET, trashAlbumId);
-        MediaLibraryFormMapOperations::GetFormMapFormId(notifyUri.c_str(), formIds);
+    if (notifyUris.empty()) {
+        return;
     }
+    string notifyUri = notifyUris[0];
+    watch->Notify(notifyUri, NotifyType::NOTIFY_REMOVE);
+    watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+    watch->Notify(notifyUri, NotifyType::NOTIFY_ALBUM_ADD_ASSET, trashAlbumId);
+    vector<int64_t> formIds;
+    MediaLibraryFormMapOperations::GetFormMapFormId(notifyUri.c_str(), formIds);
     if (!formIds.empty()) {
         MediaLibraryFormMapOperations::PublishedChange("", formIds, false);
     }
