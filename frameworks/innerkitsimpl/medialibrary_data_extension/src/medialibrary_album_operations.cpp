@@ -69,6 +69,7 @@ constexpr int32_t QUERY_PROB_IS_ME_VALUE = 1;
 constexpr int32_t QUERY_IS_ME_VALUE = 2;
 constexpr int32_t FACE_ANALYSISED_STATE = 3;
 constexpr int32_t FACE_NO_NEED_ANALYSIS_STATE = -2;
+constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -701,6 +702,19 @@ void GetIsMeAlbumPredicates(const int32_t value, DataShare::DataSharePredicates 
     predicates.SetWhereClause(selection);
 }
 
+void GetAlbumNameNotNullPredicates(const int32_t value, DataShare::DataSharePredicates &predicates)
+{
+    string selection;
+    if (value == ALBUM_NAME_NOT_NULL_ENABLED) {
+        selection = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + PhotoAlbumColumns::ALBUM_NAME +
+            " IS NOT NULL GROUP BY " + GROUP_TAG;
+    } else {
+        MEDIA_ERR_LOG("The value is not support for query not null");
+        return;
+    }
+    predicates.SetWhereClause(selection);
+}
+
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortraitAlbum(MediaLibraryCommand &cmd,
     const std::vector<std::string> &columns)
 {
@@ -720,6 +734,12 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
             return nullptr;
         }
         GetIsMeAlbumPredicates(value, predicatesPortrait);
+    } else if (whereClause.find(ALBUM_NAME_NOT_NULL) != string::npos) {
+        int32_t value = GetPortraitSubtype(ALBUM_NAME_NOT_NULL, whereClause, whereArgs);
+        if (value == E_INDEX || value != ALBUM_NAME_NOT_NULL_ENABLED) {
+            return nullptr;
+        }
+        GetAlbumNameNotNullPredicates(value, predicatesPortrait);
     } else {
         MEDIA_INFO_LOG("QueryPortraitAlbum whereClause is error");
         return nullptr;
