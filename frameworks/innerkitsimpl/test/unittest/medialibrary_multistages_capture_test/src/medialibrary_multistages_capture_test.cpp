@@ -624,5 +624,21 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, session_callback_on_error_001, Test
 
     MEDIA_INFO_LOG("session_callback_on_error_001 End");
 }
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, deferred_proc_adapter_null_session_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("deferred_proc_adapter_null_session_001 Start");
+    std::shared_ptr<DeferredProcessingAdapter> deferredProcSession = make_shared<DeferredProcessingAdapter>();
+
+    // test deferredProcSession_ is nullptr;
+    deferredProcSession->deferredProcSession_ = nullptr;
+
+    deferredProcSession->BeginSynchronize();
+    deferredProcSession->EndSynchronize();
+    deferredProcSession->RestoreImage(PHOTO_ID_FOR_TEST);
+    deferredProcSession->ProcessImage("com.test.demo", PHOTO_ID_FOR_TEST);
+    deferredProcSession->CancelProcessImage(PHOTO_ID_FOR_TEST);
+    MEDIA_INFO_LOG("deferred_proc_adapter_null_session_001 End");
+}
 }
 }
