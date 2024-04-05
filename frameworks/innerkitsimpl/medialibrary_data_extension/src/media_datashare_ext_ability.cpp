@@ -560,7 +560,7 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
 {
     MediaLibraryCommand cmd(uri);
     int32_t err = CheckPermFromUri(cmd, true);
-    if (err < 0) {
+    if (err != E_SUCCESS) {
         return err;
     }
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
@@ -591,8 +591,8 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     int32_t err = CheckPermFromUri(cmd, true);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
-    if (err < 0) {
-        DfxManager::GetInstance()->HandleNoPermmison(type, object, err);
+    if (err != E_SUCCESS) {
+        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
         return err;
     }
 
@@ -606,8 +606,8 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
     int err = CheckPermFromUri(cmd, true);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
-    if (err < 0) {
-        DfxManager::GetInstance()->HandleNoPermmison(type, object, err);
+    if (err != E_SUCCESS) {
+        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
         return err;
     }
 
@@ -633,7 +633,7 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
         return nullptr;
     }
     int32_t err = CheckPermFromUri(cmd, false);
-    if (err < 0) {
+    if (err != E_SUCCESS) {
         DfxManager::GetInstance()->HandleNoPermmison(type, object, err);
         auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
         if (uriPermissionClient.VerifyUriPermission(uri, AAFwk::Want::FLAG_AUTH_READ_URI_PERMISSION,
@@ -670,8 +670,8 @@ int MediaDataShareExtAbility::BatchInsert(const Uri &uri, const vector<DataShare
     int32_t err = CheckPermFromUri(cmd, true);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
-    if (err < 0) {
-        DfxManager::GetInstance()->HandleNoPermmison(type, object, err);
+    if (err != E_SUCCESS) {
+        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
         return err;
     }
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
