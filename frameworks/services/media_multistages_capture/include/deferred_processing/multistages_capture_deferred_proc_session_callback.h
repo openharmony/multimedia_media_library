@@ -24,11 +24,18 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MultiStagesCaptureDeferredProcSessionCallback : public CameraStandard::IDeferredPhotoProcSessionCallback {
 public:
+    EXPORT MultiStagesCaptureDeferredProcSessionCallback();
+    EXPORT ~MultiStagesCaptureDeferredProcSessionCallback();
+
     void OnProcessImageDone(const std::string &imageId, const uint8_t *addr, const long bytes) override;
-    void OnError(const std::string &imageId, const CameraStandard::DpsErrorCode error) override;
+    EXPORT void OnError(const std::string &imageId, const CameraStandard::DpsErrorCode error) override;
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
+
+private:
+    int32_t UpdatePhotoQuality(const std::string &photoId);
 };
 #endif
 } // namespace Media

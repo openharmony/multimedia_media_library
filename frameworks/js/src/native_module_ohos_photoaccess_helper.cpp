@@ -12,8 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "native_module_ohos_medialibrary.h"
+
+#include "media_album_change_request_napi.h"
+#include "media_asset_change_request_napi.h"
+#include "media_asset_edit_data_napi.h"
+#include "media_asset_manager_napi.h"
+#include "media_assets_change_request_napi.h"
 #include "napi/native_node_api.h"
+#include "native_module_ohos_medialibrary.h"
+
 extern const char _binary_photoaccesshelperinf_js_start[];
 extern const char _binary_photoaccesshelperinf_js_end[];
 extern const char _binary_photoaccesshelperinf_abc_start[];

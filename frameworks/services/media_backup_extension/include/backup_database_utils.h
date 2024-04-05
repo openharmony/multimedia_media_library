@@ -48,6 +48,9 @@ public:
         const std::string &querySql);
     static std::unordered_map<std::string, std::string> GetColumnInfoMap(
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName);
+    static void UpdateUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t number, int32_t type);
+    static int32_t QueryUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t type);
+    static std::string GarbleInfoName(const std::string &infoName);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

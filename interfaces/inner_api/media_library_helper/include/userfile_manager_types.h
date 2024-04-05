@@ -46,8 +46,9 @@ enum MediaType {
 };
 
 enum class ResourceType {
+    INVALID_RESOURCE = -1,
     IMAGE_RESOURCE = 1, // corresponds to MEDIA_TYPE_IMAGE
-    VIDEO_RESOURCE, // corresponds to MEDIA_TYPE_VIDEO
+    VIDEO_RESOURCE,     // corresponds to MEDIA_TYPE_VIDEO
     PHOTO_PROXY,
 };
 
@@ -103,7 +104,9 @@ enum PhotoAlbumSubType : int32_t {
 enum class PhotoSubType : int32_t {
     DEFAULT,
     SCREENSHOT,
-    CAMERA
+    CAMERA,
+    MOVING_PHOTO,
+    SUBTYPE_END
 };
 
 const std::string URI_PARAM_API_VERSION = "api_version";

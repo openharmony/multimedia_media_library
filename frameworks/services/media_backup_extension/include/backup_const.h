@@ -27,7 +27,7 @@
 
 namespace OHOS {
 namespace Media {
-constexpr int32_t QUERY_COUNT = 200;
+constexpr int32_t QUERY_COUNT = 500;
 constexpr int32_t PRE_CLONE_PHOTO_BATCH_COUNT = 100;
 constexpr int32_t CONNECT_SIZE = 10;
 constexpr int32_t MILLISECONDS = 1000;
@@ -74,6 +74,7 @@ const std::string EXTERNAL_DATE_ADDED = "date_added";
 
 // custom column
 const std::string CUSTOM_COUNT = "count";
+const std::string UNIQUE_NUMBER = "unique_number";
 const std::string CUSTOM_MAX_ID = "max_id";
 const std::string PRAGMA_TABLE_NAME = "name";
 const std::string PRAGMA_TABLE_TYPE = "type";

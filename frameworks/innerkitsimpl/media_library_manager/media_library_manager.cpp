@@ -147,6 +147,15 @@ static bool CheckUri(string &uri)
     return uri.substr(0, uriprex.size()) == uriprex;
 }
 
+static bool CheckPhotoUri(const string &uri)
+{
+    if (uri.find("..") != string::npos) {
+        return false;
+    }
+    string photoUriPrefix = "file://media/Photo/";
+    return MediaFileUtils::StartsWith(uri, photoUriPrefix);
+}
+
 int32_t MediaLibraryManager::OpenAsset(string &uri, const string openMode)
 {
     if (openMode.empty()) {
@@ -671,11 +680,17 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeAstc(UniqueFd &uniqueFd)
     }
 
     DecodeOptions decodeOpts;
+    decodeOpts.fastAstc = true;
     unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     if (pixelMap == nullptr) {
         MEDIA_ERR_LOG("CreatePixelMap err %{public}d", err);
         return nullptr;
     }
+    // Make the ashmem of pixelmap to be purgeable after the operation on ashmem.
+    // And then make the pixelmap subject to PurgeableManager's control.
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    PurgeableBuilder::MakePixelMapToBePurgeable(pixelMap, imageSource, decodeOpts);
+#endif
     return pixelMap;
 }
 
@@ -714,6 +729,24 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetAstc(const Uri &uri)
         MEDIA_ERR_LOG("pixelmap is null, uri :%{public}s", uriStr.c_str());
     }
     return pixelmap;
+}
+
+int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
+{
+    if (!CheckPhotoUri(uri)) {
+        MEDIA_ERR_LOG("invalid uri: %{public}s", uri.c_str());
+        return E_ERR;
+    }
+
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
+        return E_ERR;
+    }
+
+    string videoUri = uri;
+    MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
+    Uri openVideoUri(videoUri);
+    return sDataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
 }
 } // namespace Media
 } // namespace OHOS

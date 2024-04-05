@@ -66,7 +66,7 @@ int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
     return E_OK;
 }
 
-string BackupFileUtils::GarbleFilePath(std::string &filePath, int32_t sceneCode)
+string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t sceneCode)
 {
     if (filePath.empty()) {
         return filePath;
@@ -203,6 +203,34 @@ int32_t BackupFileUtils::PreparePath(const std::string &path)
         return E_CHECK_DIR_FAIL;
     }
     return E_OK;
+}
+
+bool BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode)
+{
+    bool errRet = false;
+    if (!MediaFileUtils::IsFileExists(oldPath)) {
+        MEDIA_ERR_LOG("old path: %{public}s is not exists.", GarbleFilePath(oldPath, sceneCode).c_str());
+        return E_NO_SUCH_FILE;
+    } else if (MediaFileUtils::IsFileExists(newPath)) {
+        MEDIA_ERR_LOG("new path: %{public}s is exists.", GarbleFilePath(newPath, sceneCode).c_str());
+        return E_FILE_EXIST;
+    }
+    return (rename(oldPath.c_str(), newPath.c_str()) == SUCCESS);
+}
+
+std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
+    const std::string &path)
+{
+    std::string replacedPath;
+    if (PREFIX_MAP.count(srcPrefixType) == 0 || PREFIX_MAP.count(dstPrefixType) == 0) {
+        MEDIA_ERR_LOG("Get source or destination prefix failed: %{public}d, %{public}d", srcPrefixType, dstPrefixType);
+        return replacedPath;
+    }
+    std::string srcPrefix = PREFIX_MAP.at(srcPrefixType);
+    std::string dstPrefix = PREFIX_MAP.at(dstPrefixType);
+    replacedPath = path;
+    replacedPath.replace(0, srcPrefix.length(), dstPrefix);
+    return replacedPath;
 }
 } // namespace Media
 } // namespace OHOS

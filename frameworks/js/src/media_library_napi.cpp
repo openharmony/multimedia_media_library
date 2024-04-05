@@ -5122,13 +5122,7 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
         context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr && !context->uri.empty() && errCode == E_PERMISSION_DENIED) {
         Uri queryWithUri(context->uri);
-        std::vector<std::string> FETCH_COLUMNS = {
-            MEDIA_DATA_DB_TITLE, MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_DATA_DB_MIME_TYPE, MEDIA_DATA_DB_DATE_ADDED,
-            MEDIA_DATA_DB_DATE_MODIFIED, MEDIA_DATA_DB_NAME, MEDIA_DATA_DB_SIZE, MEDIA_DATA_DB_DATE_TAKEN,
-            MEDIA_DATA_DB_ORIENTATION, MEDIA_DATA_DB_WIDTH, MEDIA_DATA_DB_HEIGHT, MEDIA_DATA_DB_DURATION,
-            MEDIA_DATA_DB_FILE_PATH, MEDIA_DATA_DB_ID
-        };
-        resultSet = UserFileClient::Query(queryWithUri, context->predicates, FETCH_COLUMNS, errCode);
+        resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode);
     }
     if (resultSet == nullptr) {
         context->SaveError(errCode);
