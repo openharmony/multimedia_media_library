@@ -50,13 +50,20 @@ DfxWorker::DfxWorker() : isThreadRunning_(false)
 
 DfxWorker::~DfxWorker()
 {
+    MEDIA_INFO_LOG("DfxWorker deconstructor");
     isThreadRunning_ = false;
+    workCv_.notify_all();
+    if (delayThread_.joinable()) {
+        delayThread_.join();
+    }
+    dfxWorkerInstance_ = nullptr;
 }
 
 void DfxWorker::Init()
 {
     MEDIA_INFO_LOG("init");
     cycleThread_ = thread(bind(&DfxWorker::InitCycleThread, this));
+    cycleThread_.detach();
     isThreadRunning_ = true;
     delayThread_ = thread(bind(&DfxWorker::InitDelayThread, this));
     isEnd_ = false;
