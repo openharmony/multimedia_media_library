@@ -627,8 +627,12 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
+        if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo now
+        }
     }
     assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
+    assetInfo.PutString(MediaColumn::MEDIA_OWNER_APPID, PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName()));
     if (!cmd.GetBundleName().empty()) {
         assetInfo.PutString(MediaColumn::MEDIA_PACKAGE_NAME,
             GetAssetPackageName(fileAsset, cmd.GetBundleName()));
@@ -1062,7 +1066,7 @@ static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const 
 }
 
 int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode,
-    MediaLibraryApi api)
+    MediaLibraryApi api, bool isMovingPhotoVideo)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryAssetOperations::OpenAsset");
@@ -1105,7 +1109,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
         return E_HAS_FS_ERROR;
     }
     tracer.Start("AddWatchList");
-    if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos) {
+    if (mode.find(MEDIA_FILEMODE_WRITEONLY) != string::npos && !isMovingPhotoVideo) {
         auto watch = MediaLibraryInotify::GetInstance();
         if (watch != nullptr) {
             MEDIA_DEBUG_LOG("enter inotify, path = %{private}s", path.c_str());
@@ -1196,7 +1200,7 @@ void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThum
     int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanAssetCallback, MediaLibraryApi::API_10,
         isForceScan);
     if (ret != 0) {
-        MEDIA_ERR_LOG("Scan file failed!");
+        MEDIA_ERR_LOG("Scan file failed with error: %{public}d", ret);
     }
 }
 
@@ -1459,7 +1463,7 @@ static string ConvertMediaPathFromCloudPath(const string &path)
 }
 
 int32_t MediaLibraryAssetOperations::GrantUriPermission(const string &uri, const string &bundleName,
-    const string &path)
+    const string &path, bool isMovingPhoto)
 {
     if (uri.empty() || path.empty()) {
         MEDIA_ERR_LOG("uri or path is empty, uri:%{private}s, path:%{private}s", uri.c_str(), path.c_str());
@@ -1473,6 +1477,11 @@ int32_t MediaLibraryAssetOperations::GrantUriPermission(const string &uri, const
     auto flag = AAFwk::Want::FLAG_AUTH_WRITE_URI_PERMISSION;
     if (!MediaFileUtils::CreateFile(path)) {
         MEDIA_ERR_LOG("Can not create file, path: %{private}s, errno: %{public}d", path.c_str(), errno);
+        return E_HAS_FS_ERROR;
+    }
+
+    if (isMovingPhoto && !MediaFileUtils::CreateFile(MediaFileUtils::GetMovingPhotoVideoPath(path))) {
+        MEDIA_ERR_LOG("Failed to create video of moving photo, errno: %{public}d", errno);
         return E_HAS_FS_ERROR;
     }
 
@@ -1681,6 +1690,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { MediaColumn::MEDIA_TYPE, { Forbidden } },
     { MediaColumn::MEDIA_MIME_TYPE, { Forbidden } },
     { MediaColumn::MEDIA_OWNER_PACKAGE, { Forbidden } },
+    { MediaColumn::MEDIA_OWNER_APPID, { Forbidden } },
     { MediaColumn::MEDIA_PACKAGE_NAME, { Forbidden } },
     { MediaColumn::MEDIA_DEVICE_NAME, { Forbidden } },
     { MediaColumn::MEDIA_DATE_MODIFIED, { Forbidden } },

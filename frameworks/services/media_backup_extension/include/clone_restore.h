@@ -41,7 +41,7 @@ private:
     void InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
-    int32_t MoveSingleFile(FileInfo &fileInfo);
+    int32_t MoveAsset(FileInfo &fileInfo);
     bool IsFilePathExist(const std::string &filePath);
     int32_t QueryAlbumTotalNumber(const std::string &tableName);
     std::vector<AlbumInfo> QueryAlbumInfos(const std::string &tableName, int32_t offset);
@@ -79,6 +79,8 @@ private:
     bool IsSameFile(FileInfo &fileInfo);
     bool HasSameFile(FileInfo &fileInfo);
     bool IsReadyForRestore(const std::string &tableName);
+    void UpdateAlbumToNotifySet(const std::string &tableName, const std::unordered_set<int32_t> &albumSet);
+    void NotifyAlbum();
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
@@ -90,6 +92,7 @@ private:
     std::unordered_map<std::string, std::string> tableQueryWhereClauseMap_;
     std::unordered_map<std::string, std::unordered_map<int32_t, int32_t>> tableAlbumIdMap_;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tableCommonColumnInfoMap_;
+    std::unordered_set<std::string> albumToNotifySet_;
 };
 } // namespace Media
 } // namespace OHOS

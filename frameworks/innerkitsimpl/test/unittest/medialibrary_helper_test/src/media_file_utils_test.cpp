@@ -651,5 +651,82 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetUriByExtrConditions_Test_
     str = MediaFileUtils::GetUriByExtrConditions(prefix, fileId, suffix);
     EXPECT_EQ(str, "test1234567890file");
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMovingPhotoVideoPath_Test_001, TestSize.Level0)
+{
+    string path = "/storage/cloud/files/Photo/1/IMG_test.jpg";
+    string videoPath = "/storage/cloud/files/Photo/1/IMG_test.mp4";
+    EXPECT_EQ(MediaFileUtils::GetMovingPhotoVideoPath(path), videoPath);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMovingPhotoVideoPath_Test_002, TestSize.Level0)
+{
+    string path = "/storage/cloud/files/Photo/1/invalidPath";
+    string videoPath = "";
+    EXPECT_EQ(MediaFileUtils::GetMovingPhotoVideoPath(path), videoPath);
+    EXPECT_EQ(MediaFileUtils::GetMovingPhotoVideoPath(""), videoPath);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoExtension_Test_001, TestSize.Level0)
+{
+    vector<string> validExtensions = { "jpg", "jpeg", "jpe", "heif", "hif" };
+    for (const auto& extension : validExtensions) {
+        EXPECT_EQ(MediaFileUtils::CheckMovingPhotoExtension(extension), true);
+    }
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoExtension_Test_002, TestSize.Level0)
+{
+    vector<string> invalidExtensions = { "arw", "avif", "bm", "bmp", "cur", "dng", "gif", "heic", "heics", "heifs",
+        "ico", "nrw", "pef", "png", "raf", "raw", "rw2", "srw", "svg", "webp" };
+    for (const auto& extension : invalidExtensions) {
+        EXPECT_EQ(MediaFileUtils::CheckMovingPhotoExtension(extension), false);
+    }
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoExtension_Test_001, TestSize.Level0)
+{
+    vector<string> validExtensions = { "m4v", "f4v", "mp4v", "mpeg4", "mp4" };
+    for (const auto& extension : validExtensions) {
+        EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoExtension(extension), true);
+    }
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoExtension_Test_002, TestSize.Level0)
+{
+    vector<string> invalidExtensions = { "3gpp2", "3gp2", "3g2", "3gpp", "3gp", "avi", "m2ts", "mts",
+        "ts", "vt", "wrf", "mpeg", "mpeg2", "mpv2", "mp2v", "m2v", "m2t", "mpeg1", "mpv1", "mp1v", "m1v",
+        "mpg", "mov", "mkv", "webm", "h264" };
+    for (const auto& extension : invalidExtensions) {
+        EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoExtension(extension), false);
+    }
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoImage_Test_001, TestSize.Level0)
+{
+    string videoPath = "/storage/cloud/files/Photo/1/IMG_test_invalid.gif";
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoImage(videoPath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideo_Test_001, TestSize.Level0)
+{
+    string videoPath = "/storage/cloud/files/Photo/1/IMG_test_invalid.mp4";
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideo(videoPath), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoDuration_Test_001, TestSize.Level0)
+{
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-4000), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-3000), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-2500), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-2000), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-1000), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(0), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(1000), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(2000), true);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(2500), true);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(3000), true);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(4000), false);
+}
 } // namespace Media
 } // namespace OHOS

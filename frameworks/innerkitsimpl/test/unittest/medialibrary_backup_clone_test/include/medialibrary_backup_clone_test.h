@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,16 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_NATIVE_MODULE_OHOS_MEDIALIBRARY_H_
-#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_NATIVE_MODULE_OHOS_MEDIALIBRARY_H_
+#ifndef MEDIALIBRARY_BACKUP_CLONE_TEST_H
+#define MEDIALIBRARY_BACKUP_CLONE_TEST_H
 
-#include "album_napi.h"
-#include "photo_album_napi.h"
-#include "smart_album_napi.h"
-#include "fetch_file_result_napi.h"
-#include "file_asset_napi.h"
-#include "media_library_napi.h"
-#include "media_scanner_napi.h"
-#include "napi/native_node_api.h"
+#include "gtest/gtest.h"
+#include "rdb_helper.h"
+#include "result_set_utils.h"
 
-#endif  // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_NATIVE_MODULE_OHOS_MEDIALIBRARY_H_
+namespace OHOS {
+namespace Media {
+class MediaLibraryBackupCloneTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+};
+} // namespace Media
+} // namespace OHOS
+#endif // MEDIALIBRARY_BACKUP_CLONE_TEST_H

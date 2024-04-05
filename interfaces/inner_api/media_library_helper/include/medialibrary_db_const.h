@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 63;
+const int32_t MEDIA_RDB_VERSION = 65;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -91,6 +91,8 @@ enum {
     VERSION_UPDATE_MDIRTY_TRIGGER_FOR_SDIRTY = 61,
     VERSION_ADD_STOYR_TABLE = 62,
     VERSION_ADD_HEAD_AND_POSE_TABLE = 63,
+    VERSION_ADD_OWNER_APPID = 64,
+    VERSION_SHOOTING_MODE_CLOUD = 65,
 };
 
 enum {
@@ -210,6 +212,7 @@ const std::string MEDIA_DATA_DB_MEDIA_TYPE = "media_type";
 const std::string MEDIA_DATA_DB_HEIGHT = "height";
 const std::string MEDIA_DATA_DB_WIDTH = "width";
 const std::string MEDIA_DATA_DB_OWNER_PACKAGE = "owner_package";
+const std::string MEDIA_DATA_DB_OWNER_APPID = "owner_appid";
 const std::string MEDIA_DATA_DB_PACKAGE_NAME = "package_name";
 
 const std::string MEDIA_DATA_DB_IS_FAV = "is_favorite";
@@ -322,6 +325,10 @@ const std::string APP_ID = "app_id";
 
 // write cache
 const std::string CACHE_FILE_NAME = "cache_file_name";
+const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name";
+
+// moving photo param
+const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO
 
 // db sandbox directory
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";

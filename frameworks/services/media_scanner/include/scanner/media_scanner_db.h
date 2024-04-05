@@ -70,6 +70,7 @@ public:
     EXPORT int32_t DeleteError(const std::string &err);
     static void UpdateAlbumInfo(const std::vector<std::string> &subtypes = {},
         const std::vector<std::string> &userAlbumIds = {}, const std::vector<std::string> &sourceAlbumIds = {});
+    static void UpdateAlbumInfoByMetaData(const Metadata &metadata);
 
 private:
     int32_t FillMetadata(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,

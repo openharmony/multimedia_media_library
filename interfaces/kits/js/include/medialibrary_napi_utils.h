@@ -297,7 +297,7 @@ const std::vector<std::string> positionTypeEnum {
 };
 
 const std::vector<std::string> photoSubTypeEnum {
-    "DEFAULT", "SCREENSHOT", "CAMERA"
+    "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO"
 };
 
 const std::vector<std::string> notifyTypeEnum {

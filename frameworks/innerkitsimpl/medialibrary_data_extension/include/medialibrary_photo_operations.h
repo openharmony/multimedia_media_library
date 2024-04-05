@@ -51,7 +51,7 @@ private:
     static int32_t UpdateV10(MediaLibraryCommand &cmd);
     static int32_t TrashPhotos(MediaLibraryCommand &cmd);
     static void SolvePhotoAlbumInCreate(MediaLibraryCommand &cmd, FileAsset &fileAsset);
-    static int32_t OpenCache(MediaLibraryCommand &cmd, bool &isCacheOperation);
+    static int32_t OpenCache(MediaLibraryCommand &cmd, const std::string &mode, bool &isCacheOperation);
     static int32_t DeleteCache(MediaLibraryCommand &cmd);
     static int32_t OpenEditOperation(MediaLibraryCommand &cmd, bool &isSkip);
     static int32_t RequestEditData(MediaLibraryCommand &cmd);
@@ -67,6 +67,9 @@ private:
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+    static bool CheckCacheCmd(MediaLibraryCommand &cmd, int32_t subtype, const std::string &displayName);
+    static int32_t MoveCacheFile(MediaLibraryCommand &cmd, int32_t subtype,
+        const std::string &cachePath, const std::string &destPath);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
 };

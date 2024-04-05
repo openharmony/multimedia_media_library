@@ -31,6 +31,7 @@ const std::string MediaColumn::MEDIA_NAME = "display_name";
 const std::string MediaColumn::MEDIA_TYPE = "media_type";
 const std::string MediaColumn::MEDIA_MIME_TYPE = "mime_type";
 const std::string MediaColumn::MEDIA_OWNER_PACKAGE = "owner_package";
+const std::string MediaColumn::MEDIA_OWNER_APPID = "owner_appid";
 const std::string MediaColumn::MEDIA_PACKAGE_NAME = "package_name";
 const std::string MediaColumn::MEDIA_DEVICE_NAME = "device_name";
 const std::string MediaColumn::MEDIA_DATE_MODIFIED = "date_modified";
@@ -47,8 +48,8 @@ const std::string MediaColumn::MEDIA_RELATIVE_PATH = "relative_path";
 const std::string MediaColumn::MEDIA_VIRTURL_PATH = "virtual_path";
 const std::set<std::string> MediaColumn::MEDIA_COLUMNS = {
     MEDIA_ID, MEDIA_FILE_PATH, MEDIA_SIZE, MEDIA_TITLE, MEDIA_NAME, MEDIA_TYPE, MEDIA_MIME_TYPE,
-    MEDIA_OWNER_PACKAGE, MEDIA_PACKAGE_NAME, MEDIA_DEVICE_NAME, MEDIA_DATE_MODIFIED, MEDIA_DATE_ADDED,
-    MEDIA_DATE_TAKEN, MEDIA_DURATION, MEDIA_TIME_PENDING, MEDIA_IS_FAV, MEDIA_DATE_TRASHED,
+    MEDIA_OWNER_PACKAGE, MEDIA_OWNER_APPID, MEDIA_PACKAGE_NAME, MEDIA_DEVICE_NAME, MEDIA_DATE_MODIFIED,
+    MEDIA_DATE_ADDED, MEDIA_DATE_TAKEN, MEDIA_DURATION, MEDIA_TIME_PENDING, MEDIA_IS_FAV, MEDIA_DATE_TRASHED,
     MEDIA_DATE_DELETED, MEDIA_HIDDEN, MEDIA_PARENT_ID, MEDIA_RELATIVE_PATH, MEDIA_VIRTURL_PATH
 };
 const std::set<std::string> MediaColumn::DEFAULT_FETCH_COLUMNS = {
@@ -119,6 +120,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_TYPE + " INT, " +
     MEDIA_MIME_TYPE + " TEXT, " +
     MEDIA_OWNER_PACKAGE + " TEXT, " +
+    MEDIA_OWNER_APPID + " TEXT, " +
     MEDIA_PACKAGE_NAME + " TEXT, " +
     MEDIA_DEVICE_NAME + " TEXT, " +
     MEDIA_DATE_ADDED + " BIGINT, " +
@@ -294,6 +296,7 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         MEDIA_TYPE,
         MEDIA_MIME_TYPE,
         MEDIA_OWNER_PACKAGE,
+        MEDIA_OWNER_APPID,
         MEDIA_DEVICE_NAME,
         MEDIA_DATE_ADDED,
         MEDIA_DATE_TAKEN,
@@ -313,6 +316,8 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
         PHOTO_DATE_YEAR,
         PHOTO_DATE_MONTH,
         PHOTO_DATE_DAY,
+        PHOTO_SHOOTING_MODE,
+        PHOTO_SHOOTING_MODE_TAG,
     };
 
     std::string result = "(";
@@ -347,6 +352,7 @@ const std::string AudioColumn::CREATE_AUDIO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MEDIA_TYPE + " INT, " +
     MEDIA_MIME_TYPE + " TEXT, " +
     MEDIA_OWNER_PACKAGE + " TEXT, " +
+    MEDIA_OWNER_APPID + " TEXT, " +
     MEDIA_PACKAGE_NAME + " TEXT, " +
     MEDIA_DEVICE_NAME + " TEXT, " +
     AUDIO_ARTIST + " TEXT, " +

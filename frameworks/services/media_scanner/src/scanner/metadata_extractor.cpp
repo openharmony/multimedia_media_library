@@ -339,6 +339,7 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data)
         (void)close(fd);
         return E_SYSCALL;
     }
+    data->SetFileSize(st.st_size);
 
     tracer.Start("avMetadataHelper->SetSource");
     int32_t err = avMetadataHelper->SetSource(fd, 0, static_cast<int64_t>(st.st_size), AV_META_USAGE_META_ONLY);
@@ -361,10 +362,46 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data)
     return E_OK;
 }
 
+int32_t MetadataExtractor::CombineMovingPhotoMetadata(std::unique_ptr<Metadata> &data)
+{
+    // if video of moving photo does not exist, just return
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(data->GetFilePath());
+    if (!MediaFileUtils::IsFileExists(videoPath)) {
+        MEDIA_INFO_LOG("Video of moving photo does not exist, path: %{private}s", videoPath.c_str());
+        return E_OK;
+    }
+
+    unique_ptr<Metadata> videoData = make_unique<Metadata>();
+    videoData->SetFilePath(videoPath);
+    int32_t err = ExtractAVMetadata(videoData);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to extract video metadata for moving photo: %{private}s", videoPath.c_str());
+        return err;
+    }
+
+    data->SetFileSize(data->GetFileSize() + videoData->GetFileSize());
+    int64_t videoDateModified = videoData->GetFileDateModified();
+    if (videoDateModified > data->GetFileDateModified()) {
+        data->SetFileDateModified(videoDateModified);
+    }
+
+    int32_t duration = videoData->GetFileDuration();
+    if (!MediaFileUtils::CheckMovingPhotoVideoDuration(duration)) {
+        MEDIA_ERR_LOG("Failed to check video duration (%{public}d ms) of moving photo", duration);
+        return E_MOVING_PHOTO;
+    }
+    return E_OK;
+}
+
 int32_t MetadataExtractor::Extract(std::unique_ptr<Metadata> &data)
 {
     if (data->GetFileMediaType() == MEDIA_TYPE_IMAGE) {
-        return ExtractImageMetadata(data);
+        int32_t ret = ExtractImageMetadata(data);
+        CHECK_AND_RETURN_RET_LOG(ret == E_OK, ret, "Failed to extract image metadata");
+        if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            return CombineMovingPhotoMetadata(data);
+        }
+        return ret;
     } else {
         return ExtractAVMetadata(data);
     }

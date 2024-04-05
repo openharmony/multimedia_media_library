@@ -153,6 +153,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     MEDIA_DATA_DB_IS_TRASH,
     MEDIA_DATA_DB_RECYCLE_PATH,
     MEDIA_DATA_DB_OWNER_PACKAGE,
+    MEDIA_DATA_DB_OWNER_APPID,
     MediaColumn::MEDIA_PACKAGE_NAME,
     MEDIA_DATA_DB_IS_FAV,
     MEDIA_DATA_DB_TIME_PENDING,
@@ -184,7 +185,9 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     SEGMENTATION,
     COMPOSITION,
     SALIENCY,
-    CATEGORY_ID
+    CATEGORY_ID,
+    HEAD,
+    POSE,
 };
 
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)

@@ -45,6 +45,7 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { MediaColumn::MEDIA_TYPE, MEMBER_TYPE_INT32 },
     { MediaColumn::MEDIA_MIME_TYPE, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_OWNER_PACKAGE, MEMBER_TYPE_STRING },
+    { MediaColumn::MEDIA_OWNER_APPID, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_PACKAGE_NAME, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_DEVICE_NAME, MEMBER_TYPE_STRING },
     { MediaColumn::MEDIA_DATE_ADDED, MEMBER_TYPE_INT64 },
@@ -121,7 +122,7 @@ protected:
     static void UpdateVirtualPath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t UpdateFileInDb(MediaLibraryCommand &cmd);
     static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
-        MediaLibraryApi api);
+        MediaLibraryApi api, bool isMovingPhotoVideo = false);
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
@@ -130,7 +131,7 @@ protected:
         const std::string &extraUri = "");
     static int32_t SetPendingStatus(MediaLibraryCommand &cmd);
     static int32_t GrantUriPermission(const std::string &uri, const std::string &bundleName,
-        const std::string &path);
+        const std::string &path, bool isMovingPhoto = false);
 
     static bool GetInt32FromValuesBucket(const NativeRdb::ValuesBucket &values, const std::string &column,
         int32_t &value);

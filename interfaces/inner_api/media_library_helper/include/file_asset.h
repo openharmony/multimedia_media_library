@@ -138,6 +138,8 @@ public:
     EXPORT void SetIsTrash(int32_t isTrash);
     EXPORT const std::string GetOwnerPackage() const;
     EXPORT void SetOwnerPackage(const std::string &ownerPackage);
+    EXPORT const std::string GetOwnerAppId() const;
+    EXPORT void SetOwnerAppId(const std::string &ownerAppId);
     EXPORT const std::string GetPackageName() const;
     EXPORT void SetPackageName(const std::string &packageName);
 

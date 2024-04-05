@@ -35,6 +35,7 @@
 #include "dfx_timer.h"
 #include "dfx_const.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_object_utils.h"
 #include "medialibrary_subscriber.h"
 #include "medialibrary_uripermission_operations.h"
 #include "multistages_capture_manager.h"
@@ -500,6 +501,12 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     return E_SUCCESS;
 }
 
+static string GetClientAppId()
+{
+    string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    return PermissionUtils::GetAppIdByBundleName(bundleName);
+}
+
 static uint32_t GetFlagFromMode(const string &mode)
 {
     if (mode.find("w") != string::npos) {
@@ -591,13 +598,20 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     int32_t err = CheckPermFromUri(cmd, true);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
+
+    DataSharePredicates appidPredicates = predicates;
     if (err != E_SUCCESS) {
         MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
-        return err;
+        string clientAppId = GetClientAppId();
+        appidPredicates.And()->EqualTo("owner_appid", clientAppId);
     }
 
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
-    return MediaLibraryDataManager::GetInstance()->Update(cmd, value, predicates);
+    auto updateRet = MediaLibraryDataManager::GetInstance()->Update(cmd, value, appidPredicates);
+    if (err < 0 && updateRet <= 0) {
+        return err;
+    }
+    return updateRet;
 }
 
 int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
@@ -633,23 +647,30 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
         return nullptr;
     }
     int32_t err = CheckPermFromUri(cmd, false);
+    int errCode = businessError.GetCode();
+    DataSharePredicates appidPredicates = predicates;
     if (err != E_SUCCESS) {
-        DfxManager::GetInstance()->HandleNoPermmison(type, object, err);
+        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
         auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
         if (uriPermissionClient.VerifyUriPermission(uri, AAFwk::Want::FLAG_AUTH_READ_URI_PERMISSION,
             IPCSkeleton::GetCallingTokenID())) {
             MEDIA_DEBUG_LOG("Permission check pass , uri = %{private}s", uri.ToString().c_str());
         } else {
-            businessError.SetCode(err);
-            return nullptr;
+            string clientAppId = GetClientAppId();
+            appidPredicates.And()->EqualTo("owner_appid", clientAppId);
         }
     }
-
-    int errCode = businessError.GetCode();
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, appidPredicates, errCode);
     businessError.SetCode(to_string(errCode));
     if (queryResultSet == nullptr) {
         MEDIA_ERR_LOG("queryResultSet is nullptr! errCode: %{public}d", errCode);
+        businessError.SetCode(errCode);
+        return nullptr;
+    }
+    auto count = 0;
+    queryResultSet->GetRowCount(count);
+    if (err < 0 && count == 0) {
+        businessError.SetCode(err);
         return nullptr;
     }
     shared_ptr<DataShareResultSet> resultSet = make_shared<DataShareResultSet>(queryResultSet);
