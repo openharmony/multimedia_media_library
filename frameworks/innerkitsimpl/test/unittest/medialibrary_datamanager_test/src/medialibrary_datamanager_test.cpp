@@ -27,6 +27,12 @@
 #include "medialibrary_unittest_utils.h"
 #include "medialibrary_uripermission_operations.h"
 #include "uri.h"
+#include "vision_column.h"
+#include "photo_album_column.h"
+#include "vision_face_tag_column.h"
+#include "medialibrary_unistore_manager.h"
+#include "vision_total_column.h"
+#include "vision_image_face_column.h"
 #define private public
 #include "medialibrary_data_manager.h"
 #undef private
@@ -1197,5 +1203,111 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_QuerySync_Test_001, TestSi
     EXPECT_EQ(ret, false);
 }
 #endif
+
+void ClearAnalysisAlbumTable()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    ASSERT_NE(rdbStore, nullptr);
+    string sql = "DELETE FROM " + ANALYSIS_ALBUM_TABLE;
+    int err = rdbStore->ExecuteSql(sql);
+    EXPECT_EQ(err, E_OK);
+}
+
+void CreatePortraitAlbum(const string &albumName, const string &tag)
+{
+    MEDIA_INFO_LOG("Create portrait album");
+    Uri uri(PAH_INSERT_ANA_PHOTO_ALBUM);
+    MediaLibraryCommand cmd(uri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumType::SMART);
+    valuesBucket.Put(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
+    valuesBucket.Put(TAG_ID, tag);
+    valuesBucket.Put(GROUP_TAG, tag);
+    if (albumName != "") {
+        valuesBucket.Put(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    }
+    auto ret = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
+    EXPECT_GT(ret, 0);
+}
+
+shared_ptr<DataShare::DataShareResultSet> QueryAlbumWithName()
+{
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY, MediaLibraryApi::API_10);
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_NAME};
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_NAME_NOT_NULL, to_string(1));
+    predicates.OrderByAsc(PhotoAlbumColumns::ALBUM_ID);
+    int errCode = 0;
+    int count = -1;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+    auto resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    EXPECT_NE(resultSet, nullptr);
+    resultSet->GetRowCount(count);
+    EXPECT_GE(count, 0);
+    return resultSet;
+}
+
+void CheckResult(const shared_ptr<DataShare::DataShareResultSet> &resultSet, int count, const vector<string> &names)
+{
+    int albumCount = 0;
+    resultSet->GetRowCount(albumCount);
+    EXPECT_EQ(albumCount, count);
+    if (count == 0) {
+        return;
+    }
+    EXPECT_EQ(resultSet->GoToFirstRow(), E_OK);
+    for (string name : names) {
+        string albumName;
+        resultSet->GetString(0, albumName);
+        EXPECT_EQ(albumName, name);
+        resultSet->GoToNextRow();
+    }
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Get_Protrait_Album_NAME_NOT_NULL_test_001 Start");
+    MEDIA_INFO_LOG("Clear analysis table");
+    ClearAnalysisAlbumTable();
+
+    MEDIA_INFO_LOG("Create portrait albums");
+    const string albumName1 = "album_1";
+    const string albumName2 = "album_2";
+    vector<string> tags = {
+        "ser_1711000000000000000",
+        "ser_1711000000000000001",
+        "ser_1711000000000000002",
+        "ser_1711000000000000003"
+    };
+    CreatePortraitAlbum(albumName1, tags[0]);
+    CreatePortraitAlbum("", tags[1]);
+    CreatePortraitAlbum("", tags[2]);
+    CreatePortraitAlbum(albumName2, tags[3]);
+
+    MEDIA_INFO_LOG("Query albums and check result");
+    CheckResult(QueryAlbumWithName(), 2, {albumName1, albumName2});
+    MEDIA_INFO_LOG("Get_Protrait_Album_NAME_NOT_NULL_test_001 End");
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Get_Protrait_Album_NAME_NOT_NULL_test_002 Start");
+    MEDIA_INFO_LOG("Clear analysis table");
+    ClearAnalysisAlbumTable();
+
+    MEDIA_INFO_LOG("Create portrait albums");
+    vector<string> tags = {
+        "ser_1711000000000000000",
+        "ser_1711000000000000001",
+        "ser_1711000000000000002"
+    };
+    CreatePortraitAlbum("", tags[0]);
+    CreatePortraitAlbum("", tags[1]);
+    CreatePortraitAlbum("", tags[2]);
+
+    MEDIA_INFO_LOG("Query albums and check result");
+    CheckResult(QueryAlbumWithName(), 0, {});
+    MEDIA_INFO_LOG("Get_Protrait_Album_NAME_NOT_NULL_test_002 End");
+}
 } // namespace Media
 } // namespace OHOS

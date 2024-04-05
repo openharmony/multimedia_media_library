@@ -1004,7 +1004,8 @@ bool CheckIsPortraitAlbum(MediaLibraryCommand &cmd)
 {
     auto predicates = cmd.GetAbsRdbPredicates();
     auto whereClause = predicates->GetWhereClause();
-    if (whereClause.find(USER_DISPLAY_LEVEL) != string::npos || whereClause.find(IS_ME) != string::npos) {
+    if (whereClause.find(USER_DISPLAY_LEVEL) != string::npos || whereClause.find(IS_ME) != string::npos ||
+        whereClause.find(ALBUM_NAME_NOT_NULL) != string::npos) {
         return true;
     }
     return false;

@@ -53,7 +53,8 @@ public:
     EXPORT static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         std::unordered_map<int32_t, int32_t> &updateResult);
     EXPORT static void UpdateAnalysisAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &userAlbumIds = {});
+        std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &userAlbumIds = {},
+        const std::vector<std::string> &fileIds = {});
     EXPORT static void UpdateAnalysisAlbumByFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &fileIds, const std::vector<int> &albumTypes);
     EXPORT static void UpdateAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
