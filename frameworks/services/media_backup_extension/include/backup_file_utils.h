@@ -34,6 +34,8 @@ public:
     static int32_t CreatePath(int32_t mediaType, const std::string &displayName, std::string &path);
     static int32_t PreparePath(const std::string &path);
     static bool MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode);
+    static std::string GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
+        const std::string &path);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);

@@ -269,6 +269,9 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
 int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
     int64_t &rowNum)
 {
+    if (values.empty()) {
+        return 0;
+    }
     int32_t errCode = E_ERR;
     TransactionOperations transactionOprn(mediaLibraryRdb_);
     errCode = transactionOprn.Start();
