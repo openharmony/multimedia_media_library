@@ -25,6 +25,7 @@
 #endif
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 // 延时子服务适配器
 #ifdef ABILITY_CAMERA_SUPPORT
 class DeferredProcessingAdapter : public RefBase {
@@ -32,18 +33,18 @@ class DeferredProcessingAdapter : public RefBase {
 class DeferredProcessingAdapter {
 #endif
 public:
-    DeferredProcessingAdapter();
-    ~DeferredProcessingAdapter();
+    EXPORT DeferredProcessingAdapter();
+    EXPORT ~DeferredProcessingAdapter();
 
-    void BeginSynchronize();
-    void EndSynchronize();
+    EXPORT void BeginSynchronize();
+    EXPORT void EndSynchronize();
     #ifdef ABILITY_CAMERA_SUPPORT
     void AddImage(const std::string &imageId, CameraStandard::DpsMetadata &metadata, const bool isTrashed = false);
     #endif
-    void RemoveImage(const std::string &imageId, const bool isRestorable = true);
-    void RestoreImage(const std::string &imageId);
-    void ProcessImage(const std::string &appName, const std::string &imageId);
-    bool CancelProcessImage(const std::string &imageId);
+    EXPORT void RemoveImage(const std::string &imageId, const bool isRestorable = true);
+    EXPORT void RestoreImage(const std::string &imageId);
+    EXPORT void ProcessImage(const std::string &appName, const std::string &imageId);
+    EXPORT bool CancelProcessImage(const std::string &imageId);
 private:
     #ifdef ABILITY_CAMERA_SUPPORT
     sptr<CameraStandard::DeferredPhotoProcSession> deferredProcSession_;
