@@ -20,11 +20,16 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class FileUtils {
 public:
     FileUtils();
     ~FileUtils();
-    static int32_t SaveImage(const std::string &filePath, void *output, size_t writeSize);
+    EXPORT static int32_t SaveImage(const std::string &filePath, void *output, size_t writeSize);
+
+private:
+    EXPORT static int DeleteFile(const std::string &fileName);
+    EXPORT static bool IsFileExist(const std::string &fileName);
 };
 } // namespace Media
 } // namespace OHOS
