@@ -408,6 +408,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DATE_ADDED_MS",             MEDIA_DATA_DB_DATE_ADDED_MS),
     std::make_pair("DATE_MODIFIED_MS",          MEDIA_DATA_DB_DATE_MODIFIED_MS),
     std::make_pair("DATE_TRASHED_MS",           MEDIA_DATA_DB_DATE_TRASHED_MS),
+    std::make_pair("PHOTO_SUBTYPE",             PhotoColumn::PHOTO_SUBTYPE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
@@ -567,7 +568,7 @@ public:
     static void UriAppendKeyValue(std::string &uri, const std::string &key, const std::string &value);
 
     static napi_value AddDefaultAssetColumns(napi_env env, std::vector<std::string> &fetchColumn,
-        std::function<bool(const std::string &columnName)> isValidColumn,
+        std::function<bool(const std::string &columnName)> isValidColumn, NapiAssetType assetType,
         const PhotoAlbumSubType subType = PhotoAlbumSubType::USER_GENERIC);
 
     static int32_t GetSystemAlbumPredicates(const PhotoAlbumSubType subType,

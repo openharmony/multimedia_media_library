@@ -110,6 +110,10 @@ const std::string PhotoColumn::DEFAULT_PHOTO_URI = "file://media/Photo";
 const std::string PhotoColumn::PHOTO_CACHE_URI_PREFIX = "file://media/Photo/cache/";
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
 
+const std::set<std::string> PhotoColumn::DEFAULT_FETCH_COLUMNS = {
+    PHOTO_SUBTYPE,
+};
+
 const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS " +
     PHOTOS_TABLE + " (" +
     MEDIA_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -274,7 +278,8 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::CAMERA_SHOT_KEY, PhotoColumn::PHOTO_ALL_EXIF,
     PhotoColumn::PHOTO_USER_COMMENT, PhotoColumn::PHOTO_DATE_YEAR, PhotoColumn::PHOTO_DATE_MONTH,
     PhotoColumn::PHOTO_DATE_DAY, PhotoColumn::PHOTO_EDIT_TIME, PhotoColumn::PHOTO_CLEAN_FLAG,
-    PhotoColumn::PHOTO_SHOOTING_MODE, PhotoColumn::PHOTO_SHOOTING_MODE_TAG, PhotoColumn::PHOTO_THUMB_STATUS
+    PhotoColumn::PHOTO_SHOOTING_MODE, PhotoColumn::PHOTO_SHOOTING_MODE_TAG, PhotoColumn::PHOTO_THUMB_STATUS,
+    PhotoColumn::PHOTO_SUBTYPE,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

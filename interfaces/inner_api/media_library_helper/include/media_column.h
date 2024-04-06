@@ -108,6 +108,9 @@ public:
     static const std::string PHOTO_FIRST_VISIT_TIME EXPORT;
     static const std::string PHOTO_DEFERRED_PROC_TYPE EXPORT;
 
+    // Photo-only default fetch columns
+    static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
+
     // index in PhotoTable
     static const std::string PHOTO_CLOUD_ID_INDEX EXPORT;
     static const std::string PHOTO_DATE_YEAR_INDEX EXPORT;

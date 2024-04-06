@@ -217,5 +217,20 @@ bool BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int
     }
     return (rename(oldPath.c_str(), newPath.c_str()) == SUCCESS);
 }
+
+std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
+    const std::string &path)
+{
+    std::string replacedPath;
+    if (PREFIX_MAP.count(srcPrefixType) == 0 || PREFIX_MAP.count(dstPrefixType) == 0) {
+        MEDIA_ERR_LOG("Get source or destination prefix failed: %{public}d, %{public}d", srcPrefixType, dstPrefixType);
+        return replacedPath;
+    }
+    std::string srcPrefix = PREFIX_MAP.at(srcPrefixType);
+    std::string dstPrefix = PREFIX_MAP.at(dstPrefixType);
+    replacedPath = path;
+    replacedPath.replace(0, srcPrefix.length(), dstPrefix);
+    return replacedPath;
+}
 } // namespace Media
 } // namespace OHOS
