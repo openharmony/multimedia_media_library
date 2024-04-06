@@ -494,4 +494,5 @@ export default {
   MediaAssetsChangeRequest: photoAccessHelper.MediaAssetsChangeRequest,
   MediaAlbumChangeRequest: photoAccessHelper.MediaAlbumChangeRequest,
   MediaAssetManager: photoAccessHelper.MediaAssetManager,
+  MovingPhoto: photoAccessHelper.MovingPhoto,
 };

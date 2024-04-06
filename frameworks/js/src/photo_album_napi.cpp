@@ -962,7 +962,7 @@ static napi_value ParseArgsGetPhotoAssets(napi_env env, napi_callback_info info,
         return nullptr;
     }
     CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
-        PhotoColumn::IsPhotoColumn));
+        PhotoColumn::IsPhotoColumn, NapiAssetType::TYPE_PHOTO));
     if (photoAlbum->GetHiddenOnly() || photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::HIDDEN) {
         if (!MediaLibraryNapiUtils::IsSystemApp()) {
             NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
