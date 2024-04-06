@@ -41,8 +41,6 @@ static int32_t InitPermission()
     perms.emplace_back("ohos.permission.WRITE_AUDIO");
     perms.emplace_back("ohos.permission.READ_IMAGEVIDEO");
     perms.emplace_back("ohos.permission.WRITE_IMAGEVIDEO");
-    perms.emplace_back("ohos.permission.READ_MEDIA");
-    perms.emplace_back("ohos.permission.WRITE_MEDIA");
     perms.emplace_back("ohos.permission.MEDIA_LOCATION");
     perms.emplace_back("ohos.permission.FILE_ACCESS_MANAGER");
     perms.emplace_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
