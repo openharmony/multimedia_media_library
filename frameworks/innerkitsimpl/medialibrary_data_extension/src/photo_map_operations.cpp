@@ -290,9 +290,11 @@ int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
     if (deleteRow <= 0) {
         return deleteRow;
     }
+
     std::unordered_map<int32_t, int32_t> updateResult;
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, updateAlbumIds);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, updateAlbumIds,
+        assetsArray);
     auto watch = MediaLibraryNotify::GetInstance();
     for (size_t i = 1; i < whereArgsUri.size() - 1; i++) {
         watch->Notify(MediaFileUtils::Encode(whereArgsUri[i]), NotifyType::NOTIFY_ALBUM_DISMISS_ASSET, albumId);
