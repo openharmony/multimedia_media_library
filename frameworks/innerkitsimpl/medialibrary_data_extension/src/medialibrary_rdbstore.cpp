@@ -2358,10 +2358,6 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS) {
         ModifySourceAlbumTriggers(store);
     }
-
-    if (oldVersion < VERSION_ADD_VIDEO_LABEL_TABEL) {
-        AddVideoLabelTable(store);
-    }
 }
 
 static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
@@ -2372,6 +2368,10 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_IS_COVER_SATISFIED_COLUMN) {
         AddIsCoverSatisfiedColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_VIDEO_LABEL_TABEL) {
+        AddVideoLabelTable(store);
     }
 }
 
