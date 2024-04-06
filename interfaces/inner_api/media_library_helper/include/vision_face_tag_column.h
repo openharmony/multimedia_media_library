@@ -34,6 +34,8 @@ const std::string PORTRAIT_DATE_MODIFY = "date_modify";
 const std::string ALBUM_TYPE = "album_type";
 const std::string IS_REMOVED = "is_removed";
 const std::string USER_OPERATION = "user_operation";
+const std::string IS_COVER_SATISFIED = "is_cover_satisfied";
+const std::string ALBUM_NAME_NOT_NULL = "album_name_not_null";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_FACE_TAG_COLUMN_H

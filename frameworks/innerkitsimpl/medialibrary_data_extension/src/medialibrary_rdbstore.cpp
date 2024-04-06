@@ -2140,6 +2140,14 @@ void AddBussinessRecordAlbum(RdbStore &store)
     UpdatePhotosMdirtyTrigger(store);
 }
 
+void AddIsCoverSatisfiedColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        ADD_IS_COVER_SATISFIED_FOR_ALBUM,
+    };
+    ExecSqls(sqls, store);
+}
+
 void AddOwnerAppId(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2344,6 +2352,10 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_HEAD_AND_POSE_TABLE) {
         AddHeadAndPoseTables(store);
+    }
+
+    if (oldVersion < VERSION_ADD_IS_COVER_SATISFIED_COLUMN) {
+        AddIsCoverSatisfiedColumn(store);
     }
 }
 
