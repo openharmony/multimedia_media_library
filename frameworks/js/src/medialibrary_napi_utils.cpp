@@ -24,6 +24,7 @@
 #include "media_asset_change_request_napi.h"
 #include "media_assets_change_request_napi.h"
 #include "media_album_change_request_napi.h"
+#include "media_asset_manager_napi.h"
 #include "media_device_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -32,6 +33,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
+#include "moving_photo_napi.h"
 #include "photo_album_napi.h"
 #include "photo_map_column.h"
 #include "smart_album_napi.h"
@@ -648,7 +650,7 @@ void MediaLibraryNapiUtils::HandleError(napi_env env, int error, napi_value &err
     }
 
     string errMsg = "System inner fail";
-    int errorOriginal = error;
+    int originalError = error;
     if (jsErrMap.count(error) > 0) {
         errMsg = jsErrMap.at(error);
     } else {
@@ -656,7 +658,7 @@ void MediaLibraryNapiUtils::HandleError(napi_env env, int error, napi_value &err
     }
     CreateNapiErrorObject(env, errorObj, error, errMsg);
     errMsg = Name + " " + errMsg;
-    NAPI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), errorOriginal);
+    NAPI_ERR_LOG("Error: %{public}s, js errcode:%{public}d ", errMsg.c_str(), originalError);
 }
 
 void MediaLibraryNapiUtils::CreateNapiErrorObject(napi_env env, napi_value &errorObj, const int32_t errCode,
@@ -819,9 +821,14 @@ void MediaLibraryNapiUtils::UriAppendKeyValue(string &uri, const string &key, co
 }
 
 napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<string> &fetchColumn,
-    function<bool(const string &columnName)> isValidColumn, const PhotoAlbumSubType subType)
+    function<bool(const string &columnName)> isValidColumn, NapiAssetType assetType,
+    const PhotoAlbumSubType subType)
 {
     auto validFetchColumns = MediaColumn::DEFAULT_FETCH_COLUMNS;
+    if (assetType == TYPE_PHOTO) {
+        validFetchColumns.insert(
+            PhotoColumn::DEFAULT_FETCH_COLUMNS.begin(), PhotoColumn::DEFAULT_FETCH_COLUMNS.end());
+    }
     switch (subType) {
         case PhotoAlbumSubType::FAVORITE:
             validFetchColumns.insert(MediaColumn::MEDIA_IS_FAV);
@@ -1441,6 +1448,14 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetsChange
 
 template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAlbumChangeRequestAsyncContext>(napi_env env,
     unique_ptr<MediaAlbumChangeRequestAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MovingPhotoAsyncContext>(napi_env env,
+    unique_ptr<MovingPhotoAsyncContext> &asyncContext, const string &resourceName,
+    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
+
+template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetManagerAsyncContext>(napi_env env,
+    unique_ptr<MediaAssetManagerAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,

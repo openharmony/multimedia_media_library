@@ -784,6 +784,23 @@ int64_t GetPhotoLastVisitTime(int32_t fileId)
     }
 }
 
+static int32_t QueryPhotoIdByDisplayName(const string& displayName)
+{
+    MediaLibraryCommand queryCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY,
+        MediaLibraryApi::API_10);
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_NAME, displayName);
+    queryCmd.SetDataSharePred(predicates);
+    vector<string> columns = { MediaColumn::MEDIA_ID };
+    auto resultSet = g_rdbStore->Query(queryCmd, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Read moving photo query photo id by display name failed");
+        return -1;
+    }
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    return fileId;
+}
+
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
 {
     MediaLibraryUnitTestUtils::Init();
@@ -2810,6 +2827,50 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_batch_update_user_comment_t
     EXPECT_EQ(changedRows, 3);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_batch_update_user_comment_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_video_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_read_moving_photo_video_test_001");
+
+    // create moving photo
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutString(ASSET_EXTENTION, "jpg");
+    values.PutString(PhotoColumn::MEDIA_TITLE, "moving_photo");
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
+    cmd.SetValueBucket(values);
+    cmd.SetBundleName("values");
+    MediaLibraryPhotoOperations::Create(cmd);
+    int32_t fileId = QueryPhotoIdByDisplayName("moving_photo.jpg");
+    ASSERT_GE(fileId, 0);
+
+    // Open and close to set pending time to 0
+    MediaFileUri fileUri(MediaType::MEDIA_TYPE_IMAGE, to_string(fileId), "", MEDIA_API_VERSION_V10);
+    string fileUriStr = fileUri.ToString();
+    Uri uri(fileUriStr);
+    MediaLibraryCommand openImageCmd(uri, Media::OperationType::OPEN);
+    int32_t fd = MediaLibraryPhotoOperations::Open(openImageCmd, "w");
+    ASSERT_GE(fd, 0);
+
+    MediaLibraryCommand closeCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CLOSE);
+    ValuesBucket closeValues;
+    closeValues.PutString(MEDIA_DATA_DB_URI, fileUriStr);
+    closeCmd.SetValueBucket(closeValues);
+    MediaLibraryPhotoOperations::Close(closeCmd);
+
+    // read moving photo video
+    string videoUriStr = fileUriStr;
+    MediaFileUtils::UriAppendKeyValue(videoUriStr, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
+    Uri videoUri(videoUriStr);
+    MediaLibraryCommand readVideoCmd(videoUri, Media::OperationType::OPEN);
+    readVideoCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t rfd = MediaLibraryDataManager::GetInstance()->OpenFile(readVideoCmd, "r");
+    EXPECT_GE(rfd, 0);
+    close(rfd);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_read_moving_photo_video_test_001");
 }
 } // namespace Media
 } // namespace OHOS

@@ -268,25 +268,32 @@ bool MediaFileUtils::IsDirectory(const string &dirName, shared_ptr<int> errCodeP
 
 bool MediaFileUtils::CreateFile(const string &filePath)
 {
-    bool errCode = false;
+    bool state = false;
 
-    if (filePath.empty() || IsFileExists(filePath)) {
-        return errCode;
+    if (filePath.empty()) {
+        MEDIA_ERR_LOG("Invalid file path");
+        return state;
+    }
+    if (IsFileExists(filePath)) {
+        MEDIA_ERR_LOG("file already exists");
+        return state;
     }
 
     ofstream file(filePath);
     if (!file) {
         MEDIA_ERR_LOG("Output file path could not be created");
-        return errCode;
+        return state;
     }
 
     if (chmod(filePath.c_str(), CHOWN_RW_USR_GRP) == SUCCESS) {
-        errCode = true;
+        state = true;
+    } else {
+        MEDIA_ERR_LOG("Failed to change permissions, error: %{public}d", errno);
     }
 
     file.close();
 
-    return errCode;
+    return state;
 }
 
 bool MediaFileUtils::DeleteFile(const string &fileName)

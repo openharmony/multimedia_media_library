@@ -4686,12 +4686,12 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     switch (context->assetType) {
         case TYPE_AUDIO: {
             CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
-                AudioColumn::IsAudioColumn));
+                AudioColumn::IsAudioColumn, TYPE_AUDIO));
             break;
         }
         case TYPE_PHOTO: {
             CHECK_NULLPTR_RET(MediaLibraryNapiUtils::AddDefaultAssetColumns(env, context->fetchColumn,
-                PhotoColumn::IsPhotoColumn));
+                PhotoColumn::IsPhotoColumn, TYPE_PHOTO));
             break;
         }
         default: {
