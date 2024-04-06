@@ -23,6 +23,7 @@ namespace Media {
 enum class ReturnDataType {
     TYPE_IMAGE_SOURCE = 0,
     TYPE_ARRAY_BUFFER,
+    TYPE_MOVING_PHOTO,
 };
 
 enum class DeliveryMode {
