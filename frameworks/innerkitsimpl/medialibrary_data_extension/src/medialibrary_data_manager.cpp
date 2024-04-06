@@ -327,7 +327,15 @@ int32_t MediaLibraryDataManager::MakeDirQuerySetMap(unordered_map<string, DirAss
     int32_t count = -1;
     vector<string> columns;
     AbsRdbPredicates dirAbsPred(MEDIATYPE_DIRECTORY_TABLE);
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return E_ERR;
+    }
     auto queryResultSet = rdbStore_->QueryByStep(dirAbsPred, columns);
+    if (queryResultSet == nullptr) {
+        MEDIA_ERR_LOG("queryResultSet is nullptr");
+        return E_ERR;
+    }
     auto ret = queryResultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdb failed");
