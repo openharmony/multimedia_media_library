@@ -70,7 +70,6 @@
 #include "vision_head_column.h"
 #include "vision_image_face_column.h"
 #include "vision_label_column.h"
-#include "vision_video_label_column.h"
 #include "vision_object_column.h"
 #include "vision_ocr_column.h"
 #include "vision_photo_map_column.h"
@@ -79,6 +78,7 @@
 #include "vision_saliency_detect_column.h"
 #include "vision_segmentation_column.h"
 #include "vision_total_column.h"
+#include "vision_video_label_column.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
