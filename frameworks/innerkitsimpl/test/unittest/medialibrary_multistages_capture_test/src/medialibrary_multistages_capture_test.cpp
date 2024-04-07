@@ -39,6 +39,7 @@
 #define private public
 #define protected public
 #include "exif_utils.h"
+#include "file_utils.h"
 #include "multistages_capture_deferred_proc_session_callback.h"
 #include "multistages_capture_dfx_first_visit.h"
 #include "multistages_capture_dfx_result.h"
@@ -620,7 +621,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, session_callback_on_error_001, Test
     ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
 
     int32_t photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
-    EXPECT_GT(photoQuality, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    EXPECT_EQ(photoQuality, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
 
     MEDIA_INFO_LOG("session_callback_on_error_001 End");
 }
@@ -639,6 +640,19 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, deferred_proc_adapter_null_session_
     deferredProcSession->ProcessImage("com.test.demo", PHOTO_ID_FOR_TEST);
     deferredProcSession->CancelProcessImage(PHOTO_ID_FOR_TEST);
     MEDIA_INFO_LOG("deferred_proc_adapter_null_session_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, file_utils_save_file_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("file_utils_save_file_001 Start");
+    const string testFileName = "/data/test/test.jpg";
+    char testOutput[] = "test.jpg";
+    FileUtils::SaveImage(testFileName, (void*)testOutput, sizeof(testOutput));
+
+    EXPECT_EQ(FileUtils::IsFileExist(testFileName), true);
+    EXPECT_EQ(FileUtils::IsFileExist(testFileName + ".tmp"), false);
+    EXPECT_EQ(FileUtils::DeleteFile(testFileName), 0);
+    MEDIA_INFO_LOG("file_utils_save_file_001 End");
 }
 }
 }

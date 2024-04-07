@@ -102,7 +102,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
     int fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     int ret = FileUtils::SaveImage(data, (void*)addr, bytes);
     if (ret != E_OK) {
-        MEDIA_ERR_LOG("Save high quality image failed. ret=%{public}d", ret);
+        MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(imageId,
             static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL));
         return;
