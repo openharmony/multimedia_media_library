@@ -24,14 +24,15 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 class MediaLibraryBundleManager {
 public:
-    MediaLibraryBundleManager() = default;
-    ~MediaLibraryBundleManager() = default;
-    static std::shared_ptr<MediaLibraryBundleManager> GetInstance();
-    void GetBundleNameByUID(const int32_t uid, std::string &bundleName);
-    std::string GetClientBundleName();
-    void Clear();
+    EXPORT MediaLibraryBundleManager() = default;
+    EXPORT ~MediaLibraryBundleManager() = default;
+    EXPORT static std::shared_ptr<MediaLibraryBundleManager> GetInstance();
+    EXPORT void GetBundleNameByUID(const int32_t uid, std::string &bundleName);
+    EXPORT std::string GetClientBundleName();
+    EXPORT void Clear();
 
 private:
 
