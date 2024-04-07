@@ -24,6 +24,7 @@
 #include "deferred_processing_adapter.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_command.h"
+#include "result_set.h"
 
 namespace OHOS {
 namespace Media {
@@ -45,14 +46,15 @@ public:
     void UpdateLowQualityDbInfo(MediaLibraryCommand &cmd);
     void UpdateLocation(int32_t fileId, const std::string &path, double longitude, double latitude);
 
-    void HandleMultiStagesOperation(MediaLibraryCommand &cmd, const NativeRdb::ValuesBucket &valuesBucket);
+    std::shared_ptr<OHOS::NativeRdb::ResultSet> HandleMultiStagesOperation(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns);
 
     bool CancelProcessRequest(const std::string &photoId);
     void RemoveImage(const std::string &photoId, bool isRestorable = true);
     void RemoveImages(const NativeRdb::AbsRdbPredicates &predicates, bool isRestorable = true);
     void RestoreImages(const NativeRdb::AbsRdbPredicates &predicates);
     void AddImage(int32_t fileId, const std::string &photoId, int32_t deferredProcType);
-    void ProcessImage(const NativeRdb::ValuesBucket &valuesBucket);
+    void ProcessImage(int fileId, int deliveryMode, const std::string &appName);
 
     void AddImageInternal(int32_t fileId, const std::string &photoId, int32_t deferredProcType,
         bool discardable = false);
@@ -68,11 +70,18 @@ private:
         DELETED,    // state of photo delete from trashed album
     };
 
+    enum class RequestType : int32_t {
+        CANCEL_REQUEST = -1,
+        REQUEST = 1,
+    };
+
     struct LowQualityPhotoInfo {
         int32_t fileId;
         PhotoState state;
-        LowQualityPhotoInfo() : fileId(0), state(PhotoState::NORMAL) {}
-        LowQualityPhotoInfo(int32_t fileId, PhotoState state) : fileId(fileId), state(state) {}
+        int32_t requestCount;
+        LowQualityPhotoInfo() : fileId(0), state(PhotoState::NORMAL), requestCount(0) {}
+        LowQualityPhotoInfo(int32_t fileId, PhotoState state, int32_t count)
+            : fileId(fileId), state(state), requestCount(count) {}
     };
 
     MultiStagesCaptureManager();
@@ -85,7 +94,8 @@ private:
     EXPORT void AddPhotoInProgress(int32_t fileId, const std::string &photoId, bool isTrashed);
     EXPORT void RemovePhotoInProgress(const std::string &photoId, bool isRestorable);
     void UpdatePhotoInProgress(const std::string &photoId);
-    bool IsPhotoInProgress(const std::string &photoId);
+    bool IsPhotoInProcess(const std::string &photoId);
+    int32_t UpdatePhotoInProcessRequestCount(const std::string &photoId, RequestType requestType);
 
     std::unordered_set<int32_t> setOfDeleted_;
 

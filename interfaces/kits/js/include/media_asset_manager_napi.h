@@ -95,7 +95,6 @@ public:
     static void NotifyMediaDataPrepared(AssetHandler *assetHandler);
     static void NotifyDataPreparedWithoutRegister(napi_env env,
         const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
-    static void DeleteInProcessMapRecord(const std::string &requestUri);
     static void OnDataPrepared(napi_env env, napi_value cb, void *context, void *data);
     static void RegisterTaskObserver(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
 
@@ -109,7 +108,9 @@ private:
     static napi_value JSRequestImageData(napi_env env, napi_callback_info info);
     static napi_value JSRequestMovingPhoto(napi_env env, napi_callback_info info);
     static napi_value JSRequestVideoFile(napi_env env, napi_callback_info info);
+    static napi_value JSCancelRequest(napi_env env, napi_callback_info info);
     static void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
+    static void CancelProcessImage(const std::string &photoId);
     static void AddImage(const int fileId, DeliveryMode deliveryMode);
     static void OnHandleRequestImage(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static void OnHandleRequestVideo(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);

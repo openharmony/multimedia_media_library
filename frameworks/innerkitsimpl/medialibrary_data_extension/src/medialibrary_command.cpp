@@ -106,6 +106,7 @@ static const map<string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_ADD_IMAGE, OperationType::ADD_IMAGE },
     { OPRN_PROCESS_IMAGE, OperationType::PROCESS_IMAGE },
     { OPRN_SET_LOCATION, OperationType::SET_LOCATION },
+    { OPRN_CANCEL_PROCESS_IMAGE, OperationType::CANCEL_PROCESS_IMAGE },
 };
 }
 

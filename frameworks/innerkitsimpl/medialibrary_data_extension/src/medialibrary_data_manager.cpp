@@ -739,9 +739,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             return MediaLibraryStoryOperations::UpdateOperation(cmd);
         
         case OperationObject::PAH_MULTISTAGES_CAPTURE: {
-            if (cmd.GetOprnType() == OperationType::ADD_IMAGE) {
-                MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, value.GetAll());
-            }
+            std::vector<std::string> columns;
+            MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
         default:
@@ -1093,7 +1092,6 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAssetOperations::QueryOperation(cmd, columns);
-
         case OperationObject::VISION_START ... OperationObject::VISION_END: {
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         }
@@ -1103,13 +1101,13 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::SEARCH_TOTAL:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-
+        case OperationObject::PAH_MULTISTAGES_CAPTURE:
+            return MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
         default:
             tracer.Start("QueryFile");
             return MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
