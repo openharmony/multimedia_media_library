@@ -22,6 +22,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_business_record_column.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -1084,6 +1085,39 @@ HWTEST_F(AlbumCountCoverTest, album_count_cover_008, TestSize.Level0)
     MEDIA_INFO_LOG("Step: Refresh and query again.");
     RefreshTable();
     AlbumInfo(1, fileAsset->GetUri(), 0, "", 0).CheckSystemAlbum(PhotoAlbumSubType::VIDEO);
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(false);
+}
+
+int QueryCountForBussinessTable()
+{
+    RdbPredicates predicates(MedialibraryBusinessRecordColumn::TABLE);
+    auto resultSet = g_rdbStore->Query(predicates, { MedialibraryBusinessRecordColumn::BUSINESS_TYPE });
+    EXPECT_NE(resultSet, nullptr);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query bussiness table");
+        return 0;
+    }
+    int32_t count = 0;
+    resultSet->GetRowCount(count);
+    return count;
+}
+
+HWTEST_F(AlbumCountCoverTest, refresh_analysis_album001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("refresh_analysis_album001 begin");
+    MediaLibraryRdbUtils::UpdateAllAlbumsCountForCloud(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
+    int count = QueryCountForBussinessTable();
+    EXPECT_GT(count, 0);
+}
+
+HWTEST_F(AlbumCountCoverTest, refresh_analysis_album002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("refresh_analysis_album002 begin");
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+    RefreshTable();
+    int count = QueryCountForBussinessTable();
+    EXPECT_EQ(count, 0);
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(false);
 }
 } // namespace OHOS::Media
