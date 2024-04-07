@@ -24,11 +24,12 @@ namespace Media {
 static const std::string MEDIA_ASSET_DATA_HANDLER_CLASS = "MediaAssetDataHandler";
 
 NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env, napi_value dataHandler, ReturnDataType dataType,
-    const std::string &uri, SourceMode sourceMode)
+    const std::string &uri, const std::string &destUri, SourceMode sourceMode)
 {
     dataType_ = dataType;
     env_ = env;
     requestUri_ = uri;
+    destUri_ = destUri;
     sourceMode_ = sourceMode;
     napi_status status = napi_create_reference(env_, dataHandler, PARAM1, &dataHandlerRef_);
     if (status != napi_ok) {
@@ -50,6 +51,11 @@ napi_env NapiMediaAssetDataHandler::GetEnv()
 std::string NapiMediaAssetDataHandler::GetRequestUri()
 {
     return requestUri_;
+}
+
+std::string NapiMediaAssetDataHandler::GetDestUri()
+{
+    return destUri_;
 }
 
 SourceMode NapiMediaAssetDataHandler::GetSourceMode()
