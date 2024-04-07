@@ -21,6 +21,7 @@
 
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_type_const.h"
 
 using namespace std;
 
@@ -30,9 +31,25 @@ FileUtils::FileUtils() {}
 
 FileUtils::~FileUtils() {}
 
-int32_t FileUtils::SaveImage(const std::string &filePath, void *output, size_t writeSize)
+int FileUtils::DeleteFile(const string &fileName)
 {
-    int fd = open(filePath.c_str(), O_CREAT|O_WRONLY|O_TRUNC, 0777);
+    int ret = remove(fileName.c_str());
+    if (ret < 0) {
+        MEDIA_INFO_LOG("DeleteFile fail, ret: %{public}d, errno: %{public}d", ret, errno);
+    }
+    return ret;
+}
+
+bool FileUtils::IsFileExist(const string &fileName)
+{
+    struct stat statInfo {};
+    return ((stat(fileName.c_str(), &statInfo)) == SUCCESS);
+}
+
+int32_t FileUtils::SaveImage(const string &filePath, void *output, size_t writeSize)
+{
+    string filePathTemp = filePath + ".tmp";
+    int fd = open(filePathTemp.c_str(), O_CREAT|O_WRONLY|O_TRUNC, 0777);
     if (fd < 0) {
         MEDIA_ERR_LOG("fd.Get() < 0 fd %{public}d errno: %{public}d", fd, errno);
         return E_ERR;
@@ -42,10 +59,19 @@ int32_t FileUtils::SaveImage(const std::string &filePath, void *output, size_t w
     int ret = write(fd, output, writeSize);
     close(fd);
     if (ret < 0) {
-        MEDIA_ERR_LOG("write fail, errno: %{public}d", errno);
+        MEDIA_ERR_LOG("write fail, ret: %{public}d, errno: %{public}d", ret, errno);
+        DeleteFile(filePathTemp);
         return ret;
     }
-    return E_OK;
+
+    ret = rename(filePathTemp.c_str(), filePath.c_str());
+    if (ret < 0) {
+        MEDIA_ERR_LOG("rename fail, ret: %{public}d, errno: %{public}d", ret, errno);
+        DeleteFile(filePathTemp);
+        return ret;
+    }
+
+    return ret;
 }
 
 } // namespace Media
