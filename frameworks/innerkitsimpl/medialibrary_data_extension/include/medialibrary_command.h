@@ -135,6 +135,7 @@ enum class EXPORT OperationType : uint32_t {
     PROCESS_IMAGE,
     SET_LOCATION,
     ANALYSIS_INDEX,
+    CANCEL_PROCESS_IMAGE,
 };
 
 class MediaLibraryCommand {

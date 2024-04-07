@@ -63,6 +63,7 @@ const std::string OPRN_ADD_IMAGE = "add_image";
 const std::string OPRN_PROCESS_IMAGE = "process_image";
 const std::string OPRN_SET_LOCATION = "set_location";
 const std::string OPRN_SET_PHOTO_QUALITY = "set_photo_quality";
+const std::string OPRN_CANCEL_PROCESS_IMAGE = "cancel_process_image";
 
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -232,6 +233,8 @@ const std::string PAH_SET_PHOTO_QUALITY = MEDIALIBRARY_DATA_URI + "/ "+ PAH_PHOT
 const std::string PAH_PROCESS_IMAGE = MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_PROCESS_IMAGE;
 const std::string PAH_ADD_IMAGE = MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_ADD_IMAGE;
 const std::string PAH_SET_LOCATION = MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_SET_LOCATION;
+const std::string PAH_CANCEL_PROCESS_IMAGE =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_CANCEL_PROCESS_IMAGE;
 
 // PhotoAccessHelper album operation constants
 const std::string PAH_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_CREATE;
