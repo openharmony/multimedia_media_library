@@ -45,18 +45,19 @@ struct MediaAssetManagerAsyncContext : NapiError {
     napi_deferred deferred;
     napi_ref callbackRef;
 
-    size_t argc = ARGS_FOUR;
-    napi_value argv[ARGS_FOUR] = {nullptr};
+    size_t argc = ARGS_FIVE;
+    napi_value argv[ARGS_FIVE] = {nullptr};
     int fileId = -1; // default value of request file id
-    std::string photoUri;
-    std::string photoId;
+    std::string mediaUri;
+    std::string mediaId;
     std::string displayName;
-    std::string photoPath;
+    std::string mediaPath;
     std::string callingPkgName;
     std::string requestId;
     napi_value requestIdNapiValue;
     napi_value dataHandler;
     napi_ref dataHandlerRef;
+    std::string destUri;
     DeliveryMode deliveryMode;
     SourceMode sourceMode;
     ReturnDataType returnDataType;
@@ -64,15 +65,15 @@ struct MediaAssetManagerAsyncContext : NapiError {
 };
 
 struct AssetHandler {
-    std::string photoId;
+    std::string mediaId;
     std::string requestId;
     std::string requestUri;
     MediaAssetDataHandlerPtr dataHandler;
     napi_threadsafe_function threadSafeFunc;
 
-    AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
+    AssetHandler(const std::string &mediaId, const std::string &requestId, const std::string &uri,
         const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
-        : photoId(photoId), requestId(requestId), requestUri(uri), dataHandler(handler), threadSafeFunc(func) {}
+        : mediaId(mediaId), requestId(requestId), requestUri(uri), dataHandler(handler), threadSafeFunc(func) {}
 };
 
 class MultiStagesTaskObserver : public DataShare::DataShareObserver {
@@ -91,7 +92,7 @@ public:
     EXPORT static napi_value Init(napi_env env, napi_value exports);
     static MultiStagesCapturePhotoStatus QueryPhotoStatus(int fileId, const string& photoUri,
         std::string &photoId, bool hasReadPermission);
-    static void NotifyImageDataPrepared(AssetHandler *assetHandler);
+    static void NotifyMediaDataPrepared(AssetHandler *assetHandler);
     static void NotifyDataPreparedWithoutRegister(napi_env env,
         const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static void DeleteInProcessMapRecord(const std::string &requestUri);
@@ -102,18 +103,23 @@ private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalizeHint);
     static bool InitUserFileClient(napi_env env, napi_callback_info info);
-    static napi_status ParseRequestImageArgs(napi_env env, napi_callback_info info,
+    static napi_status ParseRequestMediaArgs(napi_env env, napi_callback_info info,
         unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static napi_value JSRequestImage(napi_env env, napi_callback_info info);
     static napi_value JSRequestImageData(napi_env env, napi_callback_info info);
     static napi_value JSRequestMovingPhoto(napi_env env, napi_callback_info info);
+    static napi_value JSRequestVideoFile(napi_env env, napi_callback_info info);
     static void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
     static void AddImage(const int fileId, DeliveryMode deliveryMode);
     static void OnHandleRequestImage(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
+    static void OnHandleRequestVideo(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static void GetByteArrayNapiObject(const std::string &requestUri, napi_value &arrayBuffer, bool isSource,
         napi_env env);
     static void GetImageSourceNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
         napi_env env);
+    static void WriteDataToDestPath(std::string requestUri, std::string destUri, napi_value& resultNapiValue,
+        bool isSource, napi_env env);
+    static void SendFile(napi_env env, int srcFd, int destFd, napi_value &result, off_t fileSize);
 public:
     std::mutex sMediaAssetMutex_;
 };
