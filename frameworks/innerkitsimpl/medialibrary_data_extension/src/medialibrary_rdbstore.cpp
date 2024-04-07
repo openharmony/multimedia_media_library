@@ -927,6 +927,7 @@ static const vector<string> onCreateSqlStrs = {
     TriggerDeletePhotoClearMap(),
     CREATE_TAB_ANALYSIS_OCR,
     CREATE_TAB_ANALYSIS_LABEL,
+    CREATE_TAB_ANALYSIS_VIDEO_LABEL,
     CREATE_TAB_ANALYSIS_AESTHETICS,
     CREATE_TAB_ANALYSIS_SALIENCY_DETECT,
     CREATE_TAB_ANALYSIS_OBJECT,
@@ -1332,6 +1333,17 @@ static void AddSaliencyTables(RdbStore &store)
         UPDATE_SALIENCY_NOT_SUPPORT_VALUE
     };
     MEDIA_INFO_LOG("start add saliency tables");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void AddVideoLabelTable(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        CREATE_TAB_ANALYSIS_VIDEO_LABEL,
+        DROP_INSERT_VISION_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_ADD_VIDEO_LABEL
+    };
+    MEDIA_INFO_LOG("start add video label tables");
     ExecSqls(executeSqlStrs, store);
 }
 
@@ -2356,6 +2368,10 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_IS_COVER_SATISFIED_COLUMN) {
         AddIsCoverSatisfiedColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_VIDEO_LABEL_TABEL) {
+        AddVideoLabelTable(store);
     }
 }
 
