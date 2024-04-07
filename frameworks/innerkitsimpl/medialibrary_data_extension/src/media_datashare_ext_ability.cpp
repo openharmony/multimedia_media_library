@@ -637,16 +637,6 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
-    if (cmd.GetOprnObject() == OperationObject::PAH_MULTISTAGES_CAPTURE) {
-        if (cmd.GetOprnType() == Media::OperationType::PROCESS_IMAGE && columns.size() == 3) { // 3 means params number
-            NativeRdb::ValuesBucket valuesBucket;
-            valuesBucket.PutInt(PhotoColumn::MEDIA_ID, std::stoi(columns[0]));
-            valuesBucket.PutInt("delivery_mode", std::stoi(columns[1])); // 1 indicates delivery mode
-            valuesBucket.PutString("app_name", columns[2]); // 2 indicates app name
-            MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, valuesBucket);
-        }
-        return nullptr;
-    }
     int32_t err = CheckPermFromUri(cmd, false);
     int errCode = businessError.GetCode();
     DataSharePredicates appidPredicates = predicates;
