@@ -47,7 +47,7 @@ public:
 
     void HandleMultiStagesOperation(MediaLibraryCommand &cmd, const NativeRdb::ValuesBucket &valuesBucket);
 
-    bool CancelProcessRequest(const std::string &photoId);
+    EXPORT bool CancelProcessRequest(const std::string &photoId);
     void RemoveImage(const std::string &photoId, bool isRestorable = true);
     void RemoveImages(const NativeRdb::AbsRdbPredicates &predicates, bool isRestorable = true);
     void RestoreImages(const NativeRdb::AbsRdbPredicates &predicates);
