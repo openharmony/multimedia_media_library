@@ -17,6 +17,7 @@ group("test") {
   deps = [
     "unittest/album_count_cover_test:AlbumCountCoverTest",
     "unittest/media_event_test:unittest",
+    "unittest/media_library_asset_manager_test:unittest",
     "unittest/media_library_manager_test:unittest",
     "unittest/medialib_statistic_test:unittest",
     "unittest/medialibrary_album_source_test:unittest",
