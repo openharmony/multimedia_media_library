@@ -35,10 +35,12 @@
 #include "file_uri.h"
 #include "hilog/log.h"
 #include "ipc_skeleton.h"
+#include "iservice_registry.h"
 #include "js_native_api.h"
 #include "js_native_api_types.h"
 #include "location_column.h"
 #include "locale_config.h"
+#include "media_actively_calling_analyse.h"
 #include "media_asset_edit_data_napi.h"
 #include "media_exif.h"
 #include "media_column.h"
@@ -1961,6 +1963,19 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
         POSE_SCALE_HEIGHT, PROB } } },
 };
 
+static void ActivelyStartAnalysisService(const int fileId)
+{
+    NAPI_INFO_LOG("fileId is: %{public}d", fileId);
+    int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_SERVICE_OCR;
+    MessageParcel data;
+    MessageParcel reply;
+    data.WriteInt32(static_cast<int32_t>(fileId));
+    MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
+    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply)) {
+        NAPI_ERR_LOG("Actively Calling Analyse Fail");
+    }
+}
+
 static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
 {
     MediaLibraryTracer tracer;
@@ -1990,6 +2005,10 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
     predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    if (resultSet == nullptr) {
+        ActivelyStartAnalysisService(fileId);
+        resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    }
     context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
 }
 
