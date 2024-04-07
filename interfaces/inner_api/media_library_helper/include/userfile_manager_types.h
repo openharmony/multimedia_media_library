@@ -67,6 +67,7 @@ enum AnalysisType : int32_t {
     ANALYSIS_HUMAN_FACE_TAG,
     ANALYSIS_HEAD_POSITION,
     ANALYSIS_BONE_POSE,
+    ANALYSIS_VIDEO_LABEL,
 };
 
 enum PhotoAlbumType : int32_t {

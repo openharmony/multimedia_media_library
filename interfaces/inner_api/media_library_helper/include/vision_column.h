@@ -25,6 +25,7 @@ namespace Media {
 // table name
 const std::string VISION_OCR_TABLE = "tab_analysis_ocr";
 const std::string VISION_LABEL_TABLE = "tab_analysis_label";
+const std::string VISION_VIDEO_LABEL_TABLE = "tab_analysis_video_label";
 const std::string VISION_AESTHETICS_TABLE = "tab_analysis_aesthetics_score";
 const std::string VISION_SALIENCY_TABLE = "tab_analysis_saliency_detect";
 const std::string VISION_OBJECT_TABLE = "tab_analysis_object";
@@ -44,6 +45,7 @@ const std::string TARGET_ALBUM_ID = "target_album_id";
 
 const std::string URI_OCR = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_OCR;
 const std::string URI_LABEL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_LABEL;
+const std::string URI_VIDEO_LABEL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_VIDEO_LABEL;
 const std::string URI_AESTHETICS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ATTS;
 const std::string URI_OBJECT = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_OBJECT;
 const std::string URI_RECOMMENDATION = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_RECOMMENDATION;
