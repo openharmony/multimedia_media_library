@@ -56,12 +56,13 @@ const int32_t HIGH_QUALITY_IMAGE = 0;
 
 const int32_t UUID_STR_LENGTH = 37;
 const int32_t MAX_URI_SIZE = 384; // 256 for display name and 128 for relative path
+const int32_t REQUEST_ID_MAX_LEN = 64;
 
 thread_local unique_ptr<ChangeListenerNapi> g_multiStagesRequestListObj = nullptr;
 thread_local napi_ref constructor_ = nullptr;
 
 static std::map<std::string, std::shared_ptr<MultiStagesTaskObserver>> multiStagesObserverMap;
-static SafeMap<std::string, std::map<std::string, AssetHandler*>> inProcessUriMap;
+static std::map<std::string, std::map<std::string, AssetHandler*>> inProcessUriMap;
 static SafeMap<std::string, AssetHandler*> inProcessFastRequests;
 
 napi_value MediaAssetManagerNapi::Init(napi_env env, napi_value exports)
@@ -74,6 +75,7 @@ napi_value MediaAssetManagerNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("requestImageData", JSRequestImageData),
             DECLARE_NAPI_STATIC_FUNCTION("requestMovingPhoto", JSRequestMovingPhoto),
             DECLARE_NAPI_STATIC_FUNCTION("requestVideoFile", JSRequestVideoFile),
+            DECLARE_NAPI_STATIC_FUNCTION("cancelRequest", JSCancelRequest),
         }};
         MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
         return exports;
@@ -121,40 +123,56 @@ static bool HasReadPermission()
 static void InsertInProcessMapRecord(const std::string &requestUri, const std::string &requestId,
     AssetHandler *handler)
 {
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     std::map<std::string, AssetHandler*> assetHandler;
-    if (inProcessUriMap.Find(requestUri, assetHandler)) {
+    if (inProcessUriMap.find(requestUri) != inProcessUriMap.end()) {
+        assetHandler = inProcessUriMap[requestUri];
         assetHandler[requestId] = handler;
-        inProcessUriMap.EnsureInsert(requestUri, assetHandler);
+        inProcessUriMap[requestUri] = assetHandler;
     } else {
         assetHandler[requestId] = handler;
-        inProcessUriMap.Insert(requestUri, assetHandler);
+        inProcessUriMap[requestUri] = assetHandler;
     }
 }
 
 static void DeleteInProcessMapRecord(const std::string &requestUri, const std::string &requestId)
 {
-    std::map<std::string, AssetHandler*> assetHandlers;
-    if (!inProcessUriMap.Find(requestUri, assetHandlers)) {
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
+    if (inProcessUriMap.find(requestUri) == inProcessUriMap.end()) {
         return;
     }
 
+    std::map<std::string, AssetHandler*> assetHandlers = inProcessUriMap[requestUri];
     if (assetHandlers.find(requestId) == assetHandlers.end()) {
         return;
     }
 
     assetHandlers.erase(requestId);
     if (!assetHandlers.empty()) {
-        inProcessUriMap.EnsureInsert(requestUri, assetHandlers);
+        inProcessUriMap[requestUri] = assetHandlers;
         return;
     }
 
-    inProcessUriMap.Erase(requestUri);
+    inProcessUriMap.erase(requestUri);
 
     if (multiStagesObserverMap.find(requestUri) != multiStagesObserverMap.end()) {
         UserFileClient::UnregisterObserverExt(Uri(requestUri),
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(multiStagesObserverMap[requestUri]));
     }
     multiStagesObserverMap.erase(requestUri);
+}
+
+static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler *handler)
+{
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
+    for (auto record : inProcessUriMap) {
+        if (record.second.find(requestId) != record.second.end()) {
+            handler = record.second[requestId];
+            return true;
+        }
+    }
+
+    return false;
 }
 
 static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
@@ -199,8 +217,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
 
 static void DeleteDataHandler(NotifyMode notifyMode, const std::string &requestUri, const std::string &requestId)
 {
-    NAPI_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode, requestUri.c_str(),
-        requestId.c_str());
+    NAPI_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode, requestUri.c_str(), requestId.c_str());
     if (notifyMode == NotifyMode::WAIT_FOR_HIGH_QUALITY) {
         DeleteInProcessMapRecord(requestUri, requestId);
     }
@@ -253,6 +270,17 @@ void MediaAssetManagerNapi::ProcessImage(const int fileId, const int deliveryMod
     DataShare::DataSharePredicates predicates;
     int errCode = 0;
     std::vector<std::string> columns { std::to_string(fileId), std::to_string(deliveryMode), packageName };
+    UserFileClient::Query(uri, predicates, columns, errCode);
+}
+
+void MediaAssetManagerNapi::CancelProcessImage(const std::string &photoId)
+{
+    std::string uriStr = PAH_CANCEL_PROCESS_IMAGE;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(uriStr);
+    DataShare::DataSharePredicates predicates;
+    int errCode = 0;
+    std::vector<std::string> columns { photoId };
     UserFileClient::Query(uri, predicates, columns, errCode);
 }
 
@@ -747,11 +775,12 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
             continue;
         }
 
-        std::map<std::string, AssetHandler *> assetHandlers;
-        if (!inProcessUriMap.Find(uriString, assetHandlers)) {
+        std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
+        if (inProcessUriMap.find(uriString) == inProcessUriMap.end()) {
             NAPI_INFO_LOG("current uri does not in process, uri: %{public}s", uriString.c_str());
             return;
         }
+        std::map<std::string, AssetHandler *> assetHandlers = inProcessUriMap[uriString];
         for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;
             MediaAssetManagerNapi::NotifyMediaDataPrepared(assetHandler);
@@ -1027,5 +1056,36 @@ void MediaAssetManagerNapi::SendFile(napi_env env, int srcFd, int destFd, napi_v
     napi_get_boolean(env, true, &result);
 }
 
+napi_value MediaAssetManagerNapi::JSCancelRequest(napi_env env, napi_callback_info info)
+{
+    size_t argc = ARGS_TWO;
+    napi_value argv[ARGS_TWO];
+    napi_value thisVar = nullptr;
+
+    GET_JS_ARGS(env, info, argc, argv, thisVar);
+    NAPI_ASSERT(env, (argc == ARGS_TWO), "requires 2 paramters");
+
+    string requestId;
+    CHECK_ARGS_THROW_INVALID_PARAM(env,
+        MediaLibraryNapiUtils::GetParamStringWithLength(env, argv[ARGS_ONE], REQUEST_ID_MAX_LEN, requestId));
+
+    AssetHandler *assetHandler;
+    if (!inProcessFastRequests.Find(requestId, assetHandler) && !IsInProcessInMapRecord(requestId, assetHandler)) {
+        NAPI_ERR_LOG("requestId(%{public}s) not in progress.", requestId.c_str());
+        NapiError::ThrowError(env, JS_INNER_FAIL, "request id not in progress");
+        return nullptr;
+    }
+    if (assetHandler == nullptr) {
+        NAPI_ERR_LOG("assetHandler is nullptr.");
+        NapiError::ThrowError(env, JS_INNER_FAIL, "assetHandler is nullptr.");
+        return nullptr;
+    }
+
+    MediaAssetManagerNapi::CancelProcessImage(assetHandler->mediaId);
+    DeleteInProcessMapRecord(assetHandler->requestUri, assetHandler->requestId);
+    inProcessFastRequests.Erase(requestId);
+    delete assetHandler;
+    RETURN_NAPI_UNDEFINED(env);
+}
 } // namespace Media
 } // namespace OHOS
