@@ -34,7 +34,7 @@ public:
         const char* destPath, const NativeOnDataPrepared &callback) override;
     std::string NativeRequestVideo(const char* videoUri, const NativeRequestOptions &requestOptions,
         const char* destPath, const NativeOnDataPrepared &callback) override;
-    bool NativeCancel(const std::string &requestId) override;
+    bool NativeCancelRequest(const std::string &requestId) override;
 
 private:
     void CreateDataHelper(int32_t systemAbilityId);

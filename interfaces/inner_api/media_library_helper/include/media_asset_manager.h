@@ -35,8 +35,8 @@ enum class MultiStagesCapturePhotoStatus {
 
 struct RequestSourceAsyncContext {
     int fileId = -1; // default value of request file id
-    std::string mediaUri;
-    std::string mediaId;
+    std::string requestUri;
+    std::string photoId;
     std::string displayName;
     std::string mediaPath;
     std::string callingPkgName;
@@ -48,16 +48,16 @@ struct RequestSourceAsyncContext {
 };
 
 struct AssetHandler {
-    std::string mediaId;
+    std::string photoId;
     std::string requestId;
-    std::string mediaUri;
+    std::string requestUri;
     std::string destUri;
     MediaAssetDataHandlerPtr dataHandler;
     std::mutex mutex_;
 
-    AssetHandler(const std::string &mediaId, const std::string &requestId, const std::string &uri,
+    AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
         const std::string &destUri, const MediaAssetDataHandlerPtr &handler)
-        : mediaId(mediaId), requestId(requestId), mediaUri(uri), destUri(destUri), dataHandler(handler) {}
+        : photoId(photoId), requestId(requestId), requestUri(uri), destUri(destUri), dataHandler(handler) {}
 };
 
 class MultiStagesTaskObserver : public DataShare::DataShareObserver {
@@ -74,7 +74,7 @@ public:
     virtual ~MediaAssetManager() = default;
 
 public:
-    virtual bool NativeCancel(const std::string &requestId) = 0;
+    virtual bool NativeCancelRequest(const std::string &requestId) = 0;
     virtual std::string NativeRequestImage(const char* photoUri, const NativeRequestOptions &requestOptions,
         const char* destPath, const NativeOnDataPrepared &callback) = 0;
     virtual std::string NativeRequestVideo(const char* videoUri, const NativeRequestOptions &requestOptions,

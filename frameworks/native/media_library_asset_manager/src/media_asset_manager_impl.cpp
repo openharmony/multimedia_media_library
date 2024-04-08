@@ -27,6 +27,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "multistages_capture_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_tracer.h"
@@ -41,6 +42,7 @@ using Uri = OHOS::Uri;
 
 static const std::string MEDIA_ASSET_MANAGER_CLASS = "MediaAssetManagerImpl";
 const std::string API_VERSION = "api_version";
+static std::mutex multiStagesCaptureLock;
 
 const int32_t LOW_QUALITY_IMAGE = 1;
 const int32_t HIGH_QUALITY_IMAGE = 0;
@@ -49,7 +51,7 @@ const uint32_t MAX_URI_SIZE = 384;
 const std::string ERROR_REQUEST_ID = "00000000-0000-0000-0000-000000000000";
 
 static std::map<std::string, std::shared_ptr<MultiStagesTaskObserver>> multiStagesObserverMap;
-static SafeMap<std::string, std::map<std::string, AssetHandler*>> inProcessUriMap;
+static std::map<std::string, std::map<std::string, AssetHandler*>> inProcessUriMap;
 static SafeMap<std::string, AssetHandler*> inProcessFastRequests;
 
 static std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
@@ -76,22 +78,23 @@ MediaAssetManagerImpl::~MediaAssetManagerImpl()
 
 static void DeleteInProcessMapRecord(const std::string &requestUri, const std::string &requestId)
 {
-    std::map<std::string, AssetHandler*> assetHandlers;
-    if (!inProcessUriMap.Find(requestUri, assetHandlers)) {
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
+    if (inProcessUriMap.find(requestUri) == inProcessUriMap.end()) {
         return;
     }
 
+    std::map<std::string, AssetHandler*> assetHandlers = inProcessUriMap[requestUri];
     if (assetHandlers.find(requestId) == assetHandlers.end()) {
         return;
     }
 
     assetHandlers.erase(requestId);
     if (!assetHandlers.empty()) {
-        inProcessUriMap.EnsureInsert(requestUri, assetHandlers);
+        inProcessUriMap[requestUri] = assetHandlers;
         return;
     }
 
-    inProcessUriMap.Erase(requestUri);
+    inProcessUriMap.erase(requestUri);
 
     if (multiStagesObserverMap.find(requestUri) != multiStagesObserverMap.end()) {
         sDataShareHelper_->UnregisterObserverExt(Uri(requestUri),
@@ -100,10 +103,22 @@ static void DeleteInProcessMapRecord(const std::string &requestUri, const std::s
     multiStagesObserverMap.erase(requestUri);
 }
 
+static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler *handler)
+{
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
+    for (auto record : inProcessUriMap) {
+        if (record.second.find(requestId) != record.second.end()) {
+            handler = record.second[requestId];
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static void DeleteDataHandler(NativeNotifyMode notifyMode, const std::string &requestUri, const std::string &requestId)
 {
-    MEDIA_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode, requestUri.c_str(),
-        requestId.c_str());
+    MEDIA_INFO_LOG("Rmv %{public}d, %{public}s, %{public}s", notifyMode, requestUri.c_str(), requestId.c_str());
     if (notifyMode == NativeNotifyMode::WAIT_FOR_HIGH_QUALITY) {
         DeleteInProcessMapRecord(requestUri, requestId);
     }
@@ -113,13 +128,15 @@ static void DeleteDataHandler(NativeNotifyMode notifyMode, const std::string &re
 static void InsertInProcessMapRecord(const std::string &requestUri, const std::string &requestId,
     AssetHandler *handler)
 {
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     std::map<std::string, AssetHandler*> assetHandler;
-    if (inProcessUriMap.Find(requestUri, assetHandler)) {
+    if (inProcessUriMap.find(requestUri) != inProcessUriMap.end()) {
+        assetHandler = inProcessUriMap[requestUri];
         assetHandler[requestId] = handler;
-        inProcessUriMap.EnsureInsert(requestUri, assetHandler);
+        inProcessUriMap[requestUri] = assetHandler;
     } else {
         assetHandler[requestId] = handler;
-        inProcessUriMap.Insert(requestUri, assetHandler);
+        inProcessUriMap[requestUri] = assetHandler;
     }
 }
 
@@ -136,15 +153,15 @@ static AssetHandler* InsertDataHandler(NativeNotifyMode notifyMode,
     const unique_ptr<RequestSourceAsyncContext> &asyncContext)
 {
     std::shared_ptr<CapiMediaAssetDataHandler> mediaAssetDataHandler = make_shared<CapiMediaAssetDataHandler>(
-        asyncContext->onDataPreparedHandler, asyncContext->returnDataType, asyncContext->mediaUri,
+        asyncContext->onDataPreparedHandler, asyncContext->returnDataType, asyncContext->requestUri,
         asyncContext->destUri, asyncContext->requestOptions.sourceMode);
 
     mediaAssetDataHandler->SetNotifyMode(notifyMode);
 
-    AssetHandler *assetHandler = new AssetHandler(asyncContext->mediaId, asyncContext->requestId,
-        asyncContext->mediaUri, asyncContext->destUri, mediaAssetDataHandler);
-    MEDIA_INFO_LOG("Add %{public}d, %{private}s, %{private}s, %{public}p", notifyMode, asyncContext->mediaUri.c_str(),
-        asyncContext->requestId.c_str(), assetHandler);
+    AssetHandler *assetHandler = new AssetHandler(asyncContext->photoId, asyncContext->requestId,
+        asyncContext->requestUri, asyncContext->destUri, mediaAssetDataHandler);
+    MEDIA_INFO_LOG("Add %{public}d, %{private}s, %{private}s, %{public}p", notifyMode,
+        asyncContext->requestUri.c_str(), asyncContext->requestId.c_str(), assetHandler);
 
     switch (notifyMode) {
         case NativeNotifyMode::FAST_NOTIFY: {
@@ -152,7 +169,7 @@ static AssetHandler* InsertDataHandler(NativeNotifyMode notifyMode,
             break;
         }
         case NativeNotifyMode::WAIT_FOR_HIGH_QUALITY: {
-            InsertInProcessMapRecord(asyncContext->mediaUri, asyncContext->requestId, assetHandler);
+            InsertInProcessMapRecord(asyncContext->requestUri, asyncContext->requestId, assetHandler);
             break;
         }
         default:
@@ -224,7 +241,7 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
     int32_t writeResult = E_OK;
     if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_TARGET_FILE) {
         writeResult = MediaAssetManagerImpl::WriteFileToPath(dataHandler->GetRequestUri(), dataHandler->GetDestUri(),
-        dataHandler->GetSourceMode() == NativeSourceMode::ORIGINAL_MODE);
+            dataHandler->GetSourceMode() == NativeSourceMode::ORIGINAL_MODE);
         Native_RequestId requestId;
         strncpy_s(requestId.requestId, UUID_STR_LENGTH, assetHandler->requestId.c_str(), UUID_STR_LENGTH);
         if (dataHandler->onDataPreparedHandler_ != nullptr) {
@@ -235,7 +252,7 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         return false;
     }
 
-    DeleteDataHandler(notifyMode, assetHandler->mediaUri, assetHandler->requestId);
+    DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     MEDIA_INFO_LOG("Delete assetHandler: %{public}p", assetHandler);
     delete assetHandler;
     return true;
@@ -279,17 +296,17 @@ std::string MediaAssetManagerImpl::NativeRequestImage(const char* photoUri,
     std::unique_ptr<RequestSourceAsyncContext> asyncContext = std::make_unique<RequestSourceAsyncContext>();
     asyncContext->callingPkgName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     asyncContext->destUri = std::string(destUri);
-    asyncContext->mediaUri = std::string(photoUri);
-    asyncContext->displayName = MediaFileUtils::GetFileName(asyncContext->mediaUri);
-    asyncContext->fileId = std::stoi(MediaFileUtils::GetIdFromUri(asyncContext->mediaUri));
+    asyncContext->requestUri = std::string(photoUri);
+    asyncContext->displayName = MediaFileUtils::GetFileName(asyncContext->requestUri);
+    asyncContext->fileId = std::stoi(MediaFileUtils::GetIdFromUri(asyncContext->requestUri));
     asyncContext->requestOptions.deliveryMode = requestOptions.deliveryMode;
     asyncContext->requestOptions.sourceMode = NativeSourceMode::EDITED_MODE;
     asyncContext->returnDataType = ReturnDataType::TYPE_TARGET_FILE;
     asyncContext->onDataPreparedHandler = callback;
 
-    if (asyncContext->mediaUri.length() > MAX_URI_SIZE || asyncContext->destUri.length() > MAX_URI_SIZE) {
-        MEDIA_ERR_LOG("Request image file uri lens out of limit mediaUri lens: %{public}d, destUri lens: %{public}d",
-            asyncContext->mediaUri.length(), asyncContext->destUri.length());
+    if (asyncContext->requestUri.length() > MAX_URI_SIZE || asyncContext->destUri.length() > MAX_URI_SIZE) {
+        MEDIA_ERR_LOG("Request image file uri lens out of limit requestUri lens: %{public}d, destUri lens: %{public}d",
+            asyncContext->requestUri.length(), asyncContext->destUri.length());
         return ERROR_REQUEST_ID;
     }
     if (MediaFileUtils::GetMediaType(asyncContext->displayName) != MEDIA_TYPE_IMAGE ||
@@ -321,17 +338,17 @@ std::string MediaAssetManagerImpl::NativeRequestVideo(const char* videoUri,
     std::unique_ptr<RequestSourceAsyncContext> asyncContext = std::make_unique<RequestSourceAsyncContext>();
     asyncContext->callingPkgName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     asyncContext->destUri = std::string(destUri);
-    asyncContext->mediaUri = std::string(videoUri);
-    asyncContext->displayName = MediaFileUtils::GetFileName(asyncContext->mediaUri);
-    asyncContext->fileId = std::stoi(MediaFileUtils::GetIdFromUri(asyncContext->mediaUri));
+    asyncContext->requestUri = std::string(videoUri);
+    asyncContext->displayName = MediaFileUtils::GetFileName(asyncContext->requestUri);
+    asyncContext->fileId = std::stoi(MediaFileUtils::GetIdFromUri(asyncContext->requestUri));
     asyncContext->requestOptions.deliveryMode = requestOptions.deliveryMode;
     asyncContext->requestOptions.sourceMode = NativeSourceMode::EDITED_MODE;
     asyncContext->returnDataType = ReturnDataType::TYPE_TARGET_FILE;
     asyncContext->onDataPreparedHandler = callback;
 
-    if (asyncContext->mediaUri.length() > MAX_URI_SIZE || asyncContext->destUri.length() > MAX_URI_SIZE) {
-        MEDIA_ERR_LOG("Request video file uri lens out of limit mediaUri lens: %{public}d, destUri lens: %{public}d",
-            asyncContext->mediaUri.length(), asyncContext->destUri.length());
+    if (asyncContext->requestUri.length() > MAX_URI_SIZE || asyncContext->destUri.length() > MAX_URI_SIZE) {
+        MEDIA_ERR_LOG("Request video file uri lens out of limit requestUri lens: %{public}d, destUri lens: %{public}d",
+            asyncContext->requestUri.length(), asyncContext->destUri.length());
         return ERROR_REQUEST_ID;
     }
     if (MediaFileUtils::GetMediaType(asyncContext->displayName) != MEDIA_TYPE_VIDEO ||
@@ -350,9 +367,26 @@ std::string MediaAssetManagerImpl::NativeRequestVideo(const char* videoUri,
     }
 }
 
-bool MediaAssetManagerImpl::NativeCancel(const std::string &requestId)
+bool MediaAssetManagerImpl::NativeCancelRequest(const std::string &requestId)
 {
-    return false;
+    if (requestId.empty()) {
+        MEDIA_ERR_LOG("NativeCancel request id is empty.");
+        return false;
+    }
+
+    AssetHandler *assetHandler;
+    if (!inProcessFastRequests.Find(requestId, assetHandler) && !IsInProcessInMapRecord(requestId, assetHandler)) {
+        MEDIA_ERR_LOG("requestId(%{public}s) not in progress.", requestId.c_str());
+        return false;
+    }
+    if (assetHandler == nullptr) {
+        MEDIA_ERR_LOG("assetHandler is nullptr.");
+        return false;
+    }
+    MultiStagesCaptureManager::GetInstance().CancelProcessRequest(assetHandler->photoId);
+    DeleteInProcessMapRecord(assetHandler->requestUri, assetHandler->requestId);
+    inProcessFastRequests.Erase(requestId);
+    return true;
 }
 
 bool MediaAssetManagerImpl::OnHandleRequestImage(
@@ -365,7 +399,7 @@ bool MediaAssetManagerImpl::OnHandleRequestImage(
             result = NotifyDataPreparedWithoutRegister(asyncContext);
             break;
         case NativeDeliveryMode::HIGH_QUALITY_MODE:
-            status = QueryPhotoStatus(asyncContext->fileId, asyncContext->mediaId);
+            status = QueryPhotoStatus(asyncContext->fileId, asyncContext->photoId);
             if (status == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
                 result = NotifyDataPreparedWithoutRegister(asyncContext);
             } else {
@@ -373,7 +407,7 @@ bool MediaAssetManagerImpl::OnHandleRequestImage(
             }
             break;
         case NativeDeliveryMode::BALANCED_MODE:
-            status = QueryPhotoStatus(asyncContext->fileId, asyncContext->mediaId);
+            status = QueryPhotoStatus(asyncContext->fileId, asyncContext->photoId);
             result = NotifyDataPreparedWithoutRegister(asyncContext);
             if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
                 RegisterTaskObserver(asyncContext);
@@ -426,11 +460,11 @@ bool MediaAssetManagerImpl::NotifyDataPreparedWithoutRegister(
 void MediaAssetManagerImpl::RegisterTaskObserver(const unique_ptr<RequestSourceAsyncContext> &asyncContext)
 {
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
-    Uri uri(asyncContext->mediaUri);
-    if (multiStagesObserverMap.find(asyncContext->mediaUri) == multiStagesObserverMap.end()) {
+    Uri uri(asyncContext->requestUri);
+    if (multiStagesObserverMap.find(asyncContext->requestUri) == multiStagesObserverMap.end()) {
         sDataShareHelper_->RegisterObserverExt(uri,
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
-        multiStagesObserverMap.insert(std::make_pair(asyncContext->mediaUri, dataObserver));
+        multiStagesObserverMap.insert(std::make_pair(asyncContext->requestUri, dataObserver));
     }
 
     InsertDataHandler(NativeNotifyMode::WAIT_FOR_HIGH_QUALITY, asyncContext);
@@ -470,11 +504,12 @@ void MultiStagesTaskObserver::OnChange(const ChangeInfo &changeInfo)
     for (auto &uri : changeInfo.uris_) {
         string uriString = uri.ToString();
 
-        std::map<std::string, AssetHandler *> assetHandlers;
-        if (!inProcessUriMap.Find(uriString, assetHandlers)) {
-            MEDIA_INFO_LOG("Current uri does not in process, uri: %{public}s", uriString.c_str());
+        std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
+        if (inProcessUriMap.find(uriString) == inProcessUriMap.end()) {
+            MEDIA_INFO_LOG("current uri does not in process, uri: %{public}s", uriString.c_str());
             return;
         }
+        std::map<std::string, AssetHandler *> assetHandlers = inProcessUriMap[uriString];
         for (auto handler : assetHandlers) {
             auto assetHandler = handler.second;
             MediaAssetManagerImpl::NotifyImageDataPrepared(assetHandler);
