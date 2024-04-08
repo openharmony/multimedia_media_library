@@ -62,6 +62,9 @@ struct ThumbnailData {
     EXPORT int64_t dateModified {0};
     EXPORT float degrees;
     EXPORT bool isThumbAdded {false};
+
+    // Reload source when Lcd Size is not scaleable for Thumbnail
+    EXPORT bool needReloadSource {false};
     EXPORT std::shared_ptr<PixelMap> source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
@@ -143,6 +146,8 @@ public:
     EXPORT static void QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
         ThumbnailData &data, int &err);
     static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
+    static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
+    static bool ScaleThumbnailEx(ThumbnailData &data, bool isThumbnail);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
@@ -160,7 +165,8 @@ private:
 
     EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
-    static Size ConvertDecodeSize(const Size &sourceSize, Size &desiredSize, const bool isThumbnail);
+    static Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desiredSize,
+        const bool isThumbnail);
     EXPORT static bool ScaleTargetPixelMap(ThumbnailData &data, const Size &targetSize);
     EXPORT static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize,
         const std::string &targetPath);

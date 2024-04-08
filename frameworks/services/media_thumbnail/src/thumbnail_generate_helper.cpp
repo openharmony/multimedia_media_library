@@ -16,6 +16,11 @@
 
 #include "thumbnail_generate_helper.h"
 
+#include <fcntl.h>
+
+#include "dfx_const.h"
+#include "dfx_manager.h"
+#include "dfx_timer.h"
 #include "ithumbnail_helper.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -28,6 +33,19 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+int32_t ThumbnailGenerateHelper::CreateThumbnails(ThumbRdbOpt &opts, bool isSync)
+{
+    ThumbnailData thumbnailData;
+    ThumbnailUtils::GetThumbnailInfo(opts, thumbnailData);
+
+    if (isSync) {
+        IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData, false);
+    } else {
+        IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateThumbnails, opts, thumbnailData, true);
+    }
+    return E_OK;
+}
+
 int32_t ThumbnailGenerateHelper::CreateThumbnailBatch(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {
@@ -162,6 +180,44 @@ int32_t ThumbnailGenerateHelper::GetNewThumbnailCount(ThumbRdbOpt &opts, const i
         return err;
     }
     return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size, ThumbnailType thumbType)
+{
+    ThumbnailWait thumbnailWait(false);
+    thumbnailWait.CheckAndWait(opts.row, thumbType == ThumbnailType::LCD);
+    ThumbnailData thumbnailData;
+    ThumbnailUtils::GetThumbnailInfo(opts, thumbnailData);
+
+    string thumbSuffix = GetThumbSuffix(thumbType);
+    string fileName = GetThumbnailPath(thumbnailData.path, thumbSuffix);
+    if (access(fileName.c_str(), F_OK) != 0) {
+        if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, thumbnailData)) {
+            MEDIA_ERR_LOG("get lcd thumbnail pixelmap, doCreateThumbnail %{public}s", fileName.c_str());
+            return E_THUMBNAIL_LOCAL_CREATE_FAIL;
+        } else if (!IThumbnailHelper::DoCreateThumbnail(opts, thumbnailData)) {
+            MEDIA_ERR_LOG("get default thumbnail pixelmap, doCreateThumbnail %{public}s", fileName.c_str());
+            return E_THUMBNAIL_LOCAL_CREATE_FAIL;
+        }
+    }
+    if (!opts.path.empty()) {
+        fileName = GetThumbnailPath(thumbnailData.path, thumbSuffix);
+    }
+
+    DfxTimer dfxTimer(thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN,
+        INVALID_DFX, thumbType == ThumbnailType::LCD ? CLOUD_LCD_TIME_OUT : CLOUD_DEFAULT_TIME_OUT, false);
+    auto fd = open(fileName.c_str(), O_RDONLY);
+    dfxTimer.End();
+    if (fd < 0) {
+        DfxManager::GetInstance()->HandleThumbnailError(fileName,
+            thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
+        return -errno;
+    }
+    int err;
+    if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE) {
+        ThumbnailUtils::UpdateVisitTime(opts, thumbnailData, err);
+    }
+    return fd;
 }
 } // namespace Media
 } // namespace OHOS
