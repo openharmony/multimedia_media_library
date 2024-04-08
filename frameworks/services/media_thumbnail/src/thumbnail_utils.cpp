@@ -25,6 +25,7 @@
 #ifdef DISTRIBUTED
 #include "device_manager.h"
 #endif
+#include "dfx_utils.h"
 #include "distributed_kv_data_manager.h"
 #include "hitrace_meter.h"
 #include "image_packer.h"
@@ -59,6 +60,7 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 constexpr float EPSILON = 1e-6;
+constexpr float FLOAT_ZERO = 0.0f;
 constexpr int32_t SHORT_SIDE_THRESHOLD = 256;
 constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 768;
 constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 512;
@@ -72,6 +74,7 @@ constexpr int32_t MAX_DATE_ADDED_LENGTH = 13;
 constexpr int32_t DECODE_SCALE_BASE = 2;
 const std::string KVSTORE_FIELD_ID_TEMPLATE = "0000000000";
 const std::string KVSTORE_DATE_ADDED_TEMPLATE = "0000000000000";
+const std::string DEFAULT_EXIF_ORIENTATION = "1";
 
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
@@ -161,7 +164,7 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
     }
 
     DecodeOptions decOpts;
-    decOpts.desiredSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
+    decOpts.desiredSize = ConvertDecodeSize(data, imageInfo.size, desiredSize, isThumbnail);
     decOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
     data.source = audioImageSource->CreatePixelMap(decOpts, errCode);
     if ((errCode != E_OK) || (data.source == nullptr)) {
@@ -218,15 +221,10 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
     }
     int width = data.source->GetWidth();
     int height = data.source->GetHeight();
-    if (!isThumbnail && !ResizeLcd(width, height)) {
-        MEDIA_ERR_LOG("ResizeLcd failed");
-    } else if (isThumbnail && !ResizeThumb(width, height)) {
-        MEDIA_ERR_LOG("ResizeThumb failed");
-    }
-    desiredSize = {width, height};
-    if ((width != data.source->GetWidth() || height != data.source->GetHeight())) {
-        param.dstWidth = width;
-        param.dstHeight = height;
+    ConvertDecodeSize(data, {width, height}, desiredSize, isThumbnail);
+    if ((desiredSize.width != data.source->GetWidth() || desiredSize.height != data.source->GetHeight())) {
+        param.dstWidth = desiredSize.width;
+        param.dstHeight = desiredSize.height;
         data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
             param);
         if (data.source == nullptr) {
@@ -234,7 +232,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
             return false;
         }
     }
-    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, width, height);
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, desiredSize.width, desiredSize.height);
     return true;
 }
 
@@ -341,7 +339,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     }
 
     DecodeOptions decodeOpts;
-    Size targetSize = ConvertDecodeSize(imageInfo.size, desiredSize, isThumbnail);
+    Size targetSize = ConvertDecodeSize(data, imageInfo.size, desiredSize, isThumbnail);
     if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
         MEDIA_ERR_LOG("Failed to generate decodeOpts, pixelmap path %{private}s", path.c_str());
         return false;
@@ -1142,35 +1140,48 @@ bool ThumbnailUtils::DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts)
 }
 #endif
 
-Size ThumbnailUtils::ConvertDecodeSize(const Size &sourceSize, Size &desiredSize, const bool isThumbnail)
+Size ThumbnailUtils::ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desiredSize,
+    const bool isThumbnail)
 {
     int width = sourceSize.width;
     int height = sourceSize.height;
-    if (isThumbnail) {
-        if (!ResizeThumb(width, height)) {
-            MEDIA_ERR_LOG("ResizeThumb failed");
-        }
-        desiredSize = {width, height};
-        float desiredScale = static_cast<float>(desiredSize.height) / static_cast<float>(desiredSize.width);
-        float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
-        float scale = 1.0f;
-        if ((sourceScale - desiredScale > EPSILON) ^ isThumbnail) {
-            scale = (float)desiredSize.height / sourceSize.height;
-        } else {
-            scale = (float)desiredSize.width / sourceSize.width;
-        }
-        scale = scale < 1.0f ? scale : 1.0f;
-        Size decodeSize = {
-            static_cast<int32_t> (scale * sourceSize.width),
-            static_cast<int32_t> (scale * sourceSize.height),
-        };
-        return decodeSize;
+    if (!ResizeThumb(width, height)) {
+        MEDIA_ERR_LOG("ResizeThumb failed");
+        return {0, 0};
+    }
+    Size thumbDesiredSize = {width, height};
+    float desiredScale = static_cast<float>(thumbDesiredSize.height) / static_cast<float>(thumbDesiredSize.width);
+    float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
+    float scale = 1.0f;
+    if (sourceScale - desiredScale <= EPSILON) {
+        scale = (float)thumbDesiredSize.height / sourceSize.height;
     } else {
-        if (!ResizeLcd(width, height)) {
-            MEDIA_ERR_LOG("ResizeThumb failed");
-        }
-        desiredSize = {width, height};
-        return desiredSize.width != 0 && desiredSize.height != 0 ? desiredSize : sourceSize;
+        scale = (float)thumbDesiredSize.width / sourceSize.width;
+    }
+    scale = scale < 1.0f ? scale : 1.0f;
+    Size thumbDecodeSize = {
+        static_cast<int32_t> (scale * sourceSize.width),
+        static_cast<int32_t> (scale * sourceSize.height),
+    };
+
+    width = sourceSize.width;
+    height = sourceSize.height;
+    if (!ResizeLcd(width, height)) {
+        MEDIA_ERR_LOG("ResizeLcd failed");
+        return {0, 0};
+    }
+    Size lcdDesiredSize = {width, height};
+
+    int lcdMinSide = std::min(lcdDesiredSize.width, lcdDesiredSize.height);
+    int thumbMinSide = std::min(thumbDesiredSize.width, thumbDesiredSize.height);
+    data.needReloadSource = lcdMinSide < thumbMinSide;
+    
+    if (isThumbnail) {
+        desiredSize = thumbDesiredSize;
+        return thumbDecodeSize;
+    } else {
+        desiredSize = lcdDesiredSize;
+        return lcdDesiredSize;
     }
 }
 
@@ -1212,7 +1223,12 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
         }
     }
     data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    data.source->rotate(data.degrees);
+    if (std::abs(data.degrees - FLOAT_ZERO) > EPSILON) {
+        data.source->rotate(data.degrees);
+    }
+
+    // PixelMap has been rotated, fix the exif orientation to zero degree.
+    data.source->ModifyImageProperty(PHOTO_DATA_IMAGE_ORIENTATION, DEFAULT_EXIF_ORIENTATION);
     return true;
 }
 
@@ -1908,6 +1924,56 @@ bool ThumbnailUtils::DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const Thumbnai
 
     int status = kvStore->Delete(key);
     return status == E_OK;
+}
+
+void ThumbnailUtils::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
+{
+    if (opts.store == nullptr) {
+        return;
+    }
+    if (!opts.path.empty()) {
+        outData.path = opts.path;
+        outData.id = opts.row;
+        outData.dateAdded = opts.dateAdded;
+        outData.fileUri = opts.fileUri;
+        return;
+    }
+    string filesTableName = opts.table;
+    int errCode = E_ERR;
+    if (!opts.networkId.empty()) {
+        filesTableName = opts.store->ObtainDistributedTableName(opts.networkId, opts.table, errCode);
+    }
+    if (filesTableName.empty()) {
+        return;
+    }
+    opts.table = filesTableName;
+    int err;
+    ThumbnailUtils::QueryThumbnailInfo(opts, outData, err);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("query fail [%{public}d]", err);
+    }
+}
+
+bool ThumbnailUtils::ScaleThumbnailEx(ThumbnailData &data, bool isThumbnail)
+{
+    Size desiredSize;
+    Size targetSize = ConvertDecodeSize(data, {data.source->GetWidth(), data.source->GetHeight()},
+        desiredSize, isThumbnail);
+    if (data.mediaType == MEDIA_TYPE_VIDEO && !GenTargetPixelmap(data, targetSize)) {
+        MEDIA_ERR_LOG("Video file fail to scale to targetSize");
+        return false;
+    } else if (!ScaleTargetPixelMap(data, targetSize)) {
+        MEDIA_ERR_LOG("Image file fail to scale to targetSize");
+        return false;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("CenterScale");
+    PostProc postProc;
+    if (!postProc.CenterScale(desiredSize, *data.source)) {
+        MEDIA_ERR_LOG("thumbnail center crop failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        return false;
+    }
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

@@ -16,8 +16,9 @@
 
 #include "thumbnail_service.h"
 
-#include "ipc_skeleton.h"
 #include "display_manager.h"
+#include "ipc_skeleton.h"
+#include "ithumbnail_helper.h"
 #include "media_column.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_db_const.h"
@@ -28,7 +29,6 @@
 #include "thumbnail_aging_helper.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
-#include "thumbnail_helper_factory.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
 
@@ -167,20 +167,11 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
         .row = id,
         .uri = uri,
     };
-    bool isThumbnail = IsThumbnail(size.width, size.height);
-    shared_ptr<IThumbnailHelper> thumbnailHelper =
-        ThumbnailHelperFactory::GetThumbnailHelper(isThumbnail
-            ? ThumbnailHelperType::DEFAULT : ThumbnailHelperType::LCD);
-    if (thumbnailHelper == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_NO_MEMORY},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return E_NO_MEMORY;
-    }
-    if (!isThumbnail) {
+    ThumbnailType thumbType = GetThumbType(size.width, size.height, isAstc);
+    if (thumbType != ThumbnailType::THUMB && thumbType != ThumbnailType::THUMB_ASTC) {
         opts.screenSize = screenSize_;
     }
-    int fd = thumbnailHelper->GetThumbnailPixelMap(opts, size, isAstc);
+    int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, size, thumbType);
     if (fd < 0) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, fd},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -242,29 +233,6 @@ int32_t ThumbnailService::ParseThumbnailParam(const std::string &uri, string &fi
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateThumbnailInfo(const string &path, const string &tableName, const string &fileId,
-    const string &uri, const bool &isSync)
-{
-    int32_t err = CreateDefaultThumbnail(path, tableName, fileId, uri, isSync);
-    if (err != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        MEDIA_ERR_LOG("CreateDefaultThumbnail failed");
-        return err;
-    }
-
-    err = CreateLcdThumbnail(path, tableName, fileId, isSync);
-    if (err != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        MEDIA_ERR_LOG("CreateLcdThumbnail failed");
-        return err;
-    }
-    return E_OK;
-}
-
 int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &path, bool isSync)
 {
     string fileId;
@@ -276,30 +244,11 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_ERR},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-    }
-
-    err = CreateThumbnailInfo(path, tableName, fileId, uri, isSync);
-    if (err != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return err;
     }
 
-    return E_OK;
-}
-
-int32_t ThumbnailService::CreateDefaultThumbnail(const std::string &path,
-    const std::string &tableName, const std::string &fileId, const std::string &uri, const bool &isSync)
-{
     std::string dateAdded = ThumbnailUriUtils::GetDateAddedFromUri(uri);
     std::string fileUri = ThumbnailUriUtils::GetFileUriFromUri(uri);
-    shared_ptr<IThumbnailHelper> thumbnailHelper =
-        ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::DEFAULT);
-    if (thumbnailHelper == nullptr) {
-        MEDIA_ERR_LOG("thumbnailHelper nullptr");
-        return E_ERR;
-    }
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
         .path = path,
@@ -309,32 +258,13 @@ int32_t ThumbnailService::CreateDefaultThumbnail(const std::string &path,
         .fileUri = fileUri,
         .screenSize = screenSize_
     };
-    int32_t err = thumbnailHelper->CreateThumbnail(opts, isSync);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("CreateThumbnail failed : %{public}d", err);
-        return err;
-    }
-    return E_OK;
-}
 
-int32_t ThumbnailService::CreateLcdThumbnail(const std::string &path,
-    const std::string &tableName, const std::string &fileId, const bool &isSync)
-{
-    shared_ptr<IThumbnailHelper> lcdHelper = ThumbnailHelperFactory::GetThumbnailHelper(ThumbnailHelperType::LCD);
-    if (lcdHelper == nullptr) {
-        MEDIA_ERR_LOG("lcdHelper nullptr");
-        return E_ERR;
-    }
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .path = path,
-        .table = tableName,
-        .row = fileId,
-        .screenSize = screenSize_
-    };
-    int32_t err = lcdHelper->CreateThumbnail(opts, isSync);
+    err = ThumbnailGenerateHelper::CreateThumbnails(opts, isSync);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("CreateLcd failed : %{public}d", err);
+        MEDIA_ERR_LOG("CreateThumbnails failed : %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return err;
     }
     return E_OK;
