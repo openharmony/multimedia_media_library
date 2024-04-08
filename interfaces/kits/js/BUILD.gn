@@ -102,6 +102,10 @@ config("napi_config") {
 ohos_shared_library("medialibrary_nutils") {
   configs = [ ":napi_config" ]
   sources = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/form_map.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/media_file_uri.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/media_file_utils.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_command.cpp",
     "${MEDIALIB_JS_PATH}/src/album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/delete_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/fetch_file_result_napi.cpp",
@@ -112,6 +116,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/media_asset_edit_data_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_asset_manager_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_assets_change_request_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/media_asset_rdbstore.cpp",
     "${MEDIALIB_JS_PATH}/src/media_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_library_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_scanner_napi.cpp",
@@ -128,6 +133,7 @@ ohos_shared_library("medialibrary_nutils") {
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "{MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "//third_party/e2fsprogs:libext2_uuid",
   ]
 
@@ -164,6 +170,7 @@ ohos_shared_library("medialibrary_nutils") {
     "player_framework:media_client",
     "relational_store:native_rdb",
     "samgr:samgr_proxy",
+    "relational_store:rdb_data_share_adapter",
   ]
 
   defines = []
