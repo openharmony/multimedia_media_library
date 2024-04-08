@@ -50,7 +50,7 @@ extern "C" {
  * @return Returns a pointer to an OH_MediaAssetManager instance.
  * @since 12
 */
-OH_MediaAssetManager *OH_MediaAssetManager_Create(void);
+OH_MediaAssetManager* OH_MediaAssetManager_Create(void);
 
 /**
  * @brief Request image source with dest path.
@@ -60,11 +60,11 @@ OH_MediaAssetManager *OH_MediaAssetManager_Create(void);
  * @param requestOptions Options model for requesting resource.
  * @param destPath Destination address of the requested resource.
  * @param callback Called when a requested source is prepared.
- * @return Return Request id.
+ * @return Return request id.
  * @since 12
 */
-OH_RequestId OH_MediaAssetManager_RequestImageForPath(OH_MediaAssetManager* manager, const char* uri,
-    OH_ML_RequestOptions requestOptions, const char* destPath, OH_ML_OnDataPrepared callback);
+MediaLibrary_RequestId OH_MediaAssetManager_RequestImageForPath(OH_MediaAssetManager* manager, const char* uri,
+    MediaLibrary_RequestOptions requestOptions, const char* destPath, OH_MediaLibrary_OnDataPrepared callback);
 
 /**
  * @brief Request video source with dest path.
@@ -74,11 +74,11 @@ OH_RequestId OH_MediaAssetManager_RequestImageForPath(OH_MediaAssetManager* mana
  * @param requestOptions Options model for requesting resource.
  * @param destPath Destination address of the requested resource.
  * @param callback Called when a requested source is prepared.
- * @return Return Request id.
+ * @return Return request id.
  * @since 12
 */
-OH_RequestId OH_MediaAssetManager_RequestVideoForPath(OH_MediaAssetManager* manager, const char* uri,
-    OH_ML_RequestOptions requestOptions, const char* destPath, OH_ML_OnDataPrepared callback);
+MediaLibrary_RequestId OH_MediaAssetManager_RequestVideoForPath(OH_MediaAssetManager* manager, const char* uri,
+    MediaLibrary_RequestOptions requestOptions, const char* destPath, OH_MediaLibrary_OnDataPrepared callback);
 
 /**
  * @brief Cancel request by request id.
@@ -88,7 +88,7 @@ OH_RequestId OH_MediaAssetManager_RequestVideoForPath(OH_MediaAssetManager* mana
  * @return Returns true if the request is canceled successfully; returns false otherwise.
  * @since 12
 */
-bool OH_MediaAssetManager_CancelRequest(OH_MediaAssetManager* manager, const OH_RequestId requestId);
+bool OH_MediaAssetManager_CancelRequest(OH_MediaAssetManager* manager, const MediaLibrary_RequestId requestId);
 
 #ifdef __cplusplus
 }
