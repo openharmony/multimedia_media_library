@@ -95,6 +95,7 @@ public:
     EXPORT int GetThumbnail(const std::string &uri);
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
+    EXPORT void SetStartupParameter();
 
 private:
     int32_t InitMediaLibraryRdbStore();
