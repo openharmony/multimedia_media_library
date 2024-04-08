@@ -17,6 +17,7 @@
 
 #include "ability.h"
 
+#include "media_asset_rdbstore.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_helper_container.h"
@@ -146,10 +147,17 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
         NAPI_ERR_LOG("Query fail, helper null");
         return nullptr;
     }
-    DatashareBusinessError businessError;
-    auto resultSet = sDataShareHelper_->Query(uri, predicates, columns, &businessError);
-    errCode = businessError.GetCode();
-    return resultSet;
+
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    OperationObject object = OperationObject::UNKNOWN_OBJECT;
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object)) {
+        resultSet = MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode);
+    } else {
+        DatashareBusinessError businessError;
+        resultSet = sDataShareHelper_->Query(uri, predicates, columns, &businessError);
+        errCode = businessError.GetCode();
+    }
+    return resultSet; 
 }
 
 int UserFileClient::Insert(Uri &uri, const DataShareValuesBucket &value)
