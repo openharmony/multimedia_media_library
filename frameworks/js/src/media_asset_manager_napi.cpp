@@ -734,14 +734,6 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         }
     }
 
-    if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_MOVING_PHOTO) {
-        napi_value movingPhotoJSObject = MovingPhotoNapi::NewMovingPhotoNapi(
-            env, dataHandler->GetRequestUri(), dataHandler->GetSourceMode());
-        dataHandler->JsOnDataPrepared(movingPhotoJSObject);
-        DeleteAssetHandlerSafe(assetHandler);
-        return;
-    }
-
     napi_value napiValueOfMedia = nullptr;
     if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_ARRAY_BUFFER) {
         GetByteArrayNapiObject(dataHandler->GetRequestUri(), napiValueOfMedia,
@@ -755,10 +747,15 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         WriteDataToDestPath(dataHandler->GetRequestUri(), dataHandler->GetDestUri(), napiValueOfMedia,
             dataHandler->GetSourceMode() == SourceMode::ORIGINAL_MODE, env);
         dataHandler->JsOnDataPrepared(napiValueOfMedia);
+    } else if (dataHandler->GetReturnDataType() == ReturnDataType::TYPE_MOVING_PHOTO) {
+        napiValueOfMedia = MovingPhotoNapi::NewMovingPhotoNapi(
+            env, dataHandler->GetRequestUri(), dataHandler->GetSourceMode());
+        dataHandler->JsOnDataPrepared(napiValueOfMedia);
     } else {
         NAPI_ERR_LOG("source mode type invalid");
     }
 
+    napi_delete_reference(env, dataHandler->GetDataHandlerRef());
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     NAPI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
     DeleteAssetHandlerSafe(assetHandler);
@@ -992,6 +989,7 @@ static void RequestMovingPhotoComplete(napi_env env, napi_status status, void *d
     } else {
         NAPI_ERR_LOG("Async work is nullptr");
     }
+    napi_delete_reference(env, context->dataHandlerRef);
     delete context;
 }
 

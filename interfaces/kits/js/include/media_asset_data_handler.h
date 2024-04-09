@@ -55,6 +55,7 @@ public:
     SourceMode GetSourceMode();
     void SetNotifyMode(NotifyMode trigger);
     NotifyMode GetNotifyMode();
+    napi_ref GetDataHandlerRef();
     void JsOnDataPrepared(napi_value exports);
 
 private:
