@@ -206,7 +206,7 @@ static bool CompareIfArraysEquals(const unsigned char originArray[],
     return true;
 }
 
-void CallbackFunciton(int32_t result, OH_RequestId requestId)
+void CallbackFunciton(int32_t result, MediaLibrary_RequestId requestId)
 {
     EXPECT_EQ(result, SUCCESS);
     MEDIA_INFO_LOG("CallbackFunciton::result: %{public}d", result);
@@ -238,10 +238,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSi
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
     ASSERT_NE(manager, nullptr);
-    OH_ML_RequestOptions requestOptions;
-    requestOptions.deliveryMode = OH_ML_DeliveryMode::ML_FAST_MODE;
-    static OH_ML_OnDataPrepared callback = CallbackFunciton;
-    OH_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
+    MediaLibrary_RequestOptions requestOptions;
+    requestOptions.deliveryMode = MediaLibrary_DeliveryMode::MEDIA_LIBRARY_FAST_MODE;
+    static OH_MediaLibrary_OnDataPrepared callback = CallbackFunciton;
+    MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
     EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
@@ -282,10 +282,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSi
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
     ASSERT_NE(manager, nullptr);
-    OH_ML_RequestOptions requestOptions;
-    requestOptions.deliveryMode = OH_ML_DeliveryMode::ML_HIGH_QUALITY_MODE;
-    static OH_ML_OnDataPrepared callback = CallbackFunciton;
-    OH_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
+    MediaLibrary_RequestOptions requestOptions;
+    requestOptions.deliveryMode = MediaLibrary_DeliveryMode::MEDIA_LIBRARY_HIGH_QUALITY_MODE;
+    static OH_MediaLibrary_OnDataPrepared callback = CallbackFunciton;
+    MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
     EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
@@ -327,10 +327,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSi
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
     ASSERT_NE(manager, nullptr);
-    OH_ML_RequestOptions requestOptions;
-    requestOptions.deliveryMode = OH_ML_DeliveryMode::ML_BALANCED_MODE;
-    static OH_ML_OnDataPrepared callback = CallbackFunciton;
-    OH_RequestId requestID = OH_MediaAssetManager_RequestVideoForPath(manager, srcuri.c_str(),
+    MediaLibrary_RequestOptions requestOptions;
+    requestOptions.deliveryMode = MediaLibrary_DeliveryMode::MEDIA_LIBRARY_BALANCED_MODE;
+    static OH_MediaLibrary_OnDataPrepared callback = CallbackFunciton;
+    MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestVideoForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
     EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
@@ -361,10 +361,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_004, TestSi
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
     ASSERT_NE(manager, nullptr);
-    OH_ML_RequestOptions requestOptions;
-    requestOptions.deliveryMode = OH_ML_DeliveryMode::ML_FAST_MODE;
-    static OH_ML_OnDataPrepared callback = CallbackFunciton;
-    OH_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, nullptr,
+    MediaLibrary_RequestOptions requestOptions;
+    requestOptions.deliveryMode = MediaLibrary_DeliveryMode::MEDIA_LIBRARY_FAST_MODE;
+    static OH_MediaLibrary_OnDataPrepared callback = CallbackFunciton;
+    MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, nullptr,
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
     EXPECT_EQ(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
@@ -396,10 +396,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSi
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
     ASSERT_NE(manager, nullptr);
-    OH_ML_RequestOptions requestOptions;
-    requestOptions.deliveryMode = OH_ML_DeliveryMode::ML_BALANCED_MODE;
-    static OH_ML_OnDataPrepared callback = CallbackFunciton;
-    OH_RequestId requestID = OH_MediaAssetManager_RequestVideoForPath(manager, srcuri.c_str(),
+    MediaLibrary_RequestOptions requestOptions;
+    requestOptions.deliveryMode = MediaLibrary_DeliveryMode::MEDIA_LIBRARY_BALANCED_MODE;
+    static OH_MediaLibrary_OnDataPrepared callback = CallbackFunciton;
+    MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestVideoForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
     EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
@@ -441,10 +441,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_006, TestSi
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
     ASSERT_NE(manager, nullptr);
-    OH_ML_RequestOptions requestOptions;
-    requestOptions.deliveryMode = OH_ML_DeliveryMode::ML_FAST_MODE;
-    static OH_ML_OnDataPrepared callback = CallbackFunciton;
-    OH_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
+    MediaLibrary_RequestOptions requestOptions;
+    requestOptions.deliveryMode = MediaLibrary_DeliveryMode::MEDIA_LIBRARY_FAST_MODE;
+    static OH_MediaLibrary_OnDataPrepared callback = CallbackFunciton;
+    MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
     EXPECT_EQ(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
@@ -476,10 +476,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_007, TestSi
     sleep(SCAN_WAIT_TIME_1S);
     OH_MediaAssetManager *manager = OH_MediaAssetManager_Create();
     ASSERT_NE(manager, nullptr);
-    OH_ML_RequestOptions requestOptions;
-    requestOptions.deliveryMode = OH_ML_DeliveryMode::ML_HIGH_QUALITY_MODE;
-    static OH_ML_OnDataPrepared callback = CallbackFunciton;
-    OH_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
+    MediaLibrary_RequestOptions requestOptions;
+    requestOptions.deliveryMode = MediaLibrary_DeliveryMode::MEDIA_LIBRARY_HIGH_QUALITY_MODE;
+    static OH_MediaLibrary_OnDataPrepared callback = CallbackFunciton;
+    MediaLibrary_RequestId requestID = OH_MediaAssetManager_RequestImageForPath(manager, srcuri.c_str(),
         requestOptions, destUri.c_str(), callback);
     bool ret = OH_MediaAssetManager_CancelRequest(manager, requestID);
     ASSERT_EQ(ret, false);
