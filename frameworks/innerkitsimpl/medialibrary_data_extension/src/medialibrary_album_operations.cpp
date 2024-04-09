@@ -339,7 +339,7 @@ static void RefreshAlbums()
     }
 }
 
-static int64_t GetDirectoryTotalSize(const char *path)
+static int64_t CalculateThumbnailTotalSize(const char *path)
 {
     DIR *dir;
     struct dirent *entry;
@@ -368,7 +368,7 @@ static int64_t GetDirectoryTotalSize(const char *path)
             continue;
         }
         if (S_ISDIR(statbuf.st_mode)) {
-            int64_t dirSize = GetDirectoryTotalSize(fullpath);
+            int64_t dirSize = CalculateThumbnailTotalSize(fullpath);
             totalSize += dirSize;
         } else if (S_ISREG(statbuf.st_mode)) {
             size_t strLen = strlen(entry->d_name);
@@ -400,7 +400,8 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
             strcat_s(thumbnailPath, sizeof(thumbnailPath), ".thumbs") != E_SUCCESS) {
             MEDIA_ERR_LOG("Failed to construct thumbnailPath");
         } else {
-            thumbnailTotalSize = GetDirectoryTotalSize(thumbnailPath);
+            MEDIA_INFO_LOG("Start calculating thumbnail size");
+            thumbnailTotalSize = CalculateThumbnailTotalSize(thumbnailPath);
         }
         string thumbnailQuery = "SELECT cast(" + to_string(thumbnailTotalSize) +
             " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;

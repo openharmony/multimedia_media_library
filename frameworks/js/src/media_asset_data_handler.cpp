@@ -73,6 +73,11 @@ NotifyMode NapiMediaAssetDataHandler::GetNotifyMode()
     return notifyMode_;
 }
 
+napi_ref NapiMediaAssetDataHandler::GetDataHandlerRef()
+{
+    return dataHandlerRef_;
+}
+
 void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_value arg)
 {
     if (dataHandlerRef_ == nullptr) {
