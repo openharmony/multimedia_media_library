@@ -907,90 +907,8 @@ static napi_value ParseArgsForRequestMovingPhoto(napi_env env, size_t argc, cons
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMovingPhoto ParseArgGetDataHandler error");
         return nullptr;
     }
-    napi_status status = napi_create_reference(env, context->dataHandler, 1, &(context->dataHandlerRef));
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("requestMovingPhoto create data handler reference error");
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMovingPhoto create data handler reference failed");
-        return nullptr;
-    }
 
     RETURN_NAPI_TRUE(env);
-}
-
-static void RequestMovingPhotoExecute(napi_env env, void *data)
-{
-    auto* context = static_cast<MediaAssetManagerAsyncContext*>(data);
-    if (context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO) {
-        napi_get_reference_value(env, context->dataHandlerRef, &(context->dataHandler));
-    }
-    context->requestId = GenerateRequestId();
-    napi_value requestIdNapiValue;
-    napi_status status = napi_create_string_utf8(env, context->requestId.c_str(),
-        NAPI_AUTO_LENGTH, &requestIdNapiValue);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("Failed to create request ID napi string object");
-        context->SaveError(JS_INNER_FAIL);
-        return;
-    }
-    context->requestIdNapiValue = requestIdNapiValue;
-    MultiStagesCapturePhotoStatus currentQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
-    unique_ptr<MediaAssetManagerAsyncContext> tmpPtr(context);
-    switch (context->deliveryMode) {
-        case DeliveryMode::FAST:
-            MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, tmpPtr);
-            break;
-        case DeliveryMode::HIGH_QUALITY:
-            currentQuality = MediaAssetManagerNapi::QueryPhotoStatus(context->fileId,
-                context->mediaUri, context->mediaId, context->hasReadPermission);
-            if (currentQuality == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
-                MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, tmpPtr);
-            } else {
-                MediaAssetManagerNapi::RegisterTaskObserver(env, tmpPtr);
-            }
-            break;
-        case DeliveryMode::BALANCED_MODE:
-            currentQuality = MediaAssetManagerNapi::QueryPhotoStatus(context->fileId,
-                context->mediaUri, context->mediaId, context->hasReadPermission);
-            MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, tmpPtr);
-            if (currentQuality == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
-                MediaAssetManagerNapi::RegisterTaskObserver(env, tmpPtr);
-            }
-            break;
-        default: {
-            NAPI_ERR_LOG("invalid delivery mode");
-            context->SaveError(OHOS_INVALID_PARAM_CODE);
-            tmpPtr.release();
-            return;
-        }
-    }
-    NAPI_DEBUG_LOG("current quality is %{public}d, delivery mode %{public}d",
-        static_cast<int32_t>(currentQuality), static_cast<int32_t>(context->deliveryMode));
-    tmpPtr.release();
-}
-
-static void RequestMovingPhotoComplete(napi_env env, napi_status status, void *data)
-{
-    MediaAssetManagerAsyncContext *context = static_cast<MediaAssetManagerAsyncContext*>(data);
-    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
-
-    unique_ptr<JSAsyncContextOutput> outContext = make_unique<JSAsyncContextOutput>();
-    outContext->status = false;
-    napi_get_undefined(env, &outContext->data);
-
-    if (context->error != E_OK) {
-        context->HandleError(env, outContext->error);
-    } else {
-        outContext->status = true;
-        outContext->data = context->requestIdNapiValue;
-    }
-    if (context->work != nullptr) {
-        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, nullptr,
-                                                   context->work, *outContext);
-    } else {
-        NAPI_ERR_LOG("Async work is nullptr");
-    }
-    napi_delete_reference(env, context->dataHandlerRef);
-    delete context;
 }
 
 napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callback_info info)
@@ -1001,8 +919,17 @@ napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callba
     CHECK_NULLPTR_RET(ParseArgsForRequestMovingPhoto(env, asyncContext->argc, asyncContext->argv, asyncContext));
     CHECK_COND(env, InitUserFileClient(env, info), JS_INNER_FAIL);
 
-    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestMovingPhoto",
-        RequestMovingPhotoExecute, RequestMovingPhotoComplete);
+    asyncContext->requestId = GenerateRequestId();
+    OnHandleRequestImage(env, asyncContext);
+
+    napi_value promise;
+    napi_value requestId;
+    napi_deferred deferred;
+    napi_create_promise(env, &deferred, &promise);
+    napi_create_string_utf8(env, asyncContext->requestId.c_str(), NAPI_AUTO_LENGTH, &requestId);
+    napi_resolve_deferred(env, deferred, requestId);
+
+    return promise;
 }
 void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::string responseUri,
     napi_value &result, bool isSource, napi_env env)
