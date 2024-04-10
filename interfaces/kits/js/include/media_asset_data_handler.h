@@ -47,7 +47,7 @@ class NapiMediaAssetDataHandler {
 public:
     NapiMediaAssetDataHandler(napi_env env, napi_value dataHandler, ReturnDataType dataType, const std::string &uri,
         const std::string &destUri, SourceMode sourceMode);
-    ~NapiMediaAssetDataHandler() = default;
+    ~NapiMediaAssetDataHandler();
     napi_env GetEnv();
     ReturnDataType GetReturnDataType();
     std::string GetRequestUri();
@@ -55,12 +55,11 @@ public:
     SourceMode GetSourceMode();
     void SetNotifyMode(NotifyMode trigger);
     NotifyMode GetNotifyMode();
-    napi_ref GetDataHandlerRef();
     void JsOnDataPrepared(napi_value exports);
 
 private:
     napi_env env_ = nullptr;
-    napi_ref dataHandlerRef_;
+    napi_ref dataHandlerRef_ = nullptr;
     ReturnDataType dataType_;
     std::string requestUri_;
     std::string destUri_;

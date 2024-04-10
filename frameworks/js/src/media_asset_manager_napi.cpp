@@ -755,7 +755,6 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         NAPI_ERR_LOG("source mode type invalid");
     }
 
-    napi_delete_reference(env, dataHandler->GetDataHandlerRef());
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     NAPI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
     DeleteAssetHandlerSafe(assetHandler);
