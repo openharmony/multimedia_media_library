@@ -461,7 +461,7 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
     return E_OK;
 }
 
-bool CloneRestore::IsFilePathExist(const string &filePath)
+bool CloneRestore::IsFilePathExist(const string &filePath) const
 {
     if (!MediaFileUtils::IsFileExists(filePath)) {
         MEDIA_DEBUG_LOG("%{private}s doesn't exist", filePath.c_str());
@@ -489,6 +489,9 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     for (auto it = fileInfo.valMap.begin(); it != fileInfo.valMap.end(); ++it) {
         string columnName = it->first;
         auto columnVal = it->second;
+        if (columnName == PhotoColumn::PHOTO_EDIT_TIME) {
+            PrepareEditTimeVal(values, get<int64_t>(columnVal), fileInfo, commonColumnInfoMap);
+        }
         PrepareCommonColumnVal(values, columnName, columnVal, commonColumnInfoMap);
     }
     return values;
@@ -747,13 +750,10 @@ bool CloneRestore::IsSameFile(FileInfo &fileInfo)
         MEDIA_ERR_LOG("Internal error");
         return false;
     }
-    if (srcStatInfo.st_size != dstStatInfo.st_size) { /* file size */
-        MEDIA_INFO_LOG("Size differs, %{public}lld != %{public}lld", (long long)srcStatInfo.st_size,
-            (long long)dstStatInfo.st_size);
-        return false;
-    }
-    if (srcStatInfo.st_mtime != dstStatInfo.st_mtime && !HasSameFile(fileInfo)) { /* last motify time */
-        MEDIA_INFO_LOG("Mtime differs, %{public}lld != %{public}lld", (long long)srcStatInfo.st_mtime,
+    if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
+        !HasSameFile(fileInfo)) { /* file size & last modify time */
+        MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs", 
+            (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
             (long long)dstStatInfo.st_mtime);
         return false;
     }
@@ -975,6 +975,15 @@ void CloneRestore::NotifyAlbum()
         watch->Notify(albumUri, NotifyType::NOTIFY_ADD);
     }
     MEDIA_INFO_LOG("%{public}zu albums notified", albumToNotifySet_.size());
+}
+
+void CloneRestore::PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
+    const unordered_map<string, string> &commonColumnInfoMap) const
+{
+    string editDataPath = BACKUP_RESTORE_DIR +
+        BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD_EDIT_DATA, fileInfo.relativePath);
+    int64_t newEditTime = editTime > 0 && IsFilePathExist(editDataPath) ? editTime : 0;
+    PrepareCommonColumnVal(values, PhotoColumn::PHOTO_EDIT_TIME, newEditTime, commonColumnInfoMap);
 }
 } // namespace Media
 } // namespace OHOS
