@@ -654,5 +654,18 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, file_utils_save_file_001, TestSize.
     EXPECT_EQ(FileUtils::DeleteFile(testFileName), 0);
     MEDIA_INFO_LOG("file_utils_save_file_001 End");
 }
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_add_image_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("manager_add_image_001 Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+    instance.AddImage(fileId, PHOTO_ID_FOR_TEST, 0);
+    EXPECT_EQ(instance.fileId2PhotoId_.count(fileId), 1);
+    EXPECT_EQ(instance.photoIdInProcess_.count(PHOTO_ID_FOR_TEST), 1);
+    MEDIA_INFO_LOG("manager_add_image_001 End");
+}
 }
 }

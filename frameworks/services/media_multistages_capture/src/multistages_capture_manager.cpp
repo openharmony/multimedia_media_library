@@ -229,16 +229,9 @@ void MultiStagesCaptureManager::AddImage(int32_t fileId, const string &photoId, 
         return;
     }
     MEDIA_INFO_LOG("enter photoId: %{public}s, deferredProcType: %{public}d", photoId.c_str(), deferredProcType);
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY);
-    string where = MEDIA_DATA_DB_PHOTO_ID + " = ? ";
-    vector<string> whereArgs { photoId };
-    cmd.GetAbsRdbPredicates()->SetWhereClause(where);
-    cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    vector<string> columns { MEDIA_DATA_DB_DATE_TRASHED };
-    auto resultSet = DatabaseAdapter::Query(cmd, columns);
-    bool isTrashed = GetInt32Val(MEDIA_DATA_DB_DATE_TRASHED, resultSet) > 0;
 
-    AddImageInternal(fileId, photoId, deferredProcType, isTrashed);
+    // called when camera low quality photo saved, isTrashed must be false.
+    AddImageInternal(fileId, photoId, deferredProcType, false);
 }
 
 void MultiStagesCaptureManager::SyncWithDeferredProcSession()
