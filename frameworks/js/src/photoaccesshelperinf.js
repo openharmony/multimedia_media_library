@@ -402,6 +402,13 @@ async function photoPickerSelect(...args) {
   return undefined;
 }
 
+function BaseSelectOptions() {
+  this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
+  this.maxSelectNumber = -1;
+  this.isSearchSupported = true;
+  this.isPhotoTakingSupported = true;
+}
+
 function PhotoSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
@@ -483,6 +490,7 @@ export default {
   PhotoViewMIMETypes: PhotoViewMIMETypes,
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
+  BaseSelectOptions: BaseSelectOptions,
   PhotoSelectOptions: PhotoSelectOptions,
   PhotoSelectResult: PhotoSelectResult,
   PhotoViewPicker: PhotoViewPicker,

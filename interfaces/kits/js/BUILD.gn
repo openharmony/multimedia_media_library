@@ -438,3 +438,48 @@ ohos_shared_library("photoaccesshelper") {
   subsystem_name = "multimedia"
   part_name = "media_library"
 }
+
+# compile .js to .abc.
+es2abc_gen_abc("gen_photopickercomponent_abc") {
+  src_js = rebase_path("${MEDIALIB_JS_PATH}/src/photopickercomponent.js")
+  dst_file = rebase_path(target_out_dir + "/photopickercomponent.abc")
+  in_puts = [ "${MEDIALIB_JS_PATH}/src/photopickercomponent.js" ]
+  out_puts = [ target_out_dir + "/photopickercomponent.abc" ]
+  extra_args = [ "--module" ]
+}
+
+abc_output_path = get_label_info(":photopickercomponent_abc", "target_out_dir")
+photopickercomponent_abc_obj_path =
+    abc_output_path + "/photopickercomponent_abc.o"
+gen_js_obj("photopickercomponent_abc") {
+  input = "$target_out_dir/photopickercomponent.abc"
+  output = photopickercomponent_abc_obj_path
+  dep = ":gen_photopickercomponent_abc"
+}
+
+ohos_shared_library("photopickercomponent") {
+  sources = [ "${MEDIALIB_JS_PATH}/src/photopickercomponent.cpp" ]
+
+  deps = [ ":photopickercomponent_abc" ]
+
+  external_deps = [
+    "hilog:libhilog",
+    "napi:ace_napi",
+  ]
+
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
+    }
+  }
+
+  relative_install_dir = "module/file"
+  subsystem_name = "multimedia"
+  part_name = "media_library"
+}
