@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,7 +23,7 @@ extern const char _binary_photopickercomponent_abc_end[];
 
 // Napi get abc code function
 extern "C" __attribute__((visibility("default"))) void NAPI_file_PhotoPickerComponent_GetABCCode(const char **buf,
-  int *buflen)
+    int *buflen)
 {
     if (buf != nullptr) {
         *buf = _binary_photopickercomponent_abc_start;
