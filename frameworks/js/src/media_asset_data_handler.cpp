@@ -38,6 +38,13 @@ NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env, napi_value da
     }
 }
 
+NapiMediaAssetDataHandler::~NapiMediaAssetDataHandler()
+{
+    if (dataHandlerRef_ != nullptr) {
+        napi_delete_reference(env_, dataHandlerRef_);
+    }
+}
+
 ReturnDataType NapiMediaAssetDataHandler::GetReturnDataType()
 {
     return dataType_;
@@ -71,11 +78,6 @@ void NapiMediaAssetDataHandler::SetNotifyMode(NotifyMode notifyMode)
 NotifyMode NapiMediaAssetDataHandler::GetNotifyMode()
 {
     return notifyMode_;
-}
-
-napi_ref NapiMediaAssetDataHandler::GetDataHandlerRef()
-{
-    return dataHandlerRef_;
 }
 
 void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_value arg)
