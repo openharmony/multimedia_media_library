@@ -42,6 +42,7 @@ using namespace NativeRdb;
 
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_SUCCESS = 0;
+constexpr int32_t E_EMPTY_ALBUM_ID = 1;
 constexpr size_t ALBUM_UPDATE_THRESHOLD = 1000;
 
 const int SINGLE_FACE = 1;
@@ -671,7 +672,8 @@ static std::string GetPhotoId(const std::string &uri)
 }
 
 static int32_t RefreshAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const shared_ptr<ResultSet> &albumResult, function<void(PhotoAlbumSubType, int)> refreshProcessHandler)
+    const shared_ptr<ResultSet> &albumResult,
+    function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler)
 {
     while (albumResult->GoToNextRow() == NativeRdb::E_OK) {
         auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
@@ -688,7 +690,7 @@ static int32_t RefreshAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
             return E_HAS_DB_ERROR;
         }
         MEDIA_DEBUG_LOG("Execute sql %{private}s success", sql.c_str());
-        refreshProcessHandler(subtype, albumId);
+        refreshProcessHandler(PhotoAlbumType::SYSTEM, subtype, albumId);
     }
 
     string updateRefreshTableSql = "DELETE FROM " + ALBUM_REFRESH_TABLE;
@@ -1644,7 +1646,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumCountInternal(const shared_ptr<Rdb
 }
 
 int RefreshPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    function<void(PhotoAlbumSubType, int)> refreshProcessHandler)
+    function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler)
 {
     vector<string> albumIds;
     int ret = GetAllRefreshAlbumIds(rdbStore, albumIds);
@@ -1653,7 +1655,7 @@ int RefreshPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     }
     if (albumIds.empty()) {
         MEDIA_DEBUG_LOG("albumIds is empty");
-        return E_SUCCESS;
+        return E_EMPTY_ALBUM_ID;
     }
     auto resultSet = QueryAlbumById(rdbStore, albumIds);
     if (resultSet == nullptr) {
@@ -1665,7 +1667,8 @@ int RefreshPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
 }
 
 static int32_t RefreshAnalysisAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const shared_ptr<ResultSet> &albumResult, function<void(PhotoAlbumSubType, int)> refreshProcessHandler,
+    const shared_ptr<ResultSet> &albumResult,
+    function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler,
     const vector<string> &subtypes)
 {
     while (albumResult->GoToNextRow() == NativeRdb::E_OK) {
@@ -1677,7 +1680,7 @@ static int32_t RefreshAnalysisAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbS
         }
         auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
         int32_t albumId = GetAlbumId(albumResult);
-        refreshProcessHandler(subtype, albumId);
+        refreshProcessHandler(PhotoAlbumType::SMART, subtype, albumId);
     }
 
     string deleteRefreshTableSql = "DELETE FROM " + MedialibraryBusinessRecordColumn::TABLE + " WHERE " +
@@ -1739,7 +1742,7 @@ static int32_t GetRefreshAnalysisAlbumIds(const shared_ptr<NativeRdb::RdbStore> 
 }
 
 int RefreshAnalysisPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    function<void(PhotoAlbumSubType, int)> refreshProcessHandler, const vector<string> &subtypes)
+    function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler, const vector<string> &subtypes)
 {
     vector<string> albumIds;
     int ret = GetRefreshAnalysisAlbumIds(rdbStore, albumIds, subtypes);
@@ -1748,7 +1751,7 @@ int RefreshAnalysisPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     }
     if (albumIds.empty()) {
         MEDIA_DEBUG_LOG("albumIds is empty");
-        return E_SUCCESS;
+        return E_EMPTY_ALBUM_ID;
     }
     vector<string> columns = {
         PhotoAlbumColumns::ALBUM_ID,
@@ -1766,7 +1769,7 @@ int RefreshAnalysisPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
 }
 
 int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    function<void(PhotoAlbumSubType, int)> refreshProcessHandler, function<void()> refreshCallback)
+    function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler, function<void()> refreshCallback)
 {
     isInRefreshTask = true;
 
@@ -1783,11 +1786,19 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
     while (IsNeedRefreshAlbum()) {
         SetNeedRefreshAlbum(false);
         ret = RefreshPhotoAlbums(rdbStore, refreshProcessHandler);
+        if (ret == E_EMPTY_ALBUM_ID) {
+            ret = E_SUCCESS;
+            continue;
+        }
         if (ret != E_SUCCESS) {
             break;
         }
         vector<string> subtype = { std::to_string(PhotoAlbumSubType::SHOOTING_MODE) };
         ret = RefreshAnalysisPhotoAlbums(rdbStore, refreshProcessHandler, subtype);
+        if (ret == E_EMPTY_ALBUM_ID) {
+            ret = E_SUCCESS;
+            continue;
+        }
         if (ret != E_SUCCESS) {
             break;
         }
