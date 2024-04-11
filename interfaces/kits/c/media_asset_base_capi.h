@@ -19,7 +19,7 @@
  *
  * @brief Provides APIs of request capability for Media Source.
  *
- * The OH_MediaAssetManager structure and OH_RequestId type are used to request media library resources.
+ * The OH_MediaAssetManager structure and MediaLibrary_RequestId type are used to request media library resources.
  * The request can be cancelled using the request ID.
  *
  * @since 12
@@ -31,11 +31,11 @@
  * @brief Defines the structure and enumeration for Media Asset Manager.
  *
  * OH_MediaAssetManager structure: This structure provides the ability to request resources from a media library. \n
- * OH_RequestId type: This type is returned when requesting a media library resource.
+ * MediaLibrary_RequestId type: This type is returned when requesting a media library resource.
  * The request ID is used to cancel the request. \n
- * OH_ML_DeliveryMode enumeration: This enumeration defines the delivery mode of the requested resources. \n
- * OH_ML_OnDataPrepared function pointer: This function is called when the requested source is prepared. \n
- * OH_ML_RequestOptions structure: This structure provides options for requesting media library resources. \n
+ * MediaLibrary_DeliveryMode enumeration: This enumeration defines the delivery mode of the requested resources. \n
+ * OH_MediaLibrary_OnDataPrepared function pointer: This function is called when the requested source is prepared. \n
+ * MediaLibrary_RequestOptions structure: This structure provides options for requesting media library resources. \n
  *
  * @Syscap SystemCapability.FileManagement.PhotoAccessHelper.Core
  * @library libmedia_asset_manager.so
@@ -72,7 +72,7 @@ const int32_t UUID_STR_MAX_LENGTH = 37;
 typedef struct OH_MediaAssetManager OH_MediaAssetManager;
 
 /**
- * @brief Define OH_RequestId
+ * @brief Define MediaLibrary_RequestId
  *
  * This type is returned when requesting a media library resource.
  * The request id is used to cancel the request.
@@ -80,9 +80,10 @@ typedef struct OH_MediaAssetManager OH_MediaAssetManager;
  *
  * @since 12
  */
-typedef struct OH_RequestId {
+typedef struct MediaLibrary_RequestId {
+    /*request id*/
     char requestId[UUID_STR_MAX_LENGTH];
-} OH_RequestId;
+} MediaLibrary_RequestId;
 
 /**
  * @brief Delivery Mode
@@ -92,14 +93,14 @@ typedef struct OH_RequestId {
  *
  * @since 12
  */
-typedef enum OH_ML_DeliveryMode {
+typedef enum MediaLibrary_DeliveryMode {
     /*delivery fast mode*/
-    ML_FAST_MODE = 0,
+    MEDIA_LIBRARY_FAST_MODE = 0,
     /*delivery high quality mode*/
-    ML_HIGH_QUALITY_MODE = 1,
+    MEDIA_LIBRARY_HIGH_QUALITY_MODE = 1,
     /*delivery balanced mode*/
-    ML_BALANCED_MODE = 2
-} OH_ML_DeliveryMode;
+    MEDIA_LIBRARY_BALANCED_MODE = 2
+} MediaLibrary_DeliveryMode;
 
 /**
  * @brief Called when a requested source is prepared.
@@ -110,7 +111,7 @@ typedef enum OH_ML_DeliveryMode {
  * @param requestId Request ID.
  * @since 12
  */
-typedef void (*OH_ML_OnDataPrepared)(int32_t result, OH_RequestId requestId);
+typedef void (*OH_MediaLibrary_OnDataPrepared)(int32_t result, MediaLibrary_RequestId requestId);
 
 /**
  * @brief Request Options
@@ -119,10 +120,10 @@ typedef void (*OH_ML_OnDataPrepared)(int32_t result, OH_RequestId requestId);
  *
  * @since 12
  */
-typedef struct OH_ML_RequestOptions {
+typedef struct MediaLibrary_RequestOptions {
     /*delivery mode*/
-    OH_ML_DeliveryMode deliveryMode;
-} OH_ML_RequestOptions;
+    MediaLibrary_DeliveryMode deliveryMode;
+} MediaLibrary_RequestOptions;
 
 #ifdef __cplusplus
 }

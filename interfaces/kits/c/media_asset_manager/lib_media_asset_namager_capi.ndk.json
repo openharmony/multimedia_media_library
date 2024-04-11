@@ -5,10 +5,14 @@
   },
   {
     "first_introduced": "12",
-    "name": "OH_MediaAssetManager_RequestImageToPath"
+    "name": "OH_MediaAssetManager_RequestImageForPath"
   },
   {
     "first_introduced": "12",
-    "name": "OH_MediaAssetManager_RequestVideoToPath"
+    "name": "OH_MediaAssetManager_RequestVideoForPath"
+  },
+  {
+    "first_introduced": "12",
+    "name": "OH_MediaAssetManager_CancelRequest"
   }
 ]

@@ -48,6 +48,7 @@ ohos_shared_library("media_library_asset_manager") {
     "hitrace:hitrace_meter",
     "image_framework:image_native",
     "ipc:ipc_core",
+    "relational_store:native_rdb",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]

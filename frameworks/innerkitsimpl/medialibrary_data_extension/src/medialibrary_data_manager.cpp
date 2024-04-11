@@ -85,6 +85,7 @@
 #include "ithumbnail_helper.h"
 #include "vision_face_tag_column.h"
 #include "vision_photo_map_column.h"
+#include "parameter.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -1382,5 +1383,18 @@ int32_t MediaLibraryDataManager::QueryNewThumbnailCount(const int64_t &time, int
     return thumbnailService_->QueryNewThumbnailCount(time, count);
 }
 
+void MediaLibraryDataManager::SetStartupParameter()
+{
+    static constexpr uint32_t BASE_USER_RANGE = 200000; // for get uid
+    uid_t uid = getuid() / BASE_USER_RANGE;
+    const string key = "multimedia.medialibrary.startup." + to_string(uid);
+    string value = "true";
+    int32_t ret = SetParameter(key.c_str(), value.c_str());
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Failed to set startup, result: %{public}d", ret);
+    } else {
+        MEDIA_INFO_LOG("Set startup success: %{public}s", to_string(uid).c_str());
+    }
+}
 }  // namespace Media
 }  // namespace OHOS

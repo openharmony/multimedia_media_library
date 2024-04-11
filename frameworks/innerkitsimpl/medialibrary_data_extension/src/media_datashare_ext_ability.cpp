@@ -128,6 +128,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     MultiStagesCaptureManager::GetInstance().Init();
 
     Media::MedialibrarySubscriber::Subscribe();
+    dataManager->SetStartupParameter();
     MEDIA_INFO_LOG("%{public}s end.", __func__);
 }
 
