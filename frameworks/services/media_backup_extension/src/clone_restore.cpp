@@ -131,6 +131,12 @@ const unordered_map<string, string> ALBUM_URI_PREFIX_MAP = {
     { PhotoAlbumColumns::TABLE, PhotoAlbumColumns::ALBUM_URI_PREFIX },
     { ANALYSIS_ALBUM_TABLE, PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX },
 };
+const vector<string> SYSTEM_ALBUM_URI_LIST = {
+    PhotoAlbumColumns::ALBUM_URI_PREFIX + "1", PhotoAlbumColumns::ALBUM_URI_PREFIX + "2",
+    PhotoAlbumColumns::ALBUM_URI_PREFIX + "3", PhotoAlbumColumns::ALBUM_URI_PREFIX + "4",
+    PhotoAlbumColumns::ALBUM_URI_PREFIX + "5", PhotoAlbumColumns::ALBUM_URI_PREFIX + "6",
+    PhotoAlbumColumns::ALBUM_URI_PREFIX + "7",
+};
 
 template<typename Key, typename Value>
 Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, const Value &defaultValue = Value())
@@ -164,7 +170,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
 int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgradePath, bool isUpgrade)
 {
     dbPath_ = BACKUP_RESTORE_DIR + MEDIA_DB_PATH;
-    filePath_ = BACKUP_RESTORE_DIR + "/storage/cloud/files";
+    filePath_ = BACKUP_RESTORE_DIR + "/storage/media/local/files";
     if (!MediaFileUtils::IsFileExists(dbPath_)) {
         MEDIA_ERR_LOG("Media db is not exist.");
         return E_FAIL;
@@ -451,7 +457,7 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
     }
 
     string srcEditDataPath = BACKUP_RESTORE_DIR +
-        BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD_EDIT_DATA, fileInfo.relativePath);
+        BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA, fileInfo.relativePath);
     string dstEditDataPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD,
         PrefixType::LOCAL_EDIT_DATA, fileInfo.cloudPath);
     if (IsFilePathExist(srcEditDataPath) && MoveDirectory(srcEditDataPath, dstEditDataPath) != E_OK) {
@@ -971,17 +977,20 @@ void CloneRestore::NotifyAlbum()
         MEDIA_ERR_LOG("Get MediaLibraryNotify instance failed");
         return;
     }
-    for (auto albumUri : albumToNotifySet_) {
+    for (const auto &albumUri : albumToNotifySet_) {
         watch->Notify(albumUri, NotifyType::NOTIFY_ADD);
     }
-    MEDIA_INFO_LOG("%{public}zu albums notified", albumToNotifySet_.size());
+    for (const auto &albumUri : SYSTEM_ALBUM_URI_LIST) {
+        watch->Notify(albumUri, NotifyType::NOTIFY_UPDATE);
+    }
+    MEDIA_INFO_LOG("System albums and %{public}zu albums notified", albumToNotifySet_.size());
 }
 
 void CloneRestore::PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
     const unordered_map<string, string> &commonColumnInfoMap) const
 {
     string editDataPath = BACKUP_RESTORE_DIR +
-        BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD_EDIT_DATA, fileInfo.relativePath);
+        BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA, fileInfo.relativePath);
     int64_t newEditTime = editTime > 0 && IsFilePathExist(editDataPath) ? editTime : 0;
     PrepareCommonColumnVal(values, PhotoColumn::PHOTO_EDIT_TIME, newEditTime, commonColumnInfoMap);
 }
