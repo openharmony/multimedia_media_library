@@ -1496,6 +1496,17 @@ static void AddHeadAndPoseTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddSegmentationColumns(RdbStore &store)
+{
+    const string addNameOnSegmentation = "ALTER TABLE " + VISION_SEGMENTATION_TABLE + " ADD COLUMN " +
+        SEGMENTATION_NAME + " INT";
+    const string addProbOnSegmentation = "ALTER TABLE " + VISION_SEGMENTATION_TABLE + " ADD COLUMN " +
+        PROB + " REAL";
+
+    const vector<string> addSegmentationColumns = { addNameOnSegmentation, addProbOnSegmentation };
+    ExecSqls(addSegmentationColumns, store);
+}
+
 static void AddSearchTable(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -1576,6 +1587,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     AddSaliencyTables(*rdbStore_);
     UpdateSpecForAddScreenshot(*rdbStore_);
     AddHeadAndPoseTables(*rdbStore_);
+    AddSegmentationColumns(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -2372,6 +2384,10 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_VIDEO_LABEL_TABEL) {
         AddVideoLabelTable(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SEGMENTATION_COLUMNS) {
+        AddSegmentationColumns(store);
     }
 }
 
