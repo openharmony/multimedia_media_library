@@ -120,7 +120,7 @@ export class PickerController {
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   checkBoxColor?: string;
   backgroundColor?: string;
-  isSupportRepeatSelect?: boolean;
+  isRepeatSelectSupported?: boolean;
 }
 
 export enum DataType {
