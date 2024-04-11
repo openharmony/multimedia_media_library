@@ -291,6 +291,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
         }
 
         if (data.source == nullptr) {
+            MEDIA_ERR_LOG("source is nullptr");
             return false;
         }
 
