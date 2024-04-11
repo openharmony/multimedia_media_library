@@ -263,6 +263,7 @@ const PhotoViewMIMETypes = {
   IMAGE_TYPE: 'image/*',
   VIDEO_TYPE: 'video/*',
   IMAGE_VIDEO_TYPE: '*/*',
+  MOVING_PHOTO_IMAGE_TYPE: 'image/movingPhoto',
   INVALID_TYPE: ''
 }
 
@@ -282,6 +283,7 @@ const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
   [PhotoViewMIMETypes.IMAGE_TYPE, 'FILTER_MEDIA_TYPE_IMAGE'],
   [PhotoViewMIMETypes.VIDEO_TYPE, 'FILTER_MEDIA_TYPE_VIDEO'],
   [PhotoViewMIMETypes.IMAGE_VIDEO_TYPE, 'FILTER_MEDIA_TYPE_ALL'],
+  [PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE, 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO'],
 ]);
 
 const ARGS_ZERO = 0;
