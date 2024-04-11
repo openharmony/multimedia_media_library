@@ -238,7 +238,7 @@ void RefreshTable()
 {
     int32_t ret = MediaLibraryRdbUtils::RefreshAllAlbums(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
-        [] (PhotoAlbumSubType a, int b) {}, [] () {});
+        [] (PhotoAlbumType type, PhotoAlbumSubType a, int b) {}, [] () {});
     EXPECT_EQ(ret, 0);
 }
 

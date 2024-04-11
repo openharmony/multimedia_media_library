@@ -247,8 +247,32 @@ static void QuerySqlDebug(const string &sql, const vector<string> &selectionArgs
 }
 #endif
 
-static void NotifySystemAlbumFunc(PhotoAlbumSubType subtype, int32_t albumId)
+static void NotifyAnalysisAlbum(PhotoAlbumSubType subtype, int32_t albumId)
 {
+    const static set<PhotoAlbumSubType> NEED_FLUSH_ANALYSIS_ALBUM = {
+        PhotoAlbumSubType::SHOOTING_MODE,
+    };
+    if (NEED_FLUSH_ANALYSIS_ALBUM.find(subtype) != NEED_FLUSH_ANALYSIS_ALBUM.end()) {
+        auto watch = MediaLibraryNotify::GetInstance();
+        if (watch == nullptr) {
+            MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+            return;
+        }
+        if (albumId > 0) {
+            watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX,
+                to_string(albumId)), NotifyType::NOTIFY_ADD);
+        } else {
+            watch->Notify(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
+        }
+    }
+}
+
+static void NotifySystemAlbumFunc(PhotoAlbumType albumtype, PhotoAlbumSubType subtype, int32_t albumId)
+{
+    if (albumtype == PhotoAlbumType::SMART) {
+        NotifyAnalysisAlbum(subtype, albumId);
+        return;
+    }
     const static set<PhotoAlbumSubType> NEED_FLUSH_PHOTO_ALBUM = {
         PhotoAlbumSubType::IMAGE,
         PhotoAlbumSubType::VIDEO,
@@ -276,6 +300,7 @@ static void RefreshCallbackFunc()
         return;
     }
     watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
+    watch->Notify(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
 }
 
 static void RefreshAlbumAsyncTask(AsyncTaskData *data)
