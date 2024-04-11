@@ -86,7 +86,8 @@
             "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelper",
             "//foundation/multimedia/media_library/interfaces/kits/js:photoaccesshelper_js",
             "//foundation/multimedia/media_library/interfaces/kits/c:native_media_asset_manager",
-            "//foundation/multimedia/media_library/interfaces/kits/js:photopickercomponent"
+            "//foundation/multimedia/media_library/interfaces/kits/js:photopickercomponent",
+            "//foundation/multimedia/media_library/interfaces/kits/js:photopickercomponent_js"
           ],
           "service_group": [
             "//foundation/multimedia/media_library/frameworks/innerkitsimpl/media_library_helper:media_library_packages",
