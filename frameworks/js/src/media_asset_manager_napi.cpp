@@ -120,6 +120,24 @@ static bool HasReadPermission()
     return result == PermissionState::PERMISSION_GRANTED;
 }
 
+static AssetHandler* CreateAssetHandler(const std::string &photoId, const std::string &requestId,
+    const std::string &uri, const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
+{
+    AssetHandler *assetHandler = new AssetHandler(photoId, requestId, uri, handler, func);
+    NAPI_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s, %{public}p.",
+        photoId.c_str(), requestId.c_str(), uri.c_str(), assetHandler);
+    return assetHandler;
+}
+
+static void DeleteAssetHandlerSafe(AssetHandler *handler)
+{
+    if (handler != nullptr) {
+        NAPI_DEBUG_LOG("[AssetHandler delete] %{public}p.", handler);
+        delete handler;
+        handler = nullptr;
+    }
+}
+
 static void InsertInProcessMapRecord(const std::string &requestUri, const std::string &requestId,
     AssetHandler *handler)
 {
@@ -162,7 +180,7 @@ static void DeleteInProcessMapRecord(const std::string &requestUri, const std::s
     multiStagesObserverMap.erase(requestUri);
 }
 
-static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler *handler)
+static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler* &handler)
 {
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     for (auto record : inProcessUriMap) {
@@ -194,9 +212,9 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
         return nullptr;
     }
 
-    AssetHandler *assetHandler = new AssetHandler(asyncContext->mediaId, asyncContext->requestId,
+    AssetHandler *assetHandler = CreateAssetHandler(asyncContext->mediaId, asyncContext->requestId,
         asyncContext->mediaUri, mediaAssetDataHandler, threadSafeFunc);
-    NAPI_INFO_LOG("Add %{public}d, %{private}s, %{private}s, %{public}p", notifyMode, asyncContext->mediaUri.c_str(),
+    NAPI_INFO_LOG("Add %{public}d, %{public}s, %{public}s, %{public}p", notifyMode, asyncContext->mediaUri.c_str(),
         asyncContext->requestId.c_str(), assetHandler);
 
     switch (notifyMode) {
@@ -702,7 +720,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
     auto dataHandler = assetHandler->dataHandler;
     if (dataHandler == nullptr) {
         NAPI_ERR_LOG("data handler is nullptr");
-        delete assetHandler;
+        DeleteAssetHandlerSafe(assetHandler);
         return;
     }
 
@@ -711,7 +729,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         AssetHandler *tmp;
         if (!inProcessFastRequests.Find(assetHandler->requestId, tmp)) {
             NAPI_ERR_LOG("The request has been canceled");
-            delete assetHandler;
+            DeleteAssetHandlerSafe(assetHandler);
             return;
         }
     }
@@ -720,7 +738,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         napi_value movingPhotoJSObject = MovingPhotoNapi::NewMovingPhotoNapi(
             env, dataHandler->GetRequestUri(), dataHandler->GetSourceMode());
         dataHandler->JsOnDataPrepared(movingPhotoJSObject);
-        delete assetHandler;
+        DeleteAssetHandlerSafe(assetHandler);
         return;
     }
 
@@ -743,7 +761,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
 
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     NAPI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
-    delete assetHandler;
+    DeleteAssetHandlerSafe(assetHandler);
 }
 
 void MediaAssetManagerNapi::NotifyMediaDataPrepared(AssetHandler *assetHandler)
@@ -753,9 +771,7 @@ void MediaAssetManagerNapi::NotifyMediaDataPrepared(AssetHandler *assetHandler)
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_call_threadsafe_function fail, %{public}d", static_cast<int32_t>(status));
         napi_release_threadsafe_function(assetHandler->threadSafeFunc, napi_tsfn_release);
-        if (assetHandler != nullptr) {
-            delete assetHandler;
-        }
+        DeleteAssetHandlerSafe(assetHandler);
     }
 }
 
@@ -1056,6 +1072,41 @@ void MediaAssetManagerNapi::SendFile(napi_env env, int srcFd, int destFd, napi_v
     napi_get_boolean(env, true, &result);
 }
 
+static bool IsFastRequestCanceled(const std::string &requestId, std::string &photoId)
+{
+    AssetHandler *assetHandler = nullptr;
+    if (!inProcessFastRequests.Find(requestId, assetHandler)) {
+        NAPI_ERR_LOG("requestId(%{public}s) not in progress.", requestId.c_str());
+        return false;
+    }
+
+    if (assetHandler == nullptr) {
+        NAPI_ERR_LOG("assetHandler is nullptr.");
+        return false;
+    }
+    photoId = assetHandler->mediaId;
+    inProcessFastRequests.Erase(requestId);
+    return true;
+}
+
+static bool IsMapRecordCanceled(const std::string &requestId, std::string &photoId)
+{
+    AssetHandler *assetHandler = nullptr;
+    if (!IsInProcessInMapRecord(requestId, assetHandler)) {
+        NAPI_ERR_LOG("requestId(%{public}s) not in progress.", requestId.c_str());
+        return false;
+    }
+
+    if (assetHandler == nullptr) {
+        NAPI_ERR_LOG("assetHandler is nullptr.");
+        return false;
+    }
+    photoId = assetHandler->mediaId;
+    DeleteInProcessMapRecord(assetHandler->requestUri, assetHandler->requestId);
+    DeleteAssetHandlerSafe(assetHandler);
+    return true;
+}
+
 napi_value MediaAssetManagerNapi::JSCancelRequest(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_TWO;
@@ -1069,22 +1120,13 @@ napi_value MediaAssetManagerNapi::JSCancelRequest(napi_env env, napi_callback_in
     CHECK_ARGS_THROW_INVALID_PARAM(env,
         MediaLibraryNapiUtils::GetParamStringWithLength(env, argv[ARGS_ONE], REQUEST_ID_MAX_LEN, requestId));
 
-    AssetHandler *assetHandler;
-    if (!inProcessFastRequests.Find(requestId, assetHandler) && !IsInProcessInMapRecord(requestId, assetHandler)) {
-        NAPI_ERR_LOG("requestId(%{public}s) not in progress.", requestId.c_str());
-        NapiError::ThrowError(env, JS_INNER_FAIL, "request id not in progress");
-        return nullptr;
-    }
-    if (assetHandler == nullptr) {
-        NAPI_ERR_LOG("assetHandler is nullptr.");
-        NapiError::ThrowError(env, JS_INNER_FAIL, "assetHandler is nullptr.");
-        return nullptr;
+    std::string photoId = "";
+    bool hasFastRequestInProcess = IsFastRequestCanceled(requestId, photoId);
+    bool hasMapRecordInProcess = IsMapRecordCanceled(requestId, photoId);
+    if (hasFastRequestInProcess || hasMapRecordInProcess) {
+        MediaAssetManagerNapi::CancelProcessImage(photoId);
     }
 
-    MediaAssetManagerNapi::CancelProcessImage(assetHandler->mediaId);
-    DeleteInProcessMapRecord(assetHandler->requestUri, assetHandler->requestId);
-    inProcessFastRequests.Erase(requestId);
-    delete assetHandler;
     RETURN_NAPI_UNDEFINED(env);
 }
 } // namespace Media
