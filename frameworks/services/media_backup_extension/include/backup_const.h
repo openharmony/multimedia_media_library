@@ -47,7 +47,7 @@ const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
 const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
-const std::string GARBLE_CLONE_DIR = "/data/storage/el2/backup/restore/storage/cloud/files";
+const std::string GARBLE_CLONE_DIR = "/data/storage/el2/backup/restore/storage/media/local/files";
 const std::string GARBLE = "***";
 
 // DB field for update scene
