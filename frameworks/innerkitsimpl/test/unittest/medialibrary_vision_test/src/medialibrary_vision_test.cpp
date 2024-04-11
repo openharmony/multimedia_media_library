@@ -1356,6 +1356,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertSegmentation_Test_001, TestSize.Le
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(FILE_ID, 1);
     valuesBucket.Put(SEGMENTATION_AREA, "1,2,3,4,5,6,7,8,9,10");
+    valuesBucket.Put(SEGMENTATION_NAME, 1);
+    valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(SEGMENTATION_VERSION, "1.0");
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
@@ -1363,6 +1365,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertSegmentation_Test_001, TestSize.Le
     DataShare::DataShareValuesBucket valuesBucket1;
     valuesBucket1.Put(FILE_ID, 1);
     valuesBucket1.Put(SEGMENTATION_AREA, "11,12,13,14,15,16,17,18,19,20");
+    valuesBucket1.Put(SEGMENTATION_NAME, 2);
+    valuesBucket1.Put(PROB, 0.9);
     valuesBucket1.Put(SEGMENTATION_VERSION, "1.0");
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     EXPECT_LT(retVal1, 0);
@@ -1381,6 +1385,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateSegmentation_Test_001, TestSize.Le
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(FILE_ID, 2);
     valuesBucket.Put(SEGMENTATION_AREA, "1,2,3,4,5,6,7,8,9,10");
+    valuesBucket.Put(SEGMENTATION_NAME, 1);
+    valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(SEGMENTATION_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
@@ -1408,6 +1414,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteSegmentation_Test_001, TestSize.Le
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(FILE_ID, 3);
     valuesBucket.Put(SEGMENTATION_AREA, "1,2,3,4,5,6,7,8,9,10");
+    valuesBucket.Put(SEGMENTATION_NAME, 1);
+    valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(SEGMENTATION_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
@@ -1426,6 +1434,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QuerySegmentation_Test_001, TestSize.Lev
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(FILE_ID, 4);
     valuesBucket.Put(SEGMENTATION_AREA, "1,2,3,4,5,6,7,8,9,10");
+    valuesBucket.Put(SEGMENTATION_NAME, 1);
+    valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(SEGMENTATION_VERSION, "1.0");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
