@@ -60,7 +60,7 @@ public:
         std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &uris = {});
 
     EXPORT static int32_t RefreshAllAlbums(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        std::function<void(PhotoAlbumSubType, int)> refreshProcessHandler,
+        std::function<void(PhotoAlbumType, PhotoAlbumSubType, int)> refreshProcessHandler,
         std::function<void()> refreshCallback);
     EXPORT static int32_t IsNeedRefreshByCheckTable(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         bool &signal);
