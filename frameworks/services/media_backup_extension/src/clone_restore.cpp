@@ -759,7 +759,7 @@ bool CloneRestore::IsSameFile(FileInfo &fileInfo)
     }
     if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
         !HasSameFile(fileInfo)) { /* file size & last modify time */
-        MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs", 
+        MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs",
             (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
             (long long)dstStatInfo.st_mtime);
         return false;
