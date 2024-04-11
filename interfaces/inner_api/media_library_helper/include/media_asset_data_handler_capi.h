@@ -22,7 +22,7 @@
 namespace OHOS {
 namespace Media {
 
-const int32_t UUID_STR_LENGTH = 37;
+static const int32_t UUID_STR_LENGTH = 37;
 
 /**
  * @brief Request Id
