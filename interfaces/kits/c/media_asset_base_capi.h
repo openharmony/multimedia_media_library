@@ -54,12 +54,11 @@ extern "C" {
 /**
  * @brief Define UUID max length
  *
- * This macro defines the maximum length of a UUID string.
+ * This constant defines the maximum length of a UUID string.
  *
  * @since 12
  */
-
-const int32_t UUID_STR_MAX_LENGTH = 37;
+static const int32_t UUID_STR_MAX_LENGTH = 37;
 
 /**
  * @brief Define Media Asset Manager
