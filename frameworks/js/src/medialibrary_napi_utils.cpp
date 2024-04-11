@@ -1454,10 +1454,6 @@ template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MovingPhotoAsyncC
     unique_ptr<MovingPhotoAsyncContext> &asyncContext, const string &resourceName,
     void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
 
-template napi_value MediaLibraryNapiUtils::NapiCreateAsyncWork<MediaAssetManagerAsyncContext>(napi_env env,
-    unique_ptr<MediaAssetManagerAsyncContext> &asyncContext, const string &resourceName,
-    void (*execute)(napi_env, void *), void (*complete)(napi_env, napi_status, void *));
-
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context, int32_t &value);
 
