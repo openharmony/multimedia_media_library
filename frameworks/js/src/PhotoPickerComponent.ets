@@ -17,7 +17,6 @@ import photoAccessHelper from '@ohos.file.photoAccessHelper';
 const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
 const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
 const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
-const FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO = 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO';
 
 @Component
 export struct PhotoPickerComponent {
@@ -85,17 +84,13 @@ export struct PhotoPickerComponent {
   }
 
   private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
-    let filterType: string = '';
+    let filterType: string;
     if (mimeType === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
       filterType = FILTER_MEDIA_TYPE_IMAGE;
     } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE) {
       filterType = FILTER_MEDIA_TYPE_VIDEO;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.IMAGE_VIDEO_TYPE) {
-      filterType = FILTER_MEDIA_TYPE_ALL;
-    } else if (mimeType === photoAccessHelper.PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE) {
-      filterType = FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO;
     } else {
-      console.info('PhotoPickerComponent convertMIMETypeToFilterType: other case');
+      filterType = FILTER_MEDIA_TYPE_ALL;
     }
     console.info('PhotoPickerComponent convertMIMETypeToFilterType' + JSON.stringify(filterType));
     return filterType;
