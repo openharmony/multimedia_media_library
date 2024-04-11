@@ -49,11 +49,11 @@ public:
     std::shared_ptr<OHOS::NativeRdb::ResultSet> HandleMultiStagesOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
 
-    bool CancelProcessRequest(const std::string &photoId);
+    EXPORT bool CancelProcessRequest(const std::string &photoId);
     void RemoveImage(const std::string &photoId, bool isRestorable = true);
     void RemoveImages(const NativeRdb::AbsRdbPredicates &predicates, bool isRestorable = true);
     void RestoreImages(const NativeRdb::AbsRdbPredicates &predicates);
-    void AddImage(int32_t fileId, const std::string &photoId, int32_t deferredProcType);
+    EXPORT void AddImage(int32_t fileId, const std::string &photoId, int32_t deferredProcType);
     void ProcessImage(int fileId, int deliveryMode, const std::string &appName);
 
     void AddImageInternal(int32_t fileId, const std::string &photoId, int32_t deferredProcType,
