@@ -497,6 +497,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
         auto columnVal = it->second;
         if (columnName == PhotoColumn::PHOTO_EDIT_TIME) {
             PrepareEditTimeVal(values, get<int64_t>(columnVal), fileInfo, commonColumnInfoMap);
+            continue;
         }
         PrepareCommonColumnVal(values, columnName, columnVal, commonColumnInfoMap);
     }
