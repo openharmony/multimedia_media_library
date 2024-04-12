@@ -2,11 +2,11 @@
     "allowToBackupRestore": true,
     "supportScene": "next2next, hmos2next",
     "includes": [
-        "/storage/cloud/files/Photo/",
-        "/storage/cloud/files/Camera/",
-        "/storage/cloud/files/Pictures/",
-        "/storage/cloud/files/Videos/",
-        "/storage/cloud/files/.editData/",
+        "/storage/media/local/files/Photo/",
+        "/storage/media/local/files/Camera/",
+        "/storage/media/local/files/Pictures/",
+        "/storage/media/local/files/Videos/",
+        "/storage/media/local/files/.editData/",
         "/data/storage/el2/database/rdb/"
     ],
     "fullBackupOnly": true

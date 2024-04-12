@@ -42,7 +42,7 @@ private:
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     int32_t MoveAsset(FileInfo &fileInfo);
-    bool IsFilePathExist(const std::string &filePath);
+    bool IsFilePathExist(const std::string &filePath) const;
     int32_t QueryAlbumTotalNumber(const std::string &tableName);
     std::vector<AlbumInfo> QueryAlbumInfos(const std::string &tableName, int32_t offset);
     bool ParseAlbumResultSet(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
@@ -81,6 +81,8 @@ private:
     bool IsReadyForRestore(const std::string &tableName);
     void UpdateAlbumToNotifySet(const std::string &tableName, const std::unordered_set<int32_t> &albumSet);
     void NotifyAlbum();
+    void PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
+        const std::unordered_map<std::string, std::string> &commonColumnInfoMap) const;
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
