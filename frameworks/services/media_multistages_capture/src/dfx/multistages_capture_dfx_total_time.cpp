@@ -35,7 +35,7 @@ MultiStagesCaptureDfxTotalTime& MultiStagesCaptureDfxTotalTime::GetInstance()
 
 void MultiStagesCaptureDfxTotalTime::AddStartTime(const std::string &photoId)
 {
-    startTimes_.insert(make_pair(photoId, MediaFileUtils::UTCTimeMilliSeconds()));
+    startTimes_.emplace(photoId, MediaFileUtils::UTCTimeMilliSeconds());
 }
 
 void MultiStagesCaptureDfxTotalTime::RemoveStartTime(const std::string &photoId)

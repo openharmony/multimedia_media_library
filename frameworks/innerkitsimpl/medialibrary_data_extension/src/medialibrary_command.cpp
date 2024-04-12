@@ -603,11 +603,21 @@ const DataSharePredicates &MediaLibraryCommand::GetDataSharePred() const
 
 std::string MediaLibraryCommand::GetTableNameFromOprnObject(const OperationObject& object)
 {
-    if (TABLE_NAME_MAP.FIND(object) != TABLE_NAME_MAP.end()) {
+    if (TABLE_NAME_MAP.find(object) != TABLE_NAME_MAP.end()) {
         auto cmdObj = TABLE_NAME_MAP.at(object);
         return cmdObj.begin()->second;
     } else {
         return MEDIALIBRARY_TABLE;
+    }
+}
+
+OperationType MediaLibraryCommand::GetOprnTypeFromUri(Uri& uri)
+{
+    const string opType = MediaFileUri::GetPathSecondDentry(uri);
+    if (OPRN_TYPE_MAP.find(opType) != OPRN_TYPE_MAP.end()) {
+        return OPRN_TYPE_MAP.at(opType);
+    } else {
+        return OperationType::QUERY;
     }
 }
 

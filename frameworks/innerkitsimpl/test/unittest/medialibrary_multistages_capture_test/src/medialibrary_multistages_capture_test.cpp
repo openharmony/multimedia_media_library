@@ -380,6 +380,21 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_total_time_remove_start_time_00
     MEDIA_INFO_LOG("dfx_total_time_remove_start_time_003 End");
 }
 
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_total_time_invalid_param_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("dfx_total_time_invalid_param_004 Start");
+    string photoId = "";
+    MultiStagesCaptureDfxTotalTime::GetInstance().AddStartTime(photoId);
+    EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), false);
+
+    // sleep for 1234 milliseconds
+    this_thread::sleep_for(chrono::milliseconds(1234));
+    MultiStagesCaptureDfxTotalTime::GetInstance().Report(photoId);
+    EXPECT_EQ(MultiStagesCaptureDfxTotalTime::GetInstance().startTimes_.empty(), true);
+
+    MEDIA_INFO_LOG("dfx_total_time_invalid_param_004 End");
+}
+
 HWTEST_F(MediaLibraryMultiStagesCaptureTest, dfx_request_policy_get_count_001, TestSize.Level1)
 {
     MEDIA_INFO_LOG("dfx_request_policy_get_count_001 Start");

@@ -327,9 +327,14 @@ int32_t Acl::EnableACL(const std::string& path, const char* aclAttrName, const u
 
 int32_t Acl::AclSetDatabase()
 {
+    if (EnableACL(MEDIA_DB_DIR, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
+        ACL_PERM::Value::EXECUTE, MEDIA_DB_ACL_GROUP) != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl permission for the DB dir");
+        return E_ERR;
+    }
     if (RecursiveEnableACL(MEDIA_DB_DIR, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
         ACL_PERM::Value::EXECUTE, MEDIA_DB_ACL_GROUP) != E_OK) {
-        MEDIA_ERR_LOG("Failed to set the acl permission for the KVDB dir");
+        MEDIA_ERR_LOG("Failed to set the acl permission for the DB sub dir");
         return E_ERR;
     }
     return E_OK;

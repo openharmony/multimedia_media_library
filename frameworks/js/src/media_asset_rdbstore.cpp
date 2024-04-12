@@ -15,7 +15,7 @@
 
 #include "media_asset_rdbstore.h"
 
-#include "unordered_set"
+#include <unordered_set>
 
 #include "media_file_uri.h"
 #include "medialibrary_rdb_utils.h"
@@ -32,6 +32,9 @@ const std::string MEDIA_LIBRARY_STARTUP_PARAM_PREFIX = "multimedia.medialibrary.
 constexpr uint32_t BASE_USER_RANGE = 200000;
 const std::unordered_set<OperationObject> OPERATION_OBJECT_SET = {
     OperationObject::UFM_PHOTO,
+};
+const std::unordered_set<OperationType> OPERATION_TYPE_SET = {
+    OperationType::Query,
 };
 
 MediaAssetRdbStore* MediaAssetRdbStore::GetInstance()
@@ -115,7 +118,8 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(const D
     }
     std::string tableName = MediaLibraryCommand::GetTableNameFromOprnObject(object);
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(prediacates, tableName);
-    auto resultSet = rdbStore_->Query(predicates, columns);
+    MediaLibraryRdbUtils::AddQueryFilter(rdbPredicate);
+    auto resultSet = rdbStore_->Query(rdbPredicates, columns);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("fail to acquire result from visitor query");
         return nullptr;
@@ -130,11 +134,17 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(const DataShare::DataShareP
         return false;
     }
     if (rdbStore_ == nullptr) {
-        NAPI_ERR_LOG("fail to acquire rdb when query");
-        return false;
+        if (TryGetRdbStore() != NativeRdb::E_OK) {
+            NAPI_ERR_LOG("fail to acquire rdb when query");
+            return false;
+        }
     }
     object = MediaLibraryCommand::GetOprnObjectFromUri(uri);
     if (OPERATION_OBJECT_SET.count(object) == 0) {
+        return false;
+    }
+    OperationType type = MediaLibraryCommand::GetOprnTypeFromUri(uri);
+    if (OPERATION_TYPE_SET.count(type) == 0) {
         return false;
     }
     return true;
