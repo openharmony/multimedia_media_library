@@ -314,8 +314,8 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
             }
             napi_coerce_to_native_binding_object(
                 env, thisVar, DetachFileAssetFunc, AttachFileAssetFunc, obj.get(), nullptr);
-            status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
-                               FileAssetNapi::FileAssetNapiDestructor, nullptr, nullptr);
+            status = napi_wrap_async_finalizer(env, thisVar, reinterpret_cast<void *>(obj.get()),
+                                               FileAssetNapi::FileAssetNapiDestructor, nullptr, nullptr, 0);
             if (status == napi_ok) {
                 obj.release();
                 return thisVar;
