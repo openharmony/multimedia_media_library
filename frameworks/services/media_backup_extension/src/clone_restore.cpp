@@ -34,6 +34,8 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const int32_t CLONE_QUERY_COUNT = 200;
+const int32_t SYSTEM_ALBUM_ID_START = 1;
+const int32_t SYSTEM_ALBUM_ID_END = 7;
 const string MEDIA_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
     { PhotoColumn::PHOTOS_TABLE,
@@ -130,12 +132,6 @@ const unordered_map<string, ResultSetDataType> COLUMN_TYPE_MAP = {
 const unordered_map<string, string> ALBUM_URI_PREFIX_MAP = {
     { PhotoAlbumColumns::TABLE, PhotoAlbumColumns::ALBUM_URI_PREFIX },
     { ANALYSIS_ALBUM_TABLE, PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX },
-};
-const vector<string> SYSTEM_ALBUM_URI_LIST = {
-    PhotoAlbumColumns::ALBUM_URI_PREFIX + "1", PhotoAlbumColumns::ALBUM_URI_PREFIX + "2",
-    PhotoAlbumColumns::ALBUM_URI_PREFIX + "3", PhotoAlbumColumns::ALBUM_URI_PREFIX + "4",
-    PhotoAlbumColumns::ALBUM_URI_PREFIX + "5", PhotoAlbumColumns::ALBUM_URI_PREFIX + "6",
-    PhotoAlbumColumns::ALBUM_URI_PREFIX + "7",
 };
 
 template<typename Key, typename Value>
@@ -981,8 +977,8 @@ void CloneRestore::NotifyAlbum()
     for (const auto &albumUri : albumToNotifySet_) {
         watch->Notify(albumUri, NotifyType::NOTIFY_ADD);
     }
-    for (const auto &albumUri : SYSTEM_ALBUM_URI_LIST) {
-        watch->Notify(albumUri, NotifyType::NOTIFY_UPDATE);
+    for (int32_t systemAlbumId = SYSTEM_ALBUM_ID_START; systemAlbumId <= SYSTEM_ALBUM_ID_END; systemAlbumId++) {
+        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(systemAlbumId), NotifyType::NOTIFY_UPDATE);
     }
     MEDIA_INFO_LOG("System albums and %{public}zu albums notified", albumToNotifySet_.size());
 }
