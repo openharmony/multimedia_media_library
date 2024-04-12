@@ -34,6 +34,8 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const int32_t CLONE_QUERY_COUNT = 200;
+const int32_t SYSTEM_ALBUM_ID_START = 1;
+const int32_t SYSTEM_ALBUM_ID_END = 7;
 const string MEDIA_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
     { PhotoColumn::PHOTOS_TABLE,
@@ -164,7 +166,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
 int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgradePath, bool isUpgrade)
 {
     dbPath_ = BACKUP_RESTORE_DIR + MEDIA_DB_PATH;
-    filePath_ = BACKUP_RESTORE_DIR + "/storage/cloud/files";
+    filePath_ = BACKUP_RESTORE_DIR + "/storage/media/local/files";
     if (!MediaFileUtils::IsFileExists(dbPath_)) {
         MEDIA_ERR_LOG("Media db is not exist.");
         return E_FAIL;
@@ -451,7 +453,7 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
     }
 
     string srcEditDataPath = BACKUP_RESTORE_DIR +
-        BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD_EDIT_DATA, fileInfo.relativePath);
+        BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA, fileInfo.relativePath);
     string dstEditDataPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD,
         PrefixType::LOCAL_EDIT_DATA, fileInfo.cloudPath);
     if (IsFilePathExist(srcEditDataPath) && MoveDirectory(srcEditDataPath, dstEditDataPath) != E_OK) {
@@ -461,7 +463,7 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
     return E_OK;
 }
 
-bool CloneRestore::IsFilePathExist(const string &filePath)
+bool CloneRestore::IsFilePathExist(const string &filePath) const
 {
     if (!MediaFileUtils::IsFileExists(filePath)) {
         MEDIA_DEBUG_LOG("%{private}s doesn't exist", filePath.c_str());
@@ -489,6 +491,10 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     for (auto it = fileInfo.valMap.begin(); it != fileInfo.valMap.end(); ++it) {
         string columnName = it->first;
         auto columnVal = it->second;
+        if (columnName == PhotoColumn::PHOTO_EDIT_TIME) {
+            PrepareEditTimeVal(values, get<int64_t>(columnVal), fileInfo, commonColumnInfoMap);
+            continue;
+        }
         PrepareCommonColumnVal(values, columnName, columnVal, commonColumnInfoMap);
     }
     return values;
@@ -747,13 +753,10 @@ bool CloneRestore::IsSameFile(FileInfo &fileInfo)
         MEDIA_ERR_LOG("Internal error");
         return false;
     }
-    if (srcStatInfo.st_size != dstStatInfo.st_size) { /* file size */
-        MEDIA_INFO_LOG("Size differs, %{public}lld != %{public}lld", (long long)srcStatInfo.st_size,
-            (long long)dstStatInfo.st_size);
-        return false;
-    }
-    if (srcStatInfo.st_mtime != dstStatInfo.st_mtime && !HasSameFile(fileInfo)) { /* last motify time */
-        MEDIA_INFO_LOG("Mtime differs, %{public}lld != %{public}lld", (long long)srcStatInfo.st_mtime,
+    if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
+        !HasSameFile(fileInfo)) { /* file size & last modify time */
+        MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs",
+            (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
             (long long)dstStatInfo.st_mtime);
         return false;
     }
@@ -971,10 +974,22 @@ void CloneRestore::NotifyAlbum()
         MEDIA_ERR_LOG("Get MediaLibraryNotify instance failed");
         return;
     }
-    for (auto albumUri : albumToNotifySet_) {
+    for (const auto &albumUri : albumToNotifySet_) {
         watch->Notify(albumUri, NotifyType::NOTIFY_ADD);
     }
-    MEDIA_INFO_LOG("%{public}zu albums notified", albumToNotifySet_.size());
+    for (int32_t systemAlbumId = SYSTEM_ALBUM_ID_START; systemAlbumId <= SYSTEM_ALBUM_ID_END; systemAlbumId++) {
+        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX + to_string(systemAlbumId), NotifyType::NOTIFY_UPDATE);
+    }
+    MEDIA_INFO_LOG("System albums and %{public}zu albums notified", albumToNotifySet_.size());
+}
+
+void CloneRestore::PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
+    const unordered_map<string, string> &commonColumnInfoMap) const
+{
+    string editDataPath = BACKUP_RESTORE_DIR +
+        BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA, fileInfo.relativePath);
+    int64_t newEditTime = editTime > 0 && IsFilePathExist(editDataPath) ? editTime : 0;
+    PrepareCommonColumnVal(values, PhotoColumn::PHOTO_EDIT_TIME, newEditTime, commonColumnInfoMap);
 }
 } // namespace Media
 } // namespace OHOS
