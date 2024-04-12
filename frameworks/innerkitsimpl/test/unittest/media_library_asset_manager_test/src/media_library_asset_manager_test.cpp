@@ -251,9 +251,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSi
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
     EXPECT_NE((buf == nullptr), true);
     read(destFd, buf, destLen);
+    bool result = CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     free(buf);
     mediaLibraryManager->CloseAsset(destUri, destFd);
-    EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
+    EXPECT_EQ(result, true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", destDisplayName.c_str());
 }
 
@@ -295,9 +296,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSi
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
     EXPECT_NE((buf == nullptr), true);
     read(destFd, buf, destLen);
+    bool result = CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     free(buf);
     mediaLibraryManager->CloseAsset(destUri, destFd);
-    EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
+    EXPECT_EQ(result, true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", destDisplayName.c_str());
 }
 
@@ -340,9 +342,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSi
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
     EXPECT_NE((buf == nullptr), true);
     read(destFd, buf, destLen);
+    bool result = CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
     free(buf);
     mediaLibraryManager->CloseAsset(destUri, destFd);
-    EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4)), true);
+    EXPECT_EQ(result, true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", destDisplayName.c_str());
 }
 
@@ -409,9 +412,10 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSi
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
     EXPECT_NE((buf == nullptr), true);
     read(destFd, buf, destLen);
+    bool result = CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     free(buf);
     mediaLibraryManager->CloseAsset(destUri, destFd);
-    EXPECT_NE(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
+    EXPECT_NE(result, true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", destDisplayName.c_str());
 }
 

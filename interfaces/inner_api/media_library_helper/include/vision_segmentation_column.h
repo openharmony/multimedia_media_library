@@ -22,6 +22,7 @@ namespace OHOS {
 namespace Media {
 const std::string SEGMENTATION_AREA = "segmentation_area";
 const std::string SEGMENTATION_VERSION = "segmentation_version";
+const std::string SEGMENTATION_NAME = "segmentation_name";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_SEGMENTATION_COLUMN_H

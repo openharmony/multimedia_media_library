@@ -38,6 +38,13 @@ NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env, napi_value da
     }
 }
 
+NapiMediaAssetDataHandler::~NapiMediaAssetDataHandler()
+{
+    if (dataHandlerRef_ != nullptr) {
+        napi_delete_reference(env_, dataHandlerRef_);
+    }
+}
+
 ReturnDataType NapiMediaAssetDataHandler::GetReturnDataType()
 {
     return dataType_;
