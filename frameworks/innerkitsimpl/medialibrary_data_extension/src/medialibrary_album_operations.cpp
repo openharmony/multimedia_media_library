@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -70,6 +70,7 @@ constexpr int32_t QUERY_IS_ME_VALUE = 2;
 constexpr int32_t FACE_ANALYSISED_STATE = 3;
 constexpr int32_t FACE_NO_NEED_ANALYSIS_STATE = -2;
 constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
+constexpr int32_t ALBUM_COVER_SATISFIED = 1;
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -728,16 +729,14 @@ void GetIsMeAlbumPredicates(const int32_t value, DataShare::DataSharePredicates 
     predicates.SetWhereClause(selection);
 }
 
-void GetAlbumNameNotNullPredicates(const int32_t value, DataShare::DataSharePredicates &predicates)
+void GetAlbumNameNotNullPredicates(int32_t value, DataShare::DataSharePredicates &predicates)
 {
-    string selection;
-    if (value == ALBUM_NAME_NOT_NULL_ENABLED) {
-        selection = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + PhotoAlbumColumns::ALBUM_NAME +
-            " IS NOT NULL GROUP BY " + GROUP_TAG;
-    } else {
+    if (value != ALBUM_NAME_NOT_NULL_ENABLED) {
         MEDIA_ERR_LOG("The value is not support for query not null");
         return;
     }
+    string selection = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + PhotoAlbumColumns::ALBUM_NAME +
+        " IS NOT NULL GROUP BY " + GROUP_TAG;
     predicates.SetWhereClause(selection);
 }
 
@@ -1421,8 +1420,8 @@ int32_t UpdateForMergeAlbums(const MergeAlbumInfo &updateAlbumInfo, const int32_
         USER_DISPLAY_LEVEL + " = " + to_string(updateAlbumInfo.userDisplayLevel) + "," + RANK + " = " +
         to_string(updateAlbumInfo.rank) + "," + USER_OPERATION + " = " + to_string(updateAlbumInfo.userOperation) +
         "," + RENAME_OPERATION + " = " + to_string(updateAlbumInfo.renameOperation) + "," + ALBUM_NAME + " = '" +
-        updateAlbumInfo.albumName +
-        "' WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
+        updateAlbumInfo.albumName + "'," + IS_COVER_SATISFIED + " = " + to_string(updateAlbumInfo.isCoverSatisfied) +
+        " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
         " = " + to_string(currentAlbumId) + " OR " + ALBUM_ID + " = " + to_string(targetAlbumId) + ")";
     vector<string> updateSqls = { updateForMergeAlbums};
     return ExecSqls(updateSqls, uniStore);
@@ -1438,8 +1437,8 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
     }
     const std::string queryAlbumInfo = "SELECT " + ALBUM_ID + "," + GROUP_TAG + "," + COUNT + "," + IS_ME + "," +
         COVER_URI + "," + USER_DISPLAY_LEVEL + "," + RANK + "," + USER_OPERATION + "," + RENAME_OPERATION + "," +
-        ALBUM_NAME + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + to_string(currentAlbumId) +
-        " OR " + ALBUM_ID + " = " + to_string(targetAlbumId);
+        ALBUM_NAME + "," + IS_COVER_SATISFIED + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " +
+        to_string(currentAlbumId) + " OR " + ALBUM_ID + " = " + to_string(targetAlbumId);
 
     auto resultSet = uniStore->QuerySql(queryAlbumInfo);
     if (resultSet == nullptr) {
@@ -1456,7 +1455,8 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
             GetIntValueFromResultSet(resultSet, USER_DISPLAY_LEVEL, albumInfo.userDisplayLevel) != E_OK ||
             GetIntValueFromResultSet(resultSet, RANK, albumInfo.rank) != E_OK ||
             GetIntValueFromResultSet(resultSet, RENAME_OPERATION, albumInfo.renameOperation) != E_OK ||
-            GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumInfo.albumName) != E_OK) {
+            GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumInfo.albumName) != E_OK ||
+            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, albumInfo.isCoverSatisfied) != E_OK) {
                 MEDIA_ERR_LOG("GetMergeAlbumsInfo db fail");
                 return E_HAS_DB_ERROR;
             }
@@ -1465,11 +1465,11 @@ int32_t GetMergeAlbumsInfo(vector<MergeAlbumInfo> &mergeAlbumInfo, const int32_t
     return E_OK;
 }
 
-int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const string &currentAlbumCoverUri,
-    const string &targetAlbumCoverUri)
+int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumInfo &currentAlbum,
+    const MergeAlbumInfo &targetAlbum)
 {
-    string currentFileId = ParseFileIdFromCoverUri(currentAlbumCoverUri);
-    string targetFileId = ParseFileIdFromCoverUri(targetAlbumCoverUri);
+    string currentFileId = ParseFileIdFromCoverUri(currentAlbum.coverUri);
+    string targetFileId = ParseFileIdFromCoverUri(targetAlbum.coverUri);
     if (currentFileId.empty() || targetFileId.empty()) {
         return E_DB_FAIL;
     }
@@ -1478,10 +1478,15 @@ int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const string &cur
         MEDIA_ERR_LOG("uniStore is nullptr! failed query get merge album cover uri");
         return E_DB_FAIL;
     }
+    string candidateIds;
+    if (currentAlbum.isCoverSatisfied == targetAlbum.isCoverSatisfied) {
+        candidateIds = currentFileId + ", " + targetFileId;
+    } else {
+        candidateIds = currentAlbum.isCoverSatisfied == ALBUM_COVER_SATISFIED ? currentFileId : targetFileId;
+    }
     const std::string queryAlbumInfo = "SELECT " + MediaColumn::MEDIA_ID + "," + MediaColumn::MEDIA_TITLE + "," +
-        MediaColumn::MEDIA_NAME + ", MAX(" + MediaColumn::MEDIA_DATE_MODIFIED + ") FROM " + PhotoColumn::PHOTOS_TABLE +
-        " WHERE " + MediaColumn::MEDIA_ID + " = " + currentFileId + " OR " + MediaColumn::MEDIA_ID + " = " +
-        targetFileId;
+        MediaColumn::MEDIA_NAME + ", MAX(" + MediaColumn::MEDIA_DATE_ADDED + ") FROM " + PhotoColumn::PHOTOS_TABLE +
+        " WHERE " + MediaColumn::MEDIA_ID + " IN (" + candidateIds + " )";
 
     auto resultSet = uniStore->QuerySql(queryAlbumInfo);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
@@ -1513,9 +1518,10 @@ int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const string &cur
 int32_t UpdateMergeAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo, int32_t currentAlbumId)
 {
     MergeAlbumInfo updateAlbumInfo;
-    if (GetMergeAlbumCoverUri(updateAlbumInfo, mergeAlbumInfo[0].coverUri, mergeAlbumInfo[1].coverUri) != E_OK) {
+    if (GetMergeAlbumCoverUri(updateAlbumInfo, mergeAlbumInfo[0], mergeAlbumInfo[1]) != E_OK) {
         return E_HAS_DB_ERROR;
     }
+    updateAlbumInfo.isCoverSatisfied = mergeAlbumInfo[0].isCoverSatisfied | mergeAlbumInfo[1].isCoverSatisfied;
     updateAlbumInfo.count = GetMergeAlbumCount(mergeAlbumInfo[0].albumId, mergeAlbumInfo[1].albumId);
     updateAlbumInfo.groupTag = "'" + mergeAlbumInfo[0].groupTag + "|" + mergeAlbumInfo[1].groupTag + "'";
     updateAlbumInfo.isMe = (mergeAlbumInfo[0].isMe == 1 || mergeAlbumInfo[1].isMe == 1) ? 1 : 0;
@@ -1822,8 +1828,8 @@ int32_t SetCoverUri(const ValuesBucket &values, const DataSharePredicates &predi
         return E_INVALID_VALUES;
     }
     std::string updateForSetCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
-        "' WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
-        " = " + targetAlbumId + ")";
+        "', " + IS_COVER_SATISFIED + " = " + to_string(ALBUM_COVER_SATISFIED) + " WHERE " + GROUP_TAG + " IN(SELECT " +
+        GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
     vector<string> updateSqls = { updateForSetCoverUri};
     err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
