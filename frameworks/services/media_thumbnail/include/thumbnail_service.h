@@ -66,12 +66,6 @@ private:
         std::string &tableName);
     int GetThumbFd(const std::string &path, const std::string &table, const std::string &id,
         const std::string &uri, const Size &size, bool isAstc = false);
-    int32_t CreateThumbnailInfo(const std::string &path, const std::string &tableName, const std::string &fileId,
-        const std::string &uri, const bool &isSync);
-    int32_t CreateDefaultThumbnail(const std::string &path,
-        const std::string &tableName, const std::string &fileId, const std::string &uri, const bool &isSync);
-    int32_t CreateLcdThumbnail(const std::string &path,
-        const std::string &tableName, const std::string &fileId, const bool &isSync);
     static std::shared_ptr<ThumbnailService> thumbnailServiceInstance_;
     static std::mutex instanceLock_;
 #ifdef DISTRIBUTED
