@@ -563,7 +563,8 @@ unique_ptr<PixelMap> MediaLibraryManager::DecodeThumbnail(UniqueFd& uniqueFd, co
 
     PostProc postProc;
     if (size.width != 0 && size.width != DEFAULT_ORIGINAL && !isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
-        MEDIA_ERR_LOG("DecodeThumbnail error");
+        MEDIA_ERR_LOG("CenterScale failed, size: %{public}d * %{public}d, imageInfo size: %{public}d * %{public}d",
+            size.width, size.height, imageInfo.size.width, imageInfo.size.height);
         return nullptr;
     }
 
@@ -715,7 +716,7 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetAstc(const Uri &uri)
     tracer.Start("MediaLibraryManager::OpenThumbnail");
     UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, uriParams.path, uriParams.size, true));
     if (uniqueFd.Get() < 0) {
-        MEDIA_ERR_LOG("OpenThumbnail failed, errCode is %{public}d", uniqueFd.Get());
+        MEDIA_ERR_LOG("OpenThumbnail failed, errCode is %{public}d, uri :%{public}s", uniqueFd.Get(), uriStr.c_str());
         return nullptr;
     }
     tracer.Finish();
