@@ -22,6 +22,8 @@
 #include <sys/stat.h>
 
 #include "directory_ex.h"
+#include "iservice_registry.h"
+#include "media_actively_calling_analyse.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_asset_operations.h"
@@ -841,6 +843,21 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     return changedRows;
 }
 
+static void ActivelyStartAnalysisService(const bool isDeleteIndex)
+{
+    int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_UPDATE_INDEX;
+    if (isDeleteIndex) {
+        code = MediaActivelyCallingAnalyse::ActivateServiceType::START_DELETE_INDEX;
+    }
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_ASYNC);
+    MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
+    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
+        MEDIA_ERR_LOG("Actively Calling Analyse For update or delete index Fail");
+    }
+}
+
 int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
@@ -858,6 +875,7 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     if (changedRows < 0) {
         return changedRows;
     }
+    ActivelyStartAnalysisService(false);
     std::unordered_map<int32_t, int32_t>  updateResult;
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, updateResult, whereArgs);
@@ -882,7 +900,11 @@ static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates,
     const bool isAging, const bool compatible)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
-    return MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicates, isAging, compatible);
+    int32_t deletedRows = MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicates, isAging, compatible);
+    if (!isAging) {
+        ActivelyStartAnalysisService(true);
+    }
+    return deletedRows;
 }
 
 int32_t AgingPhotoAssets(shared_ptr<int> countPtr)

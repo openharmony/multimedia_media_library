@@ -22,6 +22,8 @@
 
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
+#include "iservice_registry.h"
+#include "media_actively_calling_analyse.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -607,6 +609,18 @@ static void TrashPhotosSendNotify(vector<string> &notifyUris)
     }
 }
 
+static void ActivelyStartAnalysisService()
+{
+    int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_UPDATE_INDEX;
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_ASYNC);
+    MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
+    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
+        MEDIA_ERR_LOG("Actively Calling Analyse For update index Fail");
+    }
+}
+
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -629,6 +643,7 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", updatedRows);
         return E_HAS_DB_ERROR;
     }
+    ActivelyStartAnalysisService();
     std::unordered_map<int32_t, int32_t>  updateResult;
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw(), updateResult, notifyUris);
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
@@ -711,6 +726,7 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     if (changedRows < 0) {
         return changedRows;
     }
+    ActivelyStartAnalysisService();
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
             std::to_string(PhotoAlbumSubType::FAVORITE),
