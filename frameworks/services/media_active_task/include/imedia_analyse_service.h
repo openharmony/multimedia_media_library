@@ -24,6 +24,8 @@ class IMediaAnalyseService : public IRemoteBroker {
 public:
     enum ActivateServiceType {
         START_SERVICE_OCR = 1,
+        START_DELETE_INDEX = 31,
+        START_UPDATE_INDEX = 32,
     };
 public:
     DECLARE_INTERFACE_DESCRIPTOR(u"Multimedia.MediaAnalyseService.API");
