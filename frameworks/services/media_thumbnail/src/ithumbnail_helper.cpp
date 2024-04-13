@@ -273,6 +273,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
 
     if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
         if (data.source == nullptr) {
+            MEDIA_ERR_LOG("source is nullptr");
             return false;
         }
 
