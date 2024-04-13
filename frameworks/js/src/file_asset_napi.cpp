@@ -1969,9 +1969,10 @@ static void ActivelyStartAnalysisService(const int fileId)
     int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_SERVICE_OCR;
     MessageParcel data;
     MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
     data.WriteInt32(static_cast<int32_t>(fileId));
     MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
-    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply)) {
+    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
         NAPI_ERR_LOG("Actively Calling Analyse Fail");
     }
 }
