@@ -106,6 +106,25 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(totalCmd, predicates);
 }
 
+void ClearAnalysisAlbum()
+{
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    NativeRdb::AbsRdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.NotEqualTo(ALBUM_SUBTYPE, PhotoAlbumSubType::SHOOTING_MODE);
+    int32_t deletedRows = -1;
+    auto ret = rdbStore->Delete(deletedRows, predicates);
+    MEDIA_INFO_LOG("ClearAnalysisAlbum Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+}
+
+void ClearPhotos()
+{
+    auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    int32_t deletedRows = -1;
+    auto ret = rdbStore->Delete(deletedRows, predicates);
+    MEDIA_INFO_LOG("ClearPhotos Delete retVal: %{public}d, deletedRows: %{public}d", ret, deletedRows);
+}
+
 int32_t GetAnalysisAlbumPredicates(const int32_t albumId, DataShare::DataSharePredicates &predicates)
 {
     string onClause = "file_id = map_asset";
@@ -126,6 +145,8 @@ void MediaLibraryVisionTest::SetUpTestCase(void)
     PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryVisionTest", perms, tokenId);
     ASSERT_TRUE(tokenId != 0);
     CleanVisionData();
+    ClearAnalysisAlbum();
+    ClearPhotos();
 }
 
 void MediaLibraryVisionTest::TearDownTestCase(void)
@@ -1726,7 +1747,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Leve
 HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Vision_AnalysisGetPhotoIndex_Test_001::Start");
-    int32_t albumId = CreateAnalysisAlbum("6");
+    int32_t albumId = CreateAnalysisAlbum("testIndex");
     int32_t id1 = CreateSingleImage("AnalysisGetPhotoIndex1.jpg");
     int32_t id2 = CreateSingleImage("AnalysisGetPhotoIndex2.jpg");
     InsertAnalysisMap(albumId, id1);
@@ -1734,6 +1755,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_001, TestSize
 
     Uri queryIndexUri(PAH_GET_ANALYSIS_INDEX);
     MediaLibraryCommand queryCmd(queryIndexUri);
+    queryCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
     DataShare::DataSharePredicates predicatesQuery;
     predicatesQuery.OrderByAsc(FILE_ID);
     vector<string> columns = {to_string(id2), to_string(albumId)};
@@ -1743,7 +1765,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_001, TestSize
     resultSet->GoToFirstRow();
     int index = -1;
     resultSet->GetInt(0, index);
-    EXPECT_EQ(index, 1);
+    EXPECT_EQ(index, 2);
 }
 
 void CreatTestImage()
