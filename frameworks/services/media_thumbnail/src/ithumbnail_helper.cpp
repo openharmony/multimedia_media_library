@@ -18,6 +18,7 @@
 
 #include "ability_manager_client.h"
 #include "background_task_mgr_helper.h"
+#include "dfx_utils.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
 #include "media_column.h"
@@ -41,33 +42,10 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-void IThumbnailHelper::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
+void IThumbnailHelper::CreateThumbnails(AsyncTaskData* data)
 {
-    if (opts.store == nullptr) {
-        return;
-    }
-    if (!opts.path.empty()) {
-        outData.path = opts.path;
-        outData.id = opts.row;
-        outData.dateAdded = opts.dateAdded;
-        outData.fileUri = opts.fileUri;
-        return;
-    }
-    string filesTableName = opts.table;
-    int errCode = E_ERR;
-    if (!opts.networkId.empty()) {
-        filesTableName = opts.store->ObtainDistributedTableName(opts.networkId, opts.table, errCode);
-    }
-    if (filesTableName.empty()) {
-        return;
-    }
-    opts.table = filesTableName;
-    int err;
-    ThumbnailUtils::QueryThumbnailInfo(opts, outData, err);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("query fail [%{public}d]", err);
-    }
-    return;
+    GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
+    DoCreateThumbnails(taskData->opts, taskData->thumbnailData, false);
 }
 
 void IThumbnailHelper::CreateLcd(AsyncTaskData* data)
@@ -196,6 +174,10 @@ void ThumbnailWait::Notify()
 bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const string &suffix,
     bool isLoadFromSourcePath)
 {
+    if (data.source != nullptr) {
+        return true;
+    }
+    
     // targetPath is the path of the thumbnail generated with suffix.
     std::string targetPath = isLoadFromSourcePath ? "" : GetThumbnailPath(data.path, suffix);
     if (!ThumbnailUtils::LoadSourceImage(data, suffix == THUMBNAIL_THUMB_SUFFIX, targetPath)) {
@@ -207,7 +189,7 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, con
             return false;
         } else {
             opts.path = "";
-            GetThumbnailInfo(opts, data);
+            ThumbnailUtils::GetThumbnailInfo(opts, data);
             string fileName = GetThumbnailPath(data.path, suffix);
             if (access(fileName.c_str(), F_OK) == 0) {
                 return true;
@@ -282,14 +264,14 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
 
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
-    if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
-        if (type == ThumbnailType::THUMB && !TryLoadSource(opts, data, THUMBNAIL_THUMB_SUFFIX, true)) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-                {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-            return false;
-        }
+    if (type == ThumbnailType::THUMB && !TryLoadSource(opts, data, THUMBNAIL_THUMB_SUFFIX, true)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
 
+    if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
         if (data.source == nullptr) {
             return false;
         }
@@ -429,6 +411,40 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
     // needs to be updated, and application should receive a notification at the same time.
     if (!UpdateThumbnailState(opts, data)) {
         MEDIA_ERR_LOG("UpdateThumbnailState fail");
+        return false;
+    }
+    return true;
+}
+
+bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
+{
+    if (!DoCreateLcd(opts, data, false)) {
+        MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
+
+    if (data.needReloadSource) {
+        MEDIA_WARN_LOG("Cannot scale from LCD to THM due to size conflict, path: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        ThumbnailData thumbData;
+        ThumbnailUtils::GetThumbnailInfo(opts, thumbData);
+        AddAsyncTask(CreateThumbnail, opts, thumbData, false);
+        return false;
+    }
+
+    if (!ThumbnailUtils::ScaleThumbnailEx(data, true)) {
+        MEDIA_ERR_LOG("Fail to scale from LCD to THM, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        return false;
+    }
+
+    if (!DoCreateThumbnail(opts, data, false)) {
+        MEDIA_ERR_LOG("Fail to create thumbnail, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     return true;
