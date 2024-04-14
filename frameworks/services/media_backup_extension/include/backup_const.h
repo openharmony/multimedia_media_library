@@ -27,7 +27,7 @@
 
 namespace OHOS {
 namespace Media {
-constexpr int32_t QUERY_COUNT = 500;
+constexpr int32_t QUERY_COUNT = 200;
 constexpr int32_t PRE_CLONE_PHOTO_BATCH_COUNT = 100;
 constexpr int32_t CONNECT_SIZE = 10;
 constexpr int32_t MILLISECONDS = 1000;
