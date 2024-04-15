@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,10 +25,13 @@ namespace OHOS::Media {
 std::mutex MediaLibraryKvStoreManager::mutex_;
 Utils::Timer MediaLibraryKvStoreManager::timer_("close_kvStore");
 std::atomic<uint32_t> MediaLibraryKvStoreManager::insertImageCount_ = 0;
+uint32_t MediaLibraryKvStoreManager::timerId_ = 0;
 
 MediaLibraryKvStoreManager::~MediaLibraryKvStoreManager()
 {
+    timer_.Unregister(timerId_);
     timer_.Shutdown();
+    timerId_ = 0;
 }
 
 int32_t MediaLibraryKvStoreManager::InitKvStore(const KvStoreRoleType &roleType, const KvStoreValueType &valueType)
@@ -110,7 +113,7 @@ bool MediaLibraryKvStoreManager::CloseKvStore(const KvStoreValueType &valueType)
 
 void MediaLibraryKvStoreManager::RegisterTimer(const KvStoreRoleType &roleType, const KvStoreValueType &valueType)
 {
-    if (roleType != KvStoreRoleType::OWNER || valueType != KvStoreValueType::YEAR_ASTC) {
+    if (roleType != KvStoreRoleType::OWNER) {
         return;
     }
 
@@ -121,12 +124,16 @@ void MediaLibraryKvStoreManager::RegisterTimer(const KvStoreRoleType &roleType, 
     };
 
     std::lock_guard<std::mutex> lock(mutex_);
-    if (insertImageCount_ == 0 || insertImageCount_ >= KVSTORE_INSERT_COUNT) {
-        timer_.Shutdown();
-        insertImageCount_ = 0;
-        timer_.Setup();
-        timer_.Register(timerCallback, CLOSE_KVSTORE_TIME_INTERVAL, true);
+    if (timerId_ == 0) {
         MEDIA_INFO_LOG("KvStore timer Setup");
+        timer_.Setup();
+    }
+    
+    if (insertImageCount_ == 0 || insertImageCount_ >= KVSTORE_INSERT_COUNT) {
+        timer_.Unregister(timerId_);
+        insertImageCount_ = 0;
+        timerId_ = timer_.Register(timerCallback, CLOSE_KVSTORE_TIME_INTERVAL, true);
+        MEDIA_INFO_LOG("KvStore timer Restart");
     }
     insertImageCount_++;
 }

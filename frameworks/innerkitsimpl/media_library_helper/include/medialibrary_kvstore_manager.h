@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,7 +25,7 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 using KvStoreSharedPtr = std::shared_ptr<MediaLibraryKvStore>;
-constexpr size_t KVSTORE_INSERT_COUNT = 10;
+constexpr size_t KVSTORE_INSERT_COUNT = 20;
 constexpr size_t CLOSE_KVSTORE_TIME_INTERVAL = 270000;
 
 class MediaLibraryKvStoreManager {
@@ -51,6 +51,7 @@ private:
     SafeMap<KvStoreValueType, KvStoreSharedPtr> kvStoreMap_;
     static std::mutex mutex_;
     static Utils::Timer timer_;
+    static uint32_t timerId_;
     static std::atomic<uint32_t> insertImageCount_;
 };
 } // namespace Media
