@@ -55,15 +55,21 @@ void PrintACLDetail(const std::string& path, const char* aclAttrName)
     }
     if (len == -1) {
         MEDIA_ERR_LOG("getxattr error");
-        delete[] buf;
+        if (buf != nullptr) {
+            delete[] buf;
+            buf = nullptr;
+        }
         return;
     }
 
     Acl acl;
     acl.DeSerialize(buf, len);
-    acl.Print();
+    acl.Print(path);
 
-    delete[] buf;
+    if (buf != nullptr) {
+        delete[] buf;
+        buf = nullptr;
+    }
 }
 
 ACL_PERM Acl::ReCalcMaskPerm()
@@ -162,7 +168,7 @@ char *Acl::Serialize(size_t &bufSize)
     }
 
     size_t restSize = bufSize - sizeof(AclXattrHeader);
-    AclXattrEntry *ptr = reinterpret_cast<AclXattrEntry *>(buf + sizeof(AclXattrHeader));
+    AclXattrEntry *ptr = reinterpret_cast<AclXattrEntry*>(buf + sizeof(AclXattrHeader));
     for (const auto &e : entries) {
         auto err = memcpy_s(ptr++, restSize, &e, sizeof(AclXattrEntry));
         if (err != EOK) {
@@ -180,9 +186,9 @@ int Acl::DeSerialize(const char* aclHead, size_t size)
 {
     if (size > BUF_MAX_SIZE || size < sizeof(AclXattrHeader)) {
         errno = EINVAL;
-        return -1;
+        return errno;
     }
-    header = *reinterpret_cast<const AclXattrHeader *>(aclHead);
+    header = *reinterpret_cast<const AclXattrHeader*>(aclHead);
     size -= sizeof(AclXattrHeader);
     aclHead += sizeof(AclXattrHeader);
 
@@ -190,9 +196,8 @@ int Acl::DeSerialize(const char* aclHead, size_t size)
      * `entry->tag != ACL_TAG::UNDEFINED` is unreliable outside the buffer, so check
      * it after checking the size of remaining buffer.
      */
-    for (const AclXattrEntry *entry = reinterpret_cast<const AclXattrEntry *>(aclHead);
-            size >= sizeof(AclXattrEntry) && entry->tag != ACL_TAG::UNDEFINED;
-            entry++) {
+    for (const AclXattrEntry *entry = reinterpret_cast<const AclXattrEntry*>(aclHead);
+        size >= sizeof(AclXattrEntry) && entry->tag != ACL_TAG::UNDEFINED; entry++) {
         InsertEntry(*entry);
         size -= sizeof(AclXattrEntry);
     }
@@ -200,10 +205,10 @@ int Acl::DeSerialize(const char* aclHead, size_t size)
         entries.clear();
         header = { 0 };
         errno = EINVAL;
-        return -1;
+        return errno;
     }
 
-    return 0;
+    return E_OK;
 }
 
 Acl AclFromMode(const std::string &file)
@@ -265,29 +270,28 @@ void InitSandboxGroupEntry(AclXattrEntry& entry, uint32_t id, uint16_t access)
 
 int32_t Acl::AclSetDefault()
 {
-    AclXattrEntry entry = {};
-    InitSandboxGroupEntry(entry, THUMB_ACL_GROUP, ACL_PERM::Value::READ | ACL_PERM::Value::EXECUTE);
-    int32_t err = EntryInsert(entry, THUMB_DIR);
-    if (err != E_OK) {
+    if (EnableAcl(THUMB_DIR, ACL_XATTR_DEFAULT, ACL_PERM::Value::READ | ACL_PERM::Value::EXECUTE,
+        MEDIA_DB_ACL_GROUP) != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the Photo dir");
+        return E_ERR;
     }
-    return err;
+    return E_OK;
 }
 
-int32_t Acl::RecursiveEnableACL(const std::string& path, const char* aclAttrName, const uint16_t& permission,
+int32_t Acl::RecursiveEnableAcl(const std::string& path, const char* aclAttrName, const uint16_t& permission,
     uint32_t groupId)
 {
     DIR* fileDir;
     struct dirent* dirEntry;
     struct stat st;
     std::list<std::string> dirPathList{path};
-    int32_t isSuccess = E_OK;
+    int32_t result = E_OK;
     while (!dirPathList.empty()) {
         std::string dir = dirPathList.back();
         dirPathList.pop_back();
         if ((fileDir = opendir(dir.c_str())) == nullptr) {
             MEDIA_ERR_LOG("dir not exist: %{private}s, error: %s", dir.c_str(), strerror(errno));
-            isSuccess = E_ERR;
+            result = E_ERR;
             continue;
         }
         while ((dirEntry = readdir(fileDir)) != nullptr) {
@@ -296,24 +300,24 @@ int32_t Acl::RecursiveEnableACL(const std::string& path, const char* aclAttrName
             }
             std::string fileName = dir + "/" + dirEntry->d_name;
             if (stat(fileName.c_str(), &st) != 0) {
-                MEDIA_ERR_LOG("getting file: %{private}s stat fail, error: %s", fileName.c_str(), strerror(errno))
-                isSuccess = E_ERR;
+                MEDIA_ERR_LOG("getting file: %{private}s stat fail, error: %s", fileName.c_str(), strerror(errno));
+                result = E_ERR;
                 continue;
             }
             if (st.st_mode & S_IFDIR) {
                 dirPathList.push_front(fileName);
             }
-            if (EnableAcl(fileName, aclAttrName, permission, groundId) != E_OK) {
+            if (EnableAcl(fileName, aclAttrName, permission, groupId) != E_OK) {
                 MEDIA_ERR_LOG("Failed to set the acl permission for the %{private}s", fileName.c_str());
-                isSuccess = E_ERR;
+                result = E_ERR;
             }
         }
-    closedir(fileDir);
+        closedir(fileDir);
     }
-    return isSuccess;
+    return result;
 }
 
-int32_t Acl::EnableACL(const std::string& path, const char* aclAttrName, const uint16_t& permission, uint32_t groupId)
+int32_t Acl::EnableAcl(const std::string& path, const char* aclAttrName, const uint16_t& permission, uint32_t groupId)
 {
     AclXattrEntry entry = {};
     InitSandboxGroupEntry(entry, groupId, permission);
@@ -327,12 +331,12 @@ int32_t Acl::EnableACL(const std::string& path, const char* aclAttrName, const u
 
 int32_t Acl::AclSetDatabase()
 {
-    if (EnableACL(MEDIA_DB_DIR, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
+    if (EnableAcl(MEDIA_DB_DIR, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
         ACL_PERM::Value::EXECUTE, MEDIA_DB_ACL_GROUP) != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the DB dir");
         return E_ERR;
     }
-    if (RecursiveEnableACL(MEDIA_DB_DIR, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
+    if (RecursiveEnableAcl(MEDIA_DB_DIR, ACL_XATTR_ACCESS, ACL_PERM::Value::READ | ACL_PERM::Value::WRITE |
         ACL_PERM::Value::EXECUTE, MEDIA_DB_ACL_GROUP) != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the DB sub dir");
         return E_ERR;
@@ -375,9 +379,9 @@ int32_t Acl::EntryInsert(AclXattrEntry& entry, const std::string& path, const ch
     /* in case that this acl has no OTHER TAG and can't be serialized */
     acl.InsertEntry(
         {
-        .tag = ACL_TAG::OTHER,
-        .perm = S_IXOTH,
-        .id = ACL_UNDEFINED_ID,
+            .tag = ACL_TAG::OTHER,
+            .perm = S_IXOTH,
+            .id = ACL_UNDEFINED_ID,
         }
     );
 
@@ -397,7 +401,7 @@ int32_t Acl::EntryInsert(AclXattrEntry& entry, const std::string& path, const ch
 
 void Acl::Print(const std::string& path)
 {
-    MEDIA_DEBUG_LOG("Version: %#x, path: %s\n", header.version, path.c_str());
+    MEDIA_DEBUG_LOG("Version: %#x, path: %{private}s\n", header.version, path.c_str());
     for (const auto &e: entries) {
         MEDIA_DEBUG_LOG("+======================\n"
             "tag:  %s\n"

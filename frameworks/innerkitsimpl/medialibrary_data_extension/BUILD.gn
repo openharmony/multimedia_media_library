@@ -50,6 +50,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_SERVICES_PATH}/media_active_task/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
 
@@ -133,12 +134,9 @@ ohos_shared_library("medialibrary_data_extension") {
 
   media_thumbnail_source = [
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/cloud_thumbnail_observer.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/default_thumbnail_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/ithumbnail_helper.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/lcd_thumbnail_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_aging_helper.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_generate_helper.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_helper_factory.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_service.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_uri_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/thumbnail_utils.cpp",
@@ -176,6 +174,7 @@ ohos_shared_library("medialibrary_data_extension") {
   ]
 
   sources = [
+    "${MEDIALIB_SERVICES_PATH}/media_active_task/src/media_actively_calling_analyse.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
@@ -254,6 +253,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "image_framework:image_native",
     "init:libbegetutil",
     "ipc:ipc_core",
+    "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "player_framework:media_client",

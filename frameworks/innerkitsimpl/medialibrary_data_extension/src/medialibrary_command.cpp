@@ -623,19 +623,18 @@ OperationType MediaLibraryCommand::GetOprnTypeFromUri(Uri& uri)
 
 OperationObject MediaLibraryCommand::GetOprnObjectFromUri(Uri& uri)
 {
-    const string opObject = MediaFileUri::GetPathFirstDentry(uri_);
+    const string opObject = MediaFileUri::GetPathFirstDentry(uri);
     if (OPRN_OBJ_MAP.find(opObject) != OPRN_OBJ_MAP.end()) {
         return OPRN_OBJ_MAP.at(opObject);
     }
-    string uriString = uri.ToString();
+    std::string uriString = uri.ToString();
     if (MediaFileUtils::StartsWith(uriString, PhotoColumn::PHOTO_CACHE_URI_PREFIX)) {
         return OperationObject::PAH_PHOTO;
     }
 
     for (const auto &item : OPRN_MAP) {
-        if (MediaFileUtils::StartsWith(uri, item.first)) {
-            oprnObject_ = item.second;
-            break;
+        if (MediaFileUtils::StartsWith(uriString, item.first)) {
+            return item.second;
         }
     }
     return OperationObject::UNKNOWN_OBJECT;

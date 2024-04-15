@@ -31,10 +31,9 @@ MediaActivelyCallingAnalyse::~MediaActivelyCallingAnalyse()
     MEDIA_INFO_LOG("destroy MediaActivelyCallingAnalyse instance");
 }
 
-bool MediaActivelyCallingAnalyse::SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply)
+bool MediaActivelyCallingAnalyse::SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply,
+    MessageOption &option)
 {
-    MessageOption option(MessageOption::TF_SYNC);
-
     int32_t minTimeout = 4;
     auto saMgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (saMgr == nullptr) {

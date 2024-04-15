@@ -152,7 +152,9 @@ public:
     EXPORT static int32_t AclSetDefault();
     EXPORT static int32_t AclSetDatabase();
     EXPORT static int32_t EntryInsert(AclXattrEntry& entry, const std::string& path, const char* aclAttrName);
-    EXPORT static int32_t RecursiveEnableACL(const std::string& path, const char* aclAttrName,
+    EXPORT static int32_t RecursiveEnableAcl(const std::string& path, const char* aclAttrName,
+        const uint16_t& permission, uint32_t groupId);
+    EXPORT static int32_t EnableAcl(const std::string& path, const char* aclAttrName,
         const uint16_t& permission, uint32_t groupId);
     EXPORT void Print(const std::string& path);
     EXPORT ~Acl();

@@ -157,7 +157,7 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
         resultSet = sDataShareHelper_->Query(uri, predicates, columns, &businessError);
         errCode = businessError.GetCode();
     }
-    return resultSet; 
+    return resultSet;
 }
 
 int UserFileClient::Insert(Uri &uri, const DataShareValuesBucket &value)
