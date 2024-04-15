@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -98,7 +98,7 @@ ThumbnailWait::~ThumbnailWait()
 ThumbnailMap ThumbnailWait::thumbnailMap_;
 std::shared_mutex ThumbnailWait::mutex_;
 
-static bool WaitFor(const shared_ptr<SyncStatus>& thumbnailWait, int waitMs, unique_lock<mutex> &lck)
+static bool WaitFor(const shared_ptr<ThumbnailSyncStatus> &thumbnailWait, int waitMs, unique_lock<mutex> &lck)
 {
     bool ret = thumbnailWait->cond_.wait_for(lck, chrono::milliseconds(waitMs),
         [thumbnailWait]() { return thumbnailWait->isSyncComplete_; });
@@ -123,14 +123,23 @@ WaitStatus ThumbnailWait::InsertAndWait(const string &id, bool isLcd)
         auto thumbnailWait = iter->second;
         unique_lock<mutex> lck(thumbnailWait->mtx_);
         writeLck.unlock();
-        bool ret = WaitFor(thumbnailWait, WAIT_FOR_MS, lck);
-        if (ret) {
+        MEDIA_INFO_LOG("Waiting for thumbnail generation");
+        thumbnailWait->cond_.wait(lck, [weakPtr = weak_ptr(thumbnailWait)]() {
+            if (auto sharedPtr = weakPtr.lock()) {
+                return sharedPtr->isSyncComplete_;
+            } else {
+                return true;
+            }
+        });
+        if (thumbnailWait->isCreateThumbnailSuccess_) {
+            MEDIA_INFO_LOG("Thumbnail generated successfully");
             return WaitStatus::WAIT_SUCCESS;
         } else {
-            return WaitStatus::TIMEOUT;
+            MEDIA_ERR_LOG("Failed to generate thumbnail");
+            return WaitStatus::WAIT_FAILED;
         }
     } else {
-        shared_ptr<SyncStatus> thumbnailWait = make_shared<SyncStatus>();
+        shared_ptr<ThumbnailSyncStatus> thumbnailWait = make_shared<ThumbnailSyncStatus>();
         thumbnailMap_.insert(ThumbnailMap::value_type(id_, thumbnailWait));
         return WaitStatus::INSERT;
     }
@@ -152,6 +161,22 @@ void ThumbnailWait::CheckAndWait(const string &id, bool isLcd)
         unique_lock<mutex> lck(thumbnailWait->mtx_);
         readLck.unlock();
         WaitFor(thumbnailWait, WAIT_FOR_MS, lck);
+    }
+}
+
+void ThumbnailWait::UpdateThumbnailMap()
+{
+    unique_lock<shared_mutex> writeLck(mutex_);
+    auto iter = thumbnailMap_.find(id_);
+    if (iter != thumbnailMap_.end()) {
+        auto thumbnailWait = iter->second;
+        {
+            unique_lock<mutex> lck(thumbnailWait->mtx_);
+            writeLck.unlock();
+            thumbnailWait->isCreateThumbnailSuccess_ = true;
+        }
+    } else {
+        MEDIA_ERR_LOG("Update ThumbnailMap failed, id: %{public}s", id_.c_str());
     }
 }
 
@@ -210,10 +235,19 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, true);
-    if (ret == WaitStatus::WAIT_SUCCESS && forQuery) {
-        return true;
+    if (ret != WaitStatus::INSERT) {
+        return ret == WaitStatus::WAIT_SUCCESS;
     }
 
+    if (IsCreateLcdSuccess(opts, data)) {
+        thumbnailWait.UpdateThumbnailMap();
+        return true;
+    }
+    return false;
+}
+
+bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
+{
     if (!TryLoadSource(opts, data, THUMBNAIL_LCD_SUFFIX, true)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -373,10 +407,19 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, false);
-    if (ret == WaitStatus::WAIT_SUCCESS && forQuery) {
-        return true;
+    if (ret != WaitStatus::INSERT) {
+        return ret == WaitStatus::WAIT_SUCCESS;
     }
 
+    if (IsCreateThumbnailSuccess(opts, data)) {
+        thumbnailWait.UpdateThumbnailMap();
+        return true;
+    }
+    return false;
+}
+
+bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
+{
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};

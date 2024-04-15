@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -44,10 +44,19 @@ public:
 enum WaitStatus {
     INSERT,
     WAIT_SUCCESS,
+    WAIT_FAILED,
     TIMEOUT,
 };
 
-using ThumbnailMap = std::map<std::string, std::shared_ptr<SyncStatus>>;
+class ThumbnailSyncStatus {
+public:
+    std::condition_variable cond_;
+    std::mutex mtx_;
+    bool isSyncComplete_{false};
+    bool isCreateThumbnailSuccess_{false};
+};
+
+using ThumbnailMap = std::map<std::string, std::shared_ptr<ThumbnailSyncStatus>>;
 class ThumbnailWait {
 public:
     ThumbnailWait(bool release);
@@ -55,6 +64,7 @@ public:
 
     WaitStatus InsertAndWait(const std::string &id, bool isLcd);
     void CheckAndWait(const std::string &id, bool isLcd);
+    void UpdateThumbnailMap();
 
 private:
     void Notify();
@@ -86,6 +96,8 @@ private:
     static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
     static bool UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
     static int32_t UpdateAstcState(const ThumbRdbOpt &opts, const ThumbnailData &data);
+    static bool IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
+    static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
 };
 } // namespace Media
 } // namespace OHOS
