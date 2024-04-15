@@ -167,7 +167,7 @@ if (defined(medialibrary_mtp_enable)) {
       "drivers_interface_usb:usbfn_mtp_idl_headers",
       "hilog:libhilog",
       "ipc:ipc_core",
-      "ipc:ipc_js",
+      "ipc:rpc",
       "napi:ace_napi",
     ]
 
