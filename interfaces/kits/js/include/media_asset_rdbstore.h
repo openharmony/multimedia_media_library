@@ -21,6 +21,7 @@
 #include "datashare_predicates.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_db_const.h"
+#include "medialibrary_command.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "rdb_open_callback.h"
@@ -38,12 +39,12 @@ class MediaAssetRdbStore {
 public:
     ~MediaAssetRdbStore() = default;
     EXPORT static MediaAssetRdbStore* GetInstance();
-    EXPORT std::shared_ptr<DataShareResultSet> Query(const DataShare::DataSharePredicates& predicates,
+    EXPORT std::shared_ptr<DataShare::DataShareResultSet> Query(const DataShare::DataSharePredicates& predicates,
         std::vector<std::string>& columns, OperationObject& object, int& errCode);
-    EXPORT bool IsQueryAccessibleViaSandBox(Uri& uri, Operation& object);
+    EXPORT bool IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& object, bool isIgnoreSELinux = false);
 private:
     MediaAssetRdbStore();
-    int TryGetRdbStore();
+    int32_t TryGetRdbStore(bool isIngnoreSELinux = false);
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string>& args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string>& args);
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_ {nullptr};

@@ -85,6 +85,7 @@ const int32_t EXPECTED_PHOTO_COUNT = 5;
 const int32_t EXPECTED_PHOTO_MAP_COUNT = 7;
 const int32_t EXPECTED_ANALYSIS_PHOTO_MAP_COUNT = 1;
 const int32_t EXPECTED_COUNT_1 = 1;
+const int32_t EXPECTED_COUNT_0 = 0;
 const int32_t EXPECTED_ALBUM_TOTAL_COUNT = 4;
 
 shared_ptr<MediaLibraryRdbStore> g_rdbStore;
@@ -334,7 +335,8 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_te
     EXPECT_EQ(analysisPhotoMapCount, EXPECTED_ANALYSIS_PHOTO_MAP_COUNT);
     for (const auto &whereClause : WHERE_CLAUSE_LIST) {
         int32_t count = GetPhotoCountByWhereClause(g_rdbStore->GetRaw(), whereClause);
-        EXPECT_EQ(count, EXPECTED_COUNT_1);
+        int32_t expectedCount = whereClause == WHERE_CLAUSE_EDIT ? EXPECTED_COUNT_0 : EXPECTED_COUNT_1;
+        EXPECT_EQ(count, expectedCount);
     }
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }

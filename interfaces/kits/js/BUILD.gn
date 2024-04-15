@@ -116,8 +116,8 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/media_asset_data_handler.cpp",
     "${MEDIALIB_JS_PATH}/src/media_asset_edit_data_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_asset_manager_napi.cpp",
-    "${MEDIALIB_JS_PATH}/src/media_assets_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_asset_rdbstore.cpp",
+    "${MEDIALIB_JS_PATH}/src/media_assets_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_library_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_scanner_napi.cpp",
@@ -134,7 +134,7 @@ ohos_shared_library("medialibrary_nutils") {
 
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-    "{MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "//third_party/e2fsprogs:libext2_uuid",
   ]
 
@@ -171,8 +171,8 @@ ohos_shared_library("medialibrary_nutils") {
     "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
-    "samgr:samgr_proxy",
     "relational_store:rdb_data_share_adapter",
+    "samgr:samgr_proxy",
   ]
 
   defines = []
@@ -441,6 +441,56 @@ ohos_shared_library("photoaccesshelper") {
 
   if (ability_runtime_graphics) {
     external_deps += [ "image_framework:image_native" ]
+  }
+
+  relative_install_dir = "module/file"
+  subsystem_name = "multimedia"
+  part_name = "media_library"
+}
+
+js_declaration("photopickercomponent_js") {
+  part_name = "media_library"
+  sources = [ "./@ohos.file.PhotoPickerComponent.d.ets" ]
+}
+
+# compile .js to .abc.
+es2abc_gen_abc("gen_photopickercomponent_abc") {
+  src_js = rebase_path("${MEDIALIB_JS_PATH}/src/photopickercomponent.js")
+  dst_file = rebase_path(target_out_dir + "/photopickercomponent.abc")
+  in_puts = [ "${MEDIALIB_JS_PATH}/src/photopickercomponent.js" ]
+  out_puts = [ target_out_dir + "/photopickercomponent.abc" ]
+  extra_args = [ "--module" ]
+}
+
+abc_output_path = get_label_info(":photopickercomponent_abc", "target_out_dir")
+photopickercomponent_abc_obj_path =
+    abc_output_path + "/photopickercomponent_abc.o"
+gen_js_obj("photopickercomponent_abc") {
+  input = "$target_out_dir/photopickercomponent.abc"
+  output = photopickercomponent_abc_obj_path
+  dep = ":gen_photopickercomponent_abc"
+}
+
+ohos_shared_library("photopickercomponent") {
+  sources = [ "${MEDIALIB_JS_PATH}/src/photopickercomponent.cpp" ]
+
+  deps = [ ":photopickercomponent_abc" ]
+
+  external_deps = [
+    "hilog:libhilog",
+    "napi:ace_napi",
+  ]
+
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
+    }
   }
 
   relative_install_dir = "module/file"

@@ -314,8 +314,8 @@ napi_value FileAssetNapi::FileAssetNapiConstructor(napi_env env, napi_callback_i
             }
             napi_coerce_to_native_binding_object(
                 env, thisVar, DetachFileAssetFunc, AttachFileAssetFunc, obj.get(), nullptr);
-            status = napi_wrap(env, thisVar, reinterpret_cast<void *>(obj.get()),
-                               FileAssetNapi::FileAssetNapiDestructor, nullptr, nullptr);
+            status = napi_wrap_async_finalizer(env, thisVar, reinterpret_cast<void *>(obj.get()),
+                                               FileAssetNapi::FileAssetNapiDestructor, nullptr, nullptr, 0);
             if (status == napi_ok) {
                 obj.release();
                 return thisVar;
@@ -1969,9 +1969,10 @@ static void ActivelyStartAnalysisService(const int fileId)
     int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_SERVICE_OCR;
     MessageParcel data;
     MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
     data.WriteInt32(static_cast<int32_t>(fileId));
     MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
-    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply)) {
+    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
         NAPI_ERR_LOG("Actively Calling Analyse Fail");
     }
 }

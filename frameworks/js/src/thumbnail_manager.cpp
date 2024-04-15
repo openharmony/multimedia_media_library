@@ -372,6 +372,8 @@ static PixelMapPtr DecodeThumbnail(const UniqueFd &uniqueFd, const Size &size)
 
     PostProc postProc;
     if (size.width != DEFAULT_ORIGINAL && !isEqualsRatio && !postProc.CenterScale(size, *pixelMap)) {
+        NAPI_ERR_LOG("CenterScale failed, size: %{public}d * %{public}d, imageInfo size: %{public}d * %{public}d",
+            size.width, size.height, imageInfo.size.width, imageInfo.size.height);
         return nullptr;
     }
 

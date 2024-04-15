@@ -21,7 +21,7 @@ import mediabackup from '@ohos.multimedia.mediabackup';
 const TAG = 'MediaBackupExtAbility';
 
 const backupPath = '/data/storage/el2/backup/restore/';
-const backupClonePath = '/data/storage/el2/backup/restore/storage/cloud/files/';
+const backupClonePath = '/data/storage/el2/backup/restore/storage/media/local/files/';
 const documentPath = '/storage/media/local/files/Docs/Documents';
 const galleryAppName = 'com.huawei.photos';
 const mediaAppName = 'com.android.providers.media.module';

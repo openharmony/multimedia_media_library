@@ -32,7 +32,7 @@ class MediaActivelyCallingAnalyse : public IRemoteProxy<IMediaAnalyseService> {
 public:
     explicit MediaActivelyCallingAnalyse(const sptr<IRemoteObject> &impl);
     ~MediaActivelyCallingAnalyse();
-    bool SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply);
+    bool SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option);
 
 private:
     const int32_t SAID = 10120;

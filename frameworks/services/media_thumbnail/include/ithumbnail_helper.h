@@ -68,14 +68,12 @@ class IThumbnailHelper {
 public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
-    virtual int32_t CreateThumbnail(ThumbRdbOpt &opts, bool isSync = false);
-    virtual int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size, bool isAstc = false);
+    static void CreateThumbnails(AsyncTaskData *data);
+    static bool DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
     static void CreateLcd(AsyncTaskData *data);
     static void CreateThumbnail(AsyncTaskData *data);
     static void CreateAstc(AsyncTaskData *data);
     static void AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront);
-protected:
-    static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);

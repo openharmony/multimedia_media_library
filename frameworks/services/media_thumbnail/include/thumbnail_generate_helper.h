@@ -26,10 +26,12 @@ class ThumbnailGenerateHelper {
 public:
     ThumbnailGenerateHelper() = delete;
     virtual ~ThumbnailGenerateHelper() = delete;
+    static int32_t CreateThumbnails(ThumbRdbOpt &opts, bool isSync);
     static int32_t CreateThumbnailBatch(ThumbRdbOpt &opts);
     static int32_t CreateAstcBatch(ThumbRdbOpt &opts);
     static int32_t CreateLcdBatch(ThumbRdbOpt &opts);
     static int32_t GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count);
+    static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size, ThumbnailType thumbType);
 private:
     static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
     static int32_t GetNoLcdData(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &outDatas);
