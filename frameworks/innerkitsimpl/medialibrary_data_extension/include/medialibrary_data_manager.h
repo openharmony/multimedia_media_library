@@ -53,7 +53,7 @@ class MediaLibraryDataManager {
 public:
     EXPORT MediaLibraryDataManager();
     EXPORT ~MediaLibraryDataManager();
-    EXPORT static std::shared_ptr<MediaLibraryDataManager> GetInstance();
+    EXPORT static MediaLibraryDataManager* GetInstance();
 
     EXPORT int32_t Insert(MediaLibraryCommand &cmd, const DataShare::DataShareValuesBucket &value);
     EXPORT int32_t InsertExt(MediaLibraryCommand &cmd, const DataShare::DataShareValuesBucket &value,
@@ -139,7 +139,7 @@ private:
     std::shared_ptr<OHOS::AbilityRuntime::Context> context_;
     std::string bundleName_ {BUNDLE_NAME};
     static std::mutex mutex_;
-    static std::shared_ptr<MediaLibraryDataManager> instance_;
+    static std::unique_ptr<MediaLibraryDataManager> instance_;
     static std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
     std::atomic<int> refCnt_ {0};
     std::shared_ptr<MediaDataShareExtAbility> extension_;
