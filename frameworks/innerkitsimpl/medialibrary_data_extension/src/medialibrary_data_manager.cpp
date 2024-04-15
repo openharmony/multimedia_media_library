@@ -102,7 +102,7 @@ const OHOS::DistributedKv::StoreId KVSTORE_STOREID = {"medialibrary_thumbnail"};
 
 namespace OHOS {
 namespace Media {
-shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
+unique_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
 
@@ -124,15 +124,15 @@ MediaLibraryDataManager::~MediaLibraryDataManager(void)
 #endif
 }
 
-shared_ptr<MediaLibraryDataManager> MediaLibraryDataManager::GetInstance()
+MediaLibraryDataManager* MediaLibraryDataManager::GetInstance()
 {
     if (instance_ == nullptr) {
         lock_guard<mutex> lock(mutex_);
         if (instance_ == nullptr) {
-            instance_ = make_shared<MediaLibraryDataManager>();
+            instance_ = make_unique<MediaLibraryDataManager>();
         }
     }
-    return instance_;
+    return instance_.get();
 }
 
 static DataShare::DataShareExtAbility *MediaDataShareCreator(const unique_ptr<Runtime> &runtime)

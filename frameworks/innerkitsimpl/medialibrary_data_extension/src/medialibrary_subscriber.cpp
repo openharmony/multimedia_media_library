@@ -133,7 +133,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     Init();
-    std::shared_ptr<MediaLibraryDataManager> dataManager = MediaLibraryDataManager::GetInstance();
+    auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
         return;
     }
@@ -177,7 +177,7 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 
 void MedialibrarySubscriber::WriteThumbnailStat()
 {
-    std::shared_ptr<MediaLibraryDataManager> dataManager = MediaLibraryDataManager::GetInstance();
+    auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
         return;
     }
