@@ -80,7 +80,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width("100%")
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, s;
+            var t, i, n, r, s, l;
             UIExtensionComponent.create({
                 parameters: {
                     "ability.want.params.uiExtensionTargetType": "photoPicker",
@@ -93,7 +93,8 @@ export class PhotoPickerComponent extends ViewPU {
                     preselectedUri: null === (s = this.pickerOptions) || void 0 === s ? void 0 : s.preselectedUris,
                     isFromPickerView: !0,
                     isNeedActionBar: !1,
-                    isNeedSelectBar: !1
+                    isNeedSelectBar: !1,
+                    isSearchSupported: null === (l = this.pickerOptions) || void 0 === l ? void 0 : l.isSearchSupported
                 }
             });
             UIExtensionComponent.height("100%");
