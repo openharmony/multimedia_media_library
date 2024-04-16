@@ -40,11 +40,17 @@ bool MediaActivelyCallingAnalyse::SendTransactCmd(int32_t code, MessageParcel &d
         MEDIA_ERR_LOG("Get samgr fail, samgr is nullptr");
         return false;
     }
+    sptr<IRemoteObject> remoteObject = saMgr->CheckSystemAbility(SAID);
+    if (remoteObject != nullptr) {
+        MEDIA_INFO_LOG("Active task: sa already running");
+        return false;
+    }
     sptr<IRemoteObject> remote = saMgr->LoadSystemAbility(SAID, minTimeout);
     if (remote == nullptr) {
         MEDIA_ERR_LOG("fail to send transact %{public}d due to remote object", code);
         return false;
     }
+    
     int32_t result = remote->SendRequest(code, data, reply, option);
     if (result != NO_ERROR) {
         MEDIA_ERR_LOG("receive error transact code %{public}d in transact cmd %{public}d", result, code);
