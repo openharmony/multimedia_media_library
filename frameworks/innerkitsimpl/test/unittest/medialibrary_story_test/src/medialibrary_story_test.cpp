@@ -195,7 +195,6 @@ HWTEST_F(MediaLibraryStoryTest, Story_InsertCoverInfo_Test_001, TestSize.Level0)
     valuesBucket.Put(BACKGROUND_SCALE_Y, 6.5);
     valuesBucket.Put(BACKGROUND_RECT_HEIGHT, 6.5);
     valuesBucket.Put(BACKGROUND_RECT_WIDTH, 6.5);
-    valuesBucket.Put(IS_CHOSEN, 0);
     valuesBucket.Put(COVER_ALGO_VERSION, 2);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
@@ -213,7 +212,6 @@ HWTEST_F(MediaLibraryStoryTest, Story_UpdateCoverInfo_Test_001, TestSize.Level0)
     valuesBucket.Put(BACKGROUND, "file://media/Photo/1/2/1.jpg");
     valuesBucket.Put(FOREGROUND, "file://media/Photo/1/2/2.jpg");
     valuesBucket.Put(WORDART, "file://media/Photo/1/2/3.jpg");
-    valuesBucket.Put(IS_COVERED, 0);
     valuesBucket.Put(COLOR, "black");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;
@@ -247,7 +245,6 @@ HWTEST_F(MediaLibraryStoryTest, Story_DeleteCoverInfo_Test_001, TestSize.Level0)
     valuesBucket.Put(BACKGROUND, "file://media/Photo/1/1/1.jpg");
     valuesBucket.Put(FOREGROUND, "file://media/Photo/1/1/2.jpg");
     valuesBucket.Put(WORDART, "file://media/Photo/1/1/3.jpg");
-    valuesBucket.Put(IS_COVERED, 1);
     valuesBucket.Put(COLOR, "black");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataSharePredicates predicates;
