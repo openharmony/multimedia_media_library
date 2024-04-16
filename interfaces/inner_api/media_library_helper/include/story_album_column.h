@@ -21,10 +21,10 @@
 
 namespace OHOS {
 namespace Media {
-// story album table name
-const std::string STORY_ALBUM_TABLE = "tab_story_album";
+// highlight album table name
+const std::string HIGHLIGHT_ALBUM_TABLE = "tab_highlight_album";
 
-// create story album table
+// create highlight album table
 const std::string AI_ALBUM_ID = "ai_album_id";
 const std::string SUB_TITLE = "sub_title";
 const std::string CLUSTER_TYPE = "cluster_type";
@@ -32,10 +32,10 @@ const std::string CLUSTER_SUB_TYPE = "cluster_sub_type";
 const std::string CLUSTER_CONDITION = "cluster_condition";
 const std::string MIN_DATE_ADDED = "min_date_added";
 const std::string MAX_DATE_ADDED = "max_date_added";
-const std::string GENERAT_TIME = "generat_time";
-const std::string STORY_VERSION = "story_version";
+const std::string GENERATE_TIME = "generate_time";
+const std::string HIGHLIGHT_VERSION = "highlight_version";
 const std::string REMARKS = "remarks";
-const std::string STORY_STATUS = "story_status";
+const std::string HIGHLIGHT_STATUS = "highlight_status";
 const std::string INSERT_PIC_COUNT = "insert_pic_count";
 const std::string REMOVE_PIC_COUNT = "remove_pic_count";
 const std::string SHARE_SCREENSHOT_COUNT = "share_screenshot_count";
@@ -47,7 +47,7 @@ const std::string RENDER_VIEWED_DURATION = "render_viewed_duration";
 const std::string ART_LAYOUT_VIEWED_TIMES = "art_layout_viewed_times";
 const std::string ART_LAYOUT_VIEWED_DURATION = "art_layout_viewed_duration";
 
-const std::string URI_STORY_ALBUM = MEDIALIBRARY_DATA_URI + "/" + STORY_ALBUM_TABLE;
+const std::string URI_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + HIGHLIGHT_ALBUM_TABLE;
 } // namespace Media
 } // namespace OHOS
 #endif // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_STORY_ALBUM_COLUMN_H

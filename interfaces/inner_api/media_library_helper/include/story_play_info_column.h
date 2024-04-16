@@ -21,16 +21,18 @@
 
 namespace OHOS {
 namespace Media {
-// story play info table name
-const std::string STORY_PLAY_INFO_TABLE = "tab_story_play_info";
+// highlight play info table name
+const std::string HIGHLIGHT_PLAY_INFO_TABLE = "tab_highlight_play_info";
 
-// create story play info table
+// create highlight play info table
 const std::string MUSIC = "music";
 const std::string FILTER = "filter";
 const std::string PLAY_INFO = "play_info";
 const std::string PLAY_INFO_VERSION = "play_info_version";
+const std::string IS_CHOSEN = "is_chosen";
+const std::string PLAY_INFO_ID = "play_info_id";
 
-const std::string URI_STORY_PLAY_INFO = MEDIALIBRARY_DATA_URI + "/" + STORY_PLAY_INFO_TABLE;
+const std::string URI_HIGHLIGHT_PLAY_INFO = MEDIALIBRARY_DATA_URI + "/" + HIGHLIGHT_PLAY_INFO_TABLE;
 } // namespace Media
 } // namespace OHOS
 #endif // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_STORY_COVER_INFO_COLUMN_H

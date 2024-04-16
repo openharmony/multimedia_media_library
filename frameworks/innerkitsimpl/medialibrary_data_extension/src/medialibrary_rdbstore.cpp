@@ -952,9 +952,9 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_GEO_DICTIONARY_TABLE,
     CREATE_ANALYSIS_ALBUM_FOR_ONCREATE,
     CREATE_ANALYSIS_ALBUM_MAP,
-    CREATE_STORY_ALBUM_TABLE,
-    CREATE_STORY_COVER_INFO_TABLE,
-    CREATE_STORY_PLAY_INFO_TABLE,
+    CREATE_HIGHLIGHT_ALBUM_TABLE,
+    CREATE_HIGHLIGHT_COVER_INFO_TABLE,
+    CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
     INSERT_PHOTO_INSERT_SOURCE_ALBUM,
     INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
@@ -2138,13 +2138,27 @@ void AddIsLocalAlbum(RdbStore &store)
 void AddStoryTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
-        CREATE_STORY_ALBUM_TABLE,
-        CREATE_STORY_COVER_INFO_TABLE,
-        CREATE_STORY_PLAY_INFO_TABLE,
+        CREATE_HIGHLIGHT_ALBUM_TABLE,
+        CREATE_HIGHLIGHT_COVER_INFO_TABLE,
+        CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
         CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
         "ALTER TABLE " + VISION_LABEL_TABLE + " ADD COLUMN " + SALIENCY_SUB_PROB + " TEXT",
     };
     MEDIA_INFO_LOG("start init story db");
+    ExecSqls(executeSqlStrs, store);
+}
+
+void UpdateHighlightTables(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_story_album",
+        "DROP TABLE IF EXISTS tab_story_cover_info",
+        "DROP TABLE IF EXISTS tab_story_play_info",
+        CREATE_HIGHLIGHT_ALBUM_TABLE,
+        CREATE_HIGHLIGHT_COVER_INFO_TABLE,
+        CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
+    };
+    MEDIA_INFO_LOG("update highlight db");
     ExecSqls(executeSqlStrs, store);
 }
 
@@ -2417,6 +2431,10 @@ static void UpgradeStoryTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_STOYR_TABLE) {
         AddStoryTables(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_HIGHLIGHT_TABLE) {
+        UpdateHighlightTables(store);
     }
 }
 
