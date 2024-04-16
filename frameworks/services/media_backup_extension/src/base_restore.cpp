@@ -36,6 +36,7 @@
 #include "photo_album_column.h"
 #include "result_set_utils.h"
 #include "userfilemgr_uri.h"
+#include "medialibrary_notify.h"
 
 namespace OHOS {
 namespace Media {
@@ -52,14 +53,14 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
         std::unordered_map<int32_t, int32_t>  updateResult;
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_, updateResult);
         MediaLibraryRdbUtils::UpdateSourceAlbumInternal(mediaLibraryRdb_, updateResult);
-        string notifyImage = MediaFileUtils::GetMediaTypeUri(MediaType::MEDIA_TYPE_IMAGE);
-        Uri notifyImageUri(notifyImage);
-        MediaLibraryDataManager::GetInstance()->NotifyChange(notifyImageUri);
-        string notifyVideo = MediaFileUtils::GetMediaTypeUri(MediaType::MEDIA_TYPE_VIDEO);
-        Uri notifyVideoUri(notifyVideo);
-        MediaLibraryDataManager::GetInstance()->NotifyChange(notifyVideoUri);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, MediaType::MEDIA_TYPE_IMAGE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, MediaType::MEDIA_TYPE_VIDEO);
+        auto watch = MediaLibraryNotify::GetInstance();
+        if (watch == nullptr) {
+            MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
+            return;
+        }
+        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
     }
     HandleRestData();
 }
