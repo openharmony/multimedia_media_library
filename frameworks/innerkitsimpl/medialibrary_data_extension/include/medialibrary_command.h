@@ -181,6 +181,9 @@ public:
     void SetDeviceName(const std::string &deviceName);
     void SetResult(const std::string &result);
 
+    EXPORT static std::string GetTableNameFromOprnObject(const OperationObject& object);
+    EXPORT static OperationType GetOprnTypeFromUri(Uri& uri);
+    EXPORT static OperationObject GetOprnObjectFromUri(Uri& uri);
 private:
     void ParseOprnObjectFromUri();
     void ParseOprnTypeFromUri();
