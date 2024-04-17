@@ -93,7 +93,7 @@ int32_t ThumbnailGenerateWorker::AddTask(
 void ThumbnailGenerateWorker::IgnoreTaskByRequestId(uint64_t requestId)
 {
     if (highPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty()) {
-        MEDIA_INFO_LOG("task queue empty, no need to ignore task, requestId: %{public}lu", requestId);
+        MEDIA_INFO_LOG("task queue empty, no need to ignore task");
         return;
     }
     ignoreRequestId_.store(requestId);
