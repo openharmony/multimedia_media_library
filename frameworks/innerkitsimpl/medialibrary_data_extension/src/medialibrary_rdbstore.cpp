@@ -2157,6 +2157,7 @@ void UpdateHighlightTables(RdbStore &store)
         CREATE_HIGHLIGHT_ALBUM_TABLE,
         CREATE_HIGHLIGHT_COVER_INFO_TABLE,
         CREATE_HIGHLIGHT_PLAY_INFO_TABLE,
+        "ALTER TABLE " + GEO_KNOWLEDGE_TABLE + " ADD COLUMN " + LOCATION_TYPE + " TEXT",
     };
     MEDIA_INFO_LOG("update highlight db");
     ExecSqls(executeSqlStrs, store);
