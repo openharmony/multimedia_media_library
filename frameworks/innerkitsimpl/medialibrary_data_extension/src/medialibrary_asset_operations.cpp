@@ -1714,7 +1714,7 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_EDIT_TIME, { IsInt64 } },
     { AudioColumn::AUDIO_ALBUM, { Forbidden } },
     { AudioColumn::AUDIO_ARTIST, { Forbidden } },
-    { PhotoColumn::CAMERA_SHOT_KEY, { Forbidden } },
+    { PhotoColumn::CAMERA_SHOT_KEY, { IsString } },
     { PhotoColumn::PHOTO_USER_COMMENT, { IsString } },
     { PhotoColumn::PHOTO_ID, { IsString } },
     { PhotoColumn::PHOTO_QUALITY, { IsInt32 } },

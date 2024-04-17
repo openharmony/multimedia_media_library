@@ -46,6 +46,8 @@ enum class AssetChangeOperation {
     SET_USER_COMMENT,
     SET_PHOTO_QUALITY_AND_PHOTOID,
     SET_LOCATION,
+    SET_CAMERA_SHOT_KEY,
+    SAVE_CAMERA_PHOTO,
 };
 
 enum class AddResourceMode {
@@ -122,6 +124,8 @@ private:
     EXPORT static napi_value JSAddResource(napi_env env, napi_callback_info info);
     EXPORT static napi_value AddMovingPhotoVideoResource(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetLocation(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetCameraShotKey(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSaveCameraPhoto(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();
