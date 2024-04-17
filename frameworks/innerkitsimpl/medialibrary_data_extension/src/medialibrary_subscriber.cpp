@@ -170,7 +170,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
 
 void MedialibrarySubscriber::StopBackgroundOperation()
 {
-    MEDIA_INFO_LOG("StopBackgroundOperation isScreenOff_ %{public}d, isCharging_ %{public}d", isScreenOff_, isCharging_);
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
 }
 
