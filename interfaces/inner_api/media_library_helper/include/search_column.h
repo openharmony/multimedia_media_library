@@ -101,7 +101,7 @@ const std::string UPDATE_SEARCH_STATUS_TRIGGER = "update_search_status_trigger";
 const std::string CREATE_SEARCH_UPDATE_STATUS_TRIGGER =
     std::string("CREATE TRIGGER IF NOT EXISTS update_search_status_trigger AFTER UPDATE") +
     " OF title, date_modified, latitude, longitude, date_day, " +
-    " date_month, date_year, shooting_mode, date_taken, hidden, date_trashed " +
+    " date_month, date_year, shooting_mode, date_taken, hidden, date_trashed, user_comment " +
     " ON " + PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
     " BEGIN " +
     " UPDATE " + SEARCH_TOTAL_TABLE +

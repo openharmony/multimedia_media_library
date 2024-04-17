@@ -564,6 +564,11 @@ void MediaLibraryCommand::SetApiFromQuerySetMap()
     }
 }
 
+static const map<string, OperationObject> OPRN_MAP = {
+    { PhotoColumn::PHOTO_URI_PREFIX, OperationObject::FILESYSTEM_PHOTO },
+    { AudioColumn::AUDIO_URI_PREFIX, OperationObject::FILESYSTEM_AUDIO }
+};
+
 void MediaLibraryCommand::ParseOprnObjectFromFileUri()
 {
     if (oprnObject_ != OperationObject::UNKNOWN_OBJECT) {
@@ -577,12 +582,7 @@ void MediaLibraryCommand::ParseOprnObjectFromFileUri()
         return;
     }
 
-    static const map<string, OperationObject> oprnMap = {
-        { PhotoColumn::PHOTO_URI_PREFIX, OperationObject::FILESYSTEM_PHOTO },
-        { AudioColumn::AUDIO_URI_PREFIX, OperationObject::FILESYSTEM_AUDIO }
-    };
-
-    for (const auto &item : oprnMap) {
+    for (const auto &item : OPRN_MAP) {
         if (MediaFileUtils::StartsWith(uri, item.first)) {
             oprnObject_ = item.second;
             break;
@@ -600,5 +600,46 @@ const DataSharePredicates &MediaLibraryCommand::GetDataSharePred() const
 {
     return *datasharePred_;
 }
+
+std::string MediaLibraryCommand::GetTableNameFromOprnObject(const OperationObject& object)
+{
+    if (TABLE_NAME_MAP.find(object) != TABLE_NAME_MAP.end()) {
+        auto cmdObj = TABLE_NAME_MAP.at(object);
+        return cmdObj.begin()->second;
+    } else {
+        return MEDIALIBRARY_TABLE;
+    }
+}
+
+OperationType MediaLibraryCommand::GetOprnTypeFromUri(Uri& uri)
+{
+    const string opType = MediaFileUri::GetPathSecondDentry(uri);
+    if (OPRN_TYPE_MAP.find(opType) != OPRN_TYPE_MAP.end()) {
+        return OPRN_TYPE_MAP.at(opType);
+    } else {
+        return OperationType::QUERY;
+    }
+}
+
+OperationObject MediaLibraryCommand::GetOprnObjectFromUri(Uri& uri)
+{
+    const string opObject = MediaFileUri::GetPathFirstDentry(uri);
+    if (OPRN_OBJ_MAP.find(opObject) != OPRN_OBJ_MAP.end()) {
+        return OPRN_OBJ_MAP.at(opObject);
+    }
+    std::string uriString = uri.ToString();
+    if (MediaFileUtils::StartsWith(uriString, PhotoColumn::PHOTO_CACHE_URI_PREFIX)) {
+        return OperationObject::PAH_PHOTO;
+    }
+
+    for (const auto &item : OPRN_MAP) {
+        if (MediaFileUtils::StartsWith(uriString, item.first)) {
+            return item.second;
+        }
+    }
+    return OperationObject::UNKNOWN_OBJECT;
+}
+
+
 } // namespace Media
 } // namespace OHOS

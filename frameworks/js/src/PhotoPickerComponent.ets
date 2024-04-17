@@ -49,6 +49,7 @@ export struct PhotoPickerComponent {
             isFromPickerView: true,
             isNeedActionBar: false,
             isNeedSelectBar: false,
+            isSearchSupported: this.pickerOptions?.isSearchSupported as boolean,
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           this.proxy = proxy;
