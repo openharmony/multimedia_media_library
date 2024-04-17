@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
- #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_generate_worker_manager.h"
 
 #include "medialibrary_errno.h"
 
@@ -23,7 +23,7 @@ std::mutex ThumbnailGenerateWorkerManager::mutex_;
 std::atomic<uint64_t> ThumbnailGenerateWorkerManager::requestIdCounter_ = 0;
 ThumbnailGenerateWorkerManager::~ThumbnailGenerateWorkerManager()
 {
-    thumbnailWorkerMap_.Clear;
+    thumbnailWorkerMap_.Clear();
 }
 
 ThumbnailWorkerPtr ThumbnailGenerateWorkerManager::GetThumbnailWorker(const ThumbnailTaskType &taskType)
@@ -34,7 +34,7 @@ ThumbnailWorkerPtr ThumbnailGenerateWorkerManager::GetThumbnailWorker(const Thum
     }
 
     int status = InitThumbnailWorker(taskType);
-    if (status == E_OK) {
+    if (status != E_OK) {
         MEDIA_ERR_LOG("get thumbnail worker failed, status: %{public}d", status);
         return nullptr;
     }
@@ -42,17 +42,17 @@ ThumbnailWorkerPtr ThumbnailGenerateWorkerManager::GetThumbnailWorker(const Thum
     return ptr;
 }
 
-int32_t ThumbnailGenerateWorkerManager::InitThumbnailWorker()(const ThumbnailTaskType &taskType)
+int32_t ThumbnailGenerateWorkerManager::InitThumbnailWorker(const ThumbnailTaskType &taskType)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     ThumbnailWorkerPtr ptr;
     if (thumbnailWorkerMap_.Find(taskType, ptr)) {
-        return E_Ok;
+        return E_OK;
     }
 
     ptr = std::make_shared<ThumbnailGenerateWorker>();
     int32_t status = ptr->Init(taskType);
-    if (status == E_OK) {
+    if (status != E_OK) {
         MEDIA_ERR_LOG("init thumbnail worker failed, status: %{public}d", status);
         return status;
     }
@@ -67,10 +67,11 @@ void ThumbnailGenerateWorkerManager::ClearAllTask()
         return;
     }
 
+    MEDIA_INFO_LOG("ClearAllTask in thumbnail thread pool");
     thumbnailWorkerMap_.Iterate([](ThumbnailTaskType taskType, ThumbnailWorkerPtr &ptr) {
         if (ptr != nullptr) {
             ptr->ReleaseTaskQueue(ThumbnailTaskPriority::HIGH);
-            ptr->ReleaseTaskQueue(ThumbnailTaskPriority::LOW); 
+            ptr->ReleaseTaskQueue(ThumbnailTaskPriority::LOW);
         }
     });
 }

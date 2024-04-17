@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
- #include "thumbnail_generate_worker.h"
+#include "thumbnail_generate_worker.h"
 
- #include <pthread.h>
+#include <pthread.h>
 
- #include "medialibrary_errno.h"
- #include "media_log.h"
+#include "medialibrary_errno.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {
@@ -29,7 +29,7 @@ ThumbnailGenerateWorker::~ThumbnailGenerateWorker()
     isThreadRunning_ = false;
     ignoreRequestId_ = 0;
     workerCv_.notify_all();
-    for(auto &thread : threads_) {
+    for (auto &thread : threads_) {
         if (!thread.joinable()) {
             continue;
         }
@@ -46,8 +46,8 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
         threadNum = THREAD_NUM_FOREGROUND;
         threadName = THREAD_NAME_FOREGROUND;
     } else if (taskType == ThumbnailTaskType::BACKGROUND) {
-        threadNum = THREAD_NUM_BACKROUND;
-        threadName = THREAD_NAME_BACKROUND;
+        threadNum = THREAD_NUM_BACKGROUND;
+        threadName = THREAD_NAME_BACKGROUND;
     } else {
         MEDIA_ERR_LOG("invalid task type");
         return E_ERR;
@@ -56,7 +56,7 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
     isThreadRunning_ = true;
     for (auto i = 0; i < threadNum; i++) {
         std::thread thread(&ThumbnailGenerateWorker::StartWorker, this);
-        pthread_setname_np(thread.native_handle(), threadNum.c_str());
+        pthread_setname_np(thread.native_handle(), threadName.c_str());
         threads_.emplace_back(std::move(thread));
     }
     return E_OK;
@@ -65,9 +65,9 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
 int32_t ThumbnailGenerateWorker::ReleaseTaskQueue(const ThumbnailTaskPriority &taskPriority)
 {
     if (taskPriority == ThumbnailTaskPriority::HIGH) {
-        highPriorityTaskQueue_.clear();
+        highPriorityTaskQueue_.Clear();
     } else if (taskPriority == ThumbnailTaskPriority::LOW) {
-        lowPriorityTaskQueue_.clear();
+        lowPriorityTaskQueue_.Clear();
     } else {
         MEDIA_ERR_LOG("invalid task priority");
         return E_ERR;
@@ -79,9 +79,9 @@ int32_t ThumbnailGenerateWorker::AddTask(
     const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority)
 {
     if (taskPriority == ThumbnailTaskPriority::HIGH) {
-        highPriorityTaskQueue_.push(task);
+        highPriorityTaskQueue_.Push(task);
     } else if (taskPriority == ThumbnailTaskPriority::LOW) {
-        lowPriorityTaskQueue_.push(task);
+        lowPriorityTaskQueue_.Push(task);
     } else {
         MEDIA_ERR_LOG("invalid task priority");
         return E_ERR;
@@ -112,7 +112,7 @@ void ThumbnailGenerateWorker::StartWorker()
 {
     while (isThreadRunning_) {
         WaitForTask();
-        std::shared_ptr<ThumbnailGenerateWorker> task;
+        std::shared_ptr<ThumbnailGenerateTask> task;
         if (!highPriorityTaskQueue_.Empty() && highPriorityTaskQueue_.Pop(task) &&
             task != nullptr && !NeedIgnoreTask(task->data_->requestId_)) {
             task->executor_(task->data_);

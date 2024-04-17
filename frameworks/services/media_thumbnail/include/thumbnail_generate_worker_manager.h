@@ -20,7 +20,7 @@
 #include <shared_mutex>
 
 #include "media_log.h"
- #include "thumbnail_generate_worker.h"
+#include "thumbnail_generate_worker.h"
 
 namespace OHOS {
 namespace Media {
@@ -49,7 +49,7 @@ private:
     ThumbnailGenerateWorkerManager() = default;
     ~ThumbnailGenerateWorkerManager();
 
-    int32_t InitThumbnailWorker()(const ThumbnailTaskType &taskType);
+    int32_t InitThumbnailWorker(const ThumbnailTaskType &taskType);
 
     SafeMap<ThumbnailTaskType, ThumbnailWorkerPtr> thumbnailWorkerMap_;
 
