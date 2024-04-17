@@ -51,6 +51,7 @@ public:
     void HandleTimeOutOperation(std::string &bundleName, int32_t type, int32_t object, int32_t time);
     int32_t HandleHighMemoryThumbnail(std::string &path, int32_t mediaType, int32_t width, int32_t height);
     void HandleThumbnailError(const std::string &path, int32_t method, int32_t errCode);
+    void HandleThumbnailGeneration(const ThumbnailData::GenerateStats &stats);
     void HandleFiveMinuteTask();
     int64_t HandleMiddleReport();
     int64_t HandleReportXml();

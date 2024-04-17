@@ -26,6 +26,7 @@
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
+#include "thumbnail_data.h"
 
 namespace OHOS {
 namespace Media {
@@ -45,41 +46,6 @@ struct ThumbRdbOpt {
     EXPORT std::string dateAdded;
     EXPORT std::string fileUri;
     EXPORT Size screenSize;
-};
-
-struct ThumbnailData {
-    EXPORT ThumbnailData() {}
-    EXPORT virtual ~ThumbnailData()
-    {
-        source = nullptr;
-        thumbnail.clear();
-        lcd.clear();
-        monthAstc.clear();
-        yearAstc.clear();
-    }
-
-    EXPORT int mediaType {-1};
-    EXPORT int64_t dateModified {0};
-    EXPORT float degrees;
-    EXPORT bool isThumbAdded {false};
-
-    // Reload source when Lcd Size is not scaleable for Thumbnail
-    EXPORT bool needReloadSource {false};
-    EXPORT std::shared_ptr<PixelMap> source;
-    EXPORT std::vector<uint8_t> thumbnail;
-    EXPORT std::vector<uint8_t> thumbAstc;
-    EXPORT std::vector<uint8_t> monthAstc;
-    EXPORT std::vector<uint8_t> yearAstc;
-    EXPORT std::vector<uint8_t> lcd;
-    EXPORT std::string dateAdded;
-    EXPORT std::string displayName;
-    EXPORT std::string fileUri;
-    EXPORT std::string id;
-    EXPORT std::string cloudId;
-    EXPORT std::string udid;
-    EXPORT std::string path;
-    EXPORT std::string thumbnailKey;
-    EXPORT std::string lcdKey;
 };
 
 class ThumbnailUtils {
@@ -148,6 +114,10 @@ public:
     static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
     static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     static bool ScaleThumbnailEx(ThumbnailData &data, bool isThumbnail);
+
+    static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
+        LoadSourceType sourceType);
+    static void RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);

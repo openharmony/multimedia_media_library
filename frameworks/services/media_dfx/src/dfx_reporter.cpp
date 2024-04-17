@@ -200,5 +200,25 @@ void DfxReporter::ReportDeleteBehavior(string bundleName, int32_t type, std::str
         MEDIA_ERR_LOG("ReportDeleteBehavior error:%{public}d", ret);
     }
 }
+
+void DfxReporter::ReportThumbnailGeneration(const ThumbnailData::GenerateStats &stats)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_THUMBNAIL_GENERATION",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "URI", stats.uri,
+        "SCENE", static_cast<int32_t>(stats.scene),
+        "OPEN_THUMB_COST", stats.openThumbCost,
+        "OPEN_LCD_COST", stats.openLcdCost,
+        "SOURCE_TYPE", static_cast<int32_t>(stats.sourceType),
+        "SOURCE_WIDTH", stats.sourceWidth,
+        "SOURCE_HEIGHT", stats.sourceHeight,
+        "TOTAL_COST", static_cast<int32_t>(stats.totalCost),
+        "ERROR_CODE", stats.errorCode);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportThumbnailGeneration error:%{public}d", ret);
+    }
+}
 } // namespace Media
 } // namespace OHOS

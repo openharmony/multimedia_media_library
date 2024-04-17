@@ -36,6 +36,18 @@ enum class ThumbnailType : int32_t {
     YEAR_ASTC,
 };
 
+enum class GenerateScene : int32_t {
+    LOCAL = 0,
+    CLOUD,
+    BACKGROUND
+};
+
+enum class LoadSourceType : int32_t {
+    LOCAL_PHOTO = 0,
+    CLOUD_THUMB,
+    CLOUD_LCD
+};
+
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
 
 constexpr int32_t THUMBNAIL_LCD_GENERATE_THRESHOLD = 5000;
