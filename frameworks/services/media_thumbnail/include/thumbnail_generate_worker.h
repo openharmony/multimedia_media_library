@@ -80,7 +80,7 @@ private:
     void WaitForTask();
     bool NeedIgnoreTask(uint64_t requestId);
 
-    std::atomic<bool> isThreadRunning_;
+    std::atomic<bool> isThreadRunning_ = false;
     std::list<std::thread> threads_;
 
     std::mutex workerLock_;
@@ -89,7 +89,7 @@ private:
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> highPriorityTaskQueue_;
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> lowPriorityTaskQueue_;
 
-    std::atomic<uint64_t> ignoreRequestId_;
+    std::atomic<uint64_t> ignoreRequestId_ = 0;
 };
 } // namespace Media
 } // namespace OHOS
