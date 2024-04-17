@@ -44,8 +44,9 @@ constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_SUCCESS = 0;
 constexpr int32_t E_EMPTY_ALBUM_ID = 1;
 constexpr size_t ALBUM_UPDATE_THRESHOLD = 1000;
+constexpr int32_t SINGLE_FACE = 1;
+constexpr int32_t ALBUM_COVER_SATISFIED = 1;
 
-const int SINGLE_FACE = 1;
 const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
     std::to_string(PhotoAlbumSubType::FAVORITE),
     std::to_string(PhotoAlbumSubType::VIDEO),
@@ -308,6 +309,11 @@ static inline int32_t GetAlbumSubType(const shared_ptr<ResultSet> &resultSet)
     return GetIntValFromColumn(resultSet, PhotoAlbumColumns::ALBUM_SUBTYPE);
 }
 
+static inline int32_t GetIsCoverSatisfied(const shared_ptr<ResultSet> &resultSet)
+{
+    return GetIntValFromColumn(resultSet, IS_COVER_SATISFIED);
+}
+
 static string GetFileName(const string &filePath)
 {
     string fileName;
@@ -404,7 +410,7 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
 }
 
 static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
-    ValuesBucket &values, const int newCount)
+    ValuesBucket &values, int newCount)
 {
     string newCover;
     if (newCount != 0) {
@@ -414,10 +420,10 @@ static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shar
     string oldCover = GetAlbumCover(albumResult, targetColumn);
     if (oldCover != newCover) {
         int totalFaces = GetIntValFromColumn(fileResult, TOTAL_FACES);
-        int isCoverSatisfied = totalFaces == 1 ? 1 : 0;
-        values.PutInt("is_cover_satisfied", isCoverSatisfied);
+        int isCoverSatisfied = totalFaces == SINGLE_FACE ? ALBUM_COVER_SATISFIED : 0;
+        values.PutInt(IS_COVER_SATISFIED, isCoverSatisfied);
         values.PutString(targetColumn, newCover);
-        MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s, Satisfied: %{private}d",
+        MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s, satisfied: %{public}d",
             targetColumn.c_str(), oldCover.c_str(), newCover.c_str(), isCoverSatisfied);
     }
 }
@@ -838,7 +844,7 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     clause = anaAlbumId + " = " + anaPhotoMapAlbum;
     predicates.InnerJoin(ANALYSIS_ALBUM_TABLE)->On({ clause });
 
-    string order = "( " + anaAlbumGroupTag + " IN ( SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+    clause = "( " + anaAlbumGroupTag + " IN ( SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
         " WHERE " + ALBUM_ID + " = " + albumId + " ))";
     predicates.SetWhereClause(clause + " AND ");
     predicates.BeginWrap();
@@ -865,6 +871,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
 
     string coverUri = GetAlbumCover(albumResult, PhotoAlbumColumns::ALBUM_COVER_URI);
     string coverId = GetPhotoId(coverUri);
+    int isCoverSatisfied = GetIsCoverSatisfied(albumResult);
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     string albumId = to_string(GetAlbumId(albumResult));
@@ -874,14 +881,16 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(countResult, albumResult, values, false, PhotoAlbumSubType::PORTRAIT);
-    if (fileIds.size() == 0 || std::find(fileIds.begin(), fileIds.end(), coverId) != fileIds.end()) {
-        GetPortraitAlbumCoverPredicates(coverId, predicates);
-        shared_ptr<ResultSet> coverResult = QueryGoToFirst(rdbStore, predicates, coverColumns);
-        if (countResult == nullptr) {
-            return E_HAS_DB_ERROR;
-        }
-        SetPortraitCover(coverResult, albumResult, values, newCount);
+    if (std::find(fileIds.begin(), fileIds.end(), coverId) == fileIds.end() &&
+        isCoverSatisfied == ALBUM_COVER_SATISFIED) {
+        return E_SUCCESS;
     }
+    GetPortraitAlbumCoverPredicates(coverId, predicates);
+    shared_ptr<ResultSet> coverResult = QueryGoToFirst(rdbStore, predicates, coverColumns);
+    if (coverResult == nullptr) {
+        return E_HAS_DB_ERROR;
+    }
+    SetPortraitCover(coverResult, albumResult, values, newCount);
     return E_SUCCESS;
 }
 
@@ -979,14 +988,15 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdatePortraitAlbumIfNeeded");
-    ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
     if (subtype != PhotoAlbumSubType::PORTRAIT) {
         return E_SUCCESS;
     }
 
+    ValuesBucket values;
     int err = SetPortraitUpdateValues(rdbStore, albumResult, fileIds, values);
     if (err < 0) {
+        MEDIA_WARN_LOG("Failed to set portrait update value! err: %{public}d", err);
         return err;
     }
     if (values.IsEmpty()) {
@@ -1230,6 +1240,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore
         PhotoAlbumColumns::ALBUM_SUBTYPE,
         PhotoAlbumColumns::ALBUM_COVER_URI,
         PhotoAlbumColumns::ALBUM_COUNT,
+        IS_COVER_SATISFIED
     };
     vector<string> tempAlbumId = anaAlbumAlbumIds;
     if (tempAlbumId.size() > 0) {
