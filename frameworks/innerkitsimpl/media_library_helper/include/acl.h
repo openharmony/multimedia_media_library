@@ -29,6 +29,7 @@ namespace Media {
 /*
  * ACL extended attributes (xattr) names
  */
+constexpr const char *ACL_XATTR_ACCESS = "system.posix_acl_access";
 constexpr const char *ACL_XATTR_DEFAULT = "system.posix_acl_default";
 
 /*
@@ -88,6 +89,10 @@ public:
     {
         value |= acl_perm.value;
     }
+    operator uint16_t() const
+    {
+        return value;
+    }
 };
 
 /*
@@ -142,10 +147,16 @@ public:
     EXPORT bool IsValid();
     EXPORT int InsertEntry(const AclXattrEntry &entry);
     EXPORT char *Serialize(size_t &bufSize);
+    EXPORT int DeSerialize(const char* aclHead, size_t size);
 
     EXPORT static int32_t AclSetDefault();
     EXPORT static int32_t AclSetDatabase();
-    EXPORT static int32_t EntryInsert(AclXattrEntry& entry, const std::string& path);
+    EXPORT static int32_t EntryInsert(AclXattrEntry& entry, const std::string& path, const char* aclAttrName);
+    EXPORT static int32_t RecursiveEnableAcl(const std::string& path, const char* aclAttrName,
+        const uint16_t& permission, uint32_t groupId);
+    EXPORT static int32_t EnableAcl(const std::string& path, const char* aclAttrName,
+        const uint16_t& permission, uint32_t groupId);
+    EXPORT void Print(const std::string& path);
     EXPORT ~Acl();
 private:
     void CompareInsertEntry(const AclXattrEntry &entry);

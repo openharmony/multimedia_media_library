@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 69;
+const int32_t MEDIA_RDB_VERSION = 70;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -96,7 +96,8 @@ enum {
     VERSION_ADD_IS_COVER_SATISFIED_COLUMN = 66,
     VERSION_ADD_VIDEO_LABEL_TABEL = 67,
     VERSION_ADD_SEGMENTATION_COLUMNS = 68,
-    VERSION_UPDATE_HIGHLIGHT_TABLE = 69,
+    VERSION_UPDATE_SEARCH_INDEX = 69,
+    VERSION_UPDATE_HIGHLIGHT_TABLE = 70,
 };
 
 enum {
