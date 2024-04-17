@@ -162,6 +162,8 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
+    data.stats.sourceWidth = imageInfo.size.width;
+    data.stats.sourceHeight = imageInfo.size.height;
 
     DecodeOptions decOpts;
     decOpts.desiredSize = ConvertDecodeSize(data, imageInfo.size, desiredSize, isThumbnail);
@@ -232,6 +234,8 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, const bool isThumbnail, 
             return false;
         }
     }
+    data.stats.sourceWidth = data.source->GetWidth();
+    data.stats.sourceHeight = data.source->GetHeight();
     DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, desiredSize.width, desiredSize.height);
     return true;
 }
@@ -337,6 +341,8 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_GET_INFO, err);
         return false;
     }
+    data.stats.sourceWidth = imageInfo.size.width;
+    data.stats.sourceHeight = imageInfo.size.height;
 
     DecodeOptions decodeOpts;
     Size targetSize = ConvertDecodeSize(data, imageInfo.size, desiredSize, isThumbnail);
@@ -1936,6 +1942,7 @@ void ThumbnailUtils::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
         outData.id = opts.row;
         outData.dateAdded = opts.dateAdded;
         outData.fileUri = opts.fileUri;
+        outData.stats.uri = outData.fileUri;
         return;
     }
     string filesTableName = opts.table;
@@ -1975,5 +1982,20 @@ bool ThumbnailUtils::ScaleThumbnailEx(ThumbnailData &data, bool isThumbnail)
     }
     return true;
 }
+
+void ThumbnailUtils::RecordStartGenerateStats(ThumbnailData::GenerateStats &stats,
+    GenerateScene scene, LoadSourceType sourceType)
+{
+    stats.startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    stats.scene = scene;
+    stats.sourceType = sourceType;
+}
+
+void ThumbnailUtils::RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats)
+{
+    stats.totalCost = static_cast<int32_t>(MediaFileUtils::UTCTimeMilliSeconds() - stats.startTime);
+    DfxManager::GetInstance()->HandleThumbnailGeneration(stats);
+}
+
 } // namespace Media
 } // namespace OHOS

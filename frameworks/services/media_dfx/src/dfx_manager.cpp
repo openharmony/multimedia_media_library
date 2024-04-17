@@ -96,6 +96,15 @@ void DfxManager::HandleThumbnailError(const std::string &path, int32_t method, i
     dfxCollector_->CollectThumbnailError(safePath, method, errorCode);
 }
 
+void DfxManager::HandleThumbnailGeneration(const ThumbnailData::GenerateStats &stats)
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+    dfxReporter_->ReportThumbnailGeneration(stats);
+}
+
 void DfxManager::HandleCommonBehavior(string bundleName, int32_t type)
 {
     if (!isInitSuccess_) {
