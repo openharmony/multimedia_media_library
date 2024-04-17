@@ -110,3 +110,15 @@ MEDIALIB_MSC_RESULT_STAT:
   __BASE: { type: STATISTIC, level: MINOR, desc: result of multistages capture }
   PHOTO_ID: { type: STRING, desc: photo id }
   RESULT: { type: INT32, desc: result of processing multistages capture }
+
+MEDIALIB_THUMBNAIL_GENERATION:
+  __BASE: { type: STATISTIC, level: MINOR, desc: Medialibrary thumbnail generation statistics, preserve: true }
+  URI: { type: STRING, desc: The image uri }
+  SCENE: { type: INT32, desc: The scene triggers thumbnail generation }
+  OPEN_THUMB_COST: { type: INT32, desc: Open cloud thumbnail cost time }
+  OPEN_LCD_COST: { type: INT32, desc: Open cloud LCD thumbnail cost time }
+  SOURCE_TYPE: { type: INT32, desc: The image source that generates thumbnails }
+  SOURCE_WIDTH: { type: INT32, desc: The width of the source image that generates thumbnails }
+  SOURCE_HEIGHT: { type: INT32, desc: The height of the source image that generates thumbnails }
+  TOTAL_COST: { type: INT32, desc: The total cost time that generated thumbnails }
+  ERROR_CODE: { type: INT32, desc: The error code }

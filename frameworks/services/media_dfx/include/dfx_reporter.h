@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include "thumbnail_data.h"
+
 namespace OHOS {
 namespace Media {
 class DfxReporter {
@@ -32,6 +34,7 @@ public:
     void ReportCommonBehavior();
     void ReportDeleteStatistic();
     void ReportDeleteBehavior(std::string bundleName, int32_t type, std::string path);
+    void ReportThumbnailGeneration(const ThumbnailData::GenerateStats &stats);
 };
 } // namespace Media
 } // namespace OHOS

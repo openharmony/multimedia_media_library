@@ -37,9 +37,10 @@ int32_t ThumbnailGenerateHelper::CreateThumbnails(ThumbRdbOpt &opts, bool isSync
 {
     ThumbnailData thumbnailData;
     ThumbnailUtils::GetThumbnailInfo(opts, thumbnailData);
-
+    ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::LOCAL, LoadSourceType::LOCAL_PHOTO);
     if (isSync) {
         IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData, false);
+        ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateThumbnails, opts, thumbnailData, true);
     }
@@ -96,6 +97,8 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatch(ThumbRdbOpt &opts)
     MEDIA_INFO_LOG("no astc data size: %{public}d", static_cast<int>(infos.size()));
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
+        ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::BACKGROUND,
+            LoadSourceType::LOCAL_PHOTO);
         IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateAstc, opts, infos[i], false);
     }
     return E_OK;
