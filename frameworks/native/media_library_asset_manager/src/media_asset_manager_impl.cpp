@@ -103,7 +103,25 @@ static void DeleteInProcessMapRecord(const std::string &requestUri, const std::s
     multiStagesObserverMap.erase(requestUri);
 }
 
-static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler *handler)
+static AssetHandler* CreateAssetHandler(const std::string &photoId, const std::string &requestId,
+    const std::string &uri, const std::string &destUri, const MediaAssetDataHandlerPtr &handler)
+{
+    AssetHandler *assetHandler = new AssetHandler(photoId, requestId, uri, destUri, handler);
+    MEDIA_DEBUG_LOG("[AssetHandler create] photoId: %{public}s, requestId: %{public}s, uri: %{public}s, %{public}p.",
+        photoId.c_str(), requestId.c_str(), uri.c_str(), assetHandler);
+    return assetHandler;
+}
+
+static void DeleteAssetHandlerSafe(AssetHandler *handler)
+{
+    if (handler != nullptr) {
+        MEDIA_DEBUG_LOG("[AssetHandler delete] %{public}p.", handler);
+        delete handler;
+        handler = nullptr;
+    }
+}
+
+static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler* &handler)
 {
     std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     for (auto record : inProcessUriMap) {
@@ -114,6 +132,41 @@ static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler
     }
 
     return false;
+}
+
+static bool IsFastRequestCanceled(const std::string &requestId, std::string &photoId)
+{
+    AssetHandler *assetHandler = nullptr;
+    if (!inProcessFastRequests.Find(requestId, assetHandler)) {
+        MEDIA_ERR_LOG("requestId(%{public}s) not in progress.", requestId.c_str());
+        return false;
+    }
+
+    if (assetHandler == nullptr) {
+        MEDIA_ERR_LOG("assetHandler is nullptr.");
+        return false;
+    }
+    photoId = assetHandler->photoId;
+    inProcessFastRequests.Erase(requestId);
+    return true;
+}
+
+static bool IsMapRecordCanceled(const std::string &requestId, std::string &photoId)
+{
+    AssetHandler *assetHandler = nullptr;
+    if (!IsInProcessInMapRecord(requestId, assetHandler)) {
+        MEDIA_ERR_LOG("requestId(%{public}s) not in progress.", requestId.c_str());
+        return false;
+    }
+
+    if (assetHandler == nullptr) {
+        MEDIA_ERR_LOG("assetHandler is nullptr.");
+        return false;
+    }
+    photoId = assetHandler->photoId;
+    DeleteInProcessMapRecord(assetHandler->requestUri, assetHandler->requestId);
+    DeleteAssetHandlerSafe(assetHandler);
+    return true;
 }
 
 static void DeleteDataHandler(NativeNotifyMode notifyMode, const std::string &requestUri, const std::string &requestId)
@@ -157,8 +210,7 @@ static AssetHandler* InsertDataHandler(NativeNotifyMode notifyMode,
         asyncContext->destUri, asyncContext->requestOptions.sourceMode);
 
     mediaAssetDataHandler->SetNotifyMode(notifyMode);
-
-    AssetHandler *assetHandler = new AssetHandler(asyncContext->photoId, asyncContext->requestId,
+    AssetHandler *assetHandler = CreateAssetHandler(asyncContext->photoId, asyncContext->requestId,
         asyncContext->requestUri, asyncContext->destUri, mediaAssetDataHandler);
     MEDIA_INFO_LOG("Add %{public}d, %{private}s, %{private}s, %{public}p", notifyMode,
         asyncContext->requestUri.c_str(), asyncContext->requestId.c_str(), assetHandler);
@@ -224,7 +276,7 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
     auto dataHandler = assetHandler->dataHandler;
     if (dataHandler == nullptr) {
         MEDIA_ERR_LOG("Data handler is nullptr");
-        delete assetHandler;
+        DeleteAssetHandlerSafe(assetHandler);
         return false;
     }
 
@@ -233,7 +285,7 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
         AssetHandler *tmp;
         if (!inProcessFastRequests.Find(assetHandler->requestId, tmp)) {
             MEDIA_ERR_LOG("The request has been canceled");
-            delete assetHandler;
+            DeleteAssetHandlerSafe(assetHandler);
             return false;
         }
     }
@@ -254,7 +306,7 @@ bool MediaAssetManagerImpl::NotifyImageDataPrepared(AssetHandler *assetHandler)
 
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     MEDIA_INFO_LOG("Delete assetHandler: %{public}p", assetHandler);
-    delete assetHandler;
+    DeleteAssetHandlerSafe(assetHandler);
     return true;
 }
 
@@ -374,18 +426,15 @@ bool MediaAssetManagerImpl::NativeCancelRequest(const std::string &requestId)
         return false;
     }
 
-    AssetHandler *assetHandler;
-    if (!inProcessFastRequests.Find(requestId, assetHandler) && !IsInProcessInMapRecord(requestId, assetHandler)) {
-        MEDIA_ERR_LOG("requestId(%{public}s) not in progress.", requestId.c_str());
+    std::string photoId = "";
+    bool hasFastRequestInProcess = IsFastRequestCanceled(requestId, photoId);
+    bool hasMapRecordInProcess = IsMapRecordCanceled(requestId, photoId);
+    if (hasFastRequestInProcess || hasMapRecordInProcess) {
+        MultiStagesCaptureManager::GetInstance().CancelProcessRequest(photoId);
+    } else {
+        MEDIA_ERR_LOG("NativeCancel requestId(%{public}s) not in progress.", requestId.c_str());
         return false;
     }
-    if (assetHandler == nullptr) {
-        MEDIA_ERR_LOG("assetHandler is nullptr.");
-        return false;
-    }
-    MultiStagesCaptureManager::GetInstance().CancelProcessRequest(assetHandler->photoId);
-    DeleteInProcessMapRecord(assetHandler->requestUri, assetHandler->requestId);
-    inProcessFastRequests.Erase(requestId);
     return true;
 }
 
@@ -404,6 +453,7 @@ bool MediaAssetManagerImpl::OnHandleRequestImage(
                 result = NotifyDataPreparedWithoutRegister(asyncContext);
             } else {
                 RegisterTaskObserver(asyncContext);
+                result = true;
             }
             break;
         case NativeDeliveryMode::BALANCED_MODE:
