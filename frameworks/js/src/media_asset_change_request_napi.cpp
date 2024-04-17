@@ -143,6 +143,8 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getWriteCacheHandler", JSGetWriteCacheHandler),
             DECLARE_NAPI_FUNCTION("setLocation", JSSetLocation),
             DECLARE_NAPI_FUNCTION("addResource", JSAddResource),
+            DECLARE_NAPI_FUNCTION("setCameraShotKey", JSSetCameraShotKey),
+            DECLARE_NAPI_FUNCTION("saveCameraPhoto", JSSaveCameraPhoto),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -1095,6 +1097,42 @@ napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_call
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    string cameraShotKey;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, cameraShotKey) == napi_ok,
+        "Failed to parse args");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, cameraShotKey.length() >= CAMERA_SHOT_KEY_SIZE, "Failed to check cameraShotKey");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
+    changeRequest->GetFileAssetInstance()->SetCameraShotKey(cameraShotKey);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_CAMERA_SHOT_KEY);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSaveCameraPhoto(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok,
+        "Failed to get object info");
+
+    auto changeRequest = asyncContext->objectInfo;
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SAVE_CAMERA_PHOTO);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& context, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
@@ -1846,6 +1884,21 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
     return UpdateAssetProperty(context, PAH_SET_LOCATION, predicates, valuesBucket);
 }
 
+static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    valuesBucket.Put(PhotoColumn::CAMERA_SHOT_KEY, fileAsset->GetCameraShotKey());
+    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+}
+
+static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    return true;
+}
+
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
     { AssetChangeOperation::CREATE_FROM_URI, CreateFromFileUriExecute },
     { AssetChangeOperation::GET_WRITE_CACHE_HANDLER, SubmitCacheExecute },
@@ -1856,6 +1909,8 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_USER_COMMENT, SetUserCommentExecute },
     { AssetChangeOperation::SET_PHOTO_QUALITY_AND_PHOTOID, SetPhotoQualityExecute },
     { AssetChangeOperation::SET_LOCATION, SetLocationExecute },
+    { AssetChangeOperation::SET_CAMERA_SHOT_KEY, SetCameraShotKeyExecute },
+    { AssetChangeOperation::SAVE_CAMERA_PHOTO, SaveCameraPhotoExecute },
 };
 
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
