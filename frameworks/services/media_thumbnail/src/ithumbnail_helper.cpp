@@ -46,6 +46,7 @@ void IThumbnailHelper::CreateThumbnails(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
     DoCreateThumbnails(taskData->opts, taskData->thumbnailData, false);
+    ThumbnailUtils::RecordCostTimeAndReport(taskData->thumbnailData.stats);
 }
 
 void IThumbnailHelper::CreateLcd(AsyncTaskData* data)
@@ -58,12 +59,14 @@ void IThumbnailHelper::CreateThumbnail(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
     DoCreateThumbnail(taskData->opts, taskData->thumbnailData, false);
+    ThumbnailUtils::RecordCostTimeAndReport(taskData->thumbnailData.stats);
 }
 
 void IThumbnailHelper::CreateAstc(AsyncTaskData* data)
 {
     GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
     DoCreateAstc(taskData->opts, taskData->thumbnailData, false);
+    ThumbnailUtils::RecordCostTimeAndReport(taskData->thumbnailData.stats);
 }
 
 void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront)
