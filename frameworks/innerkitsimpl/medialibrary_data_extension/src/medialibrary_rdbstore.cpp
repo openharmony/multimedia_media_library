@@ -2413,10 +2413,24 @@ static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
     }
 }
 
-static void UpgradeStoryTable(RdbStore &store, int32_t oldVersion)
+static void UpdatePhotosSearchUpdateTrigger(RdbStore& store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TRIGGER IF EXISTS update_search_status_trigger",
+        CREATE_SEARCH_UPDATE_STATUS_TRIGGER,
+    };
+    MEDIA_INFO_LOG("Start update photos search trigger");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_STOYR_TABLE) {
         AddStoryTables(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_SEARCH_INDEX) {
+        UpdatePhotosSearchUpdateTrigger(store);
     }
 }
 
@@ -2502,9 +2516,9 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeExtendedVisionTable(store, oldVersion);
     UpgradeAlbumTable(store, oldVersion);
     UpgradeHistory(store, oldVersion);
-    UpgradeStoryTable(store, oldVersion);
 
     AlwaysCheck(store);
+    UpgradeExtension(store, oldVersion);
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);
