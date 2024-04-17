@@ -36,7 +36,7 @@ const std::string CREATE_GEO_KNOWLEDGE_TABLE =
     SUB_THOROUGHFARE + " TEXT, " +
     FEATURE_NAME + " TEXT, " +
     CITY_NAME + " TEXT, " +
-    ADDRESS_DESCRIPTION + " TEXT, ";
+    ADDRESS_DESCRIPTION + " TEXT, " +
     LOCATION_TYPE + " TEXT) ";
 
 const std::string CREATE_GEO_DICTIONARY_TABLE =
