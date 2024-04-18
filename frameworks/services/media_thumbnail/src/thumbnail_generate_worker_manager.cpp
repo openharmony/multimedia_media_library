@@ -20,8 +20,6 @@
 
 namespace OHOS {
 namespace Media {
-std::mutex ThumbnailGenerateWorkerManager::mutex_;
-std::atomic<uint64_t> ThumbnailGenerateWorkerManager::requestIdCounter_ = 0;
 ThumbnailGenerateWorkerManager::~ThumbnailGenerateWorkerManager()
 {
     thumbnailWorkerMap_.Clear();

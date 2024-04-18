@@ -22,8 +22,9 @@
 
 namespace OHOS {
 namespace Media {
-static const int32_t THREAD_NUM_FOREGROUND = 4;
-static const int32_t THREAD_NUM_BACKGROUND = 2;
+static constexpr int32_t THREAD_NUM_FOREGROUND = 4;
+static constexpr int32_t THREAD_NUM_BACKGROUND = 2;
+
 ThumbnailGenerateWorker::~ThumbnailGenerateWorker()
 {
     isThreadRunning_ = false;
