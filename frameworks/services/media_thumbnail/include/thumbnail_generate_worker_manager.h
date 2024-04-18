@@ -19,7 +19,6 @@
 #include <safe_map.h>
 #include <shared_mutex>
 
-#include "media_log.h"
 #include "thumbnail_generate_worker.h"
 
 namespace OHOS {
@@ -39,7 +38,6 @@ public:
 
     EXPORT uint64_t AssignRequestId()
     {
-        MEDIA_INFO_LOG("AssignRequestId, requestIdCounter_: %{public}lu", ++requestIdCounter_);
         return requestIdCounter_;
     }
 
