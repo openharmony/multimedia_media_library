@@ -118,12 +118,14 @@ void HighlightAlbumNapi::Destructor(napi_env env, void* nativeObject, void* fina
 }
 
 static const map<int32_t, struct HighlightAlbumInfo> HIGHLIGHT_ALBUM_INFO_MAP = {
-    { COVER_INFO, { PAH_QUERY_HIGHLIGHT_COVER, { SUB_TITLE, CLUSTER_TYPE, CLUSTER_SUB_TYPE,CLUSTER_CONDITION,
-      MIN_DATE_ADDED, MAX_DATE_ADDED, GENERATE_TIME, HIGHLIGHT_VERSION, REMARKS, HIGHLIGHT_STATUS,
-      RATIO, BACKGROUND, FOREGROUND, WORDART, IS_COVERED, COLOR, RADIUS, SATURATION, BRIGHTNESS, TITIE_SCALE_X, TITIE_SCALE_Y,
-      TITIE_RECT_WIDTH, TITIE_RECT_HEIGHT, BACKGROUND_SCALE_X, BACKGROUND_SCALE_Y, BACKGROUND_RECT_WIDTH, BACKGROUND_RECT_HEIGHT,
-      COVER_ALGO_VERSION, COVER_KEY } } },
-    { PLAY_INFO, { PAH_QUERY_HIGHLIGHT_PLAY, { MUSIC, FILTER, HIGHLIGHT_PLAY_INFO, IS_CHOSEN, PLAY_INFO_VERSION, PLAY_INFO_ID } } },
+    { COVER_INFO, { PAH_QUERY_HIGHLIGHT_COVER, { SUB_TITLE, CLUSTER_TYPE, CLUSTER_SUB_TYPE,
+        CLUSTER_CONDITION, MIN_DATE_ADDED, MAX_DATE_ADDED, GENERATE_TIME, HIGHLIGHT_VERSION,
+        REMARKS, HIGHLIGHT_STATUS, RATIO, BACKGROUND, FOREGROUND, WORDART, IS_COVERED, COLOR,
+        RADIUS, SATURATION, BRIGHTNESS, TITIE_SCALE_X, TITIE_SCALE_Y, TITIE_RECT_WIDTH,
+        TITIE_RECT_HEIGHT, BACKGROUND_SCALE_X, BACKGROUND_SCALE_Y, BACKGROUND_RECT_WIDTH,
+        BACKGROUND_RECT_HEIGHT, COVER_ALGO_VERSION, COVER_KEY } } },
+    { PLAY_INFO, { PAH_QUERY_HIGHLIGHT_PLAY, { MUSIC, FILTER, HIGHLIGHT_PLAY_INFO,
+        IS_CHOSEN, PLAY_INFO_VERSION, PLAY_INFO_ID } } },
 };
 
 static const map<int32_t, std::string> HIGHLIGHT_USER_ACTION_MAP = {
@@ -161,7 +163,7 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
             };
             predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
         } else {
-            tabStr = HIGHLIGHT_PLAY_INFO_TABLE;  
+            tabStr = HIGHLIGHT_PLAY_INFO_TABLE;
         }
     } else {
         NAPI_ERR_LOG("Invalid highlightAlbumInfoType");
@@ -220,7 +222,7 @@ static void JSSetHighlightUserActionDataExecute(napi_env env, void *data)
         return;
     }
     int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
-    Uri uri (URI_HIGHLIGHT_ALBUM);
+    Uri uri(URI_HIGHLIGHT_ALBUM);
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
     context->valuesBucket.Put(userActionType, userActionType + " + " + to_string(context->actionData));
     int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
@@ -264,7 +266,7 @@ static int32_t GetFdForArrayBuffer(std::string uriStr)
         NAPI_ERR_LOG("Open highlight cover file failed due to OpenFile failure");
         return fd;
     }
-    return fd;  
+    return fd;
 }
 
 static void JSGetHighlightResourceExecute(napi_env env, void *data)
@@ -354,8 +356,8 @@ napi_value HighlightAlbumNapi::JSGetHighlightAlbumInfo(napi_env env, napi_callba
     NAPI_CALL(env, napi_get_undefined(env, &result));
     unique_ptr<HighlightAlbumNapiAsyncContext> asyncContext = make_unique<HighlightAlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
-    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, asyncContext->highlightAlbumInfoType),
-        JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext,
+        asyncContext->highlightAlbumInfoType), JS_ERR_PARAMETER_INVALID);
 
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
@@ -381,7 +383,7 @@ napi_value HighlightAlbumNapi::JSSetHighlightUserActionData(napi_env env, napi_c
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0],
         asyncContext->highlightUserActionType) == napi_ok, "Failed to get highlightUserActionType");
     CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM1],
-        asyncContext->actionData) == napi_ok, "Failed to get actionData");  
+        asyncContext->actionData) == napi_ok, "Failed to get actionData");
 
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");

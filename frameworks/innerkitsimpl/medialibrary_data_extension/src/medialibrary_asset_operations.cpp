@@ -195,7 +195,7 @@ int32_t MediaLibraryAssetOperations::OpenOperation(MediaLibraryCommand &cmd, con
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Open(cmd, mode);
         case OperationObject::HIGHLIGHT_COVER:
-            return E_INVALID_VALUES;    
+            return MediaLibraryAssetOperations::OpenHighlightCover(cmd, mode);
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("open by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;

@@ -5957,7 +5957,7 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
         }
         if (context->isHighlightAlbum) {
             context->fetchColumn.erase(std::remove(context->fetchColumn.begin(), context->fetchColumn.end(),
-            PhotoAlbumColumns::ALBUM_ID), context->fetchColumn.end());
+                PhotoAlbumColumns::ALBUM_ID), context->fetchColumn.end());
             context->fetchColumn.push_back(ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " AS " +
             PhotoAlbumColumns::ALBUM_ID);
         }
