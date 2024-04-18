@@ -305,8 +305,8 @@ std::string MediaAssetManagerImpl::NativeRequestImage(const char* photoUri,
     asyncContext->onDataPreparedHandler = callback;
 
     if (asyncContext->requestUri.length() > MAX_URI_SIZE || asyncContext->destUri.length() > MAX_URI_SIZE) {
-        MEDIA_ERR_LOG("Request image file uri lens out of limit requestUri lens: %{public}zu,
-            destUri lens: %{public}zu", asyncContext->requestUri.length(), asyncContext->destUri.length());
+        MEDIA_ERR_LOG("Request image uri lens out of limit requestUri lens: %{public}zu, destUri lens: %{public}zu",
+            asyncContext->requestUri.length(), asyncContext->destUri.length());
         return ERROR_REQUEST_ID;
     }
     if (MediaFileUtils::GetMediaType(asyncContext->displayName) != MEDIA_TYPE_IMAGE ||
@@ -347,8 +347,8 @@ std::string MediaAssetManagerImpl::NativeRequestVideo(const char* videoUri,
     asyncContext->onDataPreparedHandler = callback;
 
     if (asyncContext->requestUri.length() > MAX_URI_SIZE || asyncContext->destUri.length() > MAX_URI_SIZE) {
-        MEDIA_ERR_LOG("Request video file uri lens out of limit requestUri lens: %{public}zu,
-            destUri lens: %{public}zu", asyncContext->requestUri.length(), asyncContext->destUri.length());
+        MEDIA_ERR_LOG("Request video uri lens out of limit requestUri lens: %{public}zu, destUri lens: %{public}zu",
+            asyncContext->requestUri.length(), asyncContext->destUri.length());
         return ERROR_REQUEST_ID;
     }
     if (MediaFileUtils::GetMediaType(asyncContext->displayName) != MEDIA_TYPE_VIDEO ||
