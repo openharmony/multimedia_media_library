@@ -78,6 +78,7 @@ const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
 
+
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
 {
     int errCode = E_ERR;
@@ -193,6 +194,8 @@ int32_t MediaLibraryAssetOperations::OpenOperation(MediaLibraryCommand &cmd, con
             return MediaLibraryPhotoOperations::Open(cmd, mode);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Open(cmd, mode);
+        case OperationObject::HIGHLIGHT_COVER:
+            return E_INVALID_VALUES;    
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("open by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
@@ -1158,6 +1161,25 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
         MEDIA_ERR_LOG("This asset [%{public}d] pending status is invalid", fileAsset->GetId());
         return E_INVALID_VALUES;
     }
+}
+
+int32_t MediaLibraryAssetOperations::OpenHighlightCover(MediaLibraryCommand &cmd, const string &mode)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryAssetOperations::OpenHighlightCover");
+    string uriStr = cmd.GetUriStringWithoutSegment();
+    string path = MediaFileUtils::GetHighlightPath(uriStr);
+    if (path.length() == 0) {
+        MEDIA_ERR_LOG("Open highlight cover invalid uri : %{public}s", uriStr.c_str());
+        return E_INVALID_URI;
+    }
+    
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
+    
+    fileAsset->SetPath(path);
+    fileAsset->SetUri(uriStr);
+    
+    return OpenAsset(fileAsset, mode, cmd.GetApi(), false);
 }
 
 void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int32_t type)

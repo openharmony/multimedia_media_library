@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "highlight_album_napi.h"
 #include "media_album_change_request_napi.h"
 #include "media_asset_change_request_napi.h"
 #include "media_asset_edit_data_napi.h"
@@ -38,6 +39,7 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     FileAssetNapi::PhotoAccessHelperInit(env, exports);
     AlbumNapi::PhotoAccessHelperInit(env, exports);
     PhotoAlbumNapi::PhotoAccessInit(env, exports);
+    HighlightAlbumNapi::Init(env, exports);
     MediaAssetEditDataNapi::Init(env, exports);
     MediaAssetChangeRequestNapi::Init(env, exports);
     MediaAssetsChangeRequestNapi::Init(env, exports);

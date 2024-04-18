@@ -70,6 +70,26 @@ enum AnalysisType : int32_t {
     ANALYSIS_VIDEO_LABEL,
 };
 
+enum HighlightAlbumInfoType : int32_t {
+    INVALID_INFO = -1,
+    COVER_INFO,
+    PLAY_INFO
+};
+
+enum HighlightUserActionType : int32_t {
+    INVALID_USER_ACTION= -1,
+    INSERT_PIC_COUNT,
+    REMOVE_PIC_COUNT,
+    SHARE_SCREENSHOT_COUNT,
+    SHARE_COVER_COUNT,
+    RENAME_COUNT,
+    CHANGE_COVER_COUNT,
+    RENDER_VIEWED_TIMES =100,
+    RENDER_VIEWED_DURATION,
+    ART_LAYOUT_VIEWED_TIMES,
+    ART_LAYOUT_VIEWED_DURATION
+};
+
 enum PhotoAlbumType : int32_t {
     USER = 0,
     SYSTEM = 1024,
@@ -96,9 +116,9 @@ enum PhotoAlbumSubType : int32_t {
     GEOGRAPHY_CITY,
     SHOOTING_MODE,
     PORTRAIT,
-    HIGHLIGHT,
-    HIGHLIGHT_AI = 4104,
-    ANALYSIS_END = PORTRAIT,
+    HIGHLIGHT = 4104,
+    HIGHLIGHT_SUGGEST,
+    ANALYSIS_END = HIGHLIGHT_SUGGEST,
     ANY = std::numeric_limits<int32_t>::max()
 };
 

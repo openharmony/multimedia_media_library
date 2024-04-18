@@ -109,6 +109,7 @@ const std::string PhotoColumn::PHOTO_URI_PREFIX = "file://media/Photo/";
 const std::string PhotoColumn::DEFAULT_PHOTO_URI = "file://media/Photo";
 const std::string PhotoColumn::PHOTO_CACHE_URI_PREFIX = "file://media/Photo/cache/";
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
+const std::string PhotoColumn::HIGHTLIGHT_COVER_URI = "/highlightCover";
 
 const std::set<std::string> PhotoColumn::DEFAULT_FETCH_COLUMNS = {
     PHOTO_SUBTYPE,

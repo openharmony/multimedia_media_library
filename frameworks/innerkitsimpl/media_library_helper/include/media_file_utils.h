@@ -132,6 +132,7 @@ public:
         const std::string &suffix = "");
     EXPORT static std::string Encode(const std::string &uri);
     EXPORT static bool CheckDisplayLevel(const int32_t &displayLevel);
+    EXPORT static std::string GetHighlightPath(const std::string &uri);
 #ifdef MEDIALIBRARY_COMPATIBILITY
     EXPORT static std::string GetTableFromVirtualUri(const std::string &uri);
 #endif

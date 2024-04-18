@@ -353,7 +353,8 @@ std::unordered_map<std::string, std::string> &MediaFileUri::GetQueryKeys()
 bool MediaFileUri::IsApi10()
 {
     if ((ToString().find(PhotoColumn::PHOTO_TYPE_URI) != std::string::npos) ||
-        (ToString().find(AudioColumn::AUDIO_TYPE_URI) != std::string::npos)) {
+        (ToString().find(AudioColumn::AUDIO_TYPE_URI) != std::string::npos) ||
+        (ToString().find(PhotoColumn::HIGHTLIGHT_COVER_URI) != std::string::npos)) {
         return true;
     }
     return false;

@@ -86,6 +86,7 @@ enum class EXPORT OperationObject : uint32_t {
     STORY_PLAY,
     USER_PHOTOGRAPHY,
     PAH_MULTISTAGES_CAPTURE,
+    HIGHLIGHT_COVER,
 };
 
 enum class EXPORT OperationType : uint32_t {

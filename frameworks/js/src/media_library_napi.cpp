@@ -52,6 +52,7 @@
 #include "photo_album_napi.h"
 #include "result_set_utils.h"
 #include "smart_album_napi.h"
+#include "story_album_column.h"
 #include "string_ex.h"
 #include "string_wrapper.h"
 #include "userfile_client.h"
@@ -138,6 +139,8 @@ thread_local napi_ref MediaLibraryNapi::sDefaultChangeUriRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sAnalysisType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sRequestPhotoTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sResourceTypeEnumRef_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sHighlightAlbumInfoType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sHighlightUserActionType_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -297,6 +300,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("ResourceType", CreateResourceTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DeliveryMode", CreateDeliveryModeEnum(env)),
         DECLARE_NAPI_PROPERTY("SourceMode", CreateSourceModeEnum(env)),
+        DECLARE_NAPI_PROPERTY("HighlightAlbumInfoType", CreateHighlightAlbumInfoTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("HighlightUserActionType", CreateHighlightUserActionTypeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -5436,6 +5441,52 @@ napi_value MediaLibraryNapi::CreateAnalysisTypeEnum(napi_env env)
     return result;
 }
 
+napi_value MediaLibraryNapi::CreateHighlightAlbumInfoTypeEnum(napi_env env)
+{
+    struct AnalysisProperty property[] = {
+        { "COVER_INFO", HighlightAlbumInfoType::COVER_INFO },
+        { "PLAY_INFO", HighlightAlbumInfoType::PLAY_INFO },
+    };
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
+
+    for (uint32_t i = 0; i < sizeof(property) / sizeof(property[0]); i++) {
+        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, property[i].enumName, property[i].enumValue),
+            JS_INNER_FAIL);
+    }
+
+    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sHighlightUserActionType_), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value MediaLibraryNapi::CreateHighlightUserActionTypeEnum(napi_env env)
+{
+    struct AnalysisProperty property[] = {
+        { "INSERT_PIC_COUNT", HighlightUserActionType::INSERT_PIC_COUNT },
+        { "REMOVE_PIC_COUNT", HighlightUserActionType::REMOVE_PIC_COUNT },
+        { "SHARE_SCREENSHOT_COUNT", HighlightUserActionType::SHARE_SCREENSHOT_COUNT },
+        { "SHARE_COVER_COUNT", HighlightUserActionType::SHARE_COVER_COUNT },
+        { "RENAME_COUNT", HighlightUserActionType::RENAME_COUNT },
+        { "CHANGE_COVER_COUNT", HighlightUserActionType::CHANGE_COVER_COUNT },
+        { "RENDER_VIEWED_TIMES", HighlightUserActionType::RENDER_VIEWED_TIMES },
+        { "RENDER_VIEWED_DURATION", HighlightUserActionType::RENDER_VIEWED_DURATION },
+        { "ART_LAYOUT_VIEWED_TIMES", HighlightUserActionType::ART_LAYOUT_VIEWED_TIMES },
+        { "ART_LAYOUT_VIEWED_DURATION", HighlightUserActionType::ART_LAYOUT_VIEWED_DURATION },
+    };
+
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
+
+    for (uint32_t i = 0; i < sizeof(property) / sizeof(property[0]); i++) {
+        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, property[i].enumName, property[i].enumValue),
+            JS_INNER_FAIL);
+    }
+
+    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sHighlightAlbumInfoType_), JS_INNER_FAIL);
+    return result;
+}
+
 napi_value MediaLibraryNapi::CreateDefaultChangeUriEnum(napi_env env)
 {
     return CreateStringEnumProperty(env, DEFAULT_URI_ENUM_PROPERTIES, sDefaultChangeUriRef_);
@@ -5834,6 +5885,15 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE || albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
         context->predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
     }
+    if (albumSubType == PhotoAlbumSubType::HIGHLIGHT || albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGEST) {
+        context->isHighlightAlbum = albumSubType;
+        vector<string> onClause = {
+            ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+            HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+        };
+        context->predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
+        context->predicates.OrderByDesc(MAX_DATE_ADDED + ", " + GENERATE_TIME);
+    }
 
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
@@ -5894,6 +5954,12 @@ static napi_value ParseArgsGetPhotoAlbum(napi_env env, napi_callback_info info,
         if (!context->isAnalysisAlbum) {
             context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
             context->fetchColumn.push_back(PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
+        }
+        if (context->isHighlightAlbum) {
+            context->fetchColumn.erase(std::remove(context->fetchColumn.begin(), context->fetchColumn.end(),
+            PhotoAlbumColumns::ALBUM_ID), context->fetchColumn.end());
+            context->fetchColumn.push_back(ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " AS " +
+            PhotoAlbumColumns::ALBUM_ID);
         }
     }
     napi_value result = nullptr;
