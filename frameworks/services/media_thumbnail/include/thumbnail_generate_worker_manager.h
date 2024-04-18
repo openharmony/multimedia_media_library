@@ -38,7 +38,7 @@ public:
 
     EXPORT uint64_t AssignRequestId()
     {
-        return requestIdCounter_;
+        return ++requestIdCounter_;
     }
 
     EXPORT void ClearAllTask();
@@ -51,9 +51,9 @@ private:
 
     SafeMap<ThumbnailTaskType, ThumbnailWorkerPtr> thumbnailWorkerMap_;
 
-    static std::mutex mutex_;
+    std::mutex mutex_;
 
-    static std::atomic<uint64_t> requestIdCounter_;
+    std::atomic<uint64_t> requestIdCounter_ = 0;
 };
 } // namespace Media
 } // namespace OHOS
