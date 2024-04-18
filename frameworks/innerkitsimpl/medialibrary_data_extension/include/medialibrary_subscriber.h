@@ -46,7 +46,6 @@ private:
     void DoStartMtpService();
 #endif
     void RevertPendingByPackage(const std::string &bundleName);
-    void WriteThumbnailStat();
     int64_t GetNowTime();
     void Init();
 };
