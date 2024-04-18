@@ -626,7 +626,7 @@ napi_value MediaAssetManagerNapi::JSRequestVideoFile(napi_env env, napi_callback
         return nullptr;
     }
     if (asyncContext->mediaUri.length() > MAX_URI_SIZE || asyncContext->destUri.length() > MAX_URI_SIZE) {
-        NAPI_ERR_LOG("request video file uri lens out of limit mediaUri lens: %{public}d, destUri lens: %{public}d",
+        NAPI_ERR_LOG("request video file uri lens out of limit mediaUri lens: %{public}zu, destUri lens: %{public}zu",
             asyncContext->mediaUri.length(), asyncContext->destUri.length());
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "request video file uri lens out of limit");
         return nullptr;
