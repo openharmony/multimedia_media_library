@@ -47,6 +47,7 @@ const std::string FEATURE_NAME = "feature_name";
 const std::string CITY_ID = "city_id";
 const std::string CITY_NAME = "city_name";
 const std::string ADDRESS_DESCRIPTION = "address_description";
+const std::string LOCATION_TYPE = "location_type";
 const std::string DICTIONARY_INDEX = "dictionary_index";
 const std::string KNOWLEDG_INDEX = "knowledge_index";
 const std::string LOCATION_CITY_NAME_INDEX = "idx_city_name_index";

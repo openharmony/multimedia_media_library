@@ -38,11 +38,11 @@ namespace Media {
 void ClearStoryData()
 {
     DataShare::DataSharePredicates predicates;
-    Uri storyAlbumUri(URI_STORY_ALBUM);
+    Uri storyAlbumUri(URI_HIGHLIGHT_ALBUM);
     MediaLibraryCommand storyAlbumCmd(storyAlbumUri);
-    Uri storyCoverUri(URI_STORY_COVER_INFO);
+    Uri storyCoverUri(URI_HIGHLIGHT_COVER_INFO);
     MediaLibraryCommand storyCoverCmd(storyCoverUri);
-    Uri storyPlayUri(URI_STORY_PLAY_INFO);
+    Uri storyPlayUri(URI_HIGHLIGHT_PLAY_INFO);
     MediaLibraryCommand storyPlayCmd(storyPlayUri);
     Uri userPhotoGraphyUri(URI_USER_PHOTOGRAPHY_INFO);
     MediaLibraryCommand userPhotoGraphyCmd(userPhotoGraphyUri);
@@ -78,7 +78,7 @@ void MediaLibraryStoryTest::TearDown(void) {}
 HWTEST_F(MediaLibraryStoryTest, Story_InsertAlbum_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Story_InsertAlbum_Test_001::Start");
-    Uri storyAlbumUri(URI_STORY_ALBUM);
+    Uri storyAlbumUri(URI_HIGHLIGHT_ALBUM);
     MediaLibraryCommand cmd(storyAlbumUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, 1);
@@ -89,10 +89,10 @@ HWTEST_F(MediaLibraryStoryTest, Story_InsertAlbum_Test_001, TestSize.Level0)
     valuesBucket.Put(CLUSTER_CONDITION, "地点");
     valuesBucket.Put(MIN_DATE_ADDED, 1432973383179);
     valuesBucket.Put(MAX_DATE_ADDED, 1432973383180);
-    valuesBucket.Put(GENERAT_TIME, 1432973383181);
-    valuesBucket.Put(STORY_VERSION, 1);
+    valuesBucket.Put(GENERATE_TIME, 1432973383181);
+    valuesBucket.Put(HIGHLIGHT_VERSION, 1);
     valuesBucket.Put(REMARKS, "2");
-    valuesBucket.Put(STORY_STATUS, 1);
+    valuesBucket.Put(HIGHLIGHT_STATUS, 1);
     valuesBucket.Put(INSERT_PIC_COUNT, 3);
     valuesBucket.Put(REMOVE_PIC_COUNT, 3);
     valuesBucket.Put(SHARE_SCREENSHOT_COUNT, 5);
@@ -111,7 +111,7 @@ HWTEST_F(MediaLibraryStoryTest, Story_InsertAlbum_Test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryStoryTest, Story_UpdateAlbum_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Story_UpdateAlbum_Test_001::Start");
-    Uri storyAlbumUri(URI_STORY_ALBUM);
+    Uri storyAlbumUri(URI_HIGHLIGHT_ALBUM);
     MediaLibraryCommand cmd(storyAlbumUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, 2);
@@ -122,8 +122,8 @@ HWTEST_F(MediaLibraryStoryTest, Story_UpdateAlbum_Test_001, TestSize.Level0)
     valuesBucket.Put(CLUSTER_CONDITION, "地点");
     valuesBucket.Put(MIN_DATE_ADDED, 1432973383179);
     valuesBucket.Put(MAX_DATE_ADDED, 1432973383184);
-    valuesBucket.Put(GENERAT_TIME, 1432973383181);
-    valuesBucket.Put(STORY_VERSION, 1);
+    valuesBucket.Put(GENERATE_TIME, 1432973383181);
+    valuesBucket.Put(HIGHLIGHT_VERSION, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;
     updateValues.Put(CLUSTER_SUB_TYPE, "4");
@@ -150,7 +150,7 @@ HWTEST_F(MediaLibraryStoryTest, Story_UpdateAlbum_Test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryStoryTest, Story_DeleteAlbum_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Story_DeleteAlbum_Test_001::Start");
-    Uri storyAlbumUri(URI_STORY_ALBUM);
+    Uri storyAlbumUri(URI_HIGHLIGHT_ALBUM);
     MediaLibraryCommand cmd(storyAlbumUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, 3);
@@ -161,8 +161,8 @@ HWTEST_F(MediaLibraryStoryTest, Story_DeleteAlbum_Test_001, TestSize.Level0)
     valuesBucket.Put(CLUSTER_CONDITION, "地点");
     valuesBucket.Put(MIN_DATE_ADDED, 1432973383179);
     valuesBucket.Put(MAX_DATE_ADDED, 1432973383150);
-    valuesBucket.Put(GENERAT_TIME, 1432973383181);
-    valuesBucket.Put(STORY_VERSION, 2);
+    valuesBucket.Put(GENERATE_TIME, 1432973383181);
+    valuesBucket.Put(HIGHLIGHT_VERSION, 2);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(ALBUM_ID, to_string(3));
@@ -174,7 +174,7 @@ HWTEST_F(MediaLibraryStoryTest, Story_DeleteAlbum_Test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryStoryTest, Story_InsertCoverInfo_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Story_InsertCoverInfo_Test_001::Start");
-    Uri storyCoverUri(URI_STORY_COVER_INFO);
+    Uri storyCoverUri(URI_HIGHLIGHT_COVER_INFO);
     MediaLibraryCommand cmd(storyCoverUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, 1);
@@ -195,7 +195,6 @@ HWTEST_F(MediaLibraryStoryTest, Story_InsertCoverInfo_Test_001, TestSize.Level0)
     valuesBucket.Put(BACKGROUND_SCALE_Y, 6.5);
     valuesBucket.Put(BACKGROUND_RECT_HEIGHT, 6.5);
     valuesBucket.Put(BACKGROUND_RECT_WIDTH, 6.5);
-    valuesBucket.Put(IS_CHOSEN, 0);
     valuesBucket.Put(COVER_ALGO_VERSION, 2);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
@@ -205,7 +204,7 @@ HWTEST_F(MediaLibraryStoryTest, Story_InsertCoverInfo_Test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryStoryTest, Story_UpdateCoverInfo_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Story_UpdateCoverInfo_Test_001::Start");
-    Uri storyCoverUri(URI_STORY_COVER_INFO);
+    Uri storyCoverUri(URI_HIGHLIGHT_COVER_INFO);
     MediaLibraryCommand cmd(storyCoverUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, 1);
@@ -213,7 +212,6 @@ HWTEST_F(MediaLibraryStoryTest, Story_UpdateCoverInfo_Test_001, TestSize.Level0)
     valuesBucket.Put(BACKGROUND, "file://media/Photo/1/2/1.jpg");
     valuesBucket.Put(FOREGROUND, "file://media/Photo/1/2/2.jpg");
     valuesBucket.Put(WORDART, "file://media/Photo/1/2/3.jpg");
-    valuesBucket.Put(IS_COVERED, 0);
     valuesBucket.Put(COLOR, "black");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;
@@ -239,7 +237,7 @@ HWTEST_F(MediaLibraryStoryTest, Story_UpdateCoverInfo_Test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryStoryTest, Story_DeleteCoverInfo_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Story_DeleteCoverInfo_Test_001::Start");
-    Uri storyCoverUri(URI_STORY_COVER_INFO);
+    Uri storyCoverUri(URI_HIGHLIGHT_COVER_INFO);
     MediaLibraryCommand cmd(storyCoverUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, 1);
@@ -247,7 +245,6 @@ HWTEST_F(MediaLibraryStoryTest, Story_DeleteCoverInfo_Test_001, TestSize.Level0)
     valuesBucket.Put(BACKGROUND, "file://media/Photo/1/1/1.jpg");
     valuesBucket.Put(FOREGROUND, "file://media/Photo/1/1/2.jpg");
     valuesBucket.Put(WORDART, "file://media/Photo/1/1/3.jpg");
-    valuesBucket.Put(IS_COVERED, 1);
     valuesBucket.Put(COLOR, "black");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataSharePredicates predicates;
@@ -260,7 +257,7 @@ HWTEST_F(MediaLibraryStoryTest, Story_DeleteCoverInfo_Test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryStoryTest, Story_InsertPlayInfo_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Story_InsertPlayInfo_Test_001::Start");
-    Uri storyPlayUri(URI_STORY_PLAY_INFO);
+    Uri storyPlayUri(URI_HIGHLIGHT_PLAY_INFO);
     MediaLibraryCommand cmd(storyPlayUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, 1);
@@ -277,7 +274,7 @@ HWTEST_F(MediaLibraryStoryTest, Story_InsertPlayInfo_Test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryStoryTest, Story_UpdatePlayInfo_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Story_UpdatePlayInfo_Test_001::Start");
-    Uri storyPlayUri(URI_STORY_PLAY_INFO);
+    Uri storyPlayUri(URI_HIGHLIGHT_PLAY_INFO);
     MediaLibraryCommand cmd(storyPlayUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, 2);
@@ -310,7 +307,7 @@ HWTEST_F(MediaLibraryStoryTest, Story_UpdatePlayInfo_Test_001, TestSize.Level0)
 HWTEST_F(MediaLibraryStoryTest, Story_DeletePlayInfo_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Story_DeletePlayInfo_Test_001::Start");
-    Uri storyPlayUri(URI_STORY_PLAY_INFO);
+    Uri storyPlayUri(URI_HIGHLIGHT_PLAY_INFO);
     MediaLibraryCommand cmd(storyPlayUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(ALBUM_ID, 3);
