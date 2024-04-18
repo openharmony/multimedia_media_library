@@ -65,8 +65,7 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
     isCharging_ = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE) ||
         (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL);
 #endif
-    MEDIA_INFO_LOG("MedialibrarySubscriber isScreenOff_:%{public}d, isCharging_:%{public}d",
-        isScreenOff_, isCharging_);
+    MEDIA_INFO_LOG("MedialibrarySubscriber isScreenOff_:%{public}d, isCharging_:%{public}d", isScreenOff_, isCharging_);
 }
 
 bool MedialibrarySubscriber::Subscribe(void)
@@ -122,8 +121,7 @@ void MedialibrarySubscriber::Init()
 
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
-    MEDIA_INFO_LOG("Enter isScreenOff_ %{public}d, isCharging_ %{public}d",
-        isScreenOff_, isCharging_);
+    MEDIA_INFO_LOG("Enter isScreenOff_ %{public}d, isCharging_ %{public}d", isScreenOff_, isCharging_);
     if (!isScreenOff_ || !isCharging_) {
         MEDIA_INFO_LOG("The screen is not off or the device is not charging, will return.");
         return;
@@ -136,10 +134,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
         return;
-    }
-    auto err = dataManager->GetAgingDataSize(lockTime_, agingCount_);
-    if (err < 0) {
-        MEDIA_ERR_LOG("GetAgingDataSize faild, err:%{public}d", err);
     }
 
     auto result = dataManager->GenerateThumbnails();
@@ -171,38 +165,12 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     }
     scannerManager->ScanError();
 
-    MEDIA_INFO_LOG("Do success isScreenOff_ %{public}d, isCharging_ %{public}d",
-        isScreenOff_, isCharging_);
+    MEDIA_INFO_LOG("Do success isScreenOff_ %{public}d, isCharging_ %{public}d", isScreenOff_, isCharging_);
 }
-
-void MedialibrarySubscriber::WriteThumbnailStat()
-{
-    auto dataManager = MediaLibraryDataManager::GetInstance();
-    if (dataManager == nullptr) {
-        return;
-    }
-    int agingCount = 0;
-    int32_t err = dataManager->GetAgingDataSize(lockTime_, agingCount);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("failed to get aging data size,err:%{public}d", err);
-        return;
-    }
-    int agingSize = agingCount_ - agingCount;
-    int generateSize = 0;
-    err = dataManager->QueryNewThumbnailCount(lockTime_, generateSize);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("failed to query thumbnail count,err:%{public}d", err);
-    }
-
-    VariantMap map = {{KEY_GNUMS, generateSize}, {KEY_ANUMS, agingSize}};
-    PostEventUtils::GetInstance().PostStatProcess(StatType::THUMBNAIL_STAT, map);
-}
-
 
 void MedialibrarySubscriber::StopBackgroundOperation()
 {
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
-    WriteThumbnailStat();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
