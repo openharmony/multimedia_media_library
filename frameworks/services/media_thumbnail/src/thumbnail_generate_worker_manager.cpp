@@ -16,6 +16,7 @@
 #include "thumbnail_generate_worker_manager.h"
 
 #include "medialibrary_errno.h"
+#include "media_log.h"
 
 namespace OHOS {
 namespace Media {
