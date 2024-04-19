@@ -50,7 +50,7 @@ void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> data)
         return;
     }
     DoCreateThumbnails(data->opts_, data->thumbnailData_, false);
-    ThumbnailUtils::RecordCostTimeAndReport(taskData->thumbnailData.stats);
+    ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
 void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> data)
@@ -78,8 +78,8 @@ void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> data)
         MEDIA_ERR_LOG("CreateAstc failed, data is null");
         return;
     }
-    DoCreateAstc(taskData->opts, taskData->thumbnailData, false);
-    ThumbnailUtils::RecordCostTimeAndReport(taskData->thumbnailData.stats);
+    DoCreateAstc(data->opts_, data->thumbnailData_, false);
+    ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
 void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
@@ -88,7 +88,7 @@ void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executo
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(taskType);
     if (thumbnailWorker == nullptr) {
-        MEDIA_ERROR_LOG("thumbnailWorker is null");
+        MEDIA_ERR_LOG("thumbnailWorker is null");
         return;
     }
 
