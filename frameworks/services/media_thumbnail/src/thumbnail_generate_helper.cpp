@@ -26,6 +26,7 @@
 #include "medialibrary_kvstore_manager.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
+#include "thumbnail_generate_worker_manager.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;

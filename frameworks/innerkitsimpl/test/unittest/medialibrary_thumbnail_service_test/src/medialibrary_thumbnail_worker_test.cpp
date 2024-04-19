@@ -53,7 +53,7 @@ void MediaLibraryThumbnailWorkerTest::TearDownTestCase(void)
     }
 }
 
-void MediaLibraryThumbnailWorkerTest::SetUp(void) {}
+void MediaLibraryThumbnailWorkerTest::SetUp() {}
 
 void MediaLibraryThumbnailWorkerTest::TearDown(void) {}
 

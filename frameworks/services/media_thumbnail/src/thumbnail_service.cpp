@@ -485,7 +485,8 @@ int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
         return err;
     }
 
-    IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateAstc, opts, data, false);
+    IThumbnailHelper::AddThumbnailGenerateTask(
+        IThumbnailHelper::CreateAstc, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
     return E_OK;
 }
 
