@@ -73,11 +73,11 @@ ohos_shared_library("media_library_manager") {
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
   if (purgeable_ashmem_enable && defined(global_parts_info) &&
-      defined(global_parts_info.resourceschedule_memmgr_plugin)) {
+      defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
-      "memmgr_plugin:libpurgeablemem_plugin",
-      "memmgr_plugin:purgeable_pixelmap_builder",
+      "memmgr_override:libpurgeablemem_plugin",
+      "memmgr_override:purgeable_pixelmap_builder",
     ]
   }
 
