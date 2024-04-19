@@ -1067,7 +1067,8 @@ static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const 
     return E_OK;
 }
 
-static int32_t CreateDirectoryAndAsset(const string path) {
+static int32_t CreateDirectoryAndAsset(const string path)
+{
     string dir = MediaFileUtils::GetParentPath(path);
     if (!MediaFileUtils::CreateDirectory(dir)) {
         MEDIA_ERR_LOG("Create dir failed, dir=%{private}s", dir.c_str());

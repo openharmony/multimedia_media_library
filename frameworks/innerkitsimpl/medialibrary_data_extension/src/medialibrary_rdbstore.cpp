@@ -2464,7 +2464,7 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_HIGHLIGHT_COVER_TABLE) {
         UpdateHighlightCoverTables(store);
-    }  
+    }
 }
 
 static void CheckDateAdded(RdbStore &store)
