@@ -42,7 +42,8 @@ int32_t ThumbnailGenerateHelper::CreateThumbnails(ThumbRdbOpt &opts, bool isSync
         IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData, false);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
-        IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateThumbnails, opts, thumbnailData, true);
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnails,
+            opts, thumbnailData, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::HIGH);
     }
     return E_OK;
 }
@@ -65,9 +66,11 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBatch(ThumbRdbOpt &opts)
         MEDIA_INFO_LOG("No need generate thumbnail.");
         return E_OK;
     }
+
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
-        IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateThumbnail, opts, infos[i], false);
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnail,
+            opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
 
     return E_OK;
@@ -99,7 +102,8 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatch(ThumbRdbOpt &opts)
         opts.row = infos[i].id;
         ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::BACKGROUND,
             LoadSourceType::LOCAL_PHOTO);
-        IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateAstc, opts, infos[i], false);
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc,
+            opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
     return E_OK;
 }
@@ -128,9 +132,11 @@ int32_t ThumbnailGenerateHelper::CreateLcdBatch(ThumbRdbOpt &opts)
         MEDIA_ERR_LOG("Failed to GetNoLcdData %{private}d", err);
         return err;
     }
+
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
-        IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateLcd, opts, infos[i], false);
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcd,
+            opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
     return E_OK;
 }

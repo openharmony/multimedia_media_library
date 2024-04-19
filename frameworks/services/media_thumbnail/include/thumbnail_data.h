@@ -53,7 +53,6 @@ public:
     EXPORT int32_t mediaType {-1};
     EXPORT int64_t dateModified {0};
     EXPORT float degrees;
-    EXPORT bool isThumbAdded {false};
 
     // Reload source when Lcd Size is not scaleable for Thumbnail
     EXPORT bool needReloadSource {false};
