@@ -38,6 +38,45 @@ const std::unordered_set<OperationType> OPERATION_TYPE_SET = {
     OperationType::QUERY,
 };
 
+std::string GetTableNameFromOprnObject(const OperationObject& object)
+{
+    if (TABLE_NAME_MAP.find(object) != TABLE_NAME_MAP.end()) {
+        auto cmdObj = TABLE_NAME_MAP.at(object);
+        return cmdObj.begin()->second;
+    } else {
+        return MEDIALIBRARY_TABLE;
+    }
+}
+
+OperationType GetOprnTypeFromUri(Uri& uri)
+{
+    const std::string opType = MediaFileUri::GetPathSecondDentry(uri);
+    if (OPRN_TYPE_MAP.find(opType) != OPRN_TYPE_MAP.end()) {
+        return OPRN_TYPE_MAP.at(opType);
+    } else {
+        return OperationType::QUERY;
+    }
+}
+
+OperationObject GetOprnObjectFromUri(Uri& uri)
+{
+    const string opObject = MediaFileUri::GetPathFirstDentry(uri);
+    if (OPRN_OBJ_MAP.find(opObject) != OPRN_OBJ_MAP.end()) {
+        return OPRN_OBJ_MAP.at(opObject);
+    }
+    std::string uriString = uri.ToString();
+    if (MediaFileUtils::StartsWith(uriString, PhotoColumn::PHOTO_CACHE_URI_PREFIX)) {
+        return OperationObject::PAH_PHOTO;
+    }
+
+    for (const auto &item : OPRN_MAP) {
+        if (MediaFileUtils::StartsWith(uriString, item.first)) {
+            return item.second;
+        }
+    }
+    return OperationObject::UNKNOWN_OBJECT;
+}
+
 MediaAssetRdbStore* MediaAssetRdbStore::GetInstance()
 {
     static MediaAssetRdbStore instance;
@@ -74,15 +113,22 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
         NAPI_ERR_LOG("fail to acquire application Context");
         return NativeRdb::E_ERROR;
     }
+    uid_t uid = getuid() / BASE_USER_RANGE;
+    const string key = MEDIA_LIBRARY_STARTUP_PARAM_PREFIX + to_string(uid);
+    auto rdbInitFlag = system::GetBoolParameter(key, false);
+    if (!rdbInitFlag && !isIgnoreSELinux) {
+        NAPI_ERR_LOG("media library db update not complete, key:%{public}s", key.c_str());
+        return NativeRdb::E_ERROR;
+    }
+    string name = MEDIA_DATA_ABILITY_DB_NAME;
+    string databaseDir = MEDIA_DB_DIR + "/rdb";
+    if (access(databaseDir.c_str(), E_OK) != 0) {
+        NAPI_ERR_LOG("rdb do not exist");
+        return NativeRdb::E_ERROR;
+    }
+    string dbPath = databaseDir.append("/").append(name);
     int32_t errCode = 0;
     NativeRdb::RdbStoreConfig config {""};
-    string name = MEDIA_DATA_ABILITY_DB_NAME;
-    string dbPath = RdbSqlUtils::GetDefaultDatabasePath(MEDIA_DB_DIR, name, errCode);
-    if (errCode != E_OK) {
-        NAPI_ERR_LOG("fail to get rdb path");
-        return errCode;
-    }
-
     config.SetName(name);
     config.SetVisitorDir(dbPath);
     config.SetBundleName(context->GetBundleName());
@@ -93,14 +139,6 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
 
     MediaLibraryDataCallBack rdbDataCallBack;
-    uid_t uid = getuid() / BASE_USER_RANGE;
-    const string key = MEDIA_LIBRARY_STARTUP_PARAM_PREFIX + to_string(uid);
-    auto rdbInitFlag = system::GetBoolParameter(key, false);
-    if (!rdbInitFlag && !isIgnoreSELinux) {
-        NAPI_ERR_LOG("media library db update not complete, key:%{public}s", key.c_str());
-        return NativeRdb::E_ERROR;
-    }
-
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore_ == nullptr || errCode != NativeRdb::E_OK) {
         NAPI_ERR_LOG("Get visitor RdbStore is failed, errCode: %{public}d", errCode);
@@ -118,7 +156,7 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(
         NAPI_ERR_LOG("fail to acquire rdb when query");
         return nullptr;
     }
-    std::string tableName = MediaLibraryCommand::GetTableNameFromOprnObject(object);
+    std::string tableName = GetTableNameFromOprnObject(object);
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, tableName);
     MediaLibraryRdbUtils::AddQueryFilter(rdbPredicates);
     auto resultSet = rdbStore_->Query(rdbPredicates, columns);
@@ -141,11 +179,11 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& 
             return false;
         }
     }
-    object = MediaLibraryCommand::GetOprnObjectFromUri(uri);
+    object = GetOprnObjectFromUri(uri);
     if (OPERATION_OBJECT_SET.count(object) == 0) {
         return false;
     }
-    OperationType type = MediaLibraryCommand::GetOprnTypeFromUri(uri);
+    OperationType type = GetOprnTypeFromUri(uri);
     if (OPERATION_TYPE_SET.count(type) == 0) {
         return false;
     }
