@@ -43,7 +43,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> data)
+void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
         MEDIA_ERR_LOG("CreateThumbnails failed, data is null");
@@ -53,7 +53,7 @@ void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> data)
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
-void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> data)
+void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
         MEDIA_ERR_LOG("CreateLcd failed, data is null");
@@ -62,7 +62,7 @@ void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> data)
     DoCreateLcd(data->opts_, data->thumbnailData_, false);
 }
 
-void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> data)
+void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
         MEDIA_ERR_LOG("CreateThumbnail failed, data is null");
@@ -72,7 +72,7 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> data)
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
-void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> data)
+void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
         MEDIA_ERR_LOG("CreateAstc failed, data is null");
