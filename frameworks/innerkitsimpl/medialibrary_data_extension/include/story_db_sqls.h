@@ -61,10 +61,10 @@ const std::string CREATE_HIGHLIGHT_COVER_INFO_TABLE =
     RADIUS + " INT, " +
     SATURATION + " REAL, " +
     BRIGHTNESS + " REAL, " +
-    TITIE_SCALE_X + " REAL, " +
-    TITIE_SCALE_Y + " REAL, " +
-    TITIE_RECT_WIDTH + " REAL, " +
-    TITIE_RECT_HEIGHT + " REAL, " +
+    TITLE_SCALE_X + " REAL, " +
+    TITLE_SCALE_Y + " REAL, " +
+    TITLE_RECT_WIDTH + " REAL, " +
+    TITLE_RECT_HEIGHT + " REAL, " +
     BACKGROUND_SCALE_X + " REAL, " +
     BACKGROUND_SCALE_Y + " REAL, " +
     BACKGROUND_RECT_WIDTH + " REAL, " +
