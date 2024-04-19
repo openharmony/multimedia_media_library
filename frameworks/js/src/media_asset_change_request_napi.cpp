@@ -321,11 +321,6 @@ bool MediaAssetChangeRequestNapi::CheckChangeOperations(napi_env env)
         return false;
     }
 
-    if (fileAsset->GetTimePending() == 0 && (containsGetHandler || containsAddResource) && !containsEdit) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Cannot edit asset without setEditData");
-        return false;
-    }
-
     AssetChangeOperation firstOperation = assetChangeOperations_.front();
     if (fileAsset->GetId() <= 0 && firstOperation != AssetChangeOperation::CREATE_FROM_SCRATCH &&
         firstOperation != AssetChangeOperation::CREATE_FROM_URI) {
@@ -1477,9 +1472,8 @@ int32_t MediaAssetChangeRequestNapi::CopyMovingPhotoVideo(const string& assetUri
     return ret;
 }
 
-int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(AddResourceMode mode)
+int32_t MediaAssetChangeRequestNapi::CreateAssetBySecurityComponent(string& assetUri)
 {
-    CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
     bool isValid = false;
     string title = creationValuesBucket_.Get(PhotoColumn::MEDIA_TITLE, isValid);
     CHECK_COND_RET(isValid, E_FAIL, "Failed to get title");
@@ -1491,11 +1485,24 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(AddResourceMode mode)
     string uri = PAH_CREATE_PHOTO_COMPONENT; // create asset by security component
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createAssetUri(uri);
-    string assetUri;
-    int id = UserFileClient::InsertExt(createAssetUri, creationValuesBucket_, assetUri);
-    CHECK_COND_RET(id >= 0, id, "Failed to create asset by security component");
+    return UserFileClient::InsertExt(createAssetUri, creationValuesBucket_, assetUri);
+}
 
+int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(bool isCreation, AddResourceMode mode)
+{
+    CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
     int32_t ret = E_ERR;
+    int32_t id = 0;
+    string assetUri;
+    if (isCreation) {
+        ret = CreateAssetBySecurityComponent(assetUri);
+        CHECK_COND_RET(ret > 0, (ret == 0 ? E_ERR : ret), "Failed to create asset by security component");
+        id = ret;
+    } else {
+        assetUri = fileAsset_->GetDisplayName();
+    }
+    CHECK_COND_RET(!assetUri.empty(), E_ERR, "Failed to check empty asset uri");
+
     if (IsMovingPhoto()) {
         ret = CopyMovingPhotoVideo(assetUri);
         if (ret != E_OK) {
@@ -1520,30 +1527,24 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(AddResourceMode mode)
         return E_INVALID_VALUES;
     }
 
-    if (ret == E_OK) {
+    if (ret == E_OK && isCreation) {
         SetNewFileAsset(id, assetUri);
     }
     return ret;
 }
 
-static bool CreateBySecurityComponent(MediaAssetChangeRequestAsyncContext& context)
+static bool WriteBySecurityComponent(MediaAssetChangeRequestAsyncContext& context)
 {
     bool isCreation = IsCreation(context);
-    if (!isCreation) {
-        context.error = OHOS_PERMISSION_DENIED_CODE;
-        NAPI_ERR_LOG("Cannot edit asset without write permission");
-        return false;
-    }
-
     int32_t ret = E_FAIL;
     auto assetChangeOperations = context.assetChangeOperations;
     bool isCreateFromUri = std::find(assetChangeOperations.begin(), assetChangeOperations.end(),
                                      AssetChangeOperation::CREATE_FROM_URI) != assetChangeOperations.end();
     auto changeRequest = context.objectInfo;
     if (isCreateFromUri) {
-        ret = changeRequest->CopyToMediaLibrary(AddResourceMode::FILE_URI);
+        ret = changeRequest->CopyToMediaLibrary(isCreation, AddResourceMode::FILE_URI);
     } else {
-        ret = changeRequest->CopyToMediaLibrary(changeRequest->GetAddResourceMode());
+        ret = changeRequest->CopyToMediaLibrary(isCreation, changeRequest->GetAddResourceMode());
     }
 
     if (ret < 0) {
@@ -1556,9 +1557,6 @@ static bool CreateBySecurityComponent(MediaAssetChangeRequestAsyncContext& conte
 
 int32_t MediaAssetChangeRequestNapi::PutMediaAssetEditData(DataShare::DataShareValuesBucket& valuesBucket)
 {
-    // If there is no editData, return ok for compatibility with api10 in the following situation.
-    // (1) get an asset by createAsset in api10;
-    // (2) new a MediaAssetChangeRequest and then write data by getWriteCacheHandler or addResource.
     if (editData_ == nullptr) {
         return E_OK;
     }
@@ -1683,7 +1681,7 @@ static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
 static bool CreateFromFileUriExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     if (!HasWritePermission()) {
-        return CreateBySecurityComponent(context);
+        return WriteBySecurityComponent(context);
     }
 
     int32_t cacheFd = OpenWriteCacheHandler(context);
@@ -1772,7 +1770,7 @@ static bool AddMovingPhotoVideoExecute(MediaAssetChangeRequestAsyncContext& cont
 static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     if (!HasWritePermission()) {
-        return CreateBySecurityComponent(context);
+        return WriteBySecurityComponent(context);
     }
 
     AddResourceMode mode = context.objectInfo->GetAddResourceMode();
