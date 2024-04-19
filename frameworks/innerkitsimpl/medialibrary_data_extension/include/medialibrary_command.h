@@ -25,8 +25,7 @@
 #include "dir_asset.h"
 #include "form_map.h"
 #include "location_column.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
+#include "media_column.h"
 #include "medialibrary_db_const.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -421,7 +420,7 @@ static const std::map<std::string, OperationType> OPRN_TYPE_MAP = {
 };
 }
 
-static const std::map<satd::string, OperationObject> OPRN_MAP = {
+static const std::map<std::string, OperationObject> OPRN_MAP = {
     { PhotoColumn::PHOTO_URI_PREFIX, OperationObject::FILESYSTEM_PHOTO },
     { AudioColumn::AUDIO_URI_PREFIX, OperationObject::FILESYSTEM_AUDIO }
 };

@@ -18,6 +18,7 @@
 #include <unordered_set>
 
 #include "media_file_uri.h"
+#include "media_file_utils.h"
 #include "medialibrary_rdb_utils.h"
 #include "parameter.h"
 #include "parameters.h"
