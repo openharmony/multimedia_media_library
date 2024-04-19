@@ -24,23 +24,15 @@
 #include "ability_context.h"
 #include "datashare_proxy.h"
 #include "datashare_values_bucket.h"
-#include "medialibrary_async_worker.h"
 #include "medialibrary_sync_operation.h"
 #include "result_set_bridge.h"
 #include "thumbnail_const.h"
+#include "thumbnail_generate_worker.h"
 #include "thumbnail_utils.h"
 #include "pixel_map.h"
 
 namespace OHOS {
 namespace Media {
-class GenerateAsyncTaskData : public AsyncTaskData {
-public:
-    GenerateAsyncTaskData() = default;
-    virtual ~GenerateAsyncTaskData() override = default;
-    ThumbRdbOpt opts;
-    ThumbnailData thumbnailData;
-};
-
 enum WaitStatus {
     INSERT,
     WAIT_SUCCESS,
@@ -78,12 +70,13 @@ class IThumbnailHelper {
 public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
-    static void CreateThumbnails(AsyncTaskData *data);
+    static void CreateThumbnails(std::shared_ptr<ThumbnailTaskData> data);
     static bool DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
-    static void CreateLcd(AsyncTaskData *data);
-    static void CreateThumbnail(AsyncTaskData *data);
-    static void CreateAstc(AsyncTaskData *data);
-    static void AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront);
+    static void CreateLcd(std::shared_ptr<ThumbnailTaskData> data);
+    static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> data);
+    static void CreateAstc(std::shared_ptr<ThumbnailTaskData> data);
+    static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts, ThumbnailData &thumbData,
+        const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
