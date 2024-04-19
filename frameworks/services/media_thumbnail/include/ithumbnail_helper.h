@@ -70,11 +70,11 @@ class IThumbnailHelper {
 public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
-    static void CreateThumbnails(std::shared_ptr<ThumbnailTaskData> data);
+    static void CreateThumbnails(std::shared_ptr<ThumbnailTaskData> &data);
     static bool DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery = true);
-    static void CreateLcd(std::shared_ptr<ThumbnailTaskData> data);
-    static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> data);
-    static void CreateAstc(std::shared_ptr<ThumbnailTaskData> data);
+    static void CreateLcd(std::shared_ptr<ThumbnailTaskData> &data);
+    static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
+    static void CreateAstc(std::shared_ptr<ThumbnailTaskData> &data);
     static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts, ThumbnailData &thumbData,
         const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);

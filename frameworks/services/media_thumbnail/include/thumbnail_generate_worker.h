@@ -55,7 +55,7 @@ public:
     uint64_t requestId_ = 0;
 };
 
-using ThumbnailGenerateExecute = void (*)(std::shared_ptr<ThumbnailTaskData> data);
+using ThumbnailGenerateExecute = void (*)(std::shared_ptr<ThumbnailTaskData> &data);
 class ThumbnailGenerateTask {
 public:
     ThumbnailGenerateTask(ThumbnailGenerateExecute executor,
