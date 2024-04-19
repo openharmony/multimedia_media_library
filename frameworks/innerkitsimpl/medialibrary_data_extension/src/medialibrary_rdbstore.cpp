@@ -2163,6 +2163,16 @@ void UpdateHighlightTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+void UpdateHighlightCoverTables(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_story_cover_info",
+        CREATE_HIGHLIGHT_COVER_INFO_TABLE,
+    };
+    MEDIA_INFO_LOG("update highlight cover db");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void AddBussinessRecordAlbum(RdbStore &store)
 {
     string updateDirtyForShootingMode = "UPDATE Photos SET dirty = 2 WHERE cloud_id is not null AND " +
@@ -2451,6 +2461,10 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UPDATE_SEARCH_INDEX) {
         UpdatePhotosSearchUpdateTrigger(store);
     }
+
+    if (oldVersion < VERSION_UPDATE_HIGHLIGHT_COVER_TABLE) {
+        UpdateHighlightCoverTables(store);
+    }  
 }
 
 static void CheckDateAdded(RdbStore &store)

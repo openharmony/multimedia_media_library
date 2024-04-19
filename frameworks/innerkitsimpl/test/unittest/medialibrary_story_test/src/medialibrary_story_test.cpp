@@ -187,10 +187,10 @@ HWTEST_F(MediaLibraryStoryTest, Story_InsertCoverInfo_Test_001, TestSize.Level0)
     valuesBucket.Put(RADIUS, 1);
     valuesBucket.Put(SATURATION, 6.5);
     valuesBucket.Put(BRIGHTNESS, 6.5);
-    valuesBucket.Put(TITIE_SCALE_X, 5.5);
-    valuesBucket.Put(TITIE_SCALE_Y, 5.5);
-    valuesBucket.Put(TITIE_RECT_HEIGHT, 50.0);
-    valuesBucket.Put(TITIE_RECT_HEIGHT, 60.5);
+    valuesBucket.Put(TITLE_SCALE_X, 5.5);
+    valuesBucket.Put(TITLE_SCALE_Y, 5.5);
+    valuesBucket.Put(TITLE_RECT_HEIGHT, 50.0);
+    valuesBucket.Put(TITLE_RECT_HEIGHT, 60.5);
     valuesBucket.Put(BACKGROUND_SCALE_X, 6.5);
     valuesBucket.Put(BACKGROUND_SCALE_Y, 6.5);
     valuesBucket.Put(BACKGROUND_RECT_HEIGHT, 6.5);

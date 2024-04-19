@@ -1078,6 +1078,7 @@ static int32_t CreateDirectoryAndAsset(const string path) {
         MEDIA_ERR_LOG("Create asset failed, path=%{private}s", path.c_str());
         return errCode;
     }
+    return E_OK;
 }
 
 int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode,
@@ -1107,7 +1108,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
         if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
-            int errCode = CreateDirectoryAndAsset(fileAsset->GetPath());
+            int32_t errCode = CreateDirectoryAndAsset(fileAsset->GetPath());
             if (errCode != E_OK) {
                 return errCode;
             }
