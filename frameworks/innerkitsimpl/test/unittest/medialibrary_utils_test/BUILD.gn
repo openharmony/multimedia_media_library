@@ -30,7 +30,7 @@ ohos_unittest("medialibrary_utils_test") {
   ]
 
   sources = [ "./src/medialibrary_utils_test.cpp" ]
-  deps = [ 
+  deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
   ]
