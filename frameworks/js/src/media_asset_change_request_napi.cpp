@@ -1513,7 +1513,7 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(bool isCreation, AddReso
         CHECK_COND_RET(ret > 0, (ret == 0 ? E_ERR : ret), "Failed to create asset by security component");
         id = ret;
     } else {
-        assetUri = fileAsset_->GetDisplayName();
+        assetUri = fileAsset_->GetUri();
     }
     CHECK_COND_RET(!assetUri.empty(), E_ERR, "Failed to check empty asset uri");
 
@@ -1563,7 +1563,7 @@ static bool WriteBySecurityComponent(MediaAssetChangeRequestAsyncContext& contex
 
     if (ret < 0) {
         context.SaveError(ret);
-        NAPI_ERR_LOG("Failed to create asset by security component, ret: %{public}d", ret);
+        NAPI_ERR_LOG("Failed to write by security component, ret: %{public}d", ret);
         return false;
     }
     return true;
