@@ -59,7 +59,7 @@ using ThumbnailGenerateExecute = void (*)(std::shared_ptr<ThumbnailTaskData> &da
 class ThumbnailGenerateTask {
 public:
     ThumbnailGenerateTask(ThumbnailGenerateExecute executor,
-        std::shared_ptr<ThumbnailTaskData> data) : executor_(executor), data_(data) {}
+        std::shared_ptr<ThumbnailTaskData> &data) : executor_(executor), data_(data) {}
     ~ThumbnailGenerateTask() = default;
     ThumbnailGenerateExecute executor_;
     std::shared_ptr<ThumbnailTaskData> data_;
