@@ -193,6 +193,8 @@ int32_t MediaLibraryAssetOperations::OpenOperation(MediaLibraryCommand &cmd, con
             return MediaLibraryPhotoOperations::Open(cmd, mode);
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAudioOperations::Open(cmd, mode);
+        case OperationObject::HIGHLIGHT_COVER:
+            return MediaLibraryAssetOperations::OpenHighlightCover(cmd, mode);
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("open by FILESYSTEM_ASSET is deperated");
             return E_INVALID_VALUES;
@@ -1065,6 +1067,21 @@ static int32_t SolvePendingStatus(const shared_ptr<FileAsset> &fileAsset, const 
     return E_OK;
 }
 
+static int32_t CreateDirectoryAndAsset(const string path)
+{
+    string dir = MediaFileUtils::GetParentPath(path);
+    if (!MediaFileUtils::CreateDirectory(dir)) {
+        MEDIA_ERR_LOG("Create dir failed, dir=%{private}s", dir.c_str());
+        return E_INVALID_VALUES;
+    }
+    int32_t errCode = MediaFileUtils::CreateAsset(path);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Create asset failed, path=%{private}s", path.c_str());
+        return errCode;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode,
     MediaLibraryApi api, bool isMovingPhotoVideo)
 {
@@ -1092,9 +1109,8 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
         if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
-            int32_t errCode = MediaFileUtils::CreateAsset(fileAsset->GetPath());
+            int32_t errCode = CreateDirectoryAndAsset(fileAsset->GetPath());
             if (errCode != E_OK) {
-                MEDIA_ERR_LOG("Create asset failed, path=%{private}s", fileAsset->GetPath().c_str());
                 return errCode;
             }
         }
@@ -1158,6 +1174,25 @@ int32_t MediaLibraryAssetOperations::CloseAsset(const shared_ptr<FileAsset> &fil
         MEDIA_ERR_LOG("This asset [%{public}d] pending status is invalid", fileAsset->GetId());
         return E_INVALID_VALUES;
     }
+}
+
+int32_t MediaLibraryAssetOperations::OpenHighlightCover(MediaLibraryCommand &cmd, const string &mode)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryAssetOperations::OpenHighlightCover");
+    string uriStr = cmd.GetUriStringWithoutSegment();
+    string path = MediaFileUtils::GetHighlightPath(uriStr);
+    if (path.length() == 0) {
+        MEDIA_ERR_LOG("Open highlight cover invalid uri : %{public}s", uriStr.c_str());
+        return E_INVALID_URI;
+    }
+    
+    shared_ptr<FileAsset> fileAsset = make_shared<FileAsset>();
+    
+    fileAsset->SetPath(path);
+    fileAsset->SetUri(uriStr);
+    
+    return OpenAsset(fileAsset, mode, cmd.GetApi(), false);
 }
 
 void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int32_t type)

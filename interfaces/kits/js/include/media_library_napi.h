@@ -273,6 +273,8 @@ private:
     EXPORT static napi_value CreateAnalysisTypeEnum(napi_env env);
     EXPORT static napi_value CreateRequestPhotoTypeEnum(napi_env env);
     EXPORT static napi_value CreateResourceTypeEnum(napi_env env);
+    EXPORT static napi_value CreateHighlightAlbumInfoTypeEnum(napi_env env);
+    EXPORT static napi_value CreateHighlightUserActionTypeEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -318,6 +320,8 @@ private:
     static thread_local napi_ref sResourceTypeEnumRef_;
     static thread_local napi_ref sDeliveryModeEnumRef_;
     static thread_local napi_ref sSourceModeEnumRef_;
+    static thread_local napi_ref sHighlightAlbumInfoType_;
+    static thread_local napi_ref sHighlightUserActionType_;
 
     static std::mutex sOnOffMutex_;
 };
@@ -367,6 +371,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     int32_t parentSmartAlbumId = 0;
     int32_t smartAlbumId = -1;
     int32_t isLocationAlbum = 0;
+    int32_t isHighlightAlbum = 0;
     size_t argc;
     napi_value argv[NAPI_ARGC_MAX];
     ResultNapiType resultNapiType;

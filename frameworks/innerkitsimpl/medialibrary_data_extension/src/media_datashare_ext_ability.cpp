@@ -384,6 +384,10 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::GEO_KNOWLEDGE,
         OperationObject::GEO_PHOTO,
         OperationObject::PAH_MULTISTAGES_CAPTURE,
+        OperationObject::STORY_ALBUM,
+        OperationObject::STORY_COVER,
+        OperationObject::STORY_PLAY,
+        OperationObject::USER_PHOTOGRAPHY,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
@@ -556,6 +560,9 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
     }
     if (command.GetUri().ToString().find(PhotoColumn::PHOTO_CACHE_URI_PREFIX) != string::npos) {
         command.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    }
+    if (command.GetUri().ToString().find(MEDIA_DATA_DB_HIGHLIGHT) != string::npos) {
+        command.SetOprnObject(OperationObject::HIGHLIGHT_COVER);
     }
     return MediaLibraryDataManager::GetInstance()->OpenFile(command, unifyMode);
 }
