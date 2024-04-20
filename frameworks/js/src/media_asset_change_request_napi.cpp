@@ -1396,6 +1396,34 @@ static bool IsCreation(MediaAssetChangeRequestAsyncContext& context)
     return isCreateFromScratch || isCreateFromUri;
 }
 
+static int32_t SendFile(const UniqueFd& srcFd, const UniqueFd& destFd)
+{
+    if (srcFd.Get() < 0 || destFd.Get() < 0) {
+        NAPI_ERR_LOG("Failed to check srcFd: %{public}d and destFd: %{public}d", srcFd.Get(), destFd.Get());
+        return E_ERR;
+    }
+
+    struct stat statSrc {};
+    int32_t status = fstat(srcFd.Get(), &statSrc);
+    if (status != 0) {
+        NAPI_ERR_LOG("Failed to get file stat, errno=%{public}d", errno);
+        return status;
+    }
+
+    off_t offset = 0;
+    off_t fileSize = statSrc.st_size;
+    while (offset < fileSize) {
+        ssize_t sent = sendfile(destFd.Get(), srcFd.Get(), &offset, fileSize - offset);
+        if (sent < 0) {
+            NAPI_ERR_LOG("Failed to sendfile with errno=%{public}d, srcFd=%{private}d, destFd=%{private}d", errno,
+                srcFd.Get(), destFd.Get());
+            return sent;
+        }
+    }
+
+    return E_OK;
+}
+
 int32_t MediaAssetChangeRequestNapi::CopyFileToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo)
 {
     string srcRealPath = isMovingPhotoVideo ? movingPhotoVideoRealPath_ : realPath_;
@@ -1406,25 +1434,11 @@ int32_t MediaAssetChangeRequestNapi::CopyFileToMediaLibrary(const UniqueFd& dest
         return srcFd.Get();
     }
 
-    struct stat statSrc {};
-    int32_t status = fstat(srcFd.Get(), &statSrc);
-    if (status != 0) {
-        NAPI_ERR_LOG("Failed to get file stat, errno=%{public}d", errno);
-        return status;
+    int32_t err = SendFile(srcFd, destFd);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("Failed to send file from %{public}d to %{public}d", srcFd.Get(), destFd.Get());
     }
-
-    constexpr size_t bufferSize = 2048;
-    char buffer[bufferSize];
-    size_t bytesRead;
-    size_t bytesWritten;
-    while ((bytesRead = read(srcFd.Get(), buffer, bufferSize)) > 0) {
-        bytesWritten = write(destFd.Get(), buffer, bytesRead);
-        if (bytesWritten != bytesRead) {
-            NAPI_ERR_LOG("Failed to copy file from srcFd=%{private}d to destFd=%{private}d", srcFd.Get(), destFd.Get());
-            return E_HAS_FS_ERROR;
-        }
-    }
-    return E_OK;
+    return err;
 }
 
 int32_t MediaAssetChangeRequestNapi::CopyDataBufferToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo)
@@ -1511,10 +1525,10 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(bool isCreation, AddReso
         }
     }
 
-    AppFileService::ModuleFileUri::FileUri fileUri(assetUri);
-    UniqueFd destFd(open(fileUri.GetRealPath().c_str(), O_WRONLY));
+    Uri uri(assetUri);
+    UniqueFd destFd(UserFileClient::OpenFile(uri, MEDIA_FILEMODE_WRITEONLY));
     if (destFd.Get() < 0) {
-        NAPI_ERR_LOG("Failed to open %{private}s, errno=%{public}d", assetUri.c_str(), errno);
+        NAPI_ERR_LOG("Failed to open %{private}s with error: %{public}d", assetUri.c_str(), destFd.Get());
         return destFd.Get();
     }
 
@@ -1626,7 +1640,7 @@ static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
 }
 
 static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAsyncContext& context,
-    UniqueFd& destFd, bool isMovingPhotoVideo = false)
+    const UniqueFd& destFd, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
     size_t offset = 0;
@@ -1645,7 +1659,7 @@ static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAsyncContext& context
 }
 
 static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
-    UniqueFd& destFd, bool isMovingPhotoVideo = false)
+    const UniqueFd& destFd, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
     string realPath = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoPath() : changeRequest->GetFileRealPath();
@@ -1656,24 +1670,11 @@ static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
         return false;
     }
 
-    struct stat statSrc {};
-    int32_t status = fstat(srcFd.Get(), &statSrc);
-    if (status != 0) {
-        context.SaveError(status);
-        NAPI_ERR_LOG("Failed to get file stat, errno=%{public}d", errno);
+    int32_t err = SendFile(srcFd, destFd);
+    if (err != E_OK) {
+        context.SaveError(err);
+        NAPI_ERR_LOG("Failed to send file from %{public}d to %{public}d", srcFd.Get(), destFd.Get());
         return false;
-    }
-
-    off_t offset = 0;
-    off_t fileSize = statSrc.st_size;
-    while (offset < fileSize) {
-        ssize_t sent = sendfile(destFd.Get(), srcFd.Get(), &offset, fileSize - offset);
-        if (sent < 0) {
-            context.SaveError(sent);
-            NAPI_ERR_LOG("Failed to sendfile with errno=%{public}d, srcFd=%{private}d, destFd=%{private}d", errno,
-                srcFd.Get(), destFd.Get());
-            return false;
-        }
     }
     return true;
 }
@@ -1736,7 +1737,7 @@ static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& co
 }
 
 static bool AddResourceByMode(MediaAssetChangeRequestAsyncContext& context,
-    UniqueFd& uniqueFd, AddResourceMode mode, bool isMovingPhotoVideo = false)
+    const UniqueFd& uniqueFd, AddResourceMode mode, bool isMovingPhotoVideo = false)
 {
     bool isWriteSuccess = false;
     if (mode == AddResourceMode::DATA_BUFFER) {
