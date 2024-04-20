@@ -57,7 +57,7 @@ void MediaLibraryThumbnailWorkerTest::SetUp() {}
 
 void MediaLibraryThumbnailWorkerTest::TearDown(void) {}
 
-static void ThumbnailTestTask(std::shared_ptr<ThumbnailTaskData> data)
+static void ThumbnailTestTask(std::shared_ptr<ThumbnailTaskData> &data)
 {
     EXPECT_NE(nullptr, data);
 }
