@@ -2166,7 +2166,7 @@ void UpdateHighlightTables(RdbStore &store)
 void UpdateHighlightCoverTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
-        "DROP TABLE IF EXISTS tab_story_cover_info",
+        "DROP TABLE IF EXISTS tab_highlight_cover_info",
         CREATE_HIGHLIGHT_COVER_INFO_TABLE,
     };
     MEDIA_INFO_LOG("update highlight cover db");
