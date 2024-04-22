@@ -15,9 +15,6 @@
 
 #include "backup_file_utils.h"
 
-#include <utime.h>
-#include <sys/types.h>
-
 #include "scanner_utils.h"
 #include "metadata_extractor.h"
 #include "mimetype_utils.h"
@@ -234,17 +231,6 @@ std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixTyp
     replacedPath = path;
     replacedPath.replace(0, srcPrefix.length(), dstPrefix);
     return replacedPath;
-}
-
-void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
-{
-    struct utimbuf buf;
-    buf.actime = modifiedTime; // second
-    buf.modtime = modifiedTime; // second
-    int ret = utime(path.c_str(), &buf);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("Modify file failed: %{public}d", ret);
-    }
 }
 } // namespace Media
 } // namespace OHOS
