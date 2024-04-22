@@ -72,6 +72,7 @@ constexpr int32_t MAX_FIELD_LENGTH = 10;
 constexpr int32_t MAX_TIMEID_LENGTH = 10;
 constexpr int32_t MAX_DATE_ADDED_LENGTH = 13;
 constexpr int32_t DECODE_SCALE_BASE = 2;
+constexpr int32_t FLAT_ANGLE = 180;
 const std::string KVSTORE_FIELD_ID_TEMPLATE = "0000000000";
 const std::string KVSTORE_DATE_ADDED_TEMPLATE = "0000000000000";
 const std::string DEFAULT_EXIF_ORIENTATION = "1";
@@ -1156,6 +1157,7 @@ Size ThumbnailUtils::ConvertDecodeSize(ThumbnailData &data, const Size &sourceSi
         return {0, 0};
     }
     Size thumbDesiredSize = {width, height};
+    data.thumbDesiredSize = thumbDesiredSize;
     float desiredScale = static_cast<float>(thumbDesiredSize.height) / static_cast<float>(thumbDesiredSize.width);
     float sourceScale = static_cast<float>(sourceSize.height) / static_cast<float>(sourceSize.width);
     float scale = 1.0f;
@@ -1177,14 +1179,18 @@ Size ThumbnailUtils::ConvertDecodeSize(ThumbnailData &data, const Size &sourceSi
         return {0, 0};
     }
     Size lcdDesiredSize = {width, height};
+    data.lcdDesiredSize = lcdDesiredSize;
 
     int lcdMinSide = std::min(lcdDesiredSize.width, lcdDesiredSize.height);
     int thumbMinSide = std::min(thumbDesiredSize.width, thumbDesiredSize.height);
-    data.needReloadSource = lcdMinSide < thumbMinSide;
+    Size lcdDecodeSize = lcdMinSide < thumbMinSide ? thumbDecodeSize : lcdDesiredSize;
     
     if (isThumbnail) {
         desiredSize = thumbDesiredSize;
         return thumbDecodeSize;
+    } else if (data.needResizeLcd) {
+        desiredSize = lcdDesiredSize;
+        return lcdDecodeSize;
     } else {
         desiredSize = lcdDesiredSize;
         return lcdDesiredSize;
@@ -1231,6 +1237,10 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data, const bool isThumbnail
     data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (std::abs(data.degrees - FLOAT_ZERO) > EPSILON) {
         data.source->rotate(data.degrees);
+    }
+    if (static_cast<int>(data.degrees) % FLAT_ANGLE != 0) {
+        std::swap(data.lcdDesiredSize.width, data.lcdDesiredSize.height);
+        std::swap(data.thumbDesiredSize.width, data.thumbDesiredSize.height);
     }
 
     // PixelMap has been rotated, fix the exif orientation to zero degree.
@@ -1958,14 +1968,15 @@ void ThumbnailUtils::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
 
 bool ThumbnailUtils::ScaleThumbnailEx(ThumbnailData &data, bool isThumbnail)
 {
+    if (data.source == nullptr) {
+        MEDIA_ERR_LOG("Fail to scale thumbnail, data source is empty.");
+        return false;
+    }
     Size desiredSize;
     Size targetSize = ConvertDecodeSize(data, {data.source->GetWidth(), data.source->GetHeight()},
         desiredSize, isThumbnail);
-    if (data.mediaType == MEDIA_TYPE_VIDEO && !GenTargetPixelmap(data, targetSize)) {
-        MEDIA_ERR_LOG("Video file fail to scale to targetSize");
-        return false;
-    } else if (!ScaleTargetPixelMap(data, targetSize)) {
-        MEDIA_ERR_LOG("Image file fail to scale to targetSize");
+    if (!ScaleTargetPixelMap(data, targetSize)) {
+        MEDIA_ERR_LOG("Fail to scale to targetSize");
         return false;
     }
     MediaLibraryTracer tracer;
