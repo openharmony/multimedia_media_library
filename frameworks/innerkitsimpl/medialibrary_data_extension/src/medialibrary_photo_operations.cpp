@@ -1477,18 +1477,24 @@ int32_t MediaLibraryPhotoOperations::ParseMediaAssetEditData(MediaLibraryCommand
     string formatVersion;
     string data;
     const ValuesBucket& values = cmd.GetValueBucket();
-    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, COMPATIBLE_FORMAT, compatibleFormat), E_INVALID_VALUES,
-        "Failed to get compatibleFormat");
-    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, FORMAT_VERSION, formatVersion), E_INVALID_VALUES,
-        "Failed to get formatVersion");
-    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, EDIT_DATA, data), E_INVALID_VALUES,
-        "Failed to get edit data");
+    bool containsCompatibleFormat = GetStringFromValuesBucket(values, COMPATIBLE_FORMAT, compatibleFormat);
+    bool containsFormatVersion = GetStringFromValuesBucket(values, FORMAT_VERSION, formatVersion);
+    bool containsData = GetStringFromValuesBucket(values, EDIT_DATA, data);
+    bool notContainsEditData = !containsCompatibleFormat && !containsFormatVersion && !containsData;
+    bool containsEditData = containsCompatibleFormat && containsFormatVersion && containsData;
+    if (!containsEditData && !notContainsEditData) {
+        MEDIA_ERR_LOG(
+            "Failed to parse edit data, compatibleFormat: %{public}s, formatVersion: %{public}s, data: %{public}s",
+            compatibleFormat.c_str(), formatVersion.c_str(), data.c_str());
+        return E_INVALID_VALUES;
+    }
 
     nlohmann::json editDataJson;
-    editDataJson[COMPATIBLE_FORMAT] = compatibleFormat;
+    string bundleName = cmd.GetBundleName();
+    editDataJson[COMPATIBLE_FORMAT] = compatibleFormat.empty() ? bundleName : compatibleFormat;
     editDataJson[FORMAT_VERSION] = formatVersion;
     editDataJson[EDIT_DATA] = data;
-    editDataJson[APP_ID] = cmd.GetBundleName();
+    editDataJson[APP_ID] = bundleName;
     editData = editDataJson.dump();
     return E_OK;
 }

@@ -2723,7 +2723,7 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_003, Tes
     EXPECT_GE(fd, 0);
     close(fd);
 
-    // edit by cache
+    // edit by cache with default edit data
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(CACHE_FILE_NAME, fileName);
@@ -2731,9 +2731,46 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_003, Tes
     MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
         OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
     int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
-    EXPECT_LT(ret, 0);
+    EXPECT_EQ(ret, fileId);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_003");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_edit_by_cache_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_edit_by_cache_test_004");
+
+    // create asset
+    int32_t fileId = SetDefaultPhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo.jpg");
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("Create photo failed, ret=%{public}d", fileId);
+        return;
+    }
+
+    // open cache file
+    string fileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + ".jpg";
+    string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + fileName;
+    MediaFileUtils::UriAppendKeyValue(uri, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri openCacheUri(uri);
+
+    MediaLibraryCommand cmd(openCacheUri);
+    cmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    int32_t fd = MediaLibraryDataManager::GetInstance()->OpenFile(cmd, "w");
+    EXPECT_GE(fd, 0);
+    close(fd);
+
+    // edit by cache with invalid edit data
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
+    valuesBucket.Put(CACHE_FILE_NAME, fileName);
+    valuesBucket.Put(FORMAT_VERSION, "v1.0");
+
+    MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
+        OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    int32_t ret = MediaLibraryDataManager::GetInstance()->Insert(submitCacheCmd, valuesBucket);
+    EXPECT_LT(ret, 0);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_edit_by_cache_test_004");
 }
 
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_delete_cache_test_001, TestSize.Level0)
