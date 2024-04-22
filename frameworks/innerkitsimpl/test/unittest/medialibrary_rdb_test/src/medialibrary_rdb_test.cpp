@@ -159,6 +159,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_Delete_test_001, TestSize.Level0)
     vector<string> selectionArgs;
     int32_t rowId = 3;
     selectionArgs.push_back(to_string(rowId));
+    selectionArgs.push_back(to_string(rowId));
     cmd.GetAbsRdbPredicates()->SetWhereArgs(selectionArgs);
     rdbStorePtr->Init();
     int32_t ret = rdbStorePtr->Delete(cmd, rowId);

@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 70;
+const int32_t MEDIA_RDB_VERSION = 71;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -98,6 +98,7 @@ enum {
     VERSION_ADD_SEGMENTATION_COLUMNS = 68,
     VERSION_UPDATE_SEARCH_INDEX = 69,
     VERSION_UPDATE_HIGHLIGHT_TABLE = 70,
+    VERSION_UPDATE_HIGHLIGHT_COVER_TABLE = 71,
 };
 
 enum {
@@ -241,6 +242,7 @@ const std::string MEDIA_DATA_DB_ALBUM_NAME = "album_name";
 const std::string MEDIA_DATA_DB_COUNT = "count";
 const std::string MEDIA_DATA_BUNDLENAME = "bundle_name";
 const std::string MEDIA_DATA_DB_IS_LOCAL = "is_local";
+const std::string MEDIA_DATA_DB_HIGHLIGHT = "highlight";
 
 const std::map<std::string, std::string> DATE_TRANSITION_MAP = {
     { MEDIA_DATA_DB_DATE_MODIFIED_MS, MEDIA_DATA_DB_DATE_MODIFIED },

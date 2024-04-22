@@ -36,16 +36,16 @@ const std::string GENERATE_TIME = "generate_time";
 const std::string HIGHLIGHT_VERSION = "highlight_version";
 const std::string REMARKS = "remarks";
 const std::string HIGHLIGHT_STATUS = "highlight_status";
-const std::string INSERT_PIC_COUNT = "insert_pic_count";
-const std::string REMOVE_PIC_COUNT = "remove_pic_count";
-const std::string SHARE_SCREENSHOT_COUNT = "share_screenshot_count";
-const std::string SHARE_COVER_COUNT = "share_cover_count";
-const std::string RENAME_COUNT = "rename_count";
-const std::string CHANGE_COVER_COUNT = "change_cover_count";
-const std::string RENDER_VIEWED_TIMES = "render_viewed_times";
-const std::string RENDER_VIEWED_DURATION = "render_viewed_duration";
-const std::string ART_LAYOUT_VIEWED_TIMES = "art_layout_viewed_times";
-const std::string ART_LAYOUT_VIEWED_DURATION = "art_layout_viewed_duration";
+const std::string HIGHLIGHT_INSERT_PIC_COUNT = "insert_pic_count";
+const std::string HIGHLIGHT_REMOVE_PIC_COUNT = "remove_pic_count";
+const std::string HIGHLIGHT_SHARE_SCREENSHOT_COUNT = "share_screenshot_count";
+const std::string HIGHLIGHT_SHARE_COVER_COUNT = "share_cover_count";
+const std::string HIGHLIGHT_RENAME_COUNT = "rename_count";
+const std::string HIGHLIGHT_CHANGE_COVER_COUNT = "change_cover_count";
+const std::string HIGHLIGHT_RENDER_VIEWED_TIMES = "render_viewed_times";
+const std::string HIGHLIGHT_RENDER_VIEWED_DURATION = "render_viewed_duration";
+const std::string HIGHLIGHT_ART_LAYOUT_VIEWED_TIMES = "art_layout_viewed_times";
+const std::string HIGHLIGHT_ART_LAYOUT_VIEWED_DURATION = "art_layout_viewed_duration";
 
 const std::string URI_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + HIGHLIGHT_ALBUM_TABLE;
 } // namespace Media

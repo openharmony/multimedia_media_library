@@ -212,6 +212,8 @@ const std::string PAH_ANA_ADDRESS = "phaccess_ana_address_operation";
 const std::string PAH_GEO_PHOTOS = "phaccess_geo_photos_operation";
 const std::string PAH_ANA_TOTAL = "phaccess_ana_total_operation";
 const std::string PAH_MULTISTAGES_CAPTURE = "phaccess_multistages_capture_operation";
+const std::string PAH_HIGHLIGHT_COVER = "phaccess_highlight_cover_operation";
+const std::string PAH_HIGHLIGHT_PLAY = "phaccess_highlight_play_operation";
 
 // PhotoAccessHelper photo operation constants
 const std::string PAH_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE;
@@ -288,6 +290,8 @@ const std::string PAH_REMOVE_FORM_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_FORM_M
 const std::string PAH_QUERY_ANA_SAL = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_SALIENCY + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_ADDRESS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ADDRESS + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_GEO_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_GEO_PHOTOS + "/" + OPRN_QUERY;
+const std::string PAH_QUERY_HIGHLIGHT_COVER = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_COVER + "/" + OPRN_QUERY;
+const std::string PAH_QUERY_HIGHLIGHT_PLAY = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_PLAY + "/" + OPRN_QUERY;
 
 // mediatool operation constants
 const std::string TOOL_PHOTO = "mediatool_photo_operation";

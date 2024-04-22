@@ -30,6 +30,7 @@ ohos_unittest("medialibrary_thumbnail_service_test") {
   sources = [
     "./src/medialibrary_thumbnail_kvstore_test.cpp",
     "./src/medialibrary_thumbnail_service_test.cpp",
+    "./src/medialibrary_thumbnail_worker_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
@@ -48,6 +49,7 @@ ohos_unittest("medialibrary_thumbnail_service_test") {
     "hilog:libhilog",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_rdb",
   ]
 

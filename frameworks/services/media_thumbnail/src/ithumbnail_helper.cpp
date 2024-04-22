@@ -34,6 +34,7 @@
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
+#include "thumbnail_generate_worker_manager.h"
 #include "post_event_utils.h"
 
 using namespace std;
@@ -42,50 +43,58 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-void IThumbnailHelper::CreateThumbnails(AsyncTaskData* data)
+void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> &data)
 {
-    GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
-    DoCreateThumbnails(taskData->opts, taskData->thumbnailData, false);
-    ThumbnailUtils::RecordCostTimeAndReport(taskData->thumbnailData.stats);
-}
-
-void IThumbnailHelper::CreateLcd(AsyncTaskData* data)
-{
-    GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
-    DoCreateLcd(taskData->opts, taskData->thumbnailData, false);
-}
-
-void IThumbnailHelper::CreateThumbnail(AsyncTaskData* data)
-{
-    GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
-    DoCreateThumbnail(taskData->opts, taskData->thumbnailData, false);
-    ThumbnailUtils::RecordCostTimeAndReport(taskData->thumbnailData.stats);
-}
-
-void IThumbnailHelper::CreateAstc(AsyncTaskData* data)
-{
-    GenerateAsyncTaskData* taskData = static_cast<GenerateAsyncTaskData*>(data);
-    DoCreateAstc(taskData->opts, taskData->thumbnailData, false);
-    ThumbnailUtils::RecordCostTimeAndReport(taskData->thumbnailData.stats);
-}
-
-void IThumbnailHelper::AddAsyncTask(MediaLibraryExecute executor, ThumbRdbOpt &opts, ThumbnailData &data, bool isFront)
-{
-    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
-    if (asyncWorker == nullptr) {
-        MEDIA_DEBUG_LOG("IThumbnailHelper::AddAsyncTask asyncWorker is null");
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("CreateThumbnails failed, data is null");
         return;
     }
-    GenerateAsyncTaskData* taskData = new (nothrow)GenerateAsyncTaskData();
-    if (taskData == nullptr) {
-        MEDIA_DEBUG_LOG("IThumbnailHelper::GenerateAsyncTaskData taskData is null");
+    DoCreateThumbnails(data->opts_, data->thumbnailData_, false);
+    ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
+}
+
+void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("CreateLcd failed, data is null");
         return;
     }
-    taskData->opts = opts;
-    taskData->thumbnailData = data;
+    DoCreateLcd(data->opts_, data->thumbnailData_, false);
+}
 
-    shared_ptr<MediaLibraryAsyncTask> generateAsyncTask = make_shared<MediaLibraryAsyncTask>(executor, taskData);
-    asyncWorker->AddTask(generateAsyncTask, isFront);
+void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("CreateThumbnail failed, data is null");
+        return;
+    }
+    DoCreateThumbnail(data->opts_, data->thumbnailData_, false);
+    ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
+}
+
+void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("CreateAstc failed, data is null");
+        return;
+    }
+    DoCreateAstc(data->opts_, data->thumbnailData_, false);
+    ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
+}
+
+void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
+    ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority)
+{
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
+        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(taskType);
+    if (thumbnailWorker == nullptr) {
+        MEDIA_ERR_LOG("thumbnailWorker is null");
+        return;
+    }
+
+    std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, thumbData);
+    std::shared_ptr<ThumbnailGenerateTask> task = std::make_shared<ThumbnailGenerateTask>(executor, taskData);
+    thumbnailWorker->AddTask(task, priority);
 }
 
 ThumbnailWait::ThumbnailWait(bool release) : needRelease_(release)
@@ -382,11 +391,7 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const Thumb
         MEDIA_ERR_LOG("watch is nullptr");
         return false;
     }
-    if (data.isThumbAdded) {
-        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
-    } else {
-        watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_UPDATE);
-    }
+    watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
     return true;
 }
 
@@ -478,7 +483,8 @@ bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data
             DfxUtils::GetSafePath(data.path).c_str());
         ThumbnailData thumbData;
         ThumbnailUtils::GetThumbnailInfo(opts, thumbData);
-        AddAsyncTask(CreateThumbnail, opts, thumbData, false);
+        AddThumbnailGenerateTask(CreateThumbnail,
+            opts, thumbData, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::HIGH);
         return false;
     }
 

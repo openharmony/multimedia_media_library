@@ -123,6 +123,7 @@ protected:
     static int32_t UpdateFileInDb(MediaLibraryCommand &cmd);
     static int32_t OpenAsset(const std::shared_ptr<FileAsset> &fileAsset, const std::string &mode,
         MediaLibraryApi api, bool isMovingPhotoVideo = false);
+    static int32_t OpenHighlightCover(MediaLibraryCommand &cmd, const std::string &mode);
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
