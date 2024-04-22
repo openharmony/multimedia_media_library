@@ -36,7 +36,10 @@ ohos_unittest("medialibrary_scanner_db_test") {
     "./src/medialibrary_metadata_extractor_test.cpp",
     "./src/medialibrary_scanner_db_test.cpp",
   ]
-  deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
 
   external_deps = [
     "ability_base:zuri",

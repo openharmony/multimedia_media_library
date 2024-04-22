@@ -403,7 +403,7 @@ void Acl::Print(const std::string& path)
 {
     MEDIA_DEBUG_LOG("Version: %#x, path: %{private}s\n", header.version, path.c_str());
     for (const auto &e: entries) {
-        MEDIA_DEBUG_LOG("+======================\n"
+        MEDIA_DEBUG_LOG("---------------ACL ATTR---------------\n"
             "tag:  %s\n"
             "perm: %hx\n"
             "id:   %#x (%u)\n",
