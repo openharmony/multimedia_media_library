@@ -54,8 +54,8 @@ public:
     EXPORT int64_t dateModified {0};
     EXPORT float degrees;
 
-    // Reload source when Lcd Size is not scaleable for Thumbnail
-    EXPORT bool needReloadSource {false};
+    // Loaded lcd source can be resized to generate thumbnail in order
+    EXPORT bool needResizeLcd {false};
     EXPORT std::shared_ptr<PixelMap> source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
@@ -71,6 +71,8 @@ public:
     EXPORT std::string path;
     EXPORT std::string thumbnailKey;
     EXPORT std::string lcdKey;
+    EXPORT Size lcdDesiredSize;
+    EXPORT Size thumbDesiredSize;
     EXPORT GenerateStats stats;
 };
 } // namespace Media

@@ -261,26 +261,28 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     if (!TryLoadSource(opts, data, THUMBNAIL_LCD_SUFFIX, true)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("load source is nullptr path: %{public}s", opts.path.c_str());
         return false;
     }
 
     if (data.source == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("source is nullptr");
         return false;
     }
 
     shared_ptr<string> pathPtr = make_shared<string>(data.path);
-    if (!ThumbnailUtils::CompressImage(data.source, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO, pathPtr)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+    shared_ptr<PixelMap> lcdSource = data.source;
+    if (data.lcdDesiredSize.width != data.source->GetWidth()) {
+        MEDIA_INFO_LOG("Copy and resize data source for lcd desiredSize: %{public}s",
+            DfxUtils::GetSafePath(opts.path).c_str());
+        Media::InitializationOptions opts;
+        auto copySource = PixelMap::Create(*data.source, opts);
+        lcdSource = std::move(copySource);
+        float widthScale = (1.0f * data.lcdDesiredSize.width) / data.source->GetWidth();
+        float heightScale = (1.0f * data.lcdDesiredSize.height) / data.source->GetHeight();
+        lcdSource->scale(widthScale, heightScale);
+    }
+    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO, pathPtr)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
     }
@@ -288,9 +290,6 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
     int err = ThumbnailUtils::TrySaveFile(data, ThumbnailType::LCD);
     if (err < 0) {
         MEDIA_ERR_LOG("SaveLcd faild %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
 
@@ -298,9 +297,6 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
     if (opts.table == PhotoColumn::PHOTOS_TABLE) {
         if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
             MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-                {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
             return false;
         }
     }
@@ -475,16 +471,6 @@ bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return false;
-    }
-
-    if (data.needReloadSource) {
-        MEDIA_WARN_LOG("Cannot scale from LCD to THM due to size conflict, path: %{public}s",
-            DfxUtils::GetSafePath(data.path).c_str());
-        ThumbnailData thumbData;
-        ThumbnailUtils::GetThumbnailInfo(opts, thumbData);
-        AddThumbnailGenerateTask(CreateThumbnail,
-            opts, thumbData, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::HIGH);
         return false;
     }
 
