@@ -1669,12 +1669,15 @@ static int32_t UpdateFavoritesOrder(const int32_t value, const int32_t currentAl
     return ExecSqls(updateSortedAlbumsSqls, uniStore);
 }
 
-static int32_t UpdateFavorites(const int32_t value, const int32_t albumId)
+static int32_t UpdateFavorites(int32_t value, const int32_t albumId)
 {
     int err = UpdateFavoritesOrder(value, albumId);
     if (err != E_OK) {
         MEDIA_ERR_LOG("UpdateFavoritesOrder fail");
         return E_DB_FAIL;
+    }
+    if (value == UNFAVORITE_PAGE) {
+        value = FIRST_PAGE;
     }
     return UpdateDisplayLevel(value, albumId);
 }
