@@ -46,6 +46,8 @@ enum class AssetChangeOperation {
     SET_USER_COMMENT,
     SET_PHOTO_QUALITY_AND_PHOTOID,
     SET_LOCATION,
+    SET_CAMERA_SHOT_KEY,
+    SAVE_CAMERA_PHOTO,
 };
 
 enum class AddResourceMode {
@@ -95,8 +97,9 @@ public:
     void RecordChangeOperation(AssetChangeOperation changeOperation);
     void SetCacheFileName(std::string& fileName);
     void SetCacheMovingPhotoVideoName(std::string& fileName);
-    int32_t SubmitCache(bool isCreated);
-    int32_t CopyToMediaLibrary(AddResourceMode mode);
+    int32_t SubmitCache(bool isCreation);
+    int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
+    int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
     #ifdef ABILITY_CAMERA_SUPPORT
     sptr<CameraStandard::DeferredPhotoProxy> GetPhotoProxyObj();
@@ -122,6 +125,8 @@ private:
     EXPORT static napi_value JSAddResource(napi_env env, napi_callback_info info);
     EXPORT static napi_value AddMovingPhotoVideoResource(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetLocation(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetCameraShotKey(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSaveCameraPhoto(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();

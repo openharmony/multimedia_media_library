@@ -143,6 +143,8 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getWriteCacheHandler", JSGetWriteCacheHandler),
             DECLARE_NAPI_FUNCTION("setLocation", JSSetLocation),
             DECLARE_NAPI_FUNCTION("addResource", JSAddResource),
+            DECLARE_NAPI_FUNCTION("setCameraShotKey", JSSetCameraShotKey),
+            DECLARE_NAPI_FUNCTION("saveCameraPhoto", JSSaveCameraPhoto),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -316,11 +318,6 @@ bool MediaAssetChangeRequestNapi::CheckChangeOperations(napi_env env)
     auto fileAsset = GetFileAssetInstance();
     if (fileAsset == nullptr) {
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "fileAsset is null");
-        return false;
-    }
-
-    if (fileAsset->GetTimePending() == 0 && (containsGetHandler || containsAddResource) && !containsEdit) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Cannot edit asset without setEditData");
         return false;
     }
 
@@ -1095,6 +1092,42 @@ napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_call
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    string cameraShotKey;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsStringCallback(env, info, asyncContext, cameraShotKey) == napi_ok,
+        "Failed to parse args");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, cameraShotKey.length() >= CAMERA_SHOT_KEY_SIZE, "Failed to check cameraShotKey");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
+    changeRequest->GetFileAssetInstance()->SetCameraShotKey(cameraShotKey);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_CAMERA_SHOT_KEY);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSSaveCameraPhoto(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok,
+        "Failed to get object info");
+
+    auto changeRequest = asyncContext->objectInfo;
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SAVE_CAMERA_PHOTO);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& context, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
@@ -1363,6 +1396,34 @@ static bool IsCreation(MediaAssetChangeRequestAsyncContext& context)
     return isCreateFromScratch || isCreateFromUri;
 }
 
+static int32_t SendFile(const UniqueFd& srcFd, const UniqueFd& destFd)
+{
+    if (srcFd.Get() < 0 || destFd.Get() < 0) {
+        NAPI_ERR_LOG("Failed to check srcFd: %{public}d and destFd: %{public}d", srcFd.Get(), destFd.Get());
+        return E_ERR;
+    }
+
+    struct stat statSrc {};
+    int32_t status = fstat(srcFd.Get(), &statSrc);
+    if (status != 0) {
+        NAPI_ERR_LOG("Failed to get file stat, errno=%{public}d", errno);
+        return status;
+    }
+
+    off_t offset = 0;
+    off_t fileSize = statSrc.st_size;
+    while (offset < fileSize) {
+        ssize_t sent = sendfile(destFd.Get(), srcFd.Get(), &offset, fileSize - offset);
+        if (sent < 0) {
+            NAPI_ERR_LOG("Failed to sendfile with errno=%{public}d, srcFd=%{private}d, destFd=%{private}d", errno,
+                srcFd.Get(), destFd.Get());
+            return sent;
+        }
+    }
+
+    return E_OK;
+}
+
 int32_t MediaAssetChangeRequestNapi::CopyFileToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo)
 {
     string srcRealPath = isMovingPhotoVideo ? movingPhotoVideoRealPath_ : realPath_;
@@ -1373,25 +1434,11 @@ int32_t MediaAssetChangeRequestNapi::CopyFileToMediaLibrary(const UniqueFd& dest
         return srcFd.Get();
     }
 
-    struct stat statSrc {};
-    int32_t status = fstat(srcFd.Get(), &statSrc);
-    if (status != 0) {
-        NAPI_ERR_LOG("Failed to get file stat, errno=%{public}d", errno);
-        return status;
+    int32_t err = SendFile(srcFd, destFd);
+    if (err != E_OK) {
+        NAPI_ERR_LOG("Failed to send file from %{public}d to %{public}d", srcFd.Get(), destFd.Get());
     }
-
-    constexpr size_t bufferSize = 2048;
-    char buffer[bufferSize];
-    size_t bytesRead;
-    size_t bytesWritten;
-    while ((bytesRead = read(srcFd.Get(), buffer, bufferSize)) > 0) {
-        bytesWritten = write(destFd.Get(), buffer, bytesRead);
-        if (bytesWritten != bytesRead) {
-            NAPI_ERR_LOG("Failed to copy file from srcFd=%{private}d to destFd=%{private}d", srcFd.Get(), destFd.Get());
-            return E_HAS_FS_ERROR;
-        }
-    }
-    return E_OK;
+    return err;
 }
 
 int32_t MediaAssetChangeRequestNapi::CopyDataBufferToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo)
@@ -1439,9 +1486,8 @@ int32_t MediaAssetChangeRequestNapi::CopyMovingPhotoVideo(const string& assetUri
     return ret;
 }
 
-int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(AddResourceMode mode)
+int32_t MediaAssetChangeRequestNapi::CreateAssetBySecurityComponent(string& assetUri)
 {
-    CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
     bool isValid = false;
     string title = creationValuesBucket_.Get(PhotoColumn::MEDIA_TITLE, isValid);
     CHECK_COND_RET(isValid, E_FAIL, "Failed to get title");
@@ -1453,11 +1499,24 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(AddResourceMode mode)
     string uri = PAH_CREATE_PHOTO_COMPONENT; // create asset by security component
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createAssetUri(uri);
-    string assetUri;
-    int id = UserFileClient::InsertExt(createAssetUri, creationValuesBucket_, assetUri);
-    CHECK_COND_RET(id >= 0, id, "Failed to create asset by security component");
+    return UserFileClient::InsertExt(createAssetUri, creationValuesBucket_, assetUri);
+}
 
+int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(bool isCreation, AddResourceMode mode)
+{
+    CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
     int32_t ret = E_ERR;
+    int32_t id = 0;
+    string assetUri;
+    if (isCreation) {
+        ret = CreateAssetBySecurityComponent(assetUri);
+        CHECK_COND_RET(ret > 0, (ret == 0 ? E_ERR : ret), "Failed to create asset by security component");
+        id = ret;
+    } else {
+        assetUri = fileAsset_->GetUri();
+    }
+    CHECK_COND_RET(!assetUri.empty(), E_ERR, "Failed to check empty asset uri");
+
     if (IsMovingPhoto()) {
         ret = CopyMovingPhotoVideo(assetUri);
         if (ret != E_OK) {
@@ -1466,10 +1525,10 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(AddResourceMode mode)
         }
     }
 
-    AppFileService::ModuleFileUri::FileUri fileUri(assetUri);
-    UniqueFd destFd(open(fileUri.GetRealPath().c_str(), O_WRONLY));
+    Uri uri(assetUri);
+    UniqueFd destFd(UserFileClient::OpenFile(uri, MEDIA_FILEMODE_WRITEONLY));
     if (destFd.Get() < 0) {
-        NAPI_ERR_LOG("Failed to open %{private}s, errno=%{public}d", assetUri.c_str(), errno);
+        NAPI_ERR_LOG("Failed to open %{private}s with error: %{public}d", assetUri.c_str(), destFd.Get());
         return destFd.Get();
     }
 
@@ -1482,35 +1541,29 @@ int32_t MediaAssetChangeRequestNapi::CopyToMediaLibrary(AddResourceMode mode)
         return E_INVALID_VALUES;
     }
 
-    if (ret == E_OK) {
+    if (ret == E_OK && isCreation) {
         SetNewFileAsset(id, assetUri);
     }
     return ret;
 }
 
-static bool CreateBySecurityComponent(MediaAssetChangeRequestAsyncContext& context)
+static bool WriteBySecurityComponent(MediaAssetChangeRequestAsyncContext& context)
 {
     bool isCreation = IsCreation(context);
-    if (!isCreation) {
-        context.error = OHOS_PERMISSION_DENIED_CODE;
-        NAPI_ERR_LOG("Cannot edit asset without write permission");
-        return false;
-    }
-
     int32_t ret = E_FAIL;
     auto assetChangeOperations = context.assetChangeOperations;
     bool isCreateFromUri = std::find(assetChangeOperations.begin(), assetChangeOperations.end(),
                                      AssetChangeOperation::CREATE_FROM_URI) != assetChangeOperations.end();
     auto changeRequest = context.objectInfo;
     if (isCreateFromUri) {
-        ret = changeRequest->CopyToMediaLibrary(AddResourceMode::FILE_URI);
+        ret = changeRequest->CopyToMediaLibrary(isCreation, AddResourceMode::FILE_URI);
     } else {
-        ret = changeRequest->CopyToMediaLibrary(changeRequest->GetAddResourceMode());
+        ret = changeRequest->CopyToMediaLibrary(isCreation, changeRequest->GetAddResourceMode());
     }
 
     if (ret < 0) {
         context.SaveError(ret);
-        NAPI_ERR_LOG("Failed to create asset by security component, ret: %{public}d", ret);
+        NAPI_ERR_LOG("Failed to write by security component, ret: %{public}d", ret);
         return false;
     }
     return true;
@@ -1518,9 +1571,6 @@ static bool CreateBySecurityComponent(MediaAssetChangeRequestAsyncContext& conte
 
 int32_t MediaAssetChangeRequestNapi::PutMediaAssetEditData(DataShare::DataShareValuesBucket& valuesBucket)
 {
-    // If there is no editData, return ok for compatibility with api10 in the following situation.
-    // (1) get an asset by createAsset in api10;
-    // (2) new a MediaAssetChangeRequest and then write data by getWriteCacheHandler or addResource.
     if (editData_ == nullptr) {
         return E_OK;
     }
@@ -1590,7 +1640,7 @@ static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
 }
 
 static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAsyncContext& context,
-    UniqueFd& destFd, bool isMovingPhotoVideo = false)
+    const UniqueFd& destFd, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
     size_t offset = 0;
@@ -1609,7 +1659,7 @@ static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAsyncContext& context
 }
 
 static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
-    UniqueFd& destFd, bool isMovingPhotoVideo = false)
+    const UniqueFd& destFd, bool isMovingPhotoVideo = false)
 {
     auto changeRequest = context.objectInfo;
     string realPath = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoPath() : changeRequest->GetFileRealPath();
@@ -1620,24 +1670,11 @@ static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
         return false;
     }
 
-    struct stat statSrc {};
-    int32_t status = fstat(srcFd.Get(), &statSrc);
-    if (status != 0) {
-        context.SaveError(status);
-        NAPI_ERR_LOG("Failed to get file stat, errno=%{public}d", errno);
+    int32_t err = SendFile(srcFd, destFd);
+    if (err != E_OK) {
+        context.SaveError(err);
+        NAPI_ERR_LOG("Failed to send file from %{public}d to %{public}d", srcFd.Get(), destFd.Get());
         return false;
-    }
-
-    off_t offset = 0;
-    off_t fileSize = statSrc.st_size;
-    while (offset < fileSize) {
-        ssize_t sent = sendfile(destFd.Get(), srcFd.Get(), &offset, fileSize - offset);
-        if (sent < 0) {
-            context.SaveError(sent);
-            NAPI_ERR_LOG("Failed to sendfile with errno=%{public}d, srcFd=%{private}d, destFd=%{private}d", errno,
-                srcFd.Get(), destFd.Get());
-            return false;
-        }
     }
     return true;
 }
@@ -1645,7 +1682,7 @@ static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
 static bool CreateFromFileUriExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     if (!HasWritePermission()) {
-        return CreateBySecurityComponent(context);
+        return WriteBySecurityComponent(context);
     }
 
     int32_t cacheFd = OpenWriteCacheHandler(context);
@@ -1700,7 +1737,7 @@ static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& co
 }
 
 static bool AddResourceByMode(MediaAssetChangeRequestAsyncContext& context,
-    UniqueFd& uniqueFd, AddResourceMode mode, bool isMovingPhotoVideo = false)
+    const UniqueFd& uniqueFd, AddResourceMode mode, bool isMovingPhotoVideo = false)
 {
     bool isWriteSuccess = false;
     if (mode == AddResourceMode::DATA_BUFFER) {
@@ -1734,7 +1771,7 @@ static bool AddMovingPhotoVideoExecute(MediaAssetChangeRequestAsyncContext& cont
 static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     if (!HasWritePermission()) {
-        return CreateBySecurityComponent(context);
+        return WriteBySecurityComponent(context);
     }
 
     AddResourceMode mode = context.objectInfo->GetAddResourceMode();
@@ -1846,6 +1883,21 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
     return UpdateAssetProperty(context, PAH_SET_LOCATION, predicates, valuesBucket);
 }
 
+static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    valuesBucket.Put(PhotoColumn::CAMERA_SHOT_KEY, fileAsset->GetCameraShotKey());
+    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+}
+
+static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    return true;
+}
+
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
     { AssetChangeOperation::CREATE_FROM_URI, CreateFromFileUriExecute },
     { AssetChangeOperation::GET_WRITE_CACHE_HANDLER, SubmitCacheExecute },
@@ -1856,6 +1908,8 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_USER_COMMENT, SetUserCommentExecute },
     { AssetChangeOperation::SET_PHOTO_QUALITY_AND_PHOTOID, SetPhotoQualityExecute },
     { AssetChangeOperation::SET_LOCATION, SetLocationExecute },
+    { AssetChangeOperation::SET_CAMERA_SHOT_KEY, SetCameraShotKeyExecute },
+    { AssetChangeOperation::SAVE_CAMERA_PHOTO, SaveCameraPhotoExecute },
 };
 
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
