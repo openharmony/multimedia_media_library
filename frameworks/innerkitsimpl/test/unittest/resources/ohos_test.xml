@@ -98,6 +98,7 @@
             <option name="shell" value="mkdir -p /data/test/backup/db/gallery/ce/databases"/>
             <option name="shell" value="mkdir -p /data/test/backup/db/medialibrary/ce/databases"/>
             <option name="shell" value="mkdir -p /data/test/backup/db/external/ce/databases"/>
+            <option name="shell" value="touch /data/test/backup/1.txt"/>
         </preparer>
     </target>
     <target name="medialibrary_scanner_db_test">
