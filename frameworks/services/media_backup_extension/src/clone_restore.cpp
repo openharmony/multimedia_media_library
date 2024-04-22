@@ -46,6 +46,7 @@ const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
             MediaColumn::MEDIA_TYPE,
             MediaColumn::MEDIA_NAME,
             MediaColumn::MEDIA_DATE_ADDED,
+            MediaColumn::MEDIA_DATE_MODIFIED,
         }},
     { PhotoAlbumColumns::TABLE,
         {
@@ -374,6 +375,7 @@ bool CloneRestore::ParseResultSet(const shared_ptr<NativeRdb::ResultSet> &result
     fileInfo.fileType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
     fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
+    fileInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
 
     auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, PhotoColumn::PHOTOS_TABLE);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
@@ -452,6 +454,7 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
         return E_FAIL;
     }
 
+    BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
     string srcEditDataPath = BACKUP_RESTORE_DIR +
         BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA, fileInfo.relativePath);
     string dstEditDataPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD,
@@ -485,6 +488,7 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const FileInfo &fileInfo, c
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
     values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.dateAdded);
+    values.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, fileInfo.dateModified);
 
     unordered_map<string, string> commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_,
         PhotoColumn::PHOTOS_TABLE);

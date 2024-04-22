@@ -384,6 +384,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
+    info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet);
     return true;
 }
 
