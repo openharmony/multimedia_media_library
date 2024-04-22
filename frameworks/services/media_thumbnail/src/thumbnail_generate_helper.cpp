@@ -38,6 +38,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnails(ThumbRdbOpt &opts, bool isSync
 {
     ThumbnailData thumbnailData;
     ThumbnailUtils::GetThumbnailInfo(opts, thumbnailData);
+    thumbnailData.needResizeLcd = true;
     ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::LOCAL, LoadSourceType::LOCAL_PHOTO);
     if (isSync) {
         IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData, false);
