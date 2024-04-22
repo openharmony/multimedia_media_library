@@ -36,7 +36,6 @@ public:
     static bool MoveFile(const string &oldPath, const string &newPath, int32_t sceneCode);
     static std::string GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
         const std::string &path);
-    static void ModifyFile(const std::string path, int64_t modifiedTime);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);
