@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1662,12 +1662,15 @@ static int32_t UpdateFavoritesOrder(const int32_t value, const int32_t currentAl
     return ExecSqls(updateSortedAlbumsSqls, uniStore);
 }
 
-static int32_t UpdateFavorites(const int32_t value, const int32_t albumId)
+static int32_t UpdateFavorites(int32_t value, const int32_t albumId)
 {
     int err = UpdateFavoritesOrder(value, albumId);
     if (err != E_OK) {
         MEDIA_ERR_LOG("UpdateFavoritesOrder fail");
         return E_DB_FAIL;
+    }
+    if (value == UNFAVORITE_PAGE) {
+        value = FIRST_PAGE;
     }
     return UpdateDisplayLevel(value, albumId);
 }
