@@ -356,7 +356,8 @@ static int64_t CalculateThumbnailTotalSize(const char *path)
         return 0;
     }
     while ((entry = readdir(dir)) != nullptr) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 ||
+            strcmp(entry->d_name, "highlight") == 0) {
             continue;
         }
         char fullpath[pathLimit];

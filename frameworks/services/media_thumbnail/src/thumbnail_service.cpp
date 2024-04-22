@@ -29,6 +29,7 @@
 #include "thumbnail_aging_helper.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_helper.h"
+#include "thumbnail_generate_worker_manager.h"
 #include "thumbnail_uri_utils.h"
 #include "post_event_utils.h"
 
@@ -276,6 +277,14 @@ void ThumbnailService::InterruptBgworker()
     if (asyncWorker != nullptr) {
         asyncWorker->Interrupt();
     }
+
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
+        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
+    if (thumbnailWorker == nullptr) {
+        MEDIA_ERR_LOG("thumbnailWorker is null");
+        return;
+    }
+    thumbnailWorker->ReleaseTaskQueue(ThumbnailTaskPriority::LOW);
 }
 
 void ThumbnailService::StopAllWorker()
@@ -284,6 +293,8 @@ void ThumbnailService::StopAllWorker()
     if (asyncWorker != nullptr) {
         asyncWorker->Stop();
     }
+
+    ThumbnailGenerateWorkerManager::GetInstance().ClearAllTask();
 }
 
 int32_t ThumbnailService::GenerateThumbnails()
@@ -474,7 +485,8 @@ int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
         return err;
     }
 
-    IThumbnailHelper::AddAsyncTask(IThumbnailHelper::CreateAstc, opts, data, false);
+    IThumbnailHelper::AddThumbnailGenerateTask(
+        IThumbnailHelper::CreateAstc, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
     return E_OK;
 }
 

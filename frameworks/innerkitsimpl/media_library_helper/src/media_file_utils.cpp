@@ -555,6 +555,22 @@ bool MediaFileUtils::CheckDisplayLevel(const int32_t &displayLevel)
     return true;
 }
 
+string MediaFileUtils::GetHighlightPath(const string &uri)
+{
+    int prefixLen = 0;
+    string uriPrefix = "datashare:///media";
+    if (uri.find(uriPrefix) != string::npos) {
+        prefixLen = uriPrefix.length();
+    } else if (uri.find(ML_FILE_URI_PREFIX) != string::npos) {
+        prefixLen = ML_FILE_URI_PREFIX.length();
+    } else {
+        return "";
+    }
+
+    string path = "/storage/cloud/files/.thumbs" + uri.substr(prefixLen);
+    return path;
+}
+
 void MediaFileUtils::FormatRelativePath(string &relativePath)
 {
     if (relativePath.empty()) {
@@ -1017,7 +1033,8 @@ double MediaFileUtils::GetRealIdByTable(int32_t virtualId, const string &tableNa
 string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri, const string &extrUri)
 {
     if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
-       (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos)) {
+        (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos) ||
+        (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos)) {
         return uri;
     }
 
@@ -1062,11 +1079,7 @@ string MediaFileUtils::GetVirtualUriFromRealUri(const string &uri, const string 
         (fileUri.IsApi10() ? MEDIA_API_VERSION_V10 : MEDIA_API_VERSION_V9),
         (fileUri.IsApi10() ? extrUri : ""));
 
-    if (suffixUri.empty()) {
-        return virtualUri.ToString();
-    } else {
-        return virtualUri.ToString() + suffixUri;
-    }
+    return suffixUri.empty() ? virtualUri.ToString() : virtualUri.ToString() + suffixUri;
 }
 
 void GetExtrParamFromUri(const std::string &uri, std::string &displayName)
@@ -1095,7 +1108,8 @@ void InitPureAndSuffixUri(string &pureUri, string &suffixUri, const string &uri)
 string MediaFileUtils::GetRealUriFromVirtualUri(const string &uri)
 {
     if ((uri.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) ||
-       (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos)) {
+        (uri.find(AudioColumn::AUDIO_TYPE_URI) != string::npos) ||
+        (uri.find(PhotoColumn::HIGHTLIGHT_COVER_URI) != string::npos)) {
         return uri;
     }
 

@@ -240,5 +240,11 @@ bool PhotoAlbum::CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType)
         ((albumSubType >= PhotoAlbumSubType::ANALYSIS_START) && (albumSubType <= PhotoAlbumSubType::ANALYSIS_END)) ||
         (albumSubType == PhotoAlbumSubType::SOURCE_GENERIC);
 }
+
+bool PhotoAlbum::IsHighlightAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
+{
+    return (albumType == PhotoAlbumType::SMART) && (albumSubType == PhotoAlbumSubType::HIGHLIGHT ||
+        albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGEST);
+}
 }  // namespace Media
 }  // namespace OHOS

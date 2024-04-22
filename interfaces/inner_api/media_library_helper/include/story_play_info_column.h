@@ -27,7 +27,7 @@ const std::string HIGHLIGHT_PLAY_INFO_TABLE = "tab_highlight_play_info";
 // create highlight play info table
 const std::string MUSIC = "music";
 const std::string FILTER = "filter";
-const std::string PLAY_INFO = "play_info";
+const std::string HIGHLIGHT_PLAY_INFO = "play_info";
 const std::string PLAY_INFO_VERSION = "play_info_version";
 const std::string IS_CHOSEN = "is_chosen";
 const std::string PLAY_INFO_ID = "play_info_id";
