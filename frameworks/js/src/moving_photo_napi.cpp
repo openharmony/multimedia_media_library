@@ -187,24 +187,12 @@ static int32_t AcquireFdForArrayBuffer(MovingPhotoAsyncContext* context)
         case ResourceType::IMAGE_RESOURCE: {
             Uri uri(movingPhotoUri);
             fd = UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
-            if (fd == E_ERR) {
-                NAPI_ERR_LOG("Open source image file failed, error: %{public}d", errno);
-                return E_HAS_FS_ERROR;
-            } else if (fd < 0) {
-                NAPI_ERR_LOG("Open source image file failed due to OpenFile failure");
-                return fd;
-            }
+            CHECK_COND_RET(HandleFd(fd), fd, "Open source image file failed");
             return fd;
         }
         case ResourceType::VIDEO_RESOURCE:
             fd = MovingPhotoNapi::OpenReadonlyVideoFile(movingPhotoUri);
-            if (fd == E_ERR) {
-                NAPI_ERR_LOG("Open source video file failed, error: %{public}d", errno);
-                return E_HAS_FS_ERROR;
-            } else if (fd < 0) {
-                NAPI_ERR_LOG("Open source video file failed due to OpenFile failure");
-                return fd;
-            }
+            CHECK_COND_RET(HandleFd(fd), fd, "Open source video file failed");
             return fd;
         default:
             NAPI_ERR_LOG("Invalid resource type: %{public}d", static_cast<int32_t>(context->resourceType));
