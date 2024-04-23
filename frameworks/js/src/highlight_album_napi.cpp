@@ -207,21 +207,6 @@ static void JSGetHighlightAlbumInfoCompleteCallback(napi_env env, napi_status st
     delete context;
 }
 
-static int32_t GetUserActionFor(std::string uriStr)
-{
-    int32_t fd = 0;
-    Uri uri(uriStr);
-    fd = UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
-    if (fd == E_ERR) {
-        NAPI_ERR_LOG("Open highlight cover file failed, error: %{public}d", errno);
-        return E_HAS_FS_ERROR;
-    } else if (fd < 0) {
-        NAPI_ERR_LOG("Open highlight cover file failed due to OpenFile failure");
-        return fd;
-    }
-    return fd;
-}
-
 static void JSSetHighlightUserActionDataExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
