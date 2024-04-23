@@ -230,20 +230,20 @@ std::unordered_map<std::string, std::string> BackupDatabaseUtils::GetColumnInfoM
 }
 
 void BackupDatabaseUtils::UpdateUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t number,
-    int32_t type)
+    const std::string &type)
 {
     const string updateSql =
-        "UPDATE UniqueNumber SET unique_number = " + to_string(number) + " WHERE media_type = " + to_string(type);
+        "UPDATE UniqueNumber SET unique_number = " + to_string(number) + " WHERE media_type = '" + type + "'";
     int32_t erroCode = rdbStore->ExecuteSql(updateSql);
     if (erroCode < 0) {
         MEDIA_ERR_LOG("execute update unique number failed, ret=%{public}d", erroCode);
     }
 }
 
-int32_t BackupDatabaseUtils::QueryUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t type)
+int32_t BackupDatabaseUtils::QueryUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const std::string &type)
 {
-    const string querySql =
-        "SELECT unqiue_number FROM UniqueNumber WHERE media_type = " + to_string(type);
+    const string querySql = "SELECT unique_number FROM UniqueNumber WHERE media_type = '" + type + "'";
     return QueryInt(rdbStore, querySql, UNIQUE_NUMBER);
 }
 

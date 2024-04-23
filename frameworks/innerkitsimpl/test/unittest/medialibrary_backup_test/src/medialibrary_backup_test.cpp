@@ -15,6 +15,10 @@
 
 #include "medialibrary_backup_test.h"
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <utime.h>
+
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "external_source.h"
@@ -378,6 +382,25 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_zero_size, TestSiz
     ASSERT_FALSE(resultSet == nullptr);
     ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_a_media_zero_size end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_modify_file, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_modify_file start");
+    struct stat bufBefore;
+    const char *path = "/data/test/backup/1.txt";
+    stat(path, &bufBefore);
+    int64_t beforeModifiedTime = MediaFileUtils::Timespec2Millisecond(bufBefore.st_mtim);
+    int64_t currentTime = MediaFileUtils::UTCTimeSeconds();
+    struct utimbuf buf;
+    buf.actime = currentTime;
+    buf.modtime = currentTime;
+    utime(path, &buf);
+    struct stat bufAfter;
+    stat(path, &bufAfter);
+    int64_t afterModifiedTime = MediaFileUtils::Timespec2Millisecond(bufAfter.st_mtim);
+    ASSERT_TRUE(afterModifiedTime != beforeModifiedTime);
+    MEDIA_INFO_LOG("medialib_backup_test_modify_file end");
 }
 } // namespace Media
 } // namespace OHOS

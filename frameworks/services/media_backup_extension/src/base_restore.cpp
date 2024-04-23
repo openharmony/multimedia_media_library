@@ -53,8 +53,8 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
         std::unordered_map<int32_t, int32_t>  updateResult;
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_, updateResult);
         MediaLibraryRdbUtils::UpdateSourceAlbumInternal(mediaLibraryRdb_, updateResult);
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, MediaType::MEDIA_TYPE_IMAGE);
-        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, MediaType::MEDIA_TYPE_VIDEO);
+        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
+        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
         auto watch = MediaLibraryNotify::GetInstance();
         if (watch == nullptr) {
             MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
@@ -89,8 +89,8 @@ int32_t BaseRestore::Init(void)
     }
     migrateDatabaseNumber_ = 0;
     migrateFileNumber_ = 0;
-    imageNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, MediaType::MEDIA_TYPE_IMAGE);
-    videoNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, MediaType::MEDIA_TYPE_VIDEO);
+    imageNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, IMAGE_ASSET_TYPE);
+    videoNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, VIDEO_ASSET_TYPE);
     MEDIA_INFO_LOG("imageNumber: %{public}d", (int)imageNumber_);
     MEDIA_INFO_LOG("videoNumber: %{public}d", (int)videoNumber_);
     return E_OK;
@@ -258,6 +258,7 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
+        BackupFileUtils::ModifyFile(localPath, fileInfos[i].dateModified);
         fileMoveCount++;
     }
     migrateFileNumber_ += fileMoveCount;
