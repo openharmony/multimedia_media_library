@@ -1381,6 +1381,15 @@ napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callbac
 
 void MediaAssetChangeRequestNapi::SetNewFileAsset(int32_t id, const string& uri)
 {
+    if (fileAsset_ == nullptr) {
+        NAPI_ERR_LOG("fileAsset_ is nullptr");
+        return;
+    }
+
+    if (id <= 0 || uri.empty()) {
+        NAPI_ERR_LOG("Failed to check file_id: %{public}d and uri: %{public}s", id, uri.c_str());
+        return;
+    }
     fileAsset_->SetId(id);
     fileAsset_->SetUri(uri);
     fileAsset_->SetTimePending(0);
@@ -1915,6 +1924,13 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
 {
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
+    if (context == nullptr || context->objectInfo == nullptr ||
+        context->objectInfo->GetFileAssetInstance() == nullptr) {
+        context->SaveError(E_FAIL);
+        NAPI_ERR_LOG("Failed to check async context of MediaAssetChangeRequest object");
+        return;
+    }
+
     unordered_set<AssetChangeOperation> appliedOperations;
     for (const auto& changeOperation : context->assetChangeOperations) {
         // Keep the final result of each operation, and commit it only once.
