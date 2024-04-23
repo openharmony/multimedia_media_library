@@ -71,6 +71,7 @@ void DfxWorker::Init()
 
 void DfxWorker::InitCycleThread()
 {
+    MEDIA_INFO_LOG("InitCycleThread");
     string name("DfxCycleThread");
     pthread_setname_np(pthread_self(), name.c_str());
     Prepare();
@@ -168,6 +169,7 @@ void DfxWorker::InitLoop()
 
 void DfxWorker::InitDelayThread()
 {
+    MEDIA_INFO_LOG("InitDelayThread");
     string name("DfxDelayThread");
     pthread_setname_np(pthread_self(), name.c_str());
     while (isThreadRunning_) {
