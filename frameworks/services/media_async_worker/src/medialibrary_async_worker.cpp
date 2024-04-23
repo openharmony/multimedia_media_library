@@ -27,7 +27,7 @@ static const int32_t BG_SLEEP_COUNT = 500;
 static const int32_t FG_SLEEP_COUNT = 50;
 static const int32_t REST_FOR_MILLISECOND = 20;
 static const int32_t REST_FOR_LONG_SECOND = 2;
-static const int32_t THREAD_NUM = 6;
+static const int32_t THREAD_NUM = 2;
 shared_ptr<MediaLibraryAsyncWorker> MediaLibraryAsyncWorker::asyncWorkerInstance_{nullptr};
 mutex MediaLibraryAsyncWorker::instanceLock_;
 
