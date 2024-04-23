@@ -60,7 +60,7 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
             MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
             return;
         }
-        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_ADD);
+        watch->Notify(PhotoColumn::DEFAULT_PHOTO_URI, NotifyType::NOTIFY_ADD);
     }
     HandleRestData();
 }
