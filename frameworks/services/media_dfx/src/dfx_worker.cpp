@@ -66,7 +66,6 @@ void DfxWorker::Init()
     cycleThread_.detach();
     isThreadRunning_ = true;
     delayThread_ = thread(bind(&DfxWorker::InitDelayThread, this));
-    isEnd_ = false;
 }
 
 void DfxWorker::InitCycleThread()
