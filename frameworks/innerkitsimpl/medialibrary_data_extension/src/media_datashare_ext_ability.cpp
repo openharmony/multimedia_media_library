@@ -509,6 +509,30 @@ static string GetClientAppId()
     return PermissionUtils::GetAppIdByBundleName(bundleName);
 }
 
+static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd)
+{
+    auto ret = false;
+    if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE ||
+        cmd.GetTableName() == AudioColumn::AUDIOS_TABLE ||
+        cmd.GetTableName() == MEDIALIBRARY_TABLE) {
+        std::vector<std::string> columns;
+        DatashareBusinessError businessError;
+        int errCode = businessError.GetCode();
+        string clientAppId = GetClientAppId();
+        string fileId = MediaFileUtils::GetIdFromUri(uri.ToString());
+        DataSharePredicates predicates;
+        predicates.And()->EqualTo("file_id", fileId);
+        predicates.And()->EqualTo("owner_appid", clientAppId);
+        auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+        auto count = 0;
+        queryResultSet->GetRowCount(count);
+        if (count != 0) {
+            ret = true;
+        }
+    }
+    return ret;
+}
+
 static uint32_t GetFlagFromMode(const string &mode)
 {
     if (mode.find("w") != string::npos) {
@@ -536,8 +560,13 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
         err = UriPermissionOperations::CheckUriPermission(command.GetUriStringWithoutSegment(), unifyMode);
         if (err != E_OK) {
             auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
-            if (!uriPermissionClient.VerifyUriPermission(Uri(command.GetUriStringWithoutSegment()),
+            if (uriPermissionClient.VerifyUriPermission(Uri(command.GetUriStringWithoutSegment()),
                 GetFlagFromMode(unifyMode), IPCSkeleton::GetCallingTokenID())) {
+                err = E_OK;
+            }
+        }
+        if (err != E_OK) {
+            if (!CheckIsOwner(uri, command)) {
                 MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
                 return err;
             }
@@ -603,14 +632,20 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
 
     DataSharePredicates appidPredicates = predicates;
     if (err != E_SUCCESS) {
-        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
-        string clientAppId = GetClientAppId();
-        appidPredicates.And()->EqualTo("owner_appid", clientAppId);
+        if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE || cmd.GetTableName() == AudioColumn::AUDIOS_TABLE ||
+            cmd.GetTableName() == MEDIALIBRARY_TABLE) {
+            string clientAppId = GetClientAppId();
+            appidPredicates.And()->EqualTo("owner_appid", clientAppId);
+        } else {
+            MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
+            return err;
+        }
     }
 
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     auto updateRet = MediaLibraryDataManager::GetInstance()->Update(cmd, value, appidPredicates);
     if (err < 0 && updateRet <= 0) {
+        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
         return err;
     }
     return updateRet;
@@ -648,8 +683,14 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
             IPCSkeleton::GetCallingTokenID())) {
             MEDIA_DEBUG_LOG("Permission check pass , uri = %{private}s", uri.ToString().c_str());
         } else {
-            string clientAppId = GetClientAppId();
-            appidPredicates.And()->EqualTo("owner_appid", clientAppId);
+            if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE || cmd.GetTableName() == AudioColumn::AUDIOS_TABLE ||
+                cmd.GetTableName() == MEDIALIBRARY_TABLE) {
+                string clientAppId = GetClientAppId();
+                appidPredicates.And()->EqualTo("owner_appid", clientAppId);
+            } else {
+                businessError.SetCode(err);
+                return nullptr;
+            }
         }
     }
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, appidPredicates, errCode);
