@@ -71,7 +71,7 @@ private:
     static std::shared_ptr<DfxWorker> dfxWorkerInstance_;
     std::thread cycleThread_;
     std::thread delayThread_;
-    bool isEnd_;
+    bool isEnd_ = false;
     int32_t shortTime_;
     int32_t middleTime_;
     int32_t longTime_;
