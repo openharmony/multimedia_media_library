@@ -136,6 +136,9 @@ public:
     void SetPhotoSubType(const VariantData &photoSubType);
     int32_t GetPhotoSubType() const;
 
+    void SetDynamicRangeType(const VariantData &type);
+    EXPORT int32_t GetDynamicRangeType() const;
+
     void SetForAdd(bool forAdd);
     bool GetForAdd() const;
     void SetTableName(const std::string &tableName);
@@ -181,6 +184,7 @@ private:
     string shootingMode_;
     string shootingModeTag_;
     int64_t lastVisitTime_;
+    int32_t dynamicRangeType_;
 
     // video, audio, image
     int64_t dateTaken_;

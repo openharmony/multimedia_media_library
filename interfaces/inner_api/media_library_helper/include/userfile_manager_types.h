@@ -130,6 +130,11 @@ enum class PhotoSubType : int32_t {
     SUBTYPE_END
 };
 
+enum class DynamicRangeType : int32_t {
+    SDR,
+    HDR
+};
+
 const std::string URI_PARAM_API_VERSION = "api_version";
 
 enum class MediaLibraryApi : uint32_t {
