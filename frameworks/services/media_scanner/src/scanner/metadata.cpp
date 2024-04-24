@@ -92,6 +92,8 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::MEDIA_OWNER_PACKAGE] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetOwnerPackage);
     memberFuncMap_[PhotoColumn::PHOTO_SUBTYPE] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetPhotoSubType);
+    memberFuncMap_[PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE] = make_pair(ResultSetDataType::TYPE_INT32,
+        &Metadata::SetDynamicRangeType);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -472,6 +474,16 @@ void Metadata::SetOwnerPackage(const VariantData &ownerPackage)
 const std::string Metadata::GetOwnerPackage() const
 {
     return ownerPackage_;
+}
+
+void Metadata::SetDynamicRangeType(const VariantData &type)
+{
+    dynamicRangeType_ = std::get<int32_t>(type);
+}
+
+int32_t Metadata::GetDynamicRangeType() const
+{
+    return dynamicRangeType_;
 }
 } // namespace Media
 } // namespace OHOS
