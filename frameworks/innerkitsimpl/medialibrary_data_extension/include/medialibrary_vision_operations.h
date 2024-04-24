@@ -21,6 +21,7 @@
 
 #include "abs_shared_result_set.h"
 #include "medialibrary_command.h"
+#include "datashare_predicates.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,6 +40,9 @@ public:
     static int32_t EditCommitOperation(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
+    static std::shared_ptr<NativeRdb::ResultSet> DealWithActiveOcrTask(
+        std::shared_ptr<NativeRdb::ResultSet> &queryResult, const DataShare::DataSharePredicates &predicates,
+        const std::vector<std::string> &columns, MediaLibraryCommand &cmd);
 };
 } // namespace Media
 } // namespace OHOS
