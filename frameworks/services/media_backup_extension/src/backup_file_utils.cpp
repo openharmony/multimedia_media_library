@@ -41,6 +41,7 @@ int32_t BackupFileUtils::FillMetadata(std::unique_ptr<Metadata> &data)
         err = MetadataExtractor::ExtractImageMetadata(data);
     } else {
         err = MetadataExtractor::ExtractAVMetadata(data);
+        MEDIA_INFO_LOG("Extract av metadata end");
     }
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to extension data");
