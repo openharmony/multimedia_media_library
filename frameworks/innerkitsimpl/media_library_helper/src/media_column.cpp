@@ -229,7 +229,7 @@ const std::string PhotoColumn::INDEX_CAMERA_SHOT_KEY =
     " (" + CAMERA_SHOT_KEY + ");";
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
-                        "CREATE TRIGGER photos_delete_trigger AFTER UPDATE ON " +
+                        "CREATE TRIGGER IF NOT EXISTS photos_delete_trigger AFTER UPDATE ON " +
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN new." + PhotoColumn::PHOTO_DIRTY +
                         " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
                         " AND OLD." + PhotoColumn::PHOTO_CLOUD_ID + " is NULL AND is_caller_self_func() = 'true'" +
@@ -237,7 +237,7 @@ const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         " WHERE " + PhotoColumn::MEDIA_ID + " = old." + PhotoColumn::MEDIA_ID + "; END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
-                        "CREATE TRIGGER photos_fdirty_trigger AFTER UPDATE ON " +
+                        "CREATE TRIGGER IF NOT EXISTS photos_fdirty_trigger AFTER UPDATE ON " +
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL AND" +
                         " new.date_modified <> old.date_modified " +
                         " AND new.dirty = old.dirty AND is_caller_self_func() = 'true'" +
@@ -249,7 +249,7 @@ const std::string PhotoColumn::CREATE_PHOTOS_FDIRTY_TRIGGER =
                         " END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
-                        "CREATE TRIGGER photos_mdirty_trigger AFTER UPDATE ON " +
+                        "CREATE TRIGGER IF NOT EXISTS photos_mdirty_trigger AFTER UPDATE ON " +
                         PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
                         " AND new.date_modified = old.date_modified AND ( old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) + " OR old.dirty =" +
@@ -264,12 +264,12 @@ const std::string PhotoColumn::CREATE_PHOTOS_MDIRTY_TRIGGER =
                         " END;";
 
 const std::string  PhotoColumn::CREATE_PHOTOS_INSERT_CLOUD_SYNC =
-                        " CREATE TRIGGER photo_insert_cloud_sync_trigger AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
-                        " BEGIN SELECT cloud_sync_func(); END;";
+                        " CREATE TRIGGER IF NOT EXISTS photo_insert_cloud_sync_trigger AFTER INSERT ON " +
+                        PhotoColumn::PHOTOS_TABLE + " BEGIN SELECT cloud_sync_func(); END;";
 
 const std::string PhotoColumn::CREATE_PHOTOS_UPDATE_CLOUD_SYNC =
-                        " CREATE TRIGGER photo_update_cloud_sync_trigger AFTER UPDATE ON " + PhotoColumn::PHOTOS_TABLE +
-                        " FOR EACH ROW WHEN OLD.dirty IN (1,2,3,5) AND new.dirty != " +
+                        " CREATE TRIGGER IF NOT EXISTS photo_update_cloud_sync_trigger AFTER UPDATE ON " +
+                        PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW WHEN OLD.dirty IN (1,2,3,5) AND new.dirty != " +
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
                         " BEGIN SELECT cloud_sync_func(); END;";
 
