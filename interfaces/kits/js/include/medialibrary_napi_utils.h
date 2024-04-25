@@ -112,10 +112,10 @@
             return;                                \
         }                                          \
     } while (0)
-#define CHECK_IF_EQUAL(condition, errMsg)   \
+#define CHECK_IF_EQUAL(condition, errMsg, ...)   \
     do {                                    \
         if (!(condition)) {                 \
-            NAPI_ERR_LOG(errMsg);    \
+            NAPI_ERR_LOG(errMsg, ##__VA_ARGS__);    \
             return;                         \
         }                                   \
     } while (0)
