@@ -30,20 +30,21 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 using namespace OHOS::NativeRdb;
 class MediaLibraryFormMapOperations : public MediaLibraryAssetOperations {
 public:
-    static int32_t RemoveFormIdOperations(RdbPredicates &predicates);
-    static int32_t HandleStoreFormIdOperation(MediaLibraryCommand &cmd);
-    static void PublishedChange(const std::string newUri, const std::vector<int64_t> &formIds, const bool &isSave);
-    static void GetFormMapFormId(const std::string &uri, std::vector<int64_t> &formIds);
-    static std::string GetUriByFileId(const int32_t &fileId, const std::string &path);
-    static std::string GetFilePathById(const std::string &fileId);
+    EXPORT static int32_t RemoveFormIdOperations(RdbPredicates &predicates);
+    EXPORT static int32_t HandleStoreFormIdOperation(MediaLibraryCommand &cmd);
+    EXPORT static void PublishedChange(const std::string newUri, const std::vector<int64_t> &formIds, const bool &isSave);
+    EXPORT static void GetFormMapFormId(const std::string &uri, std::vector<int64_t> &formIds);
+    EXPORT static std::string GetUriByFileId(const int32_t &fileId, const std::string &path);
+    EXPORT static std::string GetFilePathById(const std::string &fileId);
 
 private:
-    static void ModifyFormMapMessage(const std::string &uri, const int64_t &formId, const bool &isSave);
-    static bool CheckQueryIsInDb(const OperationObject &operationObject, const std::string &queryId);
-    static std::mutex mutex_;
+    EXPORT static void ModifyFormMapMessage(const std::string &uri, const int64_t &formId, const bool &isSave);
+    EXPORT static bool CheckQueryIsInDb(const OperationObject &operationObject, const std::string &queryId);
+    EXPORT static std::mutex mutex_;
 };
 } // namespace Media
 } // namespace OHOS

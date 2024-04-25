@@ -32,9 +32,6 @@ ohos_unittest("medialibrary_photo_operations_test") {
   ]
 
   sources = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_command.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_formmap_operations.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/src/ithumbnail_helper.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_formmap_operations_test.cpp",
     "./src/medialibrary_photo_operations_test.cpp",
@@ -77,4 +74,10 @@ ohos_unittest("medialibrary_photo_operations_test") {
     cfi_cross_dso = true
     debug = false
   }
+
+  cflags = [
+    "-fno-access-control", # Ignore Private Member Access Control
+  ]
+
+  cflags_cc = cflags
 }

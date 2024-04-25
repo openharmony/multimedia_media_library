@@ -56,6 +56,15 @@ public:
 
     // Loaded lcd source can be resized to generate thumbnail in order
     EXPORT bool needResizeLcd {false};
+    EXPORT bool isCreatingThumbSource {false};
+    EXPORT bool isLoadingFromThumbToLcd {false};
+    EXPORT bool needUpload {false};
+
+    // if true, source can be read from floud
+    EXPORT bool isCloudLoading {false};
+
+    // if true, read source from cloud if not found in local
+    EXPORT bool isFrontLoading {false};
     EXPORT std::shared_ptr<PixelMap> source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;

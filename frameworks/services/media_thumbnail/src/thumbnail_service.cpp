@@ -469,6 +469,7 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
 int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
 {
     ThumbnailData data;
+    data.isCloudLoading = true;
     ThumbnailUtils::RecordStartGenerateStats(data.stats, GenerateScene::CLOUD,
         LoadSourceType::CLOUD_THUMB);
     int err = 0;

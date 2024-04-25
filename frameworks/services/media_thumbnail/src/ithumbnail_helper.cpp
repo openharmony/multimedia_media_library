@@ -49,7 +49,7 @@ void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> &data
         MEDIA_ERR_LOG("CreateThumbnails failed, data is null");
         return;
     }
-    DoCreateThumbnails(data->opts_, data->thumbnailData_, false);
+    DoCreateThumbnails(data->opts_, data->thumbnailData_);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -59,7 +59,7 @@ void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateLcd failed, data is null");
         return;
     }
-    DoCreateLcd(data->opts_, data->thumbnailData_, false);
+    DoCreateLcd(data->opts_, data->thumbnailData_);
 }
 
 void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -68,7 +68,7 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateThumbnail failed, data is null");
         return;
     }
-    DoCreateThumbnail(data->opts_, data->thumbnailData_, false);
+    DoCreateThumbnail(data->opts_, data->thumbnailData_);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -78,7 +78,7 @@ void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateAstc failed, data is null");
         return;
     }
-    DoCreateAstc(data->opts_, data->thumbnailData_, false);
+    DoCreateAstc(data->opts_, data->thumbnailData_);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -208,16 +208,13 @@ void ThumbnailWait::Notify()
     }
 }
 
-bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, const string &suffix,
-    bool isLoadFromSourcePath)
+bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     if (data.source != nullptr) {
         return true;
     }
     
-    // targetPath is the path of the thumbnail generated with suffix.
-    std::string targetPath = isLoadFromSourcePath ? "" : GetThumbnailPath(data.path, suffix);
-    if (!ThumbnailUtils::LoadSourceImage(data, suffix == THUMBNAIL_THUMB_SUFFIX, targetPath)) {
+    if (!ThumbnailUtils::LoadSourceImage(data)) {
         if (opts.path.empty()) {
             MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
@@ -227,11 +224,10 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, con
         } else {
             opts.path = "";
             ThumbnailUtils::GetThumbnailInfo(opts, data);
-            string fileName = GetThumbnailPath(data.path, suffix);
-            if (access(fileName.c_str(), F_OK) == 0) {
+            if (access(data.path.c_str(), F_OK) == 0) {
                 return true;
             }
-            if (!ThumbnailUtils::LoadSourceImage(data, suffix == THUMBNAIL_THUMB_SUFFIX, targetPath)) {
+            if (!ThumbnailUtils::LoadSourceImage(data)) {
                 VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
                     {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
                 PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -243,7 +239,7 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data, con
 }
 
 
-bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
+bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, true);
@@ -260,6 +256,8 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data, bool 
 
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
+    data.isCreatingThumbSource = false;
+    data.isLoadingFromThumbToLcd = false;
     if (!TryLoadSource(opts, data, THUMBNAIL_LCD_SUFFIX, true)) {
         MEDIA_ERR_LOG("load source is nullptr path: %{public}s", opts.path.c_str());
         return false;
@@ -306,11 +304,8 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
 
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
-    if (type == ThumbnailType::THUMB && !TryLoadSource(opts, data, THUMBNAIL_THUMB_SUFFIX, true)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return false;
+    if data.source == nullptr) {
+        MEDIA_ERR_LOG("source is nullptr when generate type: %{public}s", TYPE_NAME_MAP.at(type));
     }
 
     if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
@@ -320,7 +315,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
         }
 
         if (!ThumbnailUtils::CompressImage(data.source, type == ThumbnailType::THUMB ? data.thumbnail : data.thumbAstc,
-                                           false, nullptr, type == ThumbnailType::THUMB_ASTC)) {
+            false, nullptr, type == ThumbnailType::THUMB_ASTC)) {
             MEDIA_ERR_LOG("CompressImage faild id %{private}s", opts.row.c_str());
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
                 {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -382,6 +377,25 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const Thumb
         return false;
     }
 
+    ValuesBucket values;
+    int changedRows;
+    int64_t thumbnail_status = 0;
+    if (data.needUpload) {
+        thumbnail_status = static_cast<int64_t>(ThumbnailReady::THUMB_TO_UPLOAD);
+    } else {
+        thumbnail_status = static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_COMPLETED);
+    }
+    values.PutLong(PhotoColumn::PHOTO_HAS_ASTC, thumbnail_status);
+    err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { data.id });
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
         MEDIA_ERR_LOG("watch is nullptr");
@@ -407,7 +421,7 @@ int32_t IThumbnailHelper::UpdateAstcState(const ThumbRdbOpt &opts, const Thumbna
     return uniStore->ExecuteSql(updateAstcStateSql);
 }
 
-bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
+bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
     auto ret = thumbnailWait.InsertAndWait(data.id, false);
@@ -424,6 +438,16 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data,
 
 bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
+    data.isCreatingThumbSource = true;
+    data.isLoadingFromThumbToLcd = false;
+    if (!TryLoadSource(opts, data)) {
+        MEDIA_ERR_LOG("DoCreateThumbnail failed, try to load source failed, id: %{public}s", data.id.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
+
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -464,9 +488,9 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
     return true;
 }
 
-bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
+bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (!DoCreateLcd(opts, data, false)) {
+    if (!DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -474,12 +498,12 @@ bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data
         return false;
     }
 
-    if (!ThumbnailUtils::ScaleThumbnailEx(data, true)) {
+    if (!ThumbnailUtils::ScaleThumbnailEx(data)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
 
-    if (!DoCreateThumbnail(opts, data, false)) {
+    if (!DoCreateThumbnail(opts, data)) {
         MEDIA_ERR_LOG("Fail to create thumbnail, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -504,22 +528,14 @@ std::string GetAvailableThumbnailSuffix(ThumbnailData &data)
 
 bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
 {
-    std::string suffix = GetAvailableThumbnailSuffix(data);
-    if (!suffix.empty()) {
-        if (!TryLoadSource(opts, data, suffix, false)) {
-            MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-                {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-            return false;
-        }
-    } else {
-        if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
-            VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-                {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-            PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-            return false;
-        }
+    data.isCreatingThumbSource = true;
+    data.isLoadingFromThumbToLcd = true;
+    if (!TryLoadSource(opts, data)) {
+        MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
+            {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
     }
 
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {

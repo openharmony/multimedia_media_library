@@ -64,4 +64,10 @@ ohos_unittest("medialibrary_utils_test") {
   if (ability_runtime_graphics) {
     external_deps += [ "image_framework:image_native" ]
   }
+
+  cflags = [
+    "-fno-access-control", # Ignore Private Member Access Control
+  ]
+
+  cflags_cc = cflags
 }
