@@ -15,13 +15,18 @@
 #define MLOG_TAG "VisionOperation"
 
 #include <thread>
+#include "iservice_registry.h"
+#include "media_actively_calling_analyse.h"
 #include "media_log.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdb_utils.h"
+#include "medialibrary_rdb_transaction.h"
+#include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_vision_operations.h"
+#include "rdb_utils.h"
 #include "vision_aesthetics_score_column.h"
 #include "vision_column.h"
 #include "vision_total_column.h"
@@ -31,6 +36,7 @@ using namespace std;
 using namespace OHOS::NativeRdb;
 using Uri = OHOS::Uri;
 using namespace OHOS::DataShare;
+using namespace OHOS::RdbDataShareAdapter;
 
 namespace OHOS {
 namespace Media {
@@ -199,6 +205,50 @@ int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &c
         MEDIA_ERR_LOG("UpdateAnalysisDataForEdit fail");
     }
     return E_SUCCESS;
+}
+
+static void ActivelyStartAnalysisService(const int fileId)
+{
+    MEDIA_INFO_LOG("fileId is: %{public}d", fileId);
+    int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_SERVICE_OCR;
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    data.WriteInt32(static_cast<int32_t>(fileId));
+    MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
+    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
+        MEDIA_ERR_LOG("Actively Calling Analyse Fail");
+    }
+}
+
+shared_ptr<NativeRdb::ResultSet> MediaLibraryVisionOperations::DealWithActiveOcrTask(
+    shared_ptr<NativeRdb::ResultSet> &queryResult, const DataShare::DataSharePredicates &predicates,
+    const std::vector<std::string> &columns, MediaLibraryCommand &cmd)
+{
+    constexpr int32_t FIELD_IDX = 0;
+    constexpr int32_t VALUE_IDX = 1;
+    int32_t count = 0;
+    int32_t ret = queryResult->GetRowCount(count);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
+        return queryResult;
+    }
+    if (count > 0) {
+        MEDIA_INFO_LOG("Active OCR Library: already has ocr");
+        return queryResult;
+    } else {
+        int fileId = -1;
+        auto operationItems = predicates.GetOperationList();
+        for (DataShare::OperationItem item : operationItems) {
+            if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_ID) {
+                fileId = std::stoi(static_cast<string>(item.GetSingle(VALUE_IDX)));
+                MEDIA_INFO_LOG("Active OCR Library file id: %{public}d", fileId);
+            }
+        }
+        ActivelyStartAnalysisService(fileId);
+        queryResult = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+    }
+    return queryResult;
 }
 }
 }
