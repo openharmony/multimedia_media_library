@@ -55,7 +55,7 @@
           "kv_store",
           "memory_utils",
           "memmgr",
-          "memmgr_plugin",
+          "memmgr_override",
           "image_framework",
           "napi",
           "player_framework",
