@@ -41,7 +41,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnails(ThumbRdbOpt &opts, bool isSync
     thumbnailData.needResizeLcd = true;
     ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::LOCAL, LoadSourceType::LOCAL_PHOTO);
     if (isSync) {
-        IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData, false);
+        IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnails,

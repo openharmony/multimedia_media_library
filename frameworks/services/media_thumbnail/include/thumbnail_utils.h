@@ -77,8 +77,7 @@ public:
 
     EXPORT static bool DeleteOriginImage(ThumbRdbOpt &opts);
     // Steps
-    EXPORT static bool LoadSourceImage(ThumbnailData &data, const bool isThumbnail = true,
-        const std::string &targetPath = "");
+    EXPORT static bool LoadSourceImage(ThumbnailData &data);
     static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
 
     static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
@@ -106,14 +105,12 @@ public:
 #endif
     static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
         int &err);
-    EXPORT static bool ResizeThumb(int& width, int& height);
-    EXPORT static bool ResizeLcd(int& width, int& height);
     static bool IsSupportGenAstc();
     EXPORT static void QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
         ThumbnailData &data, int &err);
     static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
     static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
-    static bool ScaleThumbnailEx(ThumbnailData &data, bool isThumbnail);
+    static bool ScaleThumbnailEx(ThumbnailData &data);
 
     static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
         LoadSourceType sourceType);
@@ -135,15 +132,11 @@ private:
 
     EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
-    static Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desiredSize,
-        const bool isThumbnail);
-    EXPORT static bool ScaleTargetPixelMap(ThumbnailData &data, const Size &targetSize);
-    EXPORT static bool LoadImageFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize,
-        const std::string &targetPath);
-    EXPORT static bool LoadVideoFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
+    EXPORT static bool LoadImageFile(ThumbnailData &data, Size &desiredSize);
+    EXPORT static bool LoadVideoFile(ThumbnailData &data, Size &desiredSize);
     static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
-        const bool isThumbnail, Size &desiredSize, uint32_t &errCode);
-    EXPORT static bool LoadAudioFile(ThumbnailData &data, const bool isThumbnail, Size &desiredSize);
+        Size &desiredSize, uint32_t &errCode);
+    EXPORT static bool LoadAudioFile(ThumbnailData &data, Size &desiredSize);
 
 #ifdef DISTRIBUTED
     // RDB Store

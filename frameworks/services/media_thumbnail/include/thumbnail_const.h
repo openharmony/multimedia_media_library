@@ -18,6 +18,8 @@
 
 #include "medialibrary_db_const.h"
 
+#include <unordered_map>
+
 namespace OHOS {
 namespace Media {
 constexpr int32_t DEFAULT_YEAR_SIZE = 64;
@@ -48,12 +50,49 @@ enum class LoadSourceType : int32_t {
     CLOUD_LCD
 };
 
+enum class ThumbnailReady : int32_t {
+    GENERATE_THUMB_LATER,
+    GENERATE_THUMB_NOW,
+    GENERATING_THUMB,
+    GENERATE_THUMB_COMPLETED,
+    THUMB_TO_UPLOAD,
+    THUMB_UPLOAD_COMPLETED,
+}
+
+const std::unorderd_map<ThumbnailType, std::string> TYPE_NAME_MAP = {
+    { ThumbnailType::LCD, "LCD" },
+    { ThumbnailType::THUMB, "THUMB" },
+    { ThumbnailType::MTH, "MTH" },
+    { ThumbnailType::YEAR, "YEAR" },
+    { ThumbnailType::THUMB_ASTC, "THUMB_ASTC" },
+    { ThumbnailType::MTH_ASTC, "MTH_ASTC" },
+    { ThumbnailType::YEAR_ASTC, "YEAR_ASTC" },      
+}
+
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
 
 constexpr int32_t THUMBNAIL_LCD_GENERATE_THRESHOLD = 5000;
 constexpr int32_t THUMBNAIL_LCD_AGING_THRESHOLD = 10000;
 constexpr int32_t WAIT_FOR_MS = 1000;
 constexpr int32_t WAIT_FOR_SECOND = 3;
+
+constexpr float EPSILON = 1e-6;
+constexpr float FLOAT_ZERO = 0.0f;
+constexpr int32_t SHORT_SIDE_THRESHOLD = 256;
+constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 768;
+constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 512;
+constexpr int32_t LCD_LONG_SIDE_THRESHOLD = 1920;
+constexpr int32_t MAXIMUM_LCD_LONG_SIDE = 4096;
+constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
+constexpr int32_t MIN_COMPRESS_BUF_SIZE = 8192;
+constexpr int32_t MAX_FIELD_LENGTH = 10;
+constexpr int32_t MAX_TIMEID_LENGTH = 10;
+constexpr int32_t MAX_DATE_ADDED_LENGTH = 13;
+constexpr int32_t DECODE_SCALE_BASE = 2;
+constexpr int32_t FLAT_ANGLE = 180;
+const std::string KVSTORE_FIELD_ID_TEMPLATE = "0000000000";
+const std::string KVSTORE_DATE_ADDED_TEMPLATE = "0000000000000";
+const std::string DEFAULT_EXIF_ORIENTATION = "1";
 
 const std::string THUMBNAIL_LCD_SUFFIX = "LCD";     // The size fit to screen
 const std::string THUMBNAIL_THUMB_SUFFIX = "THM";   // The size which height is 256 and width is 256

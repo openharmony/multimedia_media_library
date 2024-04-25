@@ -22,9 +22,8 @@
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_utils_test.h"
 #include "thumbnail_service.h"
-#define private public
+#include "thumbnail_source_loading.h"
 #include "thumbnail_utils.h"
-#undef private
 
 using namespace std;
 using namespace OHOS;
@@ -505,20 +504,20 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Leve
     ThumbnailData data;
     data.source = nullptr;
     data.mediaType = MEDIA_TYPE_VIDEO;
-    bool isThumbnail = true;
-    std::string path = "";
-    bool ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
+    data.isCreatingThumbSource = false;
+    data.path = "";
+    bool ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, false);
     data.mediaType = MEDIA_TYPE_AUDIO;
-    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
+    ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, false);
     data.mediaType = MEDIA_TYPE_MEDIA;
     data.path = "Documents/";
-    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
+    ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, false);
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     data.source = make_shared<PixelMap>();
-    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
+    ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, true);
 }
 
@@ -660,7 +659,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Lev
     targetSize.height = 20;
     ThumbnailData data;
     data.source = make_shared<PixelMap>();
-    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data, targetSize);
+    bool ret = ScaleTargetPixelMap(data, targetSize);
     EXPECT_EQ(ret, false);
 }
 
@@ -672,13 +671,14 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     desiredSize.width = 20;
     desiredSize.height = 20;
     data.path = "/storage/cloud/files";
+    data.isCreatingThumbSource = false;
     data.source = make_shared<PixelMap>();
     std::string sourcePath = "";
-    bool ret = ThumbnailUtils::LoadImageFile(data, isThumbnail, desiredSize, sourcePath);
+    bool ret = ThumbnailUtils::LoadImageFile(data, desiredSize);
     EXPECT_EQ(ret, false);
-    ret = ThumbnailUtils::LoadVideoFile(data, isThumbnail, desiredSize);
+    ret = ThumbnailUtils::LoadVideoFile(data, desiredSize);
     EXPECT_EQ(ret, false);
-    ret = ThumbnailUtils::LoadAudioFile(data, isThumbnail, desiredSize);
+    ret = ThumbnailUtils::LoadAudioFile(data, desiredSize);
     EXPECT_EQ(ret, false);
 }
 
@@ -736,35 +736,35 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeThumb_test_001, TestSize.Level0)
     int width, height;
     width = 512;
     height = 768;
-    bool result = ThumbnailUtils::ResizeThumb(width, height);
+    bool result = ResizeThumb(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 256);
     EXPECT_EQ(height, 384);
 
     width = 512;
     height = 2560;
-    result = ThumbnailUtils::ResizeThumb(width, height);
+    result = ResizeThumb(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 256);
     EXPECT_EQ(height, 768);
 
     width = 200;
     height = 200;
-    result = ThumbnailUtils::ResizeThumb(width, height);
+    result = ResizeThumb(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 200);
     EXPECT_EQ(height, 200);
 
     width = 128;
     height = 300;
-    result = ThumbnailUtils::ResizeThumb(width, height);
+    result = ResizeThumb(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 128);
     EXPECT_EQ(height, 300);
 
     width = 128;
     height = 1000;
-    result = ThumbnailUtils::ResizeThumb(width, height);
+    result = ResizeThumb(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 128);
     EXPECT_EQ(height, 384);
@@ -775,28 +775,28 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeLcd_test_001, TestSize.Level0)
     int width, height;
     width = 1000;
     height = 1000;
-    bool result = ThumbnailUtils::ResizeLcd(width, height);
+    bool result = ResizeLcd(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 1000);
     EXPECT_EQ(height, 1000);
 
     width = 3840;
     height = 5760;
-    result = ThumbnailUtils::ResizeLcd(width, height);
+    result = ResizeLcd(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 1280);
     EXPECT_EQ(height, 1920);
 
     width = 3840;
     height = 57600;
-    result = ThumbnailUtils::ResizeLcd(width, height);
+    result = ResizeLcd(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 273);
     EXPECT_EQ(height, 4096);
 
     width = 3840;
     height = 28800;
-    result = ThumbnailUtils::ResizeLcd(width, height);
+    result = ResizeLcd(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 512);
     EXPECT_EQ(height, 3840);
