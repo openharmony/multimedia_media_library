@@ -36,7 +36,7 @@ const string PhotoMap::CREATE_TABLE = CreateTable() + TABLE +
     ")";
 
 const string PhotoMap::CREATE_NEW_TRIGGER =
-    " CREATE TRIGGER album_map_insert_cloud_sync_trigger AFTER INSERT ON " + TABLE +
+    " CREATE TRIGGER IF NOT EXISTS album_map_insert_cloud_sync_trigger AFTER INSERT ON " + TABLE +
     " FOR EACH ROW WHEN new." + DIRTY + " = " +
     to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) + " AND is_caller_self_func() = 'true'" +
     " BEGIN UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_DIRTY + " = " +
@@ -45,7 +45,7 @@ const string PhotoMap::CREATE_NEW_TRIGGER =
     to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) + "; SELECT cloud_sync_func(); END;";
 
 const string PhotoMap::CREATE_DELETE_TRIGGER =
-    "CREATE TRIGGER album_map_delete_trigger AFTER UPDATE ON " + TABLE +
+    "CREATE TRIGGER IF NOT EXISTS album_map_delete_trigger AFTER UPDATE ON " + TABLE +
     " FOR EACH ROW WHEN new." + DIRTY + " = " +
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
     " AND is_caller_self_func() = 'true' BEGIN DELETE FROM " + TABLE +

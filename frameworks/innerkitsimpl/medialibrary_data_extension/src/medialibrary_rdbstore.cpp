@@ -1904,14 +1904,14 @@ void AddAlbumOrderColumn(RdbStore &store)
         "UPDATE " + PhotoAlbumColumns::TABLE + " SET " +
         PhotoAlbumColumns::ALBUM_ORDER + " = rowid";
     const std::string albumDeleteTrigger =
-        " CREATE TRIGGER update_order_trigger AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
+        " CREATE TRIGGER IF NOT EXISTS update_order_trigger AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
         " FOR EACH ROW " +
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = album_order - 1" +
         " WHERE album_order > old.album_order; " +
         " END";
     const std::string albumInsertTrigger =
-        " CREATE TRIGGER insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
+        " CREATE TRIGGER IF NOT EXISTS insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = (" +
         " SELECT COALESCE(MAX(album_order), 0) + 1 FROM " + PhotoAlbumColumns::TABLE +
