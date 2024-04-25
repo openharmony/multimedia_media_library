@@ -1668,6 +1668,7 @@ int RefreshPhotoAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
         MEDIA_DEBUG_LOG("albumIds is empty");
         return E_EMPTY_ALBUM_ID;
     }
+    MEDIA_INFO_LOG("Start refreshing photo albums, number of albums to refresh: %{public}zu", albumIds.size());
     auto resultSet = QueryAlbumById(rdbStore, albumIds);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("RefreshPhotoAlbums resultSet is null");
