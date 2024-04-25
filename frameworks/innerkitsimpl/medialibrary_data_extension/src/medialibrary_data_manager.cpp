@@ -1094,7 +1094,13 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::FILESYSTEM_AUDIO:
             return MediaLibraryAssetOperations::QueryOperation(cmd, columns);
         case OperationObject::VISION_START ... OperationObject::VISION_END: {
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+            auto queryResult = MediaLibraryRdbStore::Query(
+                RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+            if (cmd.GetOprnObject() == OperationObject::VISION_OCR && queryResult != nullptr) {
+                queryResult = MediaLibraryVisionOperations::DealWithActiveOcrTask(
+                    queryResult, predicates, columns, cmd);
+            }
+            return queryResult;
         }
         case OperationObject::GEO_DICTIONARY:
         case OperationObject::GEO_KNOWLEDGE:
