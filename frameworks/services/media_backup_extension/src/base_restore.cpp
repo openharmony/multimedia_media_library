@@ -228,7 +228,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
 
 void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)
 {
-    MEDIA_INFO_LOG("Start insert %{public}lu photos", (long)(fileInfos.size()));
+    MEDIA_INFO_LOG("Start insert %{public}zu photos", fileInfos.size());
     if (mediaLibraryRdb_ == nullptr) {
         MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
         return;
