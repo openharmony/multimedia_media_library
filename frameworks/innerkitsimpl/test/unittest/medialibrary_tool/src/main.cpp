@@ -13,14 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_MEDIATOOL_START
-int main()
-{
-    return 0;
-}
-#else
 #include <string>
 #include <vector>
+#include <unistd.h>
 
 #include "control_main.h"
 
@@ -30,11 +25,14 @@ using namespace OHOS::Media::MediaTool;
 
 int main(int argc, char *argv[])
 {
+    int32_t id = getuid();
+    if (id != 0) {
+        return 0;
+    }
     std::vector<std::string> args;
     for (int i = 0; i < argc; i++) {
         args.push_back(std::string(argv[i]));
     }
     return ControlMain::Main(args);
 }
-#endif // MEDIALIBRARY_MEDIATOOL_START
 
