@@ -504,7 +504,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Leve
     ThumbnailData data;
     data.source = nullptr;
     data.mediaType = MEDIA_TYPE_VIDEO;
-    data.isCreatingThumbSource = false;
+    data.isCreatingThumbSource = true;
     data.path = "";
     bool ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, false);
@@ -738,15 +738,15 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeThumb_test_001, TestSize.Level0)
     height = 768;
     bool result = ResizeThumb(width, height);
     EXPECT_TRUE(result);
-    EXPECT_EQ(width, 256);
-    EXPECT_EQ(height, 384);
+    EXPECT_EQ(width, 350);
+    EXPECT_EQ(height, 525);
 
     width = 512;
     height = 2560;
     result = ResizeThumb(width, height);
     EXPECT_TRUE(result);
-    EXPECT_EQ(width, 256);
-    EXPECT_EQ(height, 768);
+    EXPECT_EQ(width, 350);
+    EXPECT_EQ(height, 1050);
 
     width = 200;
     height = 200;

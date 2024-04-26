@@ -20,6 +20,7 @@
 #include "dfx_manager.h"
 #include "image_source.h"
 #include "media_exif.h"
+#include "media_file_utils.h"
 #include "medialibrary_tracer.h"
 #include "post_proc.h"
 
@@ -47,7 +48,7 @@ bool IsLocalSourceAvailable(const std::string& path, int32_t& error)
 
 bool IsCloudSourceAvailable(const std::string& path, int32_t& error)
 {
-    int fd = open( path.c_str(), O_RDONLY);
+    int fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("SourceLoading open cloud file fail: %{public}s", path.c_str());
         return false;
@@ -250,7 +251,20 @@ bool SourceLoading::RunLoading()
         }
         SET_CURRENT_STATE_FUNCTION(state_);
         do {
-            if (!IsSourceAvailable(data_.path, error_)) {
+            if (state_ < SourceState::CloudThumb) {
+                data_.stats.sourceType = LoadSourceType::LOCAL_PHOTO;
+            } else if (state_ >= SourceState::CloudThumb && state_ <= SourceState::CloudOrigin) {
+                data_.stats.sourceType = static_cast<LoadSourceType>(state_);
+            } else {
+                data_.stats.sourceType = LoadSourceType::UNKNOWN;
+            }
+            int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+            bool IsAvailable = IsSourceAvailable(data_.path, error_);
+            if (state_ >= SourceState::CloudThumb) {
+                int64_t totalCost = static_cast<int32_t>(MediaFileUtils::UTCTimeMilliSeconds() - startTime);
+                DfxManager::GetInstance()->HandleThumbnailGeneration(data_.stats);
+            }
+            if (!IsAvailable) {
                 break;
             }
 
@@ -266,7 +280,6 @@ bool SourceLoading::RunLoading()
             if (!IsSizeAcceptable(imageSource, imageInfo, data_, state_)) {
                 break;
             }
-        
 
             MediaLibraryTracer tracer;
             tracer.Start("imageSource->CreatePixelMap");
@@ -312,7 +325,7 @@ bool SourceLoading::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, 
 {
     error_ = imageSource->GetImageInfo(0, imageInfo);
     if (error_ != E_OK) {
-        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_GET_INFO, err);
+        DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_GET_INFO, err);
         return false;
     }
 
@@ -325,6 +338,7 @@ bool SourceLoading::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, 
     data_.needUpload = state_ > SourceState::CloudThumb && minSize >= SHORT_SIDE_THRESHOLD;
     data_.stats.sourceWidth = imageInfo.size.width;
     data_.stats.sourceHeight = imageInfo.size.height;
+    DfxManager::GetInstance()->HandleThumbnailGeneration(data_.stats);
     return true;
 }
 

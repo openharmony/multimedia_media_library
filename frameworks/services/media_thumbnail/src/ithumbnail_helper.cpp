@@ -304,8 +304,9 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
 
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
-    if data.source == nullptr) {
+    if (data.source == nullptr) {
         MEDIA_ERR_LOG("source is nullptr when generate type: %{public}s", TYPE_NAME_MAP.at(type));
+        return false;
     }
 
     if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {

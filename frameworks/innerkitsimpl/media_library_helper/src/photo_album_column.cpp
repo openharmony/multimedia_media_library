@@ -130,11 +130,11 @@ const string PhotoAlbumColumns::INDEX_ALBUM_TYPES = CreateIndex() + "photo_album
 
 // Create triggers
 const std::string PhotoAlbumColumns::CREATE_ALBUM_INSERT_TRIGGER =
-    " CREATE TRIGGER album_insert_cloud_sync_trigger AFTER INSERT ON " + TABLE +
+    " CREATE TRIGGER IF NOT EXISTS album_insert_cloud_sync_trigger AFTER INSERT ON " + TABLE +
     " BEGIN SELECT cloud_sync_func(); END;";
 
 const std::string PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER =
-    "CREATE TRIGGER album_delete_trigger AFTER UPDATE ON " + TABLE +
+    "CREATE TRIGGER IF NOT EXISTS album_delete_trigger AFTER UPDATE ON " + TABLE +
     " FOR EACH ROW WHEN new." + ALBUM_DIRTY + " = " +
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) +
     " AND old." + ALBUM_DIRTY + " = " + std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_NEW)) +
@@ -142,7 +142,7 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_DELETE_TRIGGER =
     " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
 
 const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
-    "CREATE TRIGGER album_modify_trigger AFTER UPDATE ON " + TABLE +
+    "CREATE TRIGGER IF NOT EXISTS album_modify_trigger AFTER UPDATE ON " + TABLE +
     " FOR EACH ROW WHEN old." + ALBUM_DIRTY + " = " +
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
     " AND old." + ALBUM_DIRTY + " = " + "new." + ALBUM_DIRTY +
@@ -152,7 +152,7 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
     " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
 
 const std::string PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER =
-        " CREATE TRIGGER update_order_trigger AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
+        " CREATE TRIGGER IF NOT EXISTS update_order_trigger AFTER DELETE ON " + PhotoAlbumColumns::TABLE +
         " FOR EACH ROW " +
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = album_order - 1" +
@@ -160,7 +160,7 @@ const std::string PhotoAlbumColumns::ALBUM_DELETE_ORDER_TRIGGER =
         " END";
 
 const std::string PhotoAlbumColumns::ALBUM_INSERT_ORDER_TRIGGER =
-        " CREATE TRIGGER insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
+        " CREATE TRIGGER IF NOT EXISTS insert_order_trigger AFTER INSERT ON " + PhotoAlbumColumns::TABLE +
         " BEGIN " +
         " UPDATE " + PhotoAlbumColumns::TABLE + " SET album_order = (" +
         " SELECT COALESCE(MAX(album_order), 0) + 1 FROM " + PhotoAlbumColumns::TABLE +

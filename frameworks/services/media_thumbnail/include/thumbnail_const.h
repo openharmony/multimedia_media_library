@@ -41,13 +41,15 @@ enum class ThumbnailType : int32_t {
 enum class GenerateScene : int32_t {
     LOCAL = 0,
     CLOUD,
-    BACKGROUND
+    BACKGROUND,
 };
 
 enum class LoadSourceType : int32_t {
     LOCAL_PHOTO = 0,
     CLOUD_THUMB,
-    CLOUD_LCD
+    CLOUD_LCD,
+    CLOUD_ORIGIN,
+    UNKNOWN,
 };
 
 enum class ThumbnailReady : int32_t {
@@ -78,7 +80,7 @@ constexpr int32_t WAIT_FOR_SECOND = 3;
 
 constexpr float EPSILON = 1e-6;
 constexpr float FLOAT_ZERO = 0.0f;
-constexpr int32_t SHORT_SIDE_THRESHOLD = 256;
+constexpr int32_t SHORT_SIDE_THRESHOLD = 350;
 constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 768;
 constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 512;
 constexpr int32_t LCD_LONG_SIDE_THRESHOLD = 1920;
