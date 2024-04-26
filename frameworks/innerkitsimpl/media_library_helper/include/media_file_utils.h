@@ -111,7 +111,8 @@ public:
     EXPORT static MediaType GetMediaType(const std::string &filePath);
     EXPORT static std::string SplitByChar(const std::string &str, const char split);
     EXPORT static std::string GetExtensionFromPath(const std::string &path);
-    EXPORT static int32_t OpenFile(const std::string &path, const std::string &mode);
+    EXPORT static int32_t OpenFile(const std::string &path, const std::string &mode,
+        const std::string &clientbundleName = "");
     EXPORT static int32_t CreateAsset(const std::string &filePath);
     EXPORT static int32_t ModifyAsset(const std::string &oldPath, const std::string &newPath);
     EXPORT static int32_t OpenAsset(const std::string &filePath, const std::string &mode);
