@@ -281,7 +281,7 @@ const std::string CREATE_ASSETMAP_VIEW = "CREATE VIEW IF NOT EXISTS " + ASSETMAP
                         "a." + MEDIA_DATA_DB_ID + " = " +
                         "b." + SMARTALBUMMAP_DB_CHILD_ASSET_ID;
 
-const std::string CREATE_FILES_DELETE_TRIGGER = "CREATE TRIGGER delete_trigger AFTER UPDATE ON " +
+const std::string CREATE_FILES_DELETE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS delete_trigger AFTER UPDATE ON " +
                         MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN new.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyType::TYPE_DELETED)) +
                         " and OLD.cloud_id is NULL AND is_caller_self_func() = 'true'" +
@@ -289,7 +289,7 @@ const std::string CREATE_FILES_DELETE_TRIGGER = "CREATE TRIGGER delete_trigger A
                         " DELETE FROM " + MEDIALIBRARY_TABLE + " WHERE file_id = old.file_id;" +
                         " END;";
 
-const std::string CREATE_FILES_FDIRTY_TRIGGER = "CREATE TRIGGER fdirty_trigger AFTER UPDATE ON " +
+const std::string CREATE_FILES_FDIRTY_TRIGGER = "CREATE TRIGGER IF NOT EXISTS fdirty_trigger AFTER UPDATE ON " +
                         MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL AND" +
                         " new.date_modified <> old.date_modified AND is_caller_self_func() = 'true'" +
                         " BEGIN " +
@@ -299,7 +299,7 @@ const std::string CREATE_FILES_FDIRTY_TRIGGER = "CREATE TRIGGER fdirty_trigger A
                         " SELECT cloud_sync_func(); " +
                         " END;";
 
-const std::string CREATE_FILES_MDIRTY_TRIGGER = "CREATE TRIGGER mdirty_trigger AFTER UPDATE ON " +
+const std::string CREATE_FILES_MDIRTY_TRIGGER = "CREATE TRIGGER IF NOT EXISTS mdirty_trigger AFTER UPDATE ON " +
                         MEDIALIBRARY_TABLE + " FOR EACH ROW WHEN OLD.cloud_id IS NOT NULL" +
                         " AND new.date_modified = old.date_modified AND old.dirty = " +
                         std::to_string(static_cast<int32_t>(DirtyType::TYPE_SYNCED)) +

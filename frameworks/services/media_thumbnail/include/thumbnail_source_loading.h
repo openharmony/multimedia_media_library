@@ -36,8 +36,8 @@ EXPORT bool ResizeThumb(int& width, int& height);
 EXPORT bool ResizeLcd(int& width, int& height);
 EXPORT bool ScaleTargetPixelMap(ThumbnailData& data, const Size& targetSize);
 
-enum class SourceState : uint16_t {
-    Begin,
+enum class SourceState : int32_t {
+    Begin = -3,
     LocalThumb,
     LocalLcd,
     LocalOrigin,
@@ -147,7 +147,7 @@ const std::unordered_map<SourceState, StateFunc> STATE_FUNC_MAP = {
     { SourceState::Error, { ErrorSource::IsSourceAvailable, ErrorSource::SwitchToNextState,
         ErrorSource::IsSizeLargeEnough } },
     { SourceState::Finish, { FinishSource::IsSourceAvailable, FinishSource::SwitchToNextState,
-       FinishSource::IsSizeLargeEnough } },
+        FinishSource::IsSizeLargeEnough } },
 }
 
 #define SET_CURRENT_STATE_FUNCTION(state)                                                                              \
