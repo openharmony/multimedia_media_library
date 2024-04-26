@@ -22,61 +22,59 @@ ohos_executable("mediatool") {
   defines = []
   external_deps = []
 
-  if (build_variant == "root") {
-    include_dirs = [
-      "./include",
-      "../get_self_permissions/include",
-      "${MEDIALIB_ROOT_PATH}/frameworks/innerkitsimpl/media_library_helper/include",
-      "${MEDIALIB_ROOT_PATH}/frameworks/services/media_thumbnail/include",
-      "${MEDIALIB_ROOT_PATH}/frameworks/utils/include",
-      "${MEDIALIB_ROOT_PATH}/interfaces/innerkits/native/include",
-      "${MEDIALIB_ROOT_PATH}/interfaces/inner_api/media_library_helper/include",
-      "${MEDIALIB_ROOT_PATH}/interfaces/kits/js/include",
-    ]
+  include_dirs = [
+    "./include",
+    "../get_self_permissions/include",
+    "${MEDIALIB_ROOT_PATH}/frameworks/innerkitsimpl/media_library_helper/include",
+    "${MEDIALIB_ROOT_PATH}/frameworks/services/media_thumbnail/include",
+    "${MEDIALIB_ROOT_PATH}/frameworks/utils/include",
+    "${MEDIALIB_ROOT_PATH}/interfaces/innerkits/native/include",
+    "${MEDIALIB_ROOT_PATH}/interfaces/inner_api/media_library_helper/include",
+    "${MEDIALIB_ROOT_PATH}/interfaces/kits/js/include",
+  ]
 
-    sources += [
-      "../get_self_permissions/src/get_self_permissions.cpp",
-      "src/command/command.cpp",
-      "src/command/delete_command_v10.cpp",
-      "src/command/list_command_v10.cpp",
-      "src/command/recv_command_v10.cpp",
-      "src/command/send_command_v10.cpp",
-      "src/command_line.cpp",
-      "src/control_main.cpp",
-      "src/exec_env.cpp",
-      "src/userfile_client_ex.cpp",
-      "src/utils/database_utils.cpp",
-    ]
+  sources += [
+    "../get_self_permissions/src/get_self_permissions.cpp",
+    "src/command/command.cpp",
+    "src/command/delete_command_v10.cpp",
+    "src/command/list_command_v10.cpp",
+    "src/command/recv_command_v10.cpp",
+    "src/command/send_command_v10.cpp",
+    "src/command_line.cpp",
+    "src/control_main.cpp",
+    "src/exec_env.cpp",
+    "src/userfile_client_ex.cpp",
+    "src/utils/database_utils.cpp",
+  ]
 
-    defines += [ "MEDIALIBRARY_MEDIATOOL_START=1" ]
+  defines += [ "MEDIALIBRARY_MEDIATOOL_START=1" ]
 
-    deps += [
-      "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-      "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-      "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_nutils",
-    ]
+  deps += [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_nutils",
+  ]
 
-    external_deps += [
-      "ability_base:want",
-      "ability_base:zuri",
-      "ability_runtime:ability_manager",
-      "ability_runtime:abilitykit_native",
-      "ability_runtime:dataobs_manager",
-      "ability_runtime:napi_base_context",
-      "access_token:libaccesstoken_sdk",
-      "access_token:libnativetoken",
-      "access_token:libtoken_setproc",
-      "c_utils:utils",
-      "data_share:datashare_common",
-      "data_share:datashare_consumer",
-      "data_share:datashare_provider",
-      "device_auth:deviceauth_sdk",
-      "hilog:libhilog",
-      "hitrace:hitrace_meter",
-      "napi:ace_napi",
-      "samgr:samgr_proxy",
-    ]
-  }
+  external_deps += [
+    "ability_base:want",
+    "ability_base:zuri",
+    "ability_runtime:ability_manager",
+    "ability_runtime:abilitykit_native",
+    "ability_runtime:dataobs_manager",
+    "ability_runtime:napi_base_context",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libnativetoken",
+    "access_token:libtoken_setproc",
+    "c_utils:utils",
+    "data_share:datashare_common",
+    "data_share:datashare_consumer",
+    "data_share:datashare_provider",
+    "device_auth:deviceauth_sdk",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "napi:ace_napi",
+    "samgr:samgr_proxy",
+  ]
 
   ldflags = [ "-Wl,--gc-sections" ]
 
