@@ -225,7 +225,7 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
     if (data.source != nullptr) {
         return true;
     }
-    
+
     if (!ThumbnailUtils::LoadSourceImage(data)) {
         if (opts.path.empty()) {
             MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
@@ -274,6 +274,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
 {
     data.loaderOpts.decodeInThumbSize = false;
     data.loaderOpts.sourceLoadingBeginWithThumb = data.loaderOpts.isCloudLoading;
+    data.loaderOpts.isHdr = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("load source is nullptr path: %{public}s", opts.path.c_str());
         return false;
@@ -297,7 +298,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
         float heightScale = (1.0f * lcdDesiredHeight) / data.source->GetHeight();
         lcdSource->scale(widthScale, heightScale);
     }
-    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO)) {
+    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO, false, false)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
     }
@@ -616,6 +617,9 @@ bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data
         MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         data.sourceEx = nullptr;
+    }
+    if (data.source != nullptr && data.source->IsHdr() == true) {
+        data.source->ToSdr();
     }
 
     if (!DoCreateThumbnail(opts, data)) {
