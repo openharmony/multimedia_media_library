@@ -169,6 +169,12 @@ static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
     selectionTotal = FILE_ID + " = " + fileId + " AND " + SEGMENTATION + " = 1";
     DeleteFromVisionTables(fileId, selectionTotal, SEGMENTATION, PAH_ANA_SEGMENTATION);
 
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + HEAD + " = 1";
+    DeleteFromVisionTables(fileId, selectionTotal, HEAD, PAH_ANA_HEAD);
+
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + POSE + " = 1";
+    DeleteFromVisionTables(fileId, selectionTotal, POSE, PAH_ANA_POSE);
+
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Can not get rdbstore");
