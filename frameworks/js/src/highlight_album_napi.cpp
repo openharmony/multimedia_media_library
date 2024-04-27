@@ -391,7 +391,7 @@ napi_value HighlightAlbumNapi::JSSetHighlightUserActionData(napi_env env, napi_c
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext,
         asyncContext->highlightUserActionType), JS_ERR_PARAMETER_INVALID);
-    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, context->argv[1], asyncContext->actionData));
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, asyncContext->argv[1], asyncContext->actionData));
 
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
