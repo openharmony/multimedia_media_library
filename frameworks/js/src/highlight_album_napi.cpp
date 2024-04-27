@@ -234,7 +234,8 @@ static void JSSetHighlightUserActionDataExecute(napi_env env, void *data)
             context->error = JS_INNER_FAIL;
             return;
         }
-        int64_t userActionDataCount = get<int64_t>(ResultSetUtils::GetValFromColumn(userActionType, resultSet, TYPE_INT64));
+        int64_t userActionDataCount = get<int64_t>(ResultSetUtils::GetValFromColumn(userActionType,
+            resultSet, TYPE_INT64));
         context->valuesBucket.Put(userActionType, to_string(userActionDataCount + context->actionData));
         int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
         context->SaveError(changedRows);
