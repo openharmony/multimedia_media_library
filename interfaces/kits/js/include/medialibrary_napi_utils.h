@@ -276,12 +276,7 @@ const std::vector<std::string> virtualAlbumTypeEnum {
 };
 
 const std::vector<std::string> directoryEnumValues {
-    "Camera/",
-    "Videos/",
-    "Pictures/",
-    "Audios/",
-    "Documents/",
-    "Download/"
+    "Camera/", "Videos/", "Pictures/", "Audios/", "Documents/", "Download/"
 };
 
 const std::vector<std::string> systemAlbumSubType {
