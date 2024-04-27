@@ -216,7 +216,7 @@ static void JSSetHighlightUserActionDataExecute(napi_env env, void *data)
     string userActionType;
     if (HIGHLIGHT_USER_ACTION_MAP.find(context->highlightUserActionType) != HIGHLIGHT_USER_ACTION_MAP.end()) {
         userActionType = HIGHLIGHT_USER_ACTION_MAP.at(context->highlightUserActionType);
-        context->predicates.push_back(userActionType);
+        context->fetchColumn.push_back(userActionType);
     } else {
         NAPI_ERR_LOG("Invalid highlightUserActionType");
         return;
@@ -225,7 +225,7 @@ static void JSSetHighlightUserActionDataExecute(napi_env env, void *data)
     Uri uri(URI_HIGHLIGHT_ALBUM);
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
     int errCode = 0;
-    auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet != nullptr) {
         auto count = 0;
         auto ret = resultSet->GetRowCount(count);
