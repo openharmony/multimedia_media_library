@@ -62,6 +62,8 @@ struct MediaAssetManagerAsyncContext : NapiError {
     SourceMode sourceMode;
     ReturnDataType returnDataType;
     bool hasReadPermission;
+    bool needsExtraInfo;
+    MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 };
 
 struct AssetHandler {
@@ -70,6 +72,8 @@ struct AssetHandler {
     std::string requestUri;
     MediaAssetDataHandlerPtr dataHandler;
     napi_threadsafe_function threadSafeFunc;
+    MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    bool needsExtraInfo;
 
     AssetHandler(const std::string &mediaId, const std::string &requestId, const std::string &uri,
         const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
@@ -97,6 +101,12 @@ public:
         const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static void OnDataPrepared(napi_env env, napi_value cb, void *context, void *data);
     static void RegisterTaskObserver(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
+    static void GetByteArrayNapiObject(const std::string &requestUri, napi_value &arrayBuffer, bool isSource,
+        napi_env env);
+    static void GetImageSourceNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
+        napi_env env);
+    static void WriteDataToDestPath(std::string requestUri, std::string destUri, napi_value& resultNapiValue,
+        bool isSource, napi_env env);
 
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -114,12 +124,6 @@ private:
     static void AddImage(const int fileId, DeliveryMode deliveryMode);
     static void OnHandleRequestImage(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static void OnHandleRequestVideo(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
-    static void GetByteArrayNapiObject(const std::string &requestUri, napi_value &arrayBuffer, bool isSource,
-        napi_env env);
-    static void GetImageSourceNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
-        napi_env env);
-    static void WriteDataToDestPath(std::string requestUri, std::string destUri, napi_value& resultNapiValue,
-        bool isSource, napi_env env);
     static void SendFile(napi_env env, int srcFd, int destFd, napi_value &result, off_t fileSize);
 public:
     std::mutex sMediaAssetMutex_;
