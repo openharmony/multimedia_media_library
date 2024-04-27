@@ -80,33 +80,42 @@ NotifyMode NapiMediaAssetDataHandler::GetNotifyMode()
     return notifyMode_;
 }
 
-void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_value arg)
+void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_value arg, napi_value extraInfo)
 {
     if (dataHandlerRef_ == nullptr) {
-        NAPI_ERR_LOG("NapiMediaAssetDataHandler JsOnDataPrepared js function is null");
-        NapiError::ThrowError(env_, JS_INNER_FAIL, "handler is invalid");
+        NAPI_ERR_LOG("JsOnDataPrepared js function is null");
         return;
     }
 
     napi_value callback;
     napi_status status = napi_get_reference_value(env_, dataHandlerRef_, &callback);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("NapiMediaAssetDataHandler JsOnDataPrepared napi_get_reference_value fail");
-        NapiError::ThrowError(env_, JS_INNER_FAIL, "napi_get_reference_value fail");
+        NAPI_ERR_LOG("JsOnDataPrepared napi_get_reference_value fail, napi status: %{public}d",
+            static_cast<int>(status));
         return;
     }
 
     napi_value jsOnDataPrepared;
-    status = napi_get_named_property(env_, callback, "onDataPrepared", &jsOnDataPrepared);
+    status = napi_get_named_property(env_, callback, ON_DATA_PREPARED_FUNC, &jsOnDataPrepared);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("NapiMediaAssetDataHandler JsOnDataPrepared napi_get_named_property fail");
-        NapiError::ThrowError(env_, JS_INNER_FAIL, "napi_get_named_property fail");
+        NAPI_ERR_LOG("JsOnDataPrepared napi_get_named_property fail, napi status: %{public}d",
+            static_cast<int>(status));
         return;
     }
 
-    napi_value argv[] = { arg };
+    constexpr size_t maxArgs = 2;
+    napi_value argv[maxArgs];
+    size_t argc = 0;
+    if (extraInfo != nullptr) {
+        argv[PARAM0] = arg;
+        argv[PARAM1] = extraInfo;
+        argc = ARGS_TWO;
+    } else {
+        argv[PARAM0] = arg;
+        argc = ARGS_ONE;
+    }
     napi_value promise;
-    status = napi_call_function(env_, nullptr, jsOnDataPrepared, 1, argv, &promise);
+    status = napi_call_function(env_, nullptr, jsOnDataPrepared, argc, argv, &promise);
     if (status != napi_ok) {
         NAPI_ERR_LOG("call js function failed %{public}d", static_cast<int32_t>(status));
         NapiError::ThrowError(env_, JS_INNER_FAIL, "calling onDataPrepared failed");

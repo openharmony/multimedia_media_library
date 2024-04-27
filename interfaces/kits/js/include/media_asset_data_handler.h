@@ -43,6 +43,8 @@ enum class NotifyMode : int32_t {
     WAIT_FOR_HIGH_QUALITY,
 };
 
+constexpr const char* ON_DATA_PREPARED_FUNC = "onDataPrepared";
+
 class NapiMediaAssetDataHandler {
 public:
     NapiMediaAssetDataHandler(napi_env env, napi_value dataHandler, ReturnDataType dataType, const std::string &uri,
@@ -55,7 +57,7 @@ public:
     SourceMode GetSourceMode();
     void SetNotifyMode(NotifyMode trigger);
     NotifyMode GetNotifyMode();
-    void JsOnDataPrepared(napi_value exports);
+    void JsOnDataPrepared(napi_value exports, napi_value extraInfo = nullptr);
 
 private:
     napi_env env_ = nullptr;
