@@ -847,8 +847,10 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
             napi_get_undefined(env, &napiValueOfInfoMap);
         }
     }
-
     napi_value napiValueOfMedia = GetNapiValueOfMedia(env, dataHandler);
+    if (napiValueOfMedia == nullptr) {
+        napi_get_undefined(env, &napiValueOfMedia);
+    }
     dataHandler->JsOnDataPrepared(napiValueOfMedia, napiValueOfInfoMap);
     
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
@@ -910,7 +912,6 @@ void MediaAssetManagerNapi::GetImageSourceNapiObject(const std::string &fileUri,
     napi_unwrap(env, tempImageSourceNapi, reinterpret_cast<void**>(&imageSourceNapi));
     if (imageSourceNapi == nullptr) {
         NAPI_ERR_LOG("unwrap image napi object failed");
-        NapiError::ThrowError(env, JS_INNER_FAIL, "CreateImageSource error");
         return;
     }
     std::string tmpUri = fileUri;
@@ -922,7 +923,6 @@ void MediaAssetManagerNapi::GetImageSourceNapiObject(const std::string &fileUri,
     int fd = UserFileClient::OpenFile(uri, "r");
     if (fd < 0) {
         NAPI_ERR_LOG("get image fd failed, errno: %{public}d", errno);
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "open image file error");
         return;
     }
 
@@ -932,7 +932,6 @@ void MediaAssetManagerNapi::GetImageSourceNapiObject(const std::string &fileUri,
     close(fd);
     if (nativeImageSourcePtr == nullptr) {
         NAPI_ERR_LOG("get ImageSource::CreateImageSource failed nullptr");
-        NapiError::ThrowError(env, JS_INNER_FAIL, "CreateImageSource error");
         return;
     }
     imageSourceNapi->SetNativeImageSource(std::move(nativeImageSourcePtr));
@@ -955,7 +954,6 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(const std::string &requestUri
     int imageFd = UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
     if (imageFd < 0) {
         NAPI_ERR_LOG("get image fd failed, %{public}d", errno);
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "open image file  error");
         return;
     }
     size_t imgLen = lseek(imageFd, 0, SEEK_END);
@@ -966,7 +964,6 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(const std::string &requestUri
     close(imageFd);
     if (readRet != imgLen) {
         NAPI_ERR_LOG("read image failed");
-        NapiError::ThrowError(env, JS_INNER_FAIL, "open Image file error");
         return;
     }
 }
@@ -1040,7 +1037,6 @@ void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::str
     if (requestUri.empty() || responseUri.empty()) {
         napi_get_boolean(env, false, &result);
         NAPI_ERR_LOG("requestUri or responseUri is nullptr");
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestUri or responseUri is nullptr");
         return;
     }
     std::string tmpUri = requestUri;
@@ -1052,7 +1048,6 @@ void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::str
     if (srcFd < 0) {
         napi_get_boolean(env, false, &result);
         NAPI_ERR_LOG("get source file fd failed %{public}d", srcFd);
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "open source file error");
         return;
     }
     struct stat statSrc;
@@ -1060,7 +1055,6 @@ void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::str
         close(srcFd);
         napi_get_boolean(env, false, &result);
         NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "open source file error");
         return;
     }
     Uri destUri(responseUri);
@@ -1069,7 +1063,6 @@ void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::str
         close(srcFd);
         napi_get_boolean(env, false, &result);
         NAPI_ERR_LOG("get dest fd failed %{public}d", destFd);
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "open dest file error");
         return;
     }
     SendFile(env, srcFd, destFd, result, statSrc.st_size);
@@ -1090,7 +1083,6 @@ void MediaAssetManagerNapi::SendFile(napi_env env, int srcFd, int destFd, napi_v
         close(destFd);
         napi_get_boolean(env, false, &result);
         NAPI_ERR_LOG("send file failed, %{public}d", errno);
-        NapiError::ThrowError(env, OHOS_PERMISSION_DENIED_CODE, "send file failed");
         return;
     }
     napi_get_boolean(env, true, &result);

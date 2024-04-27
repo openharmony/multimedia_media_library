@@ -126,7 +126,6 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
     { "image/x-dcraw", { "raw" } },
     { "video/3gpp2", { "3gpp2", "3gp2", "3g2" } },
     { "video/3gpp", { "3gpp", "3gp" } },
-    { "video/avi", { "avi" } },
     { "video/mp4", { "m4v", "f4v", "mp4v", "mpeg4", "mp4" }},
     { "video/mp2t", { "m2ts", "mts"} },
     { "video/mp2ts", { "ts" } },
