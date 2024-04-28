@@ -1701,5 +1701,67 @@ bool PhotoEditingRecord::IsInEditOperation(int32_t fileId)
     }
     return false;
 }
+
+void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, const string& photoPath)
+{
+    auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (mediaLibraryRdbStore == nullptr) {
+        MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
+        return;
+    }
+    auto rdbStore = mediaLibraryRdbStore->GetRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("RdbStore is nullptr!");
+        return;
+    }
+
+    size_t LCDThumbnailSize = 0;
+    size_t THMThumbnailSize = 0;
+    size_t THMASTCThumbnailSize = 0;
+    if (!MediaFileUtils::GetFileSize(GetThumbnailPath(photoPath, THUMBNAIL_LCD_SUFFIX), LCDThumbnailSize)) {
+        MEDIA_WARN_LOG("Failed to get LCD thumbnail size for photo id %{public}s", photoId.c_str());
+    }
+    if (!MediaFileUtils::GetFileSize(GetThumbnailPath(photoPath, THUMBNAIL_THUMB_SUFFIX), THMThumbnailSize)) {
+        MEDIA_WARN_LOG("Failed to get THM thumbnail size for photo id %{public}s", photoId.c_str());
+    }
+    if (!MediaFileUtils::GetFileSize(GetThumbnailPath(photoPath, THUMBNAIL_THUMBASTC_SUFFIX), THMASTCThumbnailSize)) {
+        MEDIA_WARN_LOG("Failed to get THM_ASTC thumbnail size for photo id %{public}s", photoId.c_str());
+    }
+    size_t photoThumbnailSize = LCDThumbnailSize + THMThumbnailSize + THMASTCThumbnailSize;
+
+    string sql = "INSERT INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
+        PhotoExtColumn::PHOTO_ID + ", " + PhotoExtColumn::THUMBNAIL_SIZE +
+        ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) +
+        ") ON DUPLICATE KEY UPDATE " +
+        PhotoExtColumn::PHOTO_ID + " = VALUES(" + PhotoExtColumn::PHOTO_ID + "), " +
+        PhotoExtColumn::THUMBNAIL_SIZE + " = VALUES(" + PhotoExtColumn::THUMBNAIL_SIZE + ")";
+
+    int32_t ret = rdbStore->ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
+    }
+}
+
+void MediaLibraryPhotoOperations::RemoveThumbnailSizeRecord(const string& photoId)
+{
+    auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (mediaLibraryRdbStore == nullptr) {
+        MEDIA_ERR_LOG("Medialibrary rdbStore is nullptr!");
+        return;
+    }
+    auto rdbStore = mediaLibraryRdbStore->GetRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("RdbStore is nullptr!");
+        return;
+    }
+
+    string sql = "DELETE FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE +
+        "WHERE " + PhotoExtColumn::PHOTO_ID + " = " + photoId + ";";
+    int32_t ret = rdbStore->ExecuteSql(sql);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
+    }
+}
+
 } // namespace Media
 } // namespace OHOS

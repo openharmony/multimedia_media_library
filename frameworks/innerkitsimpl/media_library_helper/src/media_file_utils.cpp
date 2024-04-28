@@ -24,6 +24,7 @@
 #include <regex>
 #include <sstream>
 #include <sys/sendfile.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
@@ -1400,4 +1401,17 @@ bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
     constexpr int32_t MAX_DURATION_MS = 3000;
     return duration >= MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
+
+bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
+{
+    struct stat statbuf;
+    if (lstat(filePath.c_str(), &statbuf) == -1) {
+        MEDIA_WARN_LOG("Failed to get file size, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
+        size = 0;
+        return false;
+    }
+    size = statbuf.st_size;
+    return true;
+}
+
 } // namespace OHOS::Media

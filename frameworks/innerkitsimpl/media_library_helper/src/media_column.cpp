@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "base_column.h"
+#include "medialibrary_db_const.h"
 #include "userfile_manager_types.h"
 
 namespace OHOS {
@@ -397,5 +398,21 @@ const std::string MediaColumn::ASSETS_QUERY_FILTER =
     MediaColumn::MEDIA_DATE_TRASHED + " = 0" + " AND " +
     MediaColumn::MEDIA_HIDDEN + " = 0" + " AND " +
     MediaColumn::MEDIA_TIME_PENDING + " = 0";
+
+const std::string PhotoExtColumn::PHOTOS_EXT_TABLE = "tab_photos_ext";
+
+const std::string PhotoExtColumn::PHOTO_ID = "photo_id";
+const std::string PhotoExtColumn::THUMBNAIL_SIZE = "thumbnail_size";
+
+const std::string PhotoExtColumn::CREATE_PHOTO_EXT_TABLE =
+    "CREATE TABLE IF NOT EXISTS " +
+    PHOTOS_EXT_TABLE + " (" +
+    PHOTO_ID + " INTEGER PRIMARY KEY, " +
+    THUMBNAIL_SIZE + " BIGINT DEFAULT 0)";
+
+const std::string PhotoExtColumn::QUERY_THUMBNAIL_VOLUMN =
+    "SELECT SUM(" + THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE +
+    " FROM " + PHOTOS_EXT_TABLE;
+
 }  // namespace Media
 }  // namespace OHOS
