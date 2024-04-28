@@ -51,6 +51,7 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
     const std::string &mediaAppName)
 {
     std::unique_ptr<BaseRestore> restoreService;
+    MEDIA_INFO_LOG("Start restore service: %{public}d", sceneCode);
     if (sceneCode == UPGRADE_RESTORE_ID) {
         restoreService = std::make_unique<UpgradeRestore>(galleryAppName, mediaAppName,
             UPGRADE_RESTORE_ID, GetDualDirName());

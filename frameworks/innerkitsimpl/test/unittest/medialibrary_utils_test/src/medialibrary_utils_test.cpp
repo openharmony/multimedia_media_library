@@ -666,7 +666,6 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Lev
 HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0)
 {
     ThumbnailData data;
-    bool isThumbnail = false;
     Size desiredSize;
     desiredSize.width = 20;
     desiredSize.height = 20;

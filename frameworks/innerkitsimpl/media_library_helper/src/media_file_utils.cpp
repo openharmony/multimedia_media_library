@@ -22,6 +22,7 @@
 #include <fstream>
 #include <ftw.h>
 #include <regex>
+#include <securec.h>
 #include <sstream>
 #include <sys/sendfile.h>
 #include <sys/types.h>
@@ -30,6 +31,8 @@
 
 #include "avmetadatahelper.h"
 #include "directory_ex.h"
+#include "hmdfs.h"
+#include "ipc_skeleton.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_log.h"
@@ -123,7 +126,6 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
     { "image/x-dcraw", { "raw" } },
     { "video/3gpp2", { "3gpp2", "3gp2", "3g2" } },
     { "video/3gpp", { "3gpp", "3gp" } },
-    { "video/avi", { "avi" } },
     { "video/mp4", { "m4v", "f4v", "mp4v", "mpeg4", "mp4" }},
     { "video/mp2t", { "m2ts", "mts"} },
     { "video/mp2ts", { "ts" } },
@@ -788,7 +790,24 @@ string MediaFileUtils::GetExtensionFromPath(const string &path)
     return extention;
 }
 
-int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
+static void SendHmdfsCallerInfoToIoctl(const int32_t fd, const string &clientbundleName)
+{
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    hmdfs_caller_info caller_info;
+    caller_info.tokenId = tokenId;
+
+    if (strcpy_s(caller_info.bundle_name, sizeof(caller_info.bundle_name), clientbundleName.c_str()) != 0) {
+        MEDIA_ERR_LOG("Failed to copy clientbundleName: %{public}s", clientbundleName.c_str());
+    } else {
+        MEDIA_DEBUG_LOG("tokenId = %{public}d, clientbundleName = %{public}s", tokenId, clientbundleName.c_str());
+        int32_t ret = ioctl(fd, HMDFS_IOC_GET_CALLER_INFO, caller_info);
+        if (ret < 0) {
+            MEDIA_DEBUG_LOG("Failed to set caller_info to fd: %{public}d, error: %{public}d", fd, errno);
+        }
+    }
+}
+
+int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode, const string &clientbundleName)
 {
     int32_t errCode = E_ERR;
 
@@ -825,7 +844,13 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode)
         return errCode;
     }
     MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
-    return open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
+    int32_t fd = open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
+    if (clientbundleName.empty()) {
+        MEDIA_DEBUG_LOG("ClientBundleName is empty,failed to to set caller_info to fd");
+    } else {
+        SendHmdfsCallerInfoToIoctl(fd, clientbundleName);
+    }
+    return fd;
 }
 
 int32_t MediaFileUtils::CreateAsset(const string &filePath)

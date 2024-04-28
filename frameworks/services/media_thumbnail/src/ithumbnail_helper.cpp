@@ -258,7 +258,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
 {
     data.isCreatingThumbSource = false;
     data.isLoadingFromThumbToLcd = false;
-    if (!TryLoadSource(opts, data, THUMBNAIL_LCD_SUFFIX, true)) {
+    if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("load source is nullptr path: %{public}s", opts.path.c_str());
         return false;
     }
@@ -305,7 +305,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
 bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type)
 {
     if (data.source == nullptr) {
-        MEDIA_ERR_LOG("source is nullptr when generate type: %{public}s", TYPE_NAME_MAP.at(type));
+        MEDIA_ERR_LOG("source is nullptr when generate type: %{public}s", TYPE_NAME_MAP.at(type).c_str());
         return false;
     }
 
@@ -527,7 +527,7 @@ std::string GetAvailableThumbnailSuffix(ThumbnailData &data)
     return "";
 }
 
-bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data, bool forQuery)
+bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.isCreatingThumbSource = true;
     data.isLoadingFromThumbToLcd = true;

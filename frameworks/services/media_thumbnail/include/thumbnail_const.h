@@ -59,9 +59,9 @@ enum class ThumbnailReady : int32_t {
     GENERATE_THUMB_COMPLETED,
     THUMB_TO_UPLOAD,
     THUMB_UPLOAD_COMPLETED,
-}
+};
 
-const std::unorderd_map<ThumbnailType, std::string> TYPE_NAME_MAP = {
+const std::unordered_map<ThumbnailType, std::string> TYPE_NAME_MAP = {
     { ThumbnailType::LCD, "LCD" },
     { ThumbnailType::THUMB, "THUMB" },
     { ThumbnailType::MTH, "MTH" },
@@ -69,7 +69,7 @@ const std::unorderd_map<ThumbnailType, std::string> TYPE_NAME_MAP = {
     { ThumbnailType::THUMB_ASTC, "THUMB_ASTC" },
     { ThumbnailType::MTH_ASTC, "MTH_ASTC" },
     { ThumbnailType::YEAR_ASTC, "YEAR_ASTC" },      
-}
+};
 
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
 

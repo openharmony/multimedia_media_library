@@ -29,6 +29,7 @@
 #include "media_container_types.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_type_const.h"
 #include "permission_utils.h"
@@ -133,7 +134,11 @@ static int32_t SendRangesToIoctl(const int32_t originFd, const int32_t proxyFd, 
 /* Caller is responsible to close the returned fd */
 static int32_t OpenOriginFd(const string &path, const string &mode)
 {
-    return MediaFileUtils::OpenFile(path, mode);
+    string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+    if (clientBundle.empty()) {
+        MEDIA_ERR_LOG("clientBundleName is empty,failed to get clientBundleName");
+    }
+    return MediaFileUtils::OpenFile(path, mode, clientBundle);
 }
 
 /*

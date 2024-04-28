@@ -187,24 +187,12 @@ static int32_t AcquireFdForArrayBuffer(MovingPhotoAsyncContext* context)
         case ResourceType::IMAGE_RESOURCE: {
             Uri uri(movingPhotoUri);
             fd = UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
-            if (fd == E_ERR) {
-                NAPI_ERR_LOG("Open source image file failed, error: %{public}d", errno);
-                return E_HAS_FS_ERROR;
-            } else if (fd < 0) {
-                NAPI_ERR_LOG("Open source image file failed due to OpenFile failure");
-                return fd;
-            }
+            CHECK_COND_RET(HandleFd(fd), fd, "Open source image file failed");
             return fd;
         }
         case ResourceType::VIDEO_RESOURCE:
             fd = MovingPhotoNapi::OpenReadonlyVideoFile(movingPhotoUri);
-            if (fd == E_ERR) {
-                NAPI_ERR_LOG("Open source video file failed, error: %{public}d", errno);
-                return E_HAS_FS_ERROR;
-            } else if (fd < 0) {
-                NAPI_ERR_LOG("Open source video file failed due to OpenFile failure");
-                return fd;
-            }
+            CHECK_COND_RET(HandleFd(fd), fd, "Open source video file failed");
             return fd;
         default:
             NAPI_ERR_LOG("Invalid resource type: %{public}d", static_cast<int32_t>(context->resourceType));
@@ -359,10 +347,16 @@ napi_value MovingPhotoNapi::NewMovingPhotoNapi(napi_env env, const string& photo
     napi_value constructor = nullptr;
     napi_value instance = nullptr;
     napi_value napiStringUri = nullptr;
-    CHECK_ARGS(env, napi_create_string_utf8(env, photoUri.c_str(), NAPI_AUTO_LENGTH, &napiStringUri), JS_INNER_FAIL);
-    CHECK_ARGS(env, napi_get_reference_value(env, constructor_, &constructor), JS_INNER_FAIL);
-    CHECK_ARGS(env, napi_new_instance(env, constructor, 1, &napiStringUri, &instance), JS_INNER_FAIL);
-    CHECK_COND(env, instance != nullptr, JS_INNER_FAIL);
+    napi_status status = napi_create_string_utf8(env, photoUri.c_str(), NAPI_AUTO_LENGTH, &napiStringUri);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to create napi string, napi status: %{public}d",
+        static_cast<int>(status));
+    status = napi_get_reference_value(env, constructor_, &constructor);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to get reference of constructor, napi status: %{public}d",
+        static_cast<int>(status));
+    status = napi_new_instance(env, constructor, 1, &napiStringUri, &instance);
+    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to get new instance of moving photo, napi status: %{public}d",
+        static_cast<int>(status));
+    CHECK_COND_RET(instance != nullptr, nullptr, "Instance is nullptr");
     return instance;
 }
 
