@@ -1729,12 +1729,9 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
     }
     size_t photoThumbnailSize = LCDThumbnailSize + THMThumbnailSize + THMASTCThumbnailSize;
 
-    string sql = "INSERT INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
+    string sql = "INSERT OR REPLACE INTO " + PhotoExtColumn::PHOTOS_EXT_TABLE + " (" +
         PhotoExtColumn::PHOTO_ID + ", " + PhotoExtColumn::THUMBNAIL_SIZE +
-        ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) +
-        ") ON DUPLICATE KEY UPDATE " +
-        PhotoExtColumn::PHOTO_ID + " = VALUES(" + PhotoExtColumn::PHOTO_ID + "), " +
-        PhotoExtColumn::THUMBNAIL_SIZE + " = VALUES(" + PhotoExtColumn::THUMBNAIL_SIZE + ")";
+        ") VALUES (" + photoId + ", " + to_string(photoThumbnailSize) + ")";
 
     int32_t ret = rdbStore->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
@@ -1756,7 +1753,7 @@ void MediaLibraryPhotoOperations::RemoveThumbnailSizeRecord(const string& photoI
     }
 
     string sql = "DELETE FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE +
-        "WHERE " + PhotoExtColumn::PHOTO_ID + " = " + photoId + ";";
+        " WHERE " + PhotoExtColumn::PHOTO_ID + " = " + photoId + ";";
     int32_t ret = rdbStore->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to execute sql, photoId is %{public}s, error code is %{public}d", photoId.c_str(), ret);
