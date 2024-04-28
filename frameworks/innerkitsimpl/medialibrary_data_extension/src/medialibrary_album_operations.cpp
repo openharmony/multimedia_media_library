@@ -18,8 +18,6 @@
 
 #include <cstdio>
 #include <cstring>
-#include <dirent.h>
-#include <sys/stat.h>
 
 #include "directory_ex.h"
 #include "iservice_registry.h"
@@ -342,50 +340,6 @@ static void RefreshAlbums()
     }
 }
 
-static int64_t CalculateThumbnailTotalSize(const char *path)
-{
-    DIR *dir;
-    struct dirent *entry;
-    struct stat statbuf;
-    int64_t totalSize = 0;
-    constexpr size_t pathLimit = 512;
-    constexpr size_t jpgLen = 4;
-    constexpr size_t astcLen = 5;
-    if (!(dir = opendir(path))) {
-        MEDIA_ERR_LOG("Failed to open dir, errno: %{public}d, path: %{private}s", errno, path);
-        return 0;
-    }
-    while ((entry = readdir(dir)) != nullptr) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 ||
-            strcmp(entry->d_name, "highlight") == 0) {
-            continue;
-        }
-        char fullpath[pathLimit];
-        if (strcpy_s(fullpath, sizeof(fullpath), path) != E_SUCCESS ||
-            strcat_s(fullpath, sizeof(fullpath), "/") != E_SUCCESS ||
-            strcat_s(fullpath, sizeof(fullpath), entry->d_name) != E_SUCCESS) {
-            MEDIA_ERR_LOG("Failed to construct fullpath: %{private}s, %{private}s", path, entry->d_name);
-            continue;
-        }
-        if (lstat(fullpath, &statbuf) == -1) {
-            MEDIA_ERR_LOG("Failed to access entry, errno: %{public}d, path: %{private}s", errno, fullpath);
-            continue;
-        }
-        if (S_ISDIR(statbuf.st_mode)) {
-            int64_t dirSize = CalculateThumbnailTotalSize(fullpath);
-            totalSize += dirSize;
-        } else if (S_ISREG(statbuf.st_mode)) {
-            size_t strLen = strlen(entry->d_name);
-            if ((strLen >= jpgLen && strncmp(entry->d_name + strLen - jpgLen, ".jpg", jpgLen) == 0) ||
-                (strLen >= astcLen && strncmp(entry->d_name + strLen - astcLen, ".astc", astcLen) == 0)) {
-                totalSize += statbuf.st_size;
-            }
-        }
-    }
-    closedir(dir);
-    return totalSize;
-}
-
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     MediaLibraryCommand &cmd, const vector<string> &columns)
 {
@@ -397,22 +351,10 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
     RefreshAlbums();
 
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
-        constexpr size_t pathLimit = 128;
-        char thumbnailPath[pathLimit];
-        int64_t thumbnailTotalSize = 0;
-        if (strcpy_s(thumbnailPath, sizeof(thumbnailPath), ROOT_MEDIA_DIR.c_str()) != E_SUCCESS ||
-            strcat_s(thumbnailPath, sizeof(thumbnailPath), ".thumbs") != E_SUCCESS) {
-            MEDIA_ERR_LOG("Failed to construct thumbnailPath");
-        } else {
-            MEDIA_INFO_LOG("Start calculating thumbnail size");
-            thumbnailTotalSize = CalculateThumbnailTotalSize(thumbnailPath);
-        }
-        string thumbnailQuery = "SELECT cast(" + to_string(thumbnailTotalSize) +
-            " as bigint) as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE;
-        string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME;
-        string sql = thumbnailQuery + " UNION " + mediaVolumeQuery;
-        MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{private}s", sql.c_str());
-        return uniStore->QuerySql(sql);
+        string mediaVolumeQuery = PhotoColumn::QUERY_MEDIA_VOLUME + " UNION " + AudioColumn::QUERY_MEDIA_VOLUME
+            + " UNION " + PhotoExtColumn::QUERY_THUMBNAIL_VOLUMN;
+        MEDIA_DEBUG_LOG("QUERY_MEDIA_VOLUME = %{private}s", mediaVolumeQuery.c_str());
+        return uniStore->QuerySql(mediaVolumeQuery);
     }
 
     string whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();

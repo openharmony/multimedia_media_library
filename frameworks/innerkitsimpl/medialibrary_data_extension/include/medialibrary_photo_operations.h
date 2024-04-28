@@ -42,6 +42,8 @@ public:
     EXPORT static int32_t CommitEditInsert(MediaLibraryCommand &cmd);
     EXPORT static int32_t RevertToOrigin(MediaLibraryCommand &cmd);
     EXPORT static void DeleteRevertMessage(const std::string &path);
+    EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
+    EXPORT static void RemoveThumbnailSizeRecord(const std::string& photoId);
 
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
