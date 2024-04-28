@@ -30,6 +30,7 @@ public:
         GenerateScene scene {GenerateScene::LOCAL};
         int32_t openThumbCost {0};
         int32_t openLcdCost {0};
+        int32_t openOriginCost {0};
         LoadSourceType sourceType {LoadSourceType::LOCAL_PHOTO};
         int32_t sourceWidth {0};
         int32_t sourceHeight {0};

@@ -25,6 +25,7 @@
 #include "media_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_napi_log.h"
+#include "medialibrary_napi_utils_ext.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "photo_album_column.h"
@@ -111,18 +112,18 @@
             return;                                \
         }                                          \
     } while (0)
-#define CHECK_IF_EQUAL(condition, errMsg)   \
+#define CHECK_IF_EQUAL(condition, errMsg, ...)   \
     do {                                    \
         if (!(condition)) {                 \
-            NAPI_ERR_LOG(errMsg);    \
+            NAPI_ERR_LOG(errMsg, ##__VA_ARGS__);    \
             return;                         \
         }                                   \
     } while (0)
 
-#define CHECK_COND_RET(cond, ret, message)                          \
+#define CHECK_COND_RET(cond, ret, message, ...)                          \
     do {                                                            \
         if (!(cond)) {                                              \
-            NAPI_ERR_LOG(message);                                  \
+            NAPI_ERR_LOG(message, ##__VA_ARGS__);                                  \
             return ret;                                             \
         }                                                           \
     } while (0)
