@@ -102,7 +102,7 @@ void CleanVisionData()
     MediaLibraryCommand totalCmd(totalUri);
     Uri imageFaceUri(URI_IMAGE_FACE);
     MediaLibraryCommand imageFaceCmd(imageFaceUri);
-    Uri faceTagUri(URI_GEO_DICTIONARY);
+    Uri faceTagUri(URI_FACE_TAG);
     MediaLibraryCommand faceTagCmd(faceTagUri);
     Uri geoDictionaryUri(URI_GEO_DICTIONARY);
     MediaLibraryCommand geoDictionaryCmd(geoDictionaryUri);
