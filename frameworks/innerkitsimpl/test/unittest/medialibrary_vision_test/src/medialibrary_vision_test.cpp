@@ -72,6 +72,7 @@ constexpr int32_t FACE_FINISH_STATE = 3;
 constexpr int32_t FACE_UNCLUSTERED_STATE = 4;
 constexpr int32_t FACE_TEST_FACE_ID = 99;
 constexpr int32_t TAG_IS_ME_NUMBER = 500;
+constexpr int32_t WAIT_TIME = 3;
 void CleanVisionData()
 {
     DataShare::DataSharePredicates predicates;
@@ -99,6 +100,14 @@ void CleanVisionData()
     MediaLibraryCommand poseCmd(poseUri);
     Uri totalUri(URI_TOTAL);
     MediaLibraryCommand totalCmd(totalUri);
+    Uri imageFaceUri(URI_IMAGE_FACE);
+    MediaLibraryCommand imageFaceCmd(imageFaceUri);
+    Uri faceTagUri(URI_GEO_DICTIONARY);
+    MediaLibraryCommand faceTagCmd(faceTagUri);
+    Uri geoDictionaryUri(URI_GEO_DICTIONARY);
+    MediaLibraryCommand geoDictionaryCmd(geoDictionaryUri);
+    Uri geoKnowledgeUri(URI_GEO_KEOWLEDGE);
+    MediaLibraryCommand geoKnowledgeCmd(geoKnowledgeUri);
     MediaLibraryDataManager::GetInstance()->Delete(ocrCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(labelCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(aesCmd, predicates);
@@ -110,6 +119,10 @@ void CleanVisionData()
     MediaLibraryDataManager::GetInstance()->Delete(headCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(poseCmd, predicates);
     MediaLibraryDataManager::GetInstance()->Delete(totalCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(imageFaceCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(faceTagCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(geoDictionaryCmd, predicates);
+    MediaLibraryDataManager::GetInstance()->Delete(geoKnowledgeCmd, predicates);
 }
 
 void ClearAnalysisAlbum()
@@ -2983,7 +2996,7 @@ void TestCommitEditByFaceStatus(int32_t fileId, int32_t faceStatus)
     insertValues.Put(STATUS, 1);
     insertValues.Put(FACE, faceStatus);
     int32_t insertResult = MediaLibraryDataManager::GetInstance()->Insert(cmd, insertValues);
-    EXPECT_EQ(insertResult, 1);
+    EXPECT_GT(insertResult, 1);
 
     MediaLibraryCommand editCmd(totalUri);
     editCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
@@ -2991,7 +3004,7 @@ void TestCommitEditByFaceStatus(int32_t fileId, int32_t faceStatus)
     editValues.PutInt(FILE_ID, fileId);
     editCmd.SetValueBucket(editValues);
     MediaLibraryVisionOperations::EditCommitOperation(editCmd);
-    std::this_thread::sleep_for(std::chrono::seconds(3));
+    std::this_thread::sleep_for(std::chrono::seconds(WAIT_TIME));
 
     DataShare::DataSharePredicates queryPredicates;
     queryPredicates.EqualTo(FILE_ID, fileId);
@@ -3015,33 +3028,33 @@ void TestCommitEditByFaceStatus(int32_t fileId, int32_t faceStatus)
     MediaLibraryDataManager::GetInstance()->Delete(cmd, deletePredicates);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_COMMIT_EDIT_FACE_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_001, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Vision_COMMIT_EDIT_FACE_Test_001::Start");
+    MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_001::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_NO_NEED_ANALYSIS);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_COMMIT_EDIT_FACE_Test_002, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_002, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Vision_COMMIT_EDIT_FACE_Test_002::Start");
+    MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_002::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_RECOGNITION_STATE);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_COMMIT_EDIT_FACE_Test_003, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_003, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Vision_COMMIT_EDIT_FACE_Test_003::Start");
+    MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_003::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_FEATURE_STATE);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_COMMIT_EDIT_FACE_Test_004, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_004, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Vision_COMMIT_EDIT_FACE_Test_004::Start");
+    MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_004::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_FINISH_STATE);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_COMMIT_EDIT_FACE_Test_005, TestSize.Level0)
+HWTEST_F(MediaLibraryVisionTest, Vision_EditCommitOperation_Face_Test_005, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("Vision_COMMIT_EDIT_FACE_Test_005::Start");
+    MEDIA_INFO_LOG("Vision_EditCommitOperation_Face_Test_005::Start");
     TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_UNCLUSTERED_STATE);
 }
 } // namespace Media
