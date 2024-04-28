@@ -129,17 +129,16 @@ static const map<int32_t, struct HighlightAlbumInfo> HIGHLIGHT_ALBUM_INFO_MAP = 
 };
 
 static const map<int32_t, std::string> HIGHLIGHT_USER_ACTION_MAP = {
-    { INSERT_PIC_COUNT, HIGHLIGHT_INSERT_PIC_COUNT },
-    { REMOVE_PIC_COUNT, HIGHLIGHT_INSERT_PIC_COUNT },
-    { SHARE_SCREENSHOT_COUNT, HIGHLIGHT_SHARE_SCREENSHOT_COUNT },
-    { SHARE_COVER_COUNT, HIGHLIGHT_SHARE_COVER_COUNT },
-    { RENAME_COUNT, HIGHLIGHT_RENAME_COUNT },
-    { CHANGE_COVER_COUNT, HIGHLIGHT_CHANGE_COVER_COUNT },
+    { INSERTED_PIC_COUNT, HIGHLIGHT_INSERT_PIC_COUNT },
+    { REMOVED_PIC_COUNT, HIGHLIGHT_REMOVE_PIC_COUNT },
+    { SHARED_SCREENSHOT_COUNT, HIGHLIGHT_SHARE_SCREENSHOT_COUNT },
+    { SHARED_COVER_COUNT, HIGHLIGHT_SHARE_COVER_COUNT },
+    { RENAMED_COUNT, HIGHLIGHT_RENAME_COUNT },
+    { CHANGED_COVER_COUNT, HIGHLIGHT_CHANGE_COVER_COUNT },
     { RENDER_VIEWED_TIMES, HIGHLIGHT_RENDER_VIEWED_TIMES },
     { RENDER_VIEWED_DURATION, HIGHLIGHT_RENDER_VIEWED_DURATION },
     { ART_LAYOUT_VIEWED_TIMES, HIGHLIGHT_ART_LAYOUT_VIEWED_TIMES },
     { ART_LAYOUT_VIEWED_DURATION, HIGHLIGHT_ART_LAYOUT_VIEWED_DURATION },
-
 };
 
 static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
@@ -217,6 +216,7 @@ static void JSSetHighlightUserActionDataExecute(napi_env env, void *data)
     string userActionType;
     if (HIGHLIGHT_USER_ACTION_MAP.find(context->highlightUserActionType) != HIGHLIGHT_USER_ACTION_MAP.end()) {
         userActionType = HIGHLIGHT_USER_ACTION_MAP.at(context->highlightUserActionType);
+        context->fetchColumn.push_back(userActionType);
     } else {
         NAPI_ERR_LOG("Invalid highlightUserActionType");
         return;
@@ -224,10 +224,27 @@ static void JSSetHighlightUserActionDataExecute(napi_env env, void *data)
     int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
     Uri uri(URI_HIGHLIGHT_ALBUM);
     context->predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
-    context->valuesBucket.Put(userActionType, userActionType + " + " + to_string(context->actionData));
-    int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
-    context->SaveError(changedRows);
-    context->changedRows = changedRows;
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    if (resultSet != nullptr) {
+        auto count = 0;
+        auto ret = resultSet->GetRowCount(count);
+        if (ret != NativeRdb::E_OK || count == 0 || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+            NAPI_ERR_LOG("highlight user action data get rdbstore failed");
+            context->error = JS_INNER_FAIL;
+            return;
+        }
+        int64_t userActionDataCount = get<int64_t>(ResultSetUtils::GetValFromColumn(userActionType,
+            resultSet, TYPE_INT64));
+        context->valuesBucket.Put(userActionType, to_string(userActionDataCount + context->actionData));
+        int changedRows = UserFileClient::Update(uri, context->predicates, context->valuesBucket);
+        context->SaveError(changedRows);
+        context->changedRows = changedRows;
+    } else {
+        NAPI_ERR_LOG("highlight user action data resultSet is null");
+        context->error = JS_INNER_FAIL;
+        return;
+    }
 }
 
 static void JSSetHighlightUserActionDataCompleteCallback(napi_env env, napi_status status, void *data)
@@ -275,20 +292,12 @@ static void JSGetHighlightResourceExecute(napi_env env, void *data)
     tracer.Start("JSGetHighlightResourceExecute");
 
     auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
-    size_t questionMaskPoint = context->resourceUri.rfind('?');
-    if (context->resourceUri.find(MEDIA_DATA_DB_HIGHLIGHT) == string::npos ||
-       questionMaskPoint == string::npos) {
+    if (context->resourceUri.find(MEDIA_DATA_DB_HIGHLIGHT) == string::npos) {
         NAPI_ERR_LOG("Invalid highlight resource uri");
         return;
     }
-
-    string path = MediaFileUtils::GetHighlightPath(context->resourceUri.substr(0, questionMaskPoint));
-    if (path.length() == 0) {
-        NAPI_ERR_LOG("Invalid highlight resource path");
-        return;
-    }
     
-    int32_t fd = GetFdForArrayBuffer(path);
+    int32_t fd = GetFdForArrayBuffer(context->resourceUri);
     if (fd < 0) {
         return;
     }
@@ -380,10 +389,9 @@ napi_value HighlightAlbumNapi::JSSetHighlightUserActionData(napi_env env, napi_c
     unique_ptr<HighlightAlbumNapiAsyncContext> asyncContext = make_unique<HighlightAlbumNapiAsyncContext>();
     CHECK_NULL_PTR_RETURN_UNDEFINED(env, asyncContext, result, "asyncContext context is null");
 
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM0],
-        asyncContext->highlightUserActionType) == napi_ok, "Failed to get highlightUserActionType");
-    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env, asyncContext->argv[PARAM1],
-        asyncContext->actionData) == napi_ok, "Failed to get actionData");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext,
+        asyncContext->highlightUserActionType), JS_ERR_PARAMETER_INVALID);
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetInt32Arg(env, asyncContext->argv[1], asyncContext->actionData));
 
     auto photoAlbum = asyncContext->objectInfo->GetPhotoAlbumInstance();
     CHECK_COND_WITH_MESSAGE(env, photoAlbum != nullptr, "photoAlbum is null");
