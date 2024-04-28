@@ -420,6 +420,32 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_006, TestSize.Level0)
 }
 
 /**
+ * @tc.name: photoalbum_create_album_007
+ * @tc.desc: Create an album with the same album name as the existed deleted album
+ * @tc.type: FUNC
+ * @tc.require: issueI9KEDW
+ */
+HWTEST_F(PhotoAlbumTest, photoalbum_create_album_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("photoalbum_create_album_007 enter");
+    const string albumName = "photoalbum_create_album_007";
+    int oldAlbumId = CreatePhotoAlbum(albumName);
+    ASSERT_GT(oldAlbumId, 0);
+
+    DataSharePredicates prediacates;
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
+    DataShareValuesBucket values;
+    values.Put(PhotoAlbumColumns::ALBUM_DIRTY, to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)));
+    constexpr int32_t changedRows = 1;
+    EXPECT_EQ(UpdatePhotoAlbum(values, predicates), changedRows);
+
+    EXPECT_EQ(CreatePhotoAlbum(albumName), 1); // creation succeeds for the first time
+    EXPECT_EQ(CreatePhotoAlbum(albumName), -1); // creation failed because orf the newly created album
+    EXPECT_EQ(CreatePhotoAlbum(albumName), -1); // creation failed because orf the newly created album
+    MEDIA_INFO_LOG("photoalbum_create_album_007 exit");
+}
+
+/**
  * @tc.name: photoalbum_delete_album_001
  * @tc.desc: Delete a photo album.
  *           1. Create an album and then delete it.
