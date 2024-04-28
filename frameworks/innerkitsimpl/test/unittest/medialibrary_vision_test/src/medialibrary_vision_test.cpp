@@ -24,6 +24,7 @@
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_unittest_utils.h"
+#include "medialibrary_vision_operations.h"
 #include "result_set_utils.h"
 #include "uri.h"
 #include "vision_aesthetics_score_column.h"
@@ -64,7 +65,12 @@ constexpr int32_t FAVORITE_PAGE = 3;
 constexpr int32_t UNFAVORITE_PAGE = 0;
 constexpr int32_t DISMISS_ASSET_ALBUM_ID = -2;
 constexpr int32_t TEST_COUNT = -1;
+constexpr int32_t FACE_NO_NEED_ANALYSIS = -2;
+constexpr int32_t FACE_RECOGNITION_STATE = 1;
+constexpr int32_t FACE_FEATURE_STATE = 2;
 constexpr int32_t FACE_FINISH_STATE = 3;
+constexpr int32_t FACE_UNCLUSTERED_STATE = 4;
+constexpr int32_t FACE_TEST_FACE_ID = 99;
 constexpr int32_t TAG_IS_ME_NUMBER = 500;
 void CleanVisionData()
 {
@@ -2966,6 +2972,77 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryPose_Test_001, TestSize.Level0)
     DataShare::DataSharePredicates predicates1;
     predicates1.EqualTo(FILE_ID, 4);
     MediaLibraryDataManager::GetInstance()->Delete(cmd, predicates1);
+}
+
+void TestCommitEditByFaceStatus(int32_t fileId, int32_t faceStatus)
+{
+    Uri totalUri(URI_TOTAL);
+    MediaLibraryCommand cmd(totalUri);
+    DataShare::DataShareValuesBucket insertValues;
+    insertValues.Put(FILE_ID, fileId);
+    insertValues.Put(STATUS, 1);
+    insertValues.Put(FACE, faceStatus);
+    int32_t insertResult = MediaLibraryDataManager::GetInstance()->Insert(cmd, insertValues);
+    EXPECT_EQ(insertResult, 1);
+
+    MediaLibraryCommand editCmd(totalUri);
+    editCmd.SetOprnObject(OperationObject::FILESYSTEM_PHOTO);
+    NativeRdb::ValuesBucket editValues;
+    editValues.PutInt(FILE_ID, fileId);
+    editCmd.SetValueBucket(editValues);
+    MediaLibraryVisionOperations::EditCommitOperation(editCmd);
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    DataShare::DataSharePredicates queryPredicates;
+    queryPredicates.EqualTo(FILE_ID, fileId);
+    vector<string> columns = { STATUS, FACE };
+    int32_t errCode = 0;
+    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, queryPredicates, errCode);
+    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
+    ASSERT_NE(resultSet, nullptr);
+    int32_t count;
+    resultSet->GetRowCount(count);
+    EXPECT_EQ(count, 1);
+    EXPECT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+    int32_t status = GetInt32Val(STATUS, resultSet);
+    int32_t face = GetInt32Val(FACE, resultSet);
+    EXPECT_EQ(status, 0);
+    EXPECT_EQ(face, 0);
+    MEDIA_INFO_LOG("status: %{public}d, face: %{public}d", status, face);
+
+    DataShare::DataSharePredicates deletePredicates;
+    deletePredicates.EqualTo(FILE_ID, fileId);
+    MediaLibraryDataManager::GetInstance()->Delete(cmd, deletePredicates);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_COMMIT_EDIT_FACE_Test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_COMMIT_EDIT_FACE_Test_001::Start");
+    TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_NO_NEED_ANALYSIS);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_COMMIT_EDIT_FACE_Test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_COMMIT_EDIT_FACE_Test_002::Start");
+    TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_RECOGNITION_STATE);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_COMMIT_EDIT_FACE_Test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_COMMIT_EDIT_FACE_Test_003::Start");
+    TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_FEATURE_STATE);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_COMMIT_EDIT_FACE_Test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_COMMIT_EDIT_FACE_Test_004::Start");
+    TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_FINISH_STATE);
+}
+
+HWTEST_F(MediaLibraryVisionTest, Vision_COMMIT_EDIT_FACE_Test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("Vision_COMMIT_EDIT_FACE_Test_005::Start");
+    TestCommitEditByFaceStatus(FACE_TEST_FACE_ID, FACE_UNCLUSTERED_STATE);
 }
 } // namespace Media
 } // namespace OHOS
