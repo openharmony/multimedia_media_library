@@ -153,11 +153,7 @@ static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
     selectionTotal = FILE_ID + " = " + fileId + " AND " + SALIENCY + " = 1";
     DeleteFromVisionTables(fileId, selectionTotal, SALIENCY, PAH_ANA_SALIENCY);
 
-    selectionTotal = FILE_ID + " = " + fileId + " AND ( " +
-        FACE + " = 1 OR " +
-        FACE + " = 2 OR " +
-        FACE + " = 3 OR " +
-        FACE + " = -2 ) " ;
+    selectionTotal = FILE_ID + " = " + fileId + " AND " + FACE + " IN (-2, 1, 2, 3, 4)";
     DeleteFromVisionTables(fileId, selectionTotal, FACE, PAH_ANA_FACE);
 
     selectionTotal = FILE_ID + " = " + fileId + " AND " + OBJECT + " = 1";
