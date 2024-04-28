@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "backup_const.h"
 #include "rdb_helper.h"
 #include "result_set.h"
 
@@ -26,7 +27,8 @@ namespace Media {
 class BackupDatabaseUtils {
 public:
     static int32_t InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
-        const std::string &dbPath, const std::string &bundleName, bool isMediaLibary);
+        const std::string &dbPath, const std::string &bundleName, bool isMediaLibary,
+            int32_t area = DEFAULT_AREA_VERSION);
     static int32_t QueryInt(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &sql,
         const std::string &column);
     static int32_t Update(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t &changeRows,
