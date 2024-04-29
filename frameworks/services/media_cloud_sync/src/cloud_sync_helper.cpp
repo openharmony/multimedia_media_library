@@ -19,6 +19,7 @@
 
 #include "medialibrary_errno.h"
 #include "media_log.h"
+#include "parameters.h"
 #include "post_event_utils.h"
 namespace OHOS {
 namespace Media {
@@ -65,8 +66,95 @@ void CloudSyncHelper::StartSync()
         SYNC_INTERVAL, true);
 }
 
+bool CloudSyncHelper::InitDataShareHelper()
+{
+    const string photos = "const.kernel.bundle_name.photots";
+    const string clouddrive = "const.kernel.bundle_name.clouddrive";
+    GALLERY_BUNDLE_NAME = system::GetParameter(photos, "");
+    const auto CLOUDDRIVE_BUNDLE_NAME = system::GetParameter(clouddrive, "");
+    if (GALLERY_BUNDLE_NAME == "") {
+        MEDIA_ERR_LOG("can't get gallery bundle name");
+        return false;
+    }
+    if (CLOUDDRIVE_BUNDLE_NAME == "") {
+        MEDIA_ERR_LOG("can't get clouddrive bundle name");
+        return false;
+    }
+
+    const int32_t INVALID_UID = -1;
+    const int32_t BASE_USER_RANGE = 200000;
+    int uid = IPCSkeleton::GetCallingUid();
+    if (uid <= INVALID_UID) {
+        MEDIA_ERR_LOG("Get INVALID_UID UID %{public}d", uid);
+        return false;
+    }
+    int32_t userId = uid / BASE_USER_RANGE;
+
+    uri_ = QUERY_URI + CLOUDDRIVE_BUNDLE_NAME +
+        SYNC_SWITCH_SUFFIX +
+        std::to_string(userId);
+    DataShare::CreateOptions options;
+    options.enabled_ = true;
+    dataShareHelper_ = DataShare::DataShareHelper::Creator(uri_, options);
+    if (dataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("dataShareHelper is nullptr");
+        return false;
+    }
+    return true;
+}
+
+bool CloudSyncHelper::IsSyncSwitchOpen()
+{
+    if (!InitDataShareHelper()) {
+        return true;
+    }
+
+    Uri uri(uri_);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(BUNDLE_NAME_KEY, GALLERY_BUNDLE_NAME);
+    std::vector<std::string> columns = {SWITCH_STATUS_KEY};
+    auto resultSet = dataShareHelper_->Query(uri, predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_INFO_LOG("resultSet is null, maybe never login");
+        return false;
+    }
+
+    int32_t rowCount = -1;
+    int32_t ret = resultSet->GetRowCount(rowCount);
+    if (ret != 0 || rowCount < 0) {
+        MEDIA_ERR_LOG("get cloud status fail ret is %{public}d, rowcount is %{public}d", ret, rowCount);
+        return true;
+    } else if (rowCount == 0) {
+        MEDIA_INFO_LOG("rowCount is 0");
+        return true;
+    }
+
+    int64_t status = 0;
+    int32_t columnIndex = -1;
+    ret = resultSet->GoToFirstRow();
+    if (ret != 0) {
+        MEDIA_ERR_LOG("goto first err");
+        return true;
+    }
+    ret = resultSet->GetColumnIndex(SWITCH_STATUS_KEY, columnIndex);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Get Column index err");
+        return true;
+    }
+    ret = resultSet->GetLong(columnIndex, status);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("get long err");
+        return true;
+    }
+    return status == 1;
+}
+
 void CloudSyncHelper::OnTimerCallback()
 {
+    if (!IsSyncSwitchOpen()) {
+        return;
+    }
+
     unique_lock<mutex> lock(syncMutex_);
     isPending_ = false;
     lock.unlock();

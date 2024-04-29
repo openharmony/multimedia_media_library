@@ -135,6 +135,18 @@
           ],
           "when": "always"
         }
+      },
+      {
+        "name": "ohos.permission.READ_CLOUD_SYNC_CONFIG",
+        "reason": "$string:permission_read_cloud_sync_config",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility",
+            "MediaBackupExtensionAbility"
+          ],
+          "when": "always"
+        }
       }
     ],
     "proxyDatas": [
