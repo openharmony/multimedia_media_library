@@ -24,6 +24,8 @@
 #include "ithumbnail_helper.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
+#include "medialibrary_photo_operations.h"
+#include "medialibrary_type_const.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
@@ -43,6 +45,9 @@ int32_t ThumbnailGenerateHelper::CreateThumbnails(ThumbRdbOpt &opts, bool isSync
     if (isSync) {
         IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData, false);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
+        if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+            MediaLibraryPhotoOperations::StoreThumbnailSize(opts.row, opts.path);
+        }
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnails,
             opts, thumbnailData, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::HIGH);

@@ -130,7 +130,7 @@ const std::map<string, string> g_testExt2MimeType = {
     { "rtttl", "audio/midi" },
     { "xmf", "audio/midi" },
     { "rtx", "audio/midi" },
-    { "vt", "video/vnd.youtube.yt" },
+    { "yt", "video/vnd.youtube.yt" },
     { "arw", "image/x-sony-arw" },
     { "ico", "image/x-icon" },
     { "m3u", "audio/mpegurl" },
