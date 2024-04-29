@@ -410,9 +410,5 @@ const std::string PhotoExtColumn::CREATE_PHOTO_EXT_TABLE =
     PHOTO_ID + " INTEGER PRIMARY KEY, " +
     THUMBNAIL_SIZE + " BIGINT DEFAULT 0)";
 
-const std::string PhotoExtColumn::QUERY_THUMBNAIL_VOLUMN =
-    "SELECT SUM(" + THUMBNAIL_SIZE + ")" + " as " + MEDIA_DATA_DB_SIZE + ", -1 as " + MediaColumn::MEDIA_TYPE +
-    " FROM " + PHOTOS_EXT_TABLE;
-
 }  // namespace Media
 }  // namespace OHOS
