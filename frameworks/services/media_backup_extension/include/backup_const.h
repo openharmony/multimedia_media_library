@@ -90,6 +90,8 @@ constexpr int32_t INDEX_NICK_NAME = 3;
 constexpr int32_t NICK = 0;
 constexpr int32_t CACHE = 1;
 
+constexpr int32_t DEFAULT_AREA_VERSION = -1;
+
 enum SourceType {
     GALLERY = 0,
     EXTERNAL_CAMERA,
