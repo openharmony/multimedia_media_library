@@ -1885,7 +1885,6 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     return E_OK;
 }
 
-
 static void DeleteFiles(AsyncTaskData *data)
 {
     MediaLibraryTracer tracer;

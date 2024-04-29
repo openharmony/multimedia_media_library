@@ -152,6 +152,7 @@ public:
     EXPORT static bool CheckMovingPhotoVideo(const std::string &path);
     EXPORT static bool CheckMovingPhotoVideo(const UniqueFd &uniqueFd);
     EXPORT static bool CheckMovingPhotoVideoDuration(int32_t duration);
+    EXPORT static bool GetFileSize(const std::string &filePath, size_t& size);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

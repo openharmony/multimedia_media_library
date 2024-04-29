@@ -194,5 +194,19 @@ public:
 
     static bool IsAudioColumn(const std::string &columnName) EXPORT;
 };
+
+class PhotoExtColumn {
+public:
+    // table name
+    static const std::string PHOTOS_EXT_TABLE EXPORT;
+
+    // column name
+    static const std::string PHOTO_ID EXPORT;
+    static const std::string THUMBNAIL_SIZE EXPORT;
+
+    // create table sql
+    static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;
+};
+
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_MEDIA_COLUMN_H_

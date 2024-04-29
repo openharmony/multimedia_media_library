@@ -25,6 +25,7 @@
 #include <securec.h>
 #include <sstream>
 #include <sys/sendfile.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
@@ -129,7 +130,7 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
     { "video/mp4", { "m4v", "f4v", "mp4v", "mpeg4", "mp4" }},
     { "video/mp2t", { "m2ts", "mts"} },
     { "video/mp2ts", { "ts" } },
-    { "video/vnd.youtube.yt", { "vt" } },
+    { "video/vnd.youtube.yt", { "yt" } },
     { "video/x-webex", { "wrf" } },
     { "video/mpeg", { "mpeg", "mpeg2", "mpv2", "mp2v", "m2v", "m2t", "mpeg1", "mpv1", "mp1v", "m1v", "mpg" } },
     { "video/quicktime", { "mov" } },
@@ -1425,4 +1426,17 @@ bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
     constexpr int32_t MAX_DURATION_MS = 3000;
     return duration >= MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
+
+bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
+{
+    struct stat statbuf;
+    if (lstat(filePath.c_str(), &statbuf) == -1) {
+        MEDIA_WARN_LOG("Failed to get file size, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
+        size = 0;
+        return false;
+    }
+    size = statbuf.st_size;
+    return true;
+}
+
 } // namespace OHOS::Media

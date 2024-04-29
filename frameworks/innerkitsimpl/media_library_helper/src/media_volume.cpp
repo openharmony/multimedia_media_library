@@ -37,7 +37,7 @@ void MediaVolume::SetSize(const int mediaType, const int64_t size)
 
 int64_t MediaVolume::GetFilesSize() const
 {
-    return 0; // MediaVolumn does not include file size query from now on
+    return 0; // MediaVolume does not include file size query from now on
 }
 
 int64_t MediaVolume::GetVideosSize() const
