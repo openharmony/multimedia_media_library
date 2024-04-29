@@ -70,16 +70,15 @@ int32_t BaseRestore::Init(void)
     if (mediaLibraryRdb_ != nullptr) {
         return E_OK;
     }
-    int32_t err = BackupDatabaseUtils::InitDb(mediaLibraryRdb_, MEDIA_DATA_ABILITY_DB_NAME, DATABASE_PATH, BUNDLE_NAME,
-        true);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("medialibrary rdb fail, err = %{public}d", err);
-        return E_FAIL;
-    }
-
     auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
         MEDIA_ERR_LOG("Failed to get context");
+        return E_FAIL;
+    }
+    int32_t err = BackupDatabaseUtils::InitDb(mediaLibraryRdb_, MEDIA_DATA_ABILITY_DB_NAME, DATABASE_PATH, BUNDLE_NAME,
+        true, context->GetArea());
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("medialibrary rdb fail, err = %{public}d", err);
         return E_FAIL;
     }
     int32_t errCode = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr);

@@ -15,7 +15,6 @@
 
 #include "backup_database_utils.h"
 
-#include "backup_const.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
@@ -25,13 +24,16 @@ namespace Media {
 const size_t MIN_GARBLE_SIZE = 2;
 const size_t GARBLE_START = 1;
 int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
-    const std::string &dbPath, const std::string &bundleName, bool isMediaLibrary)
+    const std::string &dbPath, const std::string &bundleName, bool isMediaLibrary, int32_t area)
 {
     NativeRdb::RdbStoreConfig config(dbName);
     config.SetPath(dbPath);
     config.SetBundleName(bundleName);
     config.SetReadConSize(CONNECT_SIZE);
     config.SetSecurityLevel(NativeRdb::SecurityLevel::S3);
+    if (area != DEFAULT_AREA_VERSION) {
+        config.SetArea(area);
+    }
     if (isMediaLibrary) {
         config.SetScalarFunction("cloud_sync_func", 0, CloudSyncTriggerFunc);
         config.SetScalarFunction("is_caller_self_func", 0, IsCallerSelfFunc);
