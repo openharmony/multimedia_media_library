@@ -346,6 +346,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, const bool isThumbnail, 
     data.stats.sourceHeight = imageInfo.size.height;
 
     DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
     Size targetSize = ConvertDecodeSize(data, imageInfo.size, desiredSize, isThumbnail);
     if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
         MEDIA_ERR_LOG("Failed to generate decodeOpts, pixelmap path %{private}s", path.c_str());
