@@ -73,10 +73,6 @@ constexpr int32_t FACE_ANALYSISED_STATE = 3;
 constexpr int32_t FACE_NO_NEED_ANALYSIS_STATE = -2;
 constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
 constexpr int32_t ALBUM_COVER_SATISFIED = 1;
-enum class DirtyCheckStatus {
-    DELETED = 0,
-    NOT_DELETED,
-};
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -486,8 +482,7 @@ static void PrepareUserAlbum(const string &albumName, const string &relativePath
     }
 }
 
-inline void PrepareWhere(const string &albumName, const string &relativePath, RdbPredicates &predicates,
-    DirtyCheckStatus dirtyCheckStatus)
+inline void PrepareWhere(const string &albumName, const string &relativePath, RdbPredicates &predicates)
 {
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::USER));
@@ -497,18 +492,8 @@ inline void PrepareWhere(const string &albumName, const string &relativePath, Rd
     } else {
         predicates.EqualTo(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, relativePath);
     }
-    switch (dirtyCheckStatus) {
-        case DirtyCheckStatus::DELETED:
-            predicates.EqualTo(PhotoAlbumColumns::ALBUM_DIRTY,
-                to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)));
-            break;
-        case DirtyCheckStatus::NOT_DELETED:
-            predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_DIRTY,
-                to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)));
-            break;
-        default:
-            break;
-    }
+    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_DIRTY,
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)));
 }
 
 // Caller is responsible for checking @albumName AND @relativePath
@@ -523,15 +508,11 @@ int DoCreatePhotoAlbum(const string &albumName, const string &relativePath)
     PrepareUserAlbum(albumName, relativePath, albumValues);
     MediaLibraryRdbStore::BuildValuesSql(albumValues, bindArgs, sql);
 
-    RdbPredicates wherePredicatesNotDeleted(PhotoAlbumColumns::TABLE);
-    PrepareWhere(albumName, relativePath, wherePredicatesNotDeleted, DirtyCheckStatus::NOT_DELETED);
-    RdbPredicates wherePredicatesDeleted(PhotoAlbumColumns::TABLE);
-    PrepareWhere(albumName, relativePath, wherePredicatesDeleted, DirtyCheckStatus::DELETED);
+    RdbPredicates wherePredicates(PhotoAlbumColumns::TABLE);
+    PrepareWhere(albumName, relativePath, wherePredicates);
     sql.append(" WHERE NOT EXISTS (");
-    MediaLibraryRdbStore::BuildQuerySql(wherePredicatesNotDeleted, { PhotoAlbumColumns::ALBUM_ID }, bindArgs, sql);
-    sql.append(") AND (");
-    MediaLibraryRdbStore::BuildQuerySql(wherePredicatesDeleted, { MEDIA_COLUMN_COUNT_1 }, bindArgs, sql);
-    sql.append(") <= 1");
+    MediaLibraryRdbStore::BuildQuerySql(wherePredicates, { PhotoAlbumColumns::ALBUM_ID }, bindArgs, sql);
+    sql.append(");");
     MEDIA_DEBUG_LOG("DoCreatePhotoAlbum InsertSql: %{private}s", sql.c_str());
 
     return MediaLibraryRdbStore::ExecuteForLastInsertedRowId(sql, bindArgs);
