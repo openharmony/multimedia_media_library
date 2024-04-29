@@ -429,17 +429,37 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_007, TestSize.Level0)
 {
     MEDIA_INFO_LOG("photoalbum_create_album_007 enter");
     const string albumName = "photoalbum_create_album_007";
-    int oldAlbumId = CreatePhotoAlbum(albumName);
-    ASSERT_GT(oldAlbumId, 0);
+    string insertSql = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" + PhotoAlbumColumns::ALBUM_TYPE + ", " +
+        PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
+        PhotoAlbumColumns::ALBUM_DIRTY + ") VALUES (" + to_string(static_cast<int32_t>(PhotoAlbumType::USER)) + ", " +
+        to_string(static_cast<int32_t>(PhotoAlbumSubType::USER_GENERIC)) + ", '" + albumName + "', " +
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) + ")";
+    int32_t insertRet = g_rdbStore->ExecuteSql(insertSql);
+    ASSERT_EQ(insertRet, E_OK);
 
-    DataSharePredicates prediacates;
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, oldAlbumId);
-    DataShareValuesBucket values;
-    values.Put(PhotoAlbumColumns::ALBUM_DIRTY, to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)));
-    constexpr int32_t changedRows = 1;
-    EXPECT_EQ(UpdatePhotoAlbum(values, predicates), changedRows);
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    const vector<string> columns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_TYPE,
+        PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_DIRTY };
+    shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+    int32_t count = -1;
+    int32_t ret = resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to get count! err: %{public}d", ret);
+    MEDIA_INFO_LOG("Query count: %{public}d", count);
+    EXPECT_GT(count, 0);
+    ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to GoToFirstRow! err: %{public}d", ret);
 
-    EXPECT_EQ(CreatePhotoAlbum(albumName), 1); // creation succeeds for the first time
+    int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet,
+        TYPE_INT32));
+    EXPECT_GT(albumId, 0);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, PhotoAlbumType::USER);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, PhotoAlbumSubType::USER_GENERIC);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_COUNT, TYPE_INT32, 0);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_DIRTY, TYPE_INT32, static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
+
+    EXPECT_GT(CreatePhotoAlbum(albumName), 0); // creation succeeded for the first time
     EXPECT_EQ(CreatePhotoAlbum(albumName), -1); // creation failed because orf the newly created album
     EXPECT_EQ(CreatePhotoAlbum(albumName), -1); // creation failed because orf the newly created album
     MEDIA_INFO_LOG("photoalbum_create_album_007 exit");
