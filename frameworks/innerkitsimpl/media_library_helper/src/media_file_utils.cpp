@@ -128,7 +128,7 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
     { "video/mp4", { "m4v", "f4v", "mp4v", "mpeg4", "mp4" }},
     { "video/mp2t", { "m2ts", "mts"} },
     { "video/mp2ts", { "ts" } },
-    { "video/vnd.youtube.yt", { "vt" } },
+    { "video/vnd.youtube.yt", { "yt" } },
     { "video/x-webex", { "wrf" } },
     { "video/mpeg", { "mpeg", "mpeg2", "mpv2", "mp2v", "m2v", "m2t", "mpeg1", "mpv1", "mp1v", "m1v", "mpg" } },
     { "video/quicktime", { "mov" } },

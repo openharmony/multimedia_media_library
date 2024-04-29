@@ -206,9 +206,6 @@ public:
 
     // create table sql
     static const std::string CREATE_PHOTO_EXT_TABLE EXPORT;
-
-    // other sql statement
-    static const std::string QUERY_THUMBNAIL_VOLUMN EXPORT;
 };
 
 } // namespace OHOS::Media
