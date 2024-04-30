@@ -302,7 +302,7 @@ static void JSGetHighlightResourceExecute(napi_env env, void *data)
         return;
     }
     UniqueFd uniqueFd(fd);
-    size_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
+    size_t fileLen = static_cast<size_t>(lseek(uniqueFd.Get(), 0, SEEK_END));
     if (fileLen < 0) {
         NAPI_ERR_LOG("Failed to get highlight cover file length, error: %{public}d", errno);
         return;
