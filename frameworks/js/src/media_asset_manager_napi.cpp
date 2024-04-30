@@ -41,6 +41,7 @@
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
 #include "moving_photo_napi.h"
+#include "moving_photo_utils.h"
 #include "permission_utils.h"
 #include "userfile_client.h"
 
@@ -76,6 +77,7 @@ napi_value MediaAssetManagerNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_STATIC_FUNCTION("requestMovingPhoto", JSRequestMovingPhoto),
             DECLARE_NAPI_STATIC_FUNCTION("requestVideoFile", JSRequestVideoFile),
             DECLARE_NAPI_STATIC_FUNCTION("cancelRequest", JSCancelRequest),
+            DECLARE_NAPI_STATIC_FUNCTION("loadMovingPhoto", JSLoadMovingPhoto),
         }};
         MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
         return exports;
@@ -1144,6 +1146,71 @@ napi_value MediaAssetManagerNapi::JSCancelRequest(napi_env env, napi_callback_in
     }
 
     RETURN_NAPI_UNDEFINED(env);
+}
+
+static napi_value ParseArgsForLoadMovingPhoto(napi_env env, size_t argc, const napi_value argv[],
+    unique_ptr<MediaAssetManagerAsyncContext> &context)
+{
+    CHECK_COND_WITH_MESSAGE(env, (argc == ARGS_THREE), "Invalid number of arguments");
+    CHECK_COND_WITH_MESSAGE(env,
+        (ParseArgGetCallingPackageName(env, argv[PARAM0], context->callingPkgName) == napi_ok),
+        "Failed to parse calling context");
+
+    std::string imageFileUri;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::GetParamStringPathMax(env, argv[PARAM1], imageFileUri) == napi_ok,
+        "Failed to parse image file uri");
+    std::string videoFileUri;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::GetParamStringPathMax(env, argv[PARAM2], videoFileUri) == napi_ok,
+        "Failed to parse video file uri");
+    std::string uri(imageFileUri + MOVING_PHOTO_URI_SPLIT + videoFileUri);
+    context->mediaUri = uri;
+    RETURN_NAPI_TRUE(env);
+}
+
+static void JSLoadMovingPhotoComplete(napi_env env, napi_status status, void *data)
+{
+    MediaAssetManagerAsyncContext *context = static_cast<MediaAssetManagerAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSLoadMovingPhotoComplete");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        napi_value movingPhoto = MovingPhotoNapi::NewMovingPhotoNapi(env, context->mediaUri,
+            SourceMode::EDITED_MODE);
+        jsContext->data = movingPhoto;
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+        napi_get_undefined(env, &jsContext->data);
+    }
+
+    tracer.Finish();
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+static void JSLoadMovingPhotoExecute(napi_env env, void *data)
+{
+}
+
+napi_value MediaAssetManagerNapi::JSLoadMovingPhoto(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaAssetManagerAsyncContext> asyncContext = make_unique<MediaAssetManagerAsyncContext>();
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &(asyncContext->argc), asyncContext->argv, nullptr, nullptr),
+        JS_INNER_FAIL);
+    CHECK_NULLPTR_RET(ParseArgsForLoadMovingPhoto(env, asyncContext->argc, asyncContext->argv, asyncContext));
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSLoadMovingPhoto", JSLoadMovingPhotoExecute,
+        JSLoadMovingPhotoComplete);
 }
 } // namespace Media
 } // namespace OHOS
