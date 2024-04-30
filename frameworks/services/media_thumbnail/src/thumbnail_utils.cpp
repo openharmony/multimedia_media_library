@@ -1365,7 +1365,7 @@ int ThumbnailUtils::TrySaveFile(ThumbnailData &data, ThumbnailType type)
 {
     string suffix;
     uint8_t *output;
-    int writeSize;
+    uint32_t writeSize;
     switch (type) {
         case ThumbnailType::THUMB:
             suffix = THUMBNAIL_THUMB_SUFFIX;
