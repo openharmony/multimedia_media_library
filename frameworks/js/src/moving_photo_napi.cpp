@@ -25,7 +25,6 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_utils.h"
-#include "moving_photo_utils.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
 
@@ -107,7 +106,12 @@ void MovingPhotoNapi::SetSourceMode(SourceMode sourceMode)
 
 int32_t MovingPhotoNapi::OpenReadonlyVideoFile(const string& imageUri)
 {
-    return MovingPhotoUtils::OpenReadOnlyFile(imageUri, false);
+    string openVideoUri = imageUri;
+    MediaFileUtils::UriAppendKeyValue(openVideoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
+        OPEN_MOVING_PHOTO_VIDEO);
+    Uri uri(openVideoUri);
+    int videoFd = UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
+    return videoFd;
 }
 
 static int32_t writeToSandboxUri(int32_t srcFd, const string& sandboxUri)
@@ -156,13 +160,14 @@ static int32_t RequestContentToSandbox(MovingPhotoAsyncContext* context)
         MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
     }
     if (!context->destImageUri.empty()) {
-        int32_t imageFd = MovingPhotoUtils::OpenReadOnlyFile(movingPhotoUri, true);
+        Uri uri(movingPhotoUri);
+        int32_t imageFd = UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
         CHECK_COND_RET(HandleFd(imageFd), imageFd, "Open source image file failed");
         int32_t ret = writeToSandboxUri(imageFd, context->destImageUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write image to sandbox failed");
     }
     if (!context->destVideoUri.empty()) {
-        int32_t videoFd = MovingPhotoUtils::OpenReadOnlyFile(movingPhotoUri, false);
+        int32_t videoFd = MovingPhotoNapi::OpenReadonlyVideoFile(movingPhotoUri);
         CHECK_COND_RET(HandleFd(videoFd), videoFd, "Open source video file failed");
         int32_t ret = writeToSandboxUri(videoFd, context->destVideoUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
@@ -180,12 +185,13 @@ static int32_t AcquireFdForArrayBuffer(MovingPhotoAsyncContext* context)
     }
     switch (context->resourceType) {
         case ResourceType::IMAGE_RESOURCE: {
-            fd = MovingPhotoUtils::OpenReadOnlyFile(movingPhotoUri, true);
+            Uri uri(movingPhotoUri);
+            fd = UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
             CHECK_COND_RET(HandleFd(fd), fd, "Open source image file failed");
             return fd;
         }
         case ResourceType::VIDEO_RESOURCE:
-            fd = MovingPhotoUtils::OpenReadOnlyFile(movingPhotoUri, false);
+            fd = MovingPhotoNapi::OpenReadonlyVideoFile(movingPhotoUri);
             CHECK_COND_RET(HandleFd(fd), fd, "Open source video file failed");
             return fd;
         default:
@@ -374,5 +380,6 @@ napi_value MovingPhotoNapi::JSGetUri(napi_env env, napi_callback_info info)
     CHECK_ARGS(env, napi_create_string_utf8(env, obj->GetUri().c_str(), NAPI_AUTO_LENGTH, &jsResult), JS_INNER_FAIL);
     return jsResult;
 }
+
 } // namespace Media
 } // namespace OHOS
