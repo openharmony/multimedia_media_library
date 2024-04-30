@@ -460,8 +460,8 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_007, TestSize.Level0)
     CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_DIRTY, TYPE_INT32, static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
 
     EXPECT_GT(CreatePhotoAlbum(albumName), 0); // creation succeeded for the first time
-    EXPECT_EQ(CreatePhotoAlbum(albumName), -1); // creation failed because orf the newly created album
-    EXPECT_EQ(CreatePhotoAlbum(albumName), -1); // creation failed because orf the newly created album
+    EXPECT_EQ(CreatePhotoAlbum(albumName), -1); // creation failed because of the newly created album
+    EXPECT_EQ(CreatePhotoAlbum(albumName), -1); // creation failed because of the newly created album
     MEDIA_INFO_LOG("photoalbum_create_album_007 exit");
 }
 
