@@ -197,7 +197,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
     const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
 {
     std::shared_ptr<NapiMediaAssetDataHandler> mediaAssetDataHandler = make_shared<NapiMediaAssetDataHandler>(
-        env, asyncContext->dataHandler, asyncContext->returnDataType, asyncContext->mediaUri, asyncContext->destUri,
+        env, asyncContext->dataHandler, asyncContext->returnDataType, asyncContext->photoUri, asyncContext->destUri,
         asyncContext->sourceMode);
     mediaAssetDataHandler->SetNotifyMode(notifyMode);
 
@@ -212,11 +212,11 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
         return nullptr;
     }
 
-    AssetHandler *assetHandler = CreateAssetHandler(asyncContext->mediaId, asyncContext->requestId,
-        asyncContext->mediaUri, mediaAssetDataHandler, threadSafeFunc);
+    AssetHandler *assetHandler = CreateAssetHandler(asyncContext->photoId, asyncContext->requestId,
+        asyncContext->photoUri, mediaAssetDataHandler, threadSafeFunc);
     assetHandler->photoQuality = asyncContext->photoQuality;
     assetHandler->needsExtraInfo = asyncContext->needsExtraInfo;
-    NAPI_INFO_LOG("Add %{public}d, %{public}s, %{public}s, %{public}p", notifyMode, asyncContext->mediaUri.c_str(),
+    NAPI_INFO_LOG("Add %{public}d, %{public}s, %{public}s, %{public}p", notifyMode, asyncContext->photoUri.c_str(),
         asyncContext->requestId.c_str(), assetHandler);
 
     switch (notifyMode) {
@@ -225,7 +225,7 @@ static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
             break;
         }
         case NotifyMode::WAIT_FOR_HIGH_QUALITY: {
-            InsertInProcessMapRecord(asyncContext->mediaUri, asyncContext->requestId, assetHandler);
+            InsertInProcessMapRecord(asyncContext->photoUri, asyncContext->requestId, assetHandler);
             break;
         }
         default:
@@ -488,11 +488,11 @@ void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env,
     const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
 {
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
-    Uri uri(asyncContext->mediaUri);
-    if (multiStagesObserverMap.find(asyncContext->mediaUri) == multiStagesObserverMap.end()) {
+    Uri uri(asyncContext->photoUri);
+    if (multiStagesObserverMap.find(asyncContext->photoUri) == multiStagesObserverMap.end()) {
         UserFileClient::RegisterObserverExt(uri,
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
-        multiStagesObserverMap.insert(std::make_pair(asyncContext->mediaUri, dataObserver));
+        multiStagesObserverMap.insert(std::make_pair(asyncContext->photoUri, dataObserver));
     }
 
     InsertDataHandler(NotifyMode::WAIT_FOR_HIGH_QUALITY, env, asyncContext);
@@ -516,7 +516,7 @@ napi_status MediaAssetManagerNapi::ParseRequestMediaArgs(napi_env env, napi_call
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia ParseArgGetPhotoAsset error");
         return napi_invalid_arg;
     }
-    if (ParseArgGetPhotoAsset(env, asyncContext->argv[PARAM1], asyncContext->fileId, asyncContext->mediaUri,
+    if (ParseArgGetPhotoAsset(env, asyncContext->argv[PARAM1], asyncContext->fileId, asyncContext->photoUri,
         asyncContext->displayName) != napi_ok) {
         NAPI_ERR_LOG("requestMedia ParseArgGetPhotoAsset error");
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia ParseArgGetPhotoAsset error");
@@ -658,9 +658,9 @@ napi_value MediaAssetManagerNapi::JSRequestVideoFile(napi_env env, napi_callback
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "failed to parse requestVideo args");
         return nullptr;
     }
-    if (asyncContext->mediaUri.length() > MAX_URI_SIZE || asyncContext->destUri.length() > MAX_URI_SIZE) {
-        NAPI_ERR_LOG("request video file uri lens out of limit mediaUri lens: %{public}zu, destUri lens: %{public}zu",
-            asyncContext->mediaUri.length(), asyncContext->destUri.length());
+    if (asyncContext->photoUri.length() > MAX_URI_SIZE || asyncContext->destUri.length() > MAX_URI_SIZE) {
+        NAPI_ERR_LOG("request video file uri lens out of limit photoUri lens: %{public}zu, destUri lens: %{public}zu",
+            asyncContext->photoUri.length(), asyncContext->destUri.length());
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "request video file uri lens out of limit");
         return nullptr;
     }
@@ -690,13 +690,13 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env,
         case DeliveryMode::FAST:
             if (asyncContext->needsExtraInfo) {
                 asyncContext->photoQuality = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
-                    asyncContext->mediaUri, asyncContext->mediaId, asyncContext->hasReadPermission);
+                    asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission);
             }
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             break;
         case DeliveryMode::HIGH_QUALITY:
             status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
-                asyncContext->mediaUri, asyncContext->mediaId, asyncContext->hasReadPermission);
+                asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission);
             asyncContext->photoQuality = status;
             if (status == MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS) {
                 MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
@@ -706,7 +706,7 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env,
             break;
         case DeliveryMode::BALANCED_MODE:
             status = MediaAssetManagerNapi::QueryPhotoStatus(asyncContext->fileId,
-                asyncContext->mediaUri, asyncContext->mediaId, asyncContext->hasReadPermission);
+                asyncContext->photoUri, asyncContext->photoId, asyncContext->hasReadPermission);
             asyncContext->photoQuality = status;
             MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(env, asyncContext);
             if (status == MultiStagesCapturePhotoStatus::LOW_QUALITY_STATUS) {
@@ -986,7 +986,7 @@ static napi_value ParseArgsForRequestMovingPhoto(napi_env env, size_t argc, cons
     CHECK_COND_WITH_MESSAGE(env,
         fileAssetPtr->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO),
         "Asset is not a moving photo");
-    context->mediaUri = fileAssetPtr->GetUri();
+    context->photoUri = fileAssetPtr->GetUri();
     context->fileId = fileAssetPtr->GetId();
     context->returnDataType = ReturnDataType::TYPE_MOVING_PHOTO;
     context->hasReadPermission = HasReadPermission();
@@ -1100,7 +1100,7 @@ static bool IsFastRequestCanceled(const std::string &requestId, std::string &pho
         NAPI_ERR_LOG("assetHandler is nullptr.");
         return false;
     }
-    photoId = assetHandler->mediaId;
+    photoId = assetHandler->photoId;
     inProcessFastRequests.Erase(requestId);
     return true;
 }
@@ -1117,7 +1117,7 @@ static bool IsMapRecordCanceled(const std::string &requestId, std::string &photo
         NAPI_ERR_LOG("assetHandler is nullptr.");
         return false;
     }
-    photoId = assetHandler->mediaId;
+    photoId = assetHandler->photoId;
     DeleteInProcessMapRecord(assetHandler->requestUri, assetHandler->requestId);
     DeleteAssetHandlerSafe(assetHandler);
     return true;
