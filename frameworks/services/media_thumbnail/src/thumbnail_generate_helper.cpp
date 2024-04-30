@@ -21,6 +21,7 @@
 #include "dfx_const.h"
 #include "dfx_manager.h"
 #include "dfx_timer.h"
+#include "dfx_utils.h"
 #include "ithumbnail_helper.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -198,26 +199,51 @@ int32_t ThumbnailGenerateHelper::GetNewThumbnailCount(ThumbRdbOpt &opts, const i
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size, ThumbnailType thumbType)
+int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
+    std::string &fileName)
+{
+    string thumbSuffix = GetThumbSuffix(thumbType);
+    fileName = GetThumbnailPath(data.path, thumbSuffix);
+    if (thumbType == ThumbnailType::THUMB_ASTC) {
+        // Try to get jpeg thumbnail instead if there is no astc file
+        if (access(fileName.c_str(), F_OK) == 0) {
+            return E_OK;
+        } else {
+            fileName = GetThumbnailPath(data.path, GetThumbSuffix(ThumbnailType::THUMB));
+        }
+    }
+
+    // No need to create thumbnails if corresponding file exists
+    if (access(fileName.c_str(), F_OK) == 0) {
+        return E_OK;
+    }
+
+    MEDIA_INFO_LOG("No available file, create thumbnail, path: %{public}s", fileName.c_str());
+    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
+        MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s", fileName.c_str());
+        return E_THUMBNAIL_LOCAL_CREATE_FAIL;
+    } else if (!IThumbnailHelper::DoCreateThumbnail(opts, data)) {
+        MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s", fileName.c_str());
+        return E_THUMBNAIL_LOCAL_CREATE_FAIL;
+    }
+    if (!opts.path.empty()) {
+        fileName = GetThumbnailPath(data.path, thumbSuffix);
+    }
+    return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType)
 {
     ThumbnailWait thumbnailWait(false);
     thumbnailWait.CheckAndWait(opts.row, thumbType == ThumbnailType::LCD);
     ThumbnailData thumbnailData;
     ThumbnailUtils::GetThumbnailInfo(opts, thumbnailData);
 
-    string thumbSuffix = GetThumbSuffix(thumbType);
-    string fileName = GetThumbnailPath(thumbnailData.path, thumbSuffix);
-    if (access(fileName.c_str(), F_OK) != 0) {
-        if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, thumbnailData)) {
-            MEDIA_ERR_LOG("get lcd thumbnail pixelmap, doCreateThumbnail %{public}s", fileName.c_str());
-            return E_THUMBNAIL_LOCAL_CREATE_FAIL;
-        } else if (!IThumbnailHelper::DoCreateThumbnail(opts, thumbnailData)) {
-            MEDIA_ERR_LOG("get default thumbnail pixelmap, doCreateThumbnail %{public}s", fileName.c_str());
-            return E_THUMBNAIL_LOCAL_CREATE_FAIL;
-        }
-    }
-    if (!opts.path.empty()) {
-        fileName = GetThumbnailPath(thumbnailData.path, thumbSuffix);
+    string fileName;
+    int err = GetAvailableFile(opts, thumbnailData, thumbType, fileName);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("GetAvailableFile failed, path: %{public}s", DfxUtils::GetSafePath(thumbnailData.path).c_str());
+        return err;
     }
 
     DfxTimer dfxTimer(thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN,
@@ -229,7 +255,6 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, const S
             thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
         return -errno;
     }
-    int err;
     if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE) {
         ThumbnailUtils::UpdateVisitTime(opts, thumbnailData, err);
     }
