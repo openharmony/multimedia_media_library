@@ -35,6 +35,7 @@ public:
     std::string GetUri();
     SourceMode GetSourceMode();
     void SetSourceMode(SourceMode sourceMode);
+
 private:
     EXPORT static napi_value Constructor(napi_env env, napi_callback_info info);
     EXPORT static void Destructor(napi_env env, void* nativeObject, void* finalizeHint);
@@ -44,7 +45,7 @@ private:
 
     static thread_local napi_ref constructor_;
     std::string photoUri_;
-    SourceMode sourceMode_ = SourceMode::EDITED_MODE;
+    SourceMode sourceMode_;
 };
 
 struct MovingPhotoAsyncContext : public NapiError {

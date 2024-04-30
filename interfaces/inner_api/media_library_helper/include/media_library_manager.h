@@ -163,14 +163,6 @@ public:
      */
     EXPORT int32_t ReadMovingPhotoVideo(const string &uri);
 
-    /**
-     * @brief Get image uri of moving photo
-     *
-     * @param uri asset uri of the moving photo
-     * @return image uri
-     */
-    EXPORT std::string GetMovingPhotoImageUri(const string &uri);
-
 private:
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);
     static unique_ptr<PixelMap> QueryThumbnail(const std::string &uri, Size &size, const string &path, bool isAstc);
