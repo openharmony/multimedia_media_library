@@ -59,11 +59,14 @@ using namespace OHOS::NativeRdb;
 using namespace OHOS::DistributedKv;
 using namespace OHOS::Media;
 using namespace OHOS::DataShare;
+using namespace OHOS::Security::AccessToken;
 
 namespace OHOS {
 namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
+
+const string secuityComponentMode = "rw";
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
 {
@@ -208,6 +211,19 @@ static inline bool ContainsFlag(const string &mode, const char flag)
     return mode.find(flag) != string::npos;
 }
 
+static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,
+    const bool permGranted, PermissionUsedType type)
+{
+    if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO)) {
+        if (mode.find("r") != string::npos) {
+            PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type);
+        }
+        if (mode.find("w") != string::npos) {
+            PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, permGranted, type);
+        }
+    }
+}
+
 static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
 {
     MEDIA_DEBUG_LOG("uri: %{private}s mode: %{private}s", cmd.GetUri().ToString().c_str(), mode.c_str());
@@ -217,6 +233,9 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
 
     vector<string> perms;
     FillV10Perms(mediaType, containsRead, containsWrite, perms);
+    if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO)) {
+        return PermissionUtils::CheckPhotoCallerPermission(perms)? E_SUCCESS : E_PERMISSION_DENIED;
+    }
     int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
         (PermissionUtils::CheckHasPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED) :
         (PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED);
@@ -532,6 +551,8 @@ static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd)
         queryResultSet->GetRowCount(count);
         if (count != 0) {
             ret = true;
+            CollectPermissionInfo(cmd, secuityComponentMode, true,
+                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
         }
     }
     return ret;
@@ -566,12 +587,16 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
             auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
             if (uriPermissionClient.VerifyUriPermission(Uri(command.GetUriStringWithoutSegment()),
                 GetFlagFromMode(unifyMode), IPCSkeleton::GetCallingTokenID())) {
+                CollectPermissionInfo(command, unifyMode, true, PermissionUsedTypeValue::PICKER_TYPE);
                 err = E_OK;
             }
         }
         if (err != E_OK) {
+            CollectPermissionInfo(command, unifyMode, false, PermissionUsedTypeValue::PICKER_TYPE);
             if (!CheckIsOwner(uri, command)) {
                 MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
+                CollectPermissionInfo(command, secuityComponentMode, false,
+                    PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
                 return err;
             }
         }
