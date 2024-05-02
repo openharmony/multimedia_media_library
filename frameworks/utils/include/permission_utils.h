@@ -19,9 +19,14 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <thread>
+#include <mutex>
 
 #include "bundle_mgr_interface.h"
 #include "userfile_manager_types.h"
+#include "permission_used_type.h"
+#include "privacy_kit.h"
+#include "tokenid_kit.h"
 
 namespace OHOS {
 namespace Media {
@@ -55,6 +60,10 @@ public:
     static bool CheckIsSystemAppByUid();
     static std::string GetPackageNameByBundleName(const std::string &bundleName);
     static std::string GetAppIdByBundleName(const std::string &bundleName);
+    static bool CheckPhotoCallerPermission(const std::vector<std::string> &perms);
+    static bool CheckPhotoCallerPermission(const std::string &permission);
+    static void CollectPermissionInfo(const std::string &permission, const bool permGranted,
+        const Security::AccessToken::PermissionUsedType type);
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
