@@ -35,6 +35,11 @@ using namespace std;
 using namespace OHOS::Security::AccessToken;
 using namespace OHOS::AppExecFwk::Constants;
 
+bool g_hasDelayTask;
+std::mutex AddPhotoPermissionRecordLock_;
+std::thread DelayTask_;
+std::vector<Security::AccessToken::AddPermParamInfo> infos;
+
 sptr<AppExecFwk::IBundleMgr> PermissionUtils::bundleMgr_ = nullptr;
 mutex PermissionUtils::bundleMgrMutex_;
 sptr<AppExecFwk::IBundleMgr> PermissionUtils::GetSysBundleManager()
@@ -100,6 +105,98 @@ void AddPermissionRecord(const AccessTokenID &token, const string &perm, const b
         MEDIA_WARN_LOG("Failed to add permission used record: %{public}s, permGranted: %{public}d, err: %{public}d",
             perm.c_str(), permGranted, res);
     }
+}
+
+vector<AddPermParamInfo> GetPermissionRecord()
+{
+    lock_guard<mutex> lock(AddPhotoPermissionRecordLock_);
+    vector<AddPermParamInfo> result = infos;
+    infos.clear();
+    return result;
+}
+
+void AddPermissionRecord()
+{
+    vector<AddPermParamInfo> infos = GetPermissionRecord();
+    for (const auto &info : infos) {
+        int32_t ret = PrivacyKit::AddPermissionUsedRecord(info, true);
+        if (ret != 0) {
+            /* Failed to add permission used record, not fatal */
+            MEDIA_WARN_LOG("Failed to add permission used record: %{public}s, permGranted: %{public}d, err: %{public}d",
+                info.permissionName.c_str(), info.successCount, ret);
+        }
+    }
+    infos.clear();
+}
+
+void DelayAddPermissionRecord()
+{
+    string name("DelayAddPermissionRecord");
+    pthread_setname_np(pthread_self(), name.c_str());
+    MEDIA_DEBUG_LOG("DelayTask start");
+    std::this_thread::sleep_for(std::chrono::minutes(1));
+    AddPermissionRecord();
+    g_hasDelayTask = false;
+    MEDIA_DEBUG_LOG("DelayTask end");
+}
+
+void DelayTaskInit()
+{
+    if (!g_hasDelayTask) {
+        MEDIA_DEBUG_LOG("DelayTaskInit");
+        DelayTask_ = thread(DelayAddPermissionRecord);
+        DelayTask_.detach();
+        g_hasDelayTask = true;
+    }
+}
+
+void CollectPermissionRecord(const AccessTokenID &token, const string &perm,
+    const bool permGranted, const PermissionUsedType type)
+{
+    lock_guard<mutex> lock(AddPhotoPermissionRecordLock_);
+    DelayTaskInit();
+
+    if (!ShouldAddPermissionRecord(token)) {
+        return;
+    }
+
+    AddPermParamInfo info = {token, perm, permGranted, !permGranted, type};
+    infos.push_back(info);
+}
+
+void PermissionUtils::CollectPermissionInfo(const string &permission,
+    const bool permGranted, const PermissionUsedType type)
+{
+    AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    CollectPermissionRecord(tokenCaller, permission, permGranted, type);
+}
+
+bool PermissionUtils::CheckPhotoCallerPermission(const string &permission)
+{
+    PermissionUsedType type = PermissionUsedTypeValue::NORMAL_TYPE;
+    AccessTokenID tokenCaller = IPCSkeleton::GetCallingTokenID();
+    int res = AccessTokenKit::VerifyAccessToken(tokenCaller, permission);
+    if (res != PermissionState::PERMISSION_GRANTED) {
+        MEDIA_ERR_LOG("Have no media permission: %{public}s", permission.c_str());
+        CollectPermissionRecord(tokenCaller, permission, false, type);
+        return false;
+    }
+    CollectPermissionRecord(tokenCaller, permission, true, type);
+    return true;
+}
+
+bool PermissionUtils::CheckPhotoCallerPermission(const vector<string> &perms)
+{
+    if (perms.empty()) {
+        return false;
+    }
+
+    for (const auto &perm : perms) {
+        if (!CheckPhotoCallerPermission(perm)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool PermissionUtils::CheckCallerPermission(const string &permission)
