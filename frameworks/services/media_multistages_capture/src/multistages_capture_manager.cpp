@@ -234,7 +234,7 @@ void MultiStagesCaptureManager::AddImage(int32_t fileId, const string &photoId, 
     AddImageInternal(fileId, photoId, deferredProcType, false);
 }
 
-void MultiStagesCaptureManager::SyncWithDeferredProcSession()
+void MultiStagesCaptureManager::SyncWithDeferredProcSessionInternal()
 {
     MEDIA_INFO_LOG("enter");
     // 进程重启场景，媒体库需要和延时子服务同步
@@ -271,6 +271,29 @@ void MultiStagesCaptureManager::SyncWithDeferredProcSession()
     
     deferredProcSession_->EndSynchronize();
     MEDIA_INFO_LOG("exit");
+}
+
+static void SyncWithDeferredProcSessionAsync(AsyncTaskData *data)
+{
+    MultiStagesCaptureManager::GetInstance().SyncWithDeferredProcSessionInternal();
+}
+
+void MultiStagesCaptureManager::SyncWithDeferredProcSession()
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_INFO_LOG("can not get async worker");
+        return;
+    }
+
+    shared_ptr<MediaLibraryAsyncTask> asyncTask =
+        make_shared<MediaLibraryAsyncTask>(SyncWithDeferredProcSessionAsync, nullptr);
+    if (asyncTask == nullptr) {
+        MEDIA_ERR_LOG("SyncWithDeferredProcSession create task fail");
+        return;
+    }
+    MEDIA_INFO_LOG("SyncWithDeferredProcSession add task success");
+    asyncWorker->AddTask(asyncTask, false);
 }
 
 bool MultiStagesCaptureManager::CancelProcessRequest(const string &photoId)
