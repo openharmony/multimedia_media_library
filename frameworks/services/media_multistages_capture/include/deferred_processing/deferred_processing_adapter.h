@@ -36,12 +36,12 @@ public:
     EXPORT DeferredProcessingAdapter();
     EXPORT ~DeferredProcessingAdapter();
 
-    EXPORT void BeginSynchronize();
-    EXPORT void EndSynchronize();
+    EXPORT virtual void BeginSynchronize();
+    EXPORT virtual void EndSynchronize();
     #ifdef ABILITY_CAMERA_SUPPORT
     void AddImage(const std::string &imageId, CameraStandard::DpsMetadata &metadata, const bool isTrashed = false);
     #endif
-    EXPORT void RemoveImage(const std::string &imageId, const bool isRestorable = true);
+    EXPORT virtual void RemoveImage(const std::string &imageId, const bool isRestorable = true);
     EXPORT void RestoreImage(const std::string &imageId);
     EXPORT void ProcessImage(const std::string &appName, const std::string &imageId);
     EXPORT bool CancelProcessImage(const std::string &imageId);

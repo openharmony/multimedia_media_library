@@ -61,7 +61,8 @@ public:
 
     bool IsPhotoDeleted(const std::string &photoId);
 
-    void SyncWithDeferredProcSession();
+    EXPORT void SyncWithDeferredProcSession();
+    EXPORT void SyncWithDeferredProcSessionInternal();
 
 private:
     enum class PhotoState : int32_t {

@@ -24,6 +24,7 @@ MEDIALIB_CLOUD_SYNC_PATH = "${MEDIALIB_SERVICES_PATH}/media_cloud_sync"
 MEDIALIB_MTP_PATH = "${MEDIALIB_SERVICES_PATH}/media_mtp"
 MEDIALIB_CAMERA_FRAMEWORK_PATH = "${MEDIALIB_ROOT_PATH}/../camera_framework"
 MEDIALIB_GLOBAL_PATH = "//base/global"
+MEDIALIB_THIRD_PARTY_PATH = "//third_party"
 declare_args() {
   link_opt = false
 }
