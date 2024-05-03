@@ -130,6 +130,7 @@ void FileAssetNapi::FileAssetNapiDestructor(napi_env env, void *nativeObject, vo
 {
     FileAssetNapi *fileAssetObj = reinterpret_cast<FileAssetNapi*>(nativeObject);
     if (fileAssetObj != nullptr) {
+        std::lock_guard<std::mutex> lock(fileAssetObj->mutex_);
         delete fileAssetObj;
         fileAssetObj = nullptr;
     }
