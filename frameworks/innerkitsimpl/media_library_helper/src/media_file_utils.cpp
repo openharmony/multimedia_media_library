@@ -1370,13 +1370,23 @@ bool MediaFileUtils::CheckMovingPhotoImage(const string &path)
 
 bool MediaFileUtils::CheckMovingPhotoVideo(const string &path)
 {
-    string extension = GetExtensionFromPath(path);
+    string absFilePath;
+    if (!PathToRealPath(path, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to get real path, path: %{private}s", path.c_str());
+        return false;
+    }
+    if (absFilePath.empty()) {
+        MEDIA_ERR_LOG("Failed to check path for %{private}s, errno: %{public}d", path.c_str(), errno);
+        return false;
+    }
+
+    string extension = GetExtensionFromPath(absFilePath);
     if (!CheckMovingPhotoVideoExtension(extension)) {
         MEDIA_ERR_LOG("Failed to check extension (%{public}s) of moving photo video", extension.c_str());
         return false;
     }
 
-    UniqueFd uniqueFd(open(path.c_str(), O_RDONLY));
+    UniqueFd uniqueFd(open(absFilePath.c_str(), O_RDONLY));
     return CheckMovingPhotoVideo(uniqueFd);
 }
 
