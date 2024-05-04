@@ -31,12 +31,14 @@ public:
     static int32_t CreateAstcBatch(ThumbRdbOpt &opts);
     static int32_t CreateLcdBatch(ThumbRdbOpt &opts);
     static int32_t GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count);
-    static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, const Size &size, ThumbnailType thumbType);
+    static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType);
 private:
     static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
     static int32_t GetNoLcdData(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &outDatas);
     static int32_t GetNoThumbnailData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
     static int32_t GetNoAstcData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
+    static int32_t GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
+        std::string &fileName);
 };
 } // namespace Media
 } // namespace OHOS

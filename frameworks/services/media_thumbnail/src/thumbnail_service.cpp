@@ -174,7 +174,7 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     if (thumbType != ThumbnailType::THUMB && thumbType != ThumbnailType::THUMB_ASTC) {
         opts.screenSize = screenSize_;
     }
-    int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, size, thumbType);
+    int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, thumbType);
     if (fd < 0) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, fd},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
