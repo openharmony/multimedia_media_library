@@ -35,6 +35,13 @@ public:
     void ReportDeleteStatistic();
     void ReportDeleteBehavior(std::string bundleName, int32_t type, std::string path);
     void ReportThumbnailGeneration(const ThumbnailData::GenerateStats &stats);
+    void ReportPhotoInfo(int32_t localImageCount, int32_t localVideoCount, int32_t cloudImageCount,
+        int32_t cloudVideCount);
+    void ReportAlbumInfo(const std::string &albumName, int32_t albumImageCount, int32_t albumVideoCount,
+        bool isLocal);
+    void ReportDirtyCloudPhoto(const std::string &data, int32_t dirty, int32_t cloudVersion);
+    void ReportCommonVersion();
+    void ReportAnalysisVersion(const std::string &analysisName, int32_t version);
 };
 } // namespace Media
 } // namespace OHOS
