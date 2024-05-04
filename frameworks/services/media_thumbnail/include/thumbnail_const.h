@@ -20,6 +20,7 @@
 
 namespace OHOS {
 namespace Media {
+constexpr int32_t THUMBNAIL_VERSION = 0;
 constexpr int32_t DEFAULT_YEAR_SIZE = 64;
 constexpr int32_t DEFAULT_MTH_SIZE = 128;
 constexpr int32_t DEFAULT_THUMB_SIZE = 256;

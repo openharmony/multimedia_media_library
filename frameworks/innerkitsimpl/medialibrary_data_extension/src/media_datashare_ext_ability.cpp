@@ -697,7 +697,6 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
             MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
             return err;
         }
-        return err;
     }
 
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);

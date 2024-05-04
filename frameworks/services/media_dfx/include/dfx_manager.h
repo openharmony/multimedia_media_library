@@ -43,6 +43,13 @@ public:
     std::shared_ptr<DfxReporter> dfxReporter_;
 };
 
+class StatisticData : public DfxData {
+public:
+    StatisticData(std::shared_ptr<DfxReporter> dfxReporter) : dfxReporter_(dfxReporter) {}
+    virtual ~StatisticData() override = default;
+    std::shared_ptr<DfxReporter> dfxReporter_;
+};
+
 class DfxManager {
 public:
     DfxManager();
@@ -60,9 +67,11 @@ public:
         std::vector<std::string> &uris, std::string bundleName = "");
     void HandleDeleteBehaviors();
     void HandleNoPermmison(int32_t type, int32_t object, int32_t error);
+    void HandleHalfDayMissions();
 
 private:
     void Init();
+    void HandleAlbumInfoBySubtype(int32_t albumSubType);
 
 private:
     static std::mutex instanceLock_;

@@ -140,6 +140,11 @@ static inline int64_t GetInt64Val(const std::string &field, const ResultSet &res
 {
     return get<int64_t>(ResultSetUtils::GetValFromColumn(field, result, TYPE_INT64));
 }
+template<typename ResultSet>
+static inline double GetDoubleVal(const std::string &field, const ResultSet &result)
+{
+    return get<double>(ResultSetUtils::GetValFromColumn(field, result, TYPE_DOUBLE));
+}
 } // namespace Media
 } // namespace  OHOS
 #endif // INTERFACES_INNERAPI_MEDIA_LIBRARY_HELPER_INCLUDE_RESULT_SET_UTILS_H_
