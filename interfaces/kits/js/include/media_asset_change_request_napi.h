@@ -58,7 +58,7 @@ enum class AddResourceMode {
 
 class MediaDataSource : public IMediaDataSource {
 public:
-    MediaDataSource(void* buffer, size_t size) : buffer_(buffer), size_(size), readPos_(0) {}
+    MediaDataSource(void* buffer, int64_t size) : buffer_(buffer), size_(size), readPos_(0) {}
     ~MediaDataSource() = default;
 
     int32_t ReadAt(const std::shared_ptr<AVSharedMemory>& mem, uint32_t length, int64_t pos = -1) override;
@@ -67,11 +67,11 @@ public:
     int32_t GetSize(int64_t& size) override;
 
 private:
-    uint32_t ReadData(const std::shared_ptr<AVSharedMemory>& mem, uint32_t length);
+    int32_t ReadData(const std::shared_ptr<AVSharedMemory>& mem, uint32_t length);
 
     void* buffer_;
-    size_t size_;
-    uint32_t readPos_;
+    int64_t size_;
+    int64_t readPos_;
 };
 
 class MediaAssetChangeRequestNapi : public MediaChangeRequestNapi {
