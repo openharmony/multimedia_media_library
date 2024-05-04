@@ -281,6 +281,11 @@ bool PermissionUtils::IsNativeSAApp()
     return false;
 }
 
+bool PermissionUtils::IsRootShell()
+{
+    return IPCSkeleton::GetCallingUid() == 0;
+}
+
 string PermissionUtils::GetPackageNameByBundleName(const string &bundleName)
 {
     const static int32_t INVALID_UID = -1;
