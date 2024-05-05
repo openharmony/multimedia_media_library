@@ -328,8 +328,8 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
     };
 
     std::string result = "(";
-    int size = uploadPhotoColumns.size();
-    for (int i = 0; i < size; i++) {
+    size_t size = uploadPhotoColumns.size();
+    for (size_t i = 0; i < size; i++) {
         std::string column = uploadPhotoColumns[i];
         if (i != size - 1) {
             result += "new." + column + " <> old." + column + " OR ";
