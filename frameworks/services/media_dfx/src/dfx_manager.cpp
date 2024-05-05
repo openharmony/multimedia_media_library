@@ -21,6 +21,10 @@
 #include "media_log.h"
 #include "userfile_manager_types.h"
 #include "medialibrary_bundle_manager.h"
+#include "dfx_database_utils.h"
+#include "vision_aesthetics_score_column.h"
+#include "preferences.h"
+#include "preferences_helper.h"
 
 using namespace std;
 
@@ -174,6 +178,97 @@ void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::unordered
         return;
     }
     dfxWorker_->AddTask(deleteBehaviorTask);
+}
+
+static void HandlePhotoInfo(std::shared_ptr<DfxReporter> &dfxReporter)
+{
+    int32_t localImageCount = DfxDatabaseUtils::QueryFromPhotos(MediaType::MEDIA_TYPE_IMAGE, true);
+    int32_t localVideoCount = DfxDatabaseUtils::QueryFromPhotos(MediaType::MEDIA_TYPE_VIDEO, true);
+    int32_t cloudImageCount = DfxDatabaseUtils::QueryFromPhotos(MediaType::MEDIA_TYPE_IMAGE, false);
+    int32_t cloudVideoCount = DfxDatabaseUtils::QueryFromPhotos(MediaType::MEDIA_TYPE_VIDEO, false);
+    MEDIA_INFO_LOG("localImageCount: %{public}d, localVideoCount: %{public}d, cloudImageCount: %{public}d, \
+        cloudVideoCount: %{public}d", localImageCount, localVideoCount, cloudImageCount, cloudVideoCount);
+    dfxReporter->ReportPhotoInfo(localImageCount, localVideoCount, cloudImageCount, cloudVideoCount);
+}
+
+static void HandleAlbumInfoBySubtype(std::shared_ptr<DfxReporter> &dfxReporter, int32_t albumSubType)
+{
+    AlbumInfo albumInfo = DfxDatabaseUtils::QueryAlbumInfoBySubtype(albumSubType);
+    string albumName = ALBUM_MAP.at(albumSubType);
+    MEDIA_INFO_LOG("album %{public}s: {count:%{public}d, imageCount:%{public}d, videoCount:%{public}d, \
+        isLocal:%{public}d}", albumName.c_str(), albumInfo.count, albumInfo.imageCount, albumInfo.videoCount,
+        albumInfo.isLocal);
+    dfxReporter->ReportAlbumInfo(albumName.c_str(), albumInfo.imageCount, albumInfo.videoCount, albumInfo.isLocal);
+}
+
+static void HandleAlbumInfo(std::shared_ptr<DfxReporter> &dfxReporter)
+{
+    HandleAlbumInfoBySubtype(dfxReporter, static_cast<int32_t>(PhotoAlbumSubType::IMAGE));
+    HandleAlbumInfoBySubtype(dfxReporter, static_cast<int32_t>(PhotoAlbumSubType::VIDEO));
+    HandleAlbumInfoBySubtype(dfxReporter, static_cast<int32_t>(PhotoAlbumSubType::FAVORITE));
+    HandleAlbumInfoBySubtype(dfxReporter, static_cast<int32_t>(PhotoAlbumSubType::HIDDEN));
+    HandleAlbumInfoBySubtype(dfxReporter, static_cast<int32_t>(PhotoAlbumSubType::TRASH));
+}
+
+static void HandleDirtyCloudPhoto(std::shared_ptr<DfxReporter> &dfxReporter)
+{
+    vector<PhotoInfo> photoInfoList = DfxDatabaseUtils::QueryDirtyCloudPhoto();
+    if (photoInfoList.empty()) {
+        return;
+    }
+    for (auto& photoInfo: photoInfoList) {
+        dfxReporter->ReportDirtyCloudPhoto(photoInfo.data, photoInfo.dirty, photoInfo.cloudVersion);
+    }
+}
+
+static void HandleLocalVersion(std::shared_ptr<DfxReporter> &dfxReporter)
+{
+    dfxReporter->ReportCommonVersion();
+    int32_t aestheticsVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_aesthetics_score",
+        AESTHETICS_VERSION);
+    dfxReporter->ReportAnalysisVersion("tab_analysis_aesthetics_score", aestheticsVersion);
+}
+
+static void HandleStatistic(DfxData *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    auto *taskData = static_cast<StatisticData *>(data);
+    std::shared_ptr<DfxReporter> dfxReporter = taskData->dfxReporter_;
+    HandlePhotoInfo(dfxReporter);
+    HandleAlbumInfo(dfxReporter);
+    HandleDirtyCloudPhoto(dfxReporter);
+    HandleLocalVersion(dfxReporter);
+}
+
+void DfxManager::HandleHalfDayMissions()
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    int64_t lastReportTime = prefs->GetLong(LAST_HALF_DAY_REPORT_TIME, 0);
+    if (MediaFileUtils::UTCTimeSeconds() - lastReportTime > HALF_DAY && dfxWorker_ != nullptr) {
+        MEDIA_INFO_LOG("start handle statistic behavior");
+        auto *taskData = new (nothrow) StatisticData(dfxReporter_);
+        auto statisticTask = make_shared<DfxTask>(HandleStatistic, taskData);
+        if (statisticTask == nullptr) {
+            MEDIA_ERR_LOG("Failed to create statistic task.");
+            return;
+        }
+        dfxWorker_->AddTask(statisticTask);
+        int64_t time = MediaFileUtils::UTCTimeSeconds();
+        prefs->PutLong(LAST_HALF_DAY_REPORT_TIME, time);
+        prefs->FlushSync();
+    }
 }
 
 void DfxManager::HandleFiveMinuteTask()

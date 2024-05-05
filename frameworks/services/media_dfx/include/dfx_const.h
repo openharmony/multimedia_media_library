@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include "userfile_manager_types.h"
+
 namespace OHOS {
 namespace Media {
 constexpr int32_t IMAGE_MIN = 4096;
@@ -30,7 +32,7 @@ constexpr int32_t CLOUD_LCD_TIME_OUT = 800;
 constexpr int32_t RDB_TIME_OUT = 100;
 constexpr int32_t TO_MILLION = 1000;
 constexpr int32_t ONE_MINUTE = 60;
-
+constexpr int32_t HALF_DAY = 12 * 60 * 60;
 
 constexpr int32_t NOT_INIT = -1;
 constexpr int32_t COMMON_IMAGE = 0;
@@ -48,6 +50,8 @@ constexpr int32_t GARBLE_LAST_ONE = 1;
 
 constexpr int32_t LATEST_THUMBNAIL_ERROR_VERSION = 1;
 constexpr int32_t LATEST_DELETE_STATISTIC_VERSION = 1;
+
+constexpr int32_t DIRTY_PHOTO_COUNT = 10;
 
 /**
  * the number from 0 ~ 1000 is reserved for operationtype
@@ -84,6 +88,7 @@ const std::string DELETE_BEHAVIOR_XML = "/data/storage/el2/base/preferences/dele
 const std::string DFX_COMMON_XML = "/data/storage/el2/base/preferences/dfx_common.xml";
 const std::string LAST_REPORT_TIME = "last_report_time";
 const std::string LAST_MIDDLE_REPORT_TIME = "last_middle_report_time";
+const std::string LAST_HALF_DAY_REPORT_TIME = "last_half_day_report_time";
 const std::string THUMBNAIL_ERROR_VERSION = "thumbnail_error_version";
 const std::string DELETE_STATISTIC_VERSION = "delete_statistic_version";
 
@@ -101,6 +106,27 @@ struct ThumbnailErrorInfo {
 
 struct CommonBehavior {
     int32_t times;
+};
+
+struct AlbumInfo {
+    int32_t count = 0;
+    int32_t imageCount = 0;
+    int32_t videoCount = 0;
+    bool isLocal = false;
+};
+
+struct PhotoInfo {
+    std::string data;
+    int32_t dirty;
+    int32_t cloudVersion;
+};
+
+const std::unordered_map<int32_t, std::string> ALBUM_MAP = {
+    { static_cast<int32_t>(PhotoAlbumSubType::IMAGE), "IMAGE" },
+    { static_cast<int32_t>(PhotoAlbumSubType::VIDEO), "VIDEO" },
+    { static_cast<int32_t>(PhotoAlbumSubType::FAVORITE), "FAVORITE" },
+    { static_cast<int32_t>(PhotoAlbumSubType::HIDDEN), "HIDDEN" },
+    { static_cast<int32_t>(PhotoAlbumSubType::TRASH), "TRASH" },
 };
 } // namespace Media
 } // namespace OHOS

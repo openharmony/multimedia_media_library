@@ -220,5 +220,77 @@ void DfxReporter::ReportThumbnailGeneration(const ThumbnailData::GenerateStats &
         MEDIA_ERR_LOG("ReportThumbnailGeneration error:%{public}d", ret);
     }
 }
+
+void DfxReporter::ReportPhotoInfo(int32_t localImageCount, int32_t localVideoCount, int32_t cloudImageCount,
+    int32_t cloudVideoCount)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_PHOTO_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "LOCAL_IMAGE_COUNT", localImageCount,
+        "LOCAL_VIDEO_COUNT", localVideoCount,
+        "CLOUD_IMAGE_COUNT", cloudImageCount,
+        "CLOUD_VIDEO_COUNT", cloudVideoCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportPhotoInfo error:%{public}d", ret);
+    }
+}
+
+void DfxReporter::ReportAlbumInfo(const std::string &albumName, int32_t albumImageCount, int32_t albumVideoCount,
+    bool isLocal)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_ALBUM_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "ALBUM_NAME", albumName,
+        "ALBUM_IMAGE_COUNT", albumImageCount,
+        "ALBUM_VIDEO_COUNT", albumVideoCount,
+        "IS_LOCAL", isLocal);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportAlbumInfo error:%{public}d", ret);
+    }
+}
+
+void DfxReporter::ReportDirtyCloudPhoto(const std::string &data, int32_t dirty, int32_t cloudVersion)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_DIRTY_CLOUD_PHOTO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "PATH", data,
+        "DIRTY", dirty,
+        "CLOUD_VERSION", cloudVersion);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportDirtyCloudPhoto error:%{public}d", ret);
+    }
+}
+
+void DfxReporter::ReportCommonVersion()
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_COMMON_VERSION",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "DB_VERSION", MEDIA_RDB_VERSION,
+        "THUMBNAIL_VERSION", THUMBNAIL_VERSION);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportCommonVersion error:%{public}d", ret);
+    }
+}
+
+void DfxReporter::ReportAnalysisVersion(const std::string &analysisName, int32_t version)
+{
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_ANALYSIS_VERSION",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "NAME", analysisName,
+        "VERSION", version);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportAnalysisVersion error:%{public}d", ret);
+    }
+}
 } // namespace Media
 } // namespace OHOS
