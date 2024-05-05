@@ -486,6 +486,8 @@ inline void PrepareWhere(const string &albumName, const string &relativePath, Rd
     } else {
         predicates.EqualTo(PhotoAlbumColumns::ALBUM_RELATIVE_PATH, relativePath);
     }
+    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_DIRTY,
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)));
 }
 
 // Caller is responsible for checking @albumName AND @relativePath

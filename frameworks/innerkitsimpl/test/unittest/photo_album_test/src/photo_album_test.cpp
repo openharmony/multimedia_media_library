@@ -420,6 +420,52 @@ HWTEST_F(PhotoAlbumTest, photoalbum_create_album_006, TestSize.Level0)
 }
 
 /**
+ * @tc.name: photoalbum_create_album_007
+ * @tc.desc: Create an album with the same album name as the existed deleted album
+ * @tc.type: FUNC
+ * @tc.require: issueI9KEDW
+ */
+HWTEST_F(PhotoAlbumTest, photoalbum_create_album_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("photoalbum_create_album_007 enter");
+    const string albumName = "photoalbum_create_album_007";
+    string insertSql = "INSERT INTO " + PhotoAlbumColumns::TABLE + " (" + PhotoAlbumColumns::ALBUM_TYPE + ", " +
+        PhotoAlbumColumns::ALBUM_SUBTYPE + ", " + PhotoAlbumColumns::ALBUM_NAME + ", " +
+        PhotoAlbumColumns::ALBUM_DIRTY + ") VALUES (" + to_string(static_cast<int32_t>(PhotoAlbumType::USER)) + ", " +
+        to_string(static_cast<int32_t>(PhotoAlbumSubType::USER_GENERIC)) + ", '" + albumName + "', " +
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) + ")";
+    int32_t insertRet = g_rdbStore->ExecuteSql(insertSql);
+    ASSERT_EQ(insertRet, E_OK);
+
+    RdbPredicates predicates(PhotoAlbumColumns::TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_NAME, albumName);
+    const vector<string> columns = { PhotoAlbumColumns::ALBUM_ID, PhotoAlbumColumns::ALBUM_TYPE,
+        PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_DIRTY };
+    shared_ptr<OHOS::NativeRdb::ResultSet> resultSet = g_rdbStore->Query(predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+    int32_t count = -1;
+    int32_t ret = resultSet->GetRowCount(count);
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to get count! err: %{public}d", ret);
+    MEDIA_INFO_LOG("Query count: %{public}d", count);
+    EXPECT_GT(count, 0);
+    ret = resultSet->GoToFirstRow();
+    CHECK_AND_RETURN_LOG(ret == E_OK, "Failed to GoToFirstRow! err: %{public}d", ret);
+
+    int32_t albumId = get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoAlbumColumns::ALBUM_ID, resultSet,
+        TYPE_INT32));
+    EXPECT_GT(albumId, 0);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_TYPE, TYPE_INT32, PhotoAlbumType::USER);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_SUBTYPE, TYPE_INT32, PhotoAlbumSubType::USER_GENERIC);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_COUNT, TYPE_INT32, 0);
+    CheckColumn(resultSet, PhotoAlbumColumns::ALBUM_DIRTY, TYPE_INT32, static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
+
+    EXPECT_GT(CreatePhotoAlbum(albumName), 0); // creation succeeded for the first time
+    EXPECT_EQ(CreatePhotoAlbum(albumName), -1); // creation failed because of the newly created album
+    EXPECT_EQ(CreatePhotoAlbum(albumName), -1); // creation failed because of the newly created album
+    MEDIA_INFO_LOG("photoalbum_create_album_007 exit");
+}
+
+/**
  * @tc.name: photoalbum_delete_album_001
  * @tc.desc: Delete a photo album.
  *           1. Create an album and then delete it.
