@@ -108,6 +108,8 @@ unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err)
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
     if (err != E_OK || !imageSource) {
+        MEDIA_ERR_LOG("Failed to LoadImageSource, pixelmap path: %{public}s exists: %{public}d",
+            path.c_str(), MediaFileUtils::IsFileExists(path));
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_CREATE, err);
         return imageSource;
     }
