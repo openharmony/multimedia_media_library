@@ -912,8 +912,9 @@ int32_t MediaFileUtils::ModifyAsset(const string &oldPath, const string &newPath
     }
     err = rename(oldPath.c_str(), newPath.c_str());
     if (err < 0) {
-        MEDIA_ERR_LOG("Failed rename old: %{public}s : %{public}d, new: %{public}s : %{public}d errno %{public}d",
-            oldPath.c_str(), IsFileExists(oldPath), newPath.c_str(), IsFileExists(newPath), errno);
+        MEDIA_ERR_LOG("Failed rename, errno: %{public}d, old path: %{public}s exists: %{public}d, "
+            "new path: %{public}s exists: %{public}d", errno, oldPath.c_str(), IsFileExists(
+                oldPath), newPath.c_str(), IsFileExists(newPath));
         return E_FILE_OPER_FAIL;
     }
 
