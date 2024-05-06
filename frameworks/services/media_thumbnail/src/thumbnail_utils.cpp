@@ -249,7 +249,6 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 
-
     SourceLoading sourceLoading(desiredSize, data);
     return sourceLoading.RunLoading();
 }
@@ -1119,13 +1118,9 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
             UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
         }
         if (fd.Get() < 0) {
-            string dir = MediaFileUtils::GetParentPath(tempFileName);
-            if (access(dir.c_str(), F_OK) != 0) {
-                string dirToPrint = Desensitize(dir);
-                MEDIA_ERR_LOG("parent path does not exist, path %{public}s", dirToPrint.c_str());
-            }
-            string fileNameToPrint = Desensitize(tempFileName);
-            MEDIA_ERR_LOG("save failed! filePath %{pulibc}s status %{public}d", fileNameToPrint.c_str(), errno);
+            MEDIA_ERR_LOG("save failed! status %{public}d, filePath: %{public}s exists: %{public}d, parent path "
+                "exists: %{public}d", errno, Desensitize(tempFileName).c_str(), MediaFileUtils::IsFileExists(
+                    tempFileName), MediaFileUtils::IsFileExists(MediaFileUtils::GetParentPath(tempFileName)));
             return -errno;
         }
     }
@@ -1142,7 +1137,9 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
     close(fd.Release());
 
     if (MediaFileUtils::IsFileExists(fileName)) {
+        MEDIA_INFO_LOG("file: %{public}s exists and needs to be deleted", Desensitize(tempFileName).c_str());
         if (!MediaFileUtils::DeleteFile(fileName)) {
+            MEDIA_ERR_LOG("delete file: %{public}s failed", Desensitize(tempFileName).c_str());
             return -errno;
         }
     }
@@ -1264,7 +1261,8 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     MEDIA_DEBUG_LOG("path = %{private}s", path.c_str());
     int32_t fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("Open file failed, err %{public}d", errno);
+        MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
+            errno, path.c_str(), MediaFileUtils::IsFileExists(path));
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
             {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);

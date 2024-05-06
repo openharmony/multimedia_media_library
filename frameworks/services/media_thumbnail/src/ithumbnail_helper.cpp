@@ -143,7 +143,7 @@ WaitStatus ThumbnailWait::InsertAndWait(const string &id, bool isLcd)
         auto thumbnailWait = iter->second;
         unique_lock<mutex> lck(thumbnailWait->mtx_);
         writeLck.unlock();
-        MEDIA_INFO_LOG("Waiting for thumbnail generation");
+        MEDIA_INFO_LOG("Waiting for thumbnail generation, id: %{public}s", id_.c_str());
         thumbnailWait->cond_.wait(lck, [weakPtr = weak_ptr(thumbnailWait)]() {
             if (auto sharedPtr = weakPtr.lock()) {
                 return sharedPtr->isSyncComplete_;
@@ -499,6 +499,7 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
 
 bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data)
 {
+    MEDIA_INFO_LOG("Start DoCreateThumbnails, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
     if (!DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
@@ -537,6 +538,7 @@ std::string GetAvailableThumbnailSuffix(ThumbnailData &data)
 
 bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 {
+    MEDIA_INFO_LOG("Start DoCreateAstc, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
     data.isCreatingThumbSource = true;
     data.isLoadingFromThumbToLcd = true;
     if (!TryLoadSource(opts, data)) {

@@ -42,6 +42,7 @@
 #include "medialibrary_tracer.h"
 #include "moving_photo_napi.h"
 #include "permission_utils.h"
+#include "ui_extension_context.h"
 #include "userfile_client.h"
 
 using namespace OHOS::Security::AccessToken;
@@ -382,19 +383,25 @@ napi_status ParseArgGetCallingPackageName(napi_env env, napi_value arg, std::str
         NAPI_ERR_LOG("arg is invalid");
         return napi_invalid_arg;
     }
-    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, arg);
+    auto context = AbilityRuntime::GetStageModeContext(env, arg);
     if (context == nullptr) {
         NAPI_ERR_LOG("Failed to get context");
         return napi_invalid_arg;
     }
-    auto abilityContext = OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
-    if (abilityContext == nullptr) {
-        NAPI_ERR_LOG("abilityContext invalid");
-        return napi_invalid_arg;
+    auto abilityContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::AbilityContext>(context);
+    if (abilityContext != nullptr) {
+        auto abilityInfo = abilityContext->GetAbilityInfo();
+        callingPackageName = abilityInfo->bundleName;
+        return napi_ok;
     }
-    auto abilityInfo = abilityContext->GetAbilityInfo();
-    callingPackageName = abilityInfo->bundleName;
-    return napi_ok;
+    auto extensionContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::UIExtensionContext>(context);
+    if (extensionContext != nullptr) {
+        auto abilityInfo = extensionContext->GetAbilityInfo();
+        callingPackageName = abilityInfo->bundleName;
+        return napi_ok;
+    }
+    NAPI_ERR_LOG("abilityContext invalid");
+    return napi_invalid_arg;
 }
 
 napi_status ParseArgGetPhotoAsset(napi_env env, napi_value arg, int &fileId, std::string &uri,
