@@ -256,7 +256,7 @@ int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
     MediaLibraryRdbStore::ReplacePredicatesUriToId(predicates);
     
     const vector<string> &whereArgsId = predicates.GetWhereArgs();
-    if (whereArgsId.size() == 0) {
+    if (whereArgsId.size() == 0 || whereArgsUri.size() == 0) {
         MEDIA_ERR_LOG("No fileAsset to delete");
         return E_INVALID_ARGUMENTS;
     }
