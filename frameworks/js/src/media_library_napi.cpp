@@ -5463,12 +5463,12 @@ napi_value MediaLibraryNapi::CreateHighlightAlbumInfoTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreateHighlightUserActionTypeEnum(napi_env env)
 {
     struct AnalysisProperty property[] = {
-        { "INSERT_PIC_COUNT", HighlightUserActionType::INSERT_PIC_COUNT },
-        { "REMOVE_PIC_COUNT", HighlightUserActionType::REMOVE_PIC_COUNT },
-        { "SHARE_SCREENSHOT_COUNT", HighlightUserActionType::SHARE_SCREENSHOT_COUNT },
-        { "SHARE_COVER_COUNT", HighlightUserActionType::SHARE_COVER_COUNT },
-        { "RENAME_COUNT", HighlightUserActionType::RENAME_COUNT },
-        { "CHANGE_COVER_COUNT", HighlightUserActionType::CHANGE_COVER_COUNT },
+        { "INSERTED_PIC_COUNT", HighlightUserActionType::INSERTED_PIC_COUNT },
+        { "REMOVED_PIC_COUNT", HighlightUserActionType::REMOVED_PIC_COUNT },
+        { "SHARED_SCREENSHOT_COUNT", HighlightUserActionType::SHARED_SCREENSHOT_COUNT },
+        { "SHARED_COVER_COUNT", HighlightUserActionType::SHARED_COVER_COUNT },
+        { "RENAMED_COUNT", HighlightUserActionType::RENAMED_COUNT },
+        { "CHANGED_COVER_COUNT", HighlightUserActionType::CHANGED_COVER_COUNT },
         { "RENDER_VIEWED_TIMES", HighlightUserActionType::RENDER_VIEWED_TIMES },
         { "RENDER_VIEWED_DURATION", HighlightUserActionType::RENDER_VIEWED_DURATION },
         { "ART_LAYOUT_VIEWED_TIMES", HighlightUserActionType::ART_LAYOUT_VIEWED_TIMES },
@@ -5885,7 +5885,7 @@ static napi_value ParseAlbumTypes(napi_env env, unique_ptr<MediaLibraryAsyncCont
     if (albumSubType == PhotoAlbumSubType::SHOOTING_MODE || albumSubType == PhotoAlbumSubType::GEOGRAPHY_CITY) {
         context->predicates.OrderByDesc(PhotoAlbumColumns::ALBUM_COUNT);
     }
-    if (albumSubType == PhotoAlbumSubType::HIGHLIGHT || albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGEST) {
+    if (albumSubType == PhotoAlbumSubType::HIGHLIGHT || albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         context->isHighlightAlbum = albumSubType;
         vector<string> onClause = {
             ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +

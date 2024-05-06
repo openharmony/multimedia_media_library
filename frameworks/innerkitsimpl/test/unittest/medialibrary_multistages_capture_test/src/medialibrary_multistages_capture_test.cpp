@@ -20,6 +20,7 @@
 #include <chrono>
 #include <thread>
 
+#include "gmock/gmock.h"
 #include "image_source.h"
 #include "media_exif.h"
 #include "media_column.h"
@@ -40,6 +41,7 @@
 #define protected public
 #include "exif_utils.h"
 #include "file_utils.h"
+#include "mock_deferred_processing_adapter.h"
 #include "multistages_capture_deferred_proc_session_callback.h"
 #include "multistages_capture_dfx_first_visit.h"
 #include "multistages_capture_dfx_result.h"
@@ -54,6 +56,7 @@ using namespace std;
 using namespace OHOS;
 using namespace OHOS::NativeRdb;
 using namespace testing::ext;
+using namespace testing;
 
 namespace OHOS {
 namespace Media {
@@ -681,6 +684,41 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_add_image_001, TestSize.Lev
     EXPECT_EQ(instance.fileId2PhotoId_.count(fileId), 1);
     EXPECT_EQ(instance.photoIdInProcess_.count(PHOTO_ID_FOR_TEST), 1);
     MEDIA_INFO_LOG("manager_add_image_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, SyncWithDeferredProcSessionTest_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("SyncWithDeferredProcSessionTest_001 Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+
+    shared_ptr<MockDeferredProcessingAdapter> mockDeferredProcessingAdapter =
+        make_shared<MockDeferredProcessingAdapter>();
+    instance.deferredProcSession_ = mockDeferredProcessingAdapter;
+
+    EXPECT_CALL(*mockDeferredProcessingAdapter.get(), BeginSynchronize()).Times(1);
+    EXPECT_CALL(*mockDeferredProcessingAdapter.get(), EndSynchronize()).Times(1);
+
+    instance.SyncWithDeferredProcSessionInternal();
+    MEDIA_INFO_LOG("SyncWithDeferredProcSessionTest_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, SyncWithDeferredProcSessionTest_query_empty_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("SyncWithDeferredProcSessionTest_query_empty_002 Start");
+    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+
+    shared_ptr<MockDeferredProcessingAdapter> mockDeferredProcessingAdapter =
+        make_shared<MockDeferredProcessingAdapter>();
+    instance.deferredProcSession_ = mockDeferredProcessingAdapter;
+
+    EXPECT_CALL(*mockDeferredProcessingAdapter.get(), BeginSynchronize()).Times(0);
+    EXPECT_CALL(*mockDeferredProcessingAdapter.get(), EndSynchronize()).Times(0);
+
+    instance.SyncWithDeferredProcSessionInternal();
+    MEDIA_INFO_LOG("SyncWithDeferredProcSessionTest_query_empty_002 End");
 }
 }
 }

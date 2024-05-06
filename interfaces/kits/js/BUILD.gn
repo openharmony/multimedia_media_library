@@ -150,6 +150,7 @@ ohos_shared_library("medialibrary_nutils") {
     "ability_runtime:service_extension",
     "ability_runtime:ui_extension",
     "access_token:libaccesstoken_sdk",
+    "access_token:libprivacy_sdk",
     "access_token:libtokenid_sdk",
     "app_file_service:fileuri_native",
     "bundle_framework:appexecfwk_core",

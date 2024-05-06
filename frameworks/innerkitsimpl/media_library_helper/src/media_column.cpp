@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "base_column.h"
+#include "medialibrary_db_const.h"
 #include "userfile_manager_types.h"
 
 namespace OHOS {
@@ -109,7 +110,7 @@ const std::string PhotoColumn::PHOTO_URI_PREFIX = "file://media/Photo/";
 const std::string PhotoColumn::DEFAULT_PHOTO_URI = "file://media/Photo";
 const std::string PhotoColumn::PHOTO_CACHE_URI_PREFIX = "file://media/Photo/cache/";
 const std::string PhotoColumn::PHOTO_TYPE_URI = "/Photo";
-const std::string PhotoColumn::HIGHTLIGHT_COVER_URI = "/highlightCover";
+const std::string PhotoColumn::HIGHTLIGHT_COVER_URI = "/highlight";
 
 const std::set<std::string> PhotoColumn::DEFAULT_FETCH_COLUMNS = {
     PHOTO_SUBTYPE,
@@ -327,8 +328,8 @@ std::string PhotoColumn::CheckUploadPhotoColumns()
     };
 
     std::string result = "(";
-    int size = uploadPhotoColumns.size();
-    for (int i = 0; i < size; i++) {
+    size_t size = uploadPhotoColumns.size();
+    for (size_t i = 0; i < size; i++) {
         std::string column = uploadPhotoColumns[i];
         if (i != size - 1) {
             result += "new." + column + " <> old." + column + " OR ";
@@ -397,5 +398,17 @@ const std::string MediaColumn::ASSETS_QUERY_FILTER =
     MediaColumn::MEDIA_DATE_TRASHED + " = 0" + " AND " +
     MediaColumn::MEDIA_HIDDEN + " = 0" + " AND " +
     MediaColumn::MEDIA_TIME_PENDING + " = 0";
+
+const std::string PhotoExtColumn::PHOTOS_EXT_TABLE = "tab_photos_ext";
+
+const std::string PhotoExtColumn::PHOTO_ID = "photo_id";
+const std::string PhotoExtColumn::THUMBNAIL_SIZE = "thumbnail_size";
+
+const std::string PhotoExtColumn::CREATE_PHOTO_EXT_TABLE =
+    "CREATE TABLE IF NOT EXISTS " +
+    PHOTOS_EXT_TABLE + " (" +
+    PHOTO_ID + " INTEGER PRIMARY KEY, " +
+    THUMBNAIL_SIZE + " BIGINT DEFAULT 0)";
+
 }  // namespace Media
 }  // namespace OHOS

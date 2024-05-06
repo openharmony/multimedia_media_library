@@ -978,6 +978,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_ANALYSIS_ALBUM_UPDATE_SEARCH_TRIGGER,
     MedialibraryBusinessRecordColumn::CREATE_TABLE,
     MedialibraryBusinessRecordColumn::CREATE_BUSINESS_KEY_INDEX,
+    PhotoExtColumn::CREATE_PHOTO_EXT_TABLE,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2448,6 +2449,15 @@ static void UpdatePhotosSearchUpdateTrigger(RdbStore& store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void CreatePhotosExtTable(RdbStore& store)
+{
+    static const vector<string> executeSqlStrs = {
+        PhotoExtColumn::CREATE_PHOTO_EXT_TABLE
+    };
+    MEDIA_INFO_LOG("Start create photo ext table in update");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_STOYR_TABLE) {
@@ -2464,6 +2474,10 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_HIGHLIGHT_COVER_TABLE) {
         UpdateHighlightCoverTables(store);
+    }
+
+    if (oldVersion < VERSION_CREATE_PHOTOS_EXT_TABLE) {
+        CreatePhotosExtTable(store);
     }
 }
 

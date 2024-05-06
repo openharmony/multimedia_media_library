@@ -51,6 +51,10 @@
     {
       "name": "permission_access_rdb_and_kvdb",
       "value": "Allows querying rdb and fetch astc from kvdb"
+    },
+    {
+      "name": "permission_read_cloud_sync_config",
+      "value": "Allows read cloud sync config"
     }
   ]
 }

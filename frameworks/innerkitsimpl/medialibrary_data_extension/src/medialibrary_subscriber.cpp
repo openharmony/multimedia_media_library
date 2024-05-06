@@ -40,6 +40,8 @@
 #include "application_context.h"
 #include "ability_manager_client.h"
 #include "resource_type.h"
+#include "dfx_manager.h"
+
 using namespace OHOS::AAFwk;
 
 namespace OHOS {
@@ -127,6 +129,9 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         return;
     }
 
+    if (isScreenOff_ && isCharging_) {
+        DfxManager::GetInstance()->HandleHalfDayMissions();
+    }
     BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
         BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);

@@ -104,23 +104,28 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
 
     int32_t intTempMeta = 0;
     string propertyStr;
-    nlohmann::json exifJson;
-    uint32_t err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
-    exifJson[PHOTO_DATA_IMAGE_ORIENTATION] = (err == 0) ? intTempMeta: 0;
+    uint32_t err;
+    try {
+        nlohmann::json exifJson;
+        err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
+        exifJson[PHOTO_DATA_IMAGE_ORIENTATION] = (err == 0) ? intTempMeta: 0;
 
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
-    exifJson[PHOTO_DATA_IMAGE_GPS_LONGITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
+        err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
+        exifJson[PHOTO_DATA_IMAGE_GPS_LONGITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
 
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
-    exifJson[PHOTO_DATA_IMAGE_GPS_LATITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
+        err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
+        exifJson[PHOTO_DATA_IMAGE_GPS_LATITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
 
-    for (auto &exifKey : exifInfoKeys) {
-        err = imageSource->GetImagePropertyString(0, exifKey, propertyStr);
-        exifJson[exifKey] = (err == 0) ? propertyStr: "";
+        for (auto &exifKey : exifInfoKeys) {
+            err = imageSource->GetImagePropertyString(0, exifKey, propertyStr);
+            exifJson[exifKey] = (err == 0) ? propertyStr: "";
+        }
+        exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
+            AppFileService::SandboxHelper::Encode(exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
+        data->SetAllExif(exifJson.dump());
+    } catch (std::system_error &e) {
+        MEDIA_ERR_LOG("exception, err: %{public}s", e.what());
     }
-    exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
-        AppFileService::SandboxHelper::Encode(exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
-    data->SetAllExif(exifJson.dump());
 
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, propertyStr);
     if (err == 0) {

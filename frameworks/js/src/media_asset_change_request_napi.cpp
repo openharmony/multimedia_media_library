@@ -88,17 +88,19 @@ const std::string DEFAULT_TITLE_IMG_PREFIX = "IMG_";
 const std::string DEFAULT_TITLE_VIDEO_PREFIX = "VID_";
 const std::string MOVING_PHOTO_VIDEO_EXTENSION = "mp4";
 
-uint32_t MediaDataSource::ReadData(const shared_ptr<AVSharedMemory>& mem, uint32_t length)
+int32_t MediaDataSource::ReadData(const shared_ptr<AVSharedMemory>& mem, uint32_t length)
 {
     if (readPos_ >= size_) {
+        NAPI_ERR_LOG("Failed to check read position");
         return SOURCE_ERROR_EOF;
     }
 
     if (memcpy_s(mem->GetBase(), mem->GetSize(), (char*)buffer_ + readPos_, length) != E_OK) {
+        NAPI_ERR_LOG("Failed to copy buffer to mem");
         return SOURCE_ERROR_IO;
     }
-    readPos_ += length;
-    return length;
+    readPos_ += static_cast<int64_t>(length);
+    return static_cast<int32_t>(length);
 }
 
 int32_t MediaDataSource::ReadAt(const std::shared_ptr<AVSharedMemory>& mem, uint32_t length, int64_t pos)
@@ -1257,7 +1259,7 @@ napi_value MediaAssetChangeRequestNapi::JSGetWriteCacheHandler(napi_env env, nap
 
 static bool CheckMovingPhotoVideo(void* dataBuffer, size_t size)
 {
-    auto dataSource = make_shared<MediaDataSource>(dataBuffer, size);
+    auto dataSource = make_shared<MediaDataSource>(dataBuffer, static_cast<int64_t>(size));
     auto avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     if (avMetadataHelper == nullptr) {
         NAPI_WARN_LOG("Failed to create AVMetadataHelper, ignore checking duration of moving photo video");
@@ -1461,7 +1463,7 @@ int32_t MediaAssetChangeRequestNapi::CopyDataBufferToMediaLibrary(const UniqueFd
             NAPI_ERR_LOG("Failed to copy data buffer, return %{public}d", static_cast<int>(written));
             return written;
         }
-        offset += written;
+        offset += static_cast<size_t>(written);
     }
     return E_OK;
 }
@@ -1662,7 +1664,7 @@ static bool WriteCacheByArrayBuffer(MediaAssetChangeRequestAsyncContext& context
             NAPI_ERR_LOG("Failed to write data buffer to cache file, return %{public}d", static_cast<int>(written));
             return false;
         }
-        offset += written;
+        offset += static_cast<size_t>(written);
     }
     return true;
 }

@@ -1508,8 +1508,6 @@ int32_t MediaLibraryAssetOperations::GrantUriPermission(const string &uri, const
         MEDIA_WARN_LOG("bundleName is empty, bundleName:%{private}s", bundleName.c_str());
         return E_OK;
     }
-    auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
-    auto flag = AAFwk::Want::FLAG_AUTH_WRITE_URI_PERMISSION;
     if (!MediaFileUtils::CreateFile(path)) {
         MEDIA_ERR_LOG("Can not create file, path: %{private}s, errno: %{public}d", path.c_str(), errno);
         return E_HAS_FS_ERROR;
@@ -1518,13 +1516,6 @@ int32_t MediaLibraryAssetOperations::GrantUriPermission(const string &uri, const
     if (isMovingPhoto && !MediaFileUtils::CreateFile(MediaFileUtils::GetMovingPhotoVideoPath(path))) {
         MEDIA_ERR_LOG("Failed to create video of moving photo, errno: %{public}d", errno);
         return E_HAS_FS_ERROR;
-    }
-
-    int32_t ret = uriPermissionClient.GrantUriPermission(Uri(uri), flag, bundleName);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("Can not grant uri permission, uri: %{private}s, bundleName: %{private}s, ret: %{public}d",
-            uri.c_str(), bundleName.c_str(), ret);
-        return E_GRANT_URI_PERM_FAIL;
     }
 
     MediaLibraryTracer tracer;
@@ -1893,7 +1884,6 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     CreateThumbnail(uri, path, this->isCreateThumbSync);
     return E_OK;
 }
-
 
 static void DeleteFiles(AsyncTaskData *data)
 {
