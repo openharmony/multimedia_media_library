@@ -25,6 +25,7 @@
 #include <securec.h>
 #include <sstream>
 #include <sys/sendfile.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <unordered_map>
@@ -129,7 +130,7 @@ static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIM
     { "video/mp4", { "m4v", "f4v", "mp4v", "mpeg4", "mp4" }},
     { "video/mp2t", { "m2ts", "mts"} },
     { "video/mp2ts", { "ts" } },
-    { "video/vnd.youtube.yt", { "vt" } },
+    { "video/vnd.youtube.yt", { "yt" } },
     { "video/x-webex", { "wrf" } },
     { "video/mpeg", { "mpeg", "mpeg2", "mpv2", "mp2v", "m2v", "m2t", "mpeg1", "mpv1", "mp1v", "m1v", "mpg" } },
     { "video/quicktime", { "mov" } },
@@ -562,9 +563,9 @@ string MediaFileUtils::GetHighlightPath(const string &uri)
     int prefixLen = 0;
     string uriPrefix = "datashare:///media";
     if (uri.find(uriPrefix) != string::npos) {
-        prefixLen = uriPrefix.length();
+        prefixLen = static_cast<int>(uriPrefix.length());
     } else if (uri.find(ML_FILE_URI_PREFIX) != string::npos) {
-        prefixLen = ML_FILE_URI_PREFIX.length();
+        prefixLen = static_cast<int>(ML_FILE_URI_PREFIX.length());
     } else {
         return "";
     }
@@ -1369,13 +1370,23 @@ bool MediaFileUtils::CheckMovingPhotoImage(const string &path)
 
 bool MediaFileUtils::CheckMovingPhotoVideo(const string &path)
 {
-    string extension = GetExtensionFromPath(path);
+    string absFilePath;
+    if (!PathToRealPath(path, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to get real path, path: %{private}s", path.c_str());
+        return false;
+    }
+    if (absFilePath.empty()) {
+        MEDIA_ERR_LOG("Failed to check path for %{private}s, errno: %{public}d", path.c_str(), errno);
+        return false;
+    }
+
+    string extension = GetExtensionFromPath(absFilePath);
     if (!CheckMovingPhotoVideoExtension(extension)) {
         MEDIA_ERR_LOG("Failed to check extension (%{public}s) of moving photo video", extension.c_str());
         return false;
     }
 
-    UniqueFd uniqueFd(open(path.c_str(), O_RDONLY));
+    UniqueFd uniqueFd(open(absFilePath.c_str(), O_RDONLY));
     return CheckMovingPhotoVideo(uniqueFd);
 }
 
@@ -1425,4 +1436,17 @@ bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
     constexpr int32_t MAX_DURATION_MS = 3000;
     return duration >= MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
+
+bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
+{
+    struct stat statbuf;
+    if (lstat(filePath.c_str(), &statbuf) == -1) {
+        MEDIA_WARN_LOG("Failed to get file size, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
+        size = 0;
+        return false;
+    }
+    size = statbuf.st_size;
+    return true;
+}
+
 } // namespace OHOS::Media

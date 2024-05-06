@@ -17,6 +17,7 @@
 
 #include "clone_restore.h"
 
+#include "application_context.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "media_column.h"
@@ -175,7 +176,13 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     if (isUpgrade && BaseRestore::Init() != E_OK) {
         return E_FAIL;
     }
-    int32_t err = BackupDatabaseUtils::InitDb(mediaRdb_, MEDIA_DATA_ABILITY_DB_NAME, dbPath_, BUNDLE_NAME, true);
+    auto context = AbilityRuntime::Context::GetApplicationContext();
+    if (context == nullptr) {
+        MEDIA_ERR_LOG("Failed to get context");
+        return E_FAIL;
+    }
+    int32_t err = BackupDatabaseUtils::InitDb(mediaRdb_, MEDIA_DATA_ABILITY_DB_NAME, dbPath_, BUNDLE_NAME, true,
+        context->GetArea());
     if (mediaRdb_ == nullptr) {
         MEDIA_ERR_LOG("Init remote medialibrary rdb fail, err = %{public}d", err);
         return E_FAIL;

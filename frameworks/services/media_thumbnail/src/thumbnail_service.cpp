@@ -24,6 +24,8 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
+#include "medialibrary_photo_operations.h"
+#include "medialibrary_type_const.h"
 #include "media_log.h"
 #include "result_set_utils.h"
 #include "thumbnail_aging_helper.h"
@@ -172,7 +174,7 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     if (thumbType != ThumbnailType::THUMB && thumbType != ThumbnailType::THUMB_ASTC) {
         opts.screenSize = screenSize_;
     }
-    int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, size, thumbType);
+    int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, thumbType);
     if (fd < 0) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, fd},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -409,6 +411,9 @@ void ThumbnailService::InvalidateThumbnail(const std::string &id,
     };
     ThumbnailData thumbnailData;
     ThumbnailUtils::DeleteOriginImage(opts);
+    if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+        MediaLibraryPhotoOperations::RemoveThumbnailSizeRecord(id);
+    }
 }
 
 int32_t ThumbnailService::GetAgingDataSize(const int64_t &time, int &count)

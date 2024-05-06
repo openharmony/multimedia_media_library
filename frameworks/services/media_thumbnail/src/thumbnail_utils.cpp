@@ -249,6 +249,7 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 
+
     SourceLoading sourceLoading(desiredSize, data);
     return sourceLoading.RunLoading();
 }

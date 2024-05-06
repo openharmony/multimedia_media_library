@@ -25,6 +25,8 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_notify.h"
+#include "medialibrary_photo_operations.h"
+#include "medialibrary_type_const.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_rdbstore.h"
@@ -51,6 +53,9 @@ void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> &data
     }
     DoCreateThumbnails(data->opts_, data->thumbnailData_);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
+    if (data->opts_.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+        MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, data->opts_.path);
+    }
 }
 
 void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
@@ -70,6 +75,9 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
     }
     DoCreateThumbnail(data->opts_, data->thumbnailData_);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
+    if (data->opts_.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+        MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, data->opts_.path);
+    }
 }
 
 void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)

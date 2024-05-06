@@ -244,7 +244,7 @@ bool PhotoAlbum::CheckPhotoAlbumSubType(const PhotoAlbumSubType albumSubType)
 bool PhotoAlbum::IsHighlightAlbum(const PhotoAlbumType albumType, const PhotoAlbumSubType albumSubType)
 {
     return (albumType == PhotoAlbumType::SMART) && (albumSubType == PhotoAlbumSubType::HIGHLIGHT ||
-        albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGEST);
+        albumSubType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS);
 }
 }  // namespace Media
 }  // namespace OHOS

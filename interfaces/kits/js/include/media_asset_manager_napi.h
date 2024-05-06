@@ -48,10 +48,10 @@ struct MediaAssetManagerAsyncContext : NapiError {
     size_t argc = ARGS_FIVE;
     napi_value argv[ARGS_FIVE] = {nullptr};
     int fileId = -1; // default value of request file id
-    std::string mediaUri;
-    std::string mediaId;
+    std::string photoUri;
+    std::string photoId;
     std::string displayName;
-    std::string mediaPath;
+    std::string photoPath;
     std::string callingPkgName;
     std::string requestId;
     napi_value requestIdNapiValue;
@@ -67,7 +67,7 @@ struct MediaAssetManagerAsyncContext : NapiError {
 };
 
 struct AssetHandler {
-    std::string mediaId;
+    std::string photoId;
     std::string requestId;
     std::string requestUri;
     MediaAssetDataHandlerPtr dataHandler;
@@ -75,9 +75,9 @@ struct AssetHandler {
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     bool needsExtraInfo;
 
-    AssetHandler(const std::string &mediaId, const std::string &requestId, const std::string &uri,
+    AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
         const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
-        : mediaId(mediaId), requestId(requestId), requestUri(uri), dataHandler(handler), threadSafeFunc(func) {}
+        : photoId(photoId), requestId(requestId), requestUri(uri), dataHandler(handler), threadSafeFunc(func) {}
 };
 
 class MultiStagesTaskObserver : public DataShare::DataShareObserver {

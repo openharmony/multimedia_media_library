@@ -334,8 +334,8 @@ bool SourceLoading::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, 
         return false;
     }
 
-    // upload if minSize is larger than SHORT_SIDE_THRESHOLD and source is from cloud lcd or cloud origin
-    data_.needUpload = state_ > SourceState::CloudThumb && minSize >= SHORT_SIDE_THRESHOLD;
+    // upload if minSize is larger than SHORT_SIDE_THRESHOLD and source is not from thumb
+    data_.needUpload = data_.isCloudLoading && minSize >= SHORT_SIDE_THRESHOLD && state_ != SourceState::LocalThumb;
     data_.stats.sourceWidth = imageInfo.size.width;
     data_.stats.sourceHeight = imageInfo.size.height;
     DfxManager::GetInstance()->HandleThumbnailGeneration(data_.stats);
@@ -450,7 +450,7 @@ void LocalOriginSource::SwitchToNextState(ThumbnailData& data, SourceState& stat
         if (data.isFrontLoading) {
             state = SourceState::CloudThumb;
         } else if (data.isCloudLoading) {
-            state = SourceState::CloudOrigin;
+            state = SourceState::CloudLcd;
         } else {
             state = SourceState::CloudThumb;
         }    

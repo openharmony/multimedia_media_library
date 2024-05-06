@@ -695,7 +695,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoExtensi
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoExtension_Test_002, TestSize.Level0)
 {
     vector<string> invalidExtensions = { "3gpp2", "3gp2", "3g2", "3gpp", "3gp", "avi", "m2ts", "mts",
-        "ts", "vt", "wrf", "mpeg", "mpeg2", "mpv2", "mp2v", "m2v", "m2t", "mpeg1", "mpv1", "mp1v", "m1v",
+        "ts", "yt", "wrf", "mpeg", "mpeg2", "mpv2", "mp2v", "m2v", "m2t", "mpeg1", "mpv1", "mp1v", "m1v",
         "mpg", "mov", "mkv", "webm", "h264" };
     for (const auto& extension : invalidExtensions) {
         EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoExtension(extension), false);
