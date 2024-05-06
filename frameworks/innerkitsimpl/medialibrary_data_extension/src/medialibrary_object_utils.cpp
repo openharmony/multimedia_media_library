@@ -1387,7 +1387,7 @@ bool MediaLibraryObjectUtils::IsFileExistInDb(const string &path)
 bool MediaLibraryObjectUtils::CheckUriPending(const std::string &uri)
 {
     if (!uri.empty()) {
-        int positon = uri.find_first_of('?');
+        size_t positon = uri.find_first_of('?');
         string tempUri = uri.substr(0, positon);
         auto fileAsset = GetFileAssetFromUri(tempUri);
         if ((fileAsset != nullptr) && (fileAsset->GetTimePending() != 0)) {

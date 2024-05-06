@@ -1432,6 +1432,9 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         return E_ERR;
     }
     MEDIA_DEBUG_LOG("path = %{private}s", path.c_str());
+    if (path.empty()) {
+        return E_ERR;
+    }
     int32_t fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d", errno);
