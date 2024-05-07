@@ -267,10 +267,11 @@ int32_t BackupDatabaseUtils::QueryExternalAudioCount(std::shared_ptr<NativeRdb::
     return QueryInt(externalRdb, QUERY_EXTERNAL_AUDIO_COUNT, CUSTOM_COUNT);
 }
 
-bool BackupDatabaseUtils::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, FileInfo &fileInfo)
+bool BackupDatabaseUtils::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const std::string &tableName, FileInfo &fileInfo)
 {
     string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
-        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
+        tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
         MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
         MediaColumn::MEDIA_DATE_ADDED + " = " + to_string(fileInfo.dateAdded);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);

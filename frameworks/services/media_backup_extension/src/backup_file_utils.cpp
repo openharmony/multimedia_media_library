@@ -303,7 +303,8 @@ bool BackupFileUtils::IsFileValid(const std::string &filePath, int32_t sceneCode
     return true;
 }
 
-bool BackupFileUtils::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, FileInfo &fileInfo)
+bool BackupFileUtils::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+    FileInfo &fileInfo)
 {
     string srcPath = fileInfo.filePath;
     string dstPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
@@ -326,12 +327,13 @@ bool BackupFileUtils::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdb
         return false;
     }
     if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
-        !BackupDatabaseUtils::HasSameFile(rdbStore, fileInfo)) { /* file size & last modify time */
+        !BackupDatabaseUtils::HasSameFile(rdbStore, tableName, fileInfo)) { /* file size & last modify time */
         MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs",
             (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
             (long long)dstStatInfo.st_mtime);
         return false;
     }
+    fileInfo.isNew = false;
     return true;
 }
 } // namespace Media
