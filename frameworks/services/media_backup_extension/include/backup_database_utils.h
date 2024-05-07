@@ -55,6 +55,7 @@ public:
         const std::string &type);
     static int32_t QueryUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &type);
     static std::string GarbleInfoName(const std::string &infoName);
+    static bool HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, FileInfo &fileInfo);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
