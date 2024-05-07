@@ -429,18 +429,17 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-void PrepareFileInfos(vector<FileInfo> &fileInfos)
+void PrepareFileInfos(const string &tableName, vector<FileInfo> &fileInfos)
 {
     for (auto &fileInfo : fileInfos) {
         fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
-        fileInfo.isNew = !BackupDatabaseUtils::HasSameFile(restoreService->mediaLibraryRdb_, AudioColumn::AUDIOS_TABLE,
-            fileInfo);
+        fileInfo.isNew = !BackupDatabaseUtils::HasSameFile(restoreService->mediaLibraryRdb_, tableName, fileInfo);
     }
 }
 
 void InsertAudio(vector<FileInfo> &fileInfos, const unordered_set<int32_t> &excludedFileIdSet = {})
 {
-    PrepareFileInfos(fileInfos);
+    PrepareFileInfos(AudioColumn::AUDIOS_TABLE, fileInfos);
     vector<NativeRdb::ValuesBucket> values = restoreService->GetInsertValues(AudioColumn::AUDIOS_TABLE,
         CLONE_RESTORE_ID, fileInfos, SourceType::AUDIOS, excludedFileIdSet);
     int64_t rowNum = 0;
