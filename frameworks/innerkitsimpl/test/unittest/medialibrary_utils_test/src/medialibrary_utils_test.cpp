@@ -22,7 +22,6 @@
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_utils_test.h"
 #include "thumbnail_service.h"
-#include "thumbnail_source_loading.h"
 #include "thumbnail_utils.h"
 
 using namespace std;
@@ -504,7 +503,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Leve
     ThumbnailData data;
     data.source = nullptr;
     data.mediaType = MEDIA_TYPE_VIDEO;
-    data.isCreatingThumbSource = true;
+    data.useThumbAsSource = true;
     data.path = "";
     bool ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, false);
@@ -659,7 +658,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Lev
     targetSize.height = 20;
     ThumbnailData data;
     data.source = make_shared<PixelMap>();
-    bool ret = ScaleTargetPixelMap(data, targetSize);
+    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data, targetSize);
     EXPECT_EQ(ret, false);
 }
 
@@ -670,7 +669,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     desiredSize.width = 20;
     desiredSize.height = 20;
     data.path = "/storage/cloud/files";
-    data.isCreatingThumbSource = false;
+    data.useThumbAsSource = false;
     data.source = make_shared<PixelMap>();
     std::string sourcePath = "";
     bool ret = ThumbnailUtils::LoadImageFile(data, desiredSize);
@@ -735,35 +734,35 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeThumb_test_001, TestSize.Level0)
     int width, height;
     width = 512;
     height = 768;
-    bool result = ResizeThumb(width, height);
+    bool result = ThumbnailUtils::ResizeThumb(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 350);
     EXPECT_EQ(height, 525);
 
     width = 512;
     height = 2560;
-    result = ResizeThumb(width, height);
+    result = ThumbnailUtils::ResizeThumb(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 350);
     EXPECT_EQ(height, 1050);
 
     width = 200;
     height = 200;
-    result = ResizeThumb(width, height);
+    result = ThumbnailUtils::ResizeThumb(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 200);
     EXPECT_EQ(height, 200);
 
     width = 128;
     height = 300;
-    result = ResizeThumb(width, height);
+    result = ThumbnailUtils::ResizeThumb(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 128);
     EXPECT_EQ(height, 300);
 
     width = 128;
     height = 1000;
-    result = ResizeThumb(width, height);
+    result = ThumbnailUtils::ResizeThumb(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 128);
     EXPECT_EQ(height, 384);
@@ -774,28 +773,28 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeLcd_test_001, TestSize.Level0)
     int width, height;
     width = 1000;
     height = 1000;
-    bool result = ResizeLcd(width, height);
+    bool result = ThumbnailUtils::ResizeLcd(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 1000);
     EXPECT_EQ(height, 1000);
 
     width = 3840;
     height = 5760;
-    result = ResizeLcd(width, height);
+    result = ThumbnailUtils::ResizeLcd(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 1280);
     EXPECT_EQ(height, 1920);
 
     width = 3840;
     height = 57600;
-    result = ResizeLcd(width, height);
+    result = ThumbnailUtils::ResizeLcd(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 273);
     EXPECT_EQ(height, 4096);
 
     width = 3840;
     height = 28800;
-    result = ResizeLcd(width, height);
+    result = ThumbnailUtils::ResizeLcd(width, height);
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 512);
     EXPECT_EQ(height, 3840);

@@ -570,6 +570,9 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
 
 static inline string GetVirtualPath(const string &relativePath, const string &displayName)
 {
+    if (relativePath.empty() || displayName.empty()) {
+        return "";
+    }
     if (relativePath[relativePath.size() - 1] != SLASH_CHAR) {
         return relativePath + SLASH_CHAR + displayName;
     } else {
@@ -1617,7 +1620,7 @@ int32_t MediaLibraryAssetOperations::CreateAssetBucket(int32_t fileId, int32_t &
         MEDIA_ERR_LOG("input fileId [%{public}d] is invalid", fileId);
         return E_INVALID_FILEID;
     }
-    int start = ASSET_DIR_START_NUM;
+    uint32_t start = ASSET_DIR_START_NUM;
     int divider = ASSET_DIR_START_NUM;
     while (fileId > start * ASSET_IN_BUCKET_NUM_MAX) {
         divider = start;

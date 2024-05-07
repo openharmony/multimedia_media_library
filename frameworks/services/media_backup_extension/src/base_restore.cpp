@@ -98,7 +98,7 @@ int32_t BaseRestore::Init(void)
 bool BaseRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
     std::string &newPath, std::string &relativePath)
 {
-    int32_t pos = 0;
+    size_t pos = 0;
     int32_t count = 0;
     constexpr int32_t prefixLevel = 4;
     for (size_t i = 0; i < srcPath.length(); i++) {

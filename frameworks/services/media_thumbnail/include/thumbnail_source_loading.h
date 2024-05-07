@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024    Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,15 +29,11 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
 EXPORT Size ConvertDecodeSize(ThumbnailData& data, const Size& sourceSize, Size& desiredSize);
-EXPORT std::unique_ptr<ImageSource> LoadImageSource(const std::string& path, uint32_t& err);
 EXPORT bool GenDecodeOpts(const Size& sourceSize, const Size& targetSize, DecodeOptions& decodeOpts);
 EXPORT bool NeedAutoResize(const Size& size);
-EXPORT bool ResizeThumb(int& width, int& height);
-EXPORT bool ResizeLcd(int& width, int& height);
-EXPORT bool ScaleTargetPixelMap(ThumbnailData& data, const Size& targetSize);
 
 enum class SourceState : int32_t {
-    Begin = -3,
+    Begin,
     LocalThumb,
     LocalLcd,
     LocalOrigin,
@@ -62,7 +58,7 @@ const std::unordered_map<SourceState, std::string> STATE_NAME_MAP = {
 
 class BeginSource {
 public:
-    EXPORT static std::unique_ptr<ImageSource> IsSourceAvailable(ThumbnailData& data, int32_t& error) 
+    EXPORT static std::unique_ptr<ImageSource> IsSourceAvailable(ThumbnailData& data, int32_t& error)
         { return nullptr; }
     EXPORT static void SwitchToNextState(ThumbnailData& data, SourceState& state);
     EXPORT static bool IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize) { return false; }
@@ -112,7 +108,7 @@ public:
 
 class ErrorSource {
 public:
-    EXPORT static std::unique_ptr<ImageSource> IsSourceAvailable(ThumbnailData& data, int32_t& error) 
+    EXPORT static std::unique_ptr<ImageSource> IsSourceAvailable(ThumbnailData& data, int32_t& error)
         { return nullptr; }
     EXPORT static void SwitchToNextState(ThumbnailData& data, SourceState& state) { return; }
     EXPORT static bool IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize) { return false; }
@@ -120,7 +116,7 @@ public:
 
 class FinishSource {
 public:
-    EXPORT static std::unique_ptr<ImageSource> IsSourceAvailable(ThumbnailData& data, int32_t& error) 
+    EXPORT static std::unique_ptr<ImageSource> IsSourceAvailable(ThumbnailData& data, int32_t& error)
         { return nullptr; }
     EXPORT static void SwitchToNextState(ThumbnailData& data, SourceState& state) { return; }
     EXPORT static bool IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize) { return false; }
@@ -133,42 +129,35 @@ struct StateFunc {
 };
 
 const std::unordered_map<SourceState, StateFunc> STATE_FUNC_MAP = {
-    { SourceState::Begin, { BeginSource::IsSourceAvailable, BeginSource::SwitchToNextState,
-        BeginSource::IsSizeLargeEnough } },
-    { SourceState::LocalThumb, { LocalThumbSource::IsSourceAvailable, LocalThumbSource::SwitchToNextState,                      
-        LocalThumbSource::IsSizeLargeEnough } },
-    { SourceState::LocalLcd, { LocalLcdSource::IsSourceAvailable, LocalLcdSource::SwitchToNextState,
-        LocalLcdSource::IsSizeLargeEnough } },
-    { SourceState::LocalOrigin, { LocalOriginSource::IsSourceAvailable, LocalOriginSource::SwitchToNextState,
-        LocalOriginSource::IsSizeLargeEnough } },
-    { SourceState::CloudThumb, { CloudThumbSource::IsSourceAvailable, CloudThumbSource::SwitchToNextState,
-        CloudThumbSource::IsSizeLargeEnough } },
-    { SourceState::CloudLcd, { CloudLcdSource::IsSourceAvailable, CloudLcdSource::SwitchToNextState,
-        CloudLcdSource::IsSizeLargeEnough } },
-    { SourceState::CloudOrigin, { CloudOriginSource::IsSourceAvailable, CloudOriginSource::SwitchToNextState,
-        CloudOriginSource::IsSizeLargeEnough } },
-    { SourceState::Error, { ErrorSource::IsSourceAvailable, ErrorSource::SwitchToNextState,
-        ErrorSource::IsSizeLargeEnough } },
-    { SourceState::Finish, { FinishSource::IsSourceAvailable, FinishSource::SwitchToNextState,
-        FinishSource::IsSizeLargeEnough } },
+    { SourceState::Begin, { BeginSource::IsSourceAvailable,
+        BeginSource::SwitchToNextState, BeginSource::IsSizeLargeEnough } },
+    { SourceState::LocalThumb, { LocalThumbSource::IsSourceAvailable,
+        LocalThumbSource::SwitchToNextState, LocalThumbSource::IsSizeLargeEnough } },
+    { SourceState::LocalLcd, { LocalLcdSource::IsSourceAvailable,
+        LocalLcdSource::SwitchToNextState, LocalLcdSource::IsSizeLargeEnough } },
+    { SourceState::LocalOrigin, { LocalOriginSource::IsSourceAvailable,
+        LocalOriginSource::SwitchToNextState, LocalOriginSource::IsSizeLargeEnough } },
+    { SourceState::CloudThumb, { CloudThumbSource::IsSourceAvailable,
+        CloudThumbSource::SwitchToNextState, CloudThumbSource::IsSizeLargeEnough } },
+    { SourceState::CloudLcd, { CloudLcdSource::IsSourceAvailable,
+        CloudLcdSource::SwitchToNextState, CloudLcdSource::IsSizeLargeEnough } },
+    { SourceState::CloudOrigin, { CloudOriginSource::IsSourceAvailable,
+        CloudOriginSource::SwitchToNextState, CloudOriginSource::IsSizeLargeEnough } },
+    { SourceState::Error, { ErrorSource::IsSourceAvailable,
+        ErrorSource::SwitchToNextState, ErrorSource::IsSizeLargeEnough } },
+    { SourceState::Finish, { FinishSource::IsSourceAvailable,
+        FinishSource::SwitchToNextState, FinishSource::IsSizeLargeEnough } },
 };
 
-#define SET_CURRENT_STATE_FUNCTION(state)                                                                              \
-    do {                                                                                                               \
-        StateFunc stateFunc = STATE_FUNC_MAP.at(state);                                                                \
-        IsSourceAvailable = stateFunc.IsSourceAvailable;                                                               \
-        SwitchToNextState = stateFunc.SwitchToNextState;                                                               \
-        IsSizeLargeEnough = stateFunc.IsSizeLargeEnough;                                                               \
-    } while(0);
-
-
-class SourceLoading {
+class SourceLoader {
 public:
-    SourceLoading(Size& desiredSize, ThumbnailData& data) : data_(data), desiredSize_(desiredSize) {};
-    ~SourceLoading() = default;
+    SourceLoader(Size& desiredSize, ThumbnailData& data) : data_(data), desiredSize_(desiredSize) {};
+    ~SourceLoader() = default;
     bool RunLoading();
 private:
+    void SetCurrentStateFunction();
     bool IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, ImageInfo& imageInfo);
+    bool CreateImage(std::unique_ptr<ImageSource>& imageSource, ImageInfo& imageInfo);
     bool IsFinal();
 
     int32_t error_ { E_OK };

@@ -51,8 +51,14 @@ void MimeTypeUtils::CreateMapFromJson()
     jFile >> firstFloorObjs;
     for (auto& firstFloorObj : firstFloorObjs.items()) {
         json secondFloorJsons = json::parse(firstFloorObj.value().dump(), nullptr, false);
+        if (!secondFloorJsons.is_discarded()) {
+            return;
+        }
         for (auto& secondFloorJson : secondFloorJsons.items()) {
             json thirdFloorJsons = json::parse(secondFloorJson.value().dump(), nullptr, false);
+            if (!thirdFloorJsons.is_discarded()) {
+                return;
+            }
             // Key: MimeType, Value: Extension array.
             mediaJsonMap_.insert(std::pair<string, vector<string>>(secondFloorJson.key(), thirdFloorJsons));
         }

@@ -66,8 +66,9 @@ ohos_unittest("medialibrary_utils_test") {
   }
 
   cflags = [
-    "-fno-access-control", # Ignore Private Member Access Control
+    "-fno-access-control",  # Ignore Private Member Access Control
   ]
 
   cflags_cc = cflags
 }
+     
