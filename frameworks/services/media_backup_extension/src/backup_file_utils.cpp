@@ -18,6 +18,7 @@
 #include <utime.h>
 #include <sys/types.h>
 
+#include "backup_database_utils.h"
 #include "scanner_utils.h"
 #include "metadata_extractor.h"
 #include "mimetype_utils.h"
@@ -297,6 +298,38 @@ bool BackupFileUtils::IsFileValid(const std::string &filePath, int32_t sceneCode
     if (statInfo.st_size <= 0) {
         MEDIA_ERR_LOG("Invalid file (%{public}s), get size (%{public}lld) <= 0", garbledFilePath.c_str(),
             (long long)statInfo.st_size);
+        return false;
+    }
+    return true;
+}
+
+bool BackupFileUtils::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, FileInfo &fileInfo)
+{
+    string srcPath = fileInfo.filePath;
+    string dstPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
+    struct stat srcStatInfo {};
+    struct stat dstStatInfo {};
+
+    if (access(srcPath.c_str(), F_OK) || access(dstPath.c_str(), F_OK)) {
+        return false;
+    }
+    if (stat(srcPath.c_str(), &srcStatInfo) != 0) {
+        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", srcPath.c_str(), errno);
+        return false;
+    }
+    if (stat(dstPath.c_str(), &dstStatInfo) != 0) {
+        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", dstPath.c_str(), errno);
+        return false;
+    }
+    if (fileInfo.fileSize != srcStatInfo.st_size) {
+        MEDIA_ERR_LOG("Internal error");
+        return false;
+    }
+    if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
+        !BackupDatabaseUtils::HasSameFile(rdbStore, fileInfo)) { /* file size & last modify time */
+        MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs",
+            (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
+            (long long)dstStatInfo.st_mtime);
         return false;
     }
     return true;

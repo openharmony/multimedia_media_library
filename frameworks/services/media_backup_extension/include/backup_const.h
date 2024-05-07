@@ -111,6 +111,7 @@ enum SourceType {
     EXTERNAL_CAMERA,
     EXTERNAL_OTHERS,
     PHOTOS,
+    AUDIOS,
 };
 
 enum class PrefixType {
@@ -131,6 +132,16 @@ const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
     { PrefixType::LOCAL, "/storage/media/local/files" },
     { PrefixType::CLOUD_EDIT_DATA, "/storage/cloud/files/.editData" },
     { PrefixType::LOCAL_EDIT_DATA, "/storage/media/local/files/.editData" },
+};
+
+const std::vector<std::vector<std::string>> CLONE_TABLE_LISTS_AUDIO = {
+    { AudioColumn::AUDIOS_TABLE },
+};
+
+const std::vector<std::vector<std::string>> CLONE_TABLE_LISTS_PHOTO = {
+    { PhotoColumn::PHOTOS_TABLE },
+    { PhotoAlbumColumns::TABLE, PhotoMap::TABLE },
+    { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE },
 };
 
 struct FileInfo {

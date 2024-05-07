@@ -266,5 +266,26 @@ int32_t BackupDatabaseUtils::QueryExternalAudioCount(std::shared_ptr<NativeRdb::
         AND _data LIKE '/storage/emulated/0/Music%'";
     return QueryInt(externalRdb, QUERY_EXTERNAL_AUDIO_COUNT, CUSTOM_COUNT);
 }
+
+bool BackupDatabaseUtils::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, FileInfo &fileInfo)
+{
+    string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
+        MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
+        MediaColumn::MEDIA_DATE_ADDED + " = " + to_string(fileInfo.dateAdded);
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return false;
+    }
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (fileId <= 0 || cloudPath.empty()) {
+        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
+        return false;
+    }
+    fileInfo.fileIdNew = fileId;
+    fileInfo.cloudPath = cloudPath;
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
