@@ -286,7 +286,7 @@ vector<NativeRdb::ValuesBucket> GetInsertValues(vector<FileInfo> &fileInfos, int
     vector<NativeRdb::ValuesBucket> values;
     for (auto &fileInfo : fileInfos) {
         fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
-        if (BackupDatabaseUtils::HasSameFile(restoreService->mediaLibraryRdb_, fileInfo)) {
+        if (BackupDatabaseUtils::HasSameFile(restoreService->mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfo)) {
             MEDIA_INFO_LOG("Has same file, skip");
             continue;
         }
@@ -429,26 +429,20 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
-vector<NativeRdb::ValuesBucket> GetAudioInsertValues(vector<FileInfo> &fileInfos, int32_t sourceType)
+void PrepareFileInfos(vector<FileInfo> &fileInfos)
 {
-    vector<NativeRdb::ValuesBucket> values;
     for (auto &fileInfo : fileInfos) {
-        fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD,
-            fileInfo.relativePath);
-        if (BackupDatabaseUtils::HasSameFile(restoreService->mediaLibraryRdb_, fileInfo)) {
-            MEDIA_INFO_LOG("Has same file, skip");
-            continue;
-        }
-        NativeRdb::ValuesBucket value = restoreService->GetInsertValue(AudioColumn::AUDIOS_TABLE, fileInfo,
-            fileInfo.cloudPath, sourceType);
-        values.emplace_back(value);
+        fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
+        fileInfo.isNew = !BackupDatabaseUtils::HasSameFile(restoreService->mediaLibraryRdb_, AudioColumn::AUDIOS_TABLE,
+            fileInfo);
     }
-    return values;
 }
 
-void InsertAudio(vector<FileInfo> &fileInfos)
+void InsertAudio(vector<FileInfo> &fileInfos, const unordered_set<int32_t> &excludedFileIdSet = {})
 {
-    vector<NativeRdb::ValuesBucket> values = GetAudioInsertValues(fileInfos, SourceType::AUDIOS);
+    PrepareFileInfos(fileInfos);
+    vector<NativeRdb::ValuesBucket> values = restoreService->GetInsertValues(AudioColumn::AUDIOS_TABLE,
+        CLONE_RESTORE_ID, fileInfos, SourceType::AUDIOS, excludedFileIdSet);
     int64_t rowNum = 0;
     int32_t errCode = restoreService->BatchInsertWithRetry(AudioColumn::AUDIOS_TABLE, values, rowNum);
     EXPECT_EQ(errCode, E_OK);

@@ -304,7 +304,7 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(int32_t sceneCode,
         if (!BackupFileUtils::IsFileValid(fileInfos[i].filePath, CLONE_RESTORE_ID)) {
             continue;
         }
-        if (!PrepareCloudPath(fileInfos[i])) {
+        if (!PrepareCloudPath(PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
             continue;
         }
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], fileInfos[i].cloudPath, sourceType);
@@ -957,14 +957,14 @@ void CloneRestore::RestoreGallery()
     NotifyAlbum();
 }
 
-bool CloneRestore::PrepareCloudPath(FileInfo &fileInfo)
+bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
 {
     fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
     if (fileInfo.cloudPath.empty()) {
         MEDIA_ERR_LOG("Get cloudPath empty");
         return false;
     }
-    if (BackupFileUtils::IsSameFile(mediaLibraryRdb_, fileInfo)) {
+    if (BackupFileUtils::IsSameFile(mediaLibraryRdb_, tableName, fileInfo)) {
         (void)MediaFileUtils::DeleteFile(fileInfo.filePath);
         MEDIA_WARN_LOG("File %{public}s already exists.",
             BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID).c_str());
@@ -1090,7 +1090,8 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     int64_t fileMoveCount = 0;
     unordered_set<int32_t> excludedFileIdSet;
     for (auto& fileInfo : fileInfos) {
-        if (!MediaFileUtils::IsFileExists(fileInfo.filePath) || !PrepareCloudPath(fileInfo)) {
+        if (!MediaFileUtils::IsFileExists(fileInfo.filePath) ||
+            !PrepareCloudPath(AudioColumn::AUDIOS_TABLE, fileInfo)) {
             continue;
         }
         string localPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL,
@@ -1129,8 +1130,8 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(const string &tabl
             MEDIA_DEBUG_LOG("File id is in excluded set, skip");
             continue;
         }
-        if (fileInfo.cloudPath.empty()) {
-            MEDIA_ERR_LOG("Get cloudPath empty");
+        if (!fileInfo.isNew || fileInfo.cloudPath.empty()) {
+            MEDIA_DEBUG_LOG("Not new record, or get cloudPath empty");
             continue;
         }
         NativeRdb::ValuesBucket value = GetInsertValue(tableName, fileInfo, fileInfo.cloudPath,

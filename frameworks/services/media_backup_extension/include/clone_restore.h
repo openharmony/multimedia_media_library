@@ -84,7 +84,7 @@ private:
     void PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
         const std::unordered_map<std::string, std::string> &commonColumnInfoMap) const;
     void RestoreGallery();
-    bool PrepareCloudPath(FileInfo &fileInfo);
+    bool PrepareCloudPath(const std::string &tableName, FileInfo &fileInfo);
     void RestoreMusic();
     void RestoreAudio(void);
     int32_t QueryTotalNumber(const std::string &tableName);
