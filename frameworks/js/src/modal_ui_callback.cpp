@@ -54,7 +54,6 @@ void ModalUICallback::OnResultForModal(int32_t resultCode, const OHOS::AAFwk::Wa
     pickerCallBack_->uris = result.GetStringArrayParam("select-item-list");
     pickerCallBack_->isOrigin = result.GetBoolParam("isOriginal", false);
     pickerCallBack_->resultCode = resultCode;
-    pickerCallBack_->ready = true;
 }
 
 void ModalUICallback::OnReceive(const OHOS::AAFwk::WantParams &request)
