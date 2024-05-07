@@ -520,14 +520,14 @@ int32_t MediaFileUtils::CheckRelativePath(const std::string &relativePath)
         return -EINVAL;
     }
 
-    int firstPoint = (relativePath.front() == '/') ? 1 : 0;
+    uint32_t firstPoint = (relativePath.front() == '/') ? 1 : 0;
     size_t lastPoint = 0;
     while (true) {
         lastPoint = relativePath.find_first_of('/', firstPoint);
         if (lastPoint == string::npos) {
             lastPoint = relativePath.length();
         }
-        int len = lastPoint - firstPoint;
+        size_t len = lastPoint - firstPoint;
         if (len == 0) {
             MEDIA_ERR_LOG("relativePath %{private}s is invalid", relativePath.c_str());
             return -EINVAL;
@@ -705,6 +705,9 @@ string MediaFileUtils::StrCreateTime(const string &format, int64_t time)
 {
     char strTime[DEFAULT_TIME_SIZE] = "";
     auto tm = localtime(&time);
+    if (tm == nullptr) {
+        return "";
+    }
     (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
     return strTime;
 }
@@ -714,6 +717,9 @@ string MediaFileUtils::StrCreateTimeByMilliseconds(const string &format, int64_t
     char strTime[DEFAULT_TIME_SIZE] = "";
     int64_t times = time / MSEC_TO_SEC;
     auto tm = localtime(&times);
+    if (tm == nullptr) {
+        return "";
+    }
     (void)strftime(strTime, sizeof(strTime), format.c_str(), tm);
     return strTime;
 }
@@ -1026,7 +1032,7 @@ size_t MediaFileUtils::FindIgnoreCase(const std::string &str, const std::string 
     if (it == str.end()) {
         return string::npos;
     }
-    size_t pos = it - str.begin();
+    size_t pos = static_cast<size_t>(it - str.begin());
     return (pos > 0) ? pos : 0;
 }
 

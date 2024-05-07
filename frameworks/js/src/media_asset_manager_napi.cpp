@@ -967,7 +967,7 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(const std::string &requestUri
     void* buffer = nullptr;
     napi_create_arraybuffer(env, imgLen, &buffer, &arrayBuffer);
     lseek(imageFd, 0, SEEK_SET);
-    size_t readRet = read(imageFd, buffer, imgLen);
+    ssize_t readRet = read(imageFd, buffer, imgLen);
     close(imageFd);
     if (readRet != imgLen) {
         NAPI_ERR_LOG("read image failed");

@@ -3365,10 +3365,10 @@ static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *d
     jsContext->status = false;
 
     auto *obj = context->objectInfo;
-    nlohmann::json allExifJson;
-    if (!obj->GetAllExif().empty()) {
-        allExifJson = nlohmann::json::parse(obj->GetAllExif());
+    if (obj->GetAllExif().empty() || !nlohmann::json::accept(obj->GetAllExif())) {
+        return;
     }
+    nlohmann::json allExifJson = nlohmann::json::parse(obj->GetAllExif());
     if (allExifJson.is_discarded() || obj->GetAllExif().empty()) {
         NAPI_ERR_LOG("parse json failed");
         MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL,
