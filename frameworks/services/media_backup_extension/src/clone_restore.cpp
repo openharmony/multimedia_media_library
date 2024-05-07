@@ -1129,11 +1129,6 @@ vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(const string &tabl
             MEDIA_DEBUG_LOG("File id is in excluded set, skip");
             continue;
         }
-        if (!MediaFileUtils::IsFileExists(fileInfo.filePath)) {
-            MEDIA_WARN_LOG("File is not exist, filePath = %{public}s.",
-                BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str());
-            continue;
-        }
         if (fileInfo.cloudPath.empty()) {
             MEDIA_ERR_LOG("Get cloudPath empty");
             continue;
