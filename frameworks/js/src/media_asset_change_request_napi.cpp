@@ -1674,6 +1674,9 @@ static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
 {
     auto changeRequest = context.objectInfo;
     string realPath = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoPath() : changeRequest->GetFileRealPath();
+    if (realPath.empty()) {
+        return false;
+    }
     UniqueFd srcFd(open(realPath.c_str(), O_RDONLY));
     if (srcFd.Get() < 0) {
         context.SaveError(srcFd.Get());
