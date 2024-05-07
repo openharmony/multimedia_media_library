@@ -76,12 +76,12 @@ const unordered_map<string, unordered_set<string>> NEEDED_COLUMNS_MAP = {
     { AudioColumn::AUDIOS_TABLE,
         {
             MediaColumn::MEDIA_ID,
-            AudioColumn::MEDIA_FILE_PATH,
-            AudioColumn::MEDIA_SIZE,
-            AudioColumn::MEDIA_TYPE,
-            AudioColumn::MEDIA_NAME,
-            AudioColumn::MEDIA_DATE_ADDED,
-            AudioColumn::MEDIA_DATE_MODIFIED,
+            MediaColumn::MEDIA_FILE_PATH,
+            MediaColumn::MEDIA_SIZE,
+            MediaColumn::MEDIA_TYPE,
+            MediaColumn::MEDIA_NAME,
+            MediaColumn::MEDIA_DATE_ADDED,
+            MediaColumn::MEDIA_DATE_MODIFIED,
         }},
 };
 const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
@@ -110,6 +110,7 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
     { PhotoColumn::PHOTOS_TABLE,
         {
             { PhotoColumn::PHOTO_POSITION, PhotoColumn::PHOTO_POSITION + " IN (1, 3)" },
+            { MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_SIZE + " > 0" },
         }},
     { PhotoAlbumColumns::TABLE,
         {
@@ -122,6 +123,10 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
             { PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_NAME + " IS NOT NULL" },
             { PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
                 to_string(PhotoAlbumSubType::SHOOTING_MODE) + ")" },
+        }},
+    { AudioColumn::AUDIOS_TABLE,
+        {
+            { MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_SIZE + " > 0" },
         }},
 };
 const vector<string> CLONE_ALBUMS = { PhotoAlbumColumns::TABLE, ANALYSIS_ALBUM_TABLE };
