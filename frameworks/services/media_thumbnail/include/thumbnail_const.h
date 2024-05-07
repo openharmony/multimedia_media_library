@@ -47,9 +47,7 @@ enum class GenerateScene : int32_t {
 
 enum class LoadSourceType : int32_t {
     LOCAL_PHOTO = 0,
-    CLOUD_THUMB,
-    CLOUD_LCD,
-    CLOUD_ORIGIN,
+    CLOUD_PHOTO,
     UNKNOWN,
 };
 
@@ -69,7 +67,7 @@ const std::unordered_map<ThumbnailType, std::string> TYPE_NAME_MAP = {
     { ThumbnailType::YEAR, "YEAR" },
     { ThumbnailType::THUMB_ASTC, "THUMB_ASTC" },
     { ThumbnailType::MTH_ASTC, "MTH_ASTC" },
-    { ThumbnailType::YEAR_ASTC, "YEAR_ASTC" },      
+    { ThumbnailType::YEAR_ASTC, "YEAR_ASTC" },
 };
 
 constexpr uint32_t DEVICE_UDID_LENGTH = 65;
@@ -82,7 +80,7 @@ constexpr int32_t WAIT_FOR_SECOND = 3;
 constexpr float EPSILON = 1e-6;
 constexpr float FLOAT_ZERO = 0.0f;
 constexpr int32_t SHORT_SIDE_THRESHOLD = 350;
-constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 768;
+constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 1050;
 constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 512;
 constexpr int32_t LCD_LONG_SIDE_THRESHOLD = 1920;
 constexpr int32_t MAXIMUM_LCD_LONG_SIDE = 4096;

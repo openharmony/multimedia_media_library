@@ -1324,6 +1324,9 @@ static inline void ReplaceRelativePath(string &selection, size_t pos, const stri
 void MediaLibraryNapi::ReplaceSelection(string &selection, vector<string> &selectionArgs,
     const string &key, const string &keyInstead, const int32_t mode)
 {
+    if (selectionArgs.size() == 0) {
+        return;
+    }
     for (size_t pos = 0; pos != string::npos;) {
         pos = selection.find(key, pos);
         if (pos == string::npos) {
@@ -2325,6 +2328,10 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
     napi_status status = napi_invalid_arg;
     if (!parcel->ReadUint32(len)) {
         NAPI_ERR_LOG("Failed to read sub uri list length");
+        return status;
+    }
+    NapiScopeHandler scopeHandler(env);
+    if (!scopeHandler.IsValid()) {
         return status;
     }
     napi_value subUriArray = nullptr;
@@ -4291,6 +4298,9 @@ static napi_value GetImagePreviewArgsUri(napi_env env, napi_value param, MediaLi
         }
         uri += MediaLibraryNapiUtils::TransferUri(string(inputStr.get()));
         uri += "?";
+    }
+    if (uri.empty()) {
+        return nullptr;
     }
     context.uri = uri.substr(0, uri.length() - 1);
     NAPI_DEBUG_LOG("GetImagePreviewArgs res %{private}s", context.uri.c_str());

@@ -36,7 +36,8 @@ class MediaLibraryFormMapOperations : public MediaLibraryAssetOperations {
 public:
     EXPORT static int32_t RemoveFormIdOperations(RdbPredicates &predicates);
     EXPORT static int32_t HandleStoreFormIdOperation(MediaLibraryCommand &cmd);
-    EXPORT static void PublishedChange(const std::string newUri, const std::vector<int64_t> &formIds, const bool &isSave);
+    EXPORT static void PublishedChange(const std::string newUri, const std::vector<int64_t> &formIds,
+        const bool &isSave);
     EXPORT static void GetFormMapFormId(const std::string &uri, std::vector<int64_t> &formIds);
     EXPORT static std::string GetUriByFileId(const int32_t &fileId, const std::string &path);
     EXPORT static std::string GetFilePathById(const std::string &fileId);

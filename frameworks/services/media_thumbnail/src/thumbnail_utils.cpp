@@ -244,6 +244,36 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
     return true;
 }
 
+bool ThumbnailUtils::ScaleTargetPixelMap(ThumbnailData &data, const Size &targetSize)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ImageSource::ScaleTargetPixelMap");
+
+    PostProc postProc;
+    if (!postProc.ScalePixelMapEx(targetSize, *data.source, Media::AntiAliasingOption::HIGH)) {
+        MEDIA_ERR_LOG("thumbnail scale failed [%{private}s]", data.id.c_str());
+        return false;
+    }
+    return true;
+}
+
+unique_ptr<ImageSource> ThumbnailUtils::LoadImageSource(const std::string &path, uint32_t &err)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("ImageSource::CreateImageSource");
+
+    SourceOptions opts;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
+    if (err != E_OK || !imageSource) {
+        MEDIA_ERR_LOG("Failed to LoadImageSource, pixelmap path: %{public}s exists: %{public}d",
+            path.c_str(), MediaFileUtils::IsFileExists(path));
+        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_CREATE, err);
+        return imageSource;
+    }
+    return imageSource;
+}
+
+
 bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
 {
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
@@ -1192,7 +1222,7 @@ int ThumbnailUtils::TrySaveFile(ThumbnailData &data, ThumbnailType type)
 {
     string suffix;
     uint8_t *output;
-    int writeSize;
+    uint32_t writeSize;
     switch (type) {
         case ThumbnailType::THUMB:
             suffix = THUMBNAIL_THUMB_SUFFIX;
@@ -1259,6 +1289,9 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         return E_ERR;
     }
     MEDIA_DEBUG_LOG("path = %{private}s", path.c_str());
+    if (path.empty()) {
+        return E_ERR;
+    }
     int32_t fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
@@ -1508,6 +1541,82 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         data.mediaType = MediaType::MEDIA_TYPE_ALL;
         err = resultSet->GetInt(index, data.mediaType);
     }
+}
+
+bool ThumbnailUtils::ResizeThumb(int &width, int &height)
+{
+    int maxLen = max(width, height);
+    int minLen = min(width, height);
+    if (minLen == 0) {
+        MEDIA_ERR_LOG("Divisor minLen is 0");
+        return false;
+    }
+    double ratio = static_cast<double>(maxLen) / minLen;
+    if (minLen > SHORT_SIDE_THRESHOLD) {
+        minLen = SHORT_SIDE_THRESHOLD;
+        maxLen = static_cast<int>(SHORT_SIDE_THRESHOLD * ratio);
+        if (maxLen > MAXIMUM_SHORT_SIDE_THRESHOLD) {
+            maxLen = MAXIMUM_SHORT_SIDE_THRESHOLD;
+        }
+        if (height > width) {
+            width = minLen;
+            height = maxLen;
+        } else {
+            width = maxLen;
+            height = minLen;
+        }
+    } else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD) {
+        if (ratio > ASPECT_RATIO_THRESHOLD) {
+            int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
+            if (height > width) {
+                width = minLen;
+                height = newMaxLen;
+            } else {
+                width = newMaxLen;
+                height = minLen;
+            }
+        }
+    }
+    return true;
+}
+
+bool ThumbnailUtils::ResizeLcd(int &width, int &height)
+{
+    int maxLen = max(width, height);
+    int minLen = min(width, height);
+    if (minLen == 0) {
+        MEDIA_ERR_LOG("Divisor minLen is 0");
+        return false;
+    }
+    double ratio = static_cast<double>(maxLen) / minLen;
+    if (std::abs(ratio) < EPSILON) {
+        MEDIA_ERR_LOG("ratio is 0");
+        return false;
+    }
+    int newMaxLen = maxLen;
+    int newMinLen = minLen;
+    if (maxLen > LCD_LONG_SIDE_THRESHOLD) {
+        newMaxLen = LCD_LONG_SIDE_THRESHOLD;
+        newMinLen = static_cast<int>(newMaxLen / ratio);
+    }
+    int lastMinLen = newMinLen;
+    int lastMaxLen = newMaxLen;
+    if (newMinLen < LCD_SHORT_SIDE_THRESHOLD && minLen >= LCD_SHORT_SIDE_THRESHOLD) {
+        lastMinLen = LCD_SHORT_SIDE_THRESHOLD;
+        lastMaxLen = static_cast<int>(lastMinLen * ratio);
+        if (lastMaxLen > MAXIMUM_LCD_LONG_SIDE) {
+            lastMaxLen = MAXIMUM_LCD_LONG_SIDE;
+            lastMinLen = static_cast<int>(lastMaxLen / ratio);
+        }
+    }
+    if (height > width) {
+        width = lastMinLen;
+        height = lastMaxLen;
+    } else {
+        width = lastMaxLen;
+        height = lastMinLen;
+    }
+    return true;
 }
 
 bool ThumbnailUtils::IsSupportGenAstc()

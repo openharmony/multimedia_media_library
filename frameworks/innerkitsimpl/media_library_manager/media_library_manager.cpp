@@ -473,7 +473,7 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
     }
     if (isOldVer) {
         auto index = uri.find("thumbnail");
-        if (index == string::npos) {
+        if (index == string::npos || index == 0) {
             return false;
         }
         uriParams.fileUri = uri.substr(0, index - 1);
