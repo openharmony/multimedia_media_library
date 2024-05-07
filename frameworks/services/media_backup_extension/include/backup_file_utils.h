@@ -20,6 +20,7 @@
 
 #include "backup_const.h"
 #include "metadata.h"
+#include "rdb_helper.h"
 
 namespace OHOS {
 namespace Media {

@@ -286,7 +286,7 @@ vector<NativeRdb::ValuesBucket> GetInsertValues(vector<FileInfo> &fileInfos, int
     vector<NativeRdb::ValuesBucket> values;
     for (auto &fileInfo : fileInfos) {
         fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
-        if (restoreService->HasSameFile(fileInfo)) {
+        if (BackupDatabaseUtils::HasSameFile(restoreService->mediaLibraryRdb_, fileInfo)) {
             MEDIA_INFO_LOG("Has same file, skip");
             continue;
         }
@@ -435,7 +435,7 @@ vector<NativeRdb::ValuesBucket> GetAudioInsertValues(vector<FileInfo> &fileInfos
     for (auto &fileInfo : fileInfos) {
         fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD,
             fileInfo.relativePath);
-        if (restoreService->HasSameFile(fileInfo)) {
+        if (BackupDatabaseUtils::HasSameFile(restoreService->mediaLibraryRdb_, fileInfo)) {
             MEDIA_INFO_LOG("Has same file, skip");
             continue;
         }

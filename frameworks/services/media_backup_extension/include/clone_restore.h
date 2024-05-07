@@ -78,8 +78,6 @@ private:
         const std::unordered_set<std::string> &columnSet);
     bool HasColumn(const std::unordered_map<std::string, std::string> &columnInfoMap, const std::string &columnName);
     void GetAlbumExtraQueryWhereClause(const std::string &tableName);
-    bool IsSameFile(FileInfo &fileInfo);
-    bool HasSameFile(FileInfo &fileInfo);
     bool IsReadyForRestore(const std::string &tableName);
     void UpdateAlbumToNotifySet(const std::string &tableName, const std::unordered_set<int32_t> &albumSet);
     void NotifyAlbum();
