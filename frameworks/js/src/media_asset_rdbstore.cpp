@@ -34,6 +34,7 @@ constexpr uint32_t BASE_USER_RANGE = 200000;
 const std::unordered_set<OperationObject> OPERATION_OBJECT_SET = {
     OperationObject::UFM_PHOTO,
     OperationObject::UFM_AUDIO,
+    OperationObject::PAH_PHOTO,
 };
 const std::unordered_set<OperationType> OPERATION_TYPE_SET = {
     OperationType::QUERY,
