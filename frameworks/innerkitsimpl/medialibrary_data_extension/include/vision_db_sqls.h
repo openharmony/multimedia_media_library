@@ -157,6 +157,19 @@ const std::string CREATE_TAB_ANALYSIS_POSE = "CREATE TABLE IF NOT EXISTS " + VIS
     PROB + " REAL, " +
     POSE_VERSION + " TEXT) ";
 
+const std::string CREATE_TAB_ANALYSIS_POSE_FOR_ONCREATE = "CREATE TABLE IF NOT EXISTS " + VISION_POSE_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INT, " +
+    POSE_ID + " INT, " +
+    POSE_LANDMARKS + " BLOB, " +
+    POSE_SCALE_X + " INT, " +
+    POSE_SCALE_Y + " INT, " +
+    POSE_SCALE_WIDTH + " INT, " +
+    POSE_SCALE_HEIGHT + " INT, " +
+    PROB + " REAL, " +
+    POSE_VERSION + " TEXT, " +
+    POSE_TYPE + " INT) ";
+
 const std::string CREATE_TAB_ANALYSIS_TOTAL = "CREATE TABLE IF NOT EXISTS " + VISION_TOTAL_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
     FILE_ID + " INT UNIQUE, " +
@@ -199,6 +212,26 @@ const std::string CREATE_TAB_IMAGE_FACE = "CREATE TABLE IF NOT EXISTS " + VISION
     IMAGE_FACE_VERSION + " TEXT, " +
     IMAGE_FEATURES_VERSION + " TEXT, " +
     FEATURES + " BLOB) ";
+
+const std::string CREATE_TAB_IMAGE_FACE_FOR_ONCREATE = "CREATE TABLE IF NOT EXISTS " + VISION_IMAGE_FACE_TABLE + " (" +
+    ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+    FILE_ID + " INTEGER, " +
+    FACE_ID + " TEXT, " +
+    TAG_ID +  " TEXT, " +
+    SCALE_X + " REAL, " +
+    SCALE_Y + " REAL, " +
+    SCALE_WIDTH + " REAL, " +
+    SCALE_HEIGHT + " REAL, " +
+    LANDMARKS + " BLOB, " +
+    PITCH + " REAL, " +
+    YAW + " REAL, " +
+    ROLL + " REAL, " +
+    PROB + " REAL, " +
+    TOTAL_FACES + " INTEGER, " +
+    IMAGE_FACE_VERSION + " TEXT, " +
+    IMAGE_FEATURES_VERSION + " TEXT, " +
+    FEATURES + " BLOB, " +
+    FACE_OCCLUSION + " INT) ";
 
 const std::string CREATE_TAB_FACE_TAG = "CREATE TABLE IF NOT EXISTS " + VISION_FACE_TAG_TABLE + " (" +
     ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -469,6 +502,10 @@ const std::string UPDATE_POSE_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE
 const std::string POSE_INDEX = "pose_index";
 const std::string CREATE_POSE_INDEX = "CREATE UNIQUE INDEX " + POSE_INDEX + " ON " + VISION_POSE_TABLE + " (" +
     FILE_ID + "," + POSE_ID + ")";
+
+const std::string ADD_FACE_OCCLUSION_COLUMN = "ALTER TABLE " + VISION_IMAGE_FACE_TABLE +
+    " ADD COLUMN " + FACE_OCCLUSION + " INT";
+const std::string ADD_POSE_TYPE_COLUMN = "ALTER TABLE " + VISION_POSE_TABLE + " ADD COLUMN " + POSE_TYPE + " INT";
 
 const std::string ALTER_WIDTH_COLUMN = "ALTER TABLE tab_analysis_ocr ADD COLUMN width INT;";
 const std::string ALTER_HEIGHT_COLUMN = "ALTER TABLE tab_analysis_ocr ADD COLUMN height INT;";

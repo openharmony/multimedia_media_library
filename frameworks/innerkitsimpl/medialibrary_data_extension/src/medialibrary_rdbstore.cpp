@@ -935,8 +935,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_SEGMENTATION,
     CREATE_TAB_ANALYSIS_COMPOSITION,
     CREATE_TAB_ANALYSIS_HEAD,
-    CREATE_TAB_ANALYSIS_POSE,
-    CREATE_TAB_IMAGE_FACE,
+    CREATE_TAB_ANALYSIS_POSE_FOR_ONCREATE,
+    CREATE_TAB_IMAGE_FACE_FOR_ONCREATE,
     CREATE_TAB_FACE_TAG,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
     CREATE_VISION_UPDATE_TRIGGER,
@@ -1507,6 +1507,16 @@ static void AddHeadAndPoseTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddFaceOcclusionAndPoseTypeColumn(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        ADD_FACE_OCCLUSION_COLUMN,
+        ADD_POSE_TYPE_COLUMN,
+    };
+    MEDIA_INFO_LOG("start add face occlusion and pose type column");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void AddSegmentationColumns(RdbStore &store)
 {
     const string addNameOnSegmentation = "ALTER TABLE " + VISION_SEGMENTATION_TABLE + " ADD COLUMN " +
@@ -1599,6 +1609,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     UpdateSpecForAddScreenshot(*rdbStore_);
     AddHeadAndPoseTables(*rdbStore_);
     AddSegmentationColumns(*rdbStore_);
+    AddFaceOcclusionAndPoseTypeColumn(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -2424,6 +2435,10 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_SEGMENTATION_COLUMNS) {
         AddSegmentationColumns(store);
+    }
+
+    if (oldVersion < VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN) {
+        AddFaceOcclusionAndPoseTypeColumn(store);
     }
 }
 
