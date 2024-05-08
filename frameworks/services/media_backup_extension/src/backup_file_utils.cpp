@@ -30,6 +30,7 @@ namespace OHOS {
 namespace Media {
 const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
+const string DEFAULT_AUDIO_NAME = "AUD_";
 
 constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 
@@ -62,7 +63,10 @@ int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
         return E_FAIL;
     }
     data->SetFileSize(statInfo.st_size);
-    data->SetFileDateModified(static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim)));
+    auto dateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim));
+    if (dateModified != 0) {
+        data->SetFileDateModified(dateModified);
+    }
     string extension = ScannerUtils::GetFileExtension(path);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
     data->SetFileExtension(extension);
@@ -130,7 +134,8 @@ int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, 
         return errCode;
     }
 
-    string dirPath = RESTORE_CLOUD_DIR + "/" + to_string(bucketNum);
+    string dirPath = (mediaType == MediaType::MEDIA_TYPE_AUDIO ? RESTORE_AUDIO_CLOUD_DIR : RESTORE_CLOUD_DIR) + "/" +
+        to_string(bucketNum);
     if (!MediaFileUtils::IsFileExists(dirPath)) {
         bool ret = MediaFileUtils::CreateDirectory(dirPath);
         errCode = ret? E_OK: E_CHECK_DIR_FAIL;
@@ -160,6 +165,9 @@ int32_t BackupFileUtils::CreateAssetRealName(int32_t fileId, int32_t mediaType,
             break;
         case MediaType::MEDIA_TYPE_VIDEO:
             mediaTypeStr = DEFAULT_VIDEO_NAME;
+            break;
+        case MediaType::MEDIA_TYPE_AUDIO:
+            mediaTypeStr = DEFAULT_AUDIO_NAME;
             break;
         default:
             MEDIA_ERR_LOG("This mediatype %{public}d can not get real name", mediaType);
@@ -250,6 +258,27 @@ void BackupFileUtils::ModifyFile(const std::string path, int64_t modifiedTime)
     if (ret != 0) {
         MEDIA_ERR_LOG("Modify file failed: %{public}d", ret);
     }
+}
+
+string BackupFileUtils::GetFileNameFromPath(const string &path)
+{
+    if (!path.empty()) {
+        size_t lastPosition = path.rfind("/");
+        if (lastPosition != string::npos) {
+            if (path.size() > lastPosition) {
+                return path.substr(lastPosition + 1);
+            }
+        }
+    }
+
+    MEDIA_ERR_LOG("Failed to obtain file name because given pathname is empty");
+    return "";
+}
+
+string BackupFileUtils::GetFileTitle(const string &displayName)
+{
+    string::size_type pos = displayName.find_last_of('.');
+    return (pos == string::npos) ? displayName : displayName.substr(0, pos);
 }
 } // namespace Media
 } // namespace OHOS

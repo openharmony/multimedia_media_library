@@ -44,6 +44,7 @@ void ExternalSource::Init(const string &dbPath)
     InitStepOne();
     InitStepTwo();
     InitStepThree();
+    InitStepFour();
 }
 
 void ExternalSource::InitStepOne()
@@ -128,6 +129,13 @@ void ExternalSource::InitStepThree()
     externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(20,") +
         "'/storage/emulated/0/A/media/Baidu/a_media_zero_size.jpg', 0, 1708602162, 1708602162," +
         "'a_media_zero_size', 'a_media_zero_size.jpg', 0, 0, -1960413976, 1, 65537, 0, 0, 0, 0)");
+}
+
+void ExternalSource::InitStepFour()
+{
+    externalStorePtr_->ExecuteSql(string("INSERT INTO files VALUES(24,") +
+        "'/storage/emulated/0/Music/audio1.mp3', 10865209, 1708600079, 1708600079," +
+        "'a_media_normal_video', 'audio1.mp3', 0, 52221, -1122816831, 2, 65537, 352, 640, 0, 0)");
 }
 } // namespace Media
 } // namespace OHOS
