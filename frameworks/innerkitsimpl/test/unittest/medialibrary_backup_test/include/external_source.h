@@ -31,6 +31,7 @@ public:
     void InitStepOne();
     void InitStepTwo();
     void InitStepThree();
+    void InitStepFour();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> externalStorePtr_;
