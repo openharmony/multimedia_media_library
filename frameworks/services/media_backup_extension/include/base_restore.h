@@ -36,24 +36,30 @@ public:
     virtual std::vector<FileInfo> QueryFileInfos(int32_t offset) = 0;
     virtual NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) const;
+    virtual NativeRdb::ValuesBucket GetAudioInsertValue(const FileInfo &fileInfo, const std::string &newPath) const;
 
 protected:
     int32_t Init(void);
     
     virtual void RestorePhoto(void) = 0;
+    virtual void RestoreAudio(void) = 0;
     virtual void HandleRestData(void) = 0;
 
     virtual bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
+    virtual bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
     virtual void AnalyzeSource() = 0;
     virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
+    std::vector<NativeRdb::ValuesBucket> GetAudioInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
     int32_t MoveFile(const std::string &srcFile, const std::string &dstFile) const;
     std::shared_ptr<NativeRdb::ResultSet> QuerySql(const std::string &sql,
         const std::vector<std::string> &selectionArgs = std::vector<std::string>()) const;
     void InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType);
+    void InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
     void SetValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
+    void SetAudioValueFromMetaData(FileInfo &info, NativeRdb::ValuesBucket &value);
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
         int64_t &rowNum);
     int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir) const;
@@ -61,8 +67,11 @@ protected:
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
     std::atomic<uint64_t> migrateFileNumber_;
+    std::atomic<uint64_t> migrateAudioDatabaseNumber_;
+    std::atomic<uint64_t> migrateAudioFileNumber_;
     std::atomic<uint32_t> imageNumber_;
     std::atomic<uint32_t> videoNumber_;
+    std::atomic<uint32_t> audioNumber_;
     std::string dualDirName_ = "";
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
 };

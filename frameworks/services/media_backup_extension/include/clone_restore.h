@@ -36,8 +36,10 @@ private:
     int32_t QueryTotalNumber(void) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
     bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &fileInfo) override;
+    bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
     void AnalyzeSource() override;
     void RestoreAlbum(void);
+    void RestoreAudio(void) override;
     void InsertPhoto(std::vector<FileInfo> &fileInfos);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
