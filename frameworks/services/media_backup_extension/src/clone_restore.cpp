@@ -191,6 +191,15 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
     return E_OK;
 }
 
+void CloneRestore::RestoreAudio(void)
+{
+}
+
+bool CloneRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
+{
+    return true;
+}
+
 void CloneRestore::RestorePhoto(void)
 {
     MEDIA_INFO_LOG("Start clone restore: photos");

@@ -44,7 +44,9 @@ constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
 
 const std::string BACKUP_RESTORE_DIR = "/data/storage/el2/backup/restore";
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
+const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
 const std::string RESTORE_LOCAL_DIR = "/storage/media/local/files/Photo";
+const std::string RESTORE_AUDIO_LOCAL_DIR = "/storage/media/local/files/Audio";
 const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
 const std::string GARBLE_CLONE_DIR = "/data/storage/el2/backup/restore/storage/media/local/files";
@@ -71,6 +73,12 @@ const std::string GALLERY_ORIENTATION = "orientation";
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
 const std::string EXTERNAL_DATE_MODIFIED = "date_modified";
 const std::string EXTERNAL_DATE_ADDED = "date_added";
+const std::string EXTERNAL_FILE_DATA = "_data";
+const std::string EXTERNAL_TITLE = "title";
+const std::string EXTERNAL_DISPLAY_NAME = "_display_name";
+const std::string EXTERNAL_FILE_SIZE = "_size";
+const std::string EXTERNAL_DURATION = "duration";
+const std::string EXTERNAL_MEDIA_TYPE = "media_type";
 
 // custom column
 const std::string CUSTOM_COUNT = "count";
@@ -79,8 +87,14 @@ const std::string CUSTOM_MAX_ID = "max_id";
 const std::string PRAGMA_TABLE_NAME = "name";
 const std::string PRAGMA_TABLE_TYPE = "type";
 
+// audio column
+const std::string AUDIO_DATA = "_data";
+const std::string AUDIO_DATE_MODIFIED = "date_modified";
+const std::string AUDIO_DATE_TAKEN = "datetaken";
+
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
+const std::string AUDIO_DB_NAME = "audio_MediaInfo.db";
 
 constexpr int32_t INDEX_TYPE = 0;
 constexpr int32_t INDEX_CACHE_DIR = 1;
@@ -104,6 +118,12 @@ enum class PrefixType {
     LOCAL,
     CLOUD_EDIT_DATA,
     LOCAL_EDIT_DATA,
+};
+
+enum DUAL_MEDIA_TYPE {
+    IMAGE_TYPE = 1,
+    AUDIO_TYPE,
+    VIDEO_TYPE,
 };
 
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
@@ -197,6 +217,20 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
     (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 ";
+
+const std::string QUERY_AUDIO_COUNT = "SELECT count(1) as count FROM files WHERE media_type = 2 AND _size > 0 \
+    AND _data LIKE '/storage/emulated/0/Music%'";
+
+const std::string QUERY_ALL_AUDIOS_FROM_EXTERNAL = "SELECT " + EXTERNAL_IS_FAVORITE + "," + EXTERNAL_DATE_MODIFIED +
+    "," + EXTERNAL_DATE_ADDED + "," + EXTERNAL_FILE_DATA + "," + EXTERNAL_TITLE + "," + EXTERNAL_DISPLAY_NAME + "," +
+    EXTERNAL_FILE_SIZE + "," + EXTERNAL_DURATION + "," + EXTERNAL_MEDIA_TYPE + " FROM files WHERE media_type = 2 AND \
+    _size > 0 AND _data LIKE '/storage/emulated/0/Music%'";
+
+const std::string QUERY_ALL_AUDIOS_FROM_AUDIODB = "SELECT " + AUDIO_DATA + "," + AUDIO_DATE_MODIFIED + "," +
+    AUDIO_DATE_TAKEN + " FROM mediainfo WHERE _data LIKE '/storage/emulated/0/Music%'";
+
+const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM mediainfo WHERE \
+    _data LIKE '/storage/emulated/0/Music%'";
 } // namespace Media
 } // namespace OHOS
 
