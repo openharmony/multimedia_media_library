@@ -435,7 +435,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertVideoLabel_Test_002, TestSize.Leve
     valuesBucket2.Put(ALGO_VERSION, "1");
     auto retVal2 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket2);
     EXPECT_GT(retVal, 0);
-    EXPECT_LT(retVal2, 0);
+    EXPECT_GT(retVal2, 0);
     MEDIA_INFO_LOG("Vision_InsertVideoLabel_Test_002::retVal = %{public}d. retVal2 = %{public}d. End", retVal, retVal2);
 }
 
