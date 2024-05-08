@@ -385,7 +385,8 @@ bool CloneRestore::ParseResultSet(const shared_ptr<NativeRdb::ResultSet> &result
     }
     fileInfo.fileSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
     if (fileInfo.fileSize <= 0) {
-        MEDIA_ERR_LOG("File size is invalid: %{public}lld", (long long)fileInfo.fileSize);
+        MEDIA_ERR_LOG("File size is invalid: %{public}lld, filePath: %{public}s", (long long)fileInfo.fileSize,
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID).c_str());
         return false;
     }
     
