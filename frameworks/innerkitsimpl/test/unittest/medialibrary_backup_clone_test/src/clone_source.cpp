@@ -177,6 +177,10 @@ void CloneSource::InsertPhoto()
         "'/storage/cloud/files/Photo/4/IMG_1501924357_004.jpg', 85975, 'scr_pic_edit', 'scr_pic_edit.jpg', 1, " +
         "'com.ohos.screenshot', '截图', 1501924257174, 1501924257583, 1501924257, 0, 0, 0, 0, " +
         "592, 720, 1501935124, ''" + VALUES_END); // screenshot, pic, edit
+    cloneStorePtr_->ExecuteSql(INSERT_PHOTO + VALUES_BEGIN + "6, " +
+        "'/storage/cloud/files/Photo/16/IMG_1501924305_005.jpg', 0, 'size_0', 'size_0.jpg', 1, " +
+        "'com.ohos.camera', '相机', 1501924205218, 1501924205423, 1501924205, 0, 0, 0, 0, " +
+        "1280, 960, 0, ''" + VALUES_END); // cam, pic, size = 0
 }
 
 void CloneSource::InsertPhotoAlbum()

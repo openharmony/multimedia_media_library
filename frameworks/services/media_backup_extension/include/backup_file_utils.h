@@ -39,6 +39,7 @@ public:
     static void ModifyFile(const std::string path, int64_t modifiedTime);
     static std::string GetFileNameFromPath(const string &path);
     static std::string GetFileTitle(const string &displayName);
+    static bool IsFileValid(const std::string &filePath, int32_t sceneCode);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);

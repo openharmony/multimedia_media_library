@@ -249,6 +249,16 @@ int32_t GetPhotoCountByWhereClause(shared_ptr<NativeRdb::RdbStore> rdbStore, con
     return result;
 }
 
+bool HasZeroSizeFile(const vector<FileInfo> &fileInfos)
+{
+    for (const auto &fileInfo : fileInfos) {
+        if (fileInfo.fileSize <= 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialibrary_backup_clone_restore_photo_test_001 start");
@@ -263,6 +273,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_te
     vector<FileInfo> fileInfos = restoreService->QueryFileInfos(0);
     int32_t photoCount = static_cast<int32_t>(fileInfos.size());
     EXPECT_EQ(photoCount, EXPECTED_PHOTO_COUNT);
+    EXPECT_EQ(HasZeroSizeFile(fileInfos), false);
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
