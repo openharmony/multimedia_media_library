@@ -110,7 +110,6 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
     { PhotoColumn::PHOTOS_TABLE,
         {
             { PhotoColumn::PHOTO_POSITION, PhotoColumn::PHOTO_POSITION + " IN (1, 3)" },
-            { MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_SIZE + " > 0" },
         }},
     { PhotoAlbumColumns::TABLE,
         {
@@ -123,10 +122,6 @@ const unordered_map<string, unordered_map<string, string>> TABLE_QUERY_WHERE_CLA
             { PhotoAlbumColumns::ALBUM_NAME, PhotoAlbumColumns::ALBUM_NAME + " IS NOT NULL" },
             { PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumColumns::ALBUM_SUBTYPE + " IN (" +
                 to_string(PhotoAlbumSubType::SHOOTING_MODE) + ")" },
-        }},
-    { AudioColumn::AUDIOS_TABLE,
-        {
-            { MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_SIZE + " > 0" },
         }},
 };
 const vector<string> CLONE_ALBUMS = { PhotoAlbumColumns::TABLE, ANALYSIS_ALBUM_TABLE };
