@@ -484,7 +484,7 @@ bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStor
     struct stat srcStatInfo {};
     struct stat dstStatInfo {};
 
-    if (access(srcPath.c_str(), F_OK) || access(dstPath.c_str(), F_OK)) {
+    if (access(dstPath.c_str(), F_OK)) {
         return false;
     }
     if (stat(srcPath.c_str(), &srcStatInfo) != 0) {
@@ -493,10 +493,6 @@ bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStor
     }
     if (stat(dstPath.c_str(), &dstStatInfo) != 0) {
         MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", dstPath.c_str(), errno);
-        return false;
-    }
-    if (fileInfo.fileSize != srcStatInfo.st_size) {
-        MEDIA_ERR_LOG("Internal error");
         return false;
     }
     if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
@@ -516,7 +512,7 @@ bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
         tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
         MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
-        MediaColumn::MEDIA_DATE_ADDED + " = " + to_string(fileInfo.dateAdded);
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " + to_string(fileInfo.dateModified);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return false;
