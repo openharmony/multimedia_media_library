@@ -1016,7 +1016,7 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
     fileInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
 
-    auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, PhotoColumn::PHOTOS_TABLE);
+    auto commonColumnInfoMap = GetValueFromMap(tableCommonColumnInfoMap_, tableName);
     for (auto it = commonColumnInfoMap.begin(); it != commonColumnInfoMap.end(); ++it) {
         string columnName = it->first;
         string columnType = it->second;
@@ -1044,7 +1044,7 @@ void CloneRestore::InsertAudio(vector<FileInfo> &fileInfos)
     int64_t fileMoveCount = 0;
     unordered_set<int32_t> excludedFileIdSet;
     for (auto& fileInfo : fileInfos) {
-        if (!MediaFileUtils::IsFileExists(fileInfo.filePath) ||
+        if (!BackupFileUtils::IsFileValid(fileInfo.filePath, CLONE_RESTORE_ID) ||
             !PrepareCloudPath(AudioColumn::AUDIOS_TABLE, fileInfo)) {
             continue;
         }
