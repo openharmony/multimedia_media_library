@@ -302,39 +302,5 @@ bool BackupFileUtils::IsFileValid(const std::string &filePath, int32_t sceneCode
     }
     return true;
 }
-
-bool BackupFileUtils::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
-    FileInfo &fileInfo)
-{
-    string srcPath = fileInfo.filePath;
-    string dstPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
-    struct stat srcStatInfo {};
-    struct stat dstStatInfo {};
-
-    if (access(srcPath.c_str(), F_OK) || access(dstPath.c_str(), F_OK)) {
-        return false;
-    }
-    if (stat(srcPath.c_str(), &srcStatInfo) != 0) {
-        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", srcPath.c_str(), errno);
-        return false;
-    }
-    if (stat(dstPath.c_str(), &dstStatInfo) != 0) {
-        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", dstPath.c_str(), errno);
-        return false;
-    }
-    if (fileInfo.fileSize != srcStatInfo.st_size) {
-        MEDIA_ERR_LOG("Internal error");
-        return false;
-    }
-    if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
-        !BackupDatabaseUtils::HasSameFile(rdbStore, tableName, fileInfo)) { /* file size & last modify time */
-        MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs",
-            (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
-            (long long)dstStatInfo.st_mtime);
-        return false;
-    }
-    fileInfo.isNew = false;
-    return true;
-}
 } // namespace Media
 } // namespace OHOS

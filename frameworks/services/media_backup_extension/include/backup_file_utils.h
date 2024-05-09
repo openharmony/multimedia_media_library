@@ -20,7 +20,6 @@
 
 #include "backup_const.h"
 #include "metadata.h"
-#include "rdb_helper.h"
 
 namespace OHOS {
 namespace Media {
@@ -41,8 +40,6 @@ public:
     static std::string GetFileNameFromPath(const string &path);
     static std::string GetFileTitle(const string &displayName);
     static bool IsFileValid(const std::string &filePath, int32_t sceneCode);
-    static bool IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
-        FileInfo &fileInfo);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);

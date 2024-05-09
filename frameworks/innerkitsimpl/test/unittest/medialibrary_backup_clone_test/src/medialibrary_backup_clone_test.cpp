@@ -286,7 +286,7 @@ vector<NativeRdb::ValuesBucket> GetInsertValues(vector<FileInfo> &fileInfos, int
     vector<NativeRdb::ValuesBucket> values;
     for (auto &fileInfo : fileInfos) {
         fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
-        if (BackupDatabaseUtils::HasSameFile(restoreService->mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfo)) {
+        if (restoreService->HasSameFile(restoreService->mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfo)) {
             MEDIA_INFO_LOG("Has same file, skip");
             continue;
         }
@@ -433,7 +433,7 @@ void PrepareFileInfos(const string &tableName, vector<FileInfo> &fileInfos)
 {
     for (auto &fileInfo : fileInfos) {
         fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
-        fileInfo.isNew = !BackupDatabaseUtils::HasSameFile(restoreService->mediaLibraryRdb_, tableName, fileInfo);
+        fileInfo.isNew = !restoreService->HasSameFile(restoreService->mediaLibraryRdb_, tableName, fileInfo);
     }
 }
 
