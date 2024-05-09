@@ -280,5 +280,26 @@ string BackupFileUtils::GetFileTitle(const string &displayName)
     string::size_type pos = displayName.find_last_of('.');
     return (pos == string::npos) ? displayName : displayName.substr(0, pos);
 }
+
+bool BackupFileUtils::IsFileValid(const std::string &filePath, int32_t sceneCode)
+{
+    std::string garbledFilePath = BackupFileUtils::GarbleFilePath(filePath, sceneCode);
+    struct stat statInfo {};
+    if (stat(filePath.c_str(), &statInfo) != SUCCESS) {
+        MEDIA_ERR_LOG("Invalid file (%{public}s), get statInfo failed, err: %{public}d", garbledFilePath.c_str(),
+            errno);
+        return false;
+    }
+    if (statInfo.st_mode & S_IFDIR) {
+        MEDIA_ERR_LOG("Invalid file (%{public}s), is a directory", garbledFilePath.c_str());
+        return false;
+    }
+    if (statInfo.st_size <= 0) {
+        MEDIA_ERR_LOG("Invalid file (%{public}s), get size (%{public}lld) <= 0", garbledFilePath.c_str(),
+            (long long)statInfo.st_size);
+        return false;
+    }
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
