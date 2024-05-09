@@ -426,6 +426,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     vector<FileInfo> fileInfos = restoreService->QueryFileInfos(AudioColumn::AUDIOS_TABLE, 0);
     int32_t audioCount = static_cast<int32_t>(fileInfos.size());
     EXPECT_EQ(audioCount, EXPECTED_AUDIO_COUNT);
+    EXPECT_EQ(HasZeroSizeFile(fileInfos), false);
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
 
