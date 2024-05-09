@@ -500,7 +500,7 @@ bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStor
         return false;
     }
     if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
-        HasSameFile(rdbStore, tableName, fileInfo)) { /* file size & last modify time */
+        !HasSameFile(rdbStore, tableName, fileInfo)) { /* file size & last modify time */
         MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs",
             (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
             (long long)dstStatInfo.st_mtime);

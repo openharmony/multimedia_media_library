@@ -48,7 +48,7 @@ enum class TestAlbumType {
 const string TEST_BACKUP_PATH = "/data/test/backup/db";
 const string TEST_DB_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const string TEST_BACKUP_DB_PATH = TEST_BACKUP_PATH + TEST_DB_PATH;
-const string TEST_UPGRADE_FILE_DIR = "/data/test/backup/file";
+const string TEST_FAKE_FILE_DIR = "/fake/fake/fake.fake";
 const string SHOOTING_MODE_PORTRAIT_ALBUM_NAME = "1";
 const string WHERE_CLAUSE_SHOOTING_MODE = "shooting_mode = '1'";
 const string WHERE_CLAUSE_TRASHED = "date_trashed > 0";
@@ -493,6 +493,14 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     int32_t audioCountAfter = GetCountByWhereClause(AudioColumn::AUDIOS_TABLE, g_rdbStore->GetRaw());
     EXPECT_EQ(audioCountBefore, audioCountAfter);
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_is_file_valid_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_clone_is_file_valid_test_001 start");
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_DB_PATH, CLONE_RESTORE_ID), true);
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_BACKUP_PATH, CLONE_RESTORE_ID), false); // directory
+    EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_FAKE_FILE_DIR, CLONE_RESTORE_ID), false); // not exist
 }
 } // namespace Media
 } // namespace OHOS
