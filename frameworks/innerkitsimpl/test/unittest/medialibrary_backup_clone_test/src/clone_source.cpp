@@ -249,6 +249,10 @@ void CloneSource::InsertAudio()
         "'/storage/cloud/files/Audio/2/AUD_1501924014_002.mp3', 2900316, 'Muito Love', " +
         "'Ed_Napoli_-_Muito_Love.mp3', 3, 1501923914301, 1501923914326, 1704038400, 120633, 1, 0, " +
         "'Ed Napoli'" + VALUES_END); // favorite
+    cloneStorePtr_->ExecuteSql(INSERT_AUDIO + VALUES_BEGIN + "4, " +
+        "'/storage/cloud/files/Audio/2/AUD_1501924014_003.mp3', 0, 'size_0', " +
+        "'size_0.mp3', 3, 1501923914301, 1501923914326, 1704038400, 120633, 0, 0, " +
+        "'Ed Napoli'" + VALUES_END); // favorite
 }
 } // namespace Media
 } // namespace OHOS
