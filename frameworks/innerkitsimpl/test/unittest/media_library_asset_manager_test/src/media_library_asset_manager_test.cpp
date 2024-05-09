@@ -18,6 +18,7 @@
 #include "fetch_result.h"
 #include "file_asset.h"
 #include "get_self_permissions.h"
+#include "file_uri.h"
 #include "hilog/log.h"
 #include "iservice_registry.h"
 #include "medialibrary_db_const.h"
@@ -57,6 +58,8 @@ const int CLEAN_TIME = 1;
 const int SCAN_WAIT_TIME = 10;
 const int SCAN_WAIT_TIME_1S = 1;
 const char ERROR_REQUEST_ID[UUID_STR_MAX_LENGTH] = "00000000-0000-0000-0000-000000000000";
+const std::string ROOT_TEST_MEDIA_DIR =
+    "/data/app/el2/100/base/com.ohos.medialibrary.medialibrarydata/haps/";
 
 static const unsigned char FILE_CONTENT_JPG[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b,
@@ -232,7 +235,8 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSi
         EXPECT_EQ(false, true);
     }
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
-    string destUri = mediaLibraryManager->CreateAsset(destDisplayName);
+
+    string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
     EXPECT_NE(destUri, "");
     sleep(SCAN_WAIT_TIME_1S);
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
@@ -245,7 +249,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSi
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
     EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
-    int32_t destFd = mediaLibraryManager->OpenAsset(destUri, MEDIA_FILEMODE_READWRITE);
+    AppFileService::ModuleFileUri::FileUri destFileUri(destUri);
+    string destPath = destFileUri.GetRealPath();
+    int destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     int64_t destLen = lseek(destFd, 0, SEEK_END);
     lseek(destFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
@@ -253,7 +259,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_001, TestSi
     read(destFd, buf, destLen);
     bool result = CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     free(buf);
-    mediaLibraryManager->CloseAsset(destUri, destFd);
+    close(destFd);
     EXPECT_EQ(result, true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", destDisplayName.c_str());
 }
@@ -277,7 +283,8 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSi
         EXPECT_EQ(false, true);
     }
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
-    string destUri = mediaLibraryManager->CreateAsset(destDisplayName);
+
+    string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
     EXPECT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
@@ -290,7 +297,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSi
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
     EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
-    int32_t destFd = mediaLibraryManager->OpenAsset(destUri, MEDIA_FILEMODE_READWRITE);
+    AppFileService::ModuleFileUri::FileUri destFileUri(destUri);
+    string destPath = destFileUri.GetRealPath();
+    int destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     int64_t destLen = lseek(destFd, 0, SEEK_END);
     lseek(destFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
@@ -298,7 +307,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_002, TestSi
     read(destFd, buf, destLen);
     bool result = CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     free(buf);
-    mediaLibraryManager->CloseAsset(destUri, destFd);
+    close(destFd);
     EXPECT_EQ(result, true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", destDisplayName.c_str());
 }
@@ -323,7 +332,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSi
     }
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
-    string destUri = mediaLibraryManager->CreateAsset(destDisplayName);
+    string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
     EXPECT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
@@ -336,7 +345,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSi
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
     EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
-    int32_t destFd = mediaLibraryManager->OpenAsset(destUri, MEDIA_FILEMODE_READWRITE);
+    AppFileService::ModuleFileUri::FileUri destFileUri(destUri);
+    string destPath = destFileUri.GetRealPath();
+    int destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     int64_t destLen = lseek(destFd, 0, SEEK_END);
     lseek(destFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
@@ -344,7 +355,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_003, TestSi
     read(destFd, buf, destLen);
     bool result = CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
     free(buf);
-    mediaLibraryManager->CloseAsset(destUri, destFd);
+    close(destFd);
     EXPECT_EQ(result, true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", destDisplayName.c_str());
 }
@@ -358,7 +369,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_004, TestSi
 {
     MEDIA_INFO_LOG("MediaLibraryAssetManager_test_004::Start");
     string destDisplayName = "request_image_dest_3.jpg";
-    string destUri = mediaLibraryManager->CreateAsset(destDisplayName);
+    string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
     EXPECT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
@@ -393,7 +404,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSi
     }
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
-    string destUri = mediaLibraryManager->CreateAsset(destDisplayName);
+    string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
     EXPECT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
@@ -406,7 +417,9 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSi
         requestOptions, destUri.c_str(), callback);
     MEDIA_INFO_LOG("requestId: %{public}s", requestID.requestId);
     EXPECT_NE(strcmp(requestID.requestId, ERROR_REQUEST_ID), 0);
-    int32_t destFd = mediaLibraryManager->OpenAsset(destUri, MEDIA_FILEMODE_READWRITE);
+    AppFileService::ModuleFileUri::FileUri destFileUri(destUri);
+    string destPath = destFileUri.GetRealPath();
+    int destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     int64_t destLen = lseek(destFd, 0, SEEK_END);
     lseek(destFd, 0, SEEK_SET);
     unsigned char *buf = static_cast<unsigned char*>(malloc(destLen));
@@ -414,7 +427,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_005, TestSi
     read(destFd, buf, destLen);
     bool result = CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
     free(buf);
-    mediaLibraryManager->CloseAsset(destUri, destFd);
+    close(destFd);
     EXPECT_NE(result, true);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", destDisplayName.c_str());
 }
@@ -439,7 +452,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_006, TestSi
     }
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
-    string destUri = mediaLibraryManager->CreateAsset(destDisplayName);
+    string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
     EXPECT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
@@ -474,7 +487,7 @@ HWTEST_F(MediaLibraryAssetManagerTest, MediaLibraryAssetManager_test_007, TestSi
     }
     mediaLibraryManager->CloseAsset(srcuri, srcFd);
 
-    string destUri = mediaLibraryManager->CreateAsset(destDisplayName);
+    string destUri = ROOT_TEST_MEDIA_DIR + destDisplayName;
     EXPECT_NE(destUri, "");
     MEDIA_INFO_LOG("createFile uri: %{public}s", destUri.c_str());
     sleep(SCAN_WAIT_TIME_1S);
