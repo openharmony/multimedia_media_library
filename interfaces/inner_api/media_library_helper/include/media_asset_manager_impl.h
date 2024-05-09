@@ -44,6 +44,7 @@ private:
     void RegisterTaskObserver(const unique_ptr<RequestSourceAsyncContext> &asyncContext);
     void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
     static int32_t WriteFileToPath(const std::string &srcUri, const std::string &destPath, bool isSource);
+    static int32_t GetFdFromSandBoxUri(const std::string &sandBoxUri);
 
 private:
     static MediaLibraryManager* mediaLibraryManager_;
