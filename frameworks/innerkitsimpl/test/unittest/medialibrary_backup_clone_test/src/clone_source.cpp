@@ -252,7 +252,7 @@ void CloneSource::InsertAudio()
     cloneStorePtr_->ExecuteSql(INSERT_AUDIO + VALUES_BEGIN + "4, " +
         "'/storage/cloud/files/Audio/2/AUD_1501924014_003.mp3', 0, 'size_0', " +
         "'size_0.mp3', 3, 1501923914301, 1501923914326, 1704038400, 120633, 0, 0, " +
-        "'Ed Napoli'" + VALUES_END); // favorite
+        "'Ed Napoli'" + VALUES_END); // size = 0
 }
 } // namespace Media
 } // namespace OHOS
