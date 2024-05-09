@@ -19,6 +19,7 @@
 
 #include "dfx_manager.h"
 #include "dfx_const.h"
+#include "dfx_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -86,6 +87,13 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_thumbnail_8K_video_test, TestSize.Lev
     int32_t mediaType = 2;
     int32_t result = DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, mediaType, width, height);
     EXPECT_EQ(result, BIG_VIDEO);
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_safe_path_test, TestSize.Level0)
+{
+    std::string path = "/storage/cloud/files/DCIM/123";
+    std::string safePath = DfxUtils::GetSafePath(path);
+    ASSERT_TRUE(safePath == "*DCIM");
 }
 } // namespace Media
 } // namespace OHOS
