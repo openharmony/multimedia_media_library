@@ -45,7 +45,7 @@ private:
         int32_t sourceType);
     int32_t MoveAsset(FileInfo &fileInfo);
     bool IsFilePathExist(const std::string &filePath) const;
-    int32_t QueryAlbumTotalNumber(const std::string &tableName);
+    int32_t QueryTotalNumber(const std::string &tableName);
     std::vector<AlbumInfo> QueryAlbumInfos(const std::string &tableName, int32_t offset);
     bool ParseAlbumResultSet(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         AlbumInfo &albumInfo);
@@ -86,8 +86,6 @@ private:
     void RestoreGallery();
     bool PrepareCloudPath(const std::string &tableName, FileInfo &fileInfo);
     void RestoreMusic();
-    void RestoreAudio(void);
-    int32_t QueryTotalNumber(const std::string &tableName);
     std::vector<FileInfo> QueryFileInfos(const std::string &tableName, int32_t offset);
     bool ParseResultSet(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         FileInfo &fileInfo);

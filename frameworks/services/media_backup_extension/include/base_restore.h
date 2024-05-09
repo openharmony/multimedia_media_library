@@ -63,6 +63,10 @@ protected:
     int32_t BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &value,
         int64_t &rowNum);
     int32_t MoveDirectory(const std::string &srcDir, const std::string &dstDir) const;
+    bool IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+        FileInfo &fileInfo);
+    bool HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+        FileInfo &fileInfo);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
