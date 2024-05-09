@@ -72,6 +72,9 @@ string DfxUtils::GetSafeDiaplayName(string &displayName)
         extension = displayName.substr(splitIndex);
     }
     string title = MediaFileUtils::GetTitleFromDisplayName(displayName);
+    if (title == "") {
+        return title;
+    }
     int32_t length = title.size();
     string safeDisplayName;
     if (length <= GARBLE_SMALL) {
