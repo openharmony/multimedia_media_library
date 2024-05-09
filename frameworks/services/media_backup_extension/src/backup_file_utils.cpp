@@ -18,7 +18,6 @@
 #include <utime.h>
 #include <sys/types.h>
 
-#include "backup_database_utils.h"
 #include "scanner_utils.h"
 #include "metadata_extractor.h"
 #include "mimetype_utils.h"
