@@ -570,9 +570,6 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
 
 static inline string GetVirtualPath(const string &relativePath, const string &displayName)
 {
-    if (relativePath.empty() || displayName.empty()) {
-        return "";
-    }
     if (relativePath[relativePath.size() - 1] != SLASH_CHAR) {
         return relativePath + SLASH_CHAR + displayName;
     } else {
