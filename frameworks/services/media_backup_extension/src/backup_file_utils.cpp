@@ -64,7 +64,7 @@ int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
     }
     data->SetFileSize(statInfo.st_size);
     auto dateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim));
-    if (dateModified != 0) {
+    if (dateModified != 0 && data->GetFileDateModified() == 0) {
         data->SetFileDateModified(dateModified);
     }
     string extension = ScannerUtils::GetFileExtension(path);
