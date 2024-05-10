@@ -28,6 +28,7 @@
 #include "directory_ex.h"
 #include "fetch_result.h"
 #include "file_asset.h"
+#include "file_uri.h"
 #include "image_source.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -43,7 +44,6 @@
 #include "string_ex.h"
 #include "thumbnail_const.h"
 #include "unique_fd.h"
-#include "moving_photo_utils.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -729,10 +729,26 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetAstc(const Uri &uri)
     return pixelmap;
 }
 
+static int32_t OpenReadOnlyAppSandboxVideo(const string& uri)
+{
+    std::vector<std::string> uris;
+    if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
+        return -1;
+    }
+    AppFileService::ModuleFileUri::FileUri fileUri(uris[MOVING_PHOTO_VIDEO_POS]);
+    std::string realPath = fileUri.GetRealPath();
+    int32_t fd = open(realPath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        MEDIA_ERR_LOG("Failed to open read only video file");
+        return -1;
+    }
+    return fd;
+}
+
 int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
 {
-    if (!MovingPhotoUtils::IsMediaLibraryUri(uri)) {
-        return MovingPhotoUtils::OpenReadOnlyFile(uri, false);
+    if (!MediaFileUtils::IsMediaLibraryUri(uri)) {
+        return OpenReadOnlyAppSandboxVideo(uri);
     }
     if (!CheckPhotoUri(uri)) {
         MEDIA_ERR_LOG("invalid uri: %{public}s", uri.c_str());
@@ -756,14 +772,14 @@ std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
         MEDIA_ERR_LOG("invalid uri: %{public}s", uri.c_str());
         return "";
     }
-    if (MovingPhotoUtils::IsMediaLibraryUri(uri)) {
+    if (MediaFileUtils::IsMediaLibraryUri(uri)) {
         return uri;
     }
     std::vector<std::string> uris;
-    if (!MovingPhotoUtils::SplitMovingPhotoUri(uri, uris)) {
+    if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
         return "";
     }
-    return uris[0];
+    return uris[MOVING_PHOTO_IMAGE_POS];
 }
 } // namespace Media
 } // namespace OHOS

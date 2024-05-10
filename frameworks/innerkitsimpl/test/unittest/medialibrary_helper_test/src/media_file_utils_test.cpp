@@ -728,5 +728,48 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoDuratio
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(3000), true);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(4000), false);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsMediaLibraryUri_Test_001, TestSize.Level0)
+{
+    string uri = "file://media/Photo/12/IMG_2023_001/IMG_2023.jpg";
+    EXPECT_EQ(MediaFileUtils::IsMediaLibraryUri(uri), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsMediaLibraryUri_Test_002, TestSize.Level0)
+{
+    string uri("file://com.example.testdemo/data/storage/el2/base/haps/test.jpg");
+    uri.append(";");
+    uri.append("file://com.example.testdemo/data/storage/el2/base/haps/test.mp4");
+    EXPECT_EQ(MediaFileUtils::IsMediaLibraryUri(uri), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsMediaLibraryUri_Test_003, TestSize.Level0)
+{
+    string uri = "";
+    EXPECT_EQ(MediaFileUtils::IsMediaLibraryUri(uri), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_SplitMovingPhotoUri_Test_001, TestSize.Level0)
+{
+    string uri = "file://media/Photo/12/IMG_2023_001/IMG_2023.jpg";
+    std::vector<std::string> ret;
+    EXPECT_EQ(MediaFileUtils::SplitMovingPhotoUri(uri, ret), false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_SplitMovingPhotoUri_Test_002, TestSize.Level0)
+{
+    string uri("file://com.example.testdemo/data/storage/el2/base/haps/test.jpg");
+    uri.append(";");
+    uri.append("file://com.example.testdemo/data/storage/el2/base/haps/test.mp4");
+    std::vector<std::string> ret;
+    EXPECT_EQ(MediaFileUtils::SplitMovingPhotoUri(uri, ret), true);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_SplitMovingPhotoUri_Test_003, TestSize.Level0)
+{
+    string uri = "";
+    std::vector<std::string> ret;
+    EXPECT_EQ(MediaFileUtils::SplitMovingPhotoUri(uri, ret), false);
+}
 } // namespace Media
 } // namespace OHOS
