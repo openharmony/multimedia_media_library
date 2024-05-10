@@ -55,8 +55,8 @@ public:
     EXPORT void SetFileSize(const VariantData &size);
     EXPORT int64_t GetFileSize() const;
 
-    void SetFileDateAdded(const VariantData &dateAdded);
-    int64_t GetFileDateAdded() const;
+    EXPORT void SetFileDateAdded(const VariantData &dateAdded);
+    EXPORT int64_t GetFileDateAdded() const;
 
     EXPORT void SetFileDateModified(const VariantData &dateModified);
     EXPORT int64_t GetFileDateModified() const;
@@ -67,8 +67,8 @@ public:
     EXPORT void SetFileTitle(const VariantData &title);
     EXPORT const std::string &GetFileTitle() const;
 
-    void SetFileArtist(const VariantData &artist);
-    const std::string &GetFileArtist() const;
+    EXPORT void SetFileArtist(const VariantData &artist);
+    EXPORT const std::string &GetFileArtist() const;
 
     EXPORT void SetAlbum(const VariantData &album);
     EXPORT const std::string &GetAlbum() const;

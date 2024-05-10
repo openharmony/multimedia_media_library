@@ -259,5 +259,12 @@ std::string BackupDatabaseUtils::GarbleInfoName(const string &infoName)
     garbledInfoName.replace(GARBLE_START, garbledSize, GARBLE);
     return garbledInfoName;
 }
+
+int32_t BackupDatabaseUtils::QueryExternalAudioCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb)
+{
+    static string QUERY_EXTERNAL_AUDIO_COUNT = "SELECT count(1) as count FROM files WHERE media_type = 2 AND _size > 0 \
+        AND _data LIKE '/storage/emulated/0/Music%'";
+    return QueryInt(externalRdb, QUERY_EXTERNAL_AUDIO_COUNT, CUSTOM_COUNT);
+}
 } // namespace Media
 } // namespace OHOS

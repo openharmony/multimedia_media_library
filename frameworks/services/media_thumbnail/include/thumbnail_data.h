@@ -61,7 +61,7 @@ public:
     EXPORT bool isLoadingFromThumbToLcd {false};
     EXPORT bool needUpload {false};
 
-    // if true, source can be read from floud
+    // if true, source can be read from cloud
     EXPORT bool isCloudLoading {false};
 
     // if true, read source from cloud if not found in local

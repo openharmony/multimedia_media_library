@@ -34,6 +34,7 @@ enum InsertType {
     PHOTO_MAP,
     ANALYSIS_ALBUM,
     ANALYSIS_PHOTO_MAP,
+    AUDIOS,
 };
 const unordered_map<string, string> TABLE_CREATE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, PhotoColumn::CREATE_PHOTO_TABLE },
@@ -41,6 +42,7 @@ const unordered_map<string, string> TABLE_CREATE_MAP = {
     { PhotoMap::TABLE, PhotoMap::CREATE_TABLE },
     { ANALYSIS_ALBUM_TABLE, CREATE_ANALYSIS_ALBUM_FOR_ONCREATE },
     { ANALYSIS_PHOTO_MAP_TABLE, CREATE_ANALYSIS_ALBUM_MAP },
+    { AudioColumn::AUDIOS_TABLE, AudioColumn::CREATE_AUDIO_TABLE },
 };
 const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { PhotoColumn::PHOTOS_TABLE, InsertType::PHOTOS },
@@ -48,6 +50,7 @@ const unordered_map<string, InsertType> TABLE_INSERT_TYPE_MAP = {
     { PhotoMap::TABLE, InsertType::PHOTO_MAP },
     { ANALYSIS_ALBUM_TABLE, InsertType::ANALYSIS_ALBUM },
     { ANALYSIS_PHOTO_MAP_TABLE, InsertType::ANALYSIS_PHOTO_MAP },
+    { AudioColumn::AUDIOS_TABLE, InsertType::AUDIOS },
 };
 const string VALUES_BEGIN = " VALUES (";
 const string VALUES_END = ") ";
@@ -70,6 +73,12 @@ const string INSERT_ANALYSIS_ALBUM = "INSERT INTO " + ANALYSIS_ALBUM_TABLE + "("
     PhotoAlbumColumns::ALBUM_NAME + ") ";
 const string INSERT_ANALYSIS_PHOTO_MAP = "INSERT INTO " + ANALYSIS_PHOTO_MAP_TABLE + "(" + PhotoMap::ALBUM_ID + ", " +
     PhotoMap::ASSET_ID + ")";
+const string INSERT_AUDIO = "INSERT INTO " + AudioColumn::AUDIOS_TABLE + "(" + AudioColumn::MEDIA_ID + ", " +
+    AudioColumn::MEDIA_FILE_PATH + ", " + AudioColumn::MEDIA_SIZE + ", " + AudioColumn::MEDIA_TITLE + ", " +
+    AudioColumn::MEDIA_NAME + ", " + AudioColumn::MEDIA_TYPE + ", " + AudioColumn::MEDIA_DATE_ADDED + ", "  +
+    AudioColumn::MEDIA_DATE_MODIFIED + ", " + AudioColumn::MEDIA_DATE_TAKEN + ", " +
+    AudioColumn::MEDIA_DURATION + ", " + AudioColumn::MEDIA_IS_FAV + ", " + AudioColumn::MEDIA_DATE_TRASHED + ", " +
+    AudioColumn::AUDIO_ARTIST + ")";
 
 int32_t CloneOpenCall::OnCreate(NativeRdb::RdbStore &store)
 {
@@ -146,6 +155,10 @@ void CloneSource::InsertByType(int32_t insertType)
             InsertAnalysisPhotoMap();
             break;
         }
+        case InsertType::AUDIOS: {
+            InsertAudio();
+            break;
+        }
         default:
             MEDIA_INFO_LOG("Invalid insert type");
     }
@@ -177,6 +190,10 @@ void CloneSource::InsertPhoto()
         "'/storage/cloud/files/Photo/4/IMG_1501924357_004.jpg', 85975, 'scr_pic_edit', 'scr_pic_edit.jpg', 1, " +
         "'com.ohos.screenshot', '截图', 1501924257174, 1501924257583, 1501924257, 0, 0, 0, 0, " +
         "592, 720, 1501935124, ''" + VALUES_END); // screenshot, pic, edit
+    cloneStorePtr_->ExecuteSql(INSERT_PHOTO + VALUES_BEGIN + "6, " +
+        "'/storage/cloud/files/Photo/16/IMG_1501924305_005.jpg', 0, 'size_0', 'size_0.jpg', 1, " +
+        "'com.ohos.camera', '相机', 1501924205218, 1501924205423, 1501924205, 0, 0, 0, 0, " +
+        "1280, 960, 0, ''" + VALUES_END); // cam, pic, size = 0
 }
 
 void CloneSource::InsertPhotoAlbum()
@@ -212,6 +229,30 @@ void CloneSource::InsertAnalysisPhotoMap()
 {
     // map_album, map_asset
     cloneStorePtr_->ExecuteSql(INSERT_ANALYSIS_PHOTO_MAP + VALUES_BEGIN + "1, 1" + VALUES_END);
+}
+
+void CloneSource::InsertAudio()
+{
+    // file_id,
+    // data, size, title,
+    // display_name, media_type, date_added, date_modified, date_taken, duration, is_favorite, date_trashed,
+    // artist
+    cloneStorePtr_->ExecuteSql(INSERT_AUDIO + VALUES_BEGIN + "1, " +
+        "'/storage/cloud/files/Audio/16/AUD_1501924014_000.mp3', 4239718, 'Risk It All', " +
+        "'A8_MUSIC_PRODUCTIONS_-_Risk_It_All.mp3', 3, 1501923914046, 1501923914090, 1704038400, 175490, 0, 0, " +
+        "'A8 MUSIC PRODUCTIONS'" + VALUES_END);
+    cloneStorePtr_->ExecuteSql(INSERT_AUDIO + VALUES_BEGIN + "2, " +
+        "'/storage/cloud/files/Audio/1/AUD_1501924014_001.mp3', 5679616, 'Alone', " +
+        "'Alone_-_Color_Out.mp3', 3, 1501923914157, 1501923914200, 1609430400, 245498, 0, 1501924213700, " +
+        "'Color Out'" + VALUES_END); // trashed
+    cloneStorePtr_->ExecuteSql(INSERT_AUDIO + VALUES_BEGIN + "3, " +
+        "'/storage/cloud/files/Audio/2/AUD_1501924014_002.mp3', 2900316, 'Muito Love', " +
+        "'Ed_Napoli_-_Muito_Love.mp3', 3, 1501923914301, 1501923914326, 1704038400, 120633, 1, 0, " +
+        "'Ed Napoli'" + VALUES_END); // favorite
+    cloneStorePtr_->ExecuteSql(INSERT_AUDIO + VALUES_BEGIN + "4, " +
+        "'/storage/cloud/files/Audio/2/AUD_1501924014_003.mp3', 0, 'size_0', " +
+        "'size_0.mp3', 3, 1501923914301, 1501923914326, 1704038400, 120633, 0, 0, " +
+        "'Ed Napoli'" + VALUES_END); // size = 0
 }
 } // namespace Media
 } // namespace OHOS
