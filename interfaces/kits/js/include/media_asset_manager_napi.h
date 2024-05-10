@@ -119,6 +119,7 @@ private:
     static napi_value JSRequestMovingPhoto(napi_env env, napi_callback_info info);
     static napi_value JSRequestVideoFile(napi_env env, napi_callback_info info);
     static napi_value JSCancelRequest(napi_env env, napi_callback_info info);
+    static napi_value JSLoadMovingPhoto(napi_env env, napi_callback_info info);
     static void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
     static void CancelProcessImage(const std::string &photoId);
     static void AddImage(const int fileId, DeliveryMode deliveryMode);
