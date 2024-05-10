@@ -1456,4 +1456,23 @@ bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
     return true;
 }
 
+bool MediaFileUtils::SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret)
+{
+    const std::string split(MOVING_PHOTO_URI_SPLIT);
+    if (uri.empty() || IsMediaLibraryUri(uri)) {
+        MEDIA_ERR_LOG("Failed to split moving photo uri, uri=%{public}s", uri.c_str());
+        return false;
+    }
+    std::string temp = uri;
+    size_t pos = temp.find(split);
+    uint32_t step = split.size();
+    ret.push_back(temp.substr(0, pos));
+    ret.push_back(temp.substr(pos + step));
+    return true;
+}
+
+bool MediaFileUtils::IsMediaLibraryUri(const std::string& uri)
+{
+    return !uri.empty() && uri.find(MOVING_PHOTO_URI_SPLIT) == uri.npos;
+}
 } // namespace OHOS::Media

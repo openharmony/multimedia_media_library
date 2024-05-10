@@ -30,7 +30,7 @@ public:
     MovingPhotoNapi(const std::string& photoUri) : photoUri_(photoUri) {};
     ~MovingPhotoNapi() = default;
     EXPORT static napi_value Init(napi_env env, napi_value exports);
-    static int32_t OpenReadonlyVideoFile(const string& imageUri);
+    static int32_t OpenReadOnlyFile(const string& uri, bool isReadImage);
     static napi_value NewMovingPhotoNapi(napi_env env, const string& photoUri, SourceMode sourceMode);
     std::string GetUri();
     SourceMode GetSourceMode();
