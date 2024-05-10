@@ -142,7 +142,7 @@ void UpgradeRestore::RestoreAudioBatch(int32_t offset)
         infos = QueryAudioFileInfosFromAudio(offset);
     }
 
-    InsertAudio(UPGRADE_RESTORE_ID, infos);
+    InsertAudio(sceneCode_, infos);
 }
 
 std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromAudio(int32_t offset)
@@ -177,6 +177,7 @@ bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::
         return false;
     }
     info.showDateToken = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet);
+    info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
     info.fileType = MediaType::MEDIA_TYPE_AUDIO;
     info.displayName = BackupFileUtils::GetFileNameFromPath(info.filePath);
     info.title = BackupFileUtils::GetFileTitle(info.displayName);
@@ -455,9 +456,9 @@ bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::Res
             BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str());
     }
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
-    info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
+    info.isFavorite = GetInt32Val(EXTERNAL_IS_FAVORITE, resultSet);
     info.fileType = MediaType::MEDIA_TYPE_AUDIO;
-
+    info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
     return true;
 }
 

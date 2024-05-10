@@ -58,6 +58,7 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
         MediaLibraryRdbUtils::UpdateSourceAlbumInternal(mediaLibraryRdb_, updateResult);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
+        BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
         auto watch = MediaLibraryNotify::GetInstance();
         if (watch == nullptr) {
             MEDIA_ERR_LOG("Can not get MediaLibraryNotify Instance");
@@ -265,21 +266,13 @@ void BaseRestore::SetAudioValueFromMetaData(FileInfo &fileInfo, NativeRdb::Value
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
     data->SetFilePath(fileInfo.filePath);
     data->SetFileMediaType(fileInfo.fileType);
-
-    struct stat statInfo = { 0 };
-    if (stat(fileInfo.filePath.c_str(), &statInfo) != 0) {
-        MEDIA_ERR_LOG("stat syscall err %{public}d", errno);
-        return;
-    }
-    int64_t dateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim));
-    if (dateModified == 0) {
-        dateModified = fileInfo.showDateToken;
-    }
-
-    data->SetFileDateModified(dateModified);
+    data->SetFileTitle(fileInfo.title);
+    data->SetFileDateModified(fileInfo.dateModified);
     BackupFileUtils::FillMetadata(data);
+    fileInfo.fileSize = data->GetFileSize();
     MediaType mediaType = data->GetFileMediaType();
 
+    value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
     value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
     value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
     value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
@@ -304,7 +297,6 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
         }
         std::string cloudPath;
         int32_t uniqueId = audioNumber_;
-        audioNumber_++;
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
@@ -314,6 +306,14 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
         fileInfos[i].cloudPath = cloudPath;
         NativeRdb::ValuesBucket value = GetAudioInsertValue(fileInfos[i], cloudPath);
         SetAudioValueFromMetaData(fileInfos[i], value);
+        if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID &&
+            HasSameFile(mediaLibraryRdb_, AudioColumn::AUDIOS_TABLE, fileInfos[i])) {
+            (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
+            MEDIA_WARN_LOG("File %{public}s already exists.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            continue;
+        }
+        audioNumber_++;
         values.emplace_back(value);
     }
     return values;
@@ -344,6 +344,7 @@ void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfo
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
+        BackupFileUtils::ModifyFile(localPath, fileInfos[i].dateModified / MSEC_TO_SEC);
         fileMoveCount++;
     }
     migrateAudioFileNumber_ += fileMoveCount;
@@ -365,7 +366,6 @@ NativeRdb::ValuesBucket BaseRestore::GetAudioInsertValue(const FileInfo &fileInf
 {
     NativeRdb::ValuesBucket value;
     value.PutString(MediaColumn::MEDIA_FILE_PATH, fileInfo.cloudPath);
-    value.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
     value.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
     value.PutInt(MediaColumn::MEDIA_IS_FAV, fileInfo.isFavorite);
     value.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
