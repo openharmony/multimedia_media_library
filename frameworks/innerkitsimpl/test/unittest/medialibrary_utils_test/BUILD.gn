@@ -71,4 +71,3 @@ ohos_unittest("medialibrary_utils_test") {
 
   cflags_cc = cflags
 }
-     

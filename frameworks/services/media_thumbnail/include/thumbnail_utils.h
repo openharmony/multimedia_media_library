@@ -105,12 +105,15 @@ public:
 #endif
     static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
         int &err);
+    EXPORT static bool ResizeThumb(int& width, int& height);
+    EXPORT static bool ResizeLcd(int& width, int& height);
     static bool IsSupportGenAstc();
     EXPORT static void QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
         ThumbnailData &data, int &err);
     static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
     static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     static bool ScaleThumbnailEx(ThumbnailData &data);
+    EXPORT static bool ScaleTargetPixelMap(ThumbnailData &data, const Size &targetSize);
 
     static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
         LoadSourceType sourceType);

@@ -47,8 +47,9 @@ enum class GenerateScene : int32_t {
 
 enum class LoadSourceType : int32_t {
     LOCAL_PHOTO = 0,
+    CLOUD_THUMB,
+    CLOUD_LCD,
     CLOUD_PHOTO,
-    UNKNOWN,
 };
 
 enum class ThumbnailReady : int32_t {

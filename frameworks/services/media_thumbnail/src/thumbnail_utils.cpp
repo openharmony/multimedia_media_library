@@ -257,30 +257,13 @@ bool ThumbnailUtils::ScaleTargetPixelMap(ThumbnailData &data, const Size &target
     return true;
 }
 
-unique_ptr<ImageSource> ThumbnailUtils::LoadImageSource(const std::string &path, uint32_t &err)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("ImageSource::CreateImageSource");
-
-    SourceOptions opts;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
-    if (err != E_OK || !imageSource) {
-        MEDIA_ERR_LOG("Failed to LoadImageSource, pixelmap path: %{public}s exists: %{public}d",
-            path.c_str(), MediaFileUtils::IsFileExists(path));
-        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::IMAGE_SOURCE_CREATE, err);
-        return imageSource;
-    }
-    return imageSource;
-}
-
-
 bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
 {
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
 
-    SourceLoading sourceLoading(desiredSize, data);
-    return sourceLoading.RunLoading();
+    SourceLoader sourceLoader(desiredSize, data);
+    return sourceLoader.RunLoading();
 }
 
 bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isHigh,
@@ -1086,7 +1069,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
     }
     tracer.Finish();
 
-    if (data.isCreatingThumbSource) {
+    if (data.useThumbAsSource) {
         tracer.Start("CenterScale");
         PostProc postProc;
         if (!postProc.CenterScale(desiredSize, *data.source)) {

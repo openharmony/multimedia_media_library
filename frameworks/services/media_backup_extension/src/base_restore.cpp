@@ -48,8 +48,11 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         RestorePhoto();
-        MEDIA_INFO_LOG("migrate database number: %{public}lld, file number: %{public}lld",
-            (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
+        RestoreAudio();
+        MEDIA_INFO_LOG("migrate database number: %{public}lld, file number: %{public}lld," \
+            "audio database number:%{public}lld, audio file number:%{public}lld",
+            (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_,
+            (long long) migrateAudioDatabaseNumber_, (long long) migrateAudioFileNumber_);
         std::unordered_map<int32_t, int32_t>  updateResult;
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_, updateResult);
         MediaLibraryRdbUtils::UpdateSourceAlbumInternal(mediaLibraryRdb_, updateResult);
@@ -88,10 +91,14 @@ int32_t BaseRestore::Init(void)
     }
     migrateDatabaseNumber_ = 0;
     migrateFileNumber_ = 0;
+    migrateAudioDatabaseNumber_ = 0;
+    migrateAudioFileNumber_ = 0;
     imageNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, IMAGE_ASSET_TYPE);
     videoNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, VIDEO_ASSET_TYPE);
+    audioNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, AUDIO_ASSET_TYPE);
     MEDIA_INFO_LOG("imageNumber: %{public}d", (int)imageNumber_);
     MEDIA_INFO_LOG("videoNumber: %{public}d", (int)videoNumber_);
+    MEDIA_INFO_LOG("audioNumber: %{public}d", (int)audioNumber_);
     return E_OK;
 }
 
@@ -225,6 +232,146 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
 }
 
+static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
+{
+    int64_t dateAdded = metadata->GetFileDateAdded();
+    if (dateAdded != 0) {
+        value.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
+        return;
+    }
+
+    int64_t dateTaken = metadata->GetDateTaken();
+    if (dateTaken == 0) {
+        int64_t dateModified = metadata->GetFileDateModified();
+        if (dateModified == 0) {
+            dateAdded = MediaFileUtils::UTCTimeMilliSeconds();
+            MEDIA_WARN_LOG("Invalid dateAdded time, use current time instead: %{public}lld",
+                static_cast<long long>(dateAdded));
+        } else {
+            dateAdded = dateModified;
+            MEDIA_WARN_LOG("Invalid dateAdded time, use dateModified instead: %{public}lld",
+                static_cast<long long>(dateAdded));
+        }
+    } else {
+        dateAdded = dateTaken * MSEC_TO_SEC;
+        MEDIA_WARN_LOG("Invalid dateAdded time, use dateTaken instead: %{public}lld",
+            static_cast<long long>(dateAdded));
+    }
+    value.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
+}
+
+void BaseRestore::SetAudioValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
+{
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath(fileInfo.filePath);
+    data->SetFileMediaType(fileInfo.fileType);
+
+    struct stat statInfo = { 0 };
+    if (stat(fileInfo.filePath.c_str(), &statInfo) != 0) {
+        MEDIA_ERR_LOG("stat syscall err %{public}d", errno);
+        return;
+    }
+    int64_t dateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim));
+    if (dateModified == 0) {
+        dateModified = fileInfo.showDateToken;
+    }
+
+    data->SetFileDateModified(dateModified);
+    BackupFileUtils::FillMetadata(data);
+    MediaType mediaType = data->GetFileMediaType();
+
+    value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
+    value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
+    value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
+    value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
+    value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
+    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
+    value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
+    value.PutString(AudioColumn::AUDIO_ALBUM, data->GetAlbum());
+    value.PutString(AudioColumn::AUDIO_ARTIST, data->GetFileArtist());
+    InsertDateAdded(data, value);
+}
+
+std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t sceneCode,
+    std::vector<FileInfo> &fileInfos)
+{
+    vector<NativeRdb::ValuesBucket> values;
+    for (size_t i = 0; i < fileInfos.size(); i++) {
+        if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
+            MEDIA_WARN_LOG("File is not exist, filePath = %{public}s.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            continue;
+        }
+        std::string cloudPath;
+        int32_t uniqueId = audioNumber_;
+        audioNumber_++;
+        int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
+            MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
+        if (errCode != E_OK) {
+            MEDIA_ERR_LOG("Create Asset Path failed, errCode=%{public}d", errCode);
+            continue;
+        }
+        fileInfos[i].cloudPath = cloudPath;
+        NativeRdb::ValuesBucket value = GetAudioInsertValue(fileInfos[i], cloudPath);
+        SetAudioValueFromMetaData(fileInfos[i], value);
+        values.emplace_back(value);
+    }
+    return values;
+}
+
+void BaseRestore::InsertAudio(int32_t sceneCode, std::vector<FileInfo> &fileInfos)
+{
+    if (mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
+        return;
+    }
+    if (fileInfos.empty()) {
+        MEDIA_ERR_LOG("fileInfos are empty");
+        return;
+    }
+    int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
+    vector<NativeRdb::ValuesBucket> values = GetAudioInsertValues(sceneCode, fileInfos);
+    int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t fileMoveCount = 0;
+    for (size_t i = 0; i < fileInfos.size(); i++) {
+        if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
+            continue;
+        }
+        std::string tmpPath = fileInfos[i].cloudPath;
+        std::string localPath = tmpPath.replace(0, RESTORE_AUDIO_CLOUD_DIR.length(), RESTORE_AUDIO_LOCAL_DIR);
+        if (!BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode)) {
+            MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            continue;
+        }
+        fileMoveCount++;
+    }
+    migrateAudioFileNumber_ += fileMoveCount;
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+
+    int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t rowNum = 0;
+    int32_t errCode = BatchInsertWithRetry(AudioColumn::AUDIOS_TABLE, values, rowNum);
+    if (errCode != E_OK) {
+        return;
+    }
+    migrateAudioDatabaseNumber_ += rowNum;
+    MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld and move " \
+        "%{public}ld file cost %{public}ld.", (long)(startInsert - startGenerate), (long)rowNum,
+        (long)(startInsert - startMove), (long)fileMoveCount, (long)(end - startMove));
+}
+
+NativeRdb::ValuesBucket BaseRestore::GetAudioInsertValue(const FileInfo &fileInfo, const std::string &newPath) const
+{
+    NativeRdb::ValuesBucket value;
+    value.PutString(MediaColumn::MEDIA_FILE_PATH, fileInfo.cloudPath);
+    value.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
+    value.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
+    value.PutInt(MediaColumn::MEDIA_IS_FAV, fileInfo.isFavorite);
+    value.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
+    return value;
+}
+
 void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)
 {
     MEDIA_INFO_LOG("Start insert %{public}zu photos", fileInfos.size());
@@ -327,6 +474,58 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
         }
     }
     return E_OK;
+}
+
+bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+    FileInfo &fileInfo)
+{
+    string srcPath = fileInfo.filePath;
+    string dstPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
+    struct stat srcStatInfo {};
+    struct stat dstStatInfo {};
+
+    if (access(dstPath.c_str(), F_OK)) {
+        return false;
+    }
+    if (stat(srcPath.c_str(), &srcStatInfo) != 0) {
+        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", srcPath.c_str(), errno);
+        return false;
+    }
+    if (stat(dstPath.c_str(), &dstStatInfo) != 0) {
+        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", dstPath.c_str(), errno);
+        return false;
+    }
+    if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
+        !HasSameFile(rdbStore, tableName, fileInfo)) { /* file size & last modify time */
+        MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs",
+            (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
+            (long long)dstStatInfo.st_mtime);
+        return false;
+    }
+    fileInfo.isNew = false;
+    return true;
+}
+
+bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+    FileInfo &fileInfo)
+{
+    string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+        tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
+        MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " + to_string(fileInfo.dateModified);
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return false;
+    }
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (fileId <= 0 || cloudPath.empty()) {
+        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
+        return false;
+    }
+    fileInfo.fileIdNew = fileId;
+    fileInfo.cloudPath = cloudPath;
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

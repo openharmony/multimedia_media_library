@@ -25,6 +25,7 @@
 #include "album_asset.h"
 #include "datashare_abs_result_set.h"
 #include "datashare_predicates.h"
+#include "directory_ex.h"
 #include "fetch_result.h"
 #include "file_asset.h"
 #include "image_source.h"
@@ -42,6 +43,7 @@
 #include "string_ex.h"
 #include "thumbnail_const.h"
 #include "unique_fd.h"
+#include "moving_photo_utils.h"
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 #include "purgeable_pixelmap_builder.h"
@@ -729,6 +731,9 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetAstc(const Uri &uri)
 
 int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
 {
+    if (!MovingPhotoUtils::IsMediaLibraryUri(uri)) {
+        return MovingPhotoUtils::OpenReadOnlyFile(uri, false);
+    }
     if (!CheckPhotoUri(uri)) {
         MEDIA_ERR_LOG("invalid uri: %{public}s", uri.c_str());
         return E_ERR;
@@ -743,6 +748,22 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
     Uri openVideoUri(videoUri);
     return sDataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+}
+
+std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
+{
+    if (uri.empty()) {
+        MEDIA_ERR_LOG("invalid uri: %{public}s", uri.c_str());
+        return "";
+    }
+    if (MovingPhotoUtils::IsMediaLibraryUri(uri)) {
+        return uri;
+    }
+    std::vector<std::string> uris;
+    if (!MovingPhotoUtils::SplitMovingPhotoUri(uri, uris)) {
+        return "";
+    }
+    return uris[0];
 }
 } // namespace Media
 } // namespace OHOS

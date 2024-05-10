@@ -81,7 +81,6 @@ const std::map<string, string> g_testExt2MimeType = {
     { "webarchivexml", "application/x-webarchive-xml" },
     { "stl", "application/vnd.ms-pki.stl" },
     { "pcf", "application/x-font" },
-    { "yt", "application/vnd.youtube.yt" },
     { "imy", "audio/imelody" },
     { "avif", "image/avif" },
     { "vor", "application/vnd.stardivision.writer" },

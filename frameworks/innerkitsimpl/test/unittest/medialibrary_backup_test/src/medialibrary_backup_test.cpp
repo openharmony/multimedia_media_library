@@ -19,6 +19,8 @@
 #include <sys/types.h>
 #include <utime.h>
 
+#define private public
+#define protected public
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "external_source.h"
@@ -26,6 +28,8 @@
 #include "media_log.h"
 #include "upgrade_restore.h"
 #include "media_file_utils.h"
+#undef private
+#undef protected
 
 using namespace std;
 using namespace OHOS;
@@ -401,6 +405,163 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_modify_file, TestSize.Leve
     int64_t afterModifiedTime = MediaFileUtils::Timespec2Millisecond(bufAfter.st_mtim);
     ASSERT_TRUE(afterModifiedTime != beforeModifiedTime);
     MEDIA_INFO_LOG("medialib_backup_test_modify_file end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_audio, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_audio start");
+    int32_t uniqueId = 2;
+    int32_t fileType = 3;
+    std::string extension = "mp3";
+    std::string cloudPath;
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileType, extension, cloudPath);
+    EXPECT_EQ(errCode, E_OK);
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_audio end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_video, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_video start");
+    int32_t uniqueId = 2;
+    int32_t fileType = 2;
+    std::string extension = "mp4";
+    std::string cloudPath;
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileType, extension, cloudPath);
+    EXPECT_EQ(errCode, E_OK);
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_video end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_empty, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_empty start");
+    string path;
+    string res = BackupFileUtils::GetFileNameFromPath(path);
+    EXPECT_EQ(res, "");
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_empty end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_not_have, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_not_have start");
+    string path = "test";
+    string res = BackupFileUtils::GetFileNameFromPath(path);
+    EXPECT_EQ(res, "");
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_not_have end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_ok, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_ok start");
+    string path = "test/ee/ee";
+    string res = BackupFileUtils::GetFileNameFromPath(path);
+    EXPECT_NE(res, "");
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_ok end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_dispalyName_empty, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_dispalyName_empty start");
+    string displayName;
+    string res = BackupFileUtils::GetFileTitle(displayName);
+    EXPECT_EQ(res, "");
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_dispalyName_empty end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_ok, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_ok start");
+    string displayName = "test.mp3";
+    string res = BackupFileUtils::GetFileTitle(displayName);
+    EXPECT_NE(res, "");
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_ok end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_UPGRADE_RESTORE_ID, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("RestoreAudio_sceneCode_UPGRADE_RESTORE_ID start");
+    restoreService->RestoreAudio();
+    std::string queryAudio = "SELECT file_id from Audios where display_name ='audio1.mp3'";
+    auto resultSet = photosStorePtr->QuerySql(queryAudio);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("RestoreAudio_sceneCode_UPGRADE_RESTORE_ID end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_Clone, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("RestoreAudio_sceneCode_Clone start");
+    restoreService->sceneCode_ = DUAL_FRAME_CLONE_RESTORE_ID;
+    restoreService->RestoreAudio();
+    std::string queryAudio = "SELECT file_id from Audios where display_name ='audio1.mp3'";
+    auto resultSet = photosStorePtr->QuerySql(queryAudio);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("RestoreAudio_sceneCode_Clone end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_no_audioRdb, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_no_db start");
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    upgrade->RestoreAudioBatch(0);
+    std::string queryAudio = "SELECT file_id from Audios where display_name ='audio1.mp3'";
+    auto resultSet = photosStorePtr->QuerySql(queryAudio);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_no_db end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_RestoreAudioBatch_clone_fake_audiodb, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_fake_audiodb start");
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    upgrade->audioRdb_ = photosStorePtr;
+    upgrade->RestoreAudioBatch(0);
+    std::string queryAudio = "SELECT file_id from Audios where display_name ='audio1.mp3'";
+    auto resultSet = photosStorePtr->QuerySql(queryAudio);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("RestoreAudio_RestoreAudioBatch_clone_no_db end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_ParseResultSetFromAudioDb_return_false, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("RestoreAudio_ParseResultSetFromAudioDb_return_false start");
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    std::shared_ptr<NativeRdb::ResultSet> resultSet;
+    FileInfo info;
+    bool res = upgrade->ParseResultSetFromAudioDb(resultSet, info);
+    EXPECT_NE(res, true);
+    MEDIA_INFO_LOG("RestoreAudio_ParseResultSetFromAudioDb_return_false end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_GetAudioInsertValues_fileInfos_empty, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_fileInfos_empty start");
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    std::vector<FileInfo> fileInfos;
+    auto res = upgrade->GetAudioInsertValues(0, fileInfos);
+    EXPECT_EQ(res.size(), 0);
+    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_fileInfos_empty end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, RestoreAudio_GetAudioInsertValues_file_not_exit, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_file_not_exit start");
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    std::vector<FileInfo> fileInfos;
+    FileInfo info;
+    fileInfos.push_back(info);
+    NativeRdb::ValuesBucket value;
+    upgrade->SetAudioValueFromMetaData(info, value);
+    auto res = upgrade->GetAudioInsertValues(0, fileInfos);
+    EXPECT_EQ(res.size(), 0);
+    MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_file_not_exit end");
 }
 } // namespace Media
 } // namespace OHOS

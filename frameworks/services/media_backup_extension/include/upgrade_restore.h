@@ -32,20 +32,29 @@ public:
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) const override;
     std::vector<FileInfo> QueryFileInfosFromExternal(int32_t offset, int32_t maxId, bool isCamera);
+    std::vector<FileInfo> QueryAudioFileInfosFromExternal(int32_t offset);
+    std::vector<FileInfo> QueryAudioFileInfosFromAudio(int32_t offset);
     int32_t QueryNotSyncTotalNumber(int32_t offset, bool isCamera);
     void InitGarbageAlbum();
     void HandleClone();
 
 private:
     void RestorePhoto(void) override;
+    void RestoreAudio(void) override;
     void HandleRestData(void) override;
     bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
-    bool ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
+    bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
+    bool ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
+        int mediaType = DUAL_MEDIA_TYPE::IMAGE_TYPE);
+    bool ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
     bool ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
     void RestoreFromGallery();
     void RestoreFromExternal(bool isCamera);
+    void RestoreAudioFromExternal();
+    void RestoreAudioFromFile();
     bool IsValidDir(const std::string &path);
     void RestoreBatch(int32_t offset);
+    void RestoreAudioBatch(int32_t offset);
     void RestoreExternalBatch(int32_t offset, int32_t maxId, bool isCamera, int32_t type);
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath) override;
@@ -58,15 +67,18 @@ private:
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> externalRdb_;
+    std::shared_ptr<NativeRdb::RdbStore> audioRdb_;
     std::string galleryDbPath_;
     std::string filePath_;
     std::string externalDbPath_;
     std::string appDataPath_;
     std::string galleryAppName_;
     std::string mediaAppName_;
+    std::string audioAppName_;
     std::set<std::string> cacheSet_;
     std::unordered_map<std::string, std::string> nickMap_;
     bool sceneCode_;
+    std::string audioDbPath_;
 };
 } // namespace Media
 } // namespace OHOS

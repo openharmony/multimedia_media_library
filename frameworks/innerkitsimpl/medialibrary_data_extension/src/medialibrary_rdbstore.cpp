@@ -1348,6 +1348,16 @@ static void AddVideoLabelTable(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpdateVideoLabelTable(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_analysis_video_label",
+        CREATE_TAB_ANALYSIS_VIDEO_LABEL,
+    };
+    MEDIA_INFO_LOG("start update video label tables");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void AddSourceAlbumTrigger(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -2478,6 +2488,10 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_CREATE_PHOTOS_EXT_TABLE) {
         CreatePhotosExtTable(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_VIDEO_LABEL_TABEL) {
+        UpdateVideoLabelTable(store);
     }
 }
 

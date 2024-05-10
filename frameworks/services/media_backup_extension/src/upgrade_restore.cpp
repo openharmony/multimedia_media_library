@@ -30,14 +30,13 @@
 
 namespace OHOS {
 namespace Media {
-constexpr int32_t GALLERY_IMAGE_TYPE = 1;
-constexpr int32_t GALLERY_VIDEO_TYPE = 3;
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
     galleryAppName_ = galleryAppName;
     mediaAppName_ = mediaAppName;
     sceneCode_ = sceneCode;
+    audioAppName_ = "Audio";
 }
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode,
@@ -55,6 +54,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
     if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
         filePath_ = upgradeFilePath;
         galleryDbPath_ = upgradeFilePath + "/" + GALLERY_DB_NAME;
+        audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
     } else {
         filePath_ = upgradeFilePath;
         galleryDbPath_ = backupRetoreDir + "/" + galleryAppName_ + "/ce/databases/gallery.db";
@@ -84,8 +84,129 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             return E_FAIL;
         }
     }
+
+    if (!MediaFileUtils::IsFileExists(audioDbPath_)) {
+        MEDIA_ERR_LOG("audio mediaInfo db is not exist.");
+    } else {
+        int32_t audioErr = BackupDatabaseUtils::InitDb(audioRdb_, AUDIO_DB_NAME, audioDbPath_,
+            audioAppName_, false);
+        if (audioRdb_ == nullptr) {
+            MEDIA_ERR_LOG("audio init rdb fail, err = %{public}d", audioErr);
+            return E_FAIL;
+        }
+    }
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
+}
+
+void UpgradeRestore::RestoreAudio(void)
+{
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        RestoreAudioFromExternal();
+    } else {
+        RestoreAudioFromFile();
+    }
+    (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
+    (void)NativeRdb::RdbHelper::DeleteRdbStore(audioDbPath_);
+}
+
+void UpgradeRestore::RestoreAudioFromFile()
+{
+    MEDIA_INFO_LOG("start restore audio from audio_MediaInfo0");
+    int32_t totalNumber = BackupDatabaseUtils::QueryInt(audioRdb_, QUERY_DUAL_CLONE_AUDIO_COUNT, CUSTOM_COUNT);
+    MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
+    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset });
+    }
+    ffrt::wait();
+}
+
+void UpgradeRestore::RestoreAudioFromExternal(void)
+{
+    MEDIA_INFO_LOG("start restore audio from external");
+    int32_t totalNumber = BackupDatabaseUtils::QueryInt(externalRdb_, QUERY_AUDIO_COUNT, CUSTOM_COUNT);
+    MEDIA_INFO_LOG("totalNumber = %{public}d", totalNumber);
+    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset });
+    }
+    ffrt::wait();
+}
+
+void UpgradeRestore::RestoreAudioBatch(int32_t offset)
+{
+    MEDIA_INFO_LOG("start restore audio from external, offset: %{public}d", offset);
+    std::vector<FileInfo> infos;
+    if (sceneCode_ == UPGRADE_RESTORE_ID) {
+        infos = QueryAudioFileInfosFromExternal(offset);
+    } else {
+        infos = QueryAudioFileInfosFromAudio(offset);
+    }
+
+    InsertAudio(UPGRADE_RESTORE_ID, infos);
+}
+
+std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromAudio(int32_t offset)
+{
+    std::vector<FileInfo> result;
+    result.reserve(QUERY_COUNT);
+    if (audioRdb_ == nullptr) {
+        MEDIA_ERR_LOG("audioRdb_ is nullptr, Maybe init failed.");
+        return result;
+    }
+    std::string queryAllAudioByCount = QUERY_ALL_AUDIOS_FROM_AUDIODB + "limit " + std::to_string(offset) + ", " +
+        std::to_string(QUERY_COUNT);
+    auto resultSet = audioRdb_->QuerySql(queryAllAudioByCount);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query resultSql is null.");
+        return result;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        FileInfo tmpInfo;
+        if (ParseResultSetFromAudioDb(resultSet, tmpInfo)) {
+            result.emplace_back(tmpInfo);
+        }
+    }
+    return result;
+}
+
+bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
+{
+    std::string oldPath = GetStringVal(AUDIO_DATA, resultSet);
+    if (!ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+        return false;
+    }
+    info.showDateToken = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet);
+    info.fileType = MediaType::MEDIA_TYPE_AUDIO;
+    info.displayName = BackupFileUtils::GetFileNameFromPath(info.filePath);
+    info.title = BackupFileUtils::GetFileTitle(info.displayName);
+    info.isFavorite = 0;
+    info.recycledTime = 0;
+    return true;
+}
+
+std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromExternal(int32_t offset)
+{
+    std::vector<FileInfo> result;
+    result.reserve(QUERY_COUNT);
+    if (externalRdb_ == nullptr) {
+        MEDIA_ERR_LOG("externalRdb_ is nullptr, Maybe init failed.");
+        return result;
+    }
+    std::string queryAllAudioByCount = QUERY_ALL_AUDIOS_FROM_EXTERNAL + "limit " + std::to_string(offset) + ", " +
+        std::to_string(QUERY_COUNT);
+    auto resultSet = externalRdb_->QuerySql(queryAllAudioByCount);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query resultSql is null.");
+        return result;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        FileInfo tmpInfo;
+        if (ParseResultSetFromExternal(resultSet, tmpInfo, DUAL_MEDIA_TYPE::AUDIO_TYPE)) {
+            result.emplace_back(tmpInfo);
+        }
+    }
+    return result;
 }
 
 void UpgradeRestore::RestorePhoto(void)
@@ -105,7 +226,6 @@ void UpgradeRestore::RestorePhoto(void)
             (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
     }
     (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
-    (void)NativeRdb::RdbHelper::DeleteRdbStore(externalDbPath_);
 }
 
 void UpgradeRestore::AnalyzeSource()
@@ -144,8 +264,9 @@ void UpgradeRestore::AnalyzeExternalSource()
     }
     int32_t externalImageCount = BackupDatabaseUtils::QueryExternalImageCount(externalRdb_);
     int32_t externalVideoCount = BackupDatabaseUtils::QueryExternalVideoCount(externalRdb_);
-    MEDIA_INFO_LOG("external analyze result: {externalImageCount: %{public}d, externalVideoCount: %{public}d",
-        externalImageCount, externalVideoCount);
+    int32_t externalAudioCount = BackupDatabaseUtils::QueryExternalAudioCount(externalRdb_);
+    MEDIA_INFO_LOG("external analyze result: {externalImageCount: %{public}d, externalVideoCount: %{public}d, \
+        externalAudioCount: %{public}d", externalImageCount, externalVideoCount, externalAudioCount);
 }
 
 void UpgradeRestore::InitGarbageAlbum()
@@ -314,6 +435,32 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
     return result;
 }
 
+bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
+{
+    int32_t mediaType = GetInt32Val(EXTERNAL_MEDIA_TYPE, resultSet);
+    if (mediaType != DUAL_MEDIA_TYPE::AUDIO_TYPE) {
+        MEDIA_ERR_LOG("Invalid media type: %{public}d.", mediaType);
+        return false;
+    }
+    std::string oldPath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
+    if (!BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+        return false;
+    }
+    info.displayName = GetStringVal(EXTERNAL_DISPLAY_NAME, resultSet);
+    info.title = GetStringVal(EXTERNAL_TITLE, resultSet);
+    info.fileSize = GetInt64Val(EXTERNAL_FILE_SIZE, resultSet);
+    if (info.fileSize < GARBAGE_PHOTO_SIZE) {
+        MEDIA_WARN_LOG("maybe garbage path = %{public}s.",
+            BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str());
+    }
+    info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
+    info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
+    info.fileType = MediaType::MEDIA_TYPE_AUDIO;
+
+    return true;
+}
+
 std::vector<FileInfo> UpgradeRestore::QueryFileInfosFromExternal(int32_t offset, int32_t maxId, bool isCamera)
 {
     std::vector<FileInfo> result;
@@ -359,7 +506,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
 {
     // only parse image and video
     int32_t mediaType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
-    if (mediaType != GALLERY_IMAGE_TYPE && mediaType != GALLERY_VIDEO_TYPE) {
+    if (mediaType != DUAL_MEDIA_TYPE::IMAGE_TYPE && mediaType != DUAL_MEDIA_TYPE::VIDEO_TYPE) {
         MEDIA_ERR_LOG("Invalid media type: %{public}d.", mediaType);
         return false;
     }
@@ -380,7 +527,8 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     }
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
-    info.fileType = (mediaType == GALLERY_VIDEO_TYPE) ? MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
+    info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
+        MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
@@ -402,9 +550,15 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     return isSuccess;
 }
 
-bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
+bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
+    int mediaType)
 {
-    bool isSuccess = ParseResultSet(resultSet, info);
+    bool isSuccess;
+    if (mediaType == DUAL_MEDIA_TYPE::AUDIO_TYPE) {
+        isSuccess = ParseResultSetForAudio(resultSet, info);
+    } else {
+        isSuccess = ParseResultSet(resultSet, info);
+    }
     if (!isSuccess) {
         MEDIA_ERR_LOG("ParseResultSetFromExternal fail");
         return isSuccess;

@@ -383,6 +383,8 @@ MediaType MediaFileUri::GetMediaTypeFromUri(const std::string &uri)
         return Media::MEDIA_TYPE_ALBUM;
     } else if (MediaFileUtils::StartsWith(uri, FILE_URI_PREFIX)) {
         return Media::MEDIA_TYPE_FILE;
+    } else if (MediaFileUtils::StartsWith(uri, HIGHLIGHT_URI_PREFIX)) {
+        return Media::MEDIA_TYPE_FILE;
     }
     return Media::MEDIA_TYPE_DEFAULT;
 }
