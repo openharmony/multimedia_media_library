@@ -475,5 +475,57 @@ int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string 
     }
     return E_OK;
 }
+
+bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+    FileInfo &fileInfo)
+{
+    string srcPath = fileInfo.filePath;
+    string dstPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
+    struct stat srcStatInfo {};
+    struct stat dstStatInfo {};
+
+    if (access(dstPath.c_str(), F_OK)) {
+        return false;
+    }
+    if (stat(srcPath.c_str(), &srcStatInfo) != 0) {
+        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", srcPath.c_str(), errno);
+        return false;
+    }
+    if (stat(dstPath.c_str(), &dstStatInfo) != 0) {
+        MEDIA_ERR_LOG("Failed to get file %{private}s StatInfo, err=%{public}d", dstPath.c_str(), errno);
+        return false;
+    }
+    if ((srcStatInfo.st_size != dstStatInfo.st_size || srcStatInfo.st_mtime != dstStatInfo.st_mtime) &&
+        !HasSameFile(rdbStore, tableName, fileInfo)) { /* file size & last modify time */
+        MEDIA_INFO_LOG("Size (%{public}lld -> %{public}lld) or mtime (%{public}lld -> %{public}lld) differs",
+            (long long)srcStatInfo.st_size, (long long)dstStatInfo.st_size, (long long)srcStatInfo.st_mtime,
+            (long long)dstStatInfo.st_mtime);
+        return false;
+    }
+    fileInfo.isNew = false;
+    return true;
+}
+
+bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+    FileInfo &fileInfo)
+{
+    string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+        tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
+        MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
+        MediaColumn::MEDIA_DATE_MODIFIED + " = " + to_string(fileInfo.dateModified);
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return false;
+    }
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (fileId <= 0 || cloudPath.empty()) {
+        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
+        return false;
+    }
+    fileInfo.fileIdNew = fileId;
+    fileInfo.cloudPath = cloudPath;
+    return true;
+}
 } // namespace Media
 } // namespace OHOS
