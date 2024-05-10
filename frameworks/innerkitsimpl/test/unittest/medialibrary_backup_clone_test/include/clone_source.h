@@ -35,6 +35,7 @@ public:
     void InsertPhotoMap();
     void InsertAnalysisAlbum();
     void InsertAnalysisPhotoMap();
+    void InsertAudio();
     std::shared_ptr<NativeRdb::RdbStore> cloneStorePtr_;
 };
 

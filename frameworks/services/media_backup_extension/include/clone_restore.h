@@ -45,7 +45,7 @@ private:
         int32_t sourceType);
     int32_t MoveAsset(FileInfo &fileInfo);
     bool IsFilePathExist(const std::string &filePath) const;
-    int32_t QueryAlbumTotalNumber(const std::string &tableName);
+    int32_t QueryTotalNumber(const std::string &tableName);
     std::vector<AlbumInfo> QueryAlbumInfos(const std::string &tableName, int32_t offset);
     bool ParseAlbumResultSet(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         AlbumInfo &albumInfo);
@@ -73,18 +73,27 @@ private:
     void BatchInsertMap(std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
     NativeRdb::ValuesBucket GetInsertValue(const MapInfo &mapInfo) const;
     NativeRdb::ValuesBucket GetInsertValue(const AlbumInfo &albumInfo, const std::string &tableName) const;
-    void CheckTableColumnStatus();
+    void CheckTableColumnStatus(const std::vector<std::vector<std::string>> &cloneTableList);
     bool HasColumns(const std::unordered_map<std::string, std::string> &columnInfoMap,
         const std::unordered_set<std::string> &columnSet);
     bool HasColumn(const std::unordered_map<std::string, std::string> &columnInfoMap, const std::string &columnName);
     void GetAlbumExtraQueryWhereClause(const std::string &tableName);
-    bool IsSameFile(FileInfo &fileInfo);
-    bool HasSameFile(FileInfo &fileInfo);
     bool IsReadyForRestore(const std::string &tableName);
     void UpdateAlbumToNotifySet(const std::string &tableName, const std::unordered_set<int32_t> &albumSet);
     void NotifyAlbum();
     void PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
         const std::unordered_map<std::string, std::string> &commonColumnInfoMap) const;
+    void RestoreGallery();
+    bool PrepareCloudPath(const std::string &tableName, FileInfo &fileInfo);
+    void RestoreMusic();
+    std::vector<FileInfo> QueryFileInfos(const std::string &tableName, int32_t offset);
+    bool ParseResultSet(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        FileInfo &fileInfo);
+    void InsertAudio(std::vector<FileInfo> &fileInfos);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::string &tableName, int32_t sceneCode,
+        std::vector<FileInfo> &fileInfos, int32_t sourceType, const std::unordered_set<int32_t> &excludedFileIdSet);
+    NativeRdb::ValuesBucket GetInsertValue(const std::string &tableName, const FileInfo &fileInfo,
+        const std::string &newPath, int32_t sourceType) const;
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
