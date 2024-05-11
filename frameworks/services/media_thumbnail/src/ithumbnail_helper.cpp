@@ -263,8 +263,8 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    data.useThumbAsSource = false;
-    data.isLoadingFromThumbToLcd = false;
+    data.loaderOpts.decodeInThumbSize = false;
+    data.loaderOpts.sourceLoadingBeginWithThumb = false;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("load source is nullptr path: %{public}s", opts.path.c_str());
         return false;
@@ -396,17 +396,16 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const Thumb
 
 int32_t IThumbnailHelper::UpdateAstcState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
-    int32_t err = 0;
-    ValuesBucket values;
-    int changedRows;
     int64_t thumbnail_status = 0;
-    if (data.needUpload) {
+    if (data.loaderOpts.needUpload) {
         thumbnail_status = static_cast<int64_t>(ThumbnailReady::THUMB_TO_UPLOAD);
     } else {
         thumbnail_status = static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_COMPLETED);
     }
+    ValuesBucket values;
+    int changedRows;
     values.PutLong(PhotoColumn::PHOTO_HAS_ASTC, thumbnail_status);
-    err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
@@ -432,8 +431,8 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 
 bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    data.useThumbAsSource = true;
-    data.isLoadingFromThumbToLcd = false;
+    data.loaderOpts.decodeInThumbSize = true;
+    data.loaderOpts.sourceLoadingBeginWithThumb = false;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateThumbnail failed, try to load source failed, id: %{public}s", data.id.c_str());
         return false;
@@ -490,6 +489,7 @@ bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data
         return false;
     }
 
+    data.loaderOpts.decodeInThumbSize = true;
     if (!ThumbnailUtils::ScaleThumbnailEx(data)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
@@ -521,8 +521,8 @@ std::string GetAvailableThumbnailSuffix(ThumbnailData &data)
 bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     MEDIA_INFO_LOG("Start DoCreateAstc, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
-    data.useThumbAsSource = true;
-    data.isLoadingFromThumbToLcd = true;
+    data.loaderOpts.decodeInThumbSize = true;
+    data.loaderOpts.sourceLoadingBeginWithThumb = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
         return false;

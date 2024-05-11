@@ -40,6 +40,22 @@ public:
         int64_t finishTime {0};
     };
 
+    struct SourceLoaderOptions {
+        // if false, target decode size is LCD size
+        bool decodeInThumbSize {false};
+
+        // if true, load source begin with thumb to lcd, then origin,
+        // if false, load source begin with origin
+        bool sourceLoadingBeginWithThumb {false};
+        bool needUpload {false};
+
+        // if true, source can be read from cloud
+        bool isCloudLoading {false};
+
+        // if true, read source from cloud if not found in local
+        bool isForeGroundLoading {false};
+    };
+
     EXPORT ThumbnailData() = default;
 
     EXPORT virtual ~ThumbnailData()
@@ -57,15 +73,6 @@ public:
 
     // Loaded lcd source can be resized to generate thumbnail in order
     EXPORT bool needResizeLcd {false};
-    EXPORT bool useThumbAsSource {false};
-    EXPORT bool isLoadingFromThumbToLcd {false};
-    EXPORT bool needUpload {false};
-
-    // if true, source can be read from cloud
-    EXPORT bool isCloudLoading {false};
-
-    // if true, read source from cloud if not found in local
-    EXPORT bool isForeGroundLoading {false};
     EXPORT std::shared_ptr<PixelMap> source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
@@ -84,6 +91,7 @@ public:
     EXPORT Size lcdDesiredSize;
     EXPORT Size thumbDesiredSize;
     EXPORT GenerateStats stats;
+    EXPORT SourceLoaderOptions loaderOpts;
 };
 } // namespace Media
 } // namespace OHOS
