@@ -126,6 +126,7 @@ private:
     static void OnHandleRequestImage(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static void OnHandleRequestVideo(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
     static void SendFile(napi_env env, int srcFd, int destFd, napi_value &result, off_t fileSize);
+    static int32_t GetFdFromSandBoxUri(const std::string &sandBoxUri);
 public:
     std::mutex sMediaAssetMutex_;
 };

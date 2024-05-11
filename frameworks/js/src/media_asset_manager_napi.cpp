@@ -26,6 +26,7 @@
 #include "access_token.h"
 #include "accesstoken_kit.h"
 #include "dataobs_mgr_client.h"
+#include "directory_ex.h"
 #include "file_asset_napi.h"
 #include "file_uri.h"
 #include "image_source.h"
@@ -1036,6 +1037,7 @@ napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callba
 
     return promise;
 }
+
 void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::string responseUri,
     napi_value &result, bool isSource, napi_env env)
 {
@@ -1066,8 +1068,7 @@ void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::str
         NAPI_DEBUG_LOG("File get stat failed, %{public}d", errno);
         return;
     }
-    Uri destUri(responseUri);
-    int destFd = UserFileClient::OpenFile(destUri, MEDIA_FILEMODE_WRITETRUNCATE);
+    int destFd = GetFdFromSandBoxUri(responseUri);
     if (destFd < 0) {
         close(srcFd);
         napi_get_boolean(env, false, &result);
@@ -1218,6 +1219,22 @@ napi_value MediaAssetManagerNapi::JSLoadMovingPhoto(napi_env env, napi_callback_
     CHECK_NULLPTR_RET(ParseArgsForLoadMovingPhoto(env, asyncContext->argc, asyncContext->argv, asyncContext));
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSLoadMovingPhoto", JSLoadMovingPhotoExecute,
         JSLoadMovingPhotoComplete);
+}
+
+int32_t MediaAssetManagerNapi::GetFdFromSandBoxUri(const std::string &sandBoxUri)
+{
+    AppFileService::ModuleFileUri::FileUri destUri(sandBoxUri);
+    string destPath = destUri.GetRealPath();
+    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
+        NAPI_DEBUG_LOG("Create empty dest file in sandbox failed, path:%{private}s", destPath.c_str());
+        return E_ERR;
+    }
+    string absDestPath;
+    if (!PathToRealPath(destPath, absDestPath)) {
+        NAPI_DEBUG_LOG("PathToRealPath failed, path:%{private}s", destPath.c_str());
+        return E_ERR;
+    }
+    return MediaFileUtils::OpenFile(absDestPath, MEDIA_FILEMODE_WRITETRUNCATE);
 }
 } // namespace Media
 } // namespace OHOS
