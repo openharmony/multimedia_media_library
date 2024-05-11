@@ -42,7 +42,6 @@
 #include "medialibrary_napi_utils.h"
 #include "medialibrary_tracer.h"
 #include "moving_photo_napi.h"
-#include "moving_photo_utils.h"
 #include "permission_utils.h"
 #include "ui_extension_context.h"
 #include "userfile_client.h"
