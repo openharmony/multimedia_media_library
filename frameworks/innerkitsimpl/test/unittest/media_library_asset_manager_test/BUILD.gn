@@ -59,6 +59,7 @@ ohos_unittest("media_library_asset_manager_test") {
     "access_token:libaccesstoken_sdk",
     "access_token:libnativetoken",
     "access_token:libtoken_setproc",
+    "app_file_service:fileuri_native",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",

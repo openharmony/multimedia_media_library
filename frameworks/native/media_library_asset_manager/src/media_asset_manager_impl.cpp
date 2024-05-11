@@ -23,6 +23,8 @@
 #include <sys/stat.h>
 #include <uuid.h>
 
+#include "directory_ex.h"
+#include "file_uri.h"
 #include "iservice_registry.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -589,22 +591,37 @@ int32_t MediaAssetManagerImpl::WriteFileToPath(const std::string &srcUri, const 
         MEDIA_ERR_LOG("File get stat failed, %{public}d", errno);
         return E_FILE_OPER_FAIL;
     }
-    std::string tmpDestUri = destUri;
-    int destFd = MediaAssetManagerImpl::mediaLibraryManager_->OpenAsset(tmpDestUri, MEDIA_FILEMODE_WRITETRUNCATE);
+    int destFd = GetFdFromSandBoxUri(destUri);
     if (destFd < 0) {
-        MEDIA_ERR_LOG("Get destination %{public}s fd error: %{public}d", tmpDestUri.c_str(), destFd);
+        MEDIA_ERR_LOG("Get destination %{public}s fd error: %{public}d", destUri.c_str(), destFd);
         MediaAssetManagerImpl::mediaLibraryManager_->CloseAsset(tmpSrcUri, srcFd);
         return destFd;
     }
     if (sendfile(destFd, srcFd, nullptr, statSrc.st_size) == -1) {
         MediaAssetManagerImpl::mediaLibraryManager_->CloseAsset(tmpSrcUri, srcFd);
-        MediaAssetManagerImpl::mediaLibraryManager_->CloseAsset(tmpDestUri, destFd);
+        close(destFd);
         MEDIA_ERR_LOG("Sendfile failed, %{public}d", errno);
         return E_FILE_OPER_FAIL;
     }
     MediaAssetManagerImpl::mediaLibraryManager_->CloseAsset(tmpSrcUri, srcFd);
-    MediaAssetManagerImpl::mediaLibraryManager_->CloseAsset(tmpDestUri, destFd);
+    close(destFd);
     return SUCCESS;
+}
+
+int32_t MediaAssetManagerImpl::GetFdFromSandBoxUri(const std::string &sandBoxUri)
+{
+    AppFileService::ModuleFileUri::FileUri destUri(sandBoxUri);
+    string destPath = destUri.GetRealPath();
+    if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
+        MEDIA_ERR_LOG("Create empty dest file in sandbox failed, path:%{private}s", destPath.c_str());
+        return E_FILE_OPER_FAIL;
+    }
+    string absDestPath;
+    if (!PathToRealPath(destPath, absDestPath)) {
+        MEDIA_ERR_LOG("PathToRealPath failed, path:%{private}s", destPath.c_str());
+        return E_FILE_OPER_FAIL;
+    }
+    return MediaFileUtils::OpenFile(absDestPath, MEDIA_FILEMODE_WRITETRUNCATE);
 }
 } // namespace Media
 } // namespace OHOS
