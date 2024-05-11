@@ -24,19 +24,13 @@
 #include <unistd.h>
 #include <unordered_map>
 
-#define private public
-#define protected public
-#include "medialibrary_asset_operations.h"
-#include "medialibrary_photo_operations.h"
-#undef private
-#undef protected
-
 #include "abs_rdb_predicates.h"
 #include "fetch_result.h"
 #include "file_asset.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_asset_operations.h"
 #include "medialibrary_command.h"
 #include "medialibrary_common_utils.h"
 #include "medialibrary_data_manager.h"
@@ -44,6 +38,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_type_const.h"
 #include "medialibrary_unistore_manager.h"

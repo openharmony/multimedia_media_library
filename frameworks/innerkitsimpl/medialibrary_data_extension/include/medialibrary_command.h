@@ -189,7 +189,7 @@ public:
     EXPORT void SetOprnAssetId(const std::string &oprnId);
     EXPORT void SetValueBucket(const NativeRdb::ValuesBucket &value);
     EXPORT void SetTableName(const std::string &tableName);
-    void SetBundleName(const std::string &bundleName);
+    EXPORT void SetBundleName(const std::string &bundleName);
     void SetDeviceName(const std::string &deviceName);
     void SetResult(const std::string &result);
 

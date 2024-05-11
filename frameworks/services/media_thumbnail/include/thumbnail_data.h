@@ -30,6 +30,7 @@ public:
         GenerateScene scene {GenerateScene::LOCAL};
         int32_t openThumbCost {0};
         int32_t openLcdCost {0};
+        int32_t openOriginCost {0};
         LoadSourceType sourceType {LoadSourceType::LOCAL_PHOTO};
         int32_t sourceWidth {0};
         int32_t sourceHeight {0};
@@ -56,6 +57,15 @@ public:
 
     // Loaded lcd source can be resized to generate thumbnail in order
     EXPORT bool needResizeLcd {false};
+    EXPORT bool useThumbAsSource {false};
+    EXPORT bool isLoadingFromThumbToLcd {false};
+    EXPORT bool needUpload {false};
+
+    // if true, source can be read from cloud
+    EXPORT bool isCloudLoading {false};
+
+    // if true, read source from cloud if not found in local
+    EXPORT bool isForeGroundLoading {false};
     EXPORT std::shared_ptr<PixelMap> source;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;

@@ -22,9 +22,7 @@
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_utils_test.h"
 #include "thumbnail_service.h"
-#define private public
 #include "thumbnail_utils.h"
-#undef private
 
 using namespace std;
 using namespace OHOS;
@@ -505,20 +503,20 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Leve
     ThumbnailData data;
     data.source = nullptr;
     data.mediaType = MEDIA_TYPE_VIDEO;
-    bool isThumbnail = true;
-    std::string path = "";
-    bool ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
+    data.useThumbAsSource = true;
+    data.path = "";
+    bool ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, false);
     data.mediaType = MEDIA_TYPE_AUDIO;
-    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
+    ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, false);
     data.mediaType = MEDIA_TYPE_MEDIA;
     data.path = "Documents/";
-    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
+    ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, false);
     shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     data.source = make_shared<PixelMap>();
-    ret = ThumbnailUtils::LoadSourceImage(data, isThumbnail, path);
+    ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, true);
 }
 
@@ -667,18 +665,18 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Lev
 HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0)
 {
     ThumbnailData data;
-    bool isThumbnail = false;
     Size desiredSize;
     desiredSize.width = 20;
     desiredSize.height = 20;
     data.path = "/storage/cloud/files";
+    data.useThumbAsSource = false;
     data.source = make_shared<PixelMap>();
     std::string sourcePath = "";
-    bool ret = ThumbnailUtils::LoadImageFile(data, isThumbnail, desiredSize, sourcePath);
+    bool ret = ThumbnailUtils::LoadImageFile(data, desiredSize);
     EXPECT_EQ(ret, false);
-    ret = ThumbnailUtils::LoadVideoFile(data, isThumbnail, desiredSize);
+    ret = ThumbnailUtils::LoadVideoFile(data, desiredSize);
     EXPECT_EQ(ret, false);
-    ret = ThumbnailUtils::LoadAudioFile(data, isThumbnail, desiredSize);
+    ret = ThumbnailUtils::LoadAudioFile(data, desiredSize);
     EXPECT_EQ(ret, false);
 }
 
@@ -738,15 +736,15 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeThumb_test_001, TestSize.Level0)
     height = 768;
     bool result = ThumbnailUtils::ResizeThumb(width, height);
     EXPECT_TRUE(result);
-    EXPECT_EQ(width, 256);
-    EXPECT_EQ(height, 384);
+    EXPECT_EQ(width, 350);
+    EXPECT_EQ(height, 525);
 
     width = 512;
     height = 2560;
     result = ThumbnailUtils::ResizeThumb(width, height);
     EXPECT_TRUE(result);
-    EXPECT_EQ(width, 256);
-    EXPECT_EQ(height, 768);
+    EXPECT_EQ(width, 350);
+    EXPECT_EQ(height, 1050);
 
     width = 200;
     height = 200;
