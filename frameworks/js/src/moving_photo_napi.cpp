@@ -25,7 +25,6 @@
 #include "medialibrary_client_errno.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_utils.h"
-#include "moving_photo_utils.h"
 #include "userfile_client.h"
 #include "userfile_manager_types.h"
 
@@ -105,9 +104,58 @@ void MovingPhotoNapi::SetSourceMode(SourceMode sourceMode)
     sourceMode_ = sourceMode;
 }
 
-int32_t MovingPhotoNapi::OpenReadonlyVideoFile(const string& imageUri)
+static int32_t OpenReadOnlyVideo(const std::string& videoUri, bool isMediaLibUri)
 {
-    return MovingPhotoUtils::OpenReadOnlyFile(imageUri, false);
+    if (isMediaLibUri) {
+        std::string openVideoUri = videoUri;
+        MediaFileUtils::UriAppendKeyValue(openVideoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD,
+            OPEN_MOVING_PHOTO_VIDEO);
+        Uri uri(openVideoUri);
+        return UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
+    }
+    AppFileService::ModuleFileUri::FileUri fileUri(videoUri);
+    std::string realPath = fileUri.GetRealPath();
+    int32_t fd = open(realPath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        NAPI_ERR_LOG("Failed to open read only video file");
+        return -1;
+    }
+    return fd;
+}
+
+static int32_t OpenReadOnlyImage(const std::string& imageUri, bool isMediaLibUri)
+{
+    if (isMediaLibUri) {
+        Uri uri(imageUri);
+        return UserFileClient::OpenFile(uri, MEDIA_FILEMODE_READONLY);
+    }
+    AppFileService::ModuleFileUri::FileUri fileUri(imageUri);
+    std::string realPath = fileUri.GetRealPath();
+    int32_t fd = open(realPath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        NAPI_ERR_LOG("Failed to open read only image file");
+        return -1;
+    }
+    return fd;
+}
+
+int32_t MovingPhotoNapi::OpenReadOnlyFile(const std::string& uri, bool isReadImage)
+{
+    if (uri.empty()) {
+        NAPI_ERR_LOG("Failed to open read only file, uri is empty");
+        return -1;
+    }
+    std::string curUri = uri;
+    bool isMediaLibUri = MediaFileUtils::IsMediaLibraryUri(uri);
+    if (!isMediaLibUri) {
+        std::vector<std::string> uris;
+        if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
+            NAPI_ERR_LOG("Failed to open read only file, split moving photo failed");
+            return -1;
+        }
+        curUri = uris[isReadImage ? MOVING_PHOTO_IMAGE_POS : MOVING_PHOTO_VIDEO_POS];
+    }
+    return isReadImage ? OpenReadOnlyImage(curUri, isMediaLibUri) : OpenReadOnlyVideo(curUri, isMediaLibUri);
 }
 
 static int32_t writeToSandboxUri(int32_t srcFd, const string& sandboxUri)
@@ -156,13 +204,13 @@ static int32_t RequestContentToSandbox(MovingPhotoAsyncContext* context)
         MediaFileUtils::UriAppendKeyValue(movingPhotoUri, MEDIA_OPERN_KEYWORD, SOURCE_REQUEST);
     }
     if (!context->destImageUri.empty()) {
-        int32_t imageFd = MovingPhotoUtils::OpenReadOnlyFile(movingPhotoUri, true);
+        int32_t imageFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, true);
         CHECK_COND_RET(HandleFd(imageFd), imageFd, "Open source image file failed");
         int32_t ret = writeToSandboxUri(imageFd, context->destImageUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write image to sandbox failed");
     }
     if (!context->destVideoUri.empty()) {
-        int32_t videoFd = MovingPhotoUtils::OpenReadOnlyFile(movingPhotoUri, false);
+        int32_t videoFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, false);
         CHECK_COND_RET(HandleFd(videoFd), videoFd, "Open source video file failed");
         int32_t ret = writeToSandboxUri(videoFd, context->destVideoUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
@@ -180,12 +228,12 @@ static int32_t AcquireFdForArrayBuffer(MovingPhotoAsyncContext* context)
     }
     switch (context->resourceType) {
         case ResourceType::IMAGE_RESOURCE: {
-            fd = MovingPhotoUtils::OpenReadOnlyFile(movingPhotoUri, true);
+            fd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, true);
             CHECK_COND_RET(HandleFd(fd), fd, "Open source image file failed");
             return fd;
         }
         case ResourceType::VIDEO_RESOURCE:
-            fd = MovingPhotoUtils::OpenReadOnlyFile(movingPhotoUri, false);
+            fd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, false);
             CHECK_COND_RET(HandleFd(fd), fd, "Open source video file failed");
             return fd;
         default:

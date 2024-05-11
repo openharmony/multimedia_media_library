@@ -24,14 +24,10 @@ ohos_shared_library("media_library_manager") {
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-    "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
   ]
 
-  deps = [
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
-    "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary_nutils",
-  ]
+  deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
 
   external_deps = [
     "ability_base:want",
@@ -41,6 +37,7 @@ ohos_shared_library("media_library_manager") {
     "access_token:libaccesstoken_sdk",
     "access_token:libprivacy_sdk",
     "access_token:libtokenid_sdk",
+    "app_file_service:fileuri_native",
     "bundle_framework:appexecfwk_base",
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
