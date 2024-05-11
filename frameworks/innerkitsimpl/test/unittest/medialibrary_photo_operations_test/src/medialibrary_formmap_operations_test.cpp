@@ -25,12 +25,6 @@
 #include <unistd.h>
 #include <unordered_map>
 
-#define private public
-#include "medialibrary_formmap_operations.h"
-#include "medialibrary_asset_operations.h"
-#include "medialibrary_photo_operations.h"
-#undef private
-
 #include "abs_shared_result_set.h"
 #include "file_ex.h"
 #include "media_column.h"
@@ -38,7 +32,10 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_asset_operations.h"
+#include "medialibrary_formmap_operations.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_rdbstore.h"
 #include "rdb_predicates.h"
 #include "result_set_utils.h"

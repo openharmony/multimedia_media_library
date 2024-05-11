@@ -44,7 +44,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnails(ThumbRdbOpt &opts, bool isSync
     thumbnailData.needResizeLcd = true;
     ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::LOCAL, LoadSourceType::LOCAL_PHOTO);
     if (isSync) {
-        IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData, false);
+        IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
         if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
             MediaLibraryPhotoOperations::StoreThumbnailSize(opts.row, opts.path);
