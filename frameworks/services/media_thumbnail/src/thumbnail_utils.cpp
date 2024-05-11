@@ -1069,7 +1069,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
     }
     tracer.Finish();
 
-    if (data.useThumbAsSource) {
+    if (data.loaderOpts.decodeInThumbSize) {
         tracer.Start("CenterScale");
         PostProc postProc;
         if (!postProc.CenterScale(desiredSize, *data.source)) {
@@ -1749,6 +1749,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         return;
     }
     resultSet->Close();
+    data.stats.uri = data.path;
 }
 
 bool ThumbnailUtils::DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type)
