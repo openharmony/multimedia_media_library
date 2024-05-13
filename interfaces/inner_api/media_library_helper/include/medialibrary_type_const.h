@@ -129,8 +129,6 @@ enum class MultiStagesPhotoQuality : int32_t {
     LOW,
 };
 
-const int32_t SUCCESS = 0;
-
 constexpr int32_t DEFAULT_INT32 = 0;
 constexpr int64_t DEFAULT_INT64 = 0;
 const std::string DEFAULT_STR = "";

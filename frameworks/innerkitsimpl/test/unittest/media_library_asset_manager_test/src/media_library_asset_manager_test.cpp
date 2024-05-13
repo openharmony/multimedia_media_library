@@ -211,7 +211,7 @@ static bool CompareIfArraysEquals(const unsigned char originArray[],
 
 void CallbackFunciton(int32_t result, MediaLibrary_RequestId requestId)
 {
-    EXPECT_EQ(result, SUCCESS);
+    EXPECT_EQ(result, E_SUCCESS);
     MEDIA_INFO_LOG("CallbackFunciton::result: %{public}d", result);
     MEDIA_INFO_LOG("CallbackFunciton::requestId: %{public}s", requestId.requestId);
 }

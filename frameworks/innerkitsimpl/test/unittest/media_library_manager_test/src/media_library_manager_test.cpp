@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#include <fstream>
+#include <iostream>
+
 #include "media_library_manager_test.h"
 #include "datashare_helper.h"
 #include "fetch_result.h"
@@ -26,6 +29,8 @@
 #include "media_library_manager.h"
 #include "media_log.h"
 #include "media_volume.h"
+#include "photo_proxy_test.h"
+#include "result_set_utils.h"
 #include "scanner_utils.h"
 #include "system_ability_definition.h"
 
@@ -42,6 +47,7 @@ using namespace OHOS::AppExecFwk;
  */
 namespace OHOS {
 namespace Media {
+const string API_VERSION = "api_version";
 std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 std::unique_ptr<FileAsset> GetFile(int mediaTypeId);
 void ClearFile();
@@ -412,6 +418,55 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_008, TestSize.Level0)
 
     int32_t rfd = mediaLibraryManager->ReadMovingPhotoVideo(uri);
     EXPECT_LE(rfd, 0);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 enter");
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    ASSERT_NE(photoAssetProxy, nullptr);
+    sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest, nullptr);
+    string displayNameExpect = photoProxyTest->GetDisplayName();
+    photoProxyTest->SetFormat(PhotoFormat::JPG);
+    photoProxyTest->SetPhotoQuality(PhotoQuality::LOW);
+
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
+
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+    EXPECT_EQ(fileAsset->GetDisplayName(), displayNameExpect);
+    EXPECT_EQ(fileAsset->GetResultNapiType(), ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+
+    vector<string> columns { PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY };
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
+
+    string uriStr = URI_QUERY_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri queryFileUri(uriStr);
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
+
+    EXPECT_EQ(photoProxyTest->GetPhotoId(), GetStringVal(PhotoColumn::PHOTO_ID, resultSet));
+    EXPECT_EQ(-1, GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet));
+
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 enter");
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest, nullptr);
+
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
+    int32_t fd = photoAssetProxy->GetVideoFd();
+    EXPECT_GE(fd, 0);
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 exit");
 }
 } // namespace Media
 } // namespace OHOS

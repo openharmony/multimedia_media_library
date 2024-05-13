@@ -42,10 +42,8 @@
 #include "medialibrary_napi_log.h"
 #include "medialibrary_tracer.h"
 #include "modal_ui_extension_config.h"
-#ifdef ABILITY_CAMERA_SUPPORT
-#include "output/deferred_photo_proxy_napi.h"
-#endif
 #include "permission_utils.h"
+#include "photo_proxy_napi.h"
 #include "securec.h"
 #ifdef HAS_ACE_ENGINE_PART
 #include "ui_content.h"
@@ -223,18 +221,16 @@ shared_ptr<FileAsset> MediaAssetChangeRequestNapi::GetFileAssetInstance() const
     return fileAsset_;
 }
 
-#ifdef ABILITY_CAMERA_SUPPORT
-sptr<CameraStandard::DeferredPhotoProxy> MediaAssetChangeRequestNapi::GetPhotoProxyObj()
+sptr<PhotoProxy> MediaAssetChangeRequestNapi::GetPhotoProxyObj()
 {
     return photoProxy_;
 }
 
 void MediaAssetChangeRequestNapi::ReleasePhotoProxyObj()
 {
-    photoProxy_.clear();
+    photoProxy_->Release();
     photoProxy_ = nullptr;
 }
-#endif
 
 void MediaAssetChangeRequestNapi::RecordChangeOperation(AssetChangeOperation changeOperation)
 {
@@ -1008,7 +1004,6 @@ napi_value MediaAssetChangeRequestNapi::JSSetLocation(napi_env env, napi_callbac
     return result;
 }
 
-#ifdef ABILITY_CAMERA_SUPPORT
 static int SaveImage(const string &fileName, void *output, size_t writeSize)
 {
     Uri fileUri(fileName);
@@ -1027,7 +1022,7 @@ static int SaveImage(const string &fileName, void *output, size_t writeSize)
     return E_OK;
 }
 
-static int SavePhotoProxyImage(const string &fileUri, sptr<CameraStandard::DeferredPhotoProxy> photoProxyPtr)
+static int SavePhotoProxyImage(const string &fileUri, sptr<PhotoProxy> photoProxyPtr)
 {
     void* imageAddr = photoProxyPtr->GetFileDataAddr();
     size_t imageSize = photoProxyPtr->GetFileSize();
@@ -1070,7 +1065,6 @@ static int SavePhotoProxyImage(const string &fileUri, sptr<CameraStandard::Defer
     delete[] buffer;
     return ret;
 }
-#endif
 
 napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_callback_info info)
 {
@@ -1366,13 +1360,11 @@ napi_value MediaAssetChangeRequestNapi::JSAddResource(napi_env env, napi_callbac
                 NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
                 RETURN_NAPI_UNDEFINED(env);
             }
-            #ifdef ABILITY_CAMERA_SUPPORTED
-            CameraStandard::DeferredPhotoProxyNapi* napiPhotoProxyPtr = nullptr;
+            PhotoProxyNapi* napiPhotoProxyPtr = nullptr;
             CHECK_ARGS(env, napi_unwrap(env, asyncContext->argv[PARAM1], reinterpret_cast<void**>(&napiPhotoProxyPtr)),
                 JS_INNER_FAIL);
-            changeRequest->photoProxy_ = napiPhotoProxyPtr->deferredPhotoProxy_;
+            changeRequest->photoProxy_ = napiPhotoProxyPtr->photoProxy_;
             changeRequest->addResourceMode_ = AddResourceMode::PHOTO_PROXY;
-            #endif
         }
     }
 
@@ -1712,7 +1704,6 @@ static bool CreateFromFileUriExecute(MediaAssetChangeRequestAsyncContext& contex
 
 static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
-    #ifdef ABILITY_CAMERA_SUPPORT
     string uri = PAH_ADD_IMAGE;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri updateAssetUri(uri);
@@ -1727,7 +1718,7 @@ static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& co
     valuesBucket.Put(PhotoColumn::PHOTO_ID, context.objectInfo->GetPhotoProxyObj()->GetPhotoId());
     NAPI_INFO_LOG("photoId: %{public}s", context.objectInfo->GetPhotoProxyObj()->GetPhotoId().c_str());
     valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE,
-        context.objectInfo->GetPhotoProxyObj()->GetDeferredProcType());
+        static_cast<int32_t>(context.objectInfo->GetPhotoProxyObj()->GetDeferredProcType()));
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileAsset->GetId());
     int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
     if (changedRows < 0) {
@@ -1743,7 +1734,6 @@ static bool AddPhotoProxyResourceExecute(MediaAssetChangeRequestAsyncContext& co
         NAPI_ERR_LOG("Failed to saveImage , err: %{public}d", err);
         return false;
     }
-    #endif
     return true;
 }
 

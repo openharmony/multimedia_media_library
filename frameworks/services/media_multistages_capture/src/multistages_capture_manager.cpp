@@ -19,6 +19,7 @@
 
 #include "database_adapter.h"
 #include "exif_utils.h"
+#include "medialibrary_bundle_manager.h"
 #include "medialibrary_command.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_rdbstore.h"
@@ -179,7 +180,14 @@ void MultiStagesCaptureManager::UpdateLowQualityDbInfo(MediaLibraryCommand &cmd)
     MediaLibraryCommand cmdLocal (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     auto values = cmd.GetValueBucket();
     values.PutInt(MEDIA_DATA_DB_PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::LOW));
-    values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+    int32_t subType = 0;
+    ValueObject valueObject;
+    if (values.GetObject(PhotoColumn::PHOTO_SUBTYPE, valueObject)) {
+        valueObject.GetInt(subType);
+    }
+    if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        values.PutInt(MEDIA_DATA_DB_DIRTY, static_cast<int32_t>(DirtyType::TYPE_SYNCED));
+    }
     cmdLocal.SetValueBucket(values);
     cmdLocal.GetAbsRdbPredicates()->SetWhereClause(cmd.GetAbsRdbPredicates()->GetWhereClause());
     cmdLocal.GetAbsRdbPredicates()->SetWhereArgs(cmd.GetAbsRdbPredicates()->GetWhereArgs());
@@ -364,16 +372,19 @@ void MultiStagesCaptureManager::ProcessImage(int fileId, int deliveryMode, const
         return;
     }
 
+    string callerBundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
+
     MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::THIRD_PART);
-    MultiStagesCaptureDfxRequestPolicy::GetInstance().SetPolicy(appName, static_cast<RequestPolicy>(deliveryMode));
+    MultiStagesCaptureDfxRequestPolicy::GetInstance().SetPolicy(callerBundleName,
+        static_cast<RequestPolicy>(deliveryMode));
     MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId);
-    MEDIA_INFO_LOG("processimage, pkg name: %{public}s, photoid %{public}s, mode: %{public}d", appName.c_str(),
-        photoId.c_str(), deliveryMode);
     int32_t currentRequestCount = UpdatePhotoInProcessRequestCount(photoId, RequestType::REQUEST);
+    MEDIA_INFO_LOG("processimage, pkg name: %{public}s, photoid %{public}s, mode: %{public}d, count: %{public}d",
+        callerBundleName.c_str(), photoId.c_str(), deliveryMode, currentRequestCount);
     if ((deliveryMode == static_cast<int32_t>(RequestPolicy::HIGH_QUALITY_MODE) ||
         deliveryMode == static_cast<int32_t>(RequestPolicy::BALANCE_MODE)) &&
         currentRequestCount <= 1) {
-        deferredProcSession_->ProcessImage(appName, photoId);
+        deferredProcSession_->ProcessImage(callerBundleName, photoId);
     }
 }
 

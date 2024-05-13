@@ -69,6 +69,8 @@ public:
     EXPORT static std::string GetPhotoId(const std::string &uri);
     EXPORT static void GetTimeIdFromUri(
         const std::vector<std::string> &uriBatch, std::vector<std::string> &timeIdBatch);
+    EXPORT static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
+    EXPORT static std::string GetPathFromUri(const std::string &uri, bool isPhoto);
 };
 } // namespace Media
 } // namespace OHOS
