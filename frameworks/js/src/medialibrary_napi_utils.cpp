@@ -916,7 +916,8 @@ int32_t MediaLibraryNapiUtils::GetAnalysisAlbumPredicates(const int32_t albumId,
     return E_SUCCESS;
 }
 
-bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(std::string albumName, DataSharePredicates &predicates)
+bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
+    std::string albumName, DataShare::DataSharePredicates &predicates)
 {
     bool isFeaturedSinglePortrait = false;
     int portraitAlbumId = 0;
@@ -946,8 +947,9 @@ bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(std::string albumName,
                 tmpPredicates.Limit(ol.GetSingle(0), ol.GetSingle(1));
                 break;
             }
-            default:
+            default: {
                 break;
+            }
         }
     }
 
@@ -975,9 +977,9 @@ int32_t MediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
         VISION_IMAGE_FACE_TABLE + "." + ROLL + " " + portraitRotationLimit;
     predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ onClause });
 
-    constexpr int32_t halfPortrait = 2;
+    string portraitType = "IN ( 1, 2 )";
     onClause = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " = " + VISION_POSE_TABLE + "." +
-        MediaColumn::MEDIA_ID + " AND " + VISION_POSE_TABLE + "." + POSE_TYPE + " = " + to_string(halfPortrait);
+        MediaColumn::MEDIA_ID + " AND " + VISION_POSE_TABLE + "." + POSE_TYPE + " " + portraitType;
     predicates.InnerJoin(VISION_POSE_TABLE)->On({ onClause });
 
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));

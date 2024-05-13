@@ -258,7 +258,7 @@ const RecommendationType = {
   // Indicates that driving license photos can be recommended
   DRIVING_LICENSE: 9,
 
-  // indicates that featured single portrait photos can be recommended
+  // Indicates that featured single portrait photos can be recommended
   FEATURED_SINGLE_PORTRAIT: 10
 }
 
