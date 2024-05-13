@@ -24,6 +24,8 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_tracer.h"
+#include "meta.h"
+#include "meta_key.h"
 #include "nlohmann/json.hpp"
 #include "sandbox_helper.h"
 
@@ -304,12 +306,22 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
     }
 }
 
+void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
+{
+    float floatTempMeta;
+    meta->GetData(Tag::MEDIA_LONGITUDE, floatTempMeta);
+    data->SetLongitude((double)floatTempMeta);
+    meta->GetData(Tag::MEDIA_LATITUDE, floatTempMeta);
+    data->SetLatitude((double)floatTempMeta);
+}
+
 void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,
-    std::unique_ptr<Metadata> &data)
+    std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
 {
     PopulateExtractedAVMetadataOne(resultMap, data);
     PopulateExtractedAVMetadataTwo(resultMap, data);
-    
+    PopulateExtractedAVLocationMeta(meta, data);
+
     int64_t timeNow = MediaFileUtils::UTCTimeMilliSeconds();
     data->SetLastVisitTime(timeNow);
 }
@@ -355,10 +367,11 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data)
         return E_AVMETADATA;
     } else {
         tracer.Start("avMetadataHelper->ResolveMetadata");
+        std::shared_ptr<Meta> meta = avMetadataHelper->GetAVMetadata();
         std::unordered_map<int32_t, std::string> resultMap = avMetadataHelper->ResolveMetadata();
         tracer.Finish();
         if (!resultMap.empty()) {
-            FillExtractedMetadata(resultMap, data);
+            FillExtractedMetadata(resultMap, meta, data);
         }
     }
 

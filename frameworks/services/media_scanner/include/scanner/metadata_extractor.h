@@ -41,7 +41,7 @@ private:
     ~MetadataExtractor() = delete;
 
     EXPORT static void FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &metadataMap,
-        std::unique_ptr<Metadata> &data);
+        std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data);
     static int32_t CombineMovingPhotoMetadata(std::unique_ptr<Metadata> &data);
 };
 } // namespace Media
