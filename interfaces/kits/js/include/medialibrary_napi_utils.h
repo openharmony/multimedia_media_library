@@ -25,7 +25,6 @@
 #include "media_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_napi_log.h"
-#include "medialibrary_napi_utils_ext.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "photo_album_column.h"

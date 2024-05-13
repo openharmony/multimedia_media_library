@@ -722,7 +722,7 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoDuratio
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-2000), false);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(-1000), false);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(0), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(1000), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(1000), true);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(2000), true);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(2500), true);
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(3000), true);

@@ -214,7 +214,7 @@ bool MediaFileUtils::IsFileExists(const string &fileName)
 {
     struct stat statInfo {};
 
-    return ((stat(fileName.c_str(), &statInfo)) == SUCCESS);
+    return ((stat(fileName.c_str(), &statInfo)) == E_SUCCESS);
 }
 
 bool MediaFileUtils::IsDirEmpty(const string &path)
@@ -257,7 +257,7 @@ bool MediaFileUtils::IsDirectory(const string &dirName, shared_ptr<int> errCodeP
 {
     struct stat statInfo {};
 
-    if (stat(dirName.c_str(), &statInfo) == SUCCESS) {
+    if (stat(dirName.c_str(), &statInfo) == E_SUCCESS) {
         if (statInfo.st_mode & S_IFDIR) {
             return true;
         }
@@ -288,7 +288,7 @@ bool MediaFileUtils::CreateFile(const string &filePath)
         return state;
     }
 
-    if (chmod(filePath.c_str(), CHOWN_RW_USR_GRP) == SUCCESS) {
+    if (chmod(filePath.c_str(), CHOWN_RW_USR_GRP) == E_SUCCESS) {
         state = true;
     } else {
         MEDIA_ERR_LOG("Failed to change permissions, error: %{public}d", errno);
@@ -301,7 +301,7 @@ bool MediaFileUtils::CreateFile(const string &filePath)
 
 bool MediaFileUtils::DeleteFile(const string &fileName)
 {
-    return (remove(fileName.c_str()) == SUCCESS);
+    return (remove(fileName.c_str()) == E_SUCCESS);
 }
 
 bool MediaFileUtils::DeleteDir(const string &dirName)
@@ -309,7 +309,7 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
     bool errRet = false;
 
     if (IsDirectory(dirName)) {
-        errRet = (RemoveDirectory(dirName) == SUCCESS);
+        errRet = (RemoveDirectory(dirName) == E_SUCCESS);
     }
 
     return errRet;
@@ -320,7 +320,7 @@ bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
     bool errRet = false;
 
     if (IsFileExists(oldPath) && !IsFileExists(newPath)) {
-        errRet = (rename(oldPath.c_str(), newPath.c_str()) == SUCCESS);
+        errRet = (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
     }
 
     return errRet;
@@ -359,12 +359,12 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
         return errCode;
     }
 
-    if (fstat(source, &fst) == SUCCESS) {
+    if (fstat(source, &fst) == E_SUCCESS) {
         // Copy file content
         if (sendfile(dest, source, nullptr, fst.st_size) != E_ERR) {
             // Copy ownership and mode of source file
-            if (fchown(dest, fst.st_uid, fst.st_gid) == SUCCESS &&
-                fchmod(dest, fst.st_mode) == SUCCESS) {
+            if (fchown(dest, fst.st_uid, fst.st_gid) == E_SUCCESS &&
+                fchmod(dest, fst.st_mode) == E_SUCCESS) {
                 errCode = true;
             }
         }
@@ -444,7 +444,7 @@ bool MediaFileUtils::RenameDir(const string &oldPath, const string &newPath)
     bool errRet = false;
 
     if (IsDirectory(oldPath)) {
-        errRet = (rename(oldPath.c_str(), newPath.c_str()) == SUCCESS);
+        errRet = (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
         if (!errRet) {
             MEDIA_ERR_LOG("Failed RenameDir errno %{public}d", errno);
         }
@@ -1432,10 +1432,10 @@ bool MediaFileUtils::CheckMovingPhotoVideo(const UniqueFd &uniqueFd)
 
 bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
 {
-    // duration of moving photo video must be 2~3 s
-    constexpr int32_t MIN_DURATION_MS = 2000;
+    // duration of moving photo video must be 0~3 s
+    constexpr int32_t MIN_DURATION_MS = 0;
     constexpr int32_t MAX_DURATION_MS = 3000;
-    return duration >= MIN_DURATION_MS && duration <= MAX_DURATION_MS;
+    return duration > MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
 
 bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
