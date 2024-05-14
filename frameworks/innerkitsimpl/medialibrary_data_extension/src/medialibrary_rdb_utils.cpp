@@ -822,10 +822,10 @@ static void GetPortraitAlbumCoverPredicates(const string &coverId, RdbPredicates
 
     string clause = imageFaceFileId + " = " + photosFileId;
     predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ clause });
-    string order = "CASE WHEN " + photosFileId + " = " + coverId + " THEN 0 " +
-        "WHEN " + imageFaceTotalFaces + " = " + to_string(SINGLE_FACE) + " THEN 1 ELSE 2 END ";
+    string order = "CASE WHEN " + imageFaceTotalFaces + " = " + to_string(SINGLE_FACE) + " THEN 0 ELSE 1 END ";
     predicates.OrderByAsc(order);
     predicates.OrderByDesc(photosDateAdded);
+    predicates.Limit(1);
 }
 
 static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates &predicates)
@@ -881,8 +881,8 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(countResult, albumResult, values, false, PhotoAlbumSubType::PORTRAIT);
-    if (std::find(fileIds.begin(), fileIds.end(), coverId) == fileIds.end() &&
-        isCoverSatisfied == ALBUM_COVER_SATISFIED) {
+    if (isCoverSatisfied == ALBUM_COVER_SATISFIED &&
+        std::find(fileIds.begin(), fileIds.end(), coverId) == fileIds.end()) {
         return E_SUCCESS;
     }
     GetPortraitAlbumCoverPredicates(coverId, predicates);
