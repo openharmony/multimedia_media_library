@@ -17,12 +17,13 @@
 #define OHOS_MEDIALIBRARY_KVSTORE_H
 
 #include "distributed_kv_data_manager.h"
+#include "medialibrary_db_const.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-const std::string KV_STORE_OWNER_DIR = "/storage/cloud/files/.thumbs/Photo";
-const std::string KV_STORE_VISITOR_DIR = "/storage/Share/.thumbs/Photo";
+const std::string KV_STORE_OWNER_DIR = MEDIA_DB_DIR;
+const std::string KV_STORE_VISITOR_DIR = MEDIA_DB_DIR;
 
 enum class KvStoreRoleType : int32_t {
     OWNER,
