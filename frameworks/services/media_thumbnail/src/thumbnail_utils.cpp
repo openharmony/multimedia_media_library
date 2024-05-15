@@ -1661,7 +1661,7 @@ bool ThumbnailUtils::GenerateKvStoreKey(const std::string &fieldId, const std::s
     } else {
         assembledDateAdded = KVSTORE_DATE_ADDED_TEMPLATE.substr(length) + dateAdded;
     }
-    key = assembledDateAdded.substr(0, MAX_TIMEID_LENGTH) + assembledFieldId;
+    key = assembledDateAdded + assembledFieldId;
     return true;
 }
 
