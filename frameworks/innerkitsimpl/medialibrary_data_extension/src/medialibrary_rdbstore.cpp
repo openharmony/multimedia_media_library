@@ -935,8 +935,8 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_TAB_ANALYSIS_SEGMENTATION,
     CREATE_TAB_ANALYSIS_COMPOSITION,
     CREATE_TAB_ANALYSIS_HEAD,
-    CREATE_TAB_ANALYSIS_POSE_FOR_ONCREATE,
-    CREATE_TAB_IMAGE_FACE_FOR_ONCREATE,
+    CREATE_TAB_ANALYSIS_POSE,
+    CREATE_TAB_IMAGE_FACE,
     CREATE_TAB_FACE_TAG,
     CREATE_TAB_ANALYSIS_TOTAL_FOR_ONCREATE,
     CREATE_VISION_UPDATE_TRIGGER,
@@ -1509,12 +1509,9 @@ static void AddHeadAndPoseTables(RdbStore &store)
 
 static void AddFaceOcclusionAndPoseTypeColumn(RdbStore &store)
 {
-    static const vector<string> executeSqlStrs = {
-        ADD_FACE_OCCLUSION_COLUMN,
-        ADD_POSE_TYPE_COLUMN,
-    };
     MEDIA_INFO_LOG("start add face occlusion and pose type column");
-    ExecSqls(executeSqlStrs, store);
+    MediaLibraryRdbStore::AddColumnIfNotExists(store, FACE_OCCLUSION, "INT", VISION_IMAGE_FACE_TABLE);
+    MediaLibraryRdbStore::AddColumnIfNotExists(store, POSE_TYPE, "INT", VISION_POSE_TABLE);
 }
 
 static void AddSegmentationColumns(RdbStore &store)
@@ -2614,6 +2611,15 @@ bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &colum
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
     MEDIA_DEBUG_LOG("%{private}s in %{private}s: %{public}d", columnName.c_str(), tableName.c_str(), count);
     return count > 0;
+}
+
+bool MediaLibraryRdbStore::AddColumnIfNotExists(
+    RdbStore &store, const string &columnName, const string &columnType, const string &tableName)
+{
+    if (!HasColumnInTable(store, columnName, tableName)) {
+        string sql = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnType;
+        store.ExecuteSql(sql);
+    }
 }
 
 #ifdef DISTRIBUTED

@@ -925,26 +925,26 @@ bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
         return isFeaturedSinglePortrait;
     }
 
-    DataSharePredicates tmpPredicates;
+    DataSharePredicates featuredSinglePortraitPredicates;
     std::vector<OperationItem> operationList = predicates.GetOperationList();
-    for (auto& ol : operationList) {
-        switch (ol.operation) {
+    for (auto& operationItem : operationList) {
+        switch (operationItem.operation) {
             case OHOS::DataShare::OperationType::LIKE : {
-                std::string param1 = std::get<string>(ol.singleParams[0]);
-                std::string param2 = std::get<string>(ol.singleParams[1]);
-                if (param1.compare("FeaturedSinglePortrait") == 0 && param2.compare("true") == 0) {
+                std::string field = std::get<string>(operationItem.singleParams[0]);
+                std::string value = std::get<string>(operationItem.singleParams[1]);
+                if (field.compare("FeaturedSinglePortrait") == 0 && value.compare("true") == 0) {
                     isFeaturedSinglePortrait = true;
                 } else {
-                    tmpPredicates.Like(param1, param2);
+                    featuredSinglePortraitPredicates.Like(field, value);
                 }
                 break;
             }
             case OHOS::DataShare::OperationType::ORDER_BY_DESC : {
-                tmpPredicates.OrderByDesc(ol.GetSingle(0));
+                featuredSinglePortraitPredicates.OrderByDesc(operationItem.GetSingle(0));
                 break;
             }
             case OHOS::DataShare::OperationType::LIMIT : {
-                tmpPredicates.Limit(ol.GetSingle(0), ol.GetSingle(1));
+                featuredSinglePortraitPredicates.Limit(operationItem.GetSingle(0), operationItem.GetSingle(1));
                 break;
             }
             default: {
@@ -954,7 +954,7 @@ bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
     }
 
     if (isFeaturedSinglePortrait) {
-        predicates = tmpPredicates;
+        predicates = featuredSinglePortraitPredicates;
     }
     return isFeaturedSinglePortrait;
 }
