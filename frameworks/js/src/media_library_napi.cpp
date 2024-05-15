@@ -276,6 +276,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("applyChanges", JSApplyChanges),
             DECLARE_NAPI_FUNCTION("saveFormInfo", PhotoAccessSaveFormInfo),
             DECLARE_NAPI_FUNCTION("removeFormInfo", PhotoAccessRemoveFormInfo),
+            DECLARE_NAPI_FUNCTION("getAssetsSync", PhotoAccessGetPhotoAssetsSync),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -5137,6 +5138,48 @@ static void PhotoAccessGetAssetsExecute(napi_env env, void *data)
     context->fetchFileResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
 }
 
+static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyncContext& asyncContext)
+{
+    auto context = &asyncContext;
+    if (context->assetType != TYPE_PHOTO) {
+        return nullptr;
+    }
+
+    string queryUri = PAH_QUERY_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(queryUri);
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> resultSet = UserFileClient::Query(uri,
+        context->predicates, context->fetchColumn, errCode);
+    if (resultSet == nullptr && !context->uri.empty() && errCode == E_PERMISSION_DENIED) {
+        Uri queryWithUri(context->uri);
+        resultSet = UserFileClient::Query(queryWithUri, context->predicates, context->fetchColumn, errCode);
+    }
+    CHECK_NULLPTR_RET(resultSet);
+    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+    CHECK_NULLPTR_RET(fetchResult);
+
+    std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
+    auto file = fetchResult->GetFirstObject();
+    while (file != nullptr) {
+        fileAssetArray.push_back(move(file));
+        file = fetchResult->GetNextObject();
+    }
+    int len = fileAssetArray.size();
+    napi_value jsFileArray = nullptr;
+    napi_create_array_with_length(env, len, &jsFileArray);
+    size_t i = 0;
+    for (i = 0; i < len; i++) {
+        napi_value jsFileAsset = FileAssetNapi::CreateFileAsset(env, fileAssetArray[i]);
+        if ((jsFileAsset == nullptr) || (napi_set_element(env, jsFileArray, i, jsFileAsset) != napi_ok)) {
+            NAPI_ERR_LOG("Failed to get file asset napi object");
+            break;
+        }
+    }
+    return (i == len) ? jsFileArray : nullptr;
+}
+
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info)
 {
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
@@ -5145,6 +5188,17 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssets(napi_env env, napi_callba
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets",
         PhotoAccessGetAssetsExecute, GetFileAssetsAsyncCallbackComplete);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssetsSync(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetPhotoAssetsSync");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->assetType = TYPE_PHOTO;
+    CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, asyncContext));
+    return PhotoAccessGetAssetsExecuteSync(env, *asyncContext);
 }
 
 napi_value MediaLibraryNapi::JSGetAudioAssets(napi_env env, napi_callback_info info)
