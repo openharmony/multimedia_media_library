@@ -1299,7 +1299,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         return E_ERR;
     }
     (void)close(fd);
-    return SUCCESS;
+    return E_SUCCESS;
 }
 
 bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, unique_ptr<PixelMap> &pixelMap)
@@ -1330,7 +1330,7 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     decodeOpts.desiredSize.width = size.width;
     decodeOpts.desiredSize.height = size.height;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    if (err != Media::SUCCESS) {
+    if (err != E_SUCCESS) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
             {KEY_OPT_FILE, ""}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);

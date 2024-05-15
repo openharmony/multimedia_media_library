@@ -98,6 +98,7 @@ enum class EXPORT OperationObject : uint32_t {
     USER_PHOTOGRAPHY,
     PAH_MULTISTAGES_CAPTURE,
     HIGHLIGHT_COVER,
+    PAH_MOVING_PHOTO,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -256,6 +257,7 @@ static const std::map<std::string, OperationObject> OPRN_OBJ_MAP = {
     { SMARTALBUM_MAP_TABLE, OperationObject::SMART_ALBUM_MAP },
     { MEDIA_QUERYOPRN_QUERYVOLUME, OperationObject::MEDIA_VOLUME },
     { PAH_MULTISTAGES_CAPTURE, OperationObject::PAH_MULTISTAGES_CAPTURE },
+    { MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OperationObject::PAH_MOVING_PHOTO },
 
     // use in Vision
     { PAH_ANA_OCR, OperationObject::VISION_OCR },

@@ -155,8 +155,6 @@ private:
     static std::shared_ptr<FileAsset> GetAssetFromResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
         const std::vector<std::string> &columns);
 
-    static constexpr int ASSET_IN_BUCKET_NUM_MAX = 1000;
-    static constexpr int ASSET_DIR_START_NUM = 16;
     static constexpr int ASSET_MAX_COMPLEMENT_ID = 999;
 
     class ScanAssetCallback : public IMediaScannerCallback {

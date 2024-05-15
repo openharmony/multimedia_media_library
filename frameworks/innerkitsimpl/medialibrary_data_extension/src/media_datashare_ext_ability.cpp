@@ -364,7 +364,7 @@ static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool i
     }
 
     int32_t err = HandleSecurityComponentPermission(cmd);
-    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         return err;
     }
 
@@ -411,7 +411,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
-    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         return err;
     }
 
@@ -449,7 +449,7 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
 static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWrite)
 {
     int err = HandleNoPermCheck(cmd);
-    if (err == E_SUCCESS || (err != SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         return err;
     }
 

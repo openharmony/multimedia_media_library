@@ -40,6 +40,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_napi_log.h"
 #include "medialibrary_napi_utils.h"
+#include "medialibrary_napi_utils_ext.h"
 #include "medialibrary_tracer.h"
 #include "moving_photo_napi.h"
 #include "permission_utils.h"

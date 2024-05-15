@@ -64,6 +64,7 @@ const std::string OPRN_PROCESS_IMAGE = "process_image";
 const std::string OPRN_SET_LOCATION = "set_location";
 const std::string OPRN_SET_PHOTO_QUALITY = "set_photo_quality";
 const std::string OPRN_CANCEL_PROCESS_IMAGE = "cancel_process_image";
+const std::string OPRN_MOVING_PHOTO_SCAN = "moving_photo_scan";
 
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -292,6 +293,10 @@ const std::string PAH_QUERY_ANA_ADDRESS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_
 const std::string PAH_QUERY_GEO_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_GEO_PHOTOS + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_HIGHLIGHT_COVER = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_COVER + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_HIGHLIGHT_PLAY = MEDIALIBRARY_DATA_URI + "/" + PAH_HIGHLIGHT_PLAY + "/" + OPRN_QUERY;
+
+// PhotoAccessHelper moving photo
+const std::string PAH_MOVING_PHOTO_SCAN = MEDIALIBRARY_DATA_URI + "/" + MEDIA_MOVING_PHOTO_OPRN_KEYWORD + "/" +
+    OPRN_MOVING_PHOTO_SCAN;
 
 // mediatool operation constants
 const std::string TOOL_PHOTO = "mediatool_photo_operation";

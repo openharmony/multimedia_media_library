@@ -76,8 +76,6 @@ config("napi_config") {
     "${MEDIALIB_SERVICES_PATH}/media_library/include",
     "../../../../../distributedhardware/device_manager/interfaces/inner_kits/native_cpp/include",
     "//third_party/e2fsprogs/e2fsprogs/lib",
-    "${MEDIALIB_CAMERA_FRAMEWORK_PATH}/interfaces/kits/js/camera_napi/include",
-    "${MEDIALIB_CAMERA_FRAMEWORK_PATH}/interfaces/inner_api/native/camera/include",
   ]
 
   if (defined(medialibrary_mtp_enable)) {
@@ -99,7 +97,12 @@ config("napi_config") {
   ]
 }
 
+config("public_napi_config") {
+  include_dirs = [ "${MEDIALIB_INTERFACES_PATH}/kits/js/include" ]
+}
+
 ohos_shared_library("medialibrary_nutils") {
+  public_configs = [ ":public_napi_config" ]
   configs = [ ":napi_config" ]
   sources = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/form_map.cpp",
@@ -120,6 +123,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/media_asset_rdbstore.cpp",
     "${MEDIALIB_JS_PATH}/src/media_assets_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_change_request_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/media_library_comm_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_library_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_scanner_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/medialibrary_napi_utils.cpp",
@@ -127,6 +131,7 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/moving_photo_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/napi_error.cpp",
     "${MEDIALIB_JS_PATH}/src/photo_album_napi.cpp",
+    "${MEDIALIB_JS_PATH}/src/photo_proxy_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/smart_album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/thumbnail_manager.cpp",
     "${MEDIALIB_JS_PATH}/src/userfile_client.cpp",
@@ -201,16 +206,6 @@ ohos_shared_library("medialibrary_nutils") {
     ]
   }
 
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.multimedia_camera_framework) &&
-      global_parts_info.multimedia_camera_framework) {
-    defines += [ "ABILITY_CAMERA_SUPPORT" ]
-    external_deps += [
-      "camera_framework:camera_framework",
-      "camera_framework:camera_napi",
-    ]
-  }
-
   if (ability_runtime_graphics) {
     external_deps += [
       "ace_engine:ace_uicontent",
@@ -225,7 +220,10 @@ ohos_shared_library("medialibrary_nutils") {
 }
 
 ohos_shared_library("medialibrary") {
-  configs = [ ":napi_config" ]
+  configs = [
+    ":public_napi_config",
+    ":napi_config",
+  ]
 
   version_script = "libmedialibrary.map"
 
@@ -286,7 +284,10 @@ ohos_shared_library("medialibrary") {
 }
 
 ohos_shared_library("userfilemanager") {
-  configs = [ ":napi_config" ]
+  configs = [
+    ":public_napi_config",
+    ":napi_config",
+  ]
 
   sources =
       [ "${MEDIALIB_JS_PATH}/src/native_module_ohos_userfile_manager.cpp" ]
@@ -387,7 +388,10 @@ gen_js_obj("photoaccesshelperinf_abc") {
 }
 
 ohos_shared_library("photoaccesshelper") {
-  configs = [ ":napi_config" ]
+  configs = [
+    ":public_napi_config",
+    ":napi_config",
+  ]
 
   sources =
       [ "${MEDIALIB_JS_PATH}/src/native_module_ohos_photoaccess_helper.cpp" ]

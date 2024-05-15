@@ -114,15 +114,16 @@ class DeleteFilesTask : public AsyncTaskData {
 public:
     DeleteFilesTask(const std::vector<std::string> &ids, const std::vector<std::string> &paths,
         const std::vector<std::string> &notifyUris, const std::vector<std::string> &dateAddeds,
-        const std::string &table, int32_t deleteRows, std::string bundleName) : ids_(ids), paths_(paths),
-        notifyUris_(notifyUris), dateAddeds_(dateAddeds), table_(table), deleteRows_(deleteRows),
-        bundleName_(bundleName) {}
+        const std::vector<int32_t> &subTypes, const std::string &table, int32_t deleteRows, std::string bundleName)
+        : ids_(ids), paths_(paths), notifyUris_(notifyUris), dateAddeds_(dateAddeds), subTypes_(subTypes),
+        table_(table), deleteRows_(deleteRows), bundleName_(bundleName) {}
     virtual ~DeleteFilesTask() override = default;
 
     std::vector<std::string> ids_;
     std::vector<std::string> paths_;
     std::vector<std::string> notifyUris_;
     std::vector<std::string> dateAddeds_;
+    std::vector<int32_t> subTypes_;
     std::string table_;
     int32_t deleteRows_;
     std::string bundleName_;

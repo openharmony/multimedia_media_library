@@ -88,6 +88,34 @@ void PermissionUtils::GetClientBundle(const int uid, string &bundleName)
     }
 }
 
+void PermissionUtils::GetPackageName(const int uid, std::string &packageName)
+{
+    packageName = "";
+    string bundleName;
+    GetClientBundle(uid, bundleName);
+    if (bundleName.empty()) {
+        MEDIA_ERR_LOG("Get bundle name failed");
+        return;
+    }
+
+    int32_t userId = uid / BASE_USER_RANGE;
+    MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
+
+    AAFwk::Want want;
+    auto bundleMgr = GetSysBundleManager();
+    if (bundleMgr == nullptr) {
+        MEDIA_ERR_LOG("Get BundleManager failed");
+        return;
+    }
+    int ret = bundleMgr->GetLaunchWantForBundle(bundleName, want, userId);
+    if (ret != ERR_OK) {
+        MEDIA_ERR_LOG("Can not get bundleName by want, err=%{public}d, userId=%{private}d", ret, userId);
+        return;
+    }
+    string abilityName = want.GetOperation().GetAbilityName();
+    packageName = bundleMgr->GetAbilityLabel(bundleName, abilityName);
+}
+
 bool inline ShouldAddPermissionRecord(const AccessTokenID &token)
 {
     return (AccessTokenKit::GetTokenTypeFlag(token) == TOKEN_HAP);
@@ -289,13 +317,18 @@ bool PermissionUtils::IsRootShell()
 string PermissionUtils::GetPackageNameByBundleName(const string &bundleName)
 {
     const static int32_t INVALID_UID = -1;
-    const static int32_t BASE_USER_RANGE = 200000;
-    
+
     int uid = IPCSkeleton::GetCallingUid();
     if (uid <= INVALID_UID) {
         MEDIA_ERR_LOG("Get INVALID_UID UID %{public}d", uid);
         return "";
     }
+    return GetAppIdByBundleName(bundleName, uid);
+}
+
+string PermissionUtils::GetAppIdByBundleName(const string &bundleName, int32_t uid)
+{
+    const static int32_t BASE_USER_RANGE = 200000;
     int32_t userId = uid / BASE_USER_RANGE;
     MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
 
