@@ -141,6 +141,9 @@ enum class EXPORT OperationType : uint32_t {
     PORTRAIT_MERGE_ALBUM,
     DISMISS_ASSET,
     PORTRAIT_COVER_URI,
+    DISMISS,
+    GROUP_ALBUM_NAME,
+    GROUP_COVER_URI,
     SUBMIT_CACHE,
     BATCH_UPDATE_FAV,
     BATCH_UPDATE_USER_COMMENT,
@@ -424,6 +427,9 @@ static const std::map<std::string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_SET_LOCATION, OperationType::SET_LOCATION },
     { OPRN_CANCEL_PROCESS_IMAGE, OperationType::CANCEL_PROCESS_IMAGE },
     { OPRN_LOG_MOVING_PHOTO, OperationType::LOG_MOVING_PHOTO },
+    { OPRN_GROUP_DISMISS, OperationType::DISMISS },
+    { OPRN_GROUP_ALBUM_NAME, OperationType::GROUP_ALBUM_NAME },
+    { OPRN_GROUP_COVER_URI, OperationType::GROUP_COVER_URI },
 };
 }
 

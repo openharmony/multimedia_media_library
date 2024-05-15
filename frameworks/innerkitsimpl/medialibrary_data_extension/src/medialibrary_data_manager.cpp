@@ -758,8 +758,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
         }
         case OperationObject::ANALYSIS_PHOTO_ALBUM: {
-            if (cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
-                cmd.GetOprnType() <= OperationType::PORTRAIT_COVER_URI) {
+            if ((cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
+                 cmd.GetOprnType() <= OperationType::GROUP_COVER_URI)) {
                 return MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(cmd.GetOprnType(), value, predicates);
             }
             break;
@@ -1095,6 +1095,45 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     return QueryInternal(cmd, columns, predicates);
 }
 
+int32_t GetAlbumSubtypeArgument(const RdbPredicates &predicates)
+{
+    string whereClause = predicates.GetWhereClause();
+    vector<string> whereArgs = predicates.GetWhereArgs();
+    size_t subtypePos = whereClause.find(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
+    if (subtypePos == string::npos) {
+        return E_ERR;
+    }
+    size_t argsIndex = 0;
+    for (size_t i = 0; i < subtypePos; i++) {
+        if (whereClause[i] == '?') {
+            argsIndex++;
+        }
+    }
+    if (argsIndex > whereArgs.size() - 1) {
+        return E_ERR;
+    }
+    const string &subtype = whereArgs[argsIndex];
+    if (subtype.empty() || !MediaLibraryDataManagerUtils::IsNumber(subtype)) {
+        return E_ERR;
+    }
+    return std::stoi(subtype);
+}
+
+shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
+    const vector<string> &columns, const DataSharePredicates &predicates)
+{
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    int32_t albumSubtype = GetAlbumSubtypeArgument(rdbPredicates);
+    MEDIA_DEBUG_LOG("Query analysis album of subtype: %{public}d", albumSubtype);
+    if (albumSubtype == PhotoAlbumSubType::PORTRAIT && CheckIsPortraitAlbum(cmd)) {
+        return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
+    }
+    if (albumSubtype == PhotoAlbumSubType::GROUP_PHOTO) {
+        return MediaLibraryAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+    }
+    return MediaLibraryRdbStore::Query(rdbPredicates, columns);
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
@@ -1105,12 +1144,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
         case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
-        case OperationObject::ANALYSIS_PHOTO_ALBUM: {
-            if (CheckIsPortraitAlbum(cmd)) {
-                return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
-            }
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-        }
+        case OperationObject::ANALYSIS_PHOTO_ALBUM:
+            return QueryAnalysisAlbum(cmd, columns, predicates);
         case OperationObject::PHOTO_MAP:
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return PhotoMapOperations::QueryPhotoAssets(
