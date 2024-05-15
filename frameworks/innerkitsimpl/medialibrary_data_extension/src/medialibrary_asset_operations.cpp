@@ -156,6 +156,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryAssetOperations::QueryOperation(
         case OperationObject::FILESYSTEM_ASSET:
             MEDIA_ERR_LOG("api9 operation is not finished");
             return nullptr;
+        case OperationObject::PAH_MOVING_PHOTO:
+            return MediaLibraryPhotoOperations::ScanMovingPhoto(cmd, columns);
         default:
             MEDIA_ERR_LOG("error operation objec: %{public}d", cmd.GetOprnObject());
             return nullptr;
@@ -475,52 +477,6 @@ int32_t MediaLibraryAssetOperations::GetFileAssetVectorFromDb(AbsPredicates &pre
     return GetAssetVectorFromResultSet(resultSet, columns, fileAssetVector);
 }
 
-// temp function, delete after MediaFileUri::Getpath is finish
-static string GetPathFromUri(const std::string &uri, bool isPhoto)
-{
-    size_t index = uri.rfind('/');
-    if (index == string::npos) {
-        return "";
-    }
-    string realTitle = uri.substr(0, index);
-    index = realTitle.rfind('/');
-    if (index == string::npos) {
-        return "";
-    }
-    realTitle = realTitle.substr(index + 1);
-    index = realTitle.rfind('_');
-    if (index == string::npos) {
-        return "";
-    }
-    string fileId = realTitle.substr(index + 1);
-    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
-        return "";
-    }
-    int32_t fileUniqueId = 0;
-    if (!StrToInt(fileId, fileUniqueId)) {
-        MEDIA_ERR_LOG("invalid fileuri %{private}s", uri.c_str());
-        return "";
-    }
-    int32_t bucketNum = 0;
-    MediaLibraryAssetOperations::CreateAssetBucket(fileUniqueId, bucketNum);
-    string ext = MediaFileUtils::GetExtensionFromPath(uri);
-    if (ext.empty()) {
-        return "";
-    }
-
-    string path = ROOT_MEDIA_DIR;
-    if (isPhoto) {
-        path += PHOTO_BUCKET + "/" + to_string(bucketNum) + "/" + realTitle + "." + ext;
-    } else {
-        path += AUDIO_BUCKET + "/" + to_string(bucketNum) + "/" + realTitle + "." + ext;
-    }
-    if (!MediaFileUtils::IsFileExists(path)) {
-        MEDIA_ERR_LOG("file not exist, path=%{private}s", path.c_str());
-        return "";
-    }
-    return path;
-}
-
 shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const string &uri, bool isPhoto,
     const std::vector<std::string> &columns, const string &pendingStatus)
 {
@@ -542,7 +498,7 @@ shared_ptr<FileAsset> MediaLibraryAssetOperations::GetFileAssetByUri(const strin
             fileAsset = GetFileAssetFromDb(MediaColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_AUDIO, columns);
         }
     } else {
-        string path = GetPathFromUri(uri, isPhoto);
+        string path = MediaFileUri::GetPathFromUri(uri, isPhoto);
         if (path.empty()) {
             if (isPhoto) {
                 fileAsset = GetFileAssetFromDb(MediaColumn::MEDIA_ID, id, OperationObject::FILESYSTEM_PHOTO, columns);
@@ -604,6 +560,29 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
 }
 
+static void HandlerCallingPackage(MediaLibraryCommand &cmd, const FileAsset &fileAsset, ValuesBucket &outValues)
+{
+    if (!fileAsset.GetOwnerPackage().empty() && PermissionUtils::IsNativeSAApp()) {
+        outValues.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, fileAsset.GetOwnerPackage());
+
+        int32_t callingUid = 0;
+        ValueObject value;
+        if (cmd.GetValueBucket().GetObject(MEDIA_DATA_CALLING_UID, value)) {
+            value.GetInt(callingUid);
+        }
+        outValues.PutString(MediaColumn::MEDIA_OWNER_APPID,
+            PermissionUtils::GetAppIdByBundleName(fileAsset.GetOwnerPackage(), callingUid));
+        outValues.PutString(MediaColumn::MEDIA_PACKAGE_NAME, fileAsset.GetPackageName());
+        return;
+    }
+
+    outValues.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
+    outValues.PutString(MediaColumn::MEDIA_OWNER_APPID, PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName()));
+    if (!cmd.GetBundleName().empty()) {
+        outValues.PutString(MediaColumn::MEDIA_PACKAGE_NAME, GetAssetPackageName(fileAsset, cmd.GetBundleName()));
+    }
+}
+
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // Fill basic file information into DB
@@ -633,12 +612,8 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
             assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo now
         }
     }
-    assetInfo.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
-    assetInfo.PutString(MediaColumn::MEDIA_OWNER_APPID, PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName()));
-    if (!cmd.GetBundleName().empty()) {
-        assetInfo.PutString(MediaColumn::MEDIA_PACKAGE_NAME,
-            GetAssetPackageName(fileAsset, cmd.GetBundleName()));
-    }
+
+    HandlerCallingPackage(cmd, fileAsset, assetInfo);
 
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
     HandleDateAdded(nowTime,
@@ -1082,6 +1057,23 @@ static int32_t CreateDirectoryAndAsset(const string path)
     return E_OK;
 }
 
+static int32_t SolveMovingPhotoVideoCreation(const string &imagePath, const string &mode, bool isMovingPhotoVideo)
+{
+    if (mode == MEDIA_FILEMODE_READONLY || !isMovingPhotoVideo) {
+        return E_OK;
+    }
+    string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(imagePath);
+    if (MediaFileUtils::IsFileExists(videoPath)) {
+        return E_OK;
+    }
+    int32_t errCode = MediaFileUtils::CreateAsset(videoPath);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Create moving photo asset failed, path=%{private}s", videoPath.c_str());
+        return errCode;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &fileAsset, const string &mode,
     MediaLibraryApi api, bool isMovingPhotoVideo)
 {
@@ -1106,6 +1098,7 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
             return errCode;
         }
         path = fileAsset->GetPath();
+        SolveMovingPhotoVideoCreation(path, mode, isMovingPhotoVideo);
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
         if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
@@ -1611,28 +1604,6 @@ int32_t MediaLibraryAssetOperations::CreateAssetUniqueId(int32_t type)
     return GetInt32Val(UNIQUE_NUMBER, resultSet);
 }
 
-int32_t MediaLibraryAssetOperations::CreateAssetBucket(int32_t fileId, int32_t &bucketNum)
-{
-    if (fileId < 0) {
-        MEDIA_ERR_LOG("input fileId [%{public}d] is invalid", fileId);
-        return E_INVALID_FILEID;
-    }
-    uint32_t start = ASSET_DIR_START_NUM;
-    int divider = ASSET_DIR_START_NUM;
-    while (fileId > start * ASSET_IN_BUCKET_NUM_MAX) {
-        divider = start;
-        start <<= 1;
-    }
-
-    int fileIdRemainder = fileId % divider;
-    if (fileIdRemainder == 0) {
-        bucketNum = start + fileIdRemainder;
-    } else {
-        bucketNum = (start - divider) + fileIdRemainder;
-    }
-    return E_OK;
-}
-
 int32_t MediaLibraryAssetOperations::CreateAssetRealName(int32_t fileId, int32_t mediaType,
     const string &extension, string &name)
 {
@@ -1685,7 +1656,7 @@ int32_t MediaLibraryAssetOperations::CreateAssetPathById(int32_t fileId, int32_t
     }
 
     int32_t bucketNum = 0;
-    int32_t errCode = CreateAssetBucket(fileId, bucketNum);
+    int32_t errCode = MediaFileUri::CreateAssetBucket(fileId, bucketNum);
     if (errCode != E_OK) {
         return errCode;
     }
@@ -1909,9 +1880,19 @@ static void DeleteFiles(AsyncTaskData *data)
         watch->Notify(MediaFileUtils::Encode(notifyUri), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, trashAlbumId);
     }
 
-    for (const auto &path : taskData->paths_) {
-        if (!MediaFileUtils::DeleteFile(path) && (errno != ENOENT)) {
-            MEDIA_WARN_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, path.c_str());
+    for (size_t i = 0; i < taskData->paths_.size(); i++) {
+        string filePath = taskData->paths_[i];
+        if (!MediaFileUtils::DeleteFile(filePath) && (errno != ENOENT)) {
+            MEDIA_WARN_LOG("Failed to delete file, errno: %{public}d, path: %{private}s", errno, filePath.c_str());
+        }
+
+        if (taskData->subTypes_[i] == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            // delete video file of moving photo
+            string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(filePath);
+            if (!MediaFileUtils::DeleteFile(videoPath) && (errno != ENOENT)) {
+                MEDIA_WARN_LOG("Failed to delete video file, errno: %{public}d, path: %{private}s", errno,
+                    videoPath.c_str());
+            }
         }
     }
     for (size_t i = 0; i < taskData->ids_.size(); i++) {
@@ -1926,12 +1907,13 @@ static void DeleteFiles(AsyncTaskData *data)
 }
 
 int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
-    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateAddeds)
+    vector<string> &outIds, vector<string> &outPaths, vector<string> &outDateAddeds, vector<int32_t> &outSubTypes)
 {
     vector<string> columns = {
         MediaColumn::MEDIA_ID,
         MediaColumn::MEDIA_FILE_PATH,
-        MediaColumn::MEDIA_DATE_ADDED
+        MediaColumn::MEDIA_DATE_ADDED,
+        PhotoColumn::PHOTO_SUBTYPE
     };
     auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
     if (resultSet == nullptr) {
@@ -1944,6 +1926,8 @@ int32_t GetIdsAndPaths(const AbsRdbPredicates &predicates,
             TYPE_STRING)));
         outDateAddeds.push_back(get<string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DATE_ADDED, resultSet,
             TYPE_STRING)));
+        outSubTypes.push_back(
+            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_SUBTYPE, resultSet, TYPE_INT32)));
     }
     return E_OK;
 }
@@ -1984,8 +1968,9 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
     vector<string> ids;
     vector<string> paths;
     vector<string> dateAddeds;
+    vector<int32_t> subTypes;
     int32_t deletedRows = 0;
-    GetIdsAndPaths(predicates, ids, paths, dateAddeds);
+    GetIdsAndPaths(predicates, ids, paths, dateAddeds, subTypes);
     if (ids.empty()) {
         MEDIA_ERR_LOG("Failed to delete files in db, ids size: 0");
         return deletedRows;
@@ -2010,8 +1995,8 @@ int32_t MediaLibraryAssetOperations::DeleteFromDisk(AbsRdbPredicates &predicates
 
     const vector<string> &notifyUris = isAging ? agingNotifyUris : whereArgs;
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-    auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateAddeds, predicates.GetTableName(),
-        deletedRows, bundleName);
+    auto *taskData = new (nothrow) DeleteFilesTask(ids, paths, notifyUris, dateAddeds, subTypes,
+        predicates.GetTableName(), deletedRows, bundleName);
     auto deleteFilesTask = make_shared<MediaLibraryAsyncTask>(DeleteFiles, taskData);
     if (deleteFilesTask == nullptr) {
         MEDIA_ERR_LOG("Failed to create async task for deleting files.");

@@ -248,6 +248,8 @@ const std::string MEDIA_DATA_BUNDLENAME = "bundle_name";
 const std::string MEDIA_DATA_DB_IS_LOCAL = "is_local";
 const std::string MEDIA_DATA_DB_HIGHLIGHT = "highlight";
 
+const std::string MEDIA_DATA_CALLING_UID = "calling_uid";
+
 const std::map<std::string, std::string> DATE_TRANSITION_MAP = {
     { MEDIA_DATA_DB_DATE_MODIFIED_MS, MEDIA_DATA_DB_DATE_MODIFIED },
     { MEDIA_DATA_DB_DATE_ADDED_MS, MEDIA_DATA_DB_DATE_ADDED },

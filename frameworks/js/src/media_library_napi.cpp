@@ -1764,7 +1764,7 @@ static string GetFirstDirName(const string &relativePath)
 static bool IsDirectory(const string &dirName)
 {
     struct stat statInfo {};
-    if (stat((ROOT_MEDIA_DIR + dirName).c_str(), &statInfo) == SUCCESS) {
+    if (stat((ROOT_MEDIA_DIR + dirName).c_str(), &statInfo) == E_SUCCESS) {
         if (statInfo.st_mode & S_IFDIR) {
             return true;
         }
@@ -2932,7 +2932,7 @@ static void JSReleaseCompleteCallback(napi_env env, napi_status status,
     unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
     jsContext->status = false;
     if (context->objectInfo != nullptr) {
-        napi_create_int32(env, SUCCESS, &jsContext->data);
+        napi_create_int32(env, E_SUCCESS, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     } else {

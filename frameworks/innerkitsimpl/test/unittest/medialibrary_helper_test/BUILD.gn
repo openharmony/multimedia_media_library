@@ -38,6 +38,7 @@ ohos_unittest("media_library_helper_test") {
     "./src/file_asset_test.cpp",
     "./src/media_file_uri_test.cpp",
     "./src/media_file_utils_test.cpp",
+    "./src/media_photo_asset_proxy_test.cpp",
     "./src/media_volume_test.cpp",
     "./src/native_album_asset_test.cpp",
     "./src/photo_album_asset_test.cpp",
@@ -48,6 +49,8 @@ ohos_unittest("media_library_helper_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
     "${MEDIALIB_INTERFACES_PATH}/kits/js:medialibrary",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
@@ -59,6 +62,7 @@ ohos_unittest("media_library_helper_test") {
     "image_framework:image_native",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
+    "samgr:samgr_proxy",
   ]
 
   sanitize = {

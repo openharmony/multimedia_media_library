@@ -19,6 +19,7 @@
 #include <sys/types.h>
 
 #include "scanner_utils.h"
+#include "media_file_uri.h"
 #include "metadata_extractor.h"
 #include "mimetype_utils.h"
 #include "medialibrary_errno.h"
@@ -123,7 +124,7 @@ int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, 
     string &filePath)
 {
     int32_t bucketNum = 0;
-    int32_t errCode = MediaLibraryAssetOperations::CreateAssetBucket(fileId, bucketNum);
+    int32_t errCode = MediaFileUri::CreateAssetBucket(fileId, bucketNum);
     if (errCode != E_OK) {
         return errCode;
     }
@@ -227,7 +228,7 @@ bool BackupFileUtils::MoveFile(const string &oldPath, const string &newPath, int
         MEDIA_ERR_LOG("new path: %{public}s is exists.", GarbleFilePath(newPath, sceneCode).c_str());
         return E_FILE_EXIST;
     }
-    return (rename(oldPath.c_str(), newPath.c_str()) == SUCCESS);
+    return (rename(oldPath.c_str(), newPath.c_str()) == E_SUCCESS);
 }
 
 std::string BackupFileUtils::GetReplacedPathByPrefixType(PrefixType srcPrefixType, PrefixType dstPrefixType,
@@ -285,7 +286,7 @@ bool BackupFileUtils::IsFileValid(const std::string &filePath, int32_t sceneCode
 {
     std::string garbledFilePath = BackupFileUtils::GarbleFilePath(filePath, sceneCode);
     struct stat statInfo {};
-    if (stat(filePath.c_str(), &statInfo) != SUCCESS) {
+    if (stat(filePath.c_str(), &statInfo) != E_SUCCESS) {
         MEDIA_ERR_LOG("Invalid file (%{public}s), get statInfo failed, err: %{public}d", garbledFilePath.c_str(),
             errno);
         return false;

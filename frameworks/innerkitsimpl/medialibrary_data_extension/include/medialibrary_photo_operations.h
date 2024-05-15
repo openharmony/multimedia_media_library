@@ -44,6 +44,8 @@ public:
     EXPORT static void DeleteRevertMessage(const std::string &path);
     EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
     EXPORT static void RemoveThumbnailSizeRecord(const std::string& photoId);
+    EXPORT static std::shared_ptr<NativeRdb::ResultSet> ScanMovingPhoto(MediaLibraryCommand &cmd,
+        const std::vector<std::string> &columns);
 
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);

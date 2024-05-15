@@ -21,6 +21,7 @@
 #include "media_assets_change_request_napi.h"
 #include "napi/native_node_api.h"
 #include "native_module_ohos_medialibrary.h"
+#include "photo_proxy_napi.h"
 
 extern const char _binary_photoaccesshelperinf_js_start[];
 extern const char _binary_photoaccesshelperinf_js_end[];
@@ -46,6 +47,7 @@ static napi_value PhotoAccessHelperExport(napi_env env, napi_value exports)
     MediaAlbumChangeRequestNapi::Init(env, exports);
     MediaAssetManagerNapi::Init(env, exports);
     MovingPhotoNapi::Init(env, exports);
+    PhotoProxyNapi::Init(env, exports);
     return exports;
 }
 

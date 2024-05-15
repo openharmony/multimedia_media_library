@@ -35,7 +35,7 @@ public:
     void OnStateChanged(const CameraStandard::DpsStatusCode state) override;
 
 private:
-    int32_t UpdatePhotoQuality(const std::string &photoId);
+    int32_t UpdatePhotoQuality(const std::string &photoId, int32_t subType);
 };
 #endif
 } // namespace Media
