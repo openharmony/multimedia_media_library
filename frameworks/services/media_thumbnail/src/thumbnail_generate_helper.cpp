@@ -222,7 +222,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
     if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s", fileName.c_str());
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
-    } else if (!IThumbnailHelper::DoCreateThumbnail(opts, data)) {
+    } else if (thumbType == ThumbnailType::THUMB && !IThumbnailHelper::DoCreateThumbnail(opts, data)) {
         MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s", fileName.c_str());
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }

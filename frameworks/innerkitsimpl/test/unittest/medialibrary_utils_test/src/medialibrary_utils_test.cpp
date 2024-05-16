@@ -503,7 +503,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_LoadSourceImage_test_001, TestSize.Leve
     ThumbnailData data;
     data.source = nullptr;
     data.mediaType = MEDIA_TYPE_VIDEO;
-    data.useThumbAsSource = true;
+    data.loaderOpts.decodeInThumbSize = true;
     data.path = "";
     bool ret = ThumbnailUtils::LoadSourceImage(data);
     EXPECT_EQ(ret, false);
@@ -669,7 +669,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     desiredSize.width = 20;
     desiredSize.height = 20;
     data.path = "/storage/cloud/files";
-    data.useThumbAsSource = false;
+    data.loaderOpts.decodeInThumbSize  = false;
     data.source = make_shared<PixelMap>();
     std::string sourcePath = "";
     bool ret = ThumbnailUtils::LoadImageFile(data, desiredSize);

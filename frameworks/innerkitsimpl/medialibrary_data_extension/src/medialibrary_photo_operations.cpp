@@ -127,28 +127,6 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
     return deleteRow;
 }
 
-static void AddQueryIndex(AbsPredicates &predicates, const vector<string> &columns)
-{
-    auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
-    if (it == columns.end()) {
-        return;
-    }
-    const string &group = predicates.GetGroup();
-    if (group.empty()) {
-        predicates.GroupBy({ PhotoColumn::PHOTO_DATE_DAY });
-        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
-        return;
-    }
-    if (group == PhotoColumn::MEDIA_TYPE) {
-        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
-        return;
-    }
-    if (group == PhotoColumn::PHOTO_DATE_DAY) {
-        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
-        return;
-    }
-}
-
 static int32_t GetAlbumTypeSubTypeById(const string &albumId, PhotoAlbumType &type, PhotoAlbumSubType &subType)
 {
     RdbPredicates predicates(PhotoAlbumColumns::TABLE);
@@ -278,7 +256,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         }
         return HandleIndexOfUri(cmd, predicates, photoId, albumId);
     }
-    AddQueryIndex(predicates, columns);
+    MediaLibraryRdbUtils::AddQueryIndex(predicates, columns);
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
 

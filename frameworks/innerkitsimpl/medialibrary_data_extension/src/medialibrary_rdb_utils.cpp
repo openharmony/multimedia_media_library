@@ -1847,4 +1847,39 @@ void MediaLibraryRdbUtils::UpdateAllAlbumsCountForCloud(const std::shared_ptr<Na
     vector<string> subtype = { "4101" };
     MediaLibraryRdbUtils::UpdateAnalysisAlbumCountInternal(rdbStore, subtype);
 }
+
+void MediaLibraryRdbUtils::AddQueryIndex(AbsPredicates& predicates, const vector<string>& columns)
+{
+    auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
+    if (it == columns.end()) {
+        return;
+    }
+    const string &group = predicates.GetGroup();
+    if (group.empty()) {
+        predicates.GroupBy({ PhotoColumn::PHOTO_DATE_DAY });
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
+        return;
+    }
+    if (group == PhotoColumn::MEDIA_TYPE) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
+        return;
+    }
+    if (group == PhotoColumn::PHOTO_DATE_DAY) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
+        return;
+    }
+}
+
+void MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(vector<string>& columns)
+{
+    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
+    vector<string> dateTypeSeconds = { MEDIA_DATA_DB_DATE_ADDED_TO_SECOND,
+            MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND, MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND };
+    for (size_t i = 0; i < dateTypes.size(); i++) {
+        auto it = find(columns.begin(), columns.end(), dateTypes[i]);
+        if (it != columns.end()) {
+            columns.push_back(dateTypeSeconds[i]);
+        }
+    }
+}
 } // namespace OHOS::Media
