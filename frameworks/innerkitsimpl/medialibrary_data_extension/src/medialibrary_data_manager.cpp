@@ -1126,11 +1126,11 @@ shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
     int32_t albumSubtype = GetAlbumSubtypeArgument(rdbPredicates);
     MEDIA_DEBUG_LOG("Query analysis album of subtype: %{public}d", albumSubtype);
-    if (albumSubtype == PhotoAlbumSubType::PORTRAIT && CheckIsPortraitAlbum(cmd)) {
-        return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
-    }
     if (albumSubtype == PhotoAlbumSubType::GROUP_PHOTO) {
         return MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+    }
+    if (CheckIsPortraitAlbum(cmd)) {
+        return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
     }
     return MediaLibraryRdbStore::Query(rdbPredicates, columns);
 }
