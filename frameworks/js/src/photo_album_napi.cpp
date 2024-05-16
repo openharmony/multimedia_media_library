@@ -933,6 +933,11 @@ static int32_t GetPredicatesByAlbumTypes(const shared_ptr<PhotoAlbum> &photoAlbu
         if (isLocationAlbum) {
             return MediaLibraryNapiUtils::GetAllLocationPredicates(predicates);
         }
+        auto albumName = photoAlbum->GetAlbumName();
+        if (MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(albumName, predicates)) {
+            return MediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
+                photoAlbum->GetAlbumId(), predicates);
+        }
         return MediaLibraryNapiUtils::GetAnalysisAlbumPredicates(photoAlbum->GetAlbumId(), predicates);
     }
     
@@ -1015,6 +1020,23 @@ void ConvertColumnsForPortrait(PhotoAlbumNapiAsyncContext *context)
     }
 }
 
+void ConvertColumnsForFeaturedSinglePortrait(PhotoAlbumNapiAsyncContext *context)
+{
+    if (context == nullptr) {
+        return;
+    }
+
+    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
+    int portraitAlbumId = 0;
+    if (photoAlbum->GetAlbumName().compare(to_string(portraitAlbumId)) != 0) {
+        return;
+    }
+
+    for (size_t i = 0; i < context->fetchColumn.size(); i++) {
+        context->fetchColumn[i] = PhotoColumn::PHOTOS_TABLE + "." + context->fetchColumn[i];
+    }
+}
+
 static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
@@ -1023,6 +1045,7 @@ static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
     auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
+    ConvertColumnsForFeaturedSinglePortrait(context);
     int32_t errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr) {

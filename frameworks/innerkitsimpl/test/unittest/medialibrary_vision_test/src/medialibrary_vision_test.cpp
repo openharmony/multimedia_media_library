@@ -642,6 +642,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level
     valuesBucket.Put(IMAGE_FACE_VERSION, "1.01");
     valuesBucket.Put(IMAGE_FEATURES_VERSION, "3.0");
     valuesBucket.Put(FEATURES, "xyijd");
+    valuesBucket.Put(FACE_OCCLUSION, 2);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
@@ -679,6 +680,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateImageFace_Test_001, TestSize.Level
     valuesBucket.Put(IMAGE_FACE_VERSION, "1.01");
     valuesBucket.Put(IMAGE_FEATURES_VERSION, "3.0");
     valuesBucket.Put(FEATURES, "vvvr");
+    valuesBucket.Put(FACE_OCCLUSION, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;
     updateValues.Put(TOTAL_FACES, 8);
@@ -717,6 +719,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteImageFace_Test_001, TestSize.Level
     valuesBucket.Put(IMAGE_FACE_VERSION, "1.041");
     valuesBucket.Put(IMAGE_FEATURES_VERSION, "34.0");
     valuesBucket.Put(FEATURES, "bb4");
+    valuesBucket.Put(FACE_OCCLUSION, 2);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
@@ -754,6 +757,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level0
     valuesBucket.Put(IMAGE_FACE_VERSION, "1.016");
     valuesBucket.Put(IMAGE_FEATURES_VERSION, "3.06");
     valuesBucket.Put(FEATURES, "bb66");
+    valuesBucket.Put(FACE_OCCLUSION, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
@@ -2851,6 +2855,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertPose_Test_001, TestSize.Level0)
     valuesBucket.Put(POSE_SCALE_HEIGHT, 1000);
     valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(POSE_VERSION, "1.0");
+    valuesBucket.Put(POSE_TYPE, 1);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
 
@@ -2864,6 +2869,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertPose_Test_001, TestSize.Level0)
     valuesBucket1.Put(POSE_SCALE_HEIGHT, 1000);
     valuesBucket1.Put(PROB, 0.9);
     valuesBucket1.Put(POSE_VERSION, "1.0");
+    valuesBucket1.Put(POSE_TYPE, 2);
     auto retVal1 = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     EXPECT_LT(retVal1, 0);
     MEDIA_INFO_LOG("Vision_InsertPose_Test_001::retVal = %{public}d. End", retVal);
@@ -2888,12 +2894,14 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdatePose_Test_001, TestSize.Level0)
     valuesBucket.Put(POSE_SCALE_HEIGHT, 1000);
     valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(POSE_VERSION, "1.0");
+    valuesBucket.Put(POSE_TYPE, 3);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket updateValues;
     updateValues.Put(POSE_SCALE_X, 200);
     updateValues.Put(POSE_SCALE_Y, 300);
     updateValues.Put(POSE_VERSION, "2.0");
+    valuesBucket.Put(POSE_TYPE, 2);
     DataShare::DataSharePredicates predicates;
     vector<string> inValues;
     inValues.push_back("2");
@@ -2922,6 +2930,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeletePose_Test_001, TestSize.Level0)
     valuesBucket.Put(POSE_SCALE_HEIGHT, 1000);
     valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(POSE_VERSION, "1.0");
+    valuesBucket.Put(POSE_TYPE, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
@@ -2934,6 +2943,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeletePose_Test_001, TestSize.Level0)
     valuesBucket1.Put(POSE_SCALE_HEIGHT, 1000);
     valuesBucket1.Put(PROB, 0.9);
     valuesBucket1.Put(POSE_VERSION, "1.0");
+    valuesBucket1.Put(POSE_TYPE, 2);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(FILE_ID, 3);
@@ -2957,6 +2967,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryPose_Test_001, TestSize.Level0)
     valuesBucket.Put(POSE_SCALE_HEIGHT, 1000);
     valuesBucket.Put(PROB, 0.9);
     valuesBucket.Put(POSE_VERSION, "1.0");
+    valuesBucket.Put(POSE_TYPE, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
@@ -2969,6 +2980,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryPose_Test_001, TestSize.Level0)
     valuesBucket1.Put(POSE_SCALE_HEIGHT, 1000);
     valuesBucket1.Put(PROB, 0.9);
     valuesBucket1.Put(POSE_VERSION, "1.0");
+    valuesBucket1.Put(POSE_TYPE, 2);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(FILE_ID, 4);

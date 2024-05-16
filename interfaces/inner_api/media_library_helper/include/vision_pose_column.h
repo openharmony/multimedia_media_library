@@ -27,6 +27,7 @@ const std::string POSE_SCALE_Y = "pose_scale_y";
 const std::string POSE_SCALE_WIDTH = "pose_scale_width";
 const std::string POSE_SCALE_HEIGHT = "pose_scale_height";
 const std::string POSE_VERSION = "pose_version";
+const std::string POSE_TYPE = "pose_type";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_POSE_COLUMN_H
