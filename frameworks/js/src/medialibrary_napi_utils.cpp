@@ -43,6 +43,8 @@
 #include "vision_album_column.h"
 #include "vision_column.h"
 #include "vision_face_tag_column.h"
+#include "vision_pose_column.h"
+#include "vision_image_face_column.h"
 
 using namespace std;
 using namespace OHOS::DataShare;
@@ -907,6 +909,79 @@ int32_t MediaLibraryNapiUtils::GetAnalysisAlbumPredicates(const int32_t albumId,
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
+    predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    return E_SUCCESS;
+}
+
+bool MediaLibraryNapiUtils::IsFeaturedSinglePortraitAlbum(
+    std::string albumName, DataShare::DataSharePredicates &predicates)
+{
+    bool isFeaturedSinglePortrait = false;
+    int portraitAlbumId = 0;
+    if (albumName.compare(to_string(portraitAlbumId)) != 0) {
+        return isFeaturedSinglePortrait;
+    }
+
+    DataSharePredicates featuredSinglePortraitPredicates;
+    std::vector<OperationItem> operationList = predicates.GetOperationList();
+    for (auto& operationItem : operationList) {
+        switch (operationItem.operation) {
+            case OHOS::DataShare::OperationType::LIKE : {
+                std::string field = std::get<string>(operationItem.singleParams[0]);
+                std::string value = std::get<string>(operationItem.singleParams[1]);
+                if (field.compare("FeaturedSinglePortrait") == 0 && value.compare("true") == 0) {
+                    isFeaturedSinglePortrait = true;
+                } else {
+                    featuredSinglePortraitPredicates.Like(field, value);
+                }
+                break;
+            }
+            case OHOS::DataShare::OperationType::ORDER_BY_DESC : {
+                featuredSinglePortraitPredicates.OrderByDesc(operationItem.GetSingle(0));
+                break;
+            }
+            case OHOS::DataShare::OperationType::LIMIT : {
+                featuredSinglePortraitPredicates.Limit(operationItem.GetSingle(0), operationItem.GetSingle(1));
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    }
+
+    if (isFeaturedSinglePortrait) {
+        predicates = featuredSinglePortraitPredicates;
+    }
+    return isFeaturedSinglePortrait;
+}
+
+int32_t MediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
+    const int32_t albumId, DataSharePredicates &predicates)
+{
+    string onClause = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " = " +
+        ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ASSET_ID;
+    predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
+
+    constexpr int32_t minSize = 224;
+    string portraitRotationLimit = "BETWEEN -30 AND 30";
+    onClause = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " = " + VISION_IMAGE_FACE_TABLE + "." +
+        MediaColumn::MEDIA_ID + " AND " + VISION_IMAGE_FACE_TABLE + "." + TOTAL_FACES + " = 1 AND " +
+        VISION_IMAGE_FACE_TABLE + "." + SCALE_HEIGHT + " > " + to_string(minSize) + " AND " +
+        VISION_IMAGE_FACE_TABLE + "." + SCALE_WIDTH + " > " + to_string(minSize) + " AND " +
+        VISION_IMAGE_FACE_TABLE + "." + PITCH + " " + portraitRotationLimit + " AND " +
+        VISION_IMAGE_FACE_TABLE + "." + YAW + " " + portraitRotationLimit + " AND " +
+        VISION_IMAGE_FACE_TABLE + "." + ROLL + " " + portraitRotationLimit;
+    predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ onClause });
+
+    string portraitType = "IN ( 1, 2 )";
+    onClause = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " = " + VISION_POSE_TABLE + "." +
+        MediaColumn::MEDIA_ID + " AND " + VISION_POSE_TABLE + "." + POSE_TYPE + " " + portraitType;
+    predicates.InnerJoin(VISION_POSE_TABLE)->On({ onClause });
+
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
     predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));

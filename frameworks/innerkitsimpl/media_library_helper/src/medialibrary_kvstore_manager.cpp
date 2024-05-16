@@ -141,7 +141,7 @@ void MediaLibraryKvStoreManager::RegisterTimer(const KvStoreRoleType &roleType, 
 bool MediaLibraryKvStoreManager::InitMonthAndYearKvStore(const KvStoreRoleType& roleType)
 {
     if (roleType != KvStoreRoleType::OWNER) {
-        return;
+        return false;
     }
     if (GetKvStore(roleType, KvStoreValueType::MONTH_ASTC) == nullptr ||
         GetKvStore(roleType, KvStoreValueType::YEAR_ASTC) == nullptr) {
