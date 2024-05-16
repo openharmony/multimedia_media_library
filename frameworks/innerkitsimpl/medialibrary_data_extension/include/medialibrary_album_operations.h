@@ -45,16 +45,6 @@ struct MergeAlbumInfo {
     std::string albumName;
     int isCoverSatisfied;
 };
-struct GroupPhotoAlbumInfo {
-    int32_t albumId;
-    std::string tagId;
-    std::string coverUri;
-    int32_t isCoverSatisfied;
-    int32_t count;
-    int32_t fileId;
-    std::string candidateUri;
-    int32_t isMe;
-};
 class MediaLibraryAlbumOperations {
 public:
     static int32_t CreateAlbumOperation(MediaLibraryCommand &cmd);
@@ -72,8 +62,6 @@ public:
     static int32_t HandleAnalysisPhotoAlbum(const OperationType &opType, const NativeRdb::ValuesBucket &values,
         const DataShare::DataSharePredicates &predicates, std::shared_ptr<int> countPtr = nullptr);
     static std::shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbum(MediaLibraryCommand &cmd,
-        const std::vector<std::string> &columns);
-    static std::shared_ptr<NativeRdb::ResultSet> QueryGroupPhotoAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
 };
 } // namespace Media
