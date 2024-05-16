@@ -1507,6 +1507,13 @@ static void AddHeadAndPoseTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddFaceOcclusionAndPoseTypeColumn(RdbStore &store)
+{
+    MEDIA_INFO_LOG("start add face occlusion and pose type column");
+    MediaLibraryRdbStore::AddColumnIfNotExists(store, FACE_OCCLUSION, "INT", VISION_IMAGE_FACE_TABLE);
+    MediaLibraryRdbStore::AddColumnIfNotExists(store, POSE_TYPE, "INT", VISION_POSE_TABLE);
+}
+
 static void AddSegmentationColumns(RdbStore &store)
 {
     const string addNameOnSegmentation = "ALTER TABLE " + VISION_SEGMENTATION_TABLE + " ADD COLUMN " +
@@ -1599,6 +1606,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     UpdateSpecForAddScreenshot(*rdbStore_);
     AddHeadAndPoseTables(*rdbStore_);
     AddSegmentationColumns(*rdbStore_);
+    AddFaceOcclusionAndPoseTypeColumn(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -2425,6 +2433,10 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_SEGMENTATION_COLUMNS) {
         AddSegmentationColumns(store);
     }
+
+    if (oldVersion < VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN) {
+        AddFaceOcclusionAndPoseTypeColumn(store);
+    }
 }
 
 static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
@@ -2599,6 +2611,15 @@ bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &colum
     int32_t count = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
     MEDIA_DEBUG_LOG("%{private}s in %{private}s: %{public}d", columnName.c_str(), tableName.c_str(), count);
     return count > 0;
+}
+
+void MediaLibraryRdbStore::AddColumnIfNotExists(
+    RdbStore &store, const string &columnName, const string &columnType, const string &tableName)
+{
+    if (!HasColumnInTable(store, columnName, tableName)) {
+        string sql = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnType;
+        store.ExecuteSql(sql);
+    }
 }
 
 #ifdef DISTRIBUTED
