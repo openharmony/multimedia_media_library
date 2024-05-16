@@ -2613,7 +2613,7 @@ bool MediaLibraryRdbStore::HasColumnInTable(RdbStore &store, const string &colum
     return count > 0;
 }
 
-bool MediaLibraryRdbStore::AddColumnIfNotExists(
+void MediaLibraryRdbStore::AddColumnIfNotExists(
     RdbStore &store, const string &columnName, const string &columnType, const string &tableName)
 {
     if (!HasColumnInTable(store, columnName, tableName)) {
