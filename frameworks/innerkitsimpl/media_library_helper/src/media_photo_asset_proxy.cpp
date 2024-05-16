@@ -205,7 +205,7 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
         MEDIA_ERR_LOG("packet pixelMap failed packResult: %{public}d", packResult);
         return E_ERR;
     }
-    MEDIA_INFO_LOG("pack pixelMap success, packedSize: %{public}lld", packedSize);
+    MEDIA_INFO_LOG("pack pixelMap success, packedSize: %{public}" PRId64, packedSize);
 
     auto ret = SaveImage(fd, uri, photoProxy->GetPhotoId(), buffer, packedSize);
     delete[] buffer;
