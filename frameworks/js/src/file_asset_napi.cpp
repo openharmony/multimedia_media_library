@@ -399,6 +399,12 @@ napi_value FileAssetNapi::CreatePhotoAsset(napi_env env, shared_ptr<FileAsset> &
         return nullptr;
     }
 
+    if (photoAccessHelperConstructor_ == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        FileAssetNapi::PhotoAccessHelperInit(env, exports);
+    }
+
     napi_value constructor = nullptr;
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_reference_value(env, photoAccessHelperConstructor_, &constructor));

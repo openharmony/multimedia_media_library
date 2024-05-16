@@ -160,6 +160,10 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(
     }
     std::string tableName = GetTableNameFromOprnObject(object);
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, tableName);
+    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
+    if (object == OperationObject::UFM_PHOTO || object == OperationObject::PAH_PHOTO) {
+        MediaLibraryRdbUtils::AddQueryIndex(rdbPredicates, columns);
+    }
     MediaLibraryRdbUtils::AddQueryFilter(rdbPredicates);
     auto resultSet = rdbStore_->Query(rdbPredicates, columns);
     if (resultSet == nullptr) {

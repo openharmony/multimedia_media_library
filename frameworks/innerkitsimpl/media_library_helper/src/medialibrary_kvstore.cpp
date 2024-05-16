@@ -188,6 +188,7 @@ int32_t MediaLibraryKvStore::BatchQuery(
         return E_HAS_DB_ERROR;
     }
 
+    std::sort(batchKeys.begin(), batchKeys.end(), [](std::string a, std::string b) {return a > b;});
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryKvStore::BatchQuery");
     return FillBatchValues(batchKeys, values, kvStorePtr_);

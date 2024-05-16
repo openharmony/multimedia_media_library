@@ -43,12 +43,12 @@ int FileUtils::DeleteFile(const string &fileName)
 bool FileUtils::IsFileExist(const string &fileName)
 {
     struct stat statInfo {};
-    return ((stat(fileName.c_str(), &statInfo)) == SUCCESS);
+    return ((stat(fileName.c_str(), &statInfo)) == E_SUCCESS);
 }
 
 int32_t FileUtils::SaveImage(const string &filePath, void *output, size_t writeSize)
 {
-    string filePathTemp = filePath + ".tmp";
+    string filePathTemp = filePath + ".high";
     int fd = open(filePathTemp.c_str(), O_CREAT|O_WRONLY|O_TRUNC, 0777);
     if (fd < 0) {
         MEDIA_ERR_LOG("fd.Get() < 0 fd %{public}d errno: %{public}d", fd, errno);

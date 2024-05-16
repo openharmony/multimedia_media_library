@@ -257,6 +257,7 @@ private:
     EXPORT static napi_value PhotoAccessHelperOnCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperOffCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetPhotoAssetsSync(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessCreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessDeletePhotoAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);

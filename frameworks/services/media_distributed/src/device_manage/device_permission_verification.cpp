@@ -118,7 +118,7 @@ void DevicePermissionVerification::MLDevSecInfoCb(const DeviceIdentify *identify
     int32_t level = 0;
     int32_t ret = GetDeviceSecurityLevelValue(info, &level);
     FreeDeviceSecurityInfo(info);
-    if (ret != SUCCESS) {
+    if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("get device sec level failed %{public}d", ret);
         return;
     }
@@ -135,7 +135,7 @@ bool DevicePermissionVerification::ReqDestDevSecLevel(const std::string &udid)
         MEDIA_ERR_LOG("str copy failed %{public}d", ret);
     }
     ret = RequestDeviceSecurityInfoAsync(&devIdentify, nullptr, DevicePermissionVerification::MLDevSecInfoCb);
-    if (ret != SUCCESS) {
+    if (ret != E_SUCCESS) {
         MEDIA_ERR_LOG("request device sec info failed %{public}d", ret);
         return false;
     }

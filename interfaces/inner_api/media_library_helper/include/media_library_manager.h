@@ -21,6 +21,7 @@
 #include "media_volume.h"
 #include "pixel_map.h"
 #include "unique_fd.h"
+#include "media_photo_asset_proxy.h"
 
 namespace OHOS {
 namespace Media {
@@ -170,6 +171,17 @@ public:
      * @return image uri
      */
     EXPORT std::string GetMovingPhotoImageUri(const string &uri);
+
+    /**
+     * @brief Create PhotoAssetProxy
+     *
+     * @param cameraShotType a parameter for input, indicates camera shot type
+     * @param callingUid a parameter for input, indicates calling uid
+     * @param userId a parameter for input, indicates user id
+     * @return if obtain success, return PhotoAssetProxy; Otherwise return nullptr
+     */
+    EXPORT std::shared_ptr<PhotoAssetProxy> CreatePhotoAssetProxy(CameraShotType cameraShotType, uint32_t callingUid,
+        int32_t userId);
 
 private:
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);
