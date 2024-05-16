@@ -42,6 +42,7 @@
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
@@ -1129,7 +1130,7 @@ shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
         return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
     }
     if (albumSubtype == PhotoAlbumSubType::GROUP_PHOTO) {
-        return MediaLibraryAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+        return MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
     }
     return MediaLibraryRdbStore::Query(rdbPredicates, columns);
 }

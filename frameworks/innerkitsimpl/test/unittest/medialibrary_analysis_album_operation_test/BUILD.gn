@@ -16,10 +16,10 @@ import("//foundation/multimedia/media_library/media_library.gni")
 
 group("unittest") {
   testonly = true
-  deps = [ ":medialibrary_album_operation_test" ]
+  deps = [ ":medialibrary_analysis_album_operation_test" ]
 }
 
-ohos_unittest("medialibrary_album_operation_test") {
+ohos_unittest("medialibrary_analysis_album_operation_test") {
   module_out_path = "media_library/medialibraryextention"
   include_dirs = [
     "./include",
@@ -37,7 +37,7 @@ ohos_unittest("medialibrary_album_operation_test") {
     "${MEDIALIB_SERVICES_PATH}/media_active_task/src/media_actively_calling_analyse.cpp",
     "../get_self_permissions/src/get_self_permissions.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
-    "./src/medialibrary_album_operation_test.cpp",
+    "./src/medialibrary_analysis_album_operation_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
