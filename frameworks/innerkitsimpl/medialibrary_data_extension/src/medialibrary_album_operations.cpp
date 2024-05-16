@@ -1436,7 +1436,7 @@ int32_t UpdateForMergeAlbums(const MergeAlbumInfo &updateAlbumInfo, const int32_
 
     std::string updateForMergeAlbums = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + GROUP_TAG + " = " +
         updateAlbumInfo.groupTag + "," + COUNT + " = " + to_string(updateAlbumInfo.count) + "," + IS_ME + " = " +
-        to_string(updateAlbumInfo.isMe) + "," + COVER_URI + " = " + updateAlbumInfo.coverUri + "," +
+        to_string(updateAlbumInfo.isMe) + "," + COVER_URI + " = '" + updateAlbumInfo.coverUri + "'," +
         USER_DISPLAY_LEVEL + " = " + to_string(updateAlbumInfo.userDisplayLevel) + "," + RANK + " = " +
         to_string(updateAlbumInfo.rank) + "," + USER_OPERATION + " = " + to_string(updateAlbumInfo.userOperation) +
         "," + RENAME_OPERATION + " = " + to_string(updateAlbumInfo.renameOperation) + "," + ALBUM_NAME + " = '" +
@@ -1530,8 +1530,8 @@ int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumI
         MEDIA_ERR_LOG("resultSet is error! failed query get merge album cover uri");
         return E_HAS_DB_ERROR;
     }
-    updateAlbumInfo.coverUri = "'file://media/Photo/" + to_string(mergeFileId) + "/" + mergeTitle + "/" +
-        mergeDisplayName + "'";
+    updateAlbumInfo.coverUri = "file://media/Photo/" + to_string(mergeFileId) + "/" + mergeTitle + "/" +
+        mergeDisplayName;
     return E_OK;
 }
 

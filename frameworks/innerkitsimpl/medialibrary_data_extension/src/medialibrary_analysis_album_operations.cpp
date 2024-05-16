@@ -149,7 +149,7 @@ static int32_t GetStringValueFromResultSet(shared_ptr<ResultSet> resultSet, cons
     return E_OK;
 }
 
-static inline string GetCoverUri(int32_t fileId, const string &path, const string &displayName)
+static string GetCoverUri(int32_t fileId, const string &path, const string &displayName)
 {
     string fileName;
     size_t lastSlash = path.find_last_of('/');
@@ -194,6 +194,7 @@ static void ClearEmptyGroupPhotoAlubm(const vector<GroupPhotoAlbumInfo> &updateA
     values.PutInt(PhotoAlbumColumns::ALBUM_COUNT, 0);
     values.PutString(PhotoAlbumColumns::ALBUM_COVER_URI, "");
     values.PutInt(IS_COVER_SATISFIED, ALBUM_COVER_NOT_SATISFIED);
+    values.PutInt(IS_ME, ALBUM_IS_NOT_ME);
 
     RdbPredicates rdbPredicates(ANALYSIS_ALBUM_TABLE);
     if (!updateAlbums.empty()) {
@@ -365,15 +366,15 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAnalysisAlbumOperations::Query
     auto whereClause = cmd.GetAbsRdbPredicates()->GetWhereClause();
     auto whereArgs = cmd.GetAbsRdbPredicates()->GetWhereArgs();
     RdbPredicates rdbPredicates(ANALYSIS_ALBUM_TABLE);
-    if (whereClause.find(IS_ME) != string::npos) {
-        int32_t value = GetPortraitSubtype(IS_ME, whereClause, whereArgs);
-        if (value == QUERY_GROUP_PHOTO_ALBUM_RELATED_TO_ME) {
-            rdbPredicates.EqualTo(IS_ME, value);
-        }
-    }
     string clause = PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SMART) + " AND " +
         PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::GROUP_PHOTO) + " AND " +
         IS_REMOVED + " IS NOT " + to_string(ALBUM_IS_REMOVED);
+    if (whereClause.find(IS_ME) != string::npos) {
+        int32_t value = GetPortraitSubtype(IS_ME, whereClause, whereArgs);
+        if (value == QUERY_GROUP_PHOTO_ALBUM_RELATED_TO_ME) {
+            clause += " AND " + IS_ME + " = " + to_string(ALBUM_IS_ME);
+        }
+    }
     rdbPredicates.SetWhereClause(clause);
     rdbPredicates.OrderByDesc(RENAME_OPERATION);
     rdbPredicates.OrderByDesc("(SELECT LENGTH(" + TAG_ID + ") - LENGTH([REPLACE](" + TAG_ID + ", ',', '')))");
@@ -425,8 +426,8 @@ static int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const Merg
         MEDIA_ERR_LOG("resultSet is error! failed query get merge album cover uri");
         return E_HAS_DB_ERROR;
     }
-    updateAlbumInfo.coverUri = "'file://media/Photo/" + to_string(mergeFileId) + "/" + mergeTitle + "/" +
-        mergeDisplayName + "'";
+    updateAlbumInfo.coverUri = "file://media/Photo/" + to_string(mergeFileId) + "/" + mergeTitle + "/" +
+        mergeDisplayName;
     return E_OK;
 }
 
@@ -526,8 +527,6 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
             }
             updateMap[reorderedTagId].isCoverSatisfied = info.isCoverSatisfied | it->second.isCoverSatisfied;
             updateMap[reorderedTagId].coverUri = newInfo.coverUri;
-            updateMap[reorderedTagId].coverUri.erase(0, 1);
-            updateMap[reorderedTagId].coverUri.pop_back();
             deleteId.push_back(info.albumId);
         }
     }
