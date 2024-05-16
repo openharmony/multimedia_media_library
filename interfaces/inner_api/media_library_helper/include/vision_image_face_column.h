@@ -32,6 +32,7 @@ const std::string YAW = "yaw";
 const std::string ROLL = "roll";
 const std::string TOTAL_FACES = "total_faces";
 const std::string FEATURES = "features";
+const std::string FACE_OCCLUSION = "face_occlusion";
 const std::string IMAGE_FACE_VERSION = "face_version";
 const std::string IMAGE_FEATURES_VERSION = "features_version";
 } // namespace Media
