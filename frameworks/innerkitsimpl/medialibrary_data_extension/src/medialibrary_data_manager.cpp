@@ -184,6 +184,9 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
     int32_t errCode = InitMediaLibraryRdbStore();
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitMediaLibraryRdbStore");
 
+    bool initResult = MediaLibraryKvStoreManager::GetInstance().InitMonthAndYearKvStore(KvStoreRoleType::OWNER);
+    CHECK_AND_RETURN_RET_LOG(initResult, E_ERR, "failed to init kvdb at InitMonthAndYearKvStore");
+
 #ifdef DISTRIBUTED
     errCode = InitDeviceData();
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitDeviceData");
