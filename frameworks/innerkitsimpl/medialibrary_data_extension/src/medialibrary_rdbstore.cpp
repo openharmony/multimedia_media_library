@@ -2218,6 +2218,14 @@ void AddOwnerAppId(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void InitKvdbInMediaLibraryDir(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_HAS_ASTC + " = 0"
+    };
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2569,6 +2577,10 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
 
     if (oldVersion < VERSION_ADD_CLOUD_ID_INDEX) {
         AddCloudIndex(store);
+    }
+
+    if (oldVersion < VERSION_MOVE_KVDB) {
+        InitKvdbInMediaLibraryDir(store);
     }
 
     UpgradeOtherTable(store, oldVersion);
