@@ -25,6 +25,7 @@
 #include "uv.h"
 #include "imedia_analyse_service.h"
 #include "iremote_proxy.h"
+#include "parameter.h"
 
 namespace OHOS {
 namespace Media {
