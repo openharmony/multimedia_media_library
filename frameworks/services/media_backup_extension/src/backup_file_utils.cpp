@@ -65,6 +65,11 @@ int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
     }
     data->SetFileSize(statInfo.st_size);
     auto dateModified = static_cast<int64_t>(MediaFileUtils::Timespec2Millisecond(statInfo.st_mtim));
+    if (dateModified == 0) {
+        dateModified = MediaFileUtils::UTCTimeMilliSeconds();
+        MEDIA_WARN_LOG("Invalid dateModified from st_mtim, use current time instead: %{public}lld",
+            static_cast<long long>(dateModified));
+    }
     if (dateModified != 0 && data->GetFileDateModified() == 0) {
         data->SetFileDateModified(dateModified);
     }

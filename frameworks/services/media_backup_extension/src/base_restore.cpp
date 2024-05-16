@@ -194,45 +194,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     return values;
 }
 
-void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
-{
-    std::unique_ptr<Metadata> data = make_unique<Metadata>();
-    data->SetFilePath(fileInfo.filePath);
-    data->SetFileMediaType(fileInfo.fileType);
-    BackupFileUtils::FillMetadata(data);
-    MediaType mediaType = data->GetFileMediaType();
-
-    value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
-    value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
-    value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
-    value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
-    value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
-    value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
-    value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
-    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
-    value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
-    value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
-    value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
-    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
-    value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
-    value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
-    value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
-    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
-    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
-    value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
-    int64_t dateAdded = 0;
-    ValueObject valueObject;
-    if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {
-        valueObject.GetLong(dateAdded);
-    }
-    value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
-    value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
-    value.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
-}
-
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
 {
     int64_t dateAdded = metadata->GetFileDateAdded();
@@ -259,6 +220,46 @@ static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
             static_cast<long long>(dateAdded));
     }
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
+}
+
+void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
+{
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath(fileInfo.filePath);
+    data->SetFileMediaType(fileInfo.fileType);
+    BackupFileUtils::FillMetadata(data);
+    MediaType mediaType = data->GetFileMediaType();
+
+    value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
+    value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
+    value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
+    value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
+    value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
+    value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
+    value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
+    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
+    value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
+    value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
+    value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
+    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
+    value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
+    value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
+    value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
+    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
+    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
+    value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
+    InsertDateAdded(data, value);
+    int64_t dateAdded = 0;
+    ValueObject valueObject;
+    if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {
+        valueObject.GetLong(dateAdded);
+    }
+    value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
+    value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
+    value.PutString(PhotoColumn::PHOTO_DATE_DAY,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
 }
 
 void BaseRestore::SetAudioValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)

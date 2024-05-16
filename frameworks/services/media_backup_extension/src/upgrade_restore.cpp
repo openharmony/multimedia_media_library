@@ -577,12 +577,16 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
-    if (sourceType == SourceType::EXTERNAL_CAMERA || sourceType == SourceType::EXTERNAL_OTHERS) {
-        values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken * MILLISECONDS);
-        values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken);
+    if (fileInfo.showDateToken != 0) {
+        if (sourceType == SourceType::EXTERNAL_CAMERA || sourceType == SourceType::EXTERNAL_OTHERS) {
+            values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken * MILLISECONDS);
+            values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken);
+        } else {
+            values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
+            values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken / MILLISECONDS);
+        }
     } else {
-        values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
-        values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken / MILLISECONDS);
+        MEDIA_WARN_LOG("Get showDateToken = 0, path: %{private}s", fileInfo.filePath.c_str());
     }
     values.PutLong(MediaColumn::MEDIA_DURATION, fileInfo.duration);
     values.PutInt(MediaColumn::MEDIA_IS_FAV, fileInfo.isFavorite);
