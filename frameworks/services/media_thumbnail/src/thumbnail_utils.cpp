@@ -1069,7 +1069,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
     }
     tracer.Finish();
 
-    if (data.useThumbAsSource) {
+    if (data.loaderOpts.decodeInThumbSize) {
         tracer.Start("CenterScale");
         PostProc postProc;
         if (!postProc.CenterScale(desiredSize, *data.source)) {
@@ -1661,7 +1661,7 @@ bool ThumbnailUtils::GenerateKvStoreKey(const std::string &fieldId, const std::s
     } else {
         assembledDateAdded = KVSTORE_DATE_ADDED_TEMPLATE.substr(length) + dateAdded;
     }
-    key = assembledDateAdded.substr(0, MAX_TIMEID_LENGTH) + assembledFieldId;
+    key = assembledDateAdded + assembledFieldId;
     return true;
 }
 
@@ -1749,6 +1749,7 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         return;
     }
     resultSet->Close();
+    data.stats.uri = data.path;
 }
 
 bool ThumbnailUtils::DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type)

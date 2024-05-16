@@ -140,7 +140,7 @@ Size ConvertDecodeSize(ThumbnailData& data, const Size& sourceSize, Size& desire
     int thumbMinSide = std::min(thumbDesiredSize.width, thumbDesiredSize.height);
     Size lcdDecodeSize = lcdMinSide < thumbMinSide ? thumbDecodeSize : lcdDesiredSize;
     
-    if (data.useThumbAsSource) {
+    if (data.loaderOpts.decodeInThumbSize) {
         desiredSize = thumbDesiredSize;
         return thumbDecodeSize;
     } else if (data.needResizeLcd) {
@@ -181,6 +181,7 @@ bool SourceLoader::CreateImage(std::unique_ptr<ImageSource>& imageSource, ImageI
     MediaLibraryTracer tracer;
     tracer.Start("imageSource->CreateImage");
     DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
     Size targetSize = ConvertDecodeSize(data_, imageInfo.size, desiredSize_);
     if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
         MEDIA_DEBUG_LOG("SourceLoader Failed to generate decodeOpts, pixelmap path %{private}s",
@@ -281,7 +282,7 @@ bool SourceLoader::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, I
     }
 
     // upload if minSize is larger than SHORT_SIDE_THRESHOLD and source is not from thumb
-    data_.needUpload = minSize >= SHORT_SIDE_THRESHOLD && state_ != SourceState::LOCAL_THUMB
+    data_.loaderOpts.needUpload = minSize >= SHORT_SIDE_THRESHOLD && state_ != SourceState::LOCAL_THUMB
         && state_ != SourceState::CLOUD_THUMB;
     data_.stats.sourceWidth = imageInfo.size.width;
     data_.stats.sourceHeight = imageInfo.size.height;
@@ -292,6 +293,7 @@ bool SourceLoader::IsFinal()
 {
     if (error_ != E_OK) {
         state_ = SourceState::ERROR;
+        data_.stats.errorCode = error_;
         return true;
     }
     if (state_ == SourceState::FINISH) {
@@ -302,7 +304,7 @@ bool SourceLoader::IsFinal()
 
 void BeginSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 {
-    if (data.isLoadingFromThumbToLcd) {
+    if (data.loaderOpts.sourceLoadingBeginWithThumb) {
         state = SourceState::LOCAL_THUMB;
     } else {
         state = SourceState::LOCAL_ORIGIN;
@@ -327,7 +329,7 @@ std::unique_ptr<ImageSource> LocalThumbSource::IsSourceAvailable(ThumbnailData& 
 
 void LocalThumbSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 {
-    if (data.isLoadingFromThumbToLcd) {
+    if (data.loaderOpts.sourceLoadingBeginWithThumb) {
         state = SourceState::LOCAL_LCD;
     } else {
         state = SourceState::FINISH;
@@ -336,7 +338,7 @@ void LocalThumbSource::SwitchToNextState(ThumbnailData& data, SourceState& state
 
 bool LocalThumbSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
 {
-    if (minSize < SHORT_SIDE_THRESHOLD && data.isLoadingFromThumbToLcd) {
+    if (minSize < SHORT_SIDE_THRESHOLD && data.loaderOpts.sourceLoadingBeginWithThumb) {
         return false;
     }
     return true;
@@ -360,12 +362,12 @@ std::unique_ptr<ImageSource> LocalLcdSource::IsSourceAvailable(ThumbnailData& da
 
 void LocalLcdSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 {
-    if (data.isLoadingFromThumbToLcd) {
+    if (data.loaderOpts.sourceLoadingBeginWithThumb) {
         state = SourceState::LOCAL_ORIGIN;
     } else {
         state = SourceState::FINISH;
     }
-};
+}
 
 bool LocalLcdSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
 {
@@ -393,10 +395,10 @@ std::unique_ptr<ImageSource> LocalOriginSource::IsSourceAvailable(ThumbnailData&
 
 void LocalOriginSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 {
-    if (data.isLoadingFromThumbToLcd) {
-        if (data.isForeGroundLoading) {
+    if (data.loaderOpts.sourceLoadingBeginWithThumb) {
+        if (data.loaderOpts.isForeGroundLoading) {
             state = SourceState::CLOUD_THUMB;
-        } else if (data.isCloudLoading) {
+        } else if (data.loaderOpts.isCloudLoading) {
             state = SourceState::CLOUD_LCD;
         } else {
             state = SourceState::CLOUD_THUMB;
@@ -409,10 +411,10 @@ void LocalOriginSource::SwitchToNextState(ThumbnailData& data, SourceState& stat
 bool LocalOriginSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
 {
     if (minSize < SHORT_SIDE_THRESHOLD) {
-        if (!data.isLoadingFromThumbToLcd) {
+        if (!data.loaderOpts.sourceLoadingBeginWithThumb) {
             return true;
         }
-        if (!data.isCloudLoading && !data.isForeGroundLoading) {
+        if (!data.loaderOpts.isCloudLoading && !data.loaderOpts.isForeGroundLoading) {
             return true;
         }
         return false;
@@ -443,7 +445,7 @@ std::unique_ptr<ImageSource> CloudThumbSource::IsSourceAvailable(ThumbnailData& 
 void CloudThumbSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 {
     state = SourceState::CLOUD_LCD;
-};
+}
 
 bool CloudThumbSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
 {
@@ -476,7 +478,7 @@ std::unique_ptr<ImageSource> CloudLcdSource::IsSourceAvailable(ThumbnailData& da
 void CloudLcdSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 {
     state = SourceState::CLOUD_ORIGIN;
-};
+}
 
 bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
 {
