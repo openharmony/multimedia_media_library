@@ -137,16 +137,4 @@ void MediaLibraryKvStoreManager::RegisterTimer(const KvStoreRoleType &roleType, 
     }
     insertImageCount_++;
 }
-
-bool MediaLibraryKvStoreManager::InitMonthAndYearKvStore(const KvStoreRoleType& roleType)
-{
-    if (roleType != KvStoreRoleType::OWNER) {
-        return;
-    }
-    if (GetKvStore(roleType, KvStoreValueType::MONTH_ASTC) == nullptr ||
-        GetKvStore(roleType, KvStoreValueType::YEAR_ASTC) == nullptr) {
-        return false;
-    }
-    return true;
-}
 } // namespace OHOS::Media

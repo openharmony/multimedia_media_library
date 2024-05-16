@@ -128,6 +128,16 @@
                   ]
                 },
                 "name": "//foundation/multimedia/media_library/frameworks/native/media_library_asset_manager:media_library_asset_manager"
+            },
+            {
+              "header": {
+                "header_base": "//foundation/multimedia/media_library/interfaces/kits/js/include",
+                "header_files": [
+                  "media_library_comm_napi.h",
+                  "photo_proxy_napi.h"
+                ]
+              },
+              "name": "//foundation/multimedia/media_library/interfaces/kits/js:medialibrary_nutils"
             }
         ],
         "test": [

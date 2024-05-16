@@ -586,7 +586,7 @@ int32_t MediaAssetManagerImpl::WriteFileToPath(const std::string &srcUri, const 
         return srcFd;
     }
     struct stat statSrc;
-    if (fstat(srcFd, &statSrc) != SUCCESS) {
+    if (fstat(srcFd, &statSrc) != E_SUCCESS) {
         MediaAssetManagerImpl::mediaLibraryManager_->CloseAsset(tmpSrcUri, srcFd);
         MEDIA_ERR_LOG("File get stat failed, %{public}d", errno);
         return E_FILE_OPER_FAIL;
@@ -605,7 +605,7 @@ int32_t MediaAssetManagerImpl::WriteFileToPath(const std::string &srcUri, const 
     }
     MediaAssetManagerImpl::mediaLibraryManager_->CloseAsset(tmpSrcUri, srcFd);
     close(destFd);
-    return SUCCESS;
+    return E_SUCCESS;
 }
 
 int32_t MediaAssetManagerImpl::GetFdFromSandBoxUri(const std::string &sandBoxUri)

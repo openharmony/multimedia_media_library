@@ -17,16 +17,21 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "media_file_uri.h"
 #include "medialibrary_helper_container.h"
 #include "medialibrary_type_const.h"
 #include "photo_album_column.h"
-#include "media_file_uri.h"
+#include "string_ex.h"
 
 using namespace std;
 namespace OHOS {
 namespace Media {
 const size_t LEAST_PATH_LENGTH = 2;
 const std::string MEDIA_FILE_ID_DEFAULT = "-1";
+
+const int ASSET_IN_BUCKET_NUM_MAX = 1000;
+const int ASSET_DIR_START_NUM = 16;
+
 static std::string SolveMediaTypeV9(MediaType mediaType)
 {
     switch (mediaType) {
@@ -487,6 +492,79 @@ void MediaFileUri::GetTimeIdFromUri(const std::vector<std::string> &uriBatch, st
         }
         timeIdBatch.emplace_back(uri.substr(index + ML_URI_TIME_ID.length()));
     }
+}
+
+int32_t MediaFileUri::CreateAssetBucket(int32_t fileId, int32_t &bucketNum)
+{
+    if (fileId < 0) {
+        MEDIA_ERR_LOG("input fileId [%{public}d] is invalid", fileId);
+        return E_INVALID_FILEID;
+    }
+    int start = ASSET_DIR_START_NUM;
+    int divider = ASSET_DIR_START_NUM;
+    while (fileId > start * ASSET_IN_BUCKET_NUM_MAX) {
+        divider = start;
+        start <<= 1;
+    }
+
+    int fileIdRemainder = fileId % divider;
+    if (fileIdRemainder == 0) {
+        bucketNum = start + fileIdRemainder;
+    } else {
+        bucketNum = (start - divider) + fileIdRemainder;
+    }
+    return E_OK;
+}
+
+string MediaFileUri::GetPathFromUri(const string &uri, bool isPhoto)
+{
+    size_t index = uri.rfind('/');
+    if (index == string::npos) {
+        MEDIA_ERR_LOG("index invalid %{public}s", uri.c_str());
+        return "";
+    }
+    string realTitle = uri.substr(0, index);
+    index = realTitle.rfind('/');
+    if (index == string::npos) {
+        MEDIA_ERR_LOG("invalid realTitle %{public}s", uri.c_str());
+        return "";
+    }
+    realTitle = realTitle.substr(index + 1);
+    index = realTitle.rfind('_');
+    if (index == string::npos) {
+        MEDIA_ERR_LOG("realTitle can not find _ %{public}s", uri.c_str());
+        return "";
+    }
+    string fileId = realTitle.substr(index + 1);
+    if (!all_of(fileId.begin(), fileId.end(), ::isdigit)) {
+        MEDIA_ERR_LOG("fileId invalid %{public}s", uri.c_str());
+        return "";
+    }
+    int32_t fileUniqueId = 0;
+    if (!StrToInt(fileId, fileUniqueId)) {
+        MEDIA_ERR_LOG("invalid fileuri %{private}s", uri.c_str());
+        return "";
+    }
+    int32_t bucketNum = 0;
+    CreateAssetBucket(fileUniqueId, bucketNum);
+
+    string ext = MediaFileUtils::GetExtensionFromPath(uri);
+    if (ext.empty()) {
+        MEDIA_ERR_LOG("invalid ext %{public}s", uri.c_str());
+        return "";
+    }
+
+    string path = ROOT_MEDIA_DIR;
+    if (isPhoto) {
+        path += PHOTO_BUCKET + "/" + to_string(bucketNum) + "/" + realTitle + "." + ext;
+    } else {
+        path += AUDIO_BUCKET + "/" + to_string(bucketNum) + "/" + realTitle + "." + ext;
+    }
+    if (!MediaFileUtils::IsFileExists(path)) {
+        MEDIA_ERR_LOG("file not exist, path=%{private}s", path.c_str());
+        return "";
+    }
+    return path;
 }
 } // namespace Media
 } // namespace OHOS

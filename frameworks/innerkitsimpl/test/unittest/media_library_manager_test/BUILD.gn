@@ -69,4 +69,15 @@ ohos_unittest("media_library_manager_test") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]
+
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
+  }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }

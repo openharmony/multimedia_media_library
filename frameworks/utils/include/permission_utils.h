@@ -54,6 +54,7 @@ public:
     static bool CheckCallerPermission(const std::vector<std::string> &perms);
     static bool CheckHasPermission(const std::vector<std::string> &perms);
     static void GetClientBundle(const int uid, std::string &bundleName);
+    static void GetPackageName(const int uid, std::string &packageName);
     static uint32_t GetTokenId();
     static bool IsSystemApp();
     static bool IsNativeSAApp();
@@ -61,6 +62,7 @@ public:
     static bool CheckIsSystemAppByUid();
     static std::string GetPackageNameByBundleName(const std::string &bundleName);
     static std::string GetAppIdByBundleName(const std::string &bundleName);
+    static std::string GetAppIdByBundleName(const std::string &bundleName, int32_t uid);
     static bool CheckPhotoCallerPermission(const std::vector<std::string> &perms);
     static bool CheckPhotoCallerPermission(const std::string &permission);
     static void CollectPermissionInfo(const std::string &permission, const bool permGranted,

@@ -45,6 +45,7 @@
 #include "medialibrary_uripermission_operations.h"
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
+#include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "photo_map_operations.h"
@@ -124,28 +125,6 @@ int32_t MediaLibraryPhotoOperations::Delete(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(deleteRow >= 0, deleteRow, "delete photo failed, deleteRow=%{public}d", deleteRow);
 
     return deleteRow;
-}
-
-static void AddQueryIndex(AbsPredicates &predicates, const vector<string> &columns)
-{
-    auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
-    if (it == columns.end()) {
-        return;
-    }
-    const string &group = predicates.GetGroup();
-    if (group.empty()) {
-        predicates.GroupBy({ PhotoColumn::PHOTO_DATE_DAY });
-        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
-        return;
-    }
-    if (group == PhotoColumn::MEDIA_TYPE) {
-        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
-        return;
-    }
-    if (group == PhotoColumn::PHOTO_DATE_DAY) {
-        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
-        return;
-    }
 }
 
 static int32_t GetAlbumTypeSubTypeById(const string &albumId, PhotoAlbumType &type, PhotoAlbumSubType &subType)
@@ -277,7 +256,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::Query(
         }
         return HandleIndexOfUri(cmd, predicates, photoId, albumId);
     }
-    AddQueryIndex(predicates, columns);
+    MediaLibraryRdbUtils::AddQueryIndex(predicates, columns);
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
 
@@ -414,6 +393,30 @@ static inline void SetCameraShotKeyFromCmd(MediaLibraryCommand &cmd, FileAsset &
     fileAsset.SetCameraShotKey(cameraShotKey);
 }
 
+static inline int32_t GetCallingUid(MediaLibraryCommand &cmd)
+{
+    int32_t callingUid = 0;
+    ValueObject value;
+    if (cmd.GetValueBucket().GetObject(MEDIA_DATA_CALLING_UID, value)) {
+        value.GetInt(callingUid);
+    }
+    return callingUid;
+}
+
+static inline void SetCallingPackageName(MediaLibraryCommand &cmd, FileAsset &fileAsset)
+{
+    int32_t callingUid = GetCallingUid(cmd);
+    if (callingUid == 0) {
+        return;
+    }
+    string bundleName;
+    PermissionUtils::GetClientBundle(callingUid, bundleName);
+    fileAsset.SetOwnerPackage(bundleName);
+    string packageName;
+    PermissionUtils::GetPackageName(callingUid, packageName);
+    fileAsset.SetPackageName(packageName);
+}
+
 int32_t MediaLibraryPhotoOperations::CreateV9(MediaLibraryCommand& cmd)
 {
     FileAsset fileAsset;
@@ -526,6 +529,7 @@ int32_t MediaLibraryPhotoOperations::CreateV10(MediaLibraryCommand& cmd)
     fileAsset.SetMediaType(static_cast<MediaType>(mediaType));
     SetPhotoSubTypeFromCmd(cmd, fileAsset);
     SetCameraShotKeyFromCmd(cmd, fileAsset);
+    SetCallingPackageName(cmd, fileAsset);
     // Check rootdir and extention
     int32_t errCode = CheckWithType(isContains, displayName, extention, mediaType);
     CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
@@ -1760,5 +1764,18 @@ void MediaLibraryPhotoOperations::RemoveThumbnailSizeRecord(const string& photoI
     }
 }
 
+shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::ScanMovingPhoto(MediaLibraryCommand &cmd,
+    const vector<string> &columns)
+{
+    if (columns.empty()) {
+        MEDIA_ERR_LOG("column is empty");
+        return nullptr;
+    }
+    string uri = columns[0]; // 0 in columns predicates uri
+    string path = MediaFileUri::GetPathFromUri(uri, true);
+    string fileId = MediaFileUri::GetPhotoId(uri);
+    MediaLibraryObjectUtils::ScanFileAsync(path, fileId, MediaLibraryApi::API_10);
+    return nullptr;
+}
 } // namespace Media
 } // namespace OHOS
