@@ -28,7 +28,7 @@
 
 namespace OHOS {
 namespace Media {
-    
+
 class DeleteBehaviorTask : public DfxData {
 public:
     DeleteBehaviorTask(std::string id, int32_t type, int32_t size, std::unordered_map<int32_t, int32_t> &updateResult,
@@ -61,13 +61,14 @@ public:
     void HandleThumbnailGeneration(const ThumbnailData::GenerateStats &stats);
     void HandleFiveMinuteTask();
     int64_t HandleMiddleReport();
-    int64_t HandleReportXml();
+    int64_t HandleOneDayReport();
     void HandleCommonBehavior(std::string bundleName, int32_t type);
     void HandleDeleteBehavior(int32_t type, int32_t size, std::unordered_map<int32_t, int32_t> &updateResult,
         std::vector<std::string> &uris, std::string bundleName = "");
     void HandleDeleteBehaviors();
     void HandleNoPermmison(int32_t type, int32_t object, int32_t error);
     void HandleHalfDayMissions();
+    void HandleAdaptationToMovingPhoto(const std::string &appName, bool adapted);
 
 private:
     void Init();

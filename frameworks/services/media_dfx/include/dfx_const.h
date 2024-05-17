@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_DFX_CONST_H
 
 #include <string>
+#include <unordered_set>
 
 #include "userfile_manager_types.h"
 
@@ -80,17 +81,22 @@ const std::string SPLIT_CHAR = "|";
 
 const std::string FIVE_MINUTE = "5";
 const std::string SIX_HOUR = "6";
-const std::string ONE_DAY = "24";
+const std::string TWENTY_FOUR_HOURS = "24";
 
 const std::string THUMBNAIL_ERROR_XML = "/data/storage/el2/base/preferences/thumbnail_error.xml";
 const std::string COMMON_BEHAVIOR_XML = "/data/storage/el2/base/preferences/common_behavior.xml";
 const std::string DELETE_BEHAVIOR_XML = "/data/storage/el2/base/preferences/delete_behavior.xml";
+const std::string ADAPTATION_TO_MOVING_PHOTO_XML = "/data/storage/el2/base/preferences/adaptation_to_moving_photo.xml";
 const std::string DFX_COMMON_XML = "/data/storage/el2/base/preferences/dfx_common.xml";
 const std::string LAST_REPORT_TIME = "last_report_time";
 const std::string LAST_MIDDLE_REPORT_TIME = "last_middle_report_time";
 const std::string LAST_HALF_DAY_REPORT_TIME = "last_half_day_report_time";
 const std::string THUMBNAIL_ERROR_VERSION = "thumbnail_error_version";
 const std::string DELETE_STATISTIC_VERSION = "delete_statistic_version";
+const std::string MOVING_PHOTO_KEY_UNADAPTED_NUM = "unadapted_app_num";
+const std::string MOVING_PHOTO_KEY_UNADAPTED_PACKAGE = "unadapted_app_package";
+const std::string MOVING_PHOTO_KEY_ADAPTED_NUM = "adapted_app_num";
+const std::string MOVING_PHOTO_KEY_ADAPTED_PACKAGE = "adapted_app_package";
 
 const std::string CLOUD_PHOTO_PATH = "/storage/cloud/files/Photo/";
 const std::string CLOUD_FILE_PATH = "/storage/cloud/files/";
@@ -119,6 +125,11 @@ struct PhotoInfo {
     std::string data;
     int32_t dirty;
     int32_t cloudVersion;
+};
+
+struct AdaptationToMovingPhotoInfo {
+    std::unordered_set<std::string> unadaptedAppPackages;
+    std::unordered_set<std::string> adaptedAppPackages;
 };
 
 const std::unordered_map<int32_t, std::string> ALBUM_MAP = {
