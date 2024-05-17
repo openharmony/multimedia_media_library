@@ -65,6 +65,7 @@
           "samgr",
           "security_component_manager",
           "storage_service",
+          "thermal_manager",
           "user_file_service",
           "window_manager",
           "background_task_mgr",
