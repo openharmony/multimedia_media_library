@@ -30,6 +30,9 @@
 #ifdef HAS_POWER_MANAGER_PART
 #include "power_mgr_client.h"
 #endif
+#ifdef HAS_THERMAL_MANAGER_PART
+#include "thermal_mgr_client.h"
+#endif
 
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
@@ -46,12 +49,33 @@ using namespace OHOS::AAFwk;
 
 namespace OHOS {
 namespace Media {
+// The task can be performed when the battery level reaches the value
+const int32_t PROPER_DEVICE_BATTERY_CAPACITY = 50;
+
+// The task can be performed only when the temperature of the device is lower than the value
+// Level 0: The device temperature is lower than 35℃
+// Level 1: The device temperature ranges from 35℃ to 37℃
+const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 1;
+const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
+const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
+const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
 const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING,
     EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING,
     EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF,
     EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON,
-    EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED
+    EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED,
+    EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED,
+    EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED
+};
+
+const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
+    {EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING, StatusEventType::CHARGING},
+    {EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING, StatusEventType::DISCHARGING},
+    {EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF, StatusEventType::SCREEN_OFF},
+    {EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON, StatusEventType::SCREEN_ON},
+    {EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED, StatusEventType::BATTERY_CHANGED},
+    {EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED, StatusEventType::THERMAL_LEVEL_CHANGED},
 };
 
 MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscribeInfo &subscriberInfo)
@@ -66,8 +90,15 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
     auto chargeState = batteryClient.GetChargingStatus();
     isCharging_ = (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_ENABLE) ||
         (chargeState == PowerMgr::BatteryChargeState::CHARGE_STATE_FULL);
+    isPowerSufficient_ = batteryClient.GetCapacity() >= PROPER_DEVICE_BATTERY_CAPACITY;
 #endif
-    MEDIA_INFO_LOG("MedialibrarySubscriber isScreenOff_:%{public}d, isCharging_:%{public}d", isScreenOff_, isCharging_);
+#ifdef HAS_THERMAL_MANAGER_PART
+    auto& thermalMgrClient = PowerMgr::ThermalMgrClient::GetInstance();
+    isDeviceTemperatureProper_ = static_cast<int32_t>(
+        thermalMgrClient.GetThermalLevel()) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+#endif
+    MEDIA_INFO_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d",
+        isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 }
 
 bool MedialibrarySubscriber::Subscribe(void)
@@ -82,23 +113,72 @@ bool MedialibrarySubscriber::Subscribe(void)
     return EventFwk::CommonEventManager::SubscribeCommonEvent(subscriber);
 }
 
+void MedialibrarySubscriber::CheckHalfDayMissions()
+{
+    if (isScreenOff_ && isCharging_) {
+        DfxManager::GetInstance()->HandleHalfDayMissions();
+    }
+}
+
+void MedialibrarySubscriber::UpdateCurrentStatus()
+{
+    bool currentStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
+    if (currentStatus_ == currentStatus) {
+        return;
+    }
+
+    currentStatus_ = currentStatus;
+    MEDIA_INFO_LOG("Current status change:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
+    
+    if (currentStatus_) {
+        DoBackgroundOperation();
+    } else {
+        StopBackgroundOperation();
+    }
+}
+
+void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
+    const AAFwk::Want &want, const StatusEventType statusEventType)
+{
+    switch (statusEventType) {
+        case StatusEventType::SCREEN_OFF:
+            isScreenOff_ = true;
+            CheckHalfDayMissions();
+            break;
+        case StatusEventType::SCREEN_ON:
+            isScreenOff_ = false;
+            break;
+        case StatusEventType::CHARGING:
+            isCharging_ = true;
+            CheckHalfDayMissions();
+            break;
+        case StatusEventType::DISCHARGING:
+            isCharging_ = false;
+            break;
+        case StatusEventType::BATTERY_CHANGED:
+            isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
+                COMMON_EVENT_KEY_GET_DEFAULT_PARAM) >= PROPER_DEVICE_BATTERY_CAPACITY;
+            break;
+        case StatusEventType::THERMAL_LEVEL_CHANGED:
+            isDeviceTemperatureProper_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
+                COMMON_EVENT_KEY_GET_DEFAULT_PARAM) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
+            break;
+        default:
+            MEDIA_WARN_LOG("StatusEventType:%{public}d is not invalid", statusEventType);
+            return;
+    }
+
+    UpdateCurrentStatus();
+}
+
 void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
 {
     const AAFwk::Want& want = eventData.GetWant();
     std::string action = want.GetAction();
     MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
-    if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF) == 0) {
-        isScreenOff_ = true;
-        DoBackgroundOperation();
-    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_CHARGING) == 0) {
-        isCharging_ = true;
-        DoBackgroundOperation();
-    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON) == 0) {
-        isScreenOff_ = false;
-        StopBackgroundOperation();
-    } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_DISCHARGING) == 0) {
-        isCharging_ = false;
-        StopBackgroundOperation();
+    if (BACKGROUND_OPERATION_STATUS_MAP.count(action) != 0) {
+        UpdateBackgroundOperationStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
     } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED) == 0) {
         string packageName = want.GetElement().GetBundleName();
         RevertPendingByPackage(packageName);
@@ -123,15 +203,11 @@ void MedialibrarySubscriber::Init()
 
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
-    MEDIA_INFO_LOG("Enter isScreenOff_ %{public}d, isCharging_ %{public}d", isScreenOff_, isCharging_);
-    if (!isScreenOff_ || !isCharging_) {
-        MEDIA_INFO_LOG("The screen is not off or the device is not charging, will return.");
+    if (!currentStatus_) {
+        MEDIA_INFO_LOG("The conditions for DoBackgroundOperation are not met, will return.");
         return;
     }
 
-    if (isScreenOff_ && isCharging_) {
-        DfxManager::GetInstance()->HandleHalfDayMissions();
-    }
     BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
         BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
     BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
@@ -170,7 +246,8 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     }
     scannerManager->ScanError();
 
-    MEDIA_INFO_LOG("Do success isScreenOff_ %{public}d, isCharging_ %{public}d", isScreenOff_, isCharging_);
+    MEDIA_INFO_LOG("Do success, current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 }
 
 void MedialibrarySubscriber::StopBackgroundOperation()
