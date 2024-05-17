@@ -90,6 +90,16 @@ void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
+void IThumbnailHelper::CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("CreateAstcEx failed, data is null");
+        return;
+    }
+    DoCreateAstcEx(data->opts_, data->thumbnailData_);
+    ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
+}
+
 void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
     ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority)
 {
@@ -254,40 +264,46 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
         return ret == WaitStatus::WAIT_SUCCESS;
     }
 
-    if (IsCreateLcdSuccess(opts, data)) {
-        thumbnailWait.UpdateThumbnailMap();
-        return true;
+    if (!IsCreateLcdSuccess(opts, data)) {
+        MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
+        return false;
     }
-    return false;
+
+    if (data.orientation != 0 && !IsCreateLcdExSuccess(opts, data)) {
+        MEDIA_ERR_LOG("Fail to create lcdEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
+    }
+    thumbnailWait.UpdateThumbnailMap();
+    return true;
 }
 
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = false;
-    data.loaderOpts.sourceLoadingBeginWithThumb = false;
+    data.loaderOpts.sourceLoadingBeginWithThumb = data.loaderOpts.isCloudLoading;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("load source is nullptr path: %{public}s", opts.path.c_str());
         return false;
     }
 
     if (data.source == nullptr) {
-        MEDIA_ERR_LOG("source is nullptr");
+        MEDIA_ERR_LOG("Fail to create lcd, source is nullptr");
         return false;
     }
 
-    shared_ptr<string> pathPtr = make_shared<string>(data.path);
     shared_ptr<PixelMap> lcdSource = data.source;
-    if (data.lcdDesiredSize.width != data.source->GetWidth()) {
+    int lcdDesiredWidth = data.orientation % FLAT_ANGLE == 0 ? data.lcdDesiredSize.width : data.lcdDesiredSize.height;
+    int lcdDesiredHeight = data.orientation % FLAT_ANGLE == 0 ? data.lcdDesiredSize.height : data.lcdDesiredSize.width;
+    if (lcdDesiredWidth != data.source->GetWidth()) {
         MEDIA_INFO_LOG("Copy and resize data source for lcd desiredSize: %{public}s",
             DfxUtils::GetSafePath(opts.path).c_str());
-        Media::InitializationOptions opts;
-        auto copySource = PixelMap::Create(*data.source, opts);
+        Media::InitializationOptions initOpts;
+        auto copySource = PixelMap::Create(*data.source, initOpts);
         lcdSource = std::move(copySource);
-        float widthScale = (1.0f * data.lcdDesiredSize.width) / data.source->GetWidth();
-        float heightScale = (1.0f * data.lcdDesiredSize.height) / data.source->GetHeight();
+        float widthScale = (1.0f * lcdDesiredWidth) / data.source->GetWidth();
+        float heightScale = (1.0f * lcdDesiredHeight) / data.source->GetHeight();
         lcdSource->scale(widthScale, heightScale);
     }
-    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO, pathPtr)) {
+    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
     }
@@ -302,10 +318,53 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
     if (opts.table == PhotoColumn::PHOTOS_TABLE) {
         if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
             MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
-            return false;
         }
     }
 
+    return true;
+}
+
+bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    if (data.loaderOpts.isCloudLoading) {
+        MEDIA_INFO_LOG("Create lcd when cloud loading, no need to create THM_EX, path: %{public}s， id: %{public}d",
+            DfxUtils::GetSafePath(opts.path).c_str(), data.id);
+        return false;
+    }
+
+    string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_EX_SUFFIX);
+    string dirName = MediaFileUtils::GetParentPath(fileName);
+    if (!MediaFileUtils::CreateDirectory(dirName)) {
+        MEDIA_ERR_LOG("Fail to create directory, fileName: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+        return false;
+    }
+    
+    if (data.sourceEx == nullptr) {
+        MEDIA_ERR_LOG("Fail to create lcdEx, source is nullptr");
+        return false;
+    }
+    shared_ptr<PixelMap> lcdSourceEx = data.sourceEx;
+    if (data.lcdDesiredSize.width != data.sourceEx->GetWidth()) {
+        MEDIA_INFO_LOG("Copy and resize data source for lcdEx desiredSize: %{public}s",
+            DfxUtils::GetSafePath(opts.path).c_str());
+        Media::InitializationOptions initOpts;
+        auto copySource = PixelMap::Create(*data.sourceEx, initOpts);
+        lcdSourceEx = std::move(copySource);
+        float widthScale = (1.0f * data.lcdDesiredSize.width) / data.sourceEx->GetWidth();
+        float heightScale = (1.0f * data.lcdDesiredSize.height) / data.sourceEx->GetHeight();
+        lcdSourceEx->scale(widthScale, heightScale);
+    }
+    if (!ThumbnailUtils::CompressImage(lcdSourceEx, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO)) {
+        MEDIA_ERR_LOG("CompressImage faild");
+        return false;
+    }
+
+    int err = ThumbnailUtils::TrySaveFile(data, ThumbnailType::LCD_EX);
+    if (err < 0) {
+        MEDIA_ERR_LOG("SaveLcdEx faild %{public}d", err);
+        return false;
+    }
+    data.lcd.clear();
     return true;
 }
 
@@ -323,7 +382,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
         }
 
         if (!ThumbnailUtils::CompressImage(data.source, type == ThumbnailType::THUMB ? data.thumbnail : data.thumbAstc,
-            false, nullptr, type == ThumbnailType::THUMB_ASTC)) {
+            false, type == ThumbnailType::THUMB_ASTC)) {
             MEDIA_ERR_LOG("CompressImage faild id %{private}s", opts.row.c_str());
             VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
                 {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -356,6 +415,41 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
     return true;
 }
 
+bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    if (data.loaderOpts.isCloudLoading) {
+        MEDIA_INFO_LOG("Create thumb when cloud loading, no need to create THM_EX, path: %{public}s, id: %{public}d",
+            DfxUtils::GetSafePath(opts.path).c_str(), data.id);
+        return false;
+    }
+    
+    string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
+    string dirName = MediaFileUtils::GetParentPath(fileName);
+    if (!MediaFileUtils::CreateDirectory(dirName)) {
+        MEDIA_ERR_LOG("Fail to create directory, fileName: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+        return false;
+    }
+
+    if (data.sourceEx == nullptr) {
+        MEDIA_ERR_LOG("sourceEx is nullptr when generate thumbnailEx, path: %{public}s",
+            DfxUtils::GetSafePath(opts.path).c_str());
+        return false;
+    }
+
+    if (!ThumbnailUtils::CompressImage(data.sourceEx, data.thumbnail, false, false)) {
+        MEDIA_ERR_LOG("CompressImage failed id %{private}s", opts.row.c_str());
+        return false;
+    }
+
+    int err = ThumbnailUtils::TrySaveFile(data, ThumbnailType::THUMB_EX);
+    if (err < 0) {
+        MEDIA_ERR_LOG("SaveThumbnailEx failed %{public}d", err);
+        return false;
+    }
+    data.thumbnail.clear();
+    return true;
+}
+
 bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type)
 {
     Size size;
@@ -370,7 +464,7 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
 
     ThumbnailUtils::GenTargetPixelmap(data, size);
     if (!ThumbnailUtils::CompressImage(data.source,
-        (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, false, nullptr, true)) {
+        (type == ThumbnailType::MTH_ASTC) ? data.monthAstc : data.yearAstc, false, true)) {
         MEDIA_ERR_LOG("CompressImage to astc failed");
         return false;
     }
@@ -422,11 +516,16 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
         return ret == WaitStatus::WAIT_SUCCESS;
     }
 
-    if (IsCreateThumbnailSuccess(opts, data)) {
-        thumbnailWait.UpdateThumbnailMap();
-        return true;
+    if (!IsCreateThumbnailSuccess(opts, data)) {
+        MEDIA_ERR_LOG("Fail to create thumbnail, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
+        return false;
     }
-    return false;
+
+    if (data.orientation != 0 && !IsCreateThumbnailExSuccess(opts, data)) {
+        MEDIA_ERR_LOG("Fail to create thumbnailEx, path: %{public}s", DfxUtils::GetSafePath(opts.path).c_str());
+    }
+    thumbnailWait.UpdateThumbnailMap();
+    return true;
 }
 
 bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
@@ -478,6 +577,15 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
     return true;
 }
 
+bool IThumbnailHelper::IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    if (!GenThumbnailEx(opts, data)) {
+        MEDIA_ERR_LOG("Fail to create thumbnailEx, fileName: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+        return false;
+    }
+    return true;
+}
+
 bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     MEDIA_INFO_LOG("Start DoCreateThumbnails, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
@@ -490,9 +598,14 @@ bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data
     }
 
     data.loaderOpts.decodeInThumbSize = true;
-    if (!ThumbnailUtils::ScaleThumbnailEx(data)) {
-        MEDIA_ERR_LOG("Fail to scale from LCD to THM, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
+        MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
+    }
+    if (data.orientation != 0 && !ThumbnailUtils::ScaleThumbnailFromSource(data, true)) {
+        MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
+        data.sourceEx = nullptr;
     }
 
     if (!DoCreateThumbnail(opts, data)) {
@@ -546,6 +659,37 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
     if (!UpdateThumbnailState(opts, data)) {
         MEDIA_ERR_LOG("UpdateThumbnailState fail");
         return false;
+    }
+    return true;
+}
+
+bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    MEDIA_INFO_LOG("Start DoCreateAstcEx, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
+    if (!DoCreateLcd(opts, data)) {
+        MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        return false;
+    }
+
+    string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX) + THUMBNAIL_TEMP_ORIENT_SUFFIX;
+    if (!MediaFileUtils::DeleteFile(fileName)) {
+        MEDIA_ERR_LOG("Fail to delete lcd temp file, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+    }
+
+    data.loaderOpts.decodeInThumbSize = true;
+    if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
+        MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        return false;
+    }
+
+    if (!DoCreateThumbnail(opts, data)) {
+        MEDIA_ERR_LOG("Fail to create thumbnail, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        return false;
+    }
+
+    fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX) + THUMBNAIL_TEMP_ORIENT_SUFFIX;
+    if (!MediaFileUtils::DeleteFile(fileName)) {
+        MEDIA_ERR_LOG("Fail to delete thumbnail temp file, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
     }
     return true;
 }

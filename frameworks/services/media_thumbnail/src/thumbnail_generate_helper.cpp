@@ -199,6 +199,19 @@ int32_t ThumbnailGenerateHelper::GetNewThumbnailCount(ThumbRdbOpt &opts, const i
     return E_OK;
 }
 
+bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType)
+{
+    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
+        MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s", data.path.c_str());
+        return false;
+    }
+    if (thumbType != ThumbnailType::LCD && !IThumbnailHelper::DoCreateThumbnail(opts, data)) {
+        MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s", data.path.c_str());
+        return false;
+    }
+    return true;
+}
+
 int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
     std::string &fileName)
 {
@@ -213,23 +226,55 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
         }
     }
 
+    // Check if temp file through cloud doawnloading exists
+    string tempFileName = fileName + THUMBNAIL_TEMP_ORIENT_SUFFIX;
+    if (access(tempFileName.c_str(), F_OK) == 0 && !IThumbnailHelper::DoCreateAstcEx(opts, data)) {
+        MEDIA_ERR_LOG("Get pixelmap from temp file failed, path: %{public}s", tempFileName.c_str());
+        return E_THUMBNAIL_LOCAL_CREATE_FAIL;
+    }
+
     // No need to create thumbnails if corresponding file exists
     if (access(fileName.c_str(), F_OK) == 0) {
         return E_OK;
     }
 
     MEDIA_INFO_LOG("No available file, create thumbnail, path: %{public}s", fileName.c_str());
-    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
-        MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s", fileName.c_str());
-        return E_THUMBNAIL_LOCAL_CREATE_FAIL;
-    } else if (thumbType == ThumbnailType::THUMB && !IThumbnailHelper::DoCreateThumbnail(opts, data)) {
-        MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s", fileName.c_str());
+    if (!GenerateLocalThumbnail(opts, data, thumbType)){
+        MEDIA_ERR_LOG("GenerateLocalThumbnail failed, path: %{public}s", tempFileName.c_str());
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
     if (!opts.path.empty()) {
         fileName = GetThumbnailPath(data.path, thumbSuffix);
     }
     return E_OK;
+}
+
+unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
+{
+    SourceOptions opts;
+    uint32_t err = 0;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, err);
+    if (imageSource == nullptr) {
+        MEDIA_ERR_LOG("Decode thumbnail from fd failed, CreateImageSource err: %{public}d", err);
+        return nullptr;
+    }
+
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Decode thumbnail from fd failed, GetImageInfo err: %{public}d", err);
+        return nullptr;
+    }
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    if (pixelMap == nullptr) {
+        MEDIA_ERR_LOG("Decode thumbnail from fd failed, CreatePixelMap err: %{public}d", err);
+        return nullptr;
+    }
+    return pixelMap;
 }
 
 int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType)
@@ -239,8 +284,11 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
     ThumbnailData thumbnailData;
     ThumbnailUtils::GetThumbnailInfo(opts, thumbnailData);
 
+    int err;
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, thumbnailData.id, thumbnailData, err);
+
     string fileName;
-    int err = GetAvailableFile(opts, thumbnailData, thumbType, fileName);
+    err = GetAvailableFile(opts, thumbnailData, thumbType, fileName);
     if (err != E_OK) {
         MEDIA_ERR_LOG("GetAvailableFile failed, path: %{public}s", DfxUtils::GetSafePath(thumbnailData.path).c_str());
         return err;
@@ -254,6 +302,24 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
         DfxManager::GetInstance()->HandleThumbnailError(fileName,
             thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
         return -errno;
+    }
+    if (!thumbnailData.isLocalFile && thumbnailData.orientation != 0) {
+        thumbnailData.loaderOpts.isCloudLoading = true;
+        auto dataSource = DecodeThumbnailFromFd(fd);
+        if (dataSource == nullptr) {
+            DfxManager::GetInstance()->HandleThumbnailError(fileName,
+                thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
+            return -errnox        }
+        close(fd);
+
+        thumbnailData.source = std::move(dataSource);
+        thumbnailData.source->rotate(static_cast<float>(thumbnailData.orientation));
+        if (!GenerateLocalThumbnail(opts, thumbnailData, thumbType)) {
+            DfxManager::GetInstance()->HandleThumbnailError(fileName,
+                thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
+            return -errno;
+        }
+        fd = open(fileName.c_str(), O_RDONLY);
     }
     if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE) {
         ThumbnailUtils::UpdateVisitTime(opts, thumbnailData, err);
