@@ -26,7 +26,7 @@ namespace Media {
 class BackupFileUtils {
 public:
     static int32_t FillMetadata(std::unique_ptr<Metadata> &data);
-    static std::string GarbleFilePath(const std::string &filePath, int32_t sceneCode);
+    static std::string GarbleFilePath(const std::string &filePath, int32_t sceneCode, std::string cloneFilePath = "");
     static std::string GarbleFileName(std::string &fileName);
     static int32_t CreateAssetPathById(int32_t fileId, int32_t mediaType, const std::string &extension,
         std::string &filePath);
