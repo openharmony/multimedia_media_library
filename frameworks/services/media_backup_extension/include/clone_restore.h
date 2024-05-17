@@ -106,6 +106,7 @@ private:
     std::unordered_map<std::string, std::unordered_map<int32_t, int32_t>> tableAlbumIdMap_;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tableCommonColumnInfoMap_;
     std::unordered_set<std::string> albumToNotifySet_;
+    std::string garbagePath_;
 };
 } // namespace Media
 } // namespace OHOS

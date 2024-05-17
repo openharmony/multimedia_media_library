@@ -78,6 +78,7 @@ protected:
     std::atomic<uint32_t> audioNumber_;
     std::string dualDirName_ = "";
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
+    std::string backupRestoreDir_;
 };
 } // namespace Media
 } // namespace OHOS
