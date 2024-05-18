@@ -74,7 +74,7 @@ private:
     bool isEnd_ = false;
     int32_t shortTime_;
     int32_t middleTime_;
-    int32_t longTime_;
+    int32_t oneDay_;
     std::mutex taskLock_;
     std::mutex workLock_;
     std::condition_variable workCv_;
