@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_DFX_UTILS_H
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace OHOS {
@@ -25,6 +26,9 @@ class DfxUtils {
 public:
     static std::vector<std::string> Split(std::string &input, const std::string &pattern);
     static std::string GetSafePath(const std::string &path);
+    static std::string GetCurrentDate();
+    static std::string JoinStrings(const std::unordered_set<std::string>& strSet, char delimiter);
+    static std::unordered_set<std::string> SplitString(const std::string& input, char delimiter);
 
 private:
     static std::string GetSafeDiaplayName(std::string &displayName);

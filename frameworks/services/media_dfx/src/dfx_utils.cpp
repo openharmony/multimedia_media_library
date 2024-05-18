@@ -15,6 +15,10 @@
 
 #include "dfx_utils.h"
 
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+
 #include "dfx_const.h"
 #include "media_file_utils.h"
 using namespace std;
@@ -86,5 +90,43 @@ string DfxUtils::GetSafeDiaplayName(string &displayName)
     }
     return safeDisplayName;
 }
+
+string DfxUtils::GetCurrentDate()
+{
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    std::tm tm = *std::localtime(&time);
+    std::stringstream ss;
+    ss << std::put_time(&tm, "%Y-%m-%d");
+    return ss.str();
+}
+
+string DfxUtils::JoinStrings(const unordered_set<string>& strSet, char delimiter)
+{
+    string result;
+    for (auto it = strSet.begin(); it != strSet.end(); ++it) {
+        if (it != strSet.begin()) {
+            result += delimiter;
+        }
+        result += *it;
+    }
+    return result;
+}
+
+unordered_set<string> DfxUtils::SplitString(const string& input, char delimiter)
+{
+    if (input.empty()) {
+        return {};
+    }
+
+    unordered_set<std::string> result;
+    std::istringstream iss(input);
+    string token;
+    while (std::getline(iss, token, delimiter)) {
+        result.emplace(token);
+    }
+    return result;
+}
+
 } // namespace Media
 } // namespace OHOS

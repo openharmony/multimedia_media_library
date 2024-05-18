@@ -46,6 +46,7 @@
 #include "media_file_ext_ability.h"
 #include "media_file_extention_utils.h"
 #include "result_set_utils.h"
+#include "thumbnail_const.h"
 #include "uri.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
@@ -76,7 +77,8 @@ void CleanTestTables()
         PhotoColumn::PHOTOS_TABLE,
         AudioColumn::AUDIOS_TABLE,
         MEDIALIBRARY_TABLE,
-        ASSET_UNIQUE_NUMBER_TABLE
+        ASSET_UNIQUE_NUMBER_TABLE,
+        PhotoExtColumn::PHOTOS_EXT_TABLE
     };
     for (auto &dropTable : dropTableList) {
         string dropSql = "DROP TABLE " + dropTable + ";";
@@ -178,7 +180,8 @@ void SetTables()
         PhotoColumn::CREATE_PHOTO_TABLE,
         AudioColumn::CREATE_AUDIO_TABLE,
         CREATE_MEDIA_TABLE,
-        CREATE_ASSET_UNIQUE_NUMBER_TABLE
+        CREATE_ASSET_UNIQUE_NUMBER_TABLE,
+        PhotoExtColumn::CREATE_PHOTO_EXT_TABLE
         // todo: album tables
     };
     for (auto &createTableSql : createTableSqlList) {
@@ -794,6 +797,35 @@ static int32_t QueryPhotoIdByDisplayName(const string& displayName)
     }
     int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     return fileId;
+}
+
+static bool QueryPhotoThumbnailVolumn(int32_t photoId, size_t& queryResult)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr!");
+        return false;
+    }
+    const string sql = "SELECT " + PhotoExtColumn::THUMBNAIL_SIZE + " as " + MEDIA_DATA_DB_SIZE +
+        " FROM " + PhotoExtColumn::PHOTOS_EXT_TABLE +
+        " WHERE " + PhotoExtColumn::PHOTO_ID + " = " + to_string(photoId);
+    auto resultSet = uniStore->QuerySql(sql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null!");
+        return false;
+    }
+    if (resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("go to first row failed");
+        return false;
+    }
+    int64_t size = get<int64_t>(ResultSetUtils::GetValFromColumn(MEDIA_DATA_DB_SIZE,
+        resultSet, TYPE_INT64));
+    if (size < 0) {
+        MEDIA_ERR_LOG("Invalid size retrieved from database: %{public}" PRId64, size);
+        return false;
+    }
+    queryResult = static_cast<size_t>(size);
+    return true;
 }
 
 void MediaLibraryPhotoOperationsTest::SetUpTestCase()
@@ -2903,6 +2935,74 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_read_moving_photo_video_tes
     close(rfd);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_read_moving_photo_video_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_store_thumbnail_size_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_store_thumbnail_size_test_001");
+
+    // Get thumbnail paths
+
+    const int32_t testPhotoId = 1;
+    const string testPhotoPath = "/storage/cloud/files/Photo/1/IMG_test.jpg";
+    string testLCDPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_LCD_SUFFIX);
+    string testTHUMBPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_THUMB_SUFFIX);
+    string testTHUMBASTCPath = GetThumbnailPath(testPhotoPath, THUMBNAIL_THUMBASTC_SUFFIX);
+
+    // Create temporary thumbnail file
+
+    bool ret = MediaFileUtils::CreateDirectory("/storage/cloud/files/.thumbs/Photo/1/IMG_test.jpg/");
+    EXPECT_EQ(ret, true);
+
+    const size_t numBytes = 10;
+    size_t resultFileSize;
+    size_t totalThumbnailSize = 0;
+    bool isSuccess = MediaLibraryUnitTestUtils::writeBytesToFile(numBytes, testLCDPath.c_str(), resultFileSize);
+    EXPECT_EQ(isSuccess, true);
+    totalThumbnailSize += resultFileSize;
+    isSuccess = MediaLibraryUnitTestUtils::writeBytesToFile(numBytes, testTHUMBPath.c_str(), resultFileSize);
+    EXPECT_EQ(isSuccess, true);
+    totalThumbnailSize += resultFileSize;
+    isSuccess = MediaLibraryUnitTestUtils::writeBytesToFile(numBytes, testTHUMBASTCPath.c_str(), resultFileSize);
+    EXPECT_EQ(isSuccess, true);
+    totalThumbnailSize += resultFileSize;
+
+    // Check StoreThumbnailSize function
+
+    MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(testPhotoId), testPhotoPath);
+
+    size_t thumbnailSizequeryResult;
+    isSuccess = QueryPhotoThumbnailVolumn(testPhotoId, thumbnailSizequeryResult);
+    EXPECT_EQ(isSuccess, true);
+
+    EXPECT_EQ(thumbnailSizequeryResult, totalThumbnailSize);
+
+    system("rm -rf /storage/cloud/files");
+    MEDIA_INFO_LOG("end tdd photo_oprn_store_thumbnail_size_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_drop_thumbnail_size_test_001");
+
+    // Insert temporary thumbnail size record
+
+    const int32_t testPhotoId = 2;
+    const string testPhotoPath = "/storage/cloud/files/Photo/1/IMG_drop_test.jpg";
+    MediaLibraryPhotoOperations::StoreThumbnailSize(to_string(testPhotoId), testPhotoPath);
+    size_t thumbnailSizequeryResult;
+    bool isSuccess = QueryPhotoThumbnailVolumn(testPhotoId, thumbnailSizequeryResult);
+    ASSERT_EQ(isSuccess, true);
+    ASSERT_EQ(thumbnailSizequeryResult, 0);
+
+    // Test DropThumbnailSize function
+
+    MediaLibraryPhotoOperations::DropThumbnailSize(to_string(testPhotoId));
+
+    isSuccess = QueryPhotoThumbnailVolumn(testPhotoId, thumbnailSizequeryResult);
+    EXPECT_EQ(isSuccess, false);
+
+    MEDIA_INFO_LOG("end tdd photo_oprn_drop_thumbnail_size_test_001");
 }
 } // namespace Media
 } // namespace OHOS

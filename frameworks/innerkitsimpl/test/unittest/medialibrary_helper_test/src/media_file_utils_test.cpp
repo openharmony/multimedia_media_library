@@ -771,5 +771,15 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_SplitMovingPhotoUri_Test_003
     std::vector<std::string> ret;
     EXPECT_EQ(MediaFileUtils::SplitMovingPhotoUri(uri, ret), false);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileSize_Test_001, TestSize.Level0)
+{
+    bool success = true;
+    size_t size = -1;
+    string invalidPath = "/storage/cloud/files/Photo/1/IMG_test_invalid.gif";
+    success = MediaFileUtils::GetFileSize(invalidPath, size);
+    EXPECT_EQ(success, false);
+    EXPECT_EQ(size, 0);
+}
 } // namespace Media
 } // namespace OHOS

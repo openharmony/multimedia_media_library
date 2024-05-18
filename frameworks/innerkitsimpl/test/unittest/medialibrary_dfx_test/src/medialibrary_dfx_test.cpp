@@ -16,10 +16,16 @@
 #include "medialibrary_dfx_test.h"
 
 #include <string>
+#include <unordered_set>
 
-#include "dfx_manager.h"
+#include "dfx_collector.h"
 #include "dfx_const.h"
+#include "dfx_manager.h"
+#include "dfx_reporter.h"
 #include "dfx_utils.h"
+
+#include "preferences.h"
+#include "preferences_helper.h"
 
 using namespace std;
 using namespace OHOS;
@@ -94,6 +100,26 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_safe_path_test, TestSize.Level0)
     std::string path = "/storage/cloud/files/DCIM/123";
     std::string safePath = DfxUtils::GetSafePath(path);
     ASSERT_TRUE(safePath == "*DCIM");
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_join_strings_test, TestSize.Level0)
+{
+    unordered_set<string> set {"string1", "string2"};
+
+    EXPECT_EQ(DfxUtils::JoinStrings(set, ';'), "string2;string1");
+    EXPECT_EQ(DfxUtils::JoinStrings(set, '!'), "string2!string1");
+    EXPECT_EQ(DfxUtils::JoinStrings({"string1"}, ';'), "string1");
+    EXPECT_EQ(DfxUtils::JoinStrings({}, ';'), "");
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_split_string_test, TestSize.Level0)
+{
+    unordered_set<string> set {"string1", "string2"};
+
+    EXPECT_EQ(DfxUtils::SplitString("string1;string2", ';'), set);
+    EXPECT_EQ(DfxUtils::SplitString("string1!string2", '!'), set);
+    EXPECT_EQ(DfxUtils::SplitString("string1", ';'), unordered_set<string>{"string1"});
+    EXPECT_EQ(DfxUtils::SplitString("", ';'), unordered_set<string>{});
 }
 } // namespace Media
 } // namespace OHOS
