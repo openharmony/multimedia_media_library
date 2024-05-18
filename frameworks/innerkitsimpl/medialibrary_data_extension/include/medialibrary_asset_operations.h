@@ -145,6 +145,7 @@ protected:
 
     static std::string GetEditDataDirPath(const std::string &path);
     static std::string GetEditDataPath(const std::string &path);
+    static std::string GetEditDataCameraPath(const std::string &path);
     static std::string GetAssetCacheDir();
 
 private:
