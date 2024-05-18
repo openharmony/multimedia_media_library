@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -63,6 +63,18 @@ private:
     void AnalyzeExternalSource();
     void HandleCloneBatch(int32_t offset, int32_t maxId);
     void UpdateCloneWithRetry(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int32_t &number);
+    void RestoreFromGalleryAlbum();
+    std::vector<GalleryAlbumInfo> QueryGalleryAlbumInfos();
+    std::vector<AlbumInfo> QueryPhotoAlbumInfos();
+    int32_t QueryAlbumTotalNumber(const std::string &tableName, bool bgallery);
+    bool ParseAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, AlbumInfo &albumInfo);
+    bool ParseGalleryAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+                                    GalleryAlbumInfo &galleryAlbumInfos);
+    void InsertAlbum(std::vector<GalleryAlbumInfo> &galleryAlbumInfos, bool bInsertScreenreCorderAlbum);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<GalleryAlbumInfo> &galleryAlbumInfos,
+                                                        bool bInsertScreenreCorderAlbum);
+    void BatchQueryAlbum(std::vector<GalleryAlbumInfo> &galleryAlbumInfos);
+    void UpdateMediaScreenreCorderAlbumId();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -77,8 +89,10 @@ private:
     std::string audioAppName_;
     std::set<std::string> cacheSet_;
     std::unordered_map<std::string, std::string> nickMap_;
+    std::unordered_map<std::string, GalleryAlbumInfo> galleryAlbumMap_;
     bool sceneCode_;
     std::string audioDbPath_;
+    int32_t mediaScreenreCorderAlbumId_{-1};
 };
 } // namespace Media
 } // namespace OHOS
