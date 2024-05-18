@@ -407,6 +407,29 @@ bool MediaFileUtils::WriteStrToFile(const string &filePath, const string &str)
     return true;
 }
 
+bool MediaFileUtils::ReadStrFromFile(const std::string &filePath, std::string &fileContent)
+{
+    if (filePath.empty()) {
+        MEDIA_ERR_LOG("FilePath is empty");
+        return false;
+    }
+    if (!IsFileExists(filePath)) {
+        MEDIA_ERR_LOG("Can not get FilePath %{private}s", filePath.c_str());
+        return false;
+    }
+    ifstream file(filePath);
+    if (!file.is_open()) {
+        MEDIA_ERR_LOG("Can not open FilePath %{private}s", filePath.c_str());
+        return false;
+    }
+    char ch;
+    while (file.get(ch)) {
+        fileContent += ch;
+    }
+    file.close();
+    return true;
+}
+
 bool MediaFileUtils::CopyFile(int32_t rfd, int32_t wfd)
 {
     static const off_t sendSize1G = 1LL * 1024 * 1024 * 1024;

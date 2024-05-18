@@ -43,6 +43,7 @@ ohos_shared_library("media_library") {
     "src/file_asset.cpp",
     "src/form_map.cpp",
     "src/media_asset_edit_data.cpp",
+    "src/media_change_effect.cpp",
     "src/media_column.cpp",
     "src/media_file_uri.cpp",
     "src/media_file_utils.cpp",
@@ -81,6 +82,8 @@ ohos_shared_library("media_library") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
+    "graphic_2d:librender_service_client",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
@@ -93,6 +96,13 @@ ohos_shared_library("media_library") {
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.multimedia_image_effect) &&
+      global_parts_info.multimedia_image_effect) {
+    defines += [ "IMAGE_EFFECT_SUPPORT" ]
+    external_deps += [ "image_effect:image_effect_impl" ]
+  }
+
   if (!link_opt) {
     sanitize = {
       cfi = true
@@ -104,6 +114,8 @@ ohos_shared_library("media_library") {
       stack_protector_ret = true
     }
   }
+
+  use_exceptions = true
 
   innerapi_tags = [ "platformsdk" ]
   part_name = "media_library"

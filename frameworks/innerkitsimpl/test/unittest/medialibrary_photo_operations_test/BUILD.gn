@@ -34,6 +34,7 @@ ohos_unittest("medialibrary_photo_operations_test") {
   sources = [
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/medialibrary_formmap_operations_test.cpp",
+    "./src/medialibrary_photo_edit_test.cpp",
     "./src/medialibrary_photo_operations_test.cpp",
   ]
 
