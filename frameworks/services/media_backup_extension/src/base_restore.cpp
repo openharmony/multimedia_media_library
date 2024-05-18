@@ -45,6 +45,7 @@ const std::string singleDirName = "A";
 
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
+    backupRestoreDir_ = backupRetoreDir;
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         RestorePhoto();
