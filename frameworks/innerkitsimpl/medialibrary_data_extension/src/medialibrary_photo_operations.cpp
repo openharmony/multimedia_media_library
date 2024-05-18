@@ -1912,7 +1912,7 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
     }
 }
 
-void MediaLibraryPhotoOperations::RemoveThumbnailSizeRecord(const string& photoId)
+void MediaLibraryPhotoOperations::DropThumbnailSize(const string& photoId)
 {
     auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (mediaLibraryRdbStore == nullptr) {

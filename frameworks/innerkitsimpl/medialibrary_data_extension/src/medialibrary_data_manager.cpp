@@ -29,6 +29,7 @@
 #include "device_manager.h"
 #include "device_manager_callback.h"
 #endif
+#include "dfx_manager.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -454,6 +455,38 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
     }
 }
 
+static int32_t LogMovingPhoto(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
+{
+    bool inValid = false;
+    bool adapted = bool(dataShareValue.Get("adapted", inValid));
+    if (!inValid) {
+        MEDIA_ERR_LOG("Invalid adapted value");
+    }
+    string packageName = string(dataShareValue.Get("package_name", inValid));
+    if (!inValid) {
+        MEDIA_ERR_LOG("Invalid package name");
+    } else if (packageName.empty()) {
+        MEDIA_WARN_LOG("Package name is empty, adapted: %{public}d", static_cast<int>(adapted));
+    }
+    DfxManager::GetInstance()->HandleAdaptationToMovingPhoto(packageName, adapted);
+    return E_OK;
+}
+
+static int32_t SolveOtherInsertCmd(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue,
+    bool &solved)
+{
+    solved = false;
+    switch (cmd.GetOprnObject()) {
+        case OperationObject::MISCELLANEOUS:
+            if (cmd.GetOprnType() == OperationType::LOG_MOVING_PHOTO) {
+                solved = true;
+                return LogMovingPhoto(cmd, dataShareValue);
+            }
+        default:
+            return E_FAIL;
+    }
+}
+
 int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
@@ -486,15 +519,21 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
         return MediaLibraryAssetOperations::DeleteToolOperation(cmd);
 #endif
     }
+
+    bool solved = false;
+    int32_t ret = SolveOtherInsertCmd(cmd, dataShareValue, solved);
+    if (solved) {
+        return ret;
+    }
     return SolveInsertCmd(cmd);
 }
 
 int32_t MediaLibraryDataManager::InsertExt(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue,
     string &result)
 {
-    int32_t res = Insert(cmd, dataShareValue);
+    int32_t ret = Insert(cmd, dataShareValue);
     result = cmd.GetResult();
-    return res;
+    return ret;
 }
 
 int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &cmd)

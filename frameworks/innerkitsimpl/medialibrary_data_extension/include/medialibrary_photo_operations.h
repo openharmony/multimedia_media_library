@@ -42,12 +42,12 @@ public:
     EXPORT static int32_t CommitEditInsert(MediaLibraryCommand &cmd);
     EXPORT static int32_t RevertToOrigin(MediaLibraryCommand &cmd);
     EXPORT static void DeleteRevertMessage(const std::string &path);
-    EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
-    EXPORT static void RemoveThumbnailSizeRecord(const std::string& photoId);
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> ScanMovingPhoto(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     EXPORT static int32_t ProcessMultistagesPhoto(bool isEdited, const std::string &path,
         const uint8_t *addr, const long bytes);
+    EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
+    EXPORT static void DropThumbnailSize(const std::string& photoId);
 
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);

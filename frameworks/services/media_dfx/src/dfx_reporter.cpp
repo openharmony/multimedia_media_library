@@ -292,5 +292,38 @@ void DfxReporter::ReportAnalysisVersion(const std::string &analysisName, int32_t
         MEDIA_ERR_LOG("ReportAnalysisVersion error:%{public}d", ret);
     }
 }
+
+void DfxReporter::ReportAdaptationToMovingPhoto()
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(ADAPTATION_TO_MOVING_PHOTO_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+
+    string date = DfxUtils::GetCurrentDate();
+    string unadaptedAppPackages = prefs->GetString(MOVING_PHOTO_KEY_UNADAPTED_PACKAGE);
+    string adaptedAppPackages = prefs->GetString(MOVING_PHOTO_KEY_ADAPTED_PACKAGE);
+    int32_t unadaptedAppNum = prefs->GetInt(MOVING_PHOTO_KEY_UNADAPTED_NUM);
+    int32_t adaptedAppNum = prefs->GetInt(MOVING_PHOTO_KEY_ADAPTED_NUM);
+
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_MOVING_PHOTO_ADAPT",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "DATE", date,
+        "UNADAPTED_APP_NUM", unadaptedAppNum,
+        "UNADAPTED_APP_PACKAGE", unadaptedAppPackages,
+        "ADAPTED_APP_NUM", adaptedAppNum,
+        "ADAPTED_APP_PACKAGE", adaptedAppPackages);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report adaptation to moving photo error:%{public}d", ret);
+    }
+
+    prefs->Clear();
+    prefs->FlushSync();
+}
 } // namespace Media
 } // namespace OHOS

@@ -412,7 +412,7 @@ void ThumbnailService::InvalidateThumbnail(const std::string &id,
     ThumbnailData thumbnailData;
     ThumbnailUtils::DeleteOriginImage(opts);
     if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        MediaLibraryPhotoOperations::RemoveThumbnailSizeRecord(id);
+        MediaLibraryPhotoOperations::DropThumbnailSize(id);
     }
 }
 
