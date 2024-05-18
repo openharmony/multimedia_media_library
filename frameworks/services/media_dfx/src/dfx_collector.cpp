@@ -108,5 +108,24 @@ std::unordered_map<std::string, int32_t> DfxCollector::GetDeleteBehavior(int32_t
     }
     return result;
 }
+
+void DfxCollector::CollectAdaptationToMovingPhotoInfo(const string &appName, bool adapted)
+{
+    lock_guard<mutex> lock(adaptationToMovingPhotoLock_);
+    if (adapted) {
+        adaptationToMovingPhotoInfo_.adaptedAppPackages.emplace(appName);
+    } else {
+        adaptationToMovingPhotoInfo_.unadaptedAppPackages.emplace(appName);
+    }
+}
+
+AdaptationToMovingPhotoInfo DfxCollector::GetAdaptationToMovingPhotoInfo()
+{
+    lock_guard<mutex> lock(adaptationToMovingPhotoLock_);
+    AdaptationToMovingPhotoInfo infoCopy = adaptationToMovingPhotoInfo_;
+    adaptationToMovingPhotoInfo_.unadaptedAppPackages.clear();
+    adaptationToMovingPhotoInfo_.adaptedAppPackages.clear();
+    return infoCopy;
+}
 } // namespace Media
 } // namespace OHOS

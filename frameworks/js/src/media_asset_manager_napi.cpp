@@ -575,6 +575,22 @@ bool MediaAssetManagerNapi::InitUserFileClient(napi_env env, napi_callback_info 
     return UserFileClient::IsValid();
 }
 
+static int32_t GetPhotoSubtype(napi_env env, napi_value photoAssetArg)
+{
+    if (photoAssetArg == nullptr) {
+        NAPI_ERR_LOG(
+            "Dfx adaptation to moving photo collector error: failed to get photo subtype, photo asset is null");
+        return -1;
+    }
+    FileAssetNapi *obj = nullptr;
+    napi_unwrap(env, photoAssetArg, reinterpret_cast<void**>(&obj));
+    if (obj == nullptr) {
+        NAPI_ERR_LOG("Dfx adaptation to moving photo collector error: failed to unwrap file asset");
+        return -1;
+    }
+    return obj->GetFileAssetInstance()->GetPhotoSubType();
+}
+
 napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback_info info)
 {
     if (env == nullptr || info == nullptr) {
@@ -600,6 +616,17 @@ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback
 
     asyncContext->requestId = GenerateRequestId();
     OnHandleRequestImage(env, asyncContext);
+
+    int32_t subtype = GetPhotoSubtype(env, asyncContext->argv[PARAM1]);
+    if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        string uri = LOG_MOVING_PHOTO;
+        Uri logMovingPhotoUri(uri);
+        DataShare::DataShareValuesBucket valuesBucket;
+        string result;
+        valuesBucket.Put("package_name", asyncContext->callingPkgName);
+        valuesBucket.Put("adapted", false);
+        UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result);
+    }
 
     napi_value promise;
     napi_value requestId;
@@ -636,6 +663,18 @@ napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_inf
 
     asyncContext->requestId = GenerateRequestId();
     OnHandleRequestImage(env, asyncContext);
+
+    int32_t subtype = GetPhotoSubtype(env, asyncContext->argv[PARAM1]);
+    if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        string uri = LOG_MOVING_PHOTO;
+        Uri logMovingPhotoUri(uri);
+        DataShare::DataShareValuesBucket valuesBucket;
+        string result;
+        valuesBucket.Put("package_name", asyncContext->callingPkgName);
+        valuesBucket.Put("adapted", false);
+        UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result);
+    }
+
     napi_value promise;
     napi_value requestId;
     napi_deferred deferred;
@@ -862,7 +901,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         napi_get_undefined(env, &napiValueOfMedia);
     }
     dataHandler->JsOnDataPrepared(napiValueOfMedia, napiValueOfInfoMap);
-    
+
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     NAPI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
     DeleteAssetHandlerSafe(assetHandler);
@@ -1027,6 +1066,14 @@ napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callba
 
     asyncContext->requestId = GenerateRequestId();
     OnHandleRequestImage(env, asyncContext);
+
+    string uri = LOG_MOVING_PHOTO;
+    Uri logMovingPhotoUri(uri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    string result;
+    valuesBucket.Put("package_name", asyncContext->callingPkgName);
+    valuesBucket.Put("adapted", true);
+    UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result);
 
     napi_value promise;
     napi_value requestId;

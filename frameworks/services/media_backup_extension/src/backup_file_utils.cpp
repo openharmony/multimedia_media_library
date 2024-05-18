@@ -80,7 +80,7 @@ int32_t BackupFileUtils::GetFileMetadata(std::unique_ptr<Metadata> &data)
     return E_OK;
 }
 
-string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t sceneCode)
+string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t sceneCode, std::string cloneFilePath)
 {
     if (filePath.empty()) {
         return filePath;
@@ -97,7 +97,7 @@ string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t scen
     } else if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID) {
         path = filePath.substr(0, displayNameIndex).replace(0, GARBLE_DUAL_FRAME_CLONE_DIR.length(), GARBLE);
     } else if (sceneCode == CLONE_RESTORE_ID) {
-        path = filePath.substr(0, displayNameIndex).replace(0, GARBLE_CLONE_DIR.length(), GARBLE);
+        path = filePath.substr(0, displayNameIndex).replace(0, cloneFilePath.length(), GARBLE);
     } else {
         path = filePath.substr(0, displayNameIndex);
     }

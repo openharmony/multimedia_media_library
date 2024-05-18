@@ -16,6 +16,7 @@
 
 #include "dfx_analyzer.h"
 
+#include "dfx_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "preferences.h"
@@ -34,7 +35,7 @@ DfxAnalyzer::~DfxAnalyzer()
 {
 }
 
-void DfxAnalyzer::FlushThumbnail(std::unordered_map<std::string, ThumbnailErrorInfo>  &thumbnailErrorMap)
+void DfxAnalyzer::FlushThumbnail(std::unordered_map<std::string, ThumbnailErrorInfo> &thumbnailErrorMap)
 {
     if (thumbnailErrorMap.empty()) {
         return;
@@ -104,6 +105,39 @@ void DfxAnalyzer::FlushDeleteBehavior(std::unordered_map<string, int32_t> &delet
         prefs->PutInt(bundleName + SPLIT_CHAR + to_string(type), times + oldValue);
     }
     prefs->FlushSync();
+}
+
+void DfxAnalyzer::FlushAdaptationToMovingPhoto(AdaptationToMovingPhotoInfo& newAdaptationInfo)
+{
+    if (newAdaptationInfo.unadaptedAppPackages.empty() && newAdaptationInfo.adaptedAppPackages.empty()) {
+        return;
+    }
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+        NativePreferences::PreferencesHelper::GetPreferences(ADAPTATION_TO_MOVING_PHOTO_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    string unadaptedAppsStr = prefs->GetString(MOVING_PHOTO_KEY_UNADAPTED_PACKAGE);
+    string adaptedAppsStr = prefs->GetString(MOVING_PHOTO_KEY_ADAPTED_PACKAGE);
+    unordered_set<string> allUnadaptedApps = DfxUtils::SplitString(unadaptedAppsStr, ';');
+    unordered_set<string> allAdaptedApps = DfxUtils::SplitString(adaptedAppsStr, ';');
+    for (const auto& app : newAdaptationInfo.unadaptedAppPackages) {
+        allUnadaptedApps.insert(app);
+    }
+    for (const auto& app : newAdaptationInfo.adaptedAppPackages) {
+        allAdaptedApps.insert(app);
+    }
+
+    prefs->PutInt(MOVING_PHOTO_KEY_UNADAPTED_NUM, allUnadaptedApps.size());
+    prefs->PutString(MOVING_PHOTO_KEY_UNADAPTED_PACKAGE, DfxUtils::JoinStrings(allUnadaptedApps, ';'));
+    prefs->PutInt(MOVING_PHOTO_KEY_ADAPTED_NUM, allAdaptedApps.size());
+    prefs->PutString(MOVING_PHOTO_KEY_ADAPTED_PACKAGE, DfxUtils::JoinStrings(allAdaptedApps, ';'));
+
+    prefs->FlushSync();
+    MEDIA_INFO_LOG("flush adaptation to moving photo, unadapted num: %{private}zu, adapted num: %{private}zu",
+        allUnadaptedApps.size(), allAdaptedApps.size());
 }
 } // namespace Media
 } // namespace OHOS
