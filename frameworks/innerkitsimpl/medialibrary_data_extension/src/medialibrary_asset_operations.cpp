@@ -1258,6 +1258,15 @@ string MediaLibraryAssetOperations::GetEditDataPath(const string &path)
     return parentPath + "/editdata";
 }
 
+string MediaLibraryAssetOperations::GetEditDataCameraPath(const string &path)
+{
+    string parentPath = GetEditDataDirPath(path);
+    if (parentPath.empty()) {
+        return "";
+    }
+    return parentPath + "/editdata_camera";
+}
+
 string MediaLibraryAssetOperations::GetAssetCacheDir()
 {
     string cacheOwner = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
