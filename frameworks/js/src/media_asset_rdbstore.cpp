@@ -150,6 +150,93 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     return NativeRdb::E_OK;
 }
 
+void AddVirtualColumnsOfDateType(vector<string>& columns)
+{
+    vector<string> dateTypes = { MEDIA_DATA_DB_DATE_ADDED, MEDIA_DATA_DB_DATE_TRASHED, MEDIA_DATA_DB_DATE_MODIFIED };
+    vector<string> dateTypeSeconds = { MEDIA_DATA_DB_DATE_ADDED_TO_SECOND,
+            MEDIA_DATA_DB_DATE_TRASHED_TO_SECOND, MEDIA_DATA_DB_DATE_MODIFIED_TO_SECOND };
+    for (size_t i = 0; i < dateTypes.size(); i++) {
+        auto it = find(columns.begin(), columns.end(), dateTypes[i]);
+        if (it != columns.end()) {
+            columns.push_back(dateTypeSeconds[i]);
+        }
+    }
+}
+
+void AddQueryIndex(AbsPredicates& predicates, const vector<string>& columns)
+{
+    auto it = find(columns.begin(), columns.end(), MEDIA_COLUMN_COUNT);
+    if (it == columns.end()) {
+        return;
+    }
+    const string &group = predicates.GetGroup();
+    if (group.empty()) {
+        predicates.GroupBy({ PhotoColumn::PHOTO_DATE_DAY });
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
+        return;
+    }
+    if (group == PhotoColumn::MEDIA_TYPE) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
+        return;
+    }
+    if (group == PhotoColumn::PHOTO_DATE_DAY) {
+        predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_DAY_INDEX);
+        return;
+    }
+}
+
+static string GetQueryFilter(const string &tableName)
+{
+    if (tableName == MEDIALIBRARY_TABLE) {
+        return MEDIALIBRARY_TABLE + "." + MEDIA_DATA_DB_SYNC_STATUS + " = " +
+            to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE));
+    }
+    if (tableName == PhotoColumn::PHOTOS_TABLE) {
+        return PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS + " = " +
+            to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
+            PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
+            to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+    }
+    if (tableName == PhotoAlbumColumns::TABLE) {
+        return PhotoAlbumColumns::TABLE + "." + PhotoAlbumColumns::ALBUM_DIRTY + " != " +
+            to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED));
+    }
+    if (tableName == PhotoMap::TABLE) {
+        return PhotoMap::TABLE + "." + PhotoMap::DIRTY + " != " + to_string(static_cast<int32_t>(
+            DirtyTypes::TYPE_DELETED));
+    }
+    return "";
+}
+
+void AddQueryFilter(AbsRdbPredicates &predicates)
+{
+    /* build all-table vector */
+    string tableName = predicates.GetTableName();
+    vector<string> joinTables = predicates.GetJoinTableNames();
+    joinTables.push_back(tableName);
+    /* add filters */
+    string filters;
+    for (auto &t : joinTables) {
+        string filter = GetQueryFilter(t);
+        if (filter.empty()) {
+            continue;
+        }
+        if (filters.empty()) {
+            filters += filter;
+        } else {
+            filters += " AND " + filter;
+        }
+    }
+    if (filters.empty()) {
+        return;
+    }
+
+    /* rebuild */
+    string queryCondition = predicates.GetWhereClause();
+    queryCondition = queryCondition.empty() ? filters : filters + " AND " + queryCondition;
+    predicates.SetWhereClause(queryCondition);
+}
+
 std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(
     const DataShare::DataSharePredicates& predicates,
     std::vector<std::string>& columns, OperationObject& object, int& errCode)
@@ -160,11 +247,11 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(
     }
     std::string tableName = GetTableNameFromOprnObject(object);
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, tableName);
-    MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
+    AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
     if (object == OperationObject::UFM_PHOTO || object == OperationObject::PAH_PHOTO) {
-        MediaLibraryRdbUtils::AddQueryIndex(rdbPredicates, columns);
+        AddQueryIndex(rdbPredicates, columns);
     }
-    MediaLibraryRdbUtils::AddQueryFilter(rdbPredicates);
+    AddQueryFilter(rdbPredicates);
     auto resultSet = rdbStore_->Query(rdbPredicates, columns);
     if (resultSet == nullptr) {
         NAPI_ERR_LOG("fail to acquire result from visitor query");
