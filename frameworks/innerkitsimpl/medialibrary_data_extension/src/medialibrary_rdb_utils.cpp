@@ -47,6 +47,7 @@ constexpr size_t ALBUM_UPDATE_THRESHOLD = 1000;
 constexpr int32_t SINGLE_FACE = 1;
 constexpr int32_t ALBUM_COVER_SATISFIED = 1;
 
+// 注意，端云同步代码仓也有相同常量，添加新相册时，请通知端云同步进行相应修改
 const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
     std::to_string(PhotoAlbumSubType::FAVORITE),
     std::to_string(PhotoAlbumSubType::VIDEO),
@@ -58,6 +59,7 @@ const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
     std::to_string(PhotoAlbumSubType::SOURCE_GENERIC),
 };
 
+// 注意，端云同步代码仓也有相同常量，添加新相册时，请通知端云同步进行相应修改
 const std::vector<std::string> ALL_ANALYSIS_ALBUM = {
     std::to_string(PhotoAlbumSubType::CLASSIFY),
     std::to_string(PhotoAlbumSubType::GEOGRAPHY_LOCATION),
@@ -1834,6 +1836,7 @@ int32_t MediaLibraryRdbUtils::RefreshAllAlbums(const shared_ptr<NativeRdb::RdbSt
 
 void MediaLibraryRdbUtils::UpdateAllAlbumsForCloud(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
+    // 注意，端云同步代码仓也有相同函数，添加新相册时，请通知端云同步进行相应修改
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
     unordered_map<int32_t, int32_t> updateResult;
@@ -1842,6 +1845,7 @@ void MediaLibraryRdbUtils::UpdateAllAlbumsForCloud(const std::shared_ptr<NativeR
 
 void MediaLibraryRdbUtils::UpdateAllAlbumsCountForCloud(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
 {
+    // 注意，端云同步代码仓也有相同函数，添加新相册时，请通知端云同步进行相应修改
     MediaLibraryRdbUtils::UpdateSystemAlbumCountInternal(rdbStore);
     MediaLibraryRdbUtils::UpdateUserAlbumCountInternal(rdbStore);
     vector<string> subtype = { "4101" };
