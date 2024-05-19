@@ -37,6 +37,8 @@ enum class ThumbnailType : int32_t {
     THUMB_ASTC,
     MTH_ASTC,
     YEAR_ASTC,
+    LCD_EX,
+    THUMB_EX,
 };
 
 enum class GenerateScene : int32_t {
@@ -79,7 +81,6 @@ constexpr int32_t WAIT_FOR_MS = 1000;
 constexpr int32_t WAIT_FOR_SECOND = 3;
 
 constexpr float EPSILON = 1e-6;
-constexpr float FLOAT_ZERO = 0.0f;
 constexpr int32_t SHORT_SIDE_THRESHOLD = 350;
 constexpr int32_t MAXIMUM_SHORT_SIDE_THRESHOLD = 1050;
 constexpr int32_t LCD_SHORT_SIDE_THRESHOLD = 512;
@@ -101,6 +102,8 @@ const std::string THUMBNAIL_THUMB_SUFFIX = "THM";   // The size which height is 
 const std::string THUMBNAIL_THUMBASTC_SUFFIX = "THM_ASTC";
 const std::string THUMBNAIL_MTH_SUFFIX = "MTH";     // The size which height is 128 and width is 128
 const std::string THUMBNAIL_YEAR_SUFFIX = "YEAR";   // The size which height is 64 and width is 64
+const std::string THUMBNAIL_LCD_EX_SUFFIX = "THM_EX/LCD";
+const std::string THUMBNAIL_THUMB_EX_SUFFIX = "THM_EX/THM";
 
 const std::string FILE_URI_PREX = "file://";
 
@@ -124,6 +127,7 @@ const std::string THUMBNAIL_OPER = "oper";
 const std::string THUMBNAIL_HEIGHT = "height";
 const std::string THUMBNAIL_WIDTH = "width";
 const std::string THUMBNAIL_PATH = "path";
+const std::string THUMBNAIL_TEMP_ORIENT_SUFFIX = ".temp.orient";
 
 // create thumbnail in close operation
 const std::string CLOSE_CREATE_THUMB_STATUS = "create_thumbnail_sync_status";
