@@ -83,6 +83,7 @@ public:
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data);
+    static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool IsPureCloudImage(ThumbRdbOpt &opts);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);

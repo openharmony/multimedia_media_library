@@ -15,7 +15,9 @@
 
 #include "medialibrary_unittest_utils.h"
 
+#include <cerrno>
 #include <fstream>
+#include <sys/stat.h>
 
 #include "ability_context_impl.h"
 #include "fetch_result.h"
@@ -288,6 +290,38 @@ int32_t TestScannerCallback::OnScanFinished(const int32_t status, const std::str
     status_ = status;
     condVar_.notify_all();
     return E_OK;
+}
+
+bool MediaLibraryUnitTestUtils::writeBytesToFile(size_t numBytes, const char* path, size_t& resultFileSize)
+{
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        MEDIA_ERR_LOG("Error: Unable to open file %{public}s for writing, errno: %{public}d", path, errno);
+        return false;
+    }
+
+    char dummyByte = '\0'; // A dummy byte to be written
+
+    for (size_t i = 0; i < numBytes; ++i) {
+        if (write(fd, &dummyByte, sizeof(char)) == -1) {
+            MEDIA_ERR_LOG("Error while writing to file %{public}s, errno: %{public}d", path, errno);
+            close(fd);
+            return false;
+        }
+    }
+
+    close(fd);
+
+    struct stat statbuf;
+    if (lstat(path, &statbuf) == -1) {
+        MEDIA_ERR_LOG("Failed to get file size of %{public}s, errno is %{public}d", path, errno);
+        return false;
+    }
+
+    resultFileSize = statbuf.st_size;
+    MEDIA_INFO_LOG("File %{public}s successfully written, File size after writing: %{public}zu", path, resultFileSize);
+
+    return true;
 }
 }
 }

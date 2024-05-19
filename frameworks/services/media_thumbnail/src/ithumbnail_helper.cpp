@@ -327,8 +327,8 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
 bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     if (data.loaderOpts.isCloudLoading) {
-        MEDIA_INFO_LOG("Create lcd when cloud loading, no need to create THM_EX, path: %{public}s， id: %{public}d",
-            DfxUtils::GetSafePath(opts.path).c_str(), data.id);
+        MEDIA_INFO_LOG("Create lcd when cloud loading, no need to create THM_EX, path: %{public}s， id: %{public}s",
+            DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
     }
 
@@ -376,11 +376,6 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
     }
 
     if (type == ThumbnailType::THUMB || type == ThumbnailType::THUMB_ASTC) {
-        if (data.source == nullptr) {
-            MEDIA_ERR_LOG("source is nullptr");
-            return false;
-        }
-
         if (!ThumbnailUtils::CompressImage(data.source, type == ThumbnailType::THUMB ? data.thumbnail : data.thumbAstc,
             false, type == ThumbnailType::THUMB_ASTC)) {
             MEDIA_ERR_LOG("CompressImage faild id %{private}s", opts.row.c_str());
@@ -418,8 +413,8 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
 bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     if (data.loaderOpts.isCloudLoading) {
-        MEDIA_INFO_LOG("Create thumb when cloud loading, no need to create THM_EX, path: %{public}s, id: %{public}d",
-            DfxUtils::GetSafePath(opts.path).c_str(), data.id);
+        MEDIA_INFO_LOG("Create thumb when cloud loading, no need to create THM_EX, path: %{public}s, id: %{public}s",
+            DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
     }
     
@@ -580,9 +575,30 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
 bool IThumbnailHelper::IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     if (!GenThumbnailEx(opts, data)) {
-        MEDIA_ERR_LOG("Fail to create thumbnailEx, fileName: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+        MEDIA_ERR_LOG("Fail to create thumbnailEx, fileName: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
+    return true;
+}
+
+bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    if (data.source == nullptr) {
+        MEDIA_ERR_LOG("source is nullptr when rotate thumbnail path: %{public}s", data.path.c_str());
+        return false;
+    }
+
+    if (!ThumbnailUtils::CompressImage(data.source, data.thumbnail, false, false)) {
+        MEDIA_ERR_LOG("CompressImage faild id %{private}s", data.id.c_str());
+        return false;
+    }
+
+    int err = ThumbnailUtils::TrySaveFile(data, ThumbnailType::THUMB);
+    if (err < 0) {
+        MEDIA_ERR_LOG("SaveThumbnailData faild %{public}d", err);
+        return false;
+    }
+    data.thumbnail.clear();
     return true;
 }
 

@@ -48,7 +48,7 @@ std::string GetDualDirName()
 }
 
 void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &galleryAppName,
-    const std::string &mediaAppName)
+    const std::string &mediaAppName, const std::string &backupDir)
 {
     std::unique_ptr<BaseRestore> restoreService;
     MEDIA_INFO_LOG("Start restore service: %{public}d", sceneCode);
@@ -64,7 +64,7 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
         MEDIA_ERR_LOG("Create media restore service failed.");
         return;
     }
-    restoreService->StartRestore(BACKUP_RESTORE_DIR, UPGRADE_FILE_DIR);
+    restoreService->StartRestore(backupDir, UPGRADE_FILE_DIR);
 }
 } // namespace Media
 } // namespace OHOS

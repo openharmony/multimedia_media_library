@@ -115,6 +115,18 @@ bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, ThumbnailType type)
     return true;
 }
 
+bool ThumbnailUtils::DeleteThumbExDir(ThumbnailData &data)
+{
+    string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
+    string dirName = MediaFileUtils::GetParentPath(fileName);
+    if (!MediaFileUtils::DeleteDir(dirName)) {
+        MEDIA_INFO_LOG("Failed to delete THM_EX directory, path: %{public}s, id: %{public}s",
+            dirName.c_str(), data.id.c_str());
+        return false;
+    }
+    return true;
+}
+
 bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
     Size &desiredSize, uint32_t &errCode)
 {
@@ -1375,6 +1387,9 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
         isDelete = true;
     }
     if (DeleteThumbFile(tmpData, ThumbnailType::LCD)) {
+        isDelete = true;
+    }
+    if (DeleteThumbExDir(tmpData)) {
         isDelete = true;
     }
     string fileName = GetThumbnailPath(tmpData.path, "");

@@ -99,6 +99,7 @@ enum class EXPORT OperationObject : uint32_t {
     PAH_MULTISTAGES_CAPTURE,
     HIGHLIGHT_COVER,
     PAH_MOVING_PHOTO,
+    MISCELLANEOUS,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -149,6 +150,7 @@ enum class EXPORT OperationType : uint32_t {
     SET_LOCATION,
     ANALYSIS_INDEX,
     CANCEL_PROCESS_IMAGE,
+    LOG_MOVING_PHOTO,
 };
 
 class MediaLibraryCommand {
@@ -216,7 +218,7 @@ private:
     std::string bundleName_;
     std::string deviceName_;
     std::unordered_map<std::string, std::string> querySetMap_;
-    std::string result_;
+    std::string result_ = "";
     MediaLibraryApi api_;
 };
 
@@ -292,6 +294,9 @@ static const std::map<std::string, OperationObject> OPRN_OBJ_MAP = {
     { HIGHLIGHT_COVER_INFO_TABLE, OperationObject::STORY_COVER },
     { HIGHLIGHT_PLAY_INFO_TABLE, OperationObject::STORY_PLAY },
     { USER_PHOTOGRAPHY_INFO_TABLE, OperationObject::USER_PHOTOGRAPHY },
+
+    // others
+    { MISC_OPERATION, OperationObject::MISCELLANEOUS },
 };
 
 static const std::map<OperationObject, std::map<OperationType, std::string>> TABLE_NAME_MAP = {
@@ -418,6 +423,7 @@ static const std::map<std::string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_PROCESS_IMAGE, OperationType::PROCESS_IMAGE },
     { OPRN_SET_LOCATION, OperationType::SET_LOCATION },
     { OPRN_CANCEL_PROCESS_IMAGE, OperationType::CANCEL_PROCESS_IMAGE },
+    { OPRN_LOG_MOVING_PHOTO, OperationType::LOG_MOVING_PHOTO },
 };
 }
 

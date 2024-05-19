@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -45,14 +45,17 @@ const std::string singleDirName = "A";
 
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
+    backupRestoreDir_ = backupRetoreDir;
     int32_t errorCode = Init(backupRetoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         RestorePhoto();
         RestoreAudio();
         MEDIA_INFO_LOG("migrate database number: %{public}lld, file number: %{public}lld," \
-            "audio database number:%{public}lld, audio file number:%{public}lld",
+            "audio database number:%{public}lld, audio file number:%{public}lld," \
+            "map number: %{public}lld",
             (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_,
-            (long long) migrateAudioDatabaseNumber_, (long long) migrateAudioFileNumber_);
+            (long long) migrateAudioDatabaseNumber_, (long long) migrateAudioFileNumber_,
+            (long long) migrateDatabaseMapNumber_);
         std::unordered_map<int32_t, int32_t>  updateResult;
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_, updateResult);
         MediaLibraryRdbUtils::UpdateSourceAlbumInternal(mediaLibraryRdb_, updateResult);
@@ -194,45 +197,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     return values;
 }
 
-void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
-{
-    std::unique_ptr<Metadata> data = make_unique<Metadata>();
-    data->SetFilePath(fileInfo.filePath);
-    data->SetFileMediaType(fileInfo.fileType);
-    BackupFileUtils::FillMetadata(data);
-    MediaType mediaType = data->GetFileMediaType();
-
-    value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
-    value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
-    value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
-    value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
-    value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
-    value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
-    value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
-    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
-    value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
-    value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
-    value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
-    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
-    value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
-    value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
-    value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
-    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
-    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
-    value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
-    int64_t dateAdded = 0;
-    ValueObject valueObject;
-    if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {
-        valueObject.GetLong(dateAdded);
-    }
-    value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
-    value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
-    value.PutString(PhotoColumn::PHOTO_DATE_DAY,
-        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
-}
-
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
 {
     int64_t dateAdded = metadata->GetFileDateAdded();
@@ -259,6 +223,46 @@ static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
             static_cast<long long>(dateAdded));
     }
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
+}
+
+void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
+{
+    std::unique_ptr<Metadata> data = make_unique<Metadata>();
+    data->SetFilePath(fileInfo.filePath);
+    data->SetFileMediaType(fileInfo.fileType);
+    BackupFileUtils::FillMetadata(data);
+    MediaType mediaType = data->GetFileMediaType();
+
+    value.PutString(MediaColumn::MEDIA_FILE_PATH, data->GetFilePath());
+    value.PutString(MediaColumn::MEDIA_MIME_TYPE, data->GetFileMimeType());
+    value.PutInt(MediaColumn::MEDIA_TYPE, mediaType);
+    value.PutString(MediaColumn::MEDIA_TITLE, data->GetFileTitle());
+    value.PutLong(MediaColumn::MEDIA_SIZE, data->GetFileSize());
+    value.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, data->GetFileDateModified());
+    value.PutInt(MediaColumn::MEDIA_DURATION, data->GetFileDuration());
+    value.PutLong(MediaColumn::MEDIA_DATE_TAKEN, data->GetDateTaken());
+    value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
+    value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
+    value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
+    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
+    value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
+    value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
+    value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
+    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE, data->GetShootingMode());
+    value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
+    value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
+    InsertDateAdded(data, value);
+    int64_t dateAdded = 0;
+    ValueObject valueObject;
+    if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {
+        valueObject.GetLong(dateAdded);
+    }
+    value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
+    value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
+    value.PutString(PhotoColumn::PHOTO_DATE_DAY,
+        MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
 }
 
 void BaseRestore::SetAudioValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
@@ -391,6 +395,12 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     if (errCode != E_OK) {
         return;
     }
+
+    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
+    if (sourceType == SourceType::GALLERY) {
+        InsertPhotoMap(fileInfos);
+    }
+
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     migrateDatabaseNumber_ += rowNum;
     int32_t fileMoveCount = 0;
@@ -412,7 +422,7 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld and move " \
         "%{public}ld file cost %{public}ld.", (long)(startInsert - startGenerate), (long)rowNum,
-        (long)(startMove - startInsert), (long)fileMoveCount, (long)(end - startMove));
+        (long)(startQuery - startInsert), (long)fileMoveCount, (long)(end - startMove));
 }
 
 int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
@@ -526,6 +536,60 @@ bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     fileInfo.fileIdNew = fileId;
     fileInfo.cloudPath = cloudPath;
     return true;
+}
+
+void BaseRestore::InsertPhotoMap(std::vector<FileInfo> &fileInfos)
+{
+    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
+    BatchQueryPhoto(fileInfos);
+    int64_t startInsertMap = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t mapRowNum = 0;
+    BatchInsertMap(fileInfos, mapRowNum);
+    migrateDatabaseMapNumber_ += mapRowNum;
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("query cost %{public}ld, insert %{public}ld maps cost %{public}ld.",
+                   (long)(startInsertMap - startQuery), (long)mapRowNum, (long)(end - startInsertMap));
+}
+
+void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
+{
+    for (auto &fileInfo : fileInfos) {
+        if (fileInfo.cloudPath.empty() && fileInfo.mediaAlbumId <= 0) {
+            continue;
+        }
+        string sql = "SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+            MediaColumn::MEDIA_FILE_PATH + " = '" + fileInfo.cloudPath + "'";
+        auto result = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, sql);
+        if (result == nullptr || result->GoToFirstRow() != NativeRdb::E_OK) {
+            continue;
+        }
+        int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, result);
+        if (fileId <= 0) {
+            MEDIA_ERR_LOG("Get fileId invalid: %{public}d", fileId);
+            continue;
+        }
+        fileInfo.fileIdNew = fileId;
+    }
+}
+
+void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &totalRowNum)
+{
+    vector<NativeRdb::ValuesBucket> values;
+    for (const auto &fileInfo : fileInfos) {
+        if (fileInfo.cloudPath.empty() || fileInfo.mediaAlbumId <= 0) {
+            continue;
+        }
+        NativeRdb::ValuesBucket value;
+        value.PutInt(PhotoMap::ASSET_ID, fileInfo.fileIdNew);
+        value.PutInt(PhotoMap::ALBUM_ID, fileInfo.mediaAlbumId);
+        values.emplace_back(value);
+    }
+    int64_t rowNum = 0;
+    int32_t errCode = BatchInsertWithRetry(PhotoMap::TABLE, values, rowNum);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Batch insert map failed, errCode: %{public}d", errCode);
+    }
+    totalRowNum += rowNum;
 }
 } // namespace Media
 } // namespace OHOS

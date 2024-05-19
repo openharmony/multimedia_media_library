@@ -34,6 +34,8 @@ public:
     void AddCommonBahavior(std::string bundleName, int32_t type);
     void CollectDeleteBehavior(std::string bundleName, int32_t type, int32_t size);
     std::unordered_map<std::string, int32_t> GetDeleteBehavior(int32_t type);
+    void CollectAdaptationToMovingPhotoInfo(const std::string &appName, bool adapted);
+    AdaptationToMovingPhotoInfo GetAdaptationToMovingPhotoInfo();
 
 private:
     std::mutex thumbnailErrorLock_;
@@ -41,11 +43,13 @@ private:
     std::mutex deleteToTrashLock_;
     std::mutex deleteFromDiskLock_;
     std::mutex removeLock_;
+    std::mutex adaptationToMovingPhotoLock_;
     std::unordered_map<std::string, ThumbnailErrorInfo> thumbnailErrorMap_;
     std::unordered_map<std::string, CommonBehavior> commonBehaviorMap_;
     std::unordered_map<std::string, int32_t> deleteToTrashMap_;
     std::unordered_map<std::string, int32_t> deleteFromDiskMap_;
     std::unordered_map<std::string, int32_t> removeMap_;
+    AdaptationToMovingPhotoInfo adaptationToMovingPhotoInfo_;
 };
 } // namespace Media
 } // namespace OHOS

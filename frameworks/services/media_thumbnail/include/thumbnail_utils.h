@@ -71,6 +71,7 @@ public:
     static bool DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
 #endif
     static bool DeleteThumbFile(ThumbnailData &data, ThumbnailType type);
+    static bool DeleteThumbExDir(ThumbnailData &data);
 #ifdef DISTRIBUTED
     static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
 #endif

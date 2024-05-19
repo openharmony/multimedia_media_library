@@ -408,7 +408,7 @@ void ThumbnailService::InvalidateThumbnail(const std::string &id,
     ThumbnailData thumbnailData;
     ThumbnailUtils::DeleteOriginImage(opts);
     if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        MediaLibraryPhotoOperations::RemoveThumbnailSizeRecord(id);
+        MediaLibraryPhotoOperations::DropThumbnailSize(id);
     }
 }
 
@@ -518,14 +518,13 @@ int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
         string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
         string dirName = MediaFileUtils::GetParentPath(fileName);
         if (MediaFileUtils::DeleteDir(dirName)) {
-            MEDIA_INFO_LOG("Succeed in deleting THM_EX directory, path: %{public}s, id: %{public}d",
-                dirName.c_str(), data.id);
+            MEDIA_INFO_LOG("Succeed in deleting THM_EX directory, path: %{public}s, id: %{public}s",
+                dirName.c_str(), data.id.c_str());
         }
 
         IThumbnailHelper::AddThumbnailGenerateTask(
             IThumbnailHelper::CreateAstcEx, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
         return E_OK;
-
     }
 
     IThumbnailHelper::AddThumbnailGenerateTask(
