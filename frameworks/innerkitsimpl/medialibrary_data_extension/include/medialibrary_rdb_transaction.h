@@ -26,6 +26,7 @@
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 static constexpr int32_t SQLITE3_DATABASE_LOCKER = -5;
+static constexpr int32_t SQLITE3_DATABASE_LOCKER_NEW = 14800060;
 /**
  * This class is used for database transaction creation, commit, and rollback
  * The usage of class is as follows:
@@ -54,6 +55,7 @@ private:
     std::shared_ptr<OHOS::NativeRdb::RdbStore> rdbStore_;
     bool isStart = false;
     bool isFinish = false;
+    bool isSkipCloudSync = false;
 
     static std::mutex transactionMutex_;
     static std::condition_variable transactionCV_;
