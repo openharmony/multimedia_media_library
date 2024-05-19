@@ -27,6 +27,7 @@
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
@@ -212,6 +213,27 @@ bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailTyp
     return true;
 }
 
+bool GenerateRotatedThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
+    std::string &fileName)
+{
+    if (MediaFileUtils::IsFileExists(fileName)) {
+        MEDIA_INFO_LOG("file: %{public}s exists and needs to be deleted", fileName.c_str());
+        if (!MediaFileUtils::DeleteFile(fileName)) {
+            MEDIA_ERR_LOG("delete file: %{public}s failed", fileName.c_str());
+            return -errno;
+        }
+    }
+    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
+        MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, rotate lcd failed: %{public}s", data.path.c_str());
+        return false;
+    }
+    if (thumbType != ThumbnailType::LCD && !IThumbnailHelper::DoRotateThumbnail(opts, data)) {
+        MEDIA_ERR_LOG("Get default thumbnail pixelmap, rotate thumbnail failed: %{public}s", data.path.c_str());
+        return false;
+    }
+    return true;
+}
+
 int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
     std::string &fileName)
 {
@@ -239,7 +261,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
     }
 
     MEDIA_INFO_LOG("No available file, create thumbnail, path: %{public}s", fileName.c_str());
-    if (!GenerateLocalThumbnail(opts, data, thumbType)){
+    if (!GenerateLocalThumbnail(opts, data, thumbType)) {
         MEDIA_ERR_LOG("GenerateLocalThumbnail failed, path: %{public}s", tempFileName.c_str());
         return E_THUMBNAIL_LOCAL_CREATE_FAIL;
     }
@@ -307,14 +329,19 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
         thumbnailData.loaderOpts.isCloudLoading = true;
         auto dataSource = DecodeThumbnailFromFd(fd);
         if (dataSource == nullptr) {
+            MEDIA_ERR_LOG("GetThumbnailPixelMap failed, dataSource is nullptr, path: %{public}s",
+                DfxUtils::GetSafePath(thumbnailData.path).c_str());
             DfxManager::GetInstance()->HandleThumbnailError(fileName,
                 thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
-            return -errnox        }
+            return -errno;
+        }
         close(fd);
 
         thumbnailData.source = std::move(dataSource);
         thumbnailData.source->rotate(static_cast<float>(thumbnailData.orientation));
-        if (!GenerateLocalThumbnail(opts, thumbnailData, thumbType)) {
+        if (!GenerateRotatedThumbnail(opts, thumbnailData, thumbType, fileName)) {
+            MEDIA_ERR_LOG("GenerateRotatedThumbnail failed, path: %{public}s",
+                DfxUtils::GetSafePath(thumbnailData.path).c_str());
             DfxManager::GetInstance()->HandleThumbnailError(fileName,
                 thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
             return -errno;

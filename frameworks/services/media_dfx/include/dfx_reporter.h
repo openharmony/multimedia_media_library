@@ -42,6 +42,7 @@ public:
     void ReportDirtyCloudPhoto(const std::string &data, int32_t dirty, int32_t cloudVersion);
     void ReportCommonVersion();
     void ReportAnalysisVersion(const std::string &analysisName, int32_t version);
+    void ReportAdaptationToMovingPhoto();
 };
 } // namespace Media
 } // namespace OHOS

@@ -36,8 +36,8 @@ mutex DfxManager::instanceLock_;
 
 shared_ptr<DfxManager> DfxManager::GetInstance()
 {
+    lock_guard<mutex> lockGuard(instanceLock_);
     if (dfxManagerInstance_ == nullptr) {
-        lock_guard<mutex> lockGuard(instanceLock_);
         dfxManagerInstance_ = make_shared<DfxManager>();
         if (dfxManagerInstance_ != nullptr) {
             dfxManagerInstance_->Init();
@@ -282,6 +282,8 @@ void DfxManager::HandleFiveMinuteTask()
     HandleDeleteBehaviors();
     std::unordered_map<std::string, ThumbnailErrorInfo> result = dfxCollector_->GetThumbnailError();
     dfxAnalyzer_->FlushThumbnail(result);
+    AdaptationToMovingPhotoInfo adaptationInfo = dfxCollector_->GetAdaptationToMovingPhotoInfo();
+    dfxAnalyzer_->FlushAdaptationToMovingPhoto(adaptationInfo);
 }
 
 void DfxManager::HandleDeleteBehaviors()
@@ -308,14 +310,24 @@ int64_t DfxManager::HandleMiddleReport()
     return MediaFileUtils::UTCTimeSeconds();
 }
 
-int64_t DfxManager::HandleReportXml()
+int64_t DfxManager::HandleOneDayReport()
 {
     if (!isInitSuccess_) {
         MEDIA_WARN_LOG("DfxManager not init");
         return MediaFileUtils::UTCTimeSeconds();
     }
     dfxReporter_->ReportThumbnailError();
+    dfxReporter_->ReportAdaptationToMovingPhoto();
     return MediaFileUtils::UTCTimeSeconds();
+}
+
+void DfxManager::HandleAdaptationToMovingPhoto(const string &appName, bool adapted)
+{
+    if (!isInitSuccess_) {
+        MEDIA_WARN_LOG("DfxManager not init");
+        return;
+    }
+    dfxCollector_->CollectAdaptationToMovingPhotoInfo(appName, adapted);
 }
 } // namespace Media
 } // namespace OHOS

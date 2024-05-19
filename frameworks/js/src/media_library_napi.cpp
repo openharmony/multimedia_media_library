@@ -6094,6 +6094,11 @@ static void PhotoAccessCreateAssetExecute(napi_env env, void *data)
 
 napi_value MediaLibraryNapi::PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperCreatePhotoAsset");
+
+    NAPI_INFO_LOG("enter");
+
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
     asyncContext->assetType = TYPE_PHOTO;

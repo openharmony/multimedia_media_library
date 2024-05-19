@@ -154,6 +154,8 @@ Value GetValueFromMap(const unordered_map<Key, Value> &map, const Key &key, cons
 void CloneRestore::StartRestore(const string &backupRestoreDir, const string &upgradePath)
 {
     MEDIA_INFO_LOG("Start clone restore");
+    backupRestoreDir_ = backupRestoreDir;
+    garbagePath_ = backupRestoreDir_ + "/storage/media/local/files";
     int32_t errorCode = Init(backupRestoreDir, upgradePath, true);
     if (errorCode == E_OK) {
         RestoreGallery();
@@ -166,8 +168,8 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
 
 int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgradePath, bool isUpgrade)
 {
-    dbPath_ = BACKUP_RESTORE_DIR + MEDIA_DB_PATH;
-    filePath_ = BACKUP_RESTORE_DIR + "/storage/media/local/files";
+    dbPath_ = backupRestoreDir_ + MEDIA_DB_PATH;
+    filePath_ = backupRestoreDir_ + "/storage/media/local/files";
     if (!MediaFileUtils::IsFileExists(dbPath_)) {
         MEDIA_ERR_LOG("Media db is not exist.");
         return E_FAIL;
@@ -274,7 +276,7 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
         }
         if (MoveAsset(fileInfos[i]) != E_OK) {
             MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s.",
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID).c_str());
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
             continue;
         }
         fileMoveCount++;
@@ -411,7 +413,7 @@ int32_t CloneRestore::MoveAsset(FileInfo &fileInfo)
     }
 
     BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified / MSEC_TO_SEC);
-    string srcEditDataPath = BACKUP_RESTORE_DIR +
+    string srcEditDataPath = backupRestoreDir_ +
         BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA, fileInfo.relativePath);
     string dstEditDataPath = BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD,
         PrefixType::LOCAL_EDIT_DATA, fileInfo.cloudPath);
@@ -896,7 +898,7 @@ void CloneRestore::NotifyAlbum()
 void CloneRestore::PrepareEditTimeVal(NativeRdb::ValuesBucket &values, int64_t editTime, const FileInfo &fileInfo,
     const unordered_map<string, string> &commonColumnInfoMap) const
 {
-    string editDataPath = BACKUP_RESTORE_DIR +
+    string editDataPath = backupRestoreDir_ +
         BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL_EDIT_DATA, fileInfo.relativePath);
     int64_t newEditTime = editTime > 0 && IsFilePathExist(editDataPath) ? editTime : 0;
     PrepareCommonColumnVal(values, PhotoColumn::PHOTO_EDIT_TIME, newEditTime, commonColumnInfoMap);
@@ -925,13 +927,13 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
     if (IsSameFile(mediaLibraryRdb_, tableName, fileInfo)) {
         (void)MediaFileUtils::DeleteFile(fileInfo.filePath);
         MEDIA_WARN_LOG("File %{public}s already exists.",
-            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID).c_str());
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
         return false;
     }
     if (MediaFileUtils::IsFileExists(fileInfo.cloudPath) && BackupFileUtils::CreatePath(fileInfo.fileType,
         fileInfo.displayName, fileInfo.cloudPath) != E_OK) {
         MEDIA_ERR_LOG("Destination file path %{public}s exists, create new path failed",
-            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID).c_str());
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
         return false;
     }
     if (BackupFileUtils::PreparePath(fileInfo.cloudPath) != E_OK) {
@@ -1006,7 +1008,7 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     fileInfo.fileSize = GetInt64Val(MediaColumn::MEDIA_SIZE, resultSet);
     if (fileInfo.fileSize <= 0) {
         MEDIA_ERR_LOG("File size is invalid: %{public}lld, filePath: %{public}s", (long long)fileInfo.fileSize,
-            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID).c_str());
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
         return false;
     }
     

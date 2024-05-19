@@ -24,6 +24,15 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+enum class StatusEventType {
+    CHARGING,
+    DISCHARGING,
+    SCREEN_OFF,
+    SCREEN_ON,
+    BATTERY_CHANGED,
+    THERMAL_LEVEL_CHANGED
+};
+
 class EXPORT MedialibrarySubscriber : public EventFwk::CommonEventSubscriber {
 public:
     EXPORT MedialibrarySubscriber() = default;
@@ -37,6 +46,9 @@ private:
     static const std::vector<std::string> events_;
     bool isScreenOff_ {false};
     bool isCharging_ {false};
+    bool isPowerSufficient_{false};
+    bool isDeviceTemperatureProper_{false};
+    bool currentStatus_{false};
     int32_t agingCount_;
     int64_t lockTime_;
     EXPORT void DoBackgroundOperation();
@@ -48,6 +60,9 @@ private:
     void RevertPendingByPackage(const std::string &bundleName);
     int64_t GetNowTime();
     void Init();
+    void UpdateBackgroundOperationStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
+    void UpdateCurrentStatus();
+    void CheckHalfDayMissions();
 };
 }  // namespace Media
 }  // namespace OHOS
