@@ -115,6 +115,18 @@ bool ThumbnailUtils::DeleteThumbFile(ThumbnailData &data, ThumbnailType type)
     return true;
 }
 
+bool ThumbnailUtils::DeleteThumbExDir(ThumbnailData &data)
+{
+    string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
+    string dirName = MediaFileUtils::GetParentPath(fileName);
+    if (!MediaFileUtils::DeleteDir(dirName)) {
+        MEDIA_INFO_LOG("Failed to delete THM_EX directory, path: %{public}s, id: %{public}s",
+            dirName.c_str(), data.id.c_str());
+        return false;
+    }
+    return true;
+}
+
 bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
     Size &desiredSize, uint32_t &errCode)
 {
@@ -244,14 +256,14 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
     return true;
 }
 
-bool ThumbnailUtils::ScaleTargetPixelMap(ThumbnailData &data, const Size &targetSize)
+bool ThumbnailUtils::ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ImageSource::ScaleTargetPixelMap");
 
     PostProc postProc;
-    if (!postProc.ScalePixelMapEx(targetSize, *data.source, Media::AntiAliasingOption::HIGH)) {
-        MEDIA_ERR_LOG("thumbnail scale failed [%{private}s]", data.id.c_str());
+    if (!postProc.ScalePixelMapEx(targetSize, *dataSource, Media::AntiAliasingOption::HIGH)) {
+        MEDIA_ERR_LOG("Fail to scale to target thumbnail, ScalePixelMapEx failed.");
         return false;
     }
     return true;
@@ -266,13 +278,8 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
     return sourceLoader.RunLoading();
 }
 
-bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isHigh,
-    shared_ptr<string> pathPtr, bool isAstc)
+bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isHigh, bool isAstc)
 {
-    string path;
-    if (pathPtr != nullptr) {
-        path = *pathPtr;
-    }
     PackOption option = {
         .format = isAstc ? THUMBASTC_FORMAT : THUMBNAIL_FORMAT,
         .quality = isAstc ? ASTC_LOW_QUALITY : (isHigh ? THUMBNAIL_HIGH : THUMBNAIL_MID),
@@ -287,9 +294,6 @@ bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_
     tracer.Finish();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to StartPacking %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
 
@@ -298,9 +302,6 @@ bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_
     tracer.Finish();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to StartPacking %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
 
@@ -309,9 +310,6 @@ bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_
     err = imagePacker.FinalizePacking(packedSize);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to StartPacking %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
 
@@ -1055,7 +1053,6 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
     }
 
     bool ret = false;
-    data.degrees = 0.0;
     Size desiredSize;
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
         ret = LoadVideoFile(data, desiredSize);
@@ -1078,12 +1075,13 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
         }
     }
     data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    if (std::abs(data.degrees - FLOAT_ZERO) > EPSILON) {
-        data.source->rotate(data.degrees);
-    }
-    if (static_cast<int>(data.degrees) % FLAT_ANGLE != 0) {
-        std::swap(data.lcdDesiredSize.width, data.lcdDesiredSize.height);
-        std::swap(data.thumbDesiredSize.width, data.thumbDesiredSize.height);
+    if (std::abs(data.orientation) != 0) {
+        if (!data.loaderOpts.isCloudLoading) {
+            Media::InitializationOptions opts;
+            auto copySource = PixelMap::Create(*data.source, opts);
+            data.sourceEx = std::move(copySource);
+        }
+        data.source->rotate(static_cast<float>(data.orientation));
     }
 
     // PixelMap has been rotated, fix the exif orientation to zero degree.
@@ -1175,27 +1173,20 @@ int ThumbnailUtils::SaveFileCreateDir(const string &path, const string &suffix, 
     fileName = GetThumbnailPath(path, suffix);
     string dir = MediaFileUtils::GetParentPath(fileName);
     if (!MediaFileUtils::CreateDirectory(dir)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, dir}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        MEDIA_ERR_LOG("Fail to create directory, fileName: %{public}s", fileName.c_str());
         return -errno;
     }
     return E_OK;
 }
 
-int ThumbnailUtils::ToSaveFile(ThumbnailData &data, const ThumbnailType &type, const string &fileName,
-    uint8_t *output, const int &writeSize)
+int ThumbnailUtils::ToSaveFile(ThumbnailData &data, const string &fileName, uint8_t *output, const int &writeSize)
 {
     int ret = SaveFile(fileName, output, writeSize);
     if (ret < 0) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
-            {KEY_OPT_FILE, fileName}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        MEDIA_ERR_LOG("Fail to save File, err: %{public}d", ret);
         return ret;
     } else if (ret != writeSize) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_NO_SPACE},
-            {KEY_OPT_FILE, fileName}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        MEDIA_ERR_LOG("Fail to save File, insufficient space left.");
         return E_NO_SPACE;
     }
     return E_OK;
@@ -1230,6 +1221,16 @@ int ThumbnailUtils::TrySaveFile(ThumbnailData &data, ThumbnailType type)
             output = data.yearAstc.data();
             writeSize = data.yearAstc.size();
             break;
+        case ThumbnailType::LCD_EX:
+            suffix = THUMBNAIL_LCD_EX_SUFFIX;
+            output = data.lcd.data();
+            writeSize = data.lcd.size();
+            break;
+        case ThumbnailType::THUMB_EX:
+            suffix = THUMBNAIL_THUMB_EX_SUFFIX;
+            output = data.thumbnail.data();
+            writeSize = data.thumbnail.size();
+            break;
         default:
             return E_INVALID_ARGUMENTS;
     }
@@ -1239,26 +1240,20 @@ int ThumbnailUtils::TrySaveFile(ThumbnailData &data, ThumbnailType type)
     if (type == ThumbnailType::MTH_ASTC || type == ThumbnailType::YEAR_ASTC) {
         return SaveAstcDataToKvStore(data, type);
     }
-    return SaveThumbDataToLocalDir(data, type, suffix, output, writeSize);
+    return SaveThumbDataToLocalDir(data, suffix, output, writeSize);
 }
 
-int ThumbnailUtils::SaveThumbDataToLocalDir(ThumbnailData &data,
-    const ThumbnailType &type, const std::string &suffix, uint8_t *output, const int writeSize)
+int ThumbnailUtils::SaveThumbDataToLocalDir(ThumbnailData &data, const std::string &suffix,
+    uint8_t *output, const int writeSize)
 {
     string fileName;
     int ret = SaveFileCreateDir(data.path, suffix, fileName);
     if (ret != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
-            {KEY_OPT_FILE, fileName}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("SaveThumbDataToLocalDir create dir path %{public}s err %{public}d", data.path.c_str(), ret);
         return ret;
     }
-    ret = ToSaveFile(data, type, fileName, output, writeSize);
+    ret = ToSaveFile(data, fileName, output, writeSize);
     if (ret < 0) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
-            {KEY_OPT_FILE, fileName}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("SaveThumbDataToLocalDir ToSaveFile path %{public}s err %{public}d", data.path.c_str(), ret);
         return ret;
     }
@@ -1394,6 +1389,9 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
     if (DeleteThumbFile(tmpData, ThumbnailType::LCD)) {
         isDelete = true;
     }
+    if (DeleteThumbExDir(tmpData)) {
+        isDelete = true;
+    }
     string fileName = GetThumbnailPath(tmpData.path, "");
     return isDelete;
 }
@@ -1520,6 +1518,18 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
     if (err == NativeRdb::E_OK) {
         data.mediaType = MediaType::MEDIA_TYPE_ALL;
         err = resultSet->GetInt(index, data.mediaType);
+    }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_ORIENTATION, index);
+    if (err == NativeRdb::E_OK) {
+        err = resultSet->GetInt(index, data.orientation);
+    }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_POSITION, index);
+    if (err == NativeRdb::E_OK) {
+        int position = 0;
+        err = resultSet->GetInt(index, position);
+        data.isLocalFile = (position == 1);
     }
 }
 
@@ -1715,6 +1725,8 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
         MEDIA_DATA_DB_FILE_PATH,
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_ORIENTATION,
+        MEDIA_DATA_DB_POSITION,
     };
     auto resultSet = opts.store->QueryByStep(predicates, columns);
     if (resultSet == nullptr) {
@@ -1733,13 +1745,6 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
     }
 
     ParseQueryResult(resultSet, data, err);
-
-    int index;
-    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_DATE_ADDED, index);
-    if (err == NativeRdb::E_OK) {
-        ParseStringResult(resultSet, index, data.dateAdded, err);
-    }
-
     if (err != NativeRdb::E_OK || data.path.empty()) {
         MEDIA_ERR_LOG("Fail to query thumbnail data using id: %{public}s, err: %{public}d", id.c_str(), err);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
@@ -1809,22 +1814,23 @@ void ThumbnailUtils::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
     }
 }
 
-bool ThumbnailUtils::ScaleThumbnailEx(ThumbnailData &data)
+bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx)
 {
-    if (data.source == nullptr) {
-        MEDIA_ERR_LOG("Fail to scale thumbnail, data source is empty.");
+    std::shared_ptr<PixelMap> dataSource = isSourceEx ? data.sourceEx : data.source;
+    if (dataSource == nullptr) {
+        MEDIA_ERR_LOG("Fail to scale thumbnail, data source is empty, isSourceEx: %{public}d.", isSourceEx);
         return false;
     }
     Size desiredSize;
-    Size targetSize = ConvertDecodeSize(data, {data.source->GetWidth(), data.source->GetHeight()}, desiredSize);
-    if (!ScaleTargetPixelMap(data, targetSize)) {
+    Size targetSize = ConvertDecodeSize(data, {dataSource->GetWidth(), dataSource->GetHeight()}, desiredSize);
+    if (!ScaleTargetPixelMap(dataSource, targetSize)) {
         MEDIA_ERR_LOG("Fail to scale to targetSize");
         return false;
     }
     MediaLibraryTracer tracer;
     tracer.Start("CenterScale");
     PostProc postProc;
-    if (!postProc.CenterScale(desiredSize, *data.source)) {
+    if (!postProc.CenterScale(desiredSize, *dataSource)) {
         MEDIA_ERR_LOG("thumbnail center crop failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
