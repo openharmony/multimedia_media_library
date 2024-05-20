@@ -2234,6 +2234,16 @@ void ResetAstcInPhotosTable(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddDynamicRangeType(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE + " INT DEFAULT 0"
+    };
+    MEDIA_INFO_LOG("start add dynamic_range_type column");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2354,6 +2364,10 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_OWNER_APPID) {
         AddOwnerAppId(store);
+    }
+
+    if (oldVersion < VERSION_ADD_DYNAMIC_RANGE_TYPE) {
+        AddDynamicRangeType(store);
     }
 }
 

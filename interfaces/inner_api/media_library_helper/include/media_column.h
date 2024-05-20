@@ -92,6 +92,7 @@ public:
     static const std::string PHOTO_USER_COMMENT EXPORT;
     static const std::string PHOTO_ALL_EXIF EXPORT;
     static const std::string PHOTO_CLEAN_FLAG EXPORT;
+    static const std::string PHOTO_DYNAMIC_RANGE_TYPE EXPORT;
     static const std::string PHOTO_HAS_ASTC EXPORT;
 
     static const std::string PHOTO_SYNCING EXPORT;

@@ -304,6 +304,13 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
         std::string videoShootingMode = ExtractVideoShootingMode(strTemp);
         data->SetShootingMode(videoShootingMode);
     }
+    strTemp = resultMap.at(AV_KEY_VIDEO_IS_HDR_VIVID);
+    const string isHdr = "yes";
+    if (strcmp(strTemp.c_str(), isHdr.c_str()) == 0) {
+        data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::HDR));
+    } else {
+        data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::SDR));
+    }
 }
 
 void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
