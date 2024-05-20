@@ -435,6 +435,7 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
     static const set<OperationObject> NO_NEED_PERM_CHECK_OBJ = {
         OperationObject::ALL_DEVICE,
         OperationObject::ACTIVE_DEVICE,
+        OperationObject::MISCELLANEOUS,
     };
 
     string uri = cmd.GetUri().ToString();

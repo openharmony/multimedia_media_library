@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -67,6 +67,9 @@ protected:
         FileInfo &fileInfo);
     bool HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
         FileInfo &fileInfo);
+    void InsertPhotoMap(std::vector<FileInfo> &fileInfos);
+    void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
+    void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
@@ -75,9 +78,11 @@ protected:
     std::atomic<uint64_t> migrateAudioFileNumber_;
     std::atomic<uint32_t> imageNumber_;
     std::atomic<uint32_t> videoNumber_;
+    std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
     std::atomic<uint32_t> audioNumber_;
     std::string dualDirName_ = "";
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
+    std::string backupRestoreDir_;
 };
 } // namespace Media
 } // namespace OHOS

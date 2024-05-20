@@ -56,7 +56,7 @@ public:
     EXPORT static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size,
         std::unique_ptr<PixelMap> &pixelMap);
     EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
-        bool isHigh = false, std::shared_ptr<std::string> pathPtr = nullptr, bool isAstc = false);
+        bool isHigh = false, bool isAstc = false);
     EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
     // RDB Store Query
@@ -71,6 +71,7 @@ public:
     static bool DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
 #endif
     static bool DeleteThumbFile(ThumbnailData &data, ThumbnailType type);
+    static bool DeleteThumbExDir(ThumbnailData &data);
 #ifdef DISTRIBUTED
     static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
 #endif
@@ -112,8 +113,8 @@ public:
         ThumbnailData &data, int &err);
     static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
     static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
-    static bool ScaleThumbnailEx(ThumbnailData &data);
-    EXPORT static bool ScaleTargetPixelMap(ThumbnailData &data, const Size &targetSize);
+    static bool ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx);
+    EXPORT static bool ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize);
 
     static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
         LoadSourceType sourceType);
@@ -121,9 +122,9 @@ public:
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
-    static int SaveThumbDataToLocalDir(ThumbnailData &data,
-        const ThumbnailType &type, const std::string &suffix, uint8_t *output, const int writeSize);
-    static int ToSaveFile(ThumbnailData &data, const ThumbnailType &type, const std::string &fileName,
+    static int SaveThumbDataToLocalDir(ThumbnailData &data, const std::string &suffix,
+        uint8_t *output, const int writeSize);
+    static int ToSaveFile(ThumbnailData &data, const std::string &fileName,
         uint8_t *output, const int &writeSize);
     static int SaveFileCreateDir(const std::string &path, const std::string &suffix, std::string &fileName);
     EXPORT static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);

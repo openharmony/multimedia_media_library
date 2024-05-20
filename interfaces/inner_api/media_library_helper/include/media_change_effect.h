@@ -12,28 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef OHOS_MEDIA_DFX_UTILS_H
-#define OHOS_MEDIA_DFX_UTILS_H
-
+ 
+#ifndef MEDIA_LIBRARY_MEDIA_CHANGE_EFFECT_H
+#define MEDIA_LIBRARY_MEDIA_CHANGE_EFFECT_H
+ 
 #include <string>
-#include <unordered_set>
-#include <vector>
-
+ 
+using std::string;
+ 
 namespace OHOS {
 namespace Media {
-class DfxUtils {
+ 
+class MediaChangeEffect {
 public:
-    static std::vector<std::string> Split(std::string &input, const std::string &pattern);
-    static std::string GetSafePath(const std::string &path);
-    static std::string GetCurrentDate();
-    static std::string JoinStrings(const std::unordered_set<std::string>& strSet, char delimiter);
-    static std::unordered_set<std::string> SplitString(const std::string& input, char delimiter);
-
-private:
-    static std::string GetSafeDiaplayName(std::string &displayName);
+    static int32_t TakeEffect(const string &inputPath, const string &outputPath, string &editdata);
 };
-} // namespace Media
-} // namespace OHOS
-
-#endif  // OHOS_MEDIA_DFX_UTILS_H
+ 
+} // end of namespace
+}
+ 
+#endif
