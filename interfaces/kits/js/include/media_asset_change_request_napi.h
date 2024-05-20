@@ -91,11 +91,13 @@ public:
     AddResourceMode GetMovingPhotoVideoMode() const;
     void* GetMovingPhotoVideoBuffer() const;
     size_t GetMovingPhotoVideoSize() const;
+    bool IsSaveCameraPhoto();
+    void SetSaveCameraPhotoMode(bool isSaveCameraPhoto);
     std::string GetCacheMovingPhotoVideoName() const;
     void RecordChangeOperation(AssetChangeOperation changeOperation);
     void SetCacheFileName(std::string& fileName);
     void SetCacheMovingPhotoVideoName(std::string& fileName);
-    int32_t SubmitCache(bool isCreation);
+    int32_t SubmitCache(bool isCreation, bool isSaveCameraPhoto);
     int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
     int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
@@ -150,6 +152,7 @@ private:
     AddResourceMode movingPhotoVideoResourceMode_;
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
+    bool isSaveCameraPhoto_ = false;
 };
 
 struct MediaAssetChangeRequestAsyncContext : public NapiError {

@@ -22,8 +22,10 @@
 
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
+#include "file_utils.h"
 #include "iservice_registry.h"
 #include "media_actively_calling_analyse.h"
+#include "media_change_effect.h"
 #include "media_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -1046,11 +1048,16 @@ int32_t MediaLibraryPhotoOperations::RequestEditData(MediaLibraryCommand &cmd)
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_URI, "Can not get file path, uri=%{private}s",
         uriString.c_str());
 
-    string dataPath = GetEditDataPath(path);
+    string editDataPath = GetEditDataPath(path);
+    string dataPath = editDataPath;
+    if (!MediaFileUtils::IsFileExists(dataPath)) {
+        dataPath = GetEditDataCameraPath(path);
+    }
     CHECK_AND_RETURN_RET_LOG(!dataPath.empty(), E_INVALID_PATH, "Get edit data path from path %{private}s failed",
         dataPath.c_str());
-    if (fileAsset->GetPhotoEditTime() == 0) {
+    if (fileAsset->GetPhotoEditTime() == 0 && !MediaFileUtils::IsFileExists(dataPath)) {
         MEDIA_INFO_LOG("File %{private}s does not have edit data", uriString.c_str());
+        dataPath = editDataPath;
         string dataPathDir = GetEditDataDirPath(path);
         CHECK_AND_RETURN_RET_LOG(!dataPathDir.empty(), E_INVALID_PATH,
             "Get edit data dir path from path %{private}s failed", path.c_str());
@@ -1058,12 +1065,9 @@ int32_t MediaLibraryPhotoOperations::RequestEditData(MediaLibraryCommand &cmd)
             CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dataPathDir), E_HAS_FS_ERROR,
                 "Failed to create dir %{private}s", dataPathDir.c_str());
         }
-
-        if (!MediaFileUtils::IsFileExists(dataPath)) {
-            int32_t err = MediaFileUtils::CreateAsset(dataPath);
-            CHECK_AND_RETURN_RET_LOG(err == E_SUCCESS || err == E_FILE_EXIST, E_HAS_FS_ERROR,
-                "Failed to create file %{private}s", dataPath.c_str());
-        }
+        int32_t err = MediaFileUtils::CreateAsset(dataPath);
+        CHECK_AND_RETURN_RET_LOG(err == E_SUCCESS || err == E_FILE_EXIST, E_HAS_FS_ERROR,
+            "Failed to create file %{private}s", dataPath.c_str());
     } else {
         if (!MediaFileUtils::IsFileExists(dataPath)) {
             MEDIA_INFO_LOG("File %{public}s has edit at %{public}ld, but cannot get editdata", uriString.c_str(),
@@ -1356,8 +1360,17 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(path), E_HAS_FS_ERROR,
             "Failed to delete asset, path:%{private}s", path.c_str());
     }
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourcePath, path) == E_OK, E_HAS_FS_ERROR,
-        "Can not modify %{private}s to %{private}s", sourcePath.c_str(), path.c_str());
+
+    string editDataCameraPath = GetEditDataCameraPath(path);
+    if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(sourcePath, path) == E_OK, E_HAS_FS_ERROR,
+            "Can not modify %{private}s to %{private}s", sourcePath.c_str(), path.c_str());
+    } else {
+        string editData;
+        MediaFileUtils::ReadStrFromFile(editDataCameraPath, editData);
+        nlohmann::json editdataJson = nlohmann::json::parse(editData);
+        AddWaterAndFiltersToPhoto(sourcePath, path, editdataJson[EDIT_DATA]);
+    }
 
     int32_t errCode = UpdateEditTime(fileId, 0);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
@@ -1503,9 +1516,50 @@ int32_t MediaLibraryPhotoOperations::ParseMediaAssetEditData(MediaLibraryCommand
     return E_OK;
 }
 
+bool MediaLibraryPhotoOperations::IsContainsData(MediaLibraryCommand &cmd)
+{
+    string compatibleFormat;
+    string formatVersion;
+    string data;
+    const ValuesBucket& values = cmd.GetValueBucket();
+    bool containsCompatibleFormat = GetStringFromValuesBucket(values, COMPATIBLE_FORMAT, compatibleFormat);
+    bool containsFormatVersion = GetStringFromValuesBucket(values, FORMAT_VERSION, formatVersion);
+    bool containsData = GetStringFromValuesBucket(values, EDIT_DATA, data);
+    return containsCompatibleFormat && containsFormatVersion && containsData;
+}
+
+bool MediaLibraryPhotoOperations::IsCameraEditData(MediaLibraryCommand &cmd)
+{
+    string bundleName = cmd.GetBundleName();
+    return IsContainsData(cmd) && (count(CAMERA_BUNDLE_NAMES.begin(), CAMERA_BUNDLE_NAMES.end(), bundleName) > 0);
+}
+
+bool MediaLibraryPhotoOperations::IsSaveCameraPhoto(MediaLibraryCommand &cmd)
+{
+    int32_t isSaveCameraPhotoValue;
+    return GetInt32FromValuesBucket(cmd.GetValueBucket(), IS_SAVE_CAMERA_PHOTO,
+        isSaveCameraPhotoValue) && IsCameraEditData(cmd);
+}
+
+int32_t MediaLibraryPhotoOperations::SaveEditDataCamera(MediaLibraryCommand &cmd, const std::string &assetPath,
+    std::string &editData)
+{
+    string editDataCameraPath = GetEditDataCameraPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!editDataCameraPath.empty(), E_INVALID_VALUES, "Failed to get edit data path");
+    if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateFile(editDataCameraPath), E_HAS_FS_ERROR,
+            "Failed to create file %{private}s", editDataCameraPath.c_str());
+    }
+    int ret = ParseMediaAssetEditData(cmd, editData);
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataCameraPath, editData), E_HAS_FS_ERROR,
+        "Failed to write editdata:%{private}s", editDataCameraPath.c_str());
+    return ret;
+}
+
 int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
     const shared_ptr<FileAsset>& fileAsset, const string& editData)
 {
+    CHECK_AND_RETURN_RET_LOG(!editData.empty(), E_INVALID_VALUES, "editData is empty");
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
     string assetPath = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
@@ -1533,7 +1587,62 @@ int32_t MediaLibraryPhotoOperations::SaveSourceAndEditData(
 
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::WriteStrToFile(editDataPath, editData), E_HAS_FS_ERROR,
         "Failed to write editdata:%{private}s", editDataPath.c_str());
+
     return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
+    int32_t ret = E_OK;
+    // Photos目录
+    string assetPath = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+    if (IsContainsData(cmd)) {
+        // .editdata目录
+        string editDataDirPath = GetEditDataDirPath(assetPath);
+        CHECK_AND_RETURN_RET_LOG(!editDataDirPath.empty(), E_INVALID_URI, "Can not get editdata dir path");
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(editDataDirPath), E_HAS_FS_ERROR,
+            "Can not create dir %{private}s", editDataDirPath.c_str());
+
+        // (1) Photo目录照片复制到.editdata目录的source.jpg
+        string sourcePath = GetEditDataSourcePath(assetPath);
+        CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Can not get source path");
+        MediaFileUtils::CopyFileUtil(assetPath, sourcePath);
+
+        // (2) 保存editdata_camera文件
+        string editData;
+        ret = SaveEditDataCamera(cmd, assetPath, editData);
+
+        // (3) 生成水印
+        nlohmann::json editdataJson = nlohmann::json::parse(editData);
+        ret = AddWaterAndFiltersToPhoto(sourcePath, assetPath, editdataJson[EDIT_DATA]);
+    }
+    return ret;
+}
+
+int32_t MediaLibraryPhotoOperations::SaveSourceAndEditDataCamera(MediaLibraryCommand& cmd,
+    const shared_ptr<FileAsset>& fileAsset, const string& cachePath)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "fileAsset is nullptr");
+    string assetPath = fileAsset->GetFilePath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_VALUES, "Failed to get asset path");
+    string editDataDirPath = GetEditDataDirPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!editDataDirPath.empty(), E_INVALID_URI, "Can not get editdara dir path");
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(editDataDirPath), E_HAS_FS_ERROR,
+        "Can not create dir %{private}s", editDataDirPath.c_str());
+    string sourcePath = GetEditDataSourcePath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Can not get edit source path");
+
+    int32_t subtype = fileAsset->GetPhotoSubType();
+    int ret = MoveCacheFile(cmd, subtype, cachePath, sourcePath);
+
+    string editData;
+    ret = SaveEditDataCamera(cmd, assetPath, editData);
+
+    nlohmann::json editdataJson = nlohmann::json::parse(editData);
+    ret = AddWaterAndFiltersToPhoto(sourcePath, assetPath, editdataJson[EDIT_DATA]);
+    return ret;
 }
 
 int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
@@ -1585,6 +1694,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
 
     int32_t id = fileAsset->GetId();
     bool isEdit = (pending == 0);
+
     if (isEdit) {
         if (!PhotoEditingRecord::GetInstance()->StartCommitEdit(id)) {
             return E_IS_IN_REVERT;
@@ -1592,12 +1702,14 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
         int32_t errCode = SubmitEditCacheExecute(cmd, fileAsset, cachePath);
         PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
         return errCode;
+    } else if (IsCameraEditData(cmd)) {
+        SaveSourceAndEditDataCamera(cmd, fileAsset, cachePath);
+    } else {
+        int32_t errCode = MoveCacheFile(cmd, subtype, cachePath, assetPath);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
+            "Failed to move %{private}s to %{private}s, errCode: %{public}d",
+            cachePath.c_str(), assetPath.c_str(), errCode);
     }
-
-    int32_t errCode = MoveCacheFile(cmd, subtype, cachePath, assetPath);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
-        "Failed to move %{private}s to %{private}s, errCode: %{public}d",
-        cachePath.c_str(), assetPath.c_str(), errCode);
     ScanFile(assetPath, true, true, true);
     return E_OK;
 }
@@ -1605,41 +1717,98 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
 int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
 {
     const ValuesBucket& values = cmd.GetValueBucket();
-    string fileName;
-    CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, CACHE_FILE_NAME, fileName),
-        E_INVALID_VALUES, "Failed to get fileName");
-    string cacheDir = GetAssetCacheDir();
-    string cachePath = cacheDir + "/" + fileName;
-    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(cachePath), E_NO_SUCH_FILE,
-        "cachePath: %{private}s does not exist!", cachePath.c_str());
-    string movingPhotoVideoName;
-    if (GetStringFromValuesBucket(values, CACHE_MOVING_PHOTO_VIDEO_NAME, movingPhotoVideoName)) {
-        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(cacheDir + "/" + movingPhotoVideoName),
-            E_NO_SUCH_FILE, "cahce moving video path: %{private}s does not exist!", cachePath.c_str());
-    }
 
     int32_t id = 0;
-    if (!GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id)) {
-        string displayName;
-        CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName),
-            E_INVALID_VALUES, "Failed to get displayName");
-        CHECK_AND_RETURN_RET_LOG(
-            MediaFileUtils::GetExtensionFromPath(displayName) == MediaFileUtils::GetExtensionFromPath(fileName),
-            E_INVALID_VALUES, "displayName mismatches extension of cache file name");
-        ValuesBucket reservedValues = values;
-        id = CreateV10(cmd);
-        CHECK_AND_RETURN_RET_LOG(id > 0, E_FAIL, "Failed to create asset");
-        cmd.SetValueBucket(reservedValues);
-    }
+    int32_t ret = GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id);
 
-    vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
-        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
-    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
-        PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "Failed to get FileAsset, fileId=%{public}d", id);
-    int32_t errCode = SubmitCacheExecute(cmd, fileAsset, cachePath);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to submit cache, fileId=%{public}d", id);
+    if (IsSaveCameraPhoto(cmd)) {
+        CHECK_AND_RETURN_RET_LOG(ret, E_FAIL, "Failed to get asset");
+        vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
+            PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
+        shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
+            PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
+        SaveCameraPhoto(cmd, fileAsset);
+    } else {
+        string fileName;
+        CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, CACHE_FILE_NAME, fileName),
+            E_INVALID_VALUES, "Failed to get fileName");
+        string cacheDir = GetAssetCacheDir();
+        string cachePath = cacheDir + "/" + fileName;
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(cachePath), E_NO_SUCH_FILE,
+            "cachePath: %{private}s does not exist!", cachePath.c_str());
+        string movingPhotoVideoName;
+        if (GetStringFromValuesBucket(values, CACHE_MOVING_PHOTO_VIDEO_NAME, movingPhotoVideoName)) {
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(cacheDir + "/" + movingPhotoVideoName),
+                E_NO_SUCH_FILE, "cahce moving video path: %{private}s does not exist!", cachePath.c_str());
+        }
+        if (!ret) {
+            string displayName;
+            CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, PhotoColumn::MEDIA_NAME, displayName),
+                E_INVALID_VALUES, "Failed to get displayName");
+            CHECK_AND_RETURN_RET_LOG(
+                MediaFileUtils::GetExtensionFromPath(displayName) == MediaFileUtils::GetExtensionFromPath(fileName),
+                E_INVALID_VALUES, "displayName mismatches extension of cache file name");
+            ValuesBucket reservedValues = values;
+            id = CreateV10(cmd);
+            CHECK_AND_RETURN_RET_LOG(id > 0, E_FAIL, "Failed to create asset");
+            cmd.SetValueBucket(reservedValues);
+        }
+        vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
+            PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
+        shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
+            PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
+        CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES,
+            "Failed to get FileAsset, fileId=%{public}d", id);
+        int32_t errCode = SubmitCacheExecute(cmd, fileAsset, cachePath);
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to submit cache, fileId=%{public}d", id);
+    }
     return id;
+}
+
+int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, const std::string &path,
+    const uint8_t *addr, const long bytes)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
+    int ret;
+    string editDataSourcePath = GetEditDataSourcePath(path);
+    string editDataCameraPath = GetEditDataCameraPath(path);
+
+    if (isEdited) {
+        // 图片编辑过了只替换低质量裸图
+        ret = FileUtils::SaveImage(editDataSourcePath, (void*)addr, bytes);
+    } else {
+        if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
+            // 图片没编辑过且没有editdata_camera，只落盘在Photo目录
+            ret = FileUtils::SaveImage(path, (void*)addr, bytes);
+        } else {
+            // 图片没编辑过且有editdata_camera
+            MediaLibraryTracer tracer;
+            tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto AddWaterAndFiltersToPhoto");
+            // (1) 先替换低质量裸图
+            ret = FileUtils::SaveImage(editDataSourcePath, (void*)addr, bytes);
+            // (2) 生成高质量水印滤镜图片
+            string editData;
+            MediaFileUtils::ReadStrFromFile(editDataCameraPath, editData);
+            nlohmann::json editdataJson = nlohmann::json::parse(editData);
+            ret = AddWaterAndFiltersToPhoto(editDataSourcePath, path, editdataJson[EDIT_DATA]);
+        }
+    }
+    return ret;
+}
+
+int32_t MediaLibraryPhotoOperations::AddWaterAndFiltersToPhoto(const std::string &inputPath,
+    const std::string &outputPath, const std::string &editdata)
+{
+    MEDIA_INFO_LOG("AddWaterAndFiltersToPhoto inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
+        inputPath.c_str(), outputPath.c_str(), editdata.c_str());
+    std::string info = editdata;
+    int32_t ret = MediaChangeEffect::TakeEffect(inputPath, outputPath, info);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddWaterAndFiltersToPhoto: TakeEffect error. ret = %d", ret);
+        return E_ERR;
+    }
+    return E_OK;
 }
 
 PhotoEditingRecord::PhotoEditingRecord()
@@ -1743,7 +1912,7 @@ void MediaLibraryPhotoOperations::StoreThumbnailSize(const string& photoId, cons
     }
 }
 
-void MediaLibraryPhotoOperations::RemoveThumbnailSizeRecord(const string& photoId)
+void MediaLibraryPhotoOperations::DropThumbnailSize(const string& photoId)
 {
     auto mediaLibraryRdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (mediaLibraryRdbStore == nullptr) {

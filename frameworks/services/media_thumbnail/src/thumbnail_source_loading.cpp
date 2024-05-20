@@ -24,6 +24,7 @@
 #include "medialibrary_tracer.h"
 #include "post_proc.h"
 #include "thumbnail_utils.h"
+#include "thumbnail_const.h"
 
 using namespace std;
 
@@ -39,6 +40,15 @@ std::string GetLocalThumbnailPath(const std::string &path, const std::string &ke
     }
     std::string suffix = (key == "") ? "" : "/" + key + ".jpg";
     return LOCAL_MEDIA_PATH + ((key == "") ? "" : ".thumbs/") + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
+}
+
+std::string GetCloudLcdTempPath(const std::string &path)
+{
+    if (path.length() < ROOT_MEDIA_DIR.length()) {
+        return "";
+    }
+    std::string suffix = "/" + THUMBNAIL_LCD_SUFFIX + ".jpg" + THUMBNAIL_TEMP_ORIENT_SUFFIX;
+    return LOCAL_MEDIA_PATH + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
 }
     
 bool IsLocalSourceAvailable(const std::string& path)
@@ -196,19 +206,19 @@ bool SourceLoader::CreateImage(std::unique_ptr<ImageSource>& imageSource, ImageI
         error_ = E_ERR;
         return false;
     }
-    if (!NeedAutoResize(targetSize) && !ThumbnailUtils::ScaleTargetPixelMap(data_, targetSize)) {
+    if (!NeedAutoResize(targetSize) && !ThumbnailUtils::ScaleTargetPixelMap(data_.source, targetSize)) {
         MEDIA_ERR_LOG("SourceLoader Failed to scale target, pixelmap path %{private}s", data_.path.c_str());
         error_ = E_ERR;
         return false;
     }
     tracer.Finish();
 
-    int intTempMeta = 0;
-    err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
-    if (err != E_OK) {
-        MEDIA_DEBUG_LOG("SourceLoader Failed to get ImageProperty, path: %{private}s", data_.path.c_str());
+    if (data_.orientation == 0) {
+        err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, data_.orientation);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("SourceLoader Failed to get ImageProperty, path: %{private}s", data_.path.c_str());
+        }
     }
-    data_.degrees = static_cast<float>(intTempMeta);
     MEDIA_DEBUG_LOG("SourceLoader status:%{public}s, width:%{public}d, height:%{public}d",
         STATE_NAME_MAP.at(state_).c_str(), imageInfo.size.width, imageInfo.size.height);
     return true;
@@ -314,7 +324,7 @@ void BeginSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 std::unique_ptr<ImageSource> LocalThumbSource::IsSourceAvailable(ThumbnailData& data, int32_t& error)
 {
     std::string tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
-    if (!IsLocalSourceAvailable(tmpPath)) {
+    if (data.loaderOpts.isCloudLoading || !IsLocalSourceAvailable(tmpPath)) {
         return nullptr;
     }
     uint32_t err = E_OK;
@@ -346,7 +356,12 @@ bool LocalThumbSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
 
 std::unique_ptr<ImageSource> LocalLcdSource::IsSourceAvailable(ThumbnailData& data, int32_t& error)
 {
-    std::string tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+    std::string tmpPath;
+    if (data.loaderOpts.isCloudLoading) {
+        tmpPath = GetCloudLcdTempPath(data.path);
+    } else {
+        tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+    }
     if (!IsLocalSourceAvailable(tmpPath)) {
         return nullptr;
     }

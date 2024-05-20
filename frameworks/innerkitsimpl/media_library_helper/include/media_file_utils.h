@@ -94,6 +94,7 @@ public:
     EXPORT static bool MoveFile(const std::string &oldPath, const std::string &newPath);
     EXPORT static bool CopyFileUtil(const std::string &filePath, const std::string &newPath);
     EXPORT static bool WriteStrToFile(const std::string &filePath, const std::string &str);
+    EXPORT static bool ReadStrFromFile(const std::string &filePath, std::string &fileContent);
     EXPORT static bool CopyFile(int32_t rfd, int32_t wfd);
     EXPORT static bool RenameDir(const std::string &oldPath, const std::string &newPath);
     EXPORT static bool CreateDirectory(const std::string &dirPath, std::shared_ptr<int> errCodePtr = nullptr);

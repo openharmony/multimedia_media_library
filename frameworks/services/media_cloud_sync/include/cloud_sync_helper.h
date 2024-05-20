@@ -21,7 +21,6 @@
 #include <timer.h>
 
 #include "cloud_sync_manager.h"
-#include "datashare_errno.h"
 #include "datashare_helper.h"
 #include "datashare_result_set.h"
 #include "ipc_skeleton.h"

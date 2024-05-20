@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 74;
+const int32_t MEDIA_RDB_VERSION = 75;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -102,6 +102,7 @@ enum {
     VERSION_CREATE_PHOTOS_EXT_TABLE = 72,
     VERSION_UPDATE_VIDEO_LABEL_TABEL = 73,
     VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN = 74,
+    VERSION_MOVE_KVDB = 75,
 };
 
 enum {
@@ -110,6 +111,9 @@ enum {
     MEDIA_API_VERSION_V10,
 };
 
+const std::vector<std::string> CAMERA_BUNDLE_NAMES = {
+    "com.huawei.hmos.camera"
+};
 
 const std::string MEDIA_LIBRARY_VERSION = "1.0";
 
@@ -340,6 +344,7 @@ const std::string APP_ID = "app_id";
 // write cache
 const std::string CACHE_FILE_NAME = "cache_file_name";
 const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name";
+const std::string IS_SAVE_CAMERA_PHOTO = "is_save_camera_photo";
 
 // moving photo param
 const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO

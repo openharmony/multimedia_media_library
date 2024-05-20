@@ -22,6 +22,7 @@
 #include "media_log.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_object_utils.h"
+#include "medialibrary_photo_operations.h"
 #include "medialibrary_errno.h"
 #include "multistages_capture_manager.h"
 #include "multistages_capture_dfx_result.h"
@@ -121,11 +122,9 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
         return;
     }
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    if (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0 && !data.empty()) {
-        data = MediaLibraryAssetOperations::GetEditDataSourcePath(data);
-    }
+    bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    int ret = FileUtils::SaveImage(data, (void*)addr, bytes);
+    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhoto(isEdited, data, addr, bytes);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(imageId,

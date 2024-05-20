@@ -32,6 +32,7 @@ using RestoreBlock = struct {
     int32_t sceneCode;
     std::string galleryAppName;
     std::string mediaAppName;
+    std::string backupDir;
     napi_deferred nativeDeferred;
 };
 
@@ -96,16 +97,17 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
         return result;
     }
 
-    size_t argc = ARGS_THREE;
-    napi_value argv[ARGS_THREE] = {0};
+    size_t argc = ARGS_FOUR;
+    napi_value argv[ARGS_FOUR] = {0};
     napi_value thisVar = nullptr;
 
     GET_JS_ARGS(env, info, argc, argv, thisVar);
-    NAPI_ASSERT(env, (argc == ARGS_THREE), "requires 3 parameters");
+    NAPI_ASSERT(env, (argc == ARGS_FOUR), "requires 4 parameters");
     napi_get_undefined(env, &result);
     int32_t sceneCode = GetIntFromParams(env, argv, PARAM0);
     std::string galleryAppName = GetStringFromParams(env, argv, PARAM1);
     std::string mediaAppName = GetStringFromParams(env, argv, PARAM2);
+    std::string backupDir = GetStringFromParams(env, argv, PARAM3);
     NAPI_INFO_LOG("StartRestore, sceneCode = %{public}d", sceneCode);
     if (sceneCode < 0) {
         NAPI_INFO_LOG("Parameters error, sceneCode = %{public}d", sceneCode);
@@ -121,15 +123,13 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
     napi_deferred nativeDeferred = nullptr;
     napi_create_promise(env, &nativeDeferred, &result);
     RestoreBlock *block = new (std::nothrow) RestoreBlock {
-        env, sceneCode, galleryAppName, mediaAppName, nativeDeferred };
+        env, sceneCode, galleryAppName, mediaAppName, backupDir, nativeDeferred };
     work->data = reinterpret_cast<void *>(block);
-    uv_queue_work(
-        loop,
-        work,
+    uv_queue_work(loop, work,
         [](uv_work_t *work) {
             RestoreBlock *block = reinterpret_cast<RestoreBlock *> (work->data);
             BackupRestoreService::GetInstance().StartRestore(block->sceneCode, block->galleryAppName,
-                block->mediaAppName);
+                block->mediaAppName, block->backupDir);
         },
         [](uv_work_t *work, int _status) {
             RestoreBlock *block = reinterpret_cast<RestoreBlock *> (work->data);

@@ -44,7 +44,7 @@ DfxWorker::DfxWorker() : isThreadRunning_(false)
         TO_MILLION * ONE_MINUTE;
     middleTime_ = stoi(system::GetParameter("persist.multimedia.medialibrary.dfx.middletime", SIX_HOUR)) *
         ONE_MINUTE * ONE_MINUTE;
-    longTime_ = stoi(system::GetParameter("persist.multimedia.medialibrary.dfx.longtime", ONE_DAY)) * ONE_MINUTE *
+    oneDay_ = stoi(system::GetParameter("persist.multimedia.medialibrary.dfx.oneday", TWENTY_FOUR_HOURS)) * ONE_MINUTE *
         ONE_MINUTE;
 }
 
@@ -150,15 +150,15 @@ void DfxWorker::InitLoop()
     }
     while (!isEnd_) {
         DfxManager::GetInstance()->HandleFiveMinuteTask();
-        if (MediaFileUtils::UTCTimeSeconds() - lastMiddleReportTime_ > middleTime_) {
+        if (MediaFileUtils::UTCTimeSeconds() - lastMiddleReportTime_ >= middleTime_) {
             MEDIA_INFO_LOG("Report Middle Xml");
             lastMiddleReportTime_ = DfxManager::GetInstance()->HandleMiddleReport();
             prefs->PutLong(LAST_MIDDLE_REPORT_TIME, lastMiddleReportTime_);
             prefs->FlushSync();
         }
-        if (MediaFileUtils::UTCTimeSeconds() - lastReportTime_ > longTime_) {
-            MEDIA_INFO_LOG("Report Xml");
-            lastReportTime_ = DfxManager::GetInstance()->HandleReportXml();
+        if (MediaFileUtils::UTCTimeSeconds() - lastReportTime_ >= oneDay_) {
+            MEDIA_INFO_LOG("Report one day Xml");
+            lastReportTime_ = DfxManager::GetInstance()->HandleOneDayReport();
             prefs->PutLong(LAST_REPORT_TIME, lastReportTime_);
             prefs->FlushSync();
         }

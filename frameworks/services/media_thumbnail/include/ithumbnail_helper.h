@@ -75,21 +75,27 @@ public:
     static void CreateLcd(std::shared_ptr<ThumbnailTaskData> &data);
     static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
     static void CreateAstc(std::shared_ptr<ThumbnailTaskData> &data);
+    static void CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data);
     static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts, ThumbnailData &thumbData,
         const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
+    static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data);
+    static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool IsPureCloudImage(ThumbRdbOpt &opts);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
+    static bool GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
     static bool UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
     static int32_t UpdateAstcState(const ThumbRdbOpt &opts, const ThumbnailData &data);
     static bool IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
+    static bool IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
+    static bool IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
 };
 } // namespace Media
 } // namespace OHOS

@@ -20,6 +20,7 @@
 #include "ipc_skeleton.h"
 #include "ithumbnail_helper.h"
 #include "media_column.h"
+#include "media_file_utils.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
@@ -176,9 +177,6 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
     }
     int fd = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, thumbType);
     if (fd < 0) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, fd},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("GetThumbnailPixelMap failed : %{public}d", fd);
     }
     return fd;
@@ -187,9 +185,7 @@ int ThumbnailService::GetThumbFd(const string &path, const string &table, const 
 int ThumbnailService::GetThumbnailFd(const string &uri, bool isAstc)
 {
     if (!CheckSizeValid()) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_INVALID_SIZE},
-            {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        MEDIA_ERR_LOG("GetThumbnailFd failed for invaild size, uri: %{public}s", uri.c_str());
         return E_THUMBNAIL_INVALID_SIZE;
     }
     string id;
@@ -412,7 +408,7 @@ void ThumbnailService::InvalidateThumbnail(const std::string &id,
     ThumbnailData thumbnailData;
     ThumbnailUtils::DeleteOriginImage(opts);
     if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        MediaLibraryPhotoOperations::RemoveThumbnailSizeRecord(id);
+        MediaLibraryPhotoOperations::DropThumbnailSize(id);
     }
 }
 
@@ -471,6 +467,26 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     return E_OK;
 }
 
+int32_t RenameDownloadThumbnail(ThumbnailData &data, const string &suffix)
+{
+    string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
+    string tempFileName = fileName + suffix;
+    int32_t errCode = MediaFileUtils::ModifyAsset(fileName, tempFileName);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Rename download thumbnail failed, err: %{public}d, name: %{public}s", errCode, fileName.c_str());
+        return errCode;
+    }
+
+    fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+    tempFileName = fileName + suffix;
+    errCode = MediaFileUtils::ModifyAsset(fileName, tempFileName);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Rename download lcd failed, err: %{public}d, name: %{public}s", errCode, fileName.c_str());
+        return errCode;
+    }
+    return E_OK;
+}
+
 int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
 {
     ThumbnailData data;
@@ -488,7 +504,27 @@ int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
 
     ThumbnailUtils::QueryThumbnailDataFromFileId(opts, id, data, err);
     if (err != E_OK) {
+        MEDIA_ERR_LOG("QueryThumbnailDataFromFileId failed, path: %{public}s", data.path.c_str());
         return err;
+    }
+
+    if (data.orientation != 0) {
+        err = RenameDownloadThumbnail(data, THUMBNAIL_TEMP_ORIENT_SUFFIX);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("RenameDownloadThumbnail failed, path: %{public}s", data.path.c_str());
+            return err;
+        }
+
+        string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
+        string dirName = MediaFileUtils::GetParentPath(fileName);
+        if (MediaFileUtils::DeleteDir(dirName)) {
+            MEDIA_INFO_LOG("Succeed in deleting THM_EX directory, path: %{public}s, id: %{public}s",
+                dirName.c_str(), data.id.c_str());
+        }
+
+        IThumbnailHelper::AddThumbnailGenerateTask(
+            IThumbnailHelper::CreateAstcEx, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+        return E_OK;
     }
 
     IThumbnailHelper::AddThumbnailGenerateTask(

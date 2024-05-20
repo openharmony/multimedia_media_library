@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "cloud_sync_helper.h"
 #include "medialibrary_rdb_transaction.h"
 
 #include "media_log.h"
@@ -82,6 +83,12 @@ int32_t TransactionOperations::BeginTransaction()
     int curTryTime = 0;
     while (curTryTime < MAX_TRY_TIMES) {
         if (rdbStore_->IsInTransaction()) {
+            if (!isInTransaction_.load()) {
+                MEDIA_INFO_LOG("Stop cloud sync");
+                FileManagement::CloudSync::CloudSyncManager::GetInstance()
+                    .StopSync("com.ohos.medialibrary.medialibrarydata");
+                isSkipCloudSync = true;
+            }
             this_thread::sleep_for(chrono::milliseconds(TRANSACTION_WAIT_INTERVAL));
             if (isInTransaction_.load() || rdbStore_->IsInTransaction()) {
                 curTryTime++;
@@ -91,7 +98,7 @@ int32_t TransactionOperations::BeginTransaction()
         }
 
         int32_t errCode = rdbStore_->BeginTransaction();
-        if (errCode == SQLITE3_DATABASE_LOCKER) {
+        if (errCode == SQLITE3_DATABASE_LOCKER || errCode == SQLITE3_DATABASE_LOCKER_NEW) {
             curTryTime++;
             MEDIA_ERR_LOG("Sqlite database file is locked! try %{public}d times...", curTryTime);
             continue;
@@ -130,6 +137,12 @@ int32_t TransactionOperations::TransactionCommit()
         return E_HAS_DB_ERROR;
     }
 
+    if (isSkipCloudSync) {
+        MEDIA_INFO_LOG("recover cloud sync for commit");
+        CloudSyncHelper::GetInstance()->StartSync();
+        isSkipCloudSync = false;
+    }
+
     return E_OK;
 }
 
@@ -151,6 +164,12 @@ int32_t TransactionOperations::TransactionRollback()
     if (errCode != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rollback failed, errCode=%{public}d", errCode);
         return E_HAS_DB_ERROR;
+    }
+
+    if (isSkipCloudSync) {
+        MEDIA_INFO_LOG("recover cloud sync for rollback");
+        CloudSyncHelper::GetInstance()->StartSync();
+        isSkipCloudSync = false;
     }
 
     return E_OK;
