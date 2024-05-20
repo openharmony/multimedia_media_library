@@ -17,6 +17,8 @@
 #include "media_scanner_db.h"
 #define private public
 #include "metadata_extractor.h"
+#include "meta.h"
+#include "meta_key.h"
 #undef private
 
 using namespace std;
@@ -96,12 +98,15 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_001, Tes
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     data->SetFilePath(path);
     data->SetFileDateModified(static_cast<int64_t>(11));
+    std::shared_ptr<Meta> meta;
     unordered_map<int32_t, std::string> resultMap;
     resultMap = {{AV_KEY_ALBUM, ""}, {AV_KEY_ARTIST, ""}, {AV_KEY_DURATION, ""}, {AV_KEY_DATE_TIME_FORMAT, ""},
         {AV_KEY_VIDEO_HEIGHT, ""}, {AV_KEY_VIDEO_WIDTH, ""}, {AV_KEY_MIME_TYPE, ""}, {AV_KEY_MIME_TYPE, ""},
         {AV_KEY_VIDEO_ORIENTATION, ""}, {AV_KEY_TITLE, ""}, {AV_KEY_GENRE, ""}};
-    MetadataExtractor::FillExtractedMetadata(resultMap, data);
+    MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetAlbum(), "");
+    EXPECT_EQ(data->GetLongitude(), 0);
+    EXPECT_EQ(data->GetLatitude(), 0);
 }
 
 HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_002, TestSize.Level0)
@@ -113,12 +118,17 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_002, Tes
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     data->SetFilePath(path);
     data->SetFileDateModified(static_cast<int64_t>(11));
+    std::shared_ptr<Meta> meta;
+    meta->SetData(Tag::MEDIA_LONGITUDE, 1.2);
+    meta->SetData(Tag::MEDIA_LATITUDE, 138.2);
     unordered_map<int32_t, std::string> resultMap;
     resultMap = {{AV_KEY_ALBUM, "a"}, {AV_KEY_ARTIST, "a"}, {AV_KEY_DURATION, "a"}, {AV_KEY_DATE_TIME_FORMAT, "a"},
         {AV_KEY_VIDEO_HEIGHT, "a"}, {AV_KEY_VIDEO_WIDTH, "a"}, {AV_KEY_MIME_TYPE, "a"}, {AV_KEY_MIME_TYPE, "a"},
         {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"}};
-    MetadataExtractor::FillExtractedMetadata(resultMap, data);
+    MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetAlbum(), "a");
+    EXPECT_EQ(data->GetLongitude(), 1.2);
+    EXPECT_EQ(data->GetLatitude(), 138.2);
 }
 } // namespace Media
 } // namespace OHOS
