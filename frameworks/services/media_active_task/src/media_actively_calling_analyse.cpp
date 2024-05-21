@@ -45,16 +45,17 @@ bool MediaActivelyCallingAnalyse::SendTransactCmd(int32_t code, MessageParcel &d
         MEDIA_INFO_LOG("Active task: sa already running");
         return false;
     }
+
+    int ret = SetParameter("persist.multimedia.media_analysis_service.startactively", "1");
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Failed to set parameter startactively, result:%{public}d", ret);
+    }
     sptr<IRemoteObject> remote = saMgr->LoadSystemAbility(SAID, minTimeout);
     if (remote == nullptr) {
         MEDIA_ERR_LOG("fail to send transact %{public}d due to remote object", code);
         return false;
     }
     
-    int ret = SetParameter("persist.multimedia.media_analysis_service.startactively", "1");
-    if (ret != 0) {
-        MEDIA_ERR_LOG("Failed to set parameter startactively, result:%{public}d", ret);
-    }
     int32_t result = remote->SendRequest(code, data, reply, option);
     if (result != NO_ERROR) {
         MEDIA_ERR_LOG("receive error transact code %{public}d in transact cmd %{public}d", result, code);

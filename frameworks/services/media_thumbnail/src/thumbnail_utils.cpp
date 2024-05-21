@@ -1054,7 +1054,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
 
     bool ret = false;
     Size desiredSize;
-    if (data.mediaType == MEDIA_TYPE_VIDEO) {
+    if (data.mediaType == MEDIA_TYPE_VIDEO && !data.loaderOpts.isCloudLoading) {
         ret = LoadVideoFile(data, desiredSize);
     } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
         ret = LoadAudioFile(data, desiredSize);

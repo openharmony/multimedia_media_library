@@ -314,6 +314,10 @@ bool SourceLoader::IsFinal()
 
 void BeginSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 {
+    if (data.mediaType == MEDIA_TYPE_VIDEO) {
+        state = SourceState::CLOUD_LCD;
+        return;
+    }
     if (data.loaderOpts.sourceLoadingBeginWithThumb) {
         state = SourceState::LOCAL_THUMB;
     } else {
@@ -497,6 +501,9 @@ void CloudLcdSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 
 bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
 {
+    if (data.mediaType == MEDIA_TYPE_VIDEO) {
+        return true;
+    }
     if (minSize < SHORT_SIDE_THRESHOLD) {
         return false;
     }

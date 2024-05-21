@@ -34,7 +34,7 @@ class DeferredProcessingAdapter {
 #endif
 public:
     EXPORT DeferredProcessingAdapter();
-    EXPORT ~DeferredProcessingAdapter();
+    EXPORT virtual ~DeferredProcessingAdapter();
 
     EXPORT virtual void BeginSynchronize();
     EXPORT virtual void EndSynchronize();
