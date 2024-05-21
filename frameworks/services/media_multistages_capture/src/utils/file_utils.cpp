@@ -21,6 +21,7 @@
 
 #include "media_log.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 #include "medialibrary_type_const.h"
 
 using namespace std;
@@ -48,6 +49,8 @@ bool FileUtils::IsFileExist(const string &fileName)
 
 int32_t FileUtils::SaveImage(const string &filePath, void *output, size_t writeSize)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("FileUtils::SaveImage");
     string filePathTemp = filePath + ".high";
     int fd = open(filePathTemp.c_str(), O_CREAT|O_WRONLY|O_TRUNC, 0777);
     if (fd < 0) {

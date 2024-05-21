@@ -16,6 +16,7 @@
 #define MEDIALIBRARY_PERMISSION_UTILS_H
 
 #include <array>
+#include <list>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -48,6 +49,12 @@ const std::vector<std::string> WRITE_PERMS_V10 = {
     PERM_WRITE_DOCUMENT
 };
 
+struct BundleInfo {
+    std::string bundleName;
+    std::string packageName;
+    std::string appId;
+};
+
 class PermissionUtils {
 public:
     static bool CheckCallerPermission(const std::string &permission);
@@ -72,6 +79,14 @@ private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
     COMPILE_HIDDEN static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
     COMPILE_HIDDEN static std::mutex bundleMgrMutex_;
+    static void GetBundleNameFromCache(int uid, std::string &bundleName);
+    static void GetPackageNameFromCache(int uid, std::string &packageName);
+    static void GetAppIdFromCache(int uid, std::string &appId);
+    static void UpdateLatestBundleInfo(int uid, const BundleInfo &bundleInfo);
+    static void ClearBundleInfoInCache();
+
+    static std::list<std::pair<int32_t, BundleInfo>> bundleInfoList_; // 用来快速获取使用频率最低的uid
+    static std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> bundleInfoMap_;
 };
 }  // namespace Media
 }  // namespace OHOS
