@@ -2455,10 +2455,6 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_SEGMENTATION_COLUMNS) {
         AddSegmentationColumns(store);
     }
-
-    if (oldVersion < VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN) {
-        AddFaceOcclusionAndPoseTypeColumn(store);
-    }
 }
 
 static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
@@ -2526,6 +2522,10 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_VIDEO_LABEL_TABEL) {
         UpdateVideoLabelTable(store);
+    }
+
+    if (oldVersion < VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN) {
+        AddFaceOcclusionAndPoseTypeColumn(store);
     }
 
     if (oldVersion < VERSION_MOVE_KVDB) {
