@@ -111,19 +111,54 @@ void PermissionUtils::UpdateLatestBundleInfo(int uid, const BundleInfo &bundleIn
 {
     MEDIA_INFO_LOG("uid: %{public}d, {%{public}s, %{public}s, %{public}s}", uid, bundleInfo.bundleName.c_str(),
         bundleInfo.packageName.c_str(), bundleInfo.appId.c_str());
+    auto iter = bundleInfoMap_.find(uid);
+    if (iter != bundleInfoMap_.end()) {
+        bundleInfoList_.erase(iter->second);
+    }
     bundleInfoList_.push_front(make_pair(uid, bundleInfo));
     bundleInfoMap_[uid] = bundleInfoList_.begin();
-    if (bundleInfoMap_.size() > CAPACITY || bundleInfoList_.size() > CAPACITY) {
+    if (bundleInfoMap_.size() > CAPACITY) {
         int32_t deleteKey = bundleInfoList_.back().first;
         bundleInfoMap_.erase(deleteKey);
         bundleInfoList_.pop_back();
-
-        for (auto iter = bundleInfoList_.begin(); iter != bundleInfoList_.end(); iter++) {
-            if (iter->first == deleteKey) {
-                bundleInfoList_.erase(iter);
-            }
-        }
     }
+}
+
+void PermissionUtils::UpdateBundleNameInCache(int uid, const string &bundleName)
+{
+    auto iter = bundleInfoMap_.find(uid);
+    if (iter != bundleInfoMap_.end()) {
+        BundleInfo bundleInfo = bundleInfoMap_[uid]->second;
+        bundleInfo.bundleName = bundleName;
+        UpdateLatestBundleInfo(uid, bundleInfo);
+        return;
+    }
+    BundleInfo bundleInfo { bundleName, "", "" };
+    UpdateLatestBundleInfo(uid, bundleInfo);
+}
+
+void PermissionUtils::UpdatePackageNameInCache(int uid, const string &packageName)
+{
+    auto iter = bundleInfoMap_.find(uid);
+    if (iter != bundleInfoMap_.end()) {
+        BundleInfo bundleInfo = bundleInfoMap_[uid]->second;
+        bundleInfo.packageName = packageName;
+        UpdateLatestBundleInfo(uid, bundleInfo);
+        return;
+    }
+    BundleInfo bundleInfo { "", packageName, "" };
+    UpdateLatestBundleInfo(uid, bundleInfo);
+}
+
+void PermissionUtils::UpdateAppIdInCache(int uid, const string &appId)
+{
+    BundleInfo bundleInfo { "", "", appId };
+    auto iter = bundleInfoMap_.find(uid);
+    if (iter != bundleInfoMap_.end()) {
+        bundleInfo = bundleInfoMap_[uid]->second;
+        bundleInfo.appId = appId;
+    }
+    UpdateLatestBundleInfo(uid, bundleInfo);
 }
 
 void PermissionUtils::ClearBundleInfoInCache()
@@ -150,8 +185,7 @@ void PermissionUtils::GetClientBundle(const int uid, string &bundleName)
         bundleName = "";
     }
 
-    BundleInfo bundleInfo { bundleName, "", "" };
-    UpdateLatestBundleInfo(uid, bundleInfo);
+    UpdateBundleNameInCache(uid, bundleName);
 }
 
 void PermissionUtils::GetPackageName(const int uid, std::string &packageName)
@@ -187,9 +221,7 @@ void PermissionUtils::GetPackageName(const int uid, std::string &packageName)
     string abilityName = want.GetOperation().GetAbilityName();
     packageName = bundleMgr->GetAbilityLabel(bundleName, abilityName);
 
-    BundleInfo bundleInfo = bundleInfoMap_[uid]->second;
-    bundleInfo.packageName = packageName;
-    UpdateLatestBundleInfo(uid, bundleInfo);
+    UpdatePackageNameInCache(uid, packageName);
 }
 
 bool inline ShouldAddPermissionRecord(const AccessTokenID &token)
@@ -405,7 +437,27 @@ string PermissionUtils::GetPackageNameByBundleName(const string &bundleName)
         MEDIA_INFO_LOG("[FOR_TEST] uid: %{public}d, packageName: %{public}s", uid, packageName.c_str());
         return packageName;
     }
-    return GetAppIdByBundleName(bundleName, uid);
+    int32_t userId = uid / BASE_USER_RANGE;
+    MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
+
+    AAFwk::Want want;
+    auto bundleMgr_ = GetSysBundleManager();
+    if (bundleMgr_ == nullptr) {
+        MEDIA_ERR_LOG("Get BundleManager failed");
+        return "";
+    }
+    int ret = bundleMgr_->GetLaunchWantForBundle(bundleName, want, userId);
+    if (ret != ERR_OK) {
+        MEDIA_ERR_LOG("Can not get bundleName by want, err=%{public}d, userId=%{private}d",
+            ret, userId);
+        return "";
+    }
+    string abilityName = want.GetOperation().GetAbilityName();
+    packageName = bundleMgr_->GetAbilityLabel(bundleName, abilityName);
+
+    UpdatePackageNameInCache(uid, packageName);
+
+    return packageName;
 }
 
 string PermissionUtils::GetAppIdByBundleName(const string &bundleName)
@@ -442,9 +494,7 @@ string PermissionUtils::GetAppIdByBundleName(const string &bundleName, int32_t u
 
     appId = bundleMgr_->GetAppIdByBundleName(bundleName, userId);
 
-    BundleInfo bundleInfo = bundleInfoMap_[uid]->second;
-    bundleInfo.appId = appId;
-    UpdateLatestBundleInfo(uid, bundleInfo);
+    UpdateAppIdInCache(uid, appId);
 
     return appId;
 }

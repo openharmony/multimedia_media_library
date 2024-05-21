@@ -83,6 +83,9 @@ private:
     static void GetPackageNameFromCache(int uid, std::string &packageName);
     static void GetAppIdFromCache(int uid, std::string &appId);
     static void UpdateLatestBundleInfo(int uid, const BundleInfo &bundleInfo);
+    static void UpdateBundleNameInCache(int uid, const std::string &bundleName);
+    static void UpdatePackageNameInCache(int uid, const std::string &packageName);
+    static void UpdateAppIdInCache(int uid, const std::string &appId);
     static void ClearBundleInfoInCache();
 
     static std::list<std::pair<int32_t, BundleInfo>> bundleInfoList_; // 用来快速获取使用频率最低的uid

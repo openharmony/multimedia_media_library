@@ -198,5 +198,21 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_tha
     PermissionUtils::GetPackageNameFromCache(5, packageNameActual);
     EXPECT_EQ(packageNameActual, "demo5");
 }
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_than_capacity_002, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    string name = "";
+    for (int i = 0; i < 55; i++) {
+        name = "demo" + to_string(i);
+        PermissionUtils::UpdateLatestBundleInfo(1, {"com.test." + name, name, name + ".appid"});
+    }
+
+    string packageNameActual = "";
+    PermissionUtils::GetPackageNameFromCache(0, packageNameActual);
+    EXPECT_EQ(packageNameActual, "");
+    PermissionUtils::GetPackageNameFromCache(1, packageNameActual);
+    EXPECT_EQ(packageNameActual, name);
+}
 } // namespace Media
 } // namespace OHOS
