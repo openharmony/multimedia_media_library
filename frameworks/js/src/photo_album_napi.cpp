@@ -1028,7 +1028,8 @@ void ConvertColumnsForFeaturedSinglePortrait(PhotoAlbumNapiAsyncContext *context
 
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
     int portraitAlbumId = 0;
-    if (photoAlbum->GetAlbumName().compare(to_string(portraitAlbumId)) != 0) {
+    if (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::CLASSIFY ||
+        photoAlbum->GetAlbumName().compare(to_string(portraitAlbumId)) != 0) {
         return;
     }
 
