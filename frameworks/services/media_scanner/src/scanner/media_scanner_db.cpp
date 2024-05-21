@@ -558,11 +558,6 @@ int32_t MediaScannerDb::GetFileSet(MediaLibraryCommand &cmd, const vector<string
     }
 
     if (rowCount == 0) {
-        string argsLog;
-        for (const auto &arg : cmd.GetAbsRdbPredicates()->GetWhereArgs()) {
-            argsLog += arg + ";";
-        }
-        MEDIA_INFO_LOG("rowCount is 0 for where args: %{public}s", argsLog.c_str());
         return E_OK;
     }
 
