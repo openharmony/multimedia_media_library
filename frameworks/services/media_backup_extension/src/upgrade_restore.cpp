@@ -555,7 +555,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
 
     std::string relativeBucketId = GetStringVal(GALLERY_MEDIA_BUCKET_ID, resultSet);
     auto it = galleryAlbumMap_.find(relativeBucketId);
-    if (galleryAlbumMap_.find(relativeBucketId) != galleryAlbumMap_.end()) {
+    if (it != galleryAlbumMap_.end())  {
         if (it->second.albumCNName == SCREEN_SHOT_AND_RECORDER && info.fileType == MediaType::MEDIA_TYPE_VIDEO &&
            mediaScreenreCorderAlbumId_ > 0) {
             info.mediaAlbumId = mediaScreenreCorderAlbumId_;
@@ -760,7 +760,7 @@ bool UpgradeRestore::ParseAlbumResultSet(const shared_ptr<NativeRdb::ResultSet> 
 }
 
 bool UpgradeRestore::ParseGalleryAlbumResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-                                                GalleryAlbumInfo &galleryAlbumInfo)
+    GalleryAlbumInfo &galleryAlbumInfo)
 {
     galleryAlbumInfo.albumRelativeBucketId = GetStringVal(GALLERY_ALBUM_BUCKETID, resultSet);
     galleryAlbumInfo.albumName = GetStringVal(GALLERY_ALBUM_NAME, resultSet);
@@ -795,7 +795,7 @@ bool UpgradeRestore::ParseGalleryAlbumResultSet(const shared_ptr<NativeRdb::Resu
 }
 
 void UpgradeRestore::InsertAlbum(vector<GalleryAlbumInfo> &galleryAlbumInfos,
-                                 bool bInsertScreenreCorderAlbum)
+    bool bInsertScreenreCorderAlbum)
 {
     if (mediaLibraryRdb_ == nullptr) {
         MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
@@ -817,11 +817,11 @@ void UpgradeRestore::InsertAlbum(vector<GalleryAlbumInfo> &galleryAlbumInfos,
     BatchQueryAlbum(galleryAlbumInfos);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("insert %{public}ld albums cost %{public}ld, query cost %{public}ld.", (long)rowNum,
-                   (long)(startQuery - startInsert), (long)(end - startQuery));
+        (long)(startQuery - startInsert), (long)(end - startQuery));
 }
 
 vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(vector<GalleryAlbumInfo> &galleryAlbumInfos,
-                                                                bool bInsertScreenreCorderAlbum)
+    bool bInsertScreenreCorderAlbum)
 {
     vector<NativeRdb::ValuesBucket> values;
     if (bInsertScreenreCorderAlbum) {
@@ -861,6 +861,18 @@ vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(vector<GalleryAl
     return values;
 }
 
+static std::string ReplaceAll(std::string str, const std::string &oldValue, const std::string &newValue)
+{
+    for (std::string::size_type pos(0); pos != std::string::npos; pos += newValue.length()) {
+        if ((pos = str.find(oldValue, pos)) != std::string::npos) {
+            str.replace(pos, oldValue.length(), newValue);
+        } else {
+            break;
+        }
+    }
+    return str;
+}
+
 void UpgradeRestore::BatchQueryAlbum(vector<GalleryAlbumInfo> &galleryAlbumInfos)
 {
     for (auto &galleryAlbumInfo : galleryAlbumInfos) {
@@ -868,7 +880,7 @@ void UpgradeRestore::BatchQueryAlbum(vector<GalleryAlbumInfo> &galleryAlbumInfos
             continue;
         }
         string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
-                          PhotoAlbumColumns::ALBUM_NAME + " = '" + galleryAlbumInfo.albumMediaName + "'";
+            PhotoAlbumColumns::ALBUM_NAME + " = '" + ReplaceAll(galleryAlbumInfo.albumMediaName, "\'", "\'\'") + "'";
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
         if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
             continue;
@@ -888,7 +900,7 @@ void UpgradeRestore::UpdateMediaScreenreCorderAlbumId()
         return;
     }
     string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
-                      PhotoAlbumColumns::ALBUM_NAME + " = '" + VIDEO_SCREEN_RECORDER_NAME + "'";
+        PhotoAlbumColumns::ALBUM_NAME + " = '" + VIDEO_SCREEN_RECORDER_NAME + "'";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return;

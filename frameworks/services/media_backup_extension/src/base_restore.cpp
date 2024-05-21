@@ -548,7 +548,7 @@ void BaseRestore::InsertPhotoMap(std::vector<FileInfo> &fileInfos)
     migrateDatabaseMapNumber_ += mapRowNum;
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("query cost %{public}ld, insert %{public}ld maps cost %{public}ld.",
-                   (long)(startInsertMap - startQuery), (long)mapRowNum, (long)(end - startInsertMap));
+        (long)(startInsertMap - startQuery), (long)mapRowNum, (long)(end - startInsertMap));
 }
 
 void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
