@@ -23,7 +23,6 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
-#include "medialibrary_threadpool.h"
 #include "image_packer.h"
 #include "media_column.h"
 #include "datashare_values_bucket.h"
@@ -37,8 +36,6 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const string API_VERSION = "api_version";
-const int32_t THREAD_POOL_SIZE = 1;
-static std::shared_ptr<MediaLibraryThreadPool> threadPool_;
 
 PhotoAssetProxy::PhotoAssetProxy() {}
 
@@ -136,6 +133,29 @@ static bool isHighQualityPhotoExist(string uri)
     return MediaFileUtils::IsFileExists(filePathTemp) || MediaFileUtils::IsFileExists(filePath);
 }
 
+int32_t CloseFd(const shared_ptr<DataShare::DataShareHelper> &dataShareHelper, const string &uri, const int32_t fd)
+{
+    int32_t retVal = E_FAIL;
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_URI, uri);
+
+    if (dataShareHelper != nullptr) {
+        string uriStr = PAH_CLOSE_PHOTO;
+        MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri closeAssetUri(uriStr);
+
+        if (close(fd) == E_SUCCESS) {
+            retVal = dataShareHelper->Insert(closeAssetUri, valuesBucket);
+        }
+
+        if (retVal == E_FAIL) {
+            MEDIA_ERR_LOG("Failed to close the file");
+        }
+    }
+
+    return retVal;
+}
+
 int PhotoAssetProxy::SaveImage(int fd, const string &uri, const string &photoId, void *output, size_t writeSize)
 {
     MediaLibraryTracer tracer;
@@ -227,12 +247,12 @@ int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelpe
     valuesBucket.Put(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, static_cast<int32_t>(photoProxy->GetDeferredProcType()));
     valuesBucket.Put(MediaColumn::MEDIA_ID, fileId);
     valuesBucket.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(subType));
-    MEDIA_INFO_LOG("photoId: %{public}s, fileId: %{public}d", photoProxy->GetPhotoId().c_str(), fileId);
 
     int32_t changeRows = dataShareHelper->Update(updateAssetUri, predicates, valuesBucket);
     if (changeRows < 0) {
         MEDIA_ERR_LOG("update fail, error: %{public}d", changeRows);
     }
+    MEDIA_INFO_LOG("photoId: %{public}s, fileId: %{public}d", photoProxy->GetPhotoId().c_str(), fileId);
     return changeRows;
 }
 
@@ -240,7 +260,7 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
     int fd, const string &uri, const sptr<PhotoProxy> &photoProxy)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("PhotoAssetProxy::AddPhotoProxy");
+    tracer.Start("DealWithLowQualityPhoto");
     MEDIA_INFO_LOG("start photoId: %{public}s format: %{public}d, quality: %{public}d",
         photoProxy->GetPhotoId().c_str(), photoProxy->GetFormat(), photoProxy->GetPhotoQuality());
 
@@ -251,7 +271,7 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
         SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(), photoProxy->GetFileSize());
     }
     photoProxy->Release();
-    close(fd);
+    CloseFd(dataShareHelper, uri, fd);
     MEDIA_INFO_LOG("end");
 }
 
@@ -263,7 +283,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
     }
 
     MediaLibraryTracer tracer;
-    tracer.Start("PhotoAssetProxy::AddPhotoProxy");
+    tracer.Start("PhotoAssetProxy::AddPhotoProxy " + photoProxy->GetPhotoId());
     MEDIA_INFO_LOG("photoId: %{public}s", photoProxy->GetPhotoId().c_str());
     tracer.Start("PhotoAssetProxy CreatePhotoAsset");
     CreatePhotoAsset(photoProxy);
@@ -278,10 +298,7 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
         MEDIA_ERR_LOG("fd.Get() < 0 fd %{public}d status %{public}d", fd, errno);
         return;
     }
-    if (threadPool_ == nullptr) {
-        threadPool_ = make_shared<MediaLibraryThreadPool>(THREAD_POOL_SIZE);
-    }
-    threadPool_->Submit(DealWithLowQualityPhoto, dataShareHelper_, fd, uri_, photoProxy);
+    DealWithLowQualityPhoto(dataShareHelper_, fd, uri_, photoProxy);
     MEDIA_INFO_LOG("exit");
 }
 

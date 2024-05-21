@@ -39,5 +39,164 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetSysBundleManager_test_001, Tes
     auto ret = PermissionUtils::GetSysBundleManager();
     EXPECT_NE(ret, nullptr);
 }
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_not_in_cache_001, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    int uid = 1;
+    string bundleName = "";
+    PermissionUtils::GetBundleNameFromCache(uid, bundleName);
+    EXPECT_EQ(bundleName, "");
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_002, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    int uid = 1;
+    string bundleName = "com.test.demo";
+    BundleInfo bundleInfo {bundleName, "", ""};
+    PermissionUtils::UpdateLatestBundleInfo(1, bundleInfo);
+    PermissionUtils::GetBundleNameFromCache(uid, bundleName);
+    EXPECT_EQ(bundleName, "com.test.demo");
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_003, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    int uid1 = 1;
+    string bundleName = "com.test.demo";
+    BundleInfo bundleInfo {bundleName, "", ""};
+    PermissionUtils::UpdateLatestBundleInfo(uid1, bundleInfo);
+    int uid2 = 2;
+    PermissionUtils::UpdateLatestBundleInfo(uid2, bundleInfo);
+    PermissionUtils::GetBundleNameFromCache(uid1, bundleName);
+    EXPECT_EQ(bundleName, "com.test.demo");
+    PermissionUtils::GetBundleNameFromCache(uid2, bundleName);
+    EXPECT_EQ(bundleName, "com.test.demo");
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetBundleNameFromCache_in_cache_004, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo", "", ""});
+    PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo2", "", ""});
+
+    string bundleNameActual = "";
+    PermissionUtils::GetBundleNameFromCache(1, bundleNameActual);
+    EXPECT_EQ(bundleNameActual, "com.test.demo2");
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_not_in_cache_001, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    int uid = 1;
+    string packageName = "";
+    PermissionUtils::GetPackageNameFromCache(uid, packageName);
+    EXPECT_EQ(packageName, "");
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_002, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    int uid = 1;
+    string bundleName = "com.test.demo";
+    string packageName = "demo";
+    BundleInfo bundleInfo {bundleName, packageName, ""};
+    PermissionUtils::UpdateLatestBundleInfo(uid, bundleInfo);
+
+    string packageNameActual = "";
+    PermissionUtils::GetPackageNameFromCache(uid, packageNameActual);
+    EXPECT_EQ(packageNameActual, packageName);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_003, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo1", "demo1", ""});
+    PermissionUtils::UpdateLatestBundleInfo(2, {"com.test.demo2", "demo2", ""});
+
+    string packageNameActual = "";
+    PermissionUtils::GetPackageNameFromCache(2, packageNameActual);
+    EXPECT_EQ(packageNameActual, "demo2");
+    PermissionUtils::GetPackageNameFromCache(1, packageNameActual);
+    EXPECT_EQ(packageNameActual, "demo1");
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_004, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo1", "demo1", ""});
+    PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo2", "demo2", ""});
+
+    string packageNameActual = "";
+    PermissionUtils::GetPackageNameFromCache(1, packageNameActual);
+    EXPECT_EQ(packageNameActual, "demo2");
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_not_in_cache_001, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    int uid = 1;
+    string appId = "";
+    PermissionUtils::GetAppIdFromCache(uid, appId);
+    EXPECT_EQ(appId, "");
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_002, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    int uid = 1;
+    string bundleName = "com.test.demo";
+    string packageName = "demo";
+    string appId = "demo.appid";
+    BundleInfo bundleInfo {bundleName, packageName, appId};
+    PermissionUtils::UpdateLatestBundleInfo(uid, bundleInfo);
+
+    string appIdActual = "";
+    PermissionUtils::GetAppIdFromCache(uid, appIdActual);
+    EXPECT_EQ(appIdActual, appId);
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_003, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo1", "demo1", "demo1.appid"});
+    PermissionUtils::UpdateLatestBundleInfo(2, {"com.test.demo2", "demo2", "demo2.appid"});
+
+    string appIdActual = "";
+    PermissionUtils::GetAppIdFromCache(1, appIdActual);
+    EXPECT_EQ(appIdActual, "demo1.appid");
+    PermissionUtils::GetAppIdFromCache(2, appIdActual);
+    EXPECT_EQ(appIdActual, "demo2.appid");
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_004, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo1", "demo1", "demo1.appid"});
+    PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo2", "demo2", "demo2.appid"});
+
+    string appIdActual = "";
+    PermissionUtils::GetAppIdFromCache(1, appIdActual);
+    EXPECT_EQ(appIdActual, "demo2.appid");
+}
+
+HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_than_capacity_001, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    string name = "";
+    for (int i = 0; i < 55; i++) {
+        name = "demo" + to_string(i);
+        PermissionUtils::UpdateLatestBundleInfo(i, {"com.test." + name, name, name + ".appid"});
+    }
+
+    string packageNameActual = "";
+    PermissionUtils::GetPackageNameFromCache(0, packageNameActual);
+    EXPECT_EQ(packageNameActual, "");
+    PermissionUtils::GetPackageNameFromCache(4, packageNameActual);
+    EXPECT_EQ(packageNameActual, "");
+    PermissionUtils::GetPackageNameFromCache(5, packageNameActual);
+    EXPECT_EQ(packageNameActual, "demo5");
+}
 } // namespace Media
 } // namespace OHOS
