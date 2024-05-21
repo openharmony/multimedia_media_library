@@ -69,10 +69,10 @@ private:
     int32_t QueryAlbumTotalNumber(const std::string &tableName, bool bgallery);
     bool ParseAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, AlbumInfo &albumInfo);
     bool ParseGalleryAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-                                    GalleryAlbumInfo &galleryAlbumInfos);
+        GalleryAlbumInfo &galleryAlbumInfos);
     void InsertAlbum(std::vector<GalleryAlbumInfo> &galleryAlbumInfos, bool bInsertScreenreCorderAlbum);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<GalleryAlbumInfo> &galleryAlbumInfos,
-                                                        bool bInsertScreenreCorderAlbum);
+        bool bInsertScreenreCorderAlbum);
     void BatchQueryAlbum(std::vector<GalleryAlbumInfo> &galleryAlbumInfos);
     void UpdateMediaScreenreCorderAlbumId();
 

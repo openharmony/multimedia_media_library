@@ -106,6 +106,7 @@ static inline const std::unordered_map<std::string, std::pair<std::string, std::
     {"/Pictures/DoodleBoard", {"白板", "DoodleBoard"}},
     {"/Pictures/Annotation", {"批注", "Annotations"}},
     {"/Pictures/douyin", {"抖音", "douyin"}},
+    {"/Pictures/sina", {"新浪新闻", "sinanews"}},
 };
 
 static inline const std::unordered_map<std::string, std::pair<std::string, std::string>> ALBUM_WHITE_LIST_MAP = {
