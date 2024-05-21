@@ -41,7 +41,6 @@ public:
     };
 
     struct SourceLoaderOptions {
-
         // if false, target decode size is LCD size
         bool decodeInThumbSize {false};
 
@@ -70,11 +69,13 @@ public:
 
     EXPORT int32_t mediaType {-1};
     EXPORT int64_t dateModified {0};
-    EXPORT float degrees;
+    EXPORT int32_t orientation {0};
 
     // Loaded lcd source can be resized to generate thumbnail in order
     EXPORT bool needResizeLcd {false};
+    EXPORT bool isLocalFile {true};
     EXPORT std::shared_ptr<PixelMap> source;
+    EXPORT std::shared_ptr<PixelMap> sourceEx;
     EXPORT std::vector<uint8_t> thumbnail;
     EXPORT std::vector<uint8_t> thumbAstc;
     EXPORT std::vector<uint8_t> monthAstc;
