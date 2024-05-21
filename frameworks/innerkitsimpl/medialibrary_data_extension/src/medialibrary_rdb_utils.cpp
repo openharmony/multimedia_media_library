@@ -147,6 +147,7 @@ static inline shared_ptr<ResultSet> GetAnalysisAlbum(const shared_ptr<NativeRdb:
     if (!analysisAlbumIds.empty()) {
         predicates.In(PhotoAlbumColumns::ALBUM_ID, analysisAlbumIds);
     }
+    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, PhotoAlbumSubType::HIGHLIGHT);
     if (rdbStore == nullptr) {
         return nullptr;
     }
