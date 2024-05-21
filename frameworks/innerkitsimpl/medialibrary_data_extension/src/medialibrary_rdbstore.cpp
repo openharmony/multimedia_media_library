@@ -958,6 +958,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
     INSERT_PHOTO_INSERT_SOURCE_ALBUM,
     INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+    INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
     CREATE_DICTIONARY_INDEX,
@@ -2457,10 +2458,24 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
+static void UpdateInsertPhotoUpdateAlbumTrigger(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+    };
+    MEDIA_INFO_LOG("start update insert photo update album");
+    ExecSqls(executeSqlStrs, store);
+}
+
+
 static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_IS_LOCAL_ALBUM) {
         AddIsLocalAlbum(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME) {
+        UpdateInsertPhotoUpdateAlbumTrigger(store);
     }
 }
 
