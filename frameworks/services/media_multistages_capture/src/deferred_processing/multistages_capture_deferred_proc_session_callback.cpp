@@ -21,9 +21,10 @@
 #include "file_utils.h"
 #include "media_log.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_photo_operations.h"
-#include "medialibrary_errno.h"
+#include "medialibrary_tracer.h"
 #include "multistages_capture_manager.h"
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
@@ -104,6 +105,8 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
         MEDIA_ERR_LOG("addr is nullptr or bytes(%{public}ld) is 0", bytes);
         return;
     }
+    MediaLibraryTracer tracer;
+    tracer.Start("OnProcessImageDone " + imageId);
 
     // 1. 分段式拍照已经处理完成，保存全质量图
     MEDIA_INFO_LOG("photoid: %{public}s, bytes: %{public}ld enter", imageId.c_str(), bytes);
@@ -114,13 +117,16 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
     vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
         PhotoColumn::PHOTO_SUBTYPE };
+    tracer.Start("Query");
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        tracer.Finish();
         MEDIA_INFO_LOG("result set is empty");
         MultiStagesCaptureDfxTotalTime::GetInstance().RemoveStartTime(imageId);
         MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SQL_ERR));
         return;
     }
+    tracer.Finish();
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
     int fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
