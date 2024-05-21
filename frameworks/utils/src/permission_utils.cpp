@@ -35,6 +35,11 @@ using namespace std;
 using namespace OHOS::Security::AccessToken;
 using namespace OHOS::AppExecFwk::Constants;
 
+const int32_t CAPACITY = 50;
+
+std::list<std::pair<int32_t, BundleInfo>> PermissionUtils::bundleInfoList_ = {};
+std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> PermissionUtils::bundleInfoMap_ = {};
+
 bool g_hasDelayTask;
 std::mutex AddPhotoPermissionRecordLock_;
 std::thread DelayTask_;
@@ -75,8 +80,66 @@ sptr<AppExecFwk::IBundleMgr> PermissionUtils::GetSysBundleManager()
     return bundleMgr_;
 }
 
+void PermissionUtils::GetBundleNameFromCache(int uid, string &bundleName)
+{
+    auto iter = bundleInfoMap_.find(uid);
+    if (iter != bundleInfoMap_.end() && !iter->second->second.bundleName.empty()) {
+        bundleInfoList_.splice(bundleInfoList_.begin(), bundleInfoList_, iter->second);
+        bundleName = iter->second->second.bundleName;
+    }
+}
+
+void PermissionUtils::GetPackageNameFromCache(int uid, string &packageName)
+{
+    auto iter = bundleInfoMap_.find(uid);
+    if (iter != bundleInfoMap_.end() && !iter->second->second.packageName.empty()) {
+        bundleInfoList_.splice(bundleInfoList_.begin(), bundleInfoList_, iter->second);
+        packageName = iter->second->second.packageName;
+    }
+}
+
+void PermissionUtils::GetAppIdFromCache(int uid, string &appId)
+{
+    auto iter = bundleInfoMap_.find(uid);
+    if (iter != bundleInfoMap_.end() && !iter->second->second.appId.empty()) {
+        bundleInfoList_.splice(bundleInfoList_.begin(), bundleInfoList_, iter->second);
+        appId = iter->second->second.appId;
+    }
+}
+
+void PermissionUtils::UpdateLatestBundleInfo(int uid, const BundleInfo &bundleInfo)
+{
+    MEDIA_INFO_LOG("uid: %{public}d, {%{public}s, %{public}s, %{public}s}", uid, bundleInfo.bundleName.c_str(),
+        bundleInfo.packageName.c_str(), bundleInfo.appId.c_str());
+    bundleInfoList_.push_front(make_pair(uid, bundleInfo));
+    bundleInfoMap_[uid] = bundleInfoList_.begin();
+    if (bundleInfoMap_.size() > CAPACITY || bundleInfoList_.size() > CAPACITY) {
+        int32_t deleteKey = bundleInfoList_.back().first;
+        bundleInfoMap_.erase(deleteKey);
+        bundleInfoList_.pop_back();
+
+        for (auto iter = bundleInfoList_.begin(); iter != bundleInfoList_.end(); iter++) {
+            if (iter->first == deleteKey) {
+                bundleInfoList_.erase(iter);
+            }
+        }
+    }
+}
+
+void PermissionUtils::ClearBundleInfoInCache()
+{
+    bundleInfoMap_.clear();
+    bundleInfoList_.clear();
+}
+
 void PermissionUtils::GetClientBundle(const int uid, string &bundleName)
 {
+    GetBundleNameFromCache(uid, bundleName);
+    if (!bundleName.empty()) {
+        MEDIA_INFO_LOG("[FOR_TEST] uid: %{public}d, bundleName: %{public}s", uid, bundleName.c_str());
+        return;
+    }
+
     bundleMgr_ = GetSysBundleManager();
     if (bundleMgr_ == nullptr) {
         bundleName = "";
@@ -86,6 +149,9 @@ void PermissionUtils::GetClientBundle(const int uid, string &bundleName)
     if (!result) {
         bundleName = "";
     }
+
+    BundleInfo bundleInfo { bundleName, "", "" };
+    UpdateLatestBundleInfo(uid, bundleInfo);
 }
 
 void PermissionUtils::GetPackageName(const int uid, std::string &packageName)
@@ -95,6 +161,12 @@ void PermissionUtils::GetPackageName(const int uid, std::string &packageName)
     GetClientBundle(uid, bundleName);
     if (bundleName.empty()) {
         MEDIA_ERR_LOG("Get bundle name failed");
+        return;
+    }
+
+    GetPackageNameFromCache(uid, packageName);
+    if (!packageName.empty()) {
+        MEDIA_INFO_LOG("[FOR_TEST] uid: %{public}d, packageName: %{public}s", uid, packageName.c_str());
         return;
     }
 
@@ -114,6 +186,10 @@ void PermissionUtils::GetPackageName(const int uid, std::string &packageName)
     }
     string abilityName = want.GetOperation().GetAbilityName();
     packageName = bundleMgr->GetAbilityLabel(bundleName, abilityName);
+
+    BundleInfo bundleInfo = bundleInfoMap_[uid]->second;
+    bundleInfo.packageName = packageName;
+    UpdateLatestBundleInfo(uid, bundleInfo);
 }
 
 bool inline ShouldAddPermissionRecord(const AccessTokenID &token)
@@ -318,16 +394,41 @@ string PermissionUtils::GetPackageNameByBundleName(const string &bundleName)
 {
     const static int32_t INVALID_UID = -1;
 
+    string packageName = "";
     int uid = IPCSkeleton::GetCallingUid();
     if (uid <= INVALID_UID) {
         MEDIA_ERR_LOG("Get INVALID_UID UID %{public}d", uid);
-        return "";
+        return packageName;
     }
+    GetPackageNameFromCache(uid, packageName);
+    if (!packageName.empty()) {
+        MEDIA_INFO_LOG("[FOR_TEST] uid: %{public}d, packageName: %{public}s", uid, packageName.c_str());
+        return packageName;
+    }
+    return GetAppIdByBundleName(bundleName, uid);
+}
+
+string PermissionUtils::GetAppIdByBundleName(const string &bundleName)
+{
+    int uid = IPCSkeleton::GetCallingUid();
     return GetAppIdByBundleName(bundleName, uid);
 }
 
 string PermissionUtils::GetAppIdByBundleName(const string &bundleName, int32_t uid)
 {
+    if (uid <= INVALID_UID) {
+        MEDIA_ERR_LOG("Get INVALID_UID UID %{public}d", uid);
+        return "";
+    }
+
+    string appId = "";
+    GetAppIdFromCache(uid, appId);
+    if (appId.empty()) {
+        MEDIA_INFO_LOG("[FOR_TEST] uid: %{public}d, bundleName: %{public}s, appId: %{public}s", uid,
+            bundleName.c_str(), appId.c_str());
+        return appId;
+    }
+
     const static int32_t BASE_USER_RANGE = 200000;
     int32_t userId = uid / BASE_USER_RANGE;
     MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
@@ -336,34 +437,16 @@ string PermissionUtils::GetAppIdByBundleName(const string &bundleName, int32_t u
     auto bundleMgr_ = GetSysBundleManager();
     if (bundleMgr_ == nullptr) {
         MEDIA_ERR_LOG("Get BundleManager failed");
-        return "";
+        return appId;
     }
-    int ret = bundleMgr_->GetLaunchWantForBundle(bundleName, want, userId);
-    if (ret != ERR_OK) {
-        MEDIA_ERR_LOG("Can not get bundleName by want, err=%{public}d, userId=%{private}d",
-            ret, userId);
-        return "";
-    }
-    string abilityName = want.GetOperation().GetAbilityName();
-    return bundleMgr_->GetAbilityLabel(bundleName, abilityName);
-}
 
-string PermissionUtils::GetAppIdByBundleName(const string &bundleName)
-{
-    int uid = IPCSkeleton::GetCallingUid();
-    if (uid <= INVALID_UID) {
-        MEDIA_ERR_LOG("Get INVALID_UID UID %{public}d", uid);
-        return "";
-    }
-    int32_t userId = uid / BASE_USER_RANGE;
-    MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
+    appId = bundleMgr_->GetAppIdByBundleName(bundleName, userId);
 
-    auto bundleMgr_ = GetSysBundleManager();
-    if (bundleMgr_ == nullptr) {
-        MEDIA_ERR_LOG("Get BundleManager failed");
-        return "";
-    }
-    return bundleMgr_->GetAppIdByBundleName(bundleName, userId);
+    BundleInfo bundleInfo = bundleInfoMap_[uid]->second;
+    bundleInfo.appId = appId;
+    UpdateLatestBundleInfo(uid, bundleInfo);
+
+    return appId;
 }
 }  // namespace Media
 }  // namespace OHOS
