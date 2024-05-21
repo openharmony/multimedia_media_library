@@ -268,6 +268,7 @@ int32_t MediaScannerObj::Commit()
             }
         }
     } else {
+        MEDIA_INFO_LOG("insert new file: %{public}s", data_->GetFilePath().c_str());
         uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_);
         mediaScannerDb_->UpdateAlbumInfoByMetaData(*data_);
         if (watch != nullptr) {

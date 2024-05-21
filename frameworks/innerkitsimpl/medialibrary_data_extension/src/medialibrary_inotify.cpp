@@ -87,7 +87,7 @@ void MediaLibraryInotify::WatchCallBack()
             meetEvent = (eventMask & IN_CLOSE_NOWRITE) ? (meetEvent | IN_CLOSE_NOWRITE) : meetEvent;
             if (((meetEvent & IN_CLOSE_WRITE) && (meetEvent & IN_MODIFY)) ||
                 ((meetEvent & IN_CLOSE_NOWRITE) && (meetEvent & IN_MODIFY))) {
-                MEDIA_DEBUG_LOG("path:%s, meetEvent:%x file_id:%s", item.path_.c_str(),
+                MEDIA_INFO_LOG("path:%s, meetEvent:%x file_id:%s", item.path_.c_str(),
                     meetEvent, item.uri_.c_str());
                 string id = MediaFileUtils::GetIdFromUri(item.uri_);
                 string itemPath = ConvertMediaPath(item.path_);
