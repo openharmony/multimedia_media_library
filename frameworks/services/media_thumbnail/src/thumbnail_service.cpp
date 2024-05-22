@@ -27,6 +27,7 @@
 #include "medialibrary_kvstore_manager.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_type_const.h"
+#include "medialibrary_unistore_manager.h"
 #include "media_log.h"
 #include "result_set_utils.h"
 #include "thumbnail_aging_helper.h"
