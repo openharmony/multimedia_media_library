@@ -113,6 +113,7 @@ static void UpdateAstcInfo(ThumbRdbOpt &opts, std::string id)
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?", vector<string> { id });
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
+    }
 }
 
 static void PerformKvStoreUpdateTask(std::shared_ptr<ThumbnailTaskData> &data)
