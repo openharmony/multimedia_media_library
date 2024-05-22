@@ -98,11 +98,11 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_001, Tes
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     data->SetFilePath(path);
     data->SetFileDateModified(static_cast<int64_t>(11));
-    std::shared_ptr<Meta> meta;
+    std::shared_ptr<Media::Meta> meta = std::make_shared<Media::Meta>();
     unordered_map<int32_t, std::string> resultMap;
     resultMap = {{AV_KEY_ALBUM, ""}, {AV_KEY_ARTIST, ""}, {AV_KEY_DURATION, ""}, {AV_KEY_DATE_TIME_FORMAT, ""},
         {AV_KEY_VIDEO_HEIGHT, ""}, {AV_KEY_VIDEO_WIDTH, ""}, {AV_KEY_MIME_TYPE, ""}, {AV_KEY_MIME_TYPE, ""},
-        {AV_KEY_VIDEO_ORIENTATION, ""}, {AV_KEY_TITLE, ""}, {AV_KEY_GENRE, ""}};
+        {AV_KEY_VIDEO_ORIENTATION, ""}, {AV_KEY_VIDEO_IS_HDR_VIVID, ""}, {AV_KEY_TITLE, ""}, {AV_KEY_GENRE, ""}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetAlbum(), "");
     EXPECT_EQ(data->GetLongitude(), 0);
@@ -118,13 +118,13 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_002, Tes
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
     data->SetFilePath(path);
     data->SetFileDateModified(static_cast<int64_t>(11));
-    std::shared_ptr<Meta> meta;
+    std::shared_ptr<Media::Meta> meta = std::make_shared<Media::Meta>();
     meta->SetData(Tag::MEDIA_LONGITUDE, 1.2);
     meta->SetData(Tag::MEDIA_LATITUDE, 138.2);
     unordered_map<int32_t, std::string> resultMap;
     resultMap = {{AV_KEY_ALBUM, "a"}, {AV_KEY_ARTIST, "a"}, {AV_KEY_DURATION, "a"}, {AV_KEY_DATE_TIME_FORMAT, "a"},
         {AV_KEY_VIDEO_HEIGHT, "a"}, {AV_KEY_VIDEO_WIDTH, "a"}, {AV_KEY_MIME_TYPE, "a"}, {AV_KEY_MIME_TYPE, "a"},
-        {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"}};
+        {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetAlbum(), "a");
     EXPECT_EQ(data->GetLongitude(), 1.2);

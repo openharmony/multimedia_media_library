@@ -313,10 +313,13 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
 void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
 {
     float floatTempMeta;
-    meta->GetData(Tag::MEDIA_LONGITUDE, floatTempMeta);
-    data->SetLongitude((double)floatTempMeta);
-    meta->GetData(Tag::MEDIA_LATITUDE, floatTempMeta);
-    data->SetLatitude((double)floatTempMeta);
+
+    if (meta->GetData(Tag::MEDIA_LATITUDE, floatTempMeta)) {
+        data->SetLatitude((double)floatTempMeta);
+    }
+    if (meta->GetData(Tag::MEDIA_LONGITUDE, floatTempMeta)) {
+        data->SetLongitude((double)floatTempMeta);
+    }
 }
 
 void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,
