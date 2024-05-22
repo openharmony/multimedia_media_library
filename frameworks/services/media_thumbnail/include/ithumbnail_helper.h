@@ -54,7 +54,7 @@ public:
     ThumbnailWait(bool release);
     ~ThumbnailWait();
 
-    WaitStatus InsertAndWait(const std::string &id, bool isLcd);
+    WaitStatus InsertAndWait(const std::string &id, ThumbnailType type);
     void CheckAndWait(const std::string &id, bool isLcd);
     void UpdateThumbnailMap();
 
