@@ -50,6 +50,8 @@ export struct PhotoPickerComponent {
             isNeedActionBar: false,
             isNeedSelectBar: false,
             isSearchSupported: this.pickerOptions?.isSearchSupported as boolean,
+            checkBoxColor: this.pickerOptions?.checkBoxColor as string,
+            backgroundColor: this.pickerOptions?.backgroundColor as string,
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           this.proxy = proxy;
