@@ -84,6 +84,14 @@ const std::string INSERT_PHOTO_MAP =
     PhotoAlbumColumns::ALBUM_SUBTYPE + " = "+ std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) + ")," +
     " NEW." + MediaColumn::MEDIA_ID + " );";
 
+const std::string UPDATE_ALBUM_BUNDLENAME =
+    " UPDATE " + PhotoAlbumColumns::TABLE +
+    " SET " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " = NEW." + MediaColumn::MEDIA_OWNER_PACKAGE +
+    " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " AND " +
+    PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) + " AND " +
+    PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC) +
+    " AND " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " IS NULL;";
+
 const std::string SOURCE_ALBUM_WHERE =
     " WHERE " + PhotoAlbumColumns::ALBUM_NAME + " = NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
     " AND " + PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumType::SOURCE) +
@@ -97,6 +105,10 @@ const std::string SOURCE_ALBUM_WHERE_UPDATE =
 const std::string WHEN_SOURCE_PHOTO_COUNT =
     " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND ( SELECT COUNT(1) FROM " +
     PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
+
+const std::string WHEN_SOURCE_PHOTO_COUNT_FOR_BUNDLENAME =
+    " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND ( SELECT COUNT(1) FROM " +
+    PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " AND " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " IS NULL" + " )";
 
 const std::string WHEN_UPDATE_AND_DELETE = " WHEN OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL ";
 
@@ -154,6 +166,11 @@ const std::string INSERT_PHOTO_UPDATE_SOURCE_ALBUM =
     "CREATE TRIGGER IF NOT EXISTS insert_photo_update_source_album AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
     WHEN_SOURCE_PHOTO_COUNT + "> 0 " +
     " BEGIN " + INSERT_PHOTO_MAP + " END;";
+
+const std::string INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME =
+    "CREATE TRIGGER IF NOT EXISTS insert_photo_update_album_bundlename AFTER INSERT ON " + PhotoColumn::PHOTOS_TABLE +
+    WHEN_SOURCE_PHOTO_COUNT_FOR_BUNDLENAME + "> 0 " +
+    " BEGIN " + UPDATE_ALBUM_BUNDLENAME + " END;";
 
 const std::string UPDATE_PHOTO_UPDATE_SOURCE_ALBUM =
     "CREATE TRIGGER IF NOT EXISTS update_photo_update_source_album AFTER UPDATE ON " +
