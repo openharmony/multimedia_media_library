@@ -120,6 +120,11 @@ public:
         LoadSourceType sourceType);
     static void RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats);
 
+    static bool QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
+        const std::string &table, std::vector<ThumbnailData> &infos);
+    static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
+    static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
+
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
     static int SaveThumbDataToLocalDir(ThumbnailData &data, const std::string &suffix,
@@ -155,7 +160,6 @@ private:
     static bool ScaleFastThumb(ThumbnailData &data, const Size &size);
 
     static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
-    static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
     static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
 };
 } // namespace Media
