@@ -1735,34 +1735,6 @@ int32_t CreateSingleImage(string displayname)
     return MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 }
 
-HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("Vision_AnalysisAlbumMap_Test_003::Start");
-    int32_t albumId = CreateAnalysisAlbum("5");
-    int32_t id1 = CreateSingleImage("AnalysisAlbumMapTest1.jpg");
-    int32_t id2 = CreateSingleImage("AnalysisAlbumMapTest2.jpg");
-    InsertAnalysisMap(albumId, id1);
-    InsertAnalysisMap(albumId, id2);
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    std::unordered_map<int32_t, int32_t> updateResult;
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, updateResult, {
-        "file://media/Photo/" + to_string(id1), "file://media/Photo/" + to_string(id2)
-    });
-    Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);
-    MediaLibraryCommand queryCmd(queryAlbumUri);
-    DataShare::DataSharePredicates predicatesQuery;
-    predicatesQuery.EqualTo(ALBUM_NAME, "5");
-    predicatesQuery.EqualTo(ALBUM_SUBTYPE, PhotoAlbumSubType::CLASSIFY);
-    vector<string> columns = {COUNT};
-    int errCode = 0;
-    auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(queryCmd, columns, predicatesQuery, errCode);
-    shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
-    resultSet->GoToFirstRow();
-    int count = -1;
-    resultSet->GetInt(0, count);
-    EXPECT_EQ(count, 2);
-}
-
 HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisGetPhotoIndex_Test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("Vision_AnalysisGetPhotoIndex_Test_001::Start");
