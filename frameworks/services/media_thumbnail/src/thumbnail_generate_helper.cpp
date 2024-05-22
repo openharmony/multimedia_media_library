@@ -250,9 +250,13 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
 
     // Check if temp file through cloud doawnloading exists
     string tempFileName = fileName + THUMBNAIL_TEMP_ORIENT_SUFFIX;
-    if (access(tempFileName.c_str(), F_OK) == 0 && !IThumbnailHelper::DoCreateAstcEx(opts, data)) {
-        MEDIA_ERR_LOG("Get pixelmap from temp file failed, path: %{public}s", tempFileName.c_str());
-        return E_THUMBNAIL_LOCAL_CREATE_FAIL;
+    if (access(tempFileName.c_str(), F_OK) == 0) {
+        data.loaderOpts.isCloudLoading = true;
+        data.orientation = 0;
+        if (!IThumbnailHelper::DoCreateAstcEx(opts, data)) {
+            MEDIA_ERR_LOG("Get pixelmap from temp file failed, path: %{public}s", tempFileName.c_str());
+            return E_THUMBNAIL_LOCAL_CREATE_FAIL;
+        }
     }
 
     // No need to create thumbnails if corresponding file exists
