@@ -691,6 +691,39 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
     return true;
 }
 
+bool ThumbnailUtils::QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
+    const std::string &table, std::vector<ThumbnailData> &infos)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_DATE_ADDED,
+    };
+    RdbPredicates rdbPredicates(table);
+    rdbPredicates.NotEqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    shared_ptr<ResultSet> resultSet = rdbStorePtr->QueryByStep(rdbPredicates, column);
+    int err = 0;
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        return false;
+    }
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err);
+        infos.push_back(data);
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
 bool ThumbnailUtils::QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count,
     int &err)
 {
@@ -1672,6 +1705,34 @@ bool ThumbnailUtils::GenerateKvStoreKey(const std::string &fieldId, const std::s
         assembledDateAdded = KVSTORE_DATE_ADDED_TEMPLATE.substr(length) + dateAdded;
     }
     key = assembledDateAdded + assembledFieldId;
+    return true;
+}
+
+bool ThumbnailUtils::GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key)
+{
+    if (fieldId.empty() || dateAdded.empty()) {
+        MEDIA_ERR_LOG("fieldId or dateAdded is empty");
+        return false;
+    }
+
+    size_t length = fieldId.length();
+    if (length >= MAX_FIELD_LENGTH) {
+        MEDIA_ERR_LOG("fieldId length too long");
+        return false;
+    }
+    std::string assembledFieldId = KVSTORE_FIELD_ID_TEMPLATE.substr(length) + fieldId;
+
+    length = dateAdded.length();
+    std::string assembledDateAdded;
+    if (length > MAX_DATE_ADDED_LENGTH) {
+        MEDIA_ERR_LOG("dateAdded length too long, fieldId:%{public}s", fieldId.c_str());
+        return false;
+    } else if (length == MAX_DATE_ADDED_LENGTH) {
+        assembledDateAdded = dateAdded;
+    } else {
+        assembledDateAdded = KVSTORE_DATE_ADDED_TEMPLATE.substr(length) + dateAdded;
+    }
+    key = assembledDateAdded.substr(0, MAX_TIMEID_LENGTH_OLD_VERSION) + assembledFieldId;
     return true;
 }
 
