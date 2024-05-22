@@ -100,17 +100,30 @@ bool ThumbnailService::CheckSizeValid()
     return true;
 }
 
+static void UpdateAstcInfo(ThumbRdbOpt &opts, std::string id)
+{
+    if (id.empty()) {
+        return;
+    }
+
+    ValuesBucket values;
+    int changedRows;
+    values.PutLong(PhotoColumn::PHOTO_HAS_ASTC, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_COMPLETED));
+    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?", vector<string> { id });
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
+}
+
 static void PerformKvStoreUpdateTask(std::shared_ptr<ThumbnailTaskData> &data)
 {
     vector<ThumbnailData> infos;
     if (!ThumbnailUtils::QueryOldAstcInfos(data->opts_.store, PhotoColumn::PHOTOS_TABLE, infos)) {
         return;
     }
+    MEDIA_INFO_LOG("Old astc data size: %{public}d", static_cast<int>(infos.size()));
     if (infos.empty()) {
-        MEDIA_INFO_LOG("No need to PerformKvStoreUpdateTask.");
         return;
     }
-    MEDIA_INFO_LOG("Old astc data size: %{public}d", static_cast<int>(infos.size()));
 
     std::shared_ptr<MediaLibraryKvStore> monthOldKvStore = std::make_shared<MediaLibraryKvStore>();
     int32_t status = monthOldKvStore->Init(
@@ -121,9 +134,8 @@ static void PerformKvStoreUpdateTask(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("Init month kvStore failed, status %{public}d", status);
         return;
     }
-
     std::shared_ptr<MediaLibraryKvStore> yearOldKvStore = std::make_shared<MediaLibraryKvStore>();
-    int32_t status = yearOldKvStore->Init(
+    status = yearOldKvStore->Init(
         KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC_OLD_VERSION, KV_STORE_OWNER_DIR_OLD_VERSION);
     auto yearNewKvStore = MediaLibraryKvStoreManager::GetInstance()
         .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC);
@@ -131,26 +143,24 @@ static void PerformKvStoreUpdateTask(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("Init year kvStore failed, status %{public}d", status);
         return;
     }
-
     for (uint32_t i = 0; i < infos.size(); i++) {
         std::string oldKey;
         std::string newKey;
         if (!ThumbnailUtils::GenerateOldKvStoreKey(infos[i].id, infos[i].dateAdded, oldKey) ||
             !ThumbnailUtils::GenerateKvStoreKey(infos[i].id, infos[i].dateAdded, newKey)) {
-            MEDIA_ERR_LOG("GenerateKvStoreKey failed, fileID: %{public}s", infos[i].id.c_str());
             continue;
         }
         std::vector<uint8_t> monthValue;
-        if (monthOldKvStore->Query(oldKey, monthValue) != E_OK ||
-            monthNewKvStore->Insert(newKey, monthValue) != E_OK) {
+        if (monthOldKvStore->Query(oldKey, monthValue) != E_OK || monthNewKvStore->Insert(newKey, monthValue) != E_OK) {
             MEDIA_ERR_LOG("MonthValue update failed, fileID %{public}s", infos[i].id.c_str());
             continue;
         }
         std::vector<uint8_t> yearValue;
-        if (yearOldKvStore->Query(oldKey, yearValue) != E_OK ||
-            yearNewKvStore->Insert(newKey, yearValue) != E_OK) {
+        if (yearOldKvStore->Query(oldKey, yearValue) != E_OK || yearNewKvStore->Insert(newKey, yearValue) != E_OK) {
             MEDIA_ERR_LOG("YearValue update failed, fileID %{public}s", infos[i].id.c_str());
+            continue;
         }
+        UpdateAstcInfo(data->opts_, infos[i].id);
     }
     monthOldKvStore->Close();
     yearOldKvStore->Close();
