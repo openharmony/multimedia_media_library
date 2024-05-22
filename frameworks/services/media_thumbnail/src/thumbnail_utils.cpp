@@ -83,7 +83,7 @@ bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &t
 }
 #endif
 
-static string GetThumbnailSuffix(ThumbnailType type)
+std::string ThumbnailUtils::GetThumbnailSuffix(ThumbnailType type)
 {
     string suffix;
     switch (type) {
@@ -231,6 +231,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
             return false;
         }
     }
+    data.orientation = 0;
     data.stats.sourceWidth = data.source->GetWidth();
     data.stats.sourceHeight = data.source->GetHeight();
     DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, desiredSize.width, desiredSize.height);
@@ -1108,7 +1109,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
         }
     }
     data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    if (std::abs(data.orientation) != 0) {
+    if (data.orientation != 0) {
         if (!data.loaderOpts.isCloudLoading) {
             Media::InitializationOptions opts;
             auto copySource = PixelMap::Create(*data.source, opts);

@@ -138,15 +138,9 @@ static bool WaitFor(const shared_ptr<ThumbnailSyncStatus> &thumbnailWait, int wa
     return ret;
 }
 
-WaitStatus ThumbnailWait::InsertAndWait(const string &id, bool isLcd)
+WaitStatus ThumbnailWait::InsertAndWait(const string &id, ThumbnailType type)
 {
-    id_ = id;
-
-    if (isLcd) {
-        id_ += THUMBNAIL_LCD_SUFFIX;
-    } else {
-        id_ += THUMBNAIL_THUMB_SUFFIX;
-    }
+    id_ = id + ThumbnailUtils::GetThumbnailSuffix(type);
     unique_lock<shared_mutex> writeLck(mutex_);
     auto iter = thumbnailMap_.find(id_);
     if (iter != thumbnailMap_.end()) {
@@ -259,7 +253,7 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
 bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.InsertAndWait(data.id, true);
+    auto ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::LCD);
     if (ret != WaitStatus::INSERT) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
@@ -506,7 +500,7 @@ int32_t IThumbnailHelper::UpdateAstcState(const ThumbRdbOpt &opts, const Thumbna
 bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.InsertAndWait(data.id, false);
+    auto ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB);
     if (ret != WaitStatus::INSERT) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
@@ -681,6 +675,12 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 
 bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
 {
+    ThumbnailWait thumbnailWait(true);
+    auto ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB_ASTC);
+    if (ret != WaitStatus::INSERT) {
+        return ret == WaitStatus::WAIT_SUCCESS;
+    }
+    
     MEDIA_INFO_LOG("Start DoCreateAstcEx, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
     if (!DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());

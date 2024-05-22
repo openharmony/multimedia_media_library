@@ -115,6 +115,7 @@ public:
     static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     static bool ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx);
     EXPORT static bool ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize);
+    EXPORT static std::string GetThumbnailSuffix(ThumbnailType type);
 
     static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
         LoadSourceType sourceType);
