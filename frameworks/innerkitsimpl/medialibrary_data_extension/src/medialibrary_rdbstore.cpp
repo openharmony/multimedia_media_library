@@ -2227,14 +2227,6 @@ void AddOwnerAppId(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void ResetAstcInPhotosTable(RdbStore &store)
-{
-    const vector<string> sqls = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_HAS_ASTC + " = 0"
-    };
-    ExecSqls(sqls, store);
-}
-
 void AddDynamicRangeType(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2541,10 +2533,6 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN) {
         AddFaceOcclusionAndPoseTypeColumn(store);
-    }
-
-    if (oldVersion < VERSION_MOVE_KVDB) {
-        ResetAstcInPhotosTable(store);
     }
 }
 
