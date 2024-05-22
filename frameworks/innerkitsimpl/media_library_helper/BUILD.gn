@@ -82,8 +82,6 @@ ohos_shared_library("media_library") {
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
-    "graphic_2d:librender_service_client",
-    "graphic_surface:surface",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
@@ -100,6 +98,8 @@ ohos_shared_library("media_library") {
       defined(global_parts_info.multimedia_image_effect) &&
       global_parts_info.multimedia_image_effect) {
     defines += [ "IMAGE_EFFECT_SUPPORT" ]
+    external_deps += [ "graphic_2d:librender_service_client" ]
+    external_deps += [ "graphic_surface:surface" ]
     external_deps += [ "image_effect:image_effect_impl" ]
   }
 
