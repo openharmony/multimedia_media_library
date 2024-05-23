@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 77;
+const int32_t MEDIA_RDB_VERSION = 78;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -105,6 +105,7 @@ enum {
     VERSION_MOVE_KVDB = 75,
     VERSION_ADD_DYNAMIC_RANGE_TYPE = 76,
     VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME = 77,
+    VERSION_ADD_THUMB_LCD_SIZE_COLUMN = 78,
 };
 
 enum {

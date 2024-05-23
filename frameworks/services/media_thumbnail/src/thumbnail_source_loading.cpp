@@ -335,7 +335,7 @@ std::unique_ptr<ImageSource> LocalThumbSource::IsSourceAvailable(ThumbnailData& 
     std::unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
     if (err != E_OK || imageSource == nullptr) {
         error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader LocalThumbSource LoadSource error:%{public}d", err);
+        MEDIA_ERR_LOG("SourceLoader LocalThumbSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
         return nullptr;
     }
     return imageSource;
@@ -373,7 +373,7 @@ std::unique_ptr<ImageSource> LocalLcdSource::IsSourceAvailable(ThumbnailData& da
     std::unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
     if (err != E_OK || imageSource == nullptr) {
         error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader LocalLcdSource LoadSource error:%{public}d", err);
+        MEDIA_ERR_LOG("SourceLoader LocalLcdSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
         return nullptr;
     }
     return imageSource;
@@ -406,7 +406,7 @@ std::unique_ptr<ImageSource> LocalOriginSource::IsSourceAvailable(ThumbnailData&
     std::unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
     if (err != E_OK || imageSource == nullptr) {
         error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader LocalOriginSource LoadSource error:%{public}d", err);
+        MEDIA_ERR_LOG("SourceLoader LocalOriginSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
         return nullptr;
     }
     return imageSource;
@@ -455,7 +455,7 @@ std::unique_ptr<ImageSource> CloudThumbSource::IsSourceAvailable(ThumbnailData& 
     std::unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
     if (err != E_OK || imageSource == nullptr) {
         error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader CloudThumbSource LoadSource error:%{public}d", err);
+        MEDIA_ERR_LOG("SourceLoader CloudThumbSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
         return nullptr;
     }
     return imageSource;
@@ -488,7 +488,7 @@ std::unique_ptr<ImageSource> CloudLcdSource::IsSourceAvailable(ThumbnailData& da
     std::unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
     if (err != E_OK || imageSource == nullptr) {
         error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader CloudLcdSource LoadSource error:%{public}d", err);
+        MEDIA_ERR_LOG("SourceLoader CloudLcdSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
         return nullptr;
     }
     return imageSource;
@@ -527,7 +527,7 @@ std::unique_ptr<ImageSource> CloudOriginSource::IsSourceAvailable(ThumbnailData&
     std::unique_ptr<ImageSource> imageSource = LoadImageSource(data.path, err);
     if (err != E_OK || imageSource == nullptr) {
         error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader CloudOriginSource LoadSource error:%{public}d", err);
+        MEDIA_ERR_LOG("SourceLoader CloudOriginSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
         return nullptr;
     }
     return imageSource;
