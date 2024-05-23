@@ -2265,6 +2265,16 @@ void UpdatePhotoAlbumTigger(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+void AddMovingPhotoEffectMode(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::MOVING_PHOTO_EFFECT_MODE + " INT DEFAULT 0"
+    };
+    MEDIA_INFO_LOG("start add moving_photo_effect_mode column");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2559,6 +2569,10 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_THUMB_LCD_SIZE_COLUMN) {
         AddLcdAndThumbSizeColumns(store);
+    }
+
+    if (oldVersion < VERSION_ADD_MOVING_PHOTO_EFFECT_MODE) {
+        AddMovingPhotoEffectMode(store);
     }
 }
 

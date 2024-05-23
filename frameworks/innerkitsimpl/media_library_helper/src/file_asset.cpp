@@ -492,6 +492,16 @@ void FileAsset::SetPhotoEditTime(int64_t photoEditTime)
     member_[PhotoColumn::PHOTO_EDIT_TIME] = photoEditTime;
 }
 
+int32_t FileAsset::GetMovingPhotoEffectMode() const
+{
+    return GetInt32Member(PhotoColumn::MOVING_PHOTO_EFFECT_MODE);
+}
+
+void FileAsset::SetMovingPhotoEffectMode(int32_t effectMode)
+{
+    member_[PhotoColumn::MOVING_PHOTO_EFFECT_MODE] = effectMode;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
