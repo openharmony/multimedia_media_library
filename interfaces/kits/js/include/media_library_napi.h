@@ -278,6 +278,7 @@ private:
     EXPORT static napi_value CreateResourceTypeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightAlbumInfoTypeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightUserActionTypeEnum(napi_env env);
+    EXPORT static napi_value CreateMovingPhotoEffectModeEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -326,6 +327,7 @@ private:
     static thread_local napi_ref sSourceModeEnumRef_;
     static thread_local napi_ref sHighlightAlbumInfoType_;
     static thread_local napi_ref sHighlightUserActionType_;
+    static thread_local napi_ref sMovingPhotoEffectModeEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

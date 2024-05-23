@@ -142,6 +142,7 @@ thread_local napi_ref MediaLibraryNapi::sRequestPhotoTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sResourceTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHighlightAlbumInfoType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHighlightUserActionType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sMovingPhotoEffectModeEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -306,6 +307,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("SourceMode", CreateSourceModeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightAlbumInfoType", CreateHighlightAlbumInfoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightUserActionType", CreateHighlightUserActionTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("MovingPhotoEffectMode", CreateMovingPhotoEffectModeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -5607,6 +5609,26 @@ napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
 {
     const int32_t startIdx = 1;
     return CreateNumberEnumProperty(env, resourceTypeEnum, sResourceTypeEnumRef_, startIdx);
+}
+
+napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)
+{
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
+    for (size_t i = 0; i < movingPhotoEffectOpenModeEnum.size(); i++) {
+        CHECK_ARGS(env,
+            AddIntegerNamedProperty(env, result, movingPhotoEffectOpenModeEnum[i],
+                static_cast<int32_t>(MovingPhotoEffectMode::OPEN_MODE_START) + i),
+            JS_INNER_FAIL);
+    }
+
+    CHECK_ARGS(env,
+        AddIntegerNamedProperty(env, result, "IMAGE_ONLY", static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)),
+        JS_INNER_FAIL);
+
+    CHECK_ARGS(
+        env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sMovingPhotoEffectModeEnumRef_), JS_INNER_FAIL);
+    return result;
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,
