@@ -259,22 +259,26 @@ static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext
         NAPI_ERR_LOG("Failed to reset file offset, error: %{public}d", errno);
         return E_HAS_FS_ERROR;
     }
-    void* arrayBufferData = nullptr;
-    napi_value arrayBuffer;
-    CHECK_COND_RET(napi_create_arraybuffer(env, fileLen, &arrayBufferData, &arrayBuffer) == napi_ok, JS_INNER_FAIL,
-        "failed to create napi arraybuffer");
-    size_t readBytes = read(uniqueFd.Get(), arrayBufferData, fileLen);
+
+    context->arrayBufferData = malloc(fileLen);
+    if (!context->arrayBufferData) {
+        NAPI_ERR_LOG("Failed to malloc array buffer data, moving photo uri is %{public}s, resource type is %{public}d",
+            context->movingPhotoUri.c_str(), static_cast<int32_t>(context->resourceType));
+        return E_HAS_FS_ERROR;
+    }
+    context->arrayBufferLength = fileLen;
+
+    size_t readBytes = read(uniqueFd.Get(), context->arrayBufferData, fileLen);
     if (readBytes != fileLen) {
         NAPI_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, "
             "error: %{public}d", readBytes, fileLen, errno);
         return E_HAS_FS_ERROR;
     }
-    context->napiArrayBuffer = arrayBuffer;
     return E_OK;
 }
 
 static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const napi_value argv[],
-    MovingPhotoNapi* thisArg, unique_ptr<MovingPhotoAsyncContext> &context)
+    MovingPhotoNapi* thisArg, unique_ptr<MovingPhotoAsyncContext>& context)
 {
     CHECK_COND_WITH_MESSAGE(env, (argc == ARGS_ONE || argc == ARGS_TWO), "Invalid number of arguments");
     CHECK_COND(env, thisArg != nullptr, JS_INNER_FAIL);
@@ -314,6 +318,9 @@ static napi_value ParseArgsForRequestContent(napi_env env, size_t argc, const na
                     context->destVideoUri), JS_INNER_FAIL);
             }
             context->resourceType = static_cast<ResourceType>(resourceType);
+        } else {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, __FUNCTION__, __LINE__, "Invalid type of arguments");
+            return nullptr;
         }
     }
     RETURN_NAPI_TRUE(env);
@@ -346,6 +353,23 @@ static void RequestContentComplete(napi_env env, napi_status status, void *data)
     MovingPhotoAsyncContext *context = static_cast<MovingPhotoAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
+    napi_value outBuffer = nullptr;
+    if (context->error == E_OK && context->requestContentMode == MovingPhotoAsyncContext::WRITE_TO_ARRAY_BUFFER) {
+        napi_status status = napi_create_external_arraybuffer(
+            env, context->arrayBufferData, context->arrayBufferLength,
+            [](napi_env env, void* data, void* hint) { free(data); }, nullptr, &outBuffer);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Failed to create array buffer object, uri is %{public}s, resource type is %{public}d",
+                context->movingPhotoUri.c_str(), context->resourceType);
+            free(context->arrayBufferData);
+            context->arrayBufferData = nullptr;
+            context->SaveError(JS_INNER_FAIL);
+        }
+    } else if (context->arrayBufferData != nullptr) {
+        free(context->arrayBufferData);
+        context->arrayBufferData = nullptr;
+    }
+
     unique_ptr<JSAsyncContextOutput> outContext = make_unique<JSAsyncContextOutput>();
     outContext->status = false;
     napi_get_undefined(env, &outContext->data);
@@ -355,7 +379,7 @@ static void RequestContentComplete(napi_env env, napi_status status, void *data)
     } else {
         outContext->status = true;
         if (context->requestContentMode == MovingPhotoAsyncContext::WRITE_TO_ARRAY_BUFFER) {
-            outContext->data = context->napiArrayBuffer;
+            outContext->data = outBuffer;
         }
     }
     if (context->work != nullptr) {
