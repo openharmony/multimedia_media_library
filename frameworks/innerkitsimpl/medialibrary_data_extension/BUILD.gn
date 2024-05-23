@@ -53,6 +53,7 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_SERVICES_PATH}/media_active_task/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
 
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
   ]
@@ -177,6 +178,15 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_database_utils.cpp",
   ]
 
+  media_cloud_sync_notify_handle_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/analysis_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/uri_convert_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/notify_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/cloud_sync_observer.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/cloud_sync_notify_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/notify_responsibility_chain_factory.cpp",
+  ]
+
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_active_task/src/media_actively_calling_analyse.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
@@ -214,6 +224,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_rdb_utils_source
   sources += media_multistages_capture_source
   sources += media_dfx_source
+  sources += media_cloud_sync_notify_handle_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 

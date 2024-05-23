@@ -217,9 +217,11 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
 
     InitRefreshAlbum();
 
-    cloudDataObserver_ = std::make_shared<CloudThumbnailObserver>();
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
-    shareHelper->RegisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_, true);
+    cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
+    cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
+    shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
+    shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
 
     refCnt_++;
     return E_OK;
@@ -254,7 +256,8 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     }
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
-    shareHelper->UnregisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_);
+    shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
+    shareHelper->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
     rdbStore_ = nullptr;
     MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 

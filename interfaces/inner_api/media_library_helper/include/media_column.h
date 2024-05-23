@@ -160,6 +160,9 @@ public:
     static const std::string DEFAULT_PHOTO_URI EXPORT;
     static const std::string PHOTO_CACHE_URI_PREFIX EXPORT;
 
+    // cloud sync uri
+    static const std::string PHOTO_CLOUD_URI_PREFIX EXPORT;
+
     // all columns
     static const std::set<std::string> PHOTO_COLUMNS EXPORT;
 
