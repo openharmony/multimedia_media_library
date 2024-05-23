@@ -108,6 +108,8 @@ public:
     static const std::string PHOTO_QUALITY EXPORT;
     static const std::string PHOTO_FIRST_VISIT_TIME EXPORT;
     static const std::string PHOTO_DEFERRED_PROC_TYPE EXPORT;
+    static const std::string PHOTO_LCD_SIZE EXPORT;
+    static const std::string PHOTO_THUMB_SIZE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;

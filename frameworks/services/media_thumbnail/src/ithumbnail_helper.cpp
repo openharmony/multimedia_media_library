@@ -45,6 +45,14 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+
+void SetThumbnailSizeValue(ValuesBucket& values, Size& size, PhotoColumn column) {
+    if (size.height != 0 && size.width != 0) {
+        std::string tmpSize = std::to_string(size.width) + ":" + std::to_string(size.height);
+        values.PutLong(column, tmpSize);
+    }
+}
+
 void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
@@ -65,6 +73,7 @@ void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
         return;
     }
     DoCreateLcd(data->opts_, data->thumbnailData_);
+    UpdateAstcState(data->opts_, data->thumbnailData_, false);
 }
 
 void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -297,6 +306,8 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
         float heightScale = (1.0f * lcdDesiredHeight) / data.source->GetHeight();
         lcdSource->scale(widthScale, heightScale);
     }
+    data.stats.lcdSize.height = lcdSource.GetHeight();
+    data.stats.lcdSize.width = lcdSource.GetWidth();
     if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
@@ -477,7 +488,7 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const Thumb
     return true;
 }
 
-int32_t IThumbnailHelper::UpdateAstcState(const ThumbRdbOpt &opts, const ThumbnailData &data)
+int32_t IThumbnailHelper::UpdateAstcState(const ThumbRdbOpt &opts, const ThumbnailData &data, , bool isGenerateThumb)
 {
     int64_t thumbnail_status = 0;
     if (data.loaderOpts.needUpload) {
@@ -487,7 +498,11 @@ int32_t IThumbnailHelper::UpdateAstcState(const ThumbRdbOpt &opts, const Thumbna
     }
     ValuesBucket values;
     int changedRows;
-    values.PutLong(PhotoColumn::PHOTO_HAS_ASTC, thumbnail_status);
+    if (isGenerateThumb) {
+        values.PutLong(PhotoColumn::PHOTO_HAS_ASTC, thumbnail_status);
+    }
+    SetThumbnailSizeValue(values, data.stats.lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
+    SetThumbnailSizeValue(values, data.stats.thumbSize, PhotoColumn::PHOTO_THUMB_SIZE);
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
     if (err != NativeRdb::E_OK) {
@@ -525,7 +540,8 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
         MEDIA_ERR_LOG("DoCreateThumbnail failed, try to load source failed, id: %{public}s", data.id.c_str());
         return false;
     }
-
+    data.stats.thumbSize.height = data.source.GetHeight();
+    data.stats.thumbSize.width = data.source.GetWidth();
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
             {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
@@ -650,7 +666,14 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
         return false;
     }
-
+    data.stats.lcdSize.height = data.source.GetHeight();
+    data.stats.lcdSize.width = data.source.GetWidth();
+    if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
+            {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        return false;
+    }
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
             {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
