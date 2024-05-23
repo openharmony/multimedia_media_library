@@ -1552,6 +1552,15 @@ static void AddSearchTable(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpdateInsertPhotoUpdateAlbumTrigger(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+    };
+    MEDIA_INFO_LOG("start update insert photo update album");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void MediaLibraryRdbStore::ResetSearchTables()
 {
     if (rdbStore_ == nullptr) {
@@ -2450,24 +2459,10 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
     }
 }
 
-static void UpdateInsertPhotoUpdateAlbumTrigger(RdbStore &store)
-{
-    static const vector<string> executeSqlStrs = {
-        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
-    };
-    MEDIA_INFO_LOG("start update insert photo update album");
-    ExecSqls(executeSqlStrs, store);
-}
-
-
 static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_IS_LOCAL_ALBUM) {
         AddIsLocalAlbum(store);
-    }
-
-    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME) {
-        UpdateInsertPhotoUpdateAlbumTrigger(store);
     }
 }
 
@@ -2533,6 +2528,10 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN) {
         AddFaceOcclusionAndPoseTypeColumn(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME) {
+        UpdateInsertPhotoUpdateAlbumTrigger(store);
     }
 }
 
