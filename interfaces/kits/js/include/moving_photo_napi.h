@@ -64,7 +64,8 @@ struct MovingPhotoAsyncContext : public NapiError {
     std::string destImageUri;
     std::string destVideoUri;
     RequestContentMode requestContentMode = UNDEFINED;
-    napi_value napiArrayBuffer;
+    void* arrayBufferData = nullptr;
+    size_t arrayBufferLength = 0;
 };
 
 } // Media
