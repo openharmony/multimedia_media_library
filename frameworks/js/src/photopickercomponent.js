@@ -199,9 +199,9 @@ export class PhotoPickerComponent extends ViewPU {
             let r = this.onItemClicked(i, o);
             console.info("PhotoPickerComponent onReceive: onItemClicked = " + o);
             if (this.proxy) {
-                if (r && "thumbnail" === n && o === ClickType.SELECTED) {
-                    this.proxy.send({ clickConfirm: i.uri });
-                    console.info("PhotoPickerComponent onReceive: click confirm " + i.uri)
+                if ("thumbnail" === n && o === ClickType.SELECTED) {
+                    this.proxy.send({ clickConfirm: i.uri, isConfirm: r });
+                    console.info("PhotoPickerComponent onReceive: click confirm: uri = " + i.uri + "isConfirm = " + r)
                 }
                 if ("camera" === n) {
                     this.proxy.send({ enterCamera: r });
