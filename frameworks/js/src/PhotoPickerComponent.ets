@@ -171,9 +171,9 @@ export struct PhotoPickerComponent {
       let result: boolean = this.onItemClicked(itemInfo, clickType);
       console.info('PhotoPickerComponent onReceive: onItemClicked = ' + clickType);
       if (this.proxy) {
-        if (result && itemType === 'thumbnail' && clickType === ClickType.SELECTED) {
-          this.proxy.send({'clickConfirm': itemInfo.uri});
-          console.info('PhotoPickerComponent onReceive: click confirm ' + itemInfo.uri);
+        if (itemType === 'thumbnail' && clickType === ClickType.SELECTED) {
+          this.proxy.send({'clickConfirm': itemInfo.uri, 'isConfirm': result});
+          console.info('PhotoPickerComponent onReceive: click confirm: uri = ' + itemInfo.uri + 'isConfirm = ' + result);
         }
         if (itemType === 'camera') {
           this.proxy.send({'enterCamera': result});
