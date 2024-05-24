@@ -315,7 +315,7 @@ bool SourceLoader::IsFinal()
 void BeginSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 {
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
-        state = SourceState::CLOUD_LCD;
+        state = SourceState::CLOUD_THUMB;
         return;
     }
     if (data.loaderOpts.sourceLoadingBeginWithThumb) {
@@ -496,7 +496,11 @@ std::unique_ptr<ImageSource> CloudLcdSource::IsSourceAvailable(ThumbnailData& da
 
 void CloudLcdSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 {
-    state = SourceState::CLOUD_ORIGIN;
+    if (data.mediaType == MEDIA_TYPE_VIDEO) {
+        state = SourceState::FINISH;
+    } else {
+        state = SourceState::CLOUD_ORIGIN;
+    }
 }
 
 bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
