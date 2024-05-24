@@ -83,88 +83,10 @@ export struct PhotoPickerComponent {
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           this.proxy = proxy;
-          if (this.onItemClicked) {
-            this.proxy.send({'isItemClickSet': true});
-          } else {
-            this.proxy.send({'isItemClickSet': false});
-          }
-          if (this.onPickerControllerReady) {
-            this.onPickerControllerReady();
-          }
-          console.info('PhotoPickerComponent onRemoteReady');
+          this.handleOnRemoteReady();
         }).onReceive((data) => {
           let wantParam: Record<string, Object> = data as Record<string, Object>;
-          let dataType = wantParam['dataType'] as string;
-          console.info('PhotoPickerComponent onReceive: dataType = ' + dataType);
-          if (dataType === 'selectOrDeselect') {
-            let isSelect: boolean = wantParam['isSelect'] as boolean;
-            if (isSelect) {
-              if (this.onSelect) {
-                this.onSelect(wantParam['select-item-list'] as string)
-              }
-            } else {
-              if (this.onDeselect) {
-                this.onDeselect(wantParam['select-item-list'] as string)
-              }
-            }
-          } else if (dataType === 'itemClick') {
-            if (this.onItemClicked) {
-              let clickType: ClickType = ClickType.SELECTED;
-              let type = wantParam['clickType'] as string;
-              if (type === 'select') {
-                clickType = ClickType.SELECTED;
-              } else if (type === 'deselect') {
-                clickType = ClickType.DESELECTED;
-              } else {
-                console.info('PhotoPickerComponent onReceive: other clickType');
-              }
-              let itemInfo: ItemInfo = new ItemInfo();
-              let itemType: string = wantParam['itemType'] as string;
-              if (itemType === 'thumbnail') {
-                itemInfo.itemType = ItemType.THUMBNAIL;
-              } else if (itemType === 'camera') {
-                itemInfo.itemType = ItemType.CAMERA;
-              } else {
-                console.info('PhotoPickerComponent onReceive: other itemType');
-              }
-              itemInfo.uri = wantParam['uri'] as string;
-              itemInfo.mimeType = wantParam['mimeType'] as string;
-              itemInfo.width = wantParam['width'] as number;
-              itemInfo.height = wantParam['height'] as number;
-              itemInfo.size = wantParam['size'] as number;
-              itemInfo.duration = wantParam['duration'] as number;
-              let result: boolean = this.onItemClicked(itemInfo, clickType);
-              if (this.proxy) {
-                if (result && itemType === 'thumbnail' && clickType === ClickType.SELECTED) {
-                  this.proxy.send({'clickConfirm': itemInfo.uri});
-                  console.info('PhotoPickerComponent onReceive: click confirm ' + itemInfo.uri);
-                }
-                if (itemType === 'camera') {
-                  this.proxy.send({'enterCamera': result});
-                  console.info('PhotoPickerComponent onReceive: enter camera ' + result);
-                }
-              }
-            }
-          } else if (dataType === 'onPhotoBrowserStateChanged') {
-            let isEnter: boolean = wantParam['isEnter'] as boolean;
-            let photoBrowserInfo: PhotoBrowserInfo = new PhotoBrowserInfo();
-            photoBrowserInfo.animatorParams = new AnimatorParams();
-            photoBrowserInfo.animatorParams.duration = wantParam['duration'] as number;
-            photoBrowserInfo.animatorParams.curve = wantParam['curve'] as Curve | ICurve | string;
-            if (isEnter) {
-              if (this.onEnterPhotoBrowser) {
-                this.onEnterPhotoBrowser(photoBrowserInfo);
-              }
-            } else {
-              if (this.onExitPhotoBrowser) {
-                this.onExitPhotoBrowser(photoBrowserInfo);
-              }
-            }
-            console.info('PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = ' + isEnter);
-          } else {
-            console.info('PhotoPickerComponent onReceive: other case');
-          }
-          console.info('PhotoPickerComponent onReceive' + JSON.stringify(wantParam));
+          this.handleOnReceive(wantParam);
         }).onResult((data) => {
           console.info('PhotoPickerComponent onResult');
         }).onError(() => {
@@ -176,6 +98,107 @@ export struct PhotoPickerComponent {
       .width('100%')
     }
     .height('100%')
+  }
+
+  private handleOnRemoteReady(): void {
+    if (this.onItemClicked) {
+      this.proxy?.send({'isItemClickSet': true});
+    } else {
+      this.proxy?.send({'isItemClickSet': false});
+    }
+    if (this.onPickerControllerReady) {
+      this.onPickerControllerReady();
+    }
+    console.info('PhotoPickerComponent onRemoteReady');
+  }
+
+  private handleOnReceive(wantParam: Record<string, Object>): void {
+    let dataType = wantParam['dataType'] as string;
+    console.info('PhotoPickerComponent onReceive: dataType = ' + dataType);
+    if (dataType === 'selectOrDeselect') {
+      this.handleSelectOrDeselect(wantParam);
+    } else if (dataType === 'itemClick') {
+      this.handleItemClick(wantParam);
+    } else if (dataType === 'onPhotoBrowserStateChanged') {
+      this.handleEnterOrExitPhotoBrowser(wantParam);
+    } else {
+      console.info('PhotoPickerComponent onReceive: other case');
+    }
+    console.info('PhotoPickerComponent onReceive' + JSON.stringify(wantParam));
+  }
+
+  private handleSelectOrDeselect(wantParam: Record<string, Object>): void {
+    let isSelect: boolean = wantParam['isSelect'] as boolean;
+    if (isSelect) {
+      if (this.onSelect) {
+        this.onSelect(wantParam['select-item-list'] as string);
+        console.info('PhotoPickerComponent onReceive: onSelect');
+      }
+    } else {
+      if (this.onDeselect) {
+        this.onDeselect(wantParam['select-item-list'] as string);
+        console.info('PhotoPickerComponent onReceive: onDeselect');
+      }
+    }
+  }
+
+  private handleItemClick(wantParam: Record<string, Object>): void {
+    if (this.onItemClicked) {
+      let clickType: ClickType = ClickType.SELECTED;
+      let type = wantParam['clickType'] as string;
+      if (type === 'select') {
+        clickType = ClickType.SELECTED;
+      } else if (type === 'deselect') {
+        clickType = ClickType.DESELECTED;
+      } else {
+        console.info('PhotoPickerComponent onReceive: other clickType');
+      }
+      let itemInfo: ItemInfo = new ItemInfo();
+      let itemType: string = wantParam['itemType'] as string;
+      if (itemType === 'thumbnail') {
+        itemInfo.itemType = ItemType.THUMBNAIL;
+      } else if (itemType === 'camera') {
+        itemInfo.itemType = ItemType.CAMERA;
+      } else {
+        console.info('PhotoPickerComponent onReceive: other itemType');
+      }
+      itemInfo.uri = wantParam['uri'] as string;
+      itemInfo.mimeType = wantParam['mimeType'] as string;
+      itemInfo.width = wantParam['width'] as number;
+      itemInfo.height = wantParam['height'] as number;
+      itemInfo.size = wantParam['size'] as number;
+      itemInfo.duration = wantParam['duration'] as number;
+      let result: boolean = this.onItemClicked(itemInfo, clickType);
+      console.info('PhotoPickerComponent onReceive: onItemClicked = ' + clickType);
+      if (this.proxy) {
+        if (result && itemType === 'thumbnail' && clickType === ClickType.SELECTED) {
+          this.proxy.send({'clickConfirm': itemInfo.uri});
+          console.info('PhotoPickerComponent onReceive: click confirm ' + itemInfo.uri);
+        }
+        if (itemType === 'camera') {
+          this.proxy.send({'enterCamera': result});
+          console.info('PhotoPickerComponent onReceive: enter camera ' + result);
+        }
+      }
+    }
+  }
+
+  private handleEnterOrExitPhotoBrowser(wantParam: Record<string, Object>): void {
+    let isEnter: boolean = wantParam['isEnter'] as boolean;
+    let photoBrowserInfo: PhotoBrowserInfo = new PhotoBrowserInfo();
+    photoBrowserInfo.animatorParams = new AnimatorParams();
+    photoBrowserInfo.animatorParams.duration = wantParam['duration'] as number;
+    photoBrowserInfo.animatorParams.curve = wantParam['curve'] as Curve | ICurve | string;
+    if (isEnter) {
+      if (this.onEnterPhotoBrowser) {
+        this.onEnterPhotoBrowser(photoBrowserInfo);
+      }
+    } else {
+      if (this.onExitPhotoBrowser) {
+        this.onExitPhotoBrowser(photoBrowserInfo);
+      }
+    }
+    console.info('PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = ' + isEnter);
   }
 
   private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
