@@ -14,9 +14,9 @@
  */
 
 var __decorate = this && this.__decorate || function (e, o, t, i) {
-    var n, r = arguments.length, s = r < 3 ? o : null === i ? i = Object.getOwnPropertyDescriptor(o, t) : i;
-    if ("object" === typeof Reflect && "function" === typeof Reflect.decorate) s = Reflect.decorate(e, o, t, i); else for (var l = e.length - 1;l >= 0; l--) (n = e[l]) && (s = (r < 3 ? n(s) : r > 3 ? n(o, t, s) : n(o, t)) || s);
-    return r > 3 && s && Object.defineProperty(o, t, s), s
+    var n, r = arguments.length, l = r < 3 ? o : null === i ? i = Object.getOwnPropertyDescriptor(o, t) : i;
+    if ("object" === typeof Reflect && "function" === typeof Reflect.decorate) l = Reflect.decorate(e, o, t, i); else for (var s = e.length - 1;s >= 0; s--) (n = e[s]) && (l = (r < 3 ? n(l) : r > 3 ? n(o, t, l) : n(o, t)) || l);
+    return r > 3 && l && Object.defineProperty(o, t, l), l
 };
 const photoAccessHelper = requireNapi('file.photoAccessHelper');
 const FILTER_MEDIA_TYPE_ALL = "FILTER_MEDIA_TYPE_ALL";
@@ -102,7 +102,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width("100%")
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, s, l, c, p, a, d, h, E, T, C, m, _;
+            var t, i, n, r, s, l, c, p, a, d, h, E, T, C, m, P;
             UIExtensionComponent.create({
                 parameters: {
                     "ability.want.params.uiExtensionTargetType": "photoPicker",
@@ -127,59 +127,18 @@ export class PhotoPickerComponent extends ViewPU {
                     orientation: null === (T = this.pickerOptions) || void 0 === T ? void 0 : T.orientation,
                     selectMode: null === (C = this.pickerOptions) || void 0 === C ? void 0 : C.selectMode,
                     maxPhotoSelectNumber: null === (m = this.pickerOptions) || void 0 === m ? void 0 : m.maxPhotoSelectNumber,
-                    maxVideoSelectNumber: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.maxVideoSelectNumber
+                    maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber
                 }
             });
             UIExtensionComponent.height("100%");
             UIExtensionComponent.width("100%");
             UIExtensionComponent.onRemoteReady((e => {
                 this.proxy = e;
-                this.onItemClicked ? this.proxy.send({ isItemClickSet: !0 }) : this.proxy.send({ isItemClickSet: !1 });
-                this.onPickerControllerReady && this.onPickerControllerReady();
-                console.info("PhotoPickerComponent onRemoteReady")
+                this.handleOnRemoteReady()
             }));
             UIExtensionComponent.onReceive((e => {
                 let o = e;
-                let t = o.dataType;
-                console.info("PhotoPickerComponent onReceive: dataType = " + t);
-                if ("selectOrDeselect" === t) {
-                    o.isSelect ? this.onSelect && this.onSelect(o["select-item-list"]) : this.onDeselect && this.onDeselect(o["select-item-list"])
-                } else if ("itemClick" === t) {
-                    if (this.onItemClicked) {
-                        let e = ClickType.SELECTED;
-                        let t = o.clickType;
-                        "select" === t ? e = ClickType.SELECTED : "deselect" === t ? e = ClickType.DESELECTED : console.info("PhotoPickerComponent onReceive: other clickType");
-                        let i = new ItemInfo;
-                        let n = o.itemType;
-                        "thumbnail" === n ? i.itemType = ItemType.THUMBNAIL : "camera" === n ? i.itemType = ItemType.CAMERA : console.info("PhotoPickerComponent onReceive: other itemType");
-                        i.uri = o.uri;
-                        i.mimeType = o.mimeType;
-                        i.width = o.width;
-                        i.height = o.height;
-                        i.size = o.size;
-                        i.duration = o.duration;
-                        let r = this.onItemClicked(i, e);
-                        if (this.proxy) {
-                            if (r && "thumbnail" === n && e === ClickType.SELECTED) {
-                                this.proxy.send({ clickConfirm: i.uri });
-                                console.info("PhotoPickerComponent onReceive: click confirm " + i.uri)
-                            }
-                            if ("camera" === n) {
-                                this.proxy.send({ enterCamera: r });
-                                console.info("PhotoPickerComponent onReceive: enter camera " + r)
-                            }
-                        }
-                    }
-                } else if ("onPhotoBrowserStateChanged" === t) {
-                    let e = o.isEnter;
-                    let t = new PhotoBrowserInfo;
-                    t.animatorParams = new AnimatorParams;
-                    t.animatorParams.duration = o.duration;
-                    t.animatorParams.curve = o.curve;
-                    e ? this.onEnterPhotoBrowser && this.onEnterPhotoBrowser(t) : this.onExitPhotoBrowser && this.onExitPhotoBrowser(t);
-                    console.info("PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = " + e)
-                } else console.info("PhotoPickerComponent onReceive: other case");
-                console.info("PhotoPickerComponent onReceive" + JSON.stringify(o))
+                this.handleOnReceive(o)
             }));
             UIExtensionComponent.onResult((e => {
                 console.info("PhotoPickerComponent onResult")
@@ -193,6 +152,73 @@ export class PhotoPickerComponent extends ViewPU {
         }), UIExtensionComponent);
         Column.pop();
         Row.pop()
+    }
+
+    handleOnRemoteReady() {
+        var e, o;
+        this.onItemClicked ? null === (e = this.proxy) || void 0 === e || e.send({
+            isItemClickSet: !0
+        }) : null === (o = this.proxy) || void 0 === o || o.send({ isItemClickSet: !1 });
+        this.onPickerControllerReady && this.onPickerControllerReady();
+        console.info("PhotoPickerComponent onRemoteReady")
+    }
+
+    handleOnReceive(e) {
+        let o = e.dataType;
+        console.info("PhotoPickerComponent onReceive: dataType = " + o);
+        "selectOrDeselect" === o ? this.handleSelectOrDeselect(e) : "itemClick" === o ? this.handleItemClick(e) : "onPhotoBrowserStateChanged" === o ? this.handleEnterOrExitPhotoBrowser(e) : console.info("PhotoPickerComponent onReceive: other case");
+        console.info("PhotoPickerComponent onReceive" + JSON.stringify(e))
+    }
+
+    handleSelectOrDeselect(e) {
+        if (e.isSelect) {
+            if (this.onSelect) {
+                this.onSelect(e["select-item-list"]);
+                console.info("PhotoPickerComponent onReceive: onSelect")
+            }
+        } else if (this.onDeselect) {
+            this.onDeselect(e["select-item-list"]);
+            console.info("PhotoPickerComponent onReceive: onDeselect")
+        }
+    }
+
+    handleItemClick(e) {
+        if (this.onItemClicked) {
+            let o = ClickType.SELECTED;
+            let t = e.clickType;
+            "select" === t ? o = ClickType.SELECTED : "deselect" === t ? o = ClickType.DESELECTED : console.info("PhotoPickerComponent onReceive: other clickType");
+            let i = new ItemInfo;
+            let n = e.itemType;
+            "thumbnail" === n ? i.itemType = ItemType.THUMBNAIL : "camera" === n ? i.itemType = ItemType.CAMERA : console.info("PhotoPickerComponent onReceive: other itemType");
+            i.uri = e.uri;
+            i.mimeType = e.mimeType;
+            i.width = e.width;
+            i.height = e.height;
+            i.size = e.size;
+            i.duration = e.duration;
+            let r = this.onItemClicked(i, o);
+            console.info("PhotoPickerComponent onReceive: onItemClicked = " + o);
+            if (this.proxy) {
+                if (r && "thumbnail" === n && o === ClickType.SELECTED) {
+                    this.proxy.send({ clickConfirm: i.uri });
+                    console.info("PhotoPickerComponent onReceive: click confirm " + i.uri)
+                }
+                if ("camera" === n) {
+                    this.proxy.send({ enterCamera: r });
+                    console.info("PhotoPickerComponent onReceive: enter camera " + r)
+                }
+            }
+        }
+    }
+
+    handleEnterOrExitPhotoBrowser(e) {
+        let o = e.isEnter;
+        let t = new PhotoBrowserInfo;
+        t.animatorParams = new AnimatorParams;
+        t.animatorParams.duration = e.duration;
+        t.animatorParams.curve = e.curve;
+        o ? this.onEnterPhotoBrowser && this.onEnterPhotoBrowser(t) : this.onExitPhotoBrowser && this.onExitPhotoBrowser(t);
+        console.info("PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = " + o)
     }
 
     convertMIMETypeToFilterType(e) {
