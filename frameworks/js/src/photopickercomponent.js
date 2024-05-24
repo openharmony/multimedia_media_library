@@ -78,7 +78,7 @@ export class PhotoPickerComponent extends ViewPU {
             this.proxy.send({ selectUris: null == o ? void 0 : o.get("SET_SELECTED_URIS") });
             console.info("PhotoPickerComponent onChanged: SET_SELECTED_URIS")
         } else if (null == o ? void 0 : o.has("SET_ALBUM_URI")) {
-            this.proxy.send({ albumUri: null == o ? void 0 : o.get("SET_SELECTED_URIS") });
+            this.proxy.send({ albumUri: null == o ? void 0 : o.get("SET_ALBUM_URI") });
             console.info("PhotoPickerComponent onChanged: SET_ALBUM_URI")
         } else if (null == o ? void 0 : o.has("SET_MAX_SELECT_COUNT")) {
             let e = null == o ? void 0 : o.get("SET_MAX_SELECT_COUNT");
