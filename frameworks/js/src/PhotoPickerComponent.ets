@@ -39,7 +39,7 @@ export struct PhotoPickerComponent {
       this.proxy.send({'selectUris': data?.get('SET_SELECTED_URIS') as Array<string>});
       console.info('PhotoPickerComponent onChanged: SET_SELECTED_URIS');
     } else if (data?.has('SET_ALBUM_URI')) {
-      this.proxy.send({'albumUri': data?.get('SET_SELECTED_URIS') as string});
+      this.proxy.send({'albumUri': data?.get('SET_ALBUM_URI') as string});
       console.info('PhotoPickerComponent onChanged: SET_ALBUM_URI');
     } else if (data?.has('SET_MAX_SELECT_COUNT')) {
       let maxSelected: MaxSelected = data?.get('SET_MAX_SELECT_COUNT') as MaxSelected;
