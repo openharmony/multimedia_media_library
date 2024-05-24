@@ -314,7 +314,7 @@ const std::vector<std::string> dynamicRangeTypeEnum {
     "SDR", "HDR"
 };
 
-const std::vector<std::string> movingPhotoEffectOpenModeEnum {
+const std::vector<std::string> movingPhotoEffectModeEnum {
     "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE"
 };
 
