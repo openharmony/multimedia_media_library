@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -82,7 +82,7 @@ static int32_t ExecSqls(const vector<string> &sqls, const shared_ptr<MediaLibrar
             break;
         }
     }
-    return NativeRdb::E_OK;
+    return err;
 }
 
 static string ParseFileIdFromCoverUri(const string &uri)
@@ -188,7 +188,7 @@ static void NotifyGroupAlbum(const vector<int32_t> &changedAlbumIds)
     }
 }
 
-static void ClearEmptyGroupPhotoAlubm(const vector<GroupPhotoAlbumInfo> &updateAlbums)
+static void ClearEmptyGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &updateAlbums)
 {
     ValuesBucket values;
     values.PutInt(PhotoAlbumColumns::ALBUM_COUNT, 0);
@@ -251,9 +251,9 @@ static string BuildUpdateGroupPhotoAlbumSql(const GroupPhotoAlbumInfo &albumInfo
     return updateSql;
 }
 
-static void UpdateGroupPhotoAlbum(const vector<GroupPhotoAlbumInfo> &updateAlbums)
+static void UpdateGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &updateAlbums)
 {
-    ClearEmptyGroupPhotoAlubm(updateAlbums);
+    ClearEmptyGroupPhotoAlbumInfo(updateAlbums);
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     for (auto album : updateAlbums) {
         string sql = BuildUpdateGroupPhotoAlbumSql(album);
@@ -264,7 +264,7 @@ static void UpdateGroupPhotoAlbum(const vector<GroupPhotoAlbumInfo> &updateAlbum
     }
 }
 
-static void InsertGroupPhotoAlbum(const vector<GroupPhotoAlbumInfo> &insertAlbums)
+static void InsertGroupPhotoAlbumInfo(const vector<GroupPhotoAlbumInfo> &insertAlbums)
 {
     if (insertAlbums.empty()) {
         return;
@@ -355,8 +355,8 @@ static void UpdateGroupPhotoAlbum()
         }
     }
 
-    UpdateGroupPhotoAlbum(updateAlbums);
-    InsertGroupPhotoAlbum(insertAlbums);
+    UpdateGroupPhotoAlbumInfo(updateAlbums);
+    InsertGroupPhotoAlbumInfo(insertAlbums);
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(
@@ -501,12 +501,12 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         MergeAlbumInfo info;
         if (GetIntValueFromResultSet(resultSet, ALBUM_ID, info.albumId) != E_OK ||
-            GetStringValueFromResultSet(resultSet, TAG_ID, info.groupTag) != E_OK  ||
+            GetStringValueFromResultSet(resultSet, TAG_ID, info.tagId) != E_OK  ||
             GetStringValueFromResultSet(resultSet, COVER_URI, info.coverUri) != E_OK ||
             GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, info.isCoverSatisfied) != E_OK) {
             return E_HAS_DB_ERROR;
         }
-        string reorderedTagId = ReorderTagId(info.groupTag, mergeAlbumInfo);
+        string reorderedTagId = ReorderTagId(info.tagId, mergeAlbumInfo);
         auto it = updateMap.find(reorderedTagId);
         if (reorderedTagId.empty()) {
             deleteId.push_back(info.albumId);
@@ -560,7 +560,7 @@ int32_t SetGroupAlbumName(const ValuesBucket &values, const DataSharePredicates 
     }
     std::string updateForSetAlbumName = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + ALBUM_NAME + " = '" + albumName +
         "' , " + RENAME_OPERATION + " = 1 WHERE " + ALBUM_ID + " = " + targetAlbumId;
-    vector<string> updateSqls = {updateForSetAlbumName};
+    vector<string> updateSqls = { updateForSetAlbumName };
     err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
@@ -597,7 +597,7 @@ int32_t SetGroupCoverUri(const ValuesBucket &values, const DataSharePredicates &
     std::string updateForSetCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" +
         coverUri + "', " + IS_COVER_SATISFIED + " = " + to_string(ALBUM_COVER_SATISFIED) + " WHERE " +
         ALBUM_ID + " = " + targetAlbumId;
-    vector<string> updateSqls = { updateForSetCoverUri};
+    vector<string> updateSqls = { updateForSetCoverUri };
     err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
@@ -627,7 +627,7 @@ int32_t DismissGroupPhotoAlbum(const ValuesBucket &values, const DataSharePredic
     }
     std::string updateForDeleteGroupAlbum = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + IS_REMOVED + " = 1 WHERE " +
         ALBUM_ID + " = " + targetAlbumId;
-    vector<string> updateSqls = { updateForDeleteGroupAlbum};
+    vector<string> updateSqls = { updateForDeleteGroupAlbum };
     int err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };

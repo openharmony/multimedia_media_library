@@ -457,7 +457,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoAlbumName_update_e
     DataShare::DataSharePredicates dataPredicates;
     dataPredicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
     CleanTestTables();
-    EXPECT_EQ(MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(operationType, values, dataPredicates), E_OK);
+    EXPECT_NE(MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(operationType, values, dataPredicates), E_OK);
     MEDIA_INFO_LOG("SetGroupPhotoAlbumName_update_err End");
 }
 
@@ -522,7 +522,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, SetGroupPhotoCoverUri_update_er
     DataShare::DataSharePredicates dataPredicates;
     dataPredicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
     CleanTestTables();
-    EXPECT_EQ(MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(operationType, values, dataPredicates), E_OK);
+    EXPECT_NE(MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(operationType, values, dataPredicates), E_OK);
     MEDIA_INFO_LOG("SetGroupPhotoCoverUri_update_err End");
 }
 
@@ -561,7 +561,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, DismissGroupPhotoAlbum_update_e
     DataShare::DataSharePredicates dataPredicates;
     dataPredicates.EqualTo(ALBUM_ID, TRUE_ALBUM_ID);
     CleanTestTables();
-    EXPECT_EQ(MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(operationType, values, dataPredicates), E_OK);
+    EXPECT_NE(MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(operationType, values, dataPredicates), E_OK);
     MEDIA_INFO_LOG("DismissGroupPhotoAlbum_update_err End");
 }
 

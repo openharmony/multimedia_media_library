@@ -257,13 +257,13 @@ static void GetDismissAssetsPredicates(NativeRdb::RdbPredicates &rdbPredicate, v
 int32_t DoDismissAssets(int32_t subtype, const string &strAlbumId, vector<string> assets)
 {
     if (subtype == PhotoAlbumSubType::GROUP_PHOTO) {
-        NativeRdb::RdbPredicates rdbPredicate {VISION_IMAGE_FACE_TABLE};
+        NativeRdb::RdbPredicates rdbPredicate { VISION_IMAGE_FACE_TABLE };
         rdbPredicate.In(MediaColumn::MEDIA_ID, assets);
         return MediaLibraryRdbStore::Delete(rdbPredicate);
     }
 
     vector<string> updateAlbumIds;
-    NativeRdb::RdbPredicates rdbPredicate {ANALYSIS_PHOTO_MAP_TABLE};
+    NativeRdb::RdbPredicates rdbPredicate { ANALYSIS_PHOTO_MAP_TABLE };
     GetDismissAssetsPredicates(rdbPredicate, updateAlbumIds,
         static_cast<PhotoAlbumSubType>(subtype), strAlbumId, assets);
     int32_t deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);

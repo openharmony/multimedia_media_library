@@ -1096,35 +1096,11 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     return QueryInternal(cmd, columns, predicates);
 }
 
-int32_t GetAlbumSubtypeArgument(const RdbPredicates &predicates)
-{
-    string whereClause = predicates.GetWhereClause();
-    vector<string> whereArgs = predicates.GetWhereArgs();
-    size_t subtypePos = whereClause.find(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
-    if (subtypePos == string::npos) {
-        return E_ERR;
-    }
-    size_t argsIndex = 0;
-    for (size_t i = 0; i < subtypePos; i++) {
-        if (whereClause[i] == '?') {
-            argsIndex++;
-        }
-    }
-    if (argsIndex > whereArgs.size() - 1) {
-        return E_ERR;
-    }
-    const string &subtype = whereArgs[argsIndex];
-    if (subtype.empty() || !MediaLibraryDataManagerUtils::IsNumber(subtype)) {
-        return E_ERR;
-    }
-    return std::stoi(subtype);
-}
-
 shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
-    int32_t albumSubtype = GetAlbumSubtypeArgument(rdbPredicates);
+    int32_t albumSubtype = MediaLibraryRdbUtils::GetAlbumSubtypeArgument(rdbPredicates);
     MEDIA_DEBUG_LOG("Query analysis album of subtype: %{public}d", albumSubtype);
     if (albumSubtype == PhotoAlbumSubType::GROUP_PHOTO) {
         return MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
