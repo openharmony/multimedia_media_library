@@ -102,7 +102,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width("100%")
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P;
+            var t, i, n, r, l, s, c, p, a, d, h, E, T, C, m, P;
             UIExtensionComponent.create({
                 parameters: {
                     "ability.want.params.uiExtensionTargetType": "photoPicker",
@@ -124,17 +124,18 @@ export class PhotoPickerComponent extends ViewPU {
                     photoBrowserBackgroundColorMode: null === (d = this.pickerOptions) || void 0 === d ? void 0 : d.photoBrowserBackgroundColorMode,
                     isRepeatSelectSupported: null === (h = this.pickerOptions) || void 0 === h ? void 0 : h.isRepeatSelectSupported,
                     maxSelectedReminderMode: null === (E = this.pickerOptions) || void 0 === E ? void 0 : E.maxSelectedReminderMode,
-                    orientation: null === (C = this.pickerOptions) || void 0 === C ? void 0 : C.orientation,
-                    selectMode: null === (T = this.pickerOptions) || void 0 === T ? void 0 : T.selectMode,
+                    orientation: null === (T = this.pickerOptions) || void 0 === T ? void 0 : T.orientation,
+                    selectMode: null === (C = this.pickerOptions) || void 0 === C ? void 0 : C.selectMode,
                     maxPhotoSelectNumber: null === (m = this.pickerOptions) || void 0 === m ? void 0 : m.maxPhotoSelectNumber,
-                    maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber
+                    maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber,
+                    isOnItemClickedSet: !!this.onItemClicked
                 }
             });
             UIExtensionComponent.height("100%");
             UIExtensionComponent.width("100%");
             UIExtensionComponent.onRemoteReady((e => {
                 this.proxy = e;
-                this.handleOnRemoteReady()
+                console.info("PhotoPickerComponent onRemoteReady")
             }));
             UIExtensionComponent.onReceive((e => {
                 let o = e;
@@ -152,15 +153,6 @@ export class PhotoPickerComponent extends ViewPU {
         }), UIExtensionComponent);
         Column.pop();
         Row.pop()
-    }
-
-    handleOnRemoteReady() {
-        var e, o;
-        this.onItemClicked ? null === (e = this.proxy) || void 0 === e || e.send({
-            isItemClickSet: !0
-        }) : null === (o = this.proxy) || void 0 === o || o.send({ isItemClickSet: !1 });
-        this.onPickerControllerReady && this.onPickerControllerReady();
-        console.info("PhotoPickerComponent onRemoteReady")
     }
 
     handleOnReceive(e) {
