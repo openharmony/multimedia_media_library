@@ -80,10 +80,11 @@ export struct PhotoPickerComponent {
             selectMode: this.pickerOptions?.selectMode as SelectMode,
             maxPhotoSelectNumber: this.pickerOptions?.maxPhotoSelectNumber as number,
             maxVideoSelectNumber: this.pickerOptions?.maxVideoSelectNumber as number,
+            isOnItemClickedSet: this.onItemClicked? true : false,
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           this.proxy = proxy;
-          this.handleOnRemoteReady();
+          console.info('PhotoPickerComponent onRemoteReady');
         }).onReceive((data) => {
           let wantParam: Record<string, Object> = data as Record<string, Object>;
           this.handleOnReceive(wantParam);
@@ -98,18 +99,6 @@ export struct PhotoPickerComponent {
       .width('100%')
     }
     .height('100%')
-  }
-
-  private handleOnRemoteReady(): void {
-    if (this.onItemClicked) {
-      this.proxy?.send({'isItemClickSet': true});
-    } else {
-      this.proxy?.send({'isItemClickSet': false});
-    }
-    if (this.onPickerControllerReady) {
-      this.onPickerControllerReady();
-    }
-    console.info('PhotoPickerComponent onRemoteReady');
   }
 
   private handleOnReceive(wantParam: Record<string, Object>): void {
