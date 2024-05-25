@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -279,6 +279,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("saveFormInfo", PhotoAccessSaveFormInfo),
             DECLARE_NAPI_FUNCTION("removeFormInfo", PhotoAccessRemoveFormInfo),
             DECLARE_NAPI_FUNCTION("getAssetsSync", PhotoAccessGetPhotoAssetsSync),
+            DECLARE_NAPI_FUNCTION("getFileAssetsInfo", PhotoAccessGetFileAssetsInfo),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -5190,6 +5191,40 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssets(napi_env env, napi_callba
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets",
         PhotoAccessGetAssetsExecute, GetFileAssetsAsyncCallbackComplete);
+}
+
+static napi_value PhotoAccessGetFileAssetsExecuteSync(napi_env env, MediaLibraryAsyncContext& asyncContext)
+{
+    auto context = &asyncContext;
+    if (context->assetType != TYPE_PHOTO) {
+        return nullptr;
+    }
+    string queryUri = PAH_QUERY_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+
+    Uri uri(queryUri);
+    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = UserFileClient::QueryRdb(uri,
+        context->predicates, context->fetchColumn);
+    CHECK_NULLPTR_RET(resultSet);
+
+    napi_value jsFileArray = 0;
+    napi_create_array(env, &jsFileArray);
+
+    int count = 0;
+    while (!resultSet->GoToNextRow()) {
+        napi_value item = MediaLibraryNapiUtils::GetNextRowObject(env, resultSet);
+        napi_set_element(env, jsFileArray, count++, item);
+    }
+    return jsFileArray;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetFileAssetsInfo(napi_env env, napi_callback_info info)
+{
+    unique_ptr<MediaLibraryAsyncContext> context = make_unique<MediaLibraryAsyncContext>();
+    context->assetType = TYPE_PHOTO;
+    CHECK_NULLPTR_RET(ParseArgsGetAssets(env, info, context));
+
+    return PhotoAccessGetFileAssetsExecuteSync(env, *context);
 }
 
 napi_value MediaLibraryNapi::PhotoAccessGetPhotoAssetsSync(napi_env env, napi_callback_info info)
