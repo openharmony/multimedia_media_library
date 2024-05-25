@@ -110,6 +110,11 @@ export struct PhotoPickerComponent {
       this.handleItemClick(wantParam);
     } else if (dataType === 'onPhotoBrowserStateChanged') {
       this.handleEnterOrExitPhotoBrowser(wantParam);
+    } else if (dataType === 'remoteReady') {
+      if (this.onPickerControllerReady) {
+        this.onPickerControllerReady();
+        console.info('PhotoPickerComponent onReceive: onPickerControllerReady');
+      }
     } else {
       console.info('PhotoPickerComponent onReceive: other case');
     }
