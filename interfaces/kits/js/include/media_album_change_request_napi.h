@@ -41,6 +41,7 @@ enum class AlbumChangeOperation {
     MERGE_ALBUM,
     DISMISS_ASSET,
     SET_IS_ME,
+    DISMISS,
 };
 
 struct PhotoAlbumPtrCompare {
@@ -97,6 +98,7 @@ private:
     EXPORT static napi_value JSMergeAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSDismissAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetIsMe(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSDismiss(napi_env env, napi_callback_info info);
     EXPORT static bool CheckDismissAssetVaild(std::vector<std::string> &dismissAssets,
         std::vector<std::string> &newAssetArray);
 
