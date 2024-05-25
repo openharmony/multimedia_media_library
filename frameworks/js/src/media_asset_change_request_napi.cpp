@@ -143,6 +143,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("getWriteCacheHandler", JSGetWriteCacheHandler),
             DECLARE_NAPI_FUNCTION("setLocation", JSSetLocation),
             DECLARE_NAPI_FUNCTION("addResource", JSAddResource),
+            DECLARE_NAPI_FUNCTION("setEffectMode", JSSetEffectMode),
             DECLARE_NAPI_FUNCTION("setCameraShotKey", JSSetCameraShotKey),
             DECLARE_NAPI_FUNCTION("saveCameraPhoto", JSSaveCameraPhoto),
         } };
@@ -1079,6 +1080,28 @@ napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_call
     RETURN_NAPI_UNDEFINED(env);
 }
 
+napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    int32_t effectMode;
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::ParseArgsNumberCallback(env, info, asyncContext, effectMode) == napi_ok,
+        "Failed to parse effect mode");
+    CHECK_COND_WITH_MESSAGE(env, asyncContext->argc == ARGS_ONE, "Number of args is invalid");
+    CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckMovingPhotoEffectMode(effectMode), "Failed to check effect mode");
+
+    auto changeRequest = asyncContext->objectInfo;
+    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
+    changeRequest->GetFileAssetInstance()->SetMovingPhotoEffectMode(effectMode);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
 napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_callback_info info)
 {
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
@@ -1854,6 +1877,22 @@ static bool SetUserCommentExecute(MediaAssetChangeRequestAsyncContext& context)
     return UpdateAssetProperty(context, PAH_EDIT_USER_COMMENT_PHOTO, predicates, valuesBucket);
 }
 
+static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    // SET_MOVING_PHOTO_EFFECT_MODE will be applied together with ADD_RESOURCE
+    auto changeRequest = context.objectInfo;
+    if (changeRequest->Contains(AssetChangeOperation::ADD_RESOURCE)) {
+        return true;
+    }
+
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset->GetMovingPhotoEffectMode());
+    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
+}
+
 static bool SetPhotoQualityExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     DataShare::DataSharePredicates predicates;
@@ -1915,6 +1954,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_HIDDEN, SetHiddenExecute },
     { AssetChangeOperation::SET_TITLE, SetTitleExecute },
     { AssetChangeOperation::SET_USER_COMMENT, SetUserCommentExecute },
+    { AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE, SetEffectModeExecute },
     { AssetChangeOperation::SET_PHOTO_QUALITY_AND_PHOTOID, SetPhotoQualityExecute },
     { AssetChangeOperation::SET_LOCATION, SetLocationExecute },
     { AssetChangeOperation::SET_CAMERA_SHOT_KEY, SetCameraShotKeyExecute },

@@ -1491,6 +1491,12 @@ bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
     return duration > MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
 
+bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
+{
+    return effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
+           effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END);
+}
+
 bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
 {
     struct stat statbuf;
