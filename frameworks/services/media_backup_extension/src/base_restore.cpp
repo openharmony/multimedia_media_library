@@ -301,6 +301,7 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
         }
         std::string cloudPath;
         int32_t uniqueId = audioNumber_;
+        audioNumber_++;
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
@@ -317,7 +318,6 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
-        audioNumber_++;
         values.emplace_back(value);
     }
     return values;
