@@ -75,7 +75,7 @@ ohos_shared_library("media_library_manager") {
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
