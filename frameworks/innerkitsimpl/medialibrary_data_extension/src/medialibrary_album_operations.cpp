@@ -25,6 +25,7 @@
 #include "media_actively_calling_analyse.h"
 #include "media_file_utils.h"
 #include "media_log.h"
+#include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_db_const.h"
@@ -528,7 +529,7 @@ int CreatePhotoAlbum(MediaLibraryCommand &cmd)
     string subtype;
     int err = GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_NAME, albumName);
     GetStringObject(cmd.GetValueBucket(), PhotoAlbumColumns::ALBUM_SUBTYPE, subtype);
-    if (err < 0 && subtype != to_string(PORTRAIT)) {
+    if (err < 0 && subtype != to_string(PORTRAIT) && subtype != to_string(GROUP_PHOTO)) {
         return err;
     }
     int rowId;
@@ -1435,7 +1436,7 @@ int32_t UpdateForMergeAlbums(const MergeAlbumInfo &updateAlbumInfo, const int32_
 
     std::string updateForMergeAlbums = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + GROUP_TAG + " = " +
         updateAlbumInfo.groupTag + "," + COUNT + " = " + to_string(updateAlbumInfo.count) + "," + IS_ME + " = " +
-        to_string(updateAlbumInfo.isMe) + "," + COVER_URI + " = " + updateAlbumInfo.coverUri + "," +
+        to_string(updateAlbumInfo.isMe) + "," + COVER_URI + " = '" + updateAlbumInfo.coverUri + "'," +
         USER_DISPLAY_LEVEL + " = " + to_string(updateAlbumInfo.userDisplayLevel) + "," + RANK + " = " +
         to_string(updateAlbumInfo.rank) + "," + USER_OPERATION + " = " + to_string(updateAlbumInfo.userOperation) +
         "," + RENAME_OPERATION + " = " + to_string(updateAlbumInfo.renameOperation) + "," + ALBUM_NAME + " = '" +
@@ -1529,8 +1530,8 @@ int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumI
         MEDIA_ERR_LOG("resultSet is error! failed query get merge album cover uri");
         return E_HAS_DB_ERROR;
     }
-    updateAlbumInfo.coverUri = "'file://media/Photo/" + to_string(mergeFileId) + "/" + mergeTitle + "/" +
-        mergeDisplayName + "'";
+    updateAlbumInfo.coverUri = "file://media/Photo/" + to_string(mergeFileId) + "/" + mergeTitle + "/" +
+        mergeDisplayName;
     return E_OK;
 }
 
@@ -1610,6 +1611,11 @@ int32_t MergeAlbum(const ValuesBucket &values)
     err = UpdateMergeAlbumsInfo(mergeAlbumInfo, currentAlbumId);
     if (err != E_OK) {
         MEDIA_ERR_LOG("MergeAlbum failed");
+        return err;
+    }
+    err = MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(mergeAlbumInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("MergeGroupAlbum failed");
         return err;
     }
     vector<int32_t> changeAlbumIds = { currentAlbumId };
@@ -1876,6 +1882,10 @@ int32_t MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(const OperationTyp
             return SetAlbumName(values, predicates);
         case OperationType::PORTRAIT_COVER_URI:
             return SetCoverUri(values, predicates);
+        case OperationType::DISMISS:
+        case OperationType::GROUP_ALBUM_NAME:
+        case OperationType::GROUP_COVER_URI:
+            return MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(opType, values, predicates);
         default:
             MEDIA_ERR_LOG("Unknown operation type: %{public}d", opType);
             return E_ERR;
