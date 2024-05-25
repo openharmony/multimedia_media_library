@@ -31,6 +31,7 @@
 #include "file_asset.h"
 #include "file_uri.h"
 #include "image_source.h"
+#include "media_asset_rdbstore.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -626,21 +627,57 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
     return pixelmap;
 }
 
-int32_t MediaLibraryManager::GetBatchAstcs(const vector<string> &uriBatch, vector<vector<uint8_t>> &astcBatch)
+static int32_t GetAstcsByOffset(const vector<string> &uriBatch, vector<vector<uint8_t>> &astcBatch)
 {
-    if (uriBatch.empty()) {
-        MEDIA_INFO_LOG("GetBatchAstcs uriBatch is empty");
+    UriParams uriParams;
+    if (!GetParamsFromUri(uriBatch.at(0), false, uriParams)) {
+        MEDIA_ERR_LOG("GetParamsFromUri failed in GetAstcsByOffset");
+        return E_INVALID_URI;
+    }
+    vector<string> timeIdBatch;
+    int32_t start = 0;
+    int32_t count = 0;
+    MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
+    MEDIA_INFO_LOG("GetAstcsByOffset image batch size: %{public}zu, begin: %{public}s, end: %{public}s,"
+        "start: %{public}d, count: %{public}d", uriBatch.size(), timeIdBatch.back().c_str(),
+        timeIdBatch.front().c_str(), start, count);
+
+    KvStoreValueType valueType;
+    if (uriParams.size.width == DEFAULT_MONTH_THUMBNAIL_SIZE && uriParams.size.height == DEFAULT_MONTH_THUMBNAIL_SIZE) {
+        valueType = KvStoreValueType::MONTH_ASTC;
+    } else if (uriParams.size.width == DEFAULT_YEAR_THUMBNAIL_SIZE &&
+        uriParams.size.height == DEFAULT_YEAR_THUMBNAIL_SIZE) {
+        valueType = KvStoreValueType::YEAR_ASTC;
+    } else {
+        MEDIA_ERR_LOG("GetAstcsByOffset invalid image size");
         return E_INVALID_URI;
     }
 
+    vector<string> newTimeIdBatch;
+    MediaAssetRdbStore::GetInstance()->QueryTimeIdBatch(start, count, newTimeIdBatch);
+    auto kvStore = MediaLibraryKvStoreManager::GetInstance().GetKvStore(KvStoreRoleType::VISITOR, valueType);
+    if (kvStore == nullptr) {
+        MEDIA_ERR_LOG("GetAstcsByOffset kvStore is nullptr");
+        return E_DB_FAIL;
+    }
+    int32_t status = kvStore->BatchQuery(newTimeIdBatch, astcBatch);
+    if (status != E_OK) {
+        MEDIA_ERR_LOG("GetAstcsByOffset failed, status %{public}d", status);
+        return status;
+    }
+    return E_OK;
+}
+
+static int32_t GetAstcsBatch(const vector<string> &uriBatch, vector<vector<uint8_t>> &astcBatch)
+{
     UriParams uriParams;
     if (!GetParamsFromUri(uriBatch.at(0), false, uriParams)) {
-        MEDIA_ERR_LOG("GetParamsFromUri failed in GetBatchAstcs");
+        MEDIA_ERR_LOG("GetParamsFromUri failed in GetAstcsBatch");
         return E_INVALID_URI;
     }
     vector<string> timeIdBatch;
     MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch);
-    MEDIA_INFO_LOG("GetBatchAstcs image batch size: %{public}zu, begin: %{public}s, end: %{public}s",
+    MEDIA_INFO_LOG("GetAstcsBatch image batch size: %{public}zu, begin: %{public}s, end: %{public}s",
         uriBatch.size(), timeIdBatch.back().c_str(), timeIdBatch.front().c_str());
 
     KvStoreValueType valueType;
@@ -650,21 +687,34 @@ int32_t MediaLibraryManager::GetBatchAstcs(const vector<string> &uriBatch, vecto
         uriParams.size.height == DEFAULT_YEAR_THUMBNAIL_SIZE) {
         valueType = KvStoreValueType::YEAR_ASTC;
     } else {
-        MEDIA_ERR_LOG("GetBatchAstcs invalid image size");
+        MEDIA_ERR_LOG("GetAstcsBatch invalid image size");
         return E_INVALID_URI;
     }
 
     auto kvStore = MediaLibraryKvStoreManager::GetInstance().GetKvStore(KvStoreRoleType::VISITOR, valueType);
     if (kvStore == nullptr) {
-        MEDIA_ERR_LOG("GetBatchAstcs kvStore is nullptr");
+        MEDIA_ERR_LOG("GetAstcsBatch kvStore is nullptr");
         return E_DB_FAIL;
     }
     int32_t status = kvStore->BatchQuery(timeIdBatch, astcBatch);
     if (status != E_OK) {
-        MEDIA_ERR_LOG("GetBatchAstcs failed, status %{public}d", status);
+        MEDIA_ERR_LOG("GetAstcsBatch failed, status %{public}d", status);
         return status;
     }
     return E_OK;
+}
+
+int32_t MediaLibraryManager::GetBatchAstcs(const vector<string> &uriBatch, vector<vector<uint8_t>> &astcBatch)
+{
+    if (uriBatch.empty()) {
+        MEDIA_INFO_LOG("GetBatchAstcs uriBatch is empty");
+        return E_INVALID_URI;
+    }
+    if (uriBatch.at(0).find(ML_URI_OFFSET) != std::string::npos) {
+        return GetAstcsByOffset(uriBatch, astcBatch);
+    } else {
+        return GetAstcsBatch(uriBatch, astcBatch);
+    }
 }
 
 unique_ptr<PixelMap> MediaLibraryManager::DecodeAstc(UniqueFd &uniqueFd)

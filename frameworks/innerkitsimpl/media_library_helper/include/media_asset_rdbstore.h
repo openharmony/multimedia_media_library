@@ -13,15 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_ASSET_RDBSTORE_H
-#define INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_ASSET_RDBSTORE_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_ASSET_RDBSTORE_H
+#define FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_ASSET_RDBSTORE_H
 
 #include "application_context.h"
 #include "datashare_helper.h"
 #include "datashare_predicates.h"
-#include "medialibrary_napi_log.h"
 #include "medialibrary_db_const.h"
-#include "medialibrary_command.h"
+#include "medialibrary_operation.h"
 #include "rdb_errno.h"
 #include "rdb_helper.h"
 #include "rdb_open_callback.h"
@@ -42,6 +41,9 @@ public:
     EXPORT std::shared_ptr<DataShare::DataShareResultSet> Query(const DataShare::DataSharePredicates& predicates,
         std::vector<std::string>& columns, OperationObject& object, int& errCode);
     EXPORT bool IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& object, bool isIgnoreSELinux = false);
+    EXPORT std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryRdb(const DataShare::DataSharePredicates& predicates,
+        std::vector<std::string>& columns, OperationObject& object);
+    EXPORT int32_t QueryTimeIdBatch(int32_t start, int32_t count, std::vector<std::string> &batchKeys);
 private:
     MediaAssetRdbStore();
     int32_t TryGetRdbStore(bool isIngnoreSELinux = false);
@@ -59,4 +61,4 @@ public:
 } // Media
 } // OHOS
 
-#endif // INTERFACES_KITS_JS_MEDIALIBRARY_INCLUDE_MEDIA_ASSET_RDBSTORE_H
+#endif // FRAMEWORKS_INNERKITSIMPL_MEDIA_LIBRARY_INCLUDE_MEDIA_ASSET_RDBSTORE_H

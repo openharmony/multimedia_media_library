@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -67,8 +67,10 @@ public:
     EXPORT static void RemoveAllFragment(std::string &uri);
     EXPORT static std::string GetMediaTypeUri(MediaType mediaType, const int32_t &apiVersion);
     EXPORT static std::string GetPhotoId(const std::string &uri);
-    EXPORT static void GetTimeIdFromUri(
-        const std::vector<std::string> &uriBatch, std::vector<std::string> &timeIdBatch);
+    EXPORT static void GetTimeIdFromUri(const std::vector<std::string> &uriBatch,
+        std::vector<std::string> &timeIdBatch);
+    EXPORT static void GetTimeIdFromUri(const std::vector<std::string> &uriBatch,
+        std::vector<std::string> &timeIdBatch, int32_t &start, int32_t &count);
     EXPORT static int32_t CreateAssetBucket(int32_t fileId, int32_t &bucketNum);
     EXPORT static std::string GetPathFromUri(const std::string &uri, bool isPhoto);
 };

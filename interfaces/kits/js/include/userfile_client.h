@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,6 +23,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "napi_remote_object.h"
+#include "rdb_store.h"
 #include "uri.h"
 
 namespace OHOS {
@@ -56,6 +57,8 @@ public:
     EXPORT static void UnregisterObserverExt(const Uri &uri,
         std::shared_ptr<DataShare::DataShareObserver> dataObserver);
     EXPORT static void Clear();
+    EXPORT static std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryRdb(Uri &uri,
+        const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns);
 private:
     static inline std::shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
     static std::shared_ptr<DataShare::DataShareHelper> GetDataShareHelper(napi_env env, napi_callback_info info);
