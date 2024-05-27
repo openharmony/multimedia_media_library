@@ -91,7 +91,7 @@ private:
     static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
     static bool UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
-    static int32_t UpdateAstcState(const ThumbRdbOpt &opts, const ThumbnailData &data, bool isGenerateThumb = true);
+    static int32_t UpdateThumbDBState(const ThumbRdbOpt &opts, const ThumbnailData &data, bool isGenerateThumb = true);
     static bool IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
