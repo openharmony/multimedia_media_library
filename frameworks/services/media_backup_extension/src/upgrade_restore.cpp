@@ -71,6 +71,9 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             MEDIA_ERR_LOG("External init rdb fail, err = %{public}d", externalErr);
             return E_FAIL;
         }
+        if (sceneCode_ == UPGRADE_RESTORE_ID) {
+            MediaLibraryDataManager::GetInstance()->ReCreateMediaDir();
+        }
     }
 
     if (isUpgrade && BaseRestore::Init() != E_OK) {
