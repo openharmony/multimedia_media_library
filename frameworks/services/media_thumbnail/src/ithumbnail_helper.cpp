@@ -46,10 +46,11 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
-void SetThumbnailSizeValue(ValuesBucket& values, Size& size, PhotoColumn column) {
+void IThumbnailHelper::SetThumbnailSizeValue(ValuesBucket& values, Size& size, const std::string& column) 
+{
     if (size.height != 0 && size.width != 0) {
         std::string tmpSize = std::to_string(size.width) + ":" + std::to_string(size.height);
-        values.PutLong(column, tmpSize);
+        values.PutString(column, tmpSize);
     }
 }
 
@@ -500,11 +501,11 @@ int32_t IThumbnailHelper::UpdateThumbDBState(const ThumbRdbOpt &opts, const Thum
         values.PutLong(PhotoColumn::PHOTO_HAS_ASTC, thumbnail_status);
     }
     Size thumbSize;
-    if (GetThumbSize(data, ThumbnailType::THUMB, thumbSize)) {
+    if (ThumbnailUtils::GetThumbSize(data, ThumbnailType::THUMB, thumbSize)) {
         SetThumbnailSizeValue(values, thumbSize, PhotoColumn::PHOTO_THUMB_SIZE);
     }
     Size lcdSize;
-    if (GetThumbSize(data, ThumbnailType::LCD, thumbSize)) {
+    if (ThumbnailUtils::GetThumbSize(data, ThumbnailType::LCD, lcdSize)) {
         SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
     }
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",

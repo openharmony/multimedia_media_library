@@ -309,17 +309,17 @@ void UpdateStreamReadThumbDBStatus(ThumbRdbOpt& opts, ThumbnailData& data, const
 {
     ValuesBucket values;
     Size tmpSize;
-    if (GetThumbSize(data, thumbType, tmpSize)) {
+    if (ThumbnailUtils::GetThumbSize(data, thumbType, tmpSize)) {
         switch (thumbType)
         {
-        case ThumbnailType::LCD:
-            SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_THUMB_SIZE);
-            break;
-        case ThumbnailType::THUMB:
-            SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_LCD_SIZE);
-        default:
-            break;
-        }
+            case ThumbnailType::LCD:
+                IThumbnailHelper::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_THUMB_SIZE);
+                break;
+            case ThumbnailType::THUMB:
+                IThumbnailHelper::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_LCD_SIZE);
+            default:
+                break;
+        }   
     }
     int changedRows = 0;
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",

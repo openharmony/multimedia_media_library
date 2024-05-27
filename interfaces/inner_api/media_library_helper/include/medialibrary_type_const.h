@@ -193,10 +193,21 @@ const std::string PHOTO_BUCKET = "Photo";
 const std::string AUDIO_BUCKET = "Audio";
 const std::string PRE_PATH_VALUES = "/storage/cloud/";
 const std::string DOCUMENT_URI_AUTHORITY = "docs";
+const std::string BACKUP_DATA_DIR_VALUE = "data/";
+const std::string THUMB_DIR_VALUE = ".thumbs/Photo";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
-    PHOTO_BUCKET + "/", AUDIO_BUCKET + "/"
+    PHOTO_BUCKET + "/", AUDIO_BUCKET + "/", BACKUP_DATA_DIR_VALUE
+};
+
+const std::vector<std::string> E_POLICY_DIRS = {
+    ROOT_MEDIA_DIR + CAMERA_DIR_VALUES,
+    ROOT_MEDIA_DIR + VIDEO_DIR_VALUES,
+    ROOT_MEDIA_DIR + PIC_DIR_VALUES,
+    ROOT_MEDIA_DIR + PHOTO_BUCKET,
+    ROOT_MEDIA_DIR + BACKUP_DATA_DIR_VALUE,
+    ROOT_MEDIA_DIR + THUMB_DIR_VALUE,
 };
 
 const int TRASH_ALBUM_ID_VALUES = 2;

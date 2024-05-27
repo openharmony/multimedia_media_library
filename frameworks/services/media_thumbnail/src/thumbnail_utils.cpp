@@ -1914,13 +1914,24 @@ void ThumbnailUtils::RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats
     DfxManager::GetInstance()->HandleThumbnailGeneration(stats);
 }
 
-bool ThumbnailUtils::GetThumbSize(ThumbnailData &data,const ThumbnailType& type, Size& size)
+bool ThumbnailUtils::GetThumbSize(const ThumbnailData &data,const ThumbnailType& type, Size& size)
 {
     if (type != ThumbnailType::THUMB && type != ThumbnailType::LCD) {
         MEDIA_ERR_LOG("can not get size for such type: %{public}d", type);
         return false;
     }
-    std::string tmpPath = GetThumbnailPath(data.path, type);
+    std::string tmpPath = "";
+    switch (type)
+    {
+        case ThumbnailType::THUMB:
+            tmpPath = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
+            break;
+        case ThumbnailType::LCD:
+            tmpPath = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+            break;
+        default:
+            break;
+    }
     uint32_t err = 0;
     unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
     if (err != E_OK || imageSource == nullptr) {
