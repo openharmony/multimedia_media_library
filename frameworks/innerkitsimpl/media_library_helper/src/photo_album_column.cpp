@@ -147,6 +147,7 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
     " AND old." + ALBUM_DIRTY + " = " + "new." + ALBUM_DIRTY +
     " AND is_caller_self_func() = 'true'" +
+    " AND " + PhotoAlbumColumns::CheckUploadPhotoAlbumColumns() +
     " BEGIN UPDATE " + TABLE + " SET dirty = " +
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
     " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
@@ -357,5 +358,25 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
             return;
         }
     }
+}
+
+std::string PhotoAlbumColumns::CheckUploadPhotoAlbumColumns()
+{
+    // Since date_modified has been checked in mdirty and fdirty, omit it here.
+    const std::vector<std::string> uploadPhotoAlbumColumns = {
+        ALBUM_NAME,
+    };
+
+    std::string result = "(";
+    size_t size = uploadPhotoAlbumColumns.size();
+    for (size_t i = 0; i < size; i++) {
+        std::string column = uploadPhotoAlbumColumns[i];
+        if (i != size - 1) {
+            result += "new." + column + " <> old." + column + " OR ";
+        } else {
+            result += "new." + column + " <> old." + column + ")";
+        }
+    }
+    return result;
 }
 } // namespace OHOS::Media
