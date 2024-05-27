@@ -38,8 +38,6 @@ public:
         int32_t errorCode {0};
         int64_t startTime {0};
         int64_t finishTime {0};
-        Size lcdSize;
-        Size thumbSize;
     };
 
     struct SourceLoaderOptions {

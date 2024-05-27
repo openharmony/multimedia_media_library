@@ -22,6 +22,7 @@
 #include "medialibrary_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_db_const.h"
+#include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "medialibrary_rdb_transaction.h"
@@ -36,6 +37,7 @@
 #include "result_set_utils.h"
 #include "vision_album_column.h"
 #include "vision_face_tag_column.h"
+#include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
 #include "dfx_manager.h"
 #include "dfx_const.h"
@@ -44,6 +46,8 @@ namespace OHOS::Media {
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
+
+constexpr int32_t ALBUM_IS_REMOVED = 1;
 
 static int32_t AddSingleAsset(const DataShareValuesBucket &value, vector<string> &notifyUris)
 {
@@ -250,6 +254,28 @@ static void GetDismissAssetsPredicates(NativeRdb::RdbPredicates &rdbPredicate, v
     }
 }
 
+int32_t DoDismissAssets(int32_t subtype, const string &strAlbumId, vector<string> assets)
+{
+    if (subtype == PhotoAlbumSubType::GROUP_PHOTO) {
+        NativeRdb::RdbPredicates rdbPredicate { VISION_IMAGE_FACE_TABLE };
+        rdbPredicate.In(MediaColumn::MEDIA_ID, assets);
+        return MediaLibraryRdbStore::Delete(rdbPredicate);
+    }
+
+    vector<string> updateAlbumIds;
+    NativeRdb::RdbPredicates rdbPredicate { ANALYSIS_PHOTO_MAP_TABLE };
+    GetDismissAssetsPredicates(rdbPredicate, updateAlbumIds,
+        static_cast<PhotoAlbumSubType>(subtype), strAlbumId, assets);
+    int32_t deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
+    if (deleteRow <= 0) {
+        return deleteRow;
+    }
+    std::unordered_map<int32_t, int32_t> updateResult;
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, updateAlbumIds, assets);
+    return deleteRow;
+}
+
 int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
 {
     vector<string> whereArgsUri = predicates.GetWhereArgs();
@@ -273,7 +299,8 @@ int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
     }
     string strSubtype = whereArgsId[whereArgsId.size() - 1];
     int32_t subtype = atoi(strSubtype.c_str());
-    if (subtype != PhotoAlbumSubType::CLASSIFY && subtype != PhotoAlbumSubType::PORTRAIT) {
+    if (subtype != PhotoAlbumSubType::CLASSIFY && subtype != PhotoAlbumSubType::PORTRAIT &&
+        subtype != PhotoAlbumSubType::GROUP_PHOTO) {
         MEDIA_ERR_LOG("Invalid album subtype: %{public}d", subtype);
         return E_INVALID_ARGUMENTS;
     }
@@ -282,22 +309,13 @@ int32_t PhotoMapOperations::DismissAssets(NativeRdb::RdbPredicates &predicates)
     for (size_t i = 1; i < whereArgsId.size() - 1; i++) {
         assetsArray.push_back(whereArgsId[i]);
     }
-    vector<string> updateAlbumIds;
-    NativeRdb::RdbPredicates rdbPredicate {ANALYSIS_PHOTO_MAP_TABLE};
-    GetDismissAssetsPredicates(rdbPredicate, updateAlbumIds,
-        static_cast<PhotoAlbumSubType>(subtype), strAlbumId, assetsArray);
-    int deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
-    if (deleteRow <= 0) {
-        return deleteRow;
-    }
 
-    std::unordered_map<int32_t, int32_t> updateResult;
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, updateAlbumIds,
-        assetsArray);
-    auto watch = MediaLibraryNotify::GetInstance();
-    for (size_t i = 1; i < whereArgsUri.size() - 1; i++) {
-        watch->Notify(MediaFileUtils::Encode(whereArgsUri[i]), NotifyType::NOTIFY_ALBUM_DISMISS_ASSET, albumId);
+    int32_t deleteRow = DoDismissAssets(subtype, strAlbumId, assetsArray);
+    if (deleteRow > 0) {
+        auto watch = MediaLibraryNotify::GetInstance();
+        for (size_t i = 1; i < whereArgsUri.size() - 1; i++) {
+            watch->Notify(MediaFileUtils::Encode(whereArgsUri[i]), NotifyType::NOTIFY_ALBUM_DISMISS_ASSET, albumId);
+        }
     }
     return deleteRow;
 }
@@ -333,9 +351,69 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     return deleteRow;
 }
 
+bool IsQueryGroupPhotoAlbumAssets(const string &albumId, string &tagId, int32_t &isRemoved)
+{
+    if (albumId.empty() || !MediaLibraryDataManagerUtils::IsNumber(albumId)) {
+        return false;
+    }
+    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    vector<string> columns = {PhotoAlbumColumns::ALBUM_TYPE, PhotoAlbumColumns::ALBUM_SUBTYPE, TAG_ID, IS_REMOVED};
+    auto resultSet = MediaLibraryRdbStore::Query(predicates, columns);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
+        return false;
+    }
+    int32_t albumType = GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet);
+    int32_t albumSubtype = GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet);
+    tagId = GetStringVal(TAG_ID, resultSet);
+    isRemoved = GetInt32Val(IS_REMOVED, resultSet);
+    return albumType == PhotoAlbumType::SMART && albumSubtype == PhotoAlbumSubType::GROUP_PHOTO;
+}
+
+shared_ptr<OHOS::NativeRdb::ResultSet> QueryGroupPhotoAlbumAssets(const string &albumId, const string &tagId,
+    const vector<string> &columns)
+{
+    string strColumns;
+    for (size_t i = 0; i < columns.size(); i++) {
+        strColumns.append("P." + columns[i]);
+        if (i != columns.size() - 1) {
+            strColumns.append(", ");
+        }
+    }
+    string strTags = "'";
+    int32_t albumTagCount = 1;
+    for (char c : tagId) {
+        if (c == ',') {
+            strTags.append("', '");
+            albumTagCount++;
+        } else {
+            strTags.push_back(c);
+        }
+    }
+    strTags.append("'");
+    string sql = "SELECT " + strColumns + " FROM " + VISION_IMAGE_FACE_TABLE + " F INNER JOIN " +
+        ANALYSIS_ALBUM_TABLE + " AA ON F." + TAG_ID + " = AA." + TAG_ID + " AND AA." + GROUP_TAG + " IN (" + strTags +
+        ") INNER JOIN " + ANALYSIS_PHOTO_MAP_TABLE + " ON " + MAP_ALBUM + " = AA." + PhotoAlbumColumns::ALBUM_ID +
+        " AND " + MAP_ASSET + " = F." + MediaColumn::MEDIA_ID + " INNER JOIN " + PhotoColumn::PHOTOS_TABLE +
+        " P ON P." + MediaColumn::MEDIA_ID + " = F." + MediaColumn::MEDIA_ID + " AND " +
+        MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + MediaColumn::MEDIA_HIDDEN + " = 0 AND " +
+        MediaColumn::MEDIA_TIME_PENDING + " = 0 GROUP BY P." + MediaColumn::MEDIA_ID +
+        " HAVING COUNT(" + GROUP_TAG + ") = " + TOTAL_FACES + " AND " +
+        " COUNT(DISTINCT " + GROUP_TAG +") = " + to_string(albumTagCount) + ";";
+    return MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw()->QuerySql(sql);
+}
 shared_ptr<OHOS::NativeRdb::ResultSet> PhotoMapOperations::QueryPhotoAssets(const RdbPredicates &rdbPredicate,
     const vector<string> &columns)
 {
+    string albumId = rdbPredicate.GetWhereArgs()[0];
+    string tagId;
+    int32_t isRemoved;
+    if (IsQueryGroupPhotoAlbumAssets(albumId, tagId, isRemoved)) {
+        if (isRemoved == ALBUM_IS_REMOVED) {
+            return nullptr;
+        }
+        return QueryGroupPhotoAlbumAssets(albumId, tagId, columns);
+    }
     return MediaLibraryRdbStore::Query(rdbPredicate, columns);
 }
 } // namespace OHOS::Media

@@ -305,6 +305,30 @@ unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
     return pixelMap;
 }
 
+void UpdateStreamReadThumbDBStatus(ThumbRdbOpt& opts, ThumbnailData& data, const ThumbnailType& thumbType)
+{
+    ValuesBucket values;
+    Size tmpSize;
+    if (GetThumbSize(data, thumbType, tmpSize)) {
+        switch (thumbType)
+        {
+        case ThumbnailType::LCD:
+            SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_THUMB_SIZE);
+            break;
+        case ThumbnailType::THUMB:
+            SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_LCD_SIZE);
+        default:
+            break;
+        }
+    }
+    int changedRows = 0;
+    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { data.id });
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("UpdateStreamReadThumbDBStatus failed! %{public}d", err);
+    }
+}
+
 int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType)
 {
     ThumbnailWait thumbnailWait(false);
@@ -354,6 +378,7 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
         }
         fd = open(fileName.c_str(), O_RDONLY);
     }
+    UpdateStreamReadThumbDBStatus(opts, thumbnailData, thumbType);
     if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE) {
         ThumbnailUtils::UpdateVisitTime(opts, thumbnailData, err);
     }

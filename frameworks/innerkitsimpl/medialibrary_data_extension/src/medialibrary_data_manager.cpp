@@ -42,6 +42,7 @@
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
@@ -761,8 +762,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
         }
         case OperationObject::ANALYSIS_PHOTO_ALBUM: {
-            if (cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
-                cmd.GetOprnType() <= OperationType::PORTRAIT_COVER_URI) {
+            if ((cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
+                 cmd.GetOprnType() <= OperationType::GROUP_COVER_URI)) {
                 return MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(cmd.GetOprnType(), value, predicates);
             }
             break;
@@ -1098,6 +1099,21 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     return QueryInternal(cmd, columns, predicates);
 }
 
+shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
+    const vector<string> &columns, const DataSharePredicates &predicates)
+{
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    int32_t albumSubtype = MediaLibraryRdbUtils::GetAlbumSubtypeArgument(rdbPredicates);
+    MEDIA_DEBUG_LOG("Query analysis album of subtype: %{public}d", albumSubtype);
+    if (albumSubtype == PhotoAlbumSubType::GROUP_PHOTO) {
+        return MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+    }
+    if (CheckIsPortraitAlbum(cmd)) {
+        return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
+    }
+    return MediaLibraryRdbStore::Query(rdbPredicates, columns);
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
@@ -1108,12 +1124,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
         case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
-        case OperationObject::ANALYSIS_PHOTO_ALBUM: {
-            if (CheckIsPortraitAlbum(cmd)) {
-                return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
-            }
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-        }
+        case OperationObject::ANALYSIS_PHOTO_ALBUM:
+            return QueryAnalysisAlbum(cmd, columns, predicates);
         case OperationObject::PHOTO_MAP:
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return PhotoMapOperations::QueryPhotoAssets(

@@ -1914,5 +1914,29 @@ void ThumbnailUtils::RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats
     DfxManager::GetInstance()->HandleThumbnailGeneration(stats);
 }
 
+bool ThumbnailUtils::GetThumbSize(ThumbnailData &data,const ThumbnailType& type, Size& size)
+{
+    if (type != ThumbnailType::THUMB && type != ThumbnailType::LCD) {
+        MEDIA_ERR_LOG("can not get size for such type: %{public}d", type);
+        return false;
+    }
+    std::string tmpPath = GetThumbnailPath(data.path, type);
+    uint32_t err = 0;
+    unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
+    if (err != E_OK || imageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to LoadImageSource for path:%{public}s", tmpPath.c_str());
+        return false;
+    }
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to Get ImageInfo, path:%{public}s", tmpPath.c_str());
+        return false;
+    }
+    size.height = imageInfo.size.width;
+    size.width = imageInfo.size.width;
+    return true;
+}
+
 } // namespace Media
 } // namespace OHOS

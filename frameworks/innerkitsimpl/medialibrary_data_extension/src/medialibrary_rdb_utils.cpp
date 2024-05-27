@@ -23,6 +23,7 @@
 #include "media_log.h"
 #include "media_refresh_album_column.h"
 #include "medialibrary_business_record_column.h"
+#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_tracer.h"
@@ -40,6 +41,7 @@ namespace OHOS::Media {
 using namespace std;
 using namespace NativeRdb;
 
+constexpr int32_t E_ERR = -1;
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_SUCCESS = 0;
 constexpr int32_t E_EMPTY_ALBUM_ID = 1;
@@ -1231,6 +1233,30 @@ int32_t MediaLibraryRdbUtils::GetAlbumIdsForPortrait(const shared_ptr<NativeRdb:
         }
     }
     return E_OK;
+}
+
+int32_t MediaLibraryRdbUtils::GetAlbumSubtypeArgument(const RdbPredicates &predicates)
+{
+    string whereClause = predicates.GetWhereClause();
+    vector<string> whereArgs = predicates.GetWhereArgs();
+    size_t subtypePos = whereClause.find(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
+    if (subtypePos == string::npos) {
+        return E_ERR;
+    }
+    size_t argsIndex = 0;
+    for (size_t i = 0; i < subtypePos; i++) {
+        if (whereClause[i] == '?') {
+            argsIndex++;
+        }
+    }
+    if (argsIndex > whereArgs.size() - 1) {
+        return E_ERR;
+    }
+    const string &subtype = whereArgs[argsIndex];
+    if (subtype.empty() || !MediaLibraryDataManagerUtils::IsNumber(subtype)) {
+        return E_ERR;
+    }
+    return std::stoi(subtype);
 }
 
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore> &rdbStore,

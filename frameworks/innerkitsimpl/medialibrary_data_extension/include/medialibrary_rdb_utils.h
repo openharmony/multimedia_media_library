@@ -22,6 +22,7 @@
 #include <string>
 #include <map>
 
+#include "rdb_predicates.h"
 #include "rdb_store.h"
 #include "userfile_manager_types.h"
 namespace OHOS::Media {
@@ -80,6 +81,7 @@ public:
     EXPORT static bool IsInRefreshTask();
     EXPORT static int32_t GetAlbumIdsForPortrait(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         std::vector<std::string> &portraitAlbumIds);
+    EXPORT static int32_t GetAlbumSubtypeArgument(const NativeRdb::RdbPredicates &predicates);
     EXPORT static void AddVirtualColumnsOfDateType(std::vector<std::string>& columns);
     EXPORT static void AddQueryIndex(NativeRdb::AbsPredicates& predicates, const std::vector<std::string>& columns);
 private:
