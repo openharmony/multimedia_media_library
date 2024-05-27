@@ -162,7 +162,34 @@ static void MakeRootDirs(AsyncTaskData *data)
         } else if (ret <= 0) {
             MEDIA_ERR_LOG("Failed to preset root dir: %{private}s", dir.c_str());
         }
-        MediaFileUtils::CreateDirectory(ROOT_MEDIA_DIR + dir + ".recycle");
+    }
+    if (data->dataDisplay.compare(E_POLICY) == 0 && !MediaFileUtils::SetEPolicy()) {
+        MEDIA_ERR_LOG("Failed to SetEPolicy fail");
+    }
+}
+
+void MediaLibraryDataManager::ReCreateMediaDir()
+{
+    // delete E policy dir
+    for (const string &dir : E_POLICY_DIRS) {
+        if (!MediaFileUtils::DeleteDir(dir)) {
+            MEDIA_ERR_LOG("Delete dir fail, dir: %{private}s", dir.c_str());
+        }
+    }
+    
+    // create C policy dir
+    InitACLPermission();
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return;
+    }
+    AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
+    shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
+    if (makeRootDirTask != nullptr) {
+        asyncWorker->AddTask(makeRootDirTask, true);
+    } else {
+        MEDIA_WARN_LOG("Can not init make root dir task");
     }
 }
 
@@ -205,7 +232,9 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
         MEDIA_ERR_LOG("Can not get asyncWorker");
         return E_ERR;
     }
-    shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, nullptr);
+    AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
+    taskData->dataDisplay = E_POLICY;
+    shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
     if (makeRootDirTask != nullptr) {
         asyncWorker->AddTask(makeRootDirTask, true);
     } else {
