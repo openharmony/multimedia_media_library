@@ -95,6 +95,7 @@ public:
         const bool hiddenState);
     EXPORT static void GetSourceAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
+    EXPORT static std::string CheckUploadPhotoAlbumColumns();
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_ALBUM_COLUMN_H
