@@ -1235,6 +1235,79 @@ string MediaLibraryNapiUtils::GetStringFetchProperty(napi_env env, napi_value ar
     return "";
 }
 
+napi_value MediaLibraryNapiUtils::CreateValueByIndex(napi_env env, int32_t index, string name,
+    shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const shared_ptr<FileAsset> &asset)
+{
+    int status;
+    int integerVal = 0;
+    string stringVal = "";
+    int64_t longVal = 0;
+    double doubleVal = 0.0;
+    napi_value value = nullptr;
+    auto dataType = MediaLibraryNapiUtils::GetTypeMap().at(name);
+    switch (dataType) {
+        case TYPE_STRING:
+            status = resultSet->GetString(index, stringVal);
+            napi_create_string_utf8(env, stringVal.c_str(), NAPI_AUTO_LENGTH, &value);
+            asset->GetMemberMap().emplace(name, stringVal);
+            break;
+        case TYPE_INT32:
+            status = resultSet->GetInt(index, integerVal);
+            napi_create_int32(env, integerVal, &value);
+            asset->GetMemberMap().emplace(name, integerVal);
+            break;
+        case TYPE_INT64:
+            status = resultSet->GetLong(index, longVal);
+            napi_create_int64(env, longVal, &value);
+            asset->GetMemberMap().emplace(name, longVal);
+            break;
+        case TYPE_DOUBLE:
+            status = resultSet->GetDouble(index, doubleVal);
+            napi_create_double(env, doubleVal, &value);
+            asset->GetMemberMap().emplace(name, doubleVal);
+            break;
+        default:
+            NAPI_ERR_LOG("not match dataType %{public}d", dataType);
+            break;
+    }
+
+    return value;
+}
+
+napi_value MediaLibraryNapiUtils::GetNextRowObject(napi_env env, shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet)
+{
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("GetNextRowObject fail, result is nullptr");
+        return nullptr;
+    }
+    vector<string> columnNames;
+    resultSet->GetAllColumnNames(columnNames);
+
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+
+    napi_value value = nullptr;
+    int32_t index = -1;
+    auto fileAsset = make_shared<FileAsset>();
+    for (const auto &name : columnNames) {
+        index++;
+
+        // Check if the column name exists in the type map
+        if (MediaLibraryNapiUtils::GetTypeMap().count(name) == 0) {
+            continue;
+        }
+        value = MediaLibraryNapiUtils::CreateValueByIndex(env, index, name, resultSet, fileAsset);
+        napi_set_named_property(env, result, name.c_str(), value);
+    }
+
+    string extrUri = MediaFileUtils::GetExtraUri(fileAsset->GetDisplayName(), fileAsset->GetPath(), false);
+    MediaFileUri fileUri(fileAsset->GetMediaType(), to_string(fileAsset->GetId()), "", MEDIA_API_VERSION_V10, extrUri);
+    fileAsset->SetUri(move(fileUri.ToString()));
+    napi_create_string_utf8(env, fileAsset->GetUri().c_str(), NAPI_AUTO_LENGTH, &value);
+    napi_set_named_property(env, result, MEDIA_DATA_DB_URI.c_str(), value);
+    return result;
+}
+
 bool MediaLibraryNapiUtils::IsSystemApp()
 {
     static bool isSys = Security::AccessToken::TokenIdKit::IsSystemAppByFullTokenID(IPCSkeleton::GetSelfTokenID());

@@ -140,6 +140,7 @@ const std::string ML_FILE_URI_PREFIX = "file://media";
 const std::string ML_URI_NETWORKID = "networkid";
 const std::string ML_URI_NETWORKID_EQUAL = "?networkid=";
 const std::string ML_URI_TIME_ID = "&time_id=";
+const std::string ML_URI_OFFSET = "&offset=";
 const std::string ML_URI_DATE_ADDED = "date_added";
 const std::string ML_URI_AUTHORITY = "media";
 const std::string ML_DATA_SHARE_SCHEME = "datashare";
