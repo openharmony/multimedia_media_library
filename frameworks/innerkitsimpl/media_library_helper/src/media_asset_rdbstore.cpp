@@ -19,17 +19,20 @@
 
 #include "media_file_uri.h"
 #include "media_file_utils.h"
-#include "medialibrary_rdb_utils.h"
+#include "media_log.h"
 #include "parameter.h"
 #include "parameters.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::RdbDataShareAdapter;
+using namespace OHOS::Media::MediaOperation;
+
 namespace OHOS {
 namespace Media {
 
 const std::string MEDIA_LIBRARY_STARTUP_PARAM_PREFIX = "multimedia.medialibrary.startup.";
+const std::string RBDSTORE_FIELD_ID_TEMPLATE = "0000000000";
 constexpr uint32_t BASE_USER_RANGE = 200000;
 const std::unordered_set<OperationObject> OPERATION_OBJECT_SET = {
     OperationObject::UFM_PHOTO,
@@ -97,35 +100,35 @@ const std::string MediaAssetRdbStore::IsCallerSelfFunc(const std::vector<std::st
 
 MediaAssetRdbStore::MediaAssetRdbStore()
 {
-    NAPI_INFO_LOG("init visitor rdb");
+    MEDIA_INFO_LOG("init visitor rdb");
     if (rdbStore_ != nullptr) {
-        NAPI_INFO_LOG("visitor rdb exists");
+        MEDIA_INFO_LOG("visitor rdb exists");
         return;
     }
     if (TryGetRdbStore() != NativeRdb::E_OK) {
         return;
     }
-    NAPI_INFO_LOG("success to init visitor rdb");
+    MEDIA_INFO_LOG("success to init visitor rdb");
 }
 
 int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
 {
     auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
-        NAPI_ERR_LOG("fail to acquire application Context");
+        MEDIA_ERR_LOG("fail to acquire application Context");
         return NativeRdb::E_ERROR;
     }
     uid_t uid = getuid() / BASE_USER_RANGE;
     const string key = MEDIA_LIBRARY_STARTUP_PARAM_PREFIX + to_string(uid);
     auto rdbInitFlag = system::GetBoolParameter(key, false);
     if (!rdbInitFlag && !isIgnoreSELinux) {
-        NAPI_ERR_LOG("media library db update not complete, key:%{public}s", key.c_str());
+        MEDIA_ERR_LOG("media library db update not complete, key:%{public}s", key.c_str());
         return NativeRdb::E_ERROR;
     }
     string name = MEDIA_DATA_ABILITY_DB_NAME;
     string databaseDir = MEDIA_DB_DIR + "/rdb";
     if (access(databaseDir.c_str(), E_OK) != 0) {
-        NAPI_ERR_LOG("rdb do not exist");
+        MEDIA_ERR_LOG("rdb do not exist");
         return NativeRdb::E_ERROR;
     }
     string dbPath = databaseDir.append("/").append(name);
@@ -143,7 +146,7 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     MediaLibraryDataCallBack rdbDataCallBack;
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore_ == nullptr || errCode != NativeRdb::E_OK) {
-        NAPI_ERR_LOG("Get visitor RdbStore is failed, errCode: %{public}d", errCode);
+        MEDIA_ERR_LOG("Get visitor RdbStore is failed, errCode: %{public}d", errCode);
         rdbStore_ = nullptr;
         return errCode;
     }
@@ -242,7 +245,7 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(
     std::vector<std::string>& columns, OperationObject& object, int& errCode)
 {
     if (rdbStore_ == nullptr) {
-        NAPI_ERR_LOG("fail to acquire rdb when query");
+        MEDIA_ERR_LOG("fail to acquire rdb when query");
         return nullptr;
     }
     std::string tableName = GetTableNameFromOprnObject(object);
@@ -254,7 +257,7 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(
     AddQueryFilter(rdbPredicates);
     auto resultSet = rdbStore_->Query(rdbPredicates, columns);
     if (resultSet == nullptr) {
-        NAPI_ERR_LOG("fail to acquire result from visitor query");
+        MEDIA_ERR_LOG("fail to acquire result from visitor query");
         return nullptr;
     }
     auto resultSetBridge = RdbUtils::ToResultSetBridge(resultSet);
@@ -268,7 +271,7 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& 
     }
     if (rdbStore_ == nullptr) {
         if (TryGetRdbStore(isIgnoreSELinux) != NativeRdb::E_OK) {
-            NAPI_ERR_LOG("fail to acquire rdb when query");
+            MEDIA_ERR_LOG("fail to acquire rdb when query");
             return false;
         }
     }
@@ -281,6 +284,69 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& 
         return false;
     }
     return true;
+}
+
+std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
+    const DataShare::DataSharePredicates& predicates, std::vector<std::string>& columns, OperationObject& object)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("fail to acquire rdb when query");
+        return nullptr;
+    }
+    std::string tableName = GetTableNameFromOprnObject(object);
+    NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, tableName);
+    AddVirtualColumnsOfDateType(const_cast<vector<string> &>(columns));
+    if (object == OperationObject::UFM_PHOTO || object == OperationObject::PAH_PHOTO) {
+        AddQueryIndex(rdbPredicates, columns);
+    }
+    AddQueryFilter(rdbPredicates);
+    auto resultSet = rdbStore_->Query(rdbPredicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("fail to acquire result from visitor query");
+        return nullptr;
+    }
+    return resultSet;
+}
+
+int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::vector<std::string> &batchKeys)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr when query");
+        return NativeRdb::E_DB_NOT_EXIST;
+    }
+    DataShare::DataSharePredicates predicates;
+    predicates.And()->OrderByDesc(MediaColumn::MEDIA_DATE_ADDED)
+                    ->Limit(count, start)
+                    ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0")
+                    ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0")
+                    ->EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
+    std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_ADDED};
+    NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+    AddQueryFilter(rdbPredicates);
+    auto resultSet = rdbStore_->Query(rdbPredicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("fail to acquire result from visitor query");
+        return NativeRdb::E_ERROR;
+    }
+
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int columnIndex = 0;
+        int64_t dateAddedTime = 0;
+        int fileId = 0;
+
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_DATE_ADDED, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetLong(columnIndex, dateAddedTime);
+        }
+        if (resultSet->GetColumnIndex(MediaColumn::MEDIA_ID, columnIndex) == NativeRdb::E_OK) {
+            resultSet->GetInt(columnIndex, fileId);
+        }
+
+        std::string timeId = std::to_string(dateAddedTime) +
+                             RBDSTORE_FIELD_ID_TEMPLATE.substr(std::to_string(fileId).length()) +
+                             std::to_string(fileId);
+        batchKeys.emplace_back(std::move(timeId));
+    }
+    return NativeRdb::E_OK;
 }
 
 int32_t MediaLibraryDataCallBack::OnCreate(NativeRdb::RdbStore& rdbStore)
