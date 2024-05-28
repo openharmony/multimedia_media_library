@@ -31,7 +31,10 @@ public:
     void InitGalleryMediaOne();
     void InitGalleryMediaTwo();
     void InitGalleryMediaThree();
+    void InitGalleryMediaFour();
     void InitGarbageAlbum();
+    void InitGalleryAlbumOne();
+    void InitGalleryAlbumTwo();
     std::shared_ptr<NativeRdb::RdbStore> galleryStorePtr_;
 };
 
@@ -41,6 +44,7 @@ public:
     int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
     static const string CREATE_GALLERY_MEDIA;
     static const string CREATE_GARBAGE_ALBUM;
+    static const string CREATE_GALLERY_ALBUM;
 };
 } // namespace Media
 } // namespace OHOS
