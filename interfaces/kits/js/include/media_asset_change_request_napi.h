@@ -131,6 +131,7 @@ private:
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();
+    bool CheckEffectModeWriteOperation();
     int32_t CopyFileToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo = false);
     int32_t CopyDataBufferToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo = false);
     int32_t CopyMovingPhotoVideo(const std::string& assetUri);
