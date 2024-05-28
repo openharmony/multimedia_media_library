@@ -31,6 +31,7 @@
 #include "media_log.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
+#include "thumbnail_utils.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -305,21 +306,38 @@ unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
     return pixelMap;
 }
 
+bool IsThumbnailAvailableLocally(ThumbnailData &data, ThumbnailType thumbType)
+{
+    string tmpPath = "";
+    switch (thumbType) {
+        case ThumbnailType::THUMB:
+            return GetLocalThumbnailPath(path, THUMBNAIL_THUMB_SUFFIX);
+            break;
+        case ThumbnailType::LCD:
+            return GetLocalThumbnailPath(path, THUMBNAIL_LCD_SUFFIX);
+            break;
+        default:
+            return "";
+            break;
+    }
+    return access(tmpPath.c_str(), F_OK) == 0;
+}
+
 void UpdateStreamReadThumbDBStatus(ThumbRdbOpt& opts, ThumbnailData& data, const ThumbnailType& thumbType)
 {
     ValuesBucket values;
     Size tmpSize;
-    if (ThumbnailUtils::GetThumbSize(data, thumbType, tmpSize)) {
-        switch (thumbType)
-        {
-            case ThumbnailType::LCD:
-                IThumbnailHelper::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_THUMB_SIZE);
-                break;
-            case ThumbnailType::THUMB:
-                IThumbnailHelper::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_LCD_SIZE);
-            default:
-                break;
-        }   
+    if (!ThumbnailUtils::GetThumbSize(data, thumbType, tmpSize)) {
+        return;
+    }
+    switch (thumbType) {
+        case ThumbnailType::LCD:
+            ThumbnailUtils::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_LCD_SIZE);
+            break;
+        case ThumbnailType::THUMB:
+            ThumbnailUtils::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_THUMB_SIZE);
+        default:
+            break;
     }
     int changedRows = 0;
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
@@ -345,7 +363,7 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
         MEDIA_ERR_LOG("GetAvailableFile failed, path: %{public}s", DfxUtils::GetSafePath(thumbnailData.path).c_str());
         return err;
     }
-
+    bool thumbnailExistLocally = IsThumbnailAvailableLocally(thumbnailData, thumbType);
     DfxTimer dfxTimer(thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN,
         INVALID_DFX, thumbType == ThumbnailType::LCD ? CLOUD_LCD_TIME_OUT : CLOUD_DEFAULT_TIME_OUT, false);
     auto fd = open(fileName.c_str(), O_RDONLY);
@@ -378,7 +396,9 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
         }
         fd = open(fileName.c_str(), O_RDONLY);
     }
-    UpdateStreamReadThumbDBStatus(opts, thumbnailData, thumbType);
+    if (!thumbnailExistLocally) {
+        UpdateStreamReadThumbDBStatus(opts, thumbnailData, thumbType);
+    }
     if (thumbType == ThumbnailType::LCD && opts.table == PhotoColumn::PHOTOS_TABLE) {
         ThumbnailUtils::UpdateVisitTime(opts, thumbnailData, err);
     }

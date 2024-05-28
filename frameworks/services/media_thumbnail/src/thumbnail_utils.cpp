@@ -220,6 +220,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     }
     int width = data.source->GetWidth();
     int height = data.source->GetHeight();
+    data.loaderOpts.needUpload = true;
     ConvertDecodeSize(data, {width, height}, desiredSize);
     if ((desiredSize.width != data.source->GetWidth() || desiredSize.height != data.source->GetHeight())) {
         param.dstWidth = desiredSize.width;
@@ -782,6 +783,10 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
     tracer.Start("UpdateLcdInfo opts.store->Update");
     int64_t timeNow = UTCTimeMilliSeconds();
     values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
+    Size lcdSize;
+    if (GetThumbSize(data, ThumbnailType::LCD, lcdSize)) {
+        SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
+    }
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
@@ -1914,24 +1919,13 @@ void ThumbnailUtils::RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats
     DfxManager::GetInstance()->HandleThumbnailGeneration(stats);
 }
 
-bool ThumbnailUtils::GetThumbSize(const ThumbnailData &data,const ThumbnailType& type, Size& size)
+bool ThumbnailUtils::GetThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size)
 {
     if (type != ThumbnailType::THUMB && type != ThumbnailType::LCD) {
         MEDIA_ERR_LOG("can not get size for such type: %{public}d", type);
         return false;
     }
-    std::string tmpPath = "";
-    switch (type)
-    {
-        case ThumbnailType::THUMB:
-            tmpPath = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
-            break;
-        case ThumbnailType::LCD:
-            tmpPath = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
-            break;
-        default:
-            break;
-    }
+    std::string tmpPath = GetLocalThumbnailPathWithThumbType(data.path, type);
     uint32_t err = 0;
     unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
     if (err != E_OK || imageSource == nullptr) {
@@ -1944,9 +1938,17 @@ bool ThumbnailUtils::GetThumbSize(const ThumbnailData &data,const ThumbnailType&
         MEDIA_ERR_LOG("Failed to Get ImageInfo, path:%{public}s", tmpPath.c_str());
         return false;
     }
-    size.height = imageInfo.size.width;
+    size.height = imageInfo.size.height;
     size.width = imageInfo.size.width;
     return true;
+}
+
+void ThumbnailUtils::SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column)
+{
+    if (size.height != 0 && size.width != 0) {
+        std::string tmpSize = std::to_string(size.width) + ":" + std::to_string(size.height);
+        values.PutString(column, tmpSize);
+    }
 }
 
 } // namespace Media

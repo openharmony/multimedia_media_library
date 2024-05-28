@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 
 #include "datashare_predicates.h"
 #include "datashare_result_set.h"
+#include "file_asset.h"
 #include "location_column.h"
 #include "media_column.h"
 #include "medialibrary_db_const.h"
@@ -28,6 +29,7 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "photo_album_column.h"
+#include "rdb_store.h"
 
 #ifdef NAPI_ASSERT
 #undef NAPI_ASSERT
@@ -454,6 +456,20 @@ struct NapiClassInfo {
 /* Util class used by napi asynchronous methods for making call to js callback function */
 class MediaLibraryNapiUtils {
 public:
+    static const std::unordered_map<std::string, ResultSetDataType> &GetTypeMap()
+    {
+        static const std::unordered_map<std::string, ResultSetDataType> TYPE_MAP = {
+            {MEDIA_DATA_DB_ID, TYPE_INT32},
+            {MEDIA_DATA_DB_FILE_PATH, TYPE_STRING},
+            {MEDIA_DATA_DB_NAME, TYPE_STRING},
+            {MEDIA_DATA_DB_MEDIA_TYPE, TYPE_INT32},
+            {MEDIA_DATA_DB_DATE_ADDED, TYPE_INT64},
+            {MEDIA_DATA_DB_DATE_MODIFIED, TYPE_INT64},
+            {MEDIA_DATA_DB_DATE_TAKEN, TYPE_INT64},
+            {MEDIA_DATA_DB_COUNT, TYPE_INT32},
+        };
+        return TYPE_MAP;
+    }
     static napi_value NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info);
     static napi_value NapiAddStaticProps(napi_env env, napi_value exports,
         const std::vector<napi_property_descriptor> &staticProps);
@@ -601,6 +617,9 @@ public:
         napi_env env, std::vector<napi_value> &napiValues, std::vector<std::string> &values);
     static void FixSpecialDateType(std::string &selections);
     static std::string TransferUri(const std::string &oldUri);
+    static napi_value GetNextRowObject(napi_env env, std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet);
+    static napi_value CreateValueByIndex(napi_env env, int32_t index, std::string name,
+        std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
 
 private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);

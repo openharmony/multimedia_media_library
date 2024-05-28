@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 78;
+const int32_t MEDIA_RDB_VERSION = 79;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -105,7 +105,8 @@ enum {
     VERSION_MOVE_KVDB = 75,
     VERSION_ADD_DYNAMIC_RANGE_TYPE = 76,
     VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME = 77,
-    VERSION_ADD_THUMB_LCD_SIZE_COLUMN = 78,
+    VERSION_UPDATE_PHOTO_ALBUM_TIGGER = 78,
+    VERSION_ADD_THUMB_LCD_SIZE_COLUMN = 79,
 };
 
 enum {
@@ -141,6 +142,7 @@ const std::string ML_FILE_URI_PREFIX = "file://media";
 const std::string ML_URI_NETWORKID = "networkid";
 const std::string ML_URI_NETWORKID_EQUAL = "?networkid=";
 const std::string ML_URI_TIME_ID = "&time_id=";
+const std::string ML_URI_OFFSET = "&offset=";
 const std::string ML_URI_DATE_ADDED = "date_added";
 const std::string ML_URI_AUTHORITY = "media";
 const std::string ML_DATA_SHARE_SCHEME = "datashare";

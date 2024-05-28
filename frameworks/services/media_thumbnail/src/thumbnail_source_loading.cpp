@@ -278,9 +278,10 @@ bool SourceLoader::RunLoading()
 
 bool SourceLoader::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, ImageInfo& imageInfo)
 {
-    error_ = imageSource->GetImageInfo(0, imageInfo);
-    if (error_ != E_OK) {
-        DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_GET_INFO, error_);
+    uint32_t err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_GET_INFO, err);
+        error_ = E_ERR;
         return false;
     }
 

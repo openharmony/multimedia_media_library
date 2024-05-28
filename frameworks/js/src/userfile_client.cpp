@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2022-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -156,6 +156,17 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
         DatashareBusinessError businessError;
         resultSet = sDataShareHelper_->Query(uri, predicates, columns, &businessError);
         errCode = businessError.GetCode();
+    }
+    return resultSet;
+}
+
+std::shared_ptr<NativeRdb::AbsSharedResultSet> UserFileClient::QueryRdb(Uri &uri,
+    const DataShare::DataSharePredicates &predicates, std::vector<std::string> &columns)
+{
+    shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = nullptr;
+    OperationObject object = OperationObject::UNKNOWN_OBJECT;
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object)) {
+        resultSet = MediaAssetRdbStore::GetInstance()->QueryRdb(predicates, columns, object);
     }
     return resultSet;
 }

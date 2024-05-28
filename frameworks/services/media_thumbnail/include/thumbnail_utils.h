@@ -126,6 +126,7 @@ public:
     static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
     static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
     static bool GetThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
+    static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
