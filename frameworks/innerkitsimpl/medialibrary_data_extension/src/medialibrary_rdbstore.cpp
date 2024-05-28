@@ -2255,6 +2255,16 @@ void AddLcdAndThumbSizeColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void UpdatePhotoAlbumTigger(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TRIGGER IF EXISTS album_modify_trigger",
+        PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER,
+    };
+    MEDIA_INFO_LOG("Start update album modify trigger");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2488,10 +2498,6 @@ static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_SHOOTING_MODE_CLOUD) {
         AddBussinessRecordAlbum(store);
     }
-
-    if (oldVersion < VERSION_ADD_THUMB_LCD_SIZE_COLUMN) {
-        AddLcdAndThumbSizeColumns(store);
-    }
 }
 
 static void UpdatePhotosSearchUpdateTrigger(RdbStore& store)
@@ -2545,6 +2551,14 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME) {
         UpdateInsertPhotoUpdateAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_TIGGER) {
+        UpdatePhotoAlbumTigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_THUMB_LCD_SIZE_COLUMN) {
+        AddLcdAndThumbSizeColumns(store);
     }
 }
 

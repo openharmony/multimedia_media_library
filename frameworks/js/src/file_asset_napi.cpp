@@ -2758,7 +2758,7 @@ napi_value FileAssetNapi::UserFileMgrGet(napi_env env, napi_callback_info info)
         NapiError::ThrowError(env, JS_E_FILE_KEY);
         return jsResult;
     }
-   
+
     if (IsSpecialKey(inputKey)) {
         return HandleGettingSpecialKey(env, inputKey, obj->fileAssetPtr);
     }

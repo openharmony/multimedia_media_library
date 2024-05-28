@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,6 +27,7 @@ using namespace std;
 namespace OHOS {
 namespace Media {
 const size_t LEAST_PATH_LENGTH = 2;
+const size_t BATCH_SIZE_START_AND_END = 2;
 const std::string MEDIA_FILE_ID_DEFAULT = "-1";
 
 const int ASSET_IN_BUCKET_NUM_MAX = 1000;
@@ -492,6 +493,43 @@ void MediaFileUri::GetTimeIdFromUri(const std::vector<std::string> &uriBatch, st
         }
         timeIdBatch.emplace_back(uri.substr(index + ML_URI_TIME_ID.length()));
     }
+}
+
+void MediaFileUri::GetTimeIdFromUri(const std::vector<std::string> &uriBatch, std::vector<std::string> &timeIdBatch,
+    int32_t &start, int32_t &count)
+{
+    if (uriBatch.size() != BATCH_SIZE_START_AND_END) {
+        return;
+    }
+    std::vector<int32_t> offset;
+    for (size_t i = 0; i < uriBatch.size(); ++i) {
+        std::string uri = uriBatch.at(i);
+        if (uri.empty()) {
+            continue;
+        }
+        auto indexStart = uri.rfind(ML_URI_TIME_ID);
+        if (indexStart == std::string::npos) {
+            MEDIA_ERR_LOG("GetTimeIdFromUri find indexStart for time_id failed: %{private}s", uri.c_str());
+            continue;
+        }
+        auto indexEnd = uri.rfind(ML_URI_OFFSET);
+        if (indexEnd == std::string::npos) {
+            MEDIA_ERR_LOG("GetTimeIdFromUri find indexEnd for time_id failed: %{private}s", uri.c_str());
+            continue;
+        }
+        int32_t timeIdLen = indexEnd - indexStart - ML_URI_TIME_ID.length();
+        if (indexEnd <= uri.size()) {
+            timeIdBatch.emplace_back(uri.substr(indexStart + ML_URI_TIME_ID.length(), timeIdLen));
+        }
+        if (indexEnd + ML_URI_OFFSET.length() <= uri.size()) {
+            offset.emplace_back(stoi(uri.substr(indexEnd + ML_URI_OFFSET.length())));
+        }
+    }
+    if (offset.size() != BATCH_SIZE_START_AND_END) {
+        return;
+    }
+    start = offset[0];
+    count = offset[1] - offset[0] + 1;
 }
 
 int32_t MediaFileUri::CreateAssetBucket(int32_t fileId, int32_t &bucketNum)

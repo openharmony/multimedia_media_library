@@ -45,15 +45,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-
-void IThumbnailHelper::SetThumbnailSizeValue(ValuesBucket& values, Size& size, const std::string& column) 
-{
-    if (size.height != 0 && size.width != 0) {
-        std::string tmpSize = std::to_string(size.width) + ":" + std::to_string(size.height);
-        values.PutString(column, tmpSize);
-    }
-}
-
 void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
@@ -74,7 +65,6 @@ void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
         return;
     }
     DoCreateLcd(data->opts_, data->thumbnailData_);
-    UpdateThumbDBState(data->opts_, data->thumbnailData_, false);
 }
 
 void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
@@ -502,11 +492,11 @@ int32_t IThumbnailHelper::UpdateThumbDBState(const ThumbRdbOpt &opts, const Thum
     }
     Size thumbSize;
     if (ThumbnailUtils::GetThumbSize(data, ThumbnailType::THUMB, thumbSize)) {
-        SetThumbnailSizeValue(values, thumbSize, PhotoColumn::PHOTO_THUMB_SIZE);
+        ThumbnailUtils::SetThumbnailSizeValue(values, thumbSize, PhotoColumn::PHOTO_THUMB_SIZE);
     }
     Size lcdSize;
     if (ThumbnailUtils::GetThumbSize(data, ThumbnailType::LCD, lcdSize)) {
-        SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
+        ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
     }
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
@@ -669,7 +659,7 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
         return false;
     }
-    if (!GenThumbnail(opts, data, ThumbnailType::THUMB)) {
+    if (data.loaderOpts.needUpload && !GenThumbnail(opts, data, ThumbnailType::THUMB)) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
             {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -731,7 +721,6 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
     if (!MediaFileUtils::DeleteFile(fileName)) {
         MEDIA_ERR_LOG("Fail to delete thumbnail temp file, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
     }
-
     return true;
 }
 
