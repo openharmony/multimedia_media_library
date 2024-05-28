@@ -270,8 +270,59 @@ bool MediaAssetChangeRequestNapi::CheckMovingPhotoResource(ResourceType resource
     return isResourceTypeVaild && addResourceTimes <= 1; // currently, add resource no more than once
 }
 
+static const unordered_map<MovingPhotoEffectMode, unordered_map<ResourceType, bool>> EFFECT_MODE_RESOURCE_CHECK = {
+    { MovingPhotoEffectMode::DEFAULT,
+        { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, false } } },
+    { MovingPhotoEffectMode::BOUNCE_PLAY,
+        { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, true } } },
+    { MovingPhotoEffectMode::LOOP_PLAY,
+        { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, true } } },
+    { MovingPhotoEffectMode::LONG_EXPOSURE,
+        { { ResourceType::IMAGE_RESOURCE, true }, { ResourceType::VIDEO_RESOURCE, false } } },
+    { MovingPhotoEffectMode::MULTI_EXPOSURE,
+        { { ResourceType::IMAGE_RESOURCE, true }, { ResourceType::VIDEO_RESOURCE, false } } },
+};
+
+bool MediaAssetChangeRequestNapi::CheckEffectModeWriteOperation()
+{
+    if (fileAsset_ == nullptr) {
+        NAPI_ERR_LOG("fileAsset is nullptr");
+        return false;
+    }
+
+    if (fileAsset_->GetTimePending() != 0) {
+        NAPI_ERR_LOG("Failed to check pending of fileAsset: %{public}" PRId64, fileAsset_->GetTimePending());
+        return false;
+    }
+
+    MovingPhotoEffectMode effectMode = static_cast<MovingPhotoEffectMode>(fileAsset_->GetMovingPhotoEffectMode());
+    auto iter = EFFECT_MODE_RESOURCE_CHECK.find(effectMode);
+    if (iter == EFFECT_MODE_RESOURCE_CHECK.end()) {
+        NAPI_ERR_LOG("Failed to check effect mode: %{public}d", static_cast<int32_t>(effectMode));
+        return false;
+    }
+
+    bool isImageExist = std::find(addResourceTypes_.begin(), addResourceTypes_.end(), ResourceType::IMAGE_RESOURCE) !=
+                        addResourceTypes_.end();
+    bool isVideoExist = std::find(addResourceTypes_.begin(), addResourceTypes_.end(), ResourceType::VIDEO_RESOURCE) !=
+                        addResourceTypes_.end();
+    if (iter->second.at(ResourceType::IMAGE_RESOURCE) && !isImageExist) {
+        NAPI_ERR_LOG("Failed to check image resource for effect mode: %{public}d", static_cast<int32_t>(effectMode));
+        return false;
+    }
+    if (iter->second.at(ResourceType::VIDEO_RESOURCE) && !isVideoExist) {
+        NAPI_ERR_LOG("Failed to check video resource for effect mode: %{public}d", static_cast<int32_t>(effectMode));
+        return false;
+    }
+    return true;
+}
+
 bool MediaAssetChangeRequestNapi::CheckMovingPhotoWriteOperation()
 {
+    if (Contains(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE)) {
+        return CheckEffectModeWriteOperation();
+    }
+
     bool containsAddResource = Contains(AssetChangeOperation::ADD_RESOURCE);
     if (!containsAddResource) {
         return true;
@@ -428,7 +479,7 @@ static bool CheckMovingPhotoCreationArgs(MediaAssetChangeRequestAsyncContext& co
     }
 
     if (mediaType != static_cast<int32_t>(MEDIA_TYPE_IMAGE)) {
-        NAPI_ERR_LOG("Failed to cehck media type (%{public}d) for moving photo", mediaType);
+        NAPI_ERR_LOG("Failed to check media type (%{public}d) for moving photo", mediaType);
         return false;
     }
 
@@ -1096,8 +1147,14 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
     CHECK_COND_WITH_MESSAGE(env, MediaFileUtils::CheckMovingPhotoEffectMode(effectMode), "Failed to check effect mode");
 
     auto changeRequest = asyncContext->objectInfo;
-    CHECK_COND(env, changeRequest->GetFileAssetInstance() != nullptr, JS_INNER_FAIL);
-    changeRequest->GetFileAssetInstance()->SetMovingPhotoEffectMode(effectMode);
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT, "Operation not support: the asset is not moving photo");
+        return nullptr;
+    }
+
+    fileAsset->SetMovingPhotoEffectMode(effectMode);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE);
     RETURN_NAPI_UNDEFINED(env);
 }
