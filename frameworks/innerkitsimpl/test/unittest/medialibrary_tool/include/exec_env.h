@@ -48,6 +48,9 @@ struct DeleteParam {
     bool isOnlyDeleteDb = false;
     std::string deleteUri;
 };
+struct QueryParam {
+    std::string displayName;
+};
 
 struct ExecEnv {
     OptionArgs optArgs;
@@ -56,6 +59,7 @@ struct ExecEnv {
     RecvParam recvParam;
     ListParam listParam;
     DeleteParam deleteParam;
+    QueryParam queryParam;
     std::string workPath; // current work path
     [[nodiscard]] std::string ToStr() const;
 };

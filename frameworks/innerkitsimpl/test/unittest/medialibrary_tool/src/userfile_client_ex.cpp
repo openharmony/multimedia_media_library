@@ -422,6 +422,22 @@ int32_t UserFileClientEx::Delete(bool isOnlyDeleteDb, bool isRestart)
     return ret;
 }
 
+std::shared_ptr<DataShare::DataShareResultSet> UserFileClientEx::GetResultsetByDisplayName(
+    const std::string &tableName, const std::string &displayName)
+{
+    DataShare::DataSharePredicates predicates;
+    predicates.And()->EqualTo(MediaColumn::MEDIA_NAME, displayName);
+    std::vector<std::string> columns = { MediaColumn::MEDIA_FILE_PATH };
+    int queryErrCode = 0;
+    std::string queryUriStr = GetQueryUri(tableName);
+    if (queryUriStr.empty()) {
+        MEDIA_ERR_LOG("query failed. queryUriStr:empty, tableName:%{public}s", tableName.c_str());
+    }
+    Uri filesQueryUri(queryUriStr);
+    auto resultSet = UserFileClient::Query(filesQueryUri, predicates, columns, queryErrCode);
+    return resultSet;
+}
+
 std::string UserFileClientEx::GetTableNameByMediaType(const MediaType mediaType)
 {
     static const std::map<MediaType, std::string> TYPE_TABLE_MAP = {
