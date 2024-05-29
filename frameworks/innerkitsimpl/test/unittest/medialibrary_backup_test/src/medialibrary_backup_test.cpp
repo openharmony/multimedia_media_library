@@ -21,6 +21,7 @@
 
 #define private public
 #define protected public
+#include "backup_const_map.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "external_source.h"
@@ -44,7 +45,7 @@ const std::string GALLERY_APP_NAME = "gallery";
 const std::string MEDIA_APP_NAME = "external";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 
-const int EXPECTED_NUM = 20;
+const int EXPECTED_NUM = 30;
 const int EXPECTED_OREINTATION = 270;
 const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "user_comment";
@@ -57,9 +58,25 @@ const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS 
     " date_trashed BIGINT DEFAULT 0, hidden INT DEFAULT 0, height INT, width INT, user_comment TEXT, " +
     " orientation INT DEFAULT 0, package_name TEXT);";
 
+const string PhotosOpenCall::CREATE_PHOTOS_ALBUM = "CREATE TABLE IF NOT EXISTS PhotoAlbum \
+    (album_id INTEGER PRIMARY KEY AUTOINCREMENT, album_type INT,   \
+    album_subtype INT, album_name TEXT COLLATE NOCASE, cover_uri TEXT, count \
+    INT DEFAULT 0, date_modified BIGINT DEFAULT 0, dirty INT DEFAULT  1  , cloud_id TEXT,  \
+    relative_path TEXT, contains_hidden INT DEFAULT 0, hidden_count INT DEFAULT 0,  \
+    hidden_cover TEXT DEFAULT '', album_order INT,  image_count INT DEFAULT 0,  \
+    video_count INT DEFAULT 0, bundle_name TEXT, local_language TEXT,  \
+    is_local INT)";
+
+const string PhotosOpenCall::CREATE_PHOTOS_MAP = "CREATE TABLE IF NOT EXISTS  PhotoMap \
+    (map_album INT, map_asset INT, dirty INT DEFAULT 1, PRIMARY KEY (map_album, map_asset))";
+
 int PhotosOpenCall::OnCreate(RdbStore &store)
 {
-    return store.ExecuteSql(CREATE_PHOTOS);
+    int ret = 0;
+    ret += store.ExecuteSql(CREATE_PHOTOS);
+    ret += store.ExecuteSql(CREATE_PHOTOS_ALBUM);
+    ret += store.ExecuteSql(CREATE_PHOTOS_MAP);
+    return ret;
 }
 
 int PhotosOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersion)
@@ -67,8 +84,36 @@ int PhotosOpenCall::OnUpgrade(RdbStore &store, int oldVersion, int newVersion)
     return 0;
 }
 
-shared_ptr<NativeRdb::RdbStore> photosStorePtr = nullptr;
+std::shared_ptr<NativeRdb::RdbStore> photosStorePtr = nullptr;
 std::unique_ptr<UpgradeRestore> restoreService = nullptr;
+
+void InitPhotoAlbum()
+{
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (0, 1, 'test101');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (1024, 2049, 'TmallPic');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (1024, 2049, '美图贴贴');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (1024, 2049, 'funnygallery');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (1024, 2049, 'xiaohongshu');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (1024, 2049, 'Douyin');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (1024, 2049, 'save');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (1024, 2049, 'Weibo');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (1024, 2049, 'Camera');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (1024, 2049, 'Screenshots');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) \
+        VALUES (1024, 2049, 'Screenrecorder');");
+    photosStorePtr->ExecuteSql("INSERT INTO PhotoAlbum (album_type, album_subtype,album_name) VALUES (1024, 2049,'" +
+        GetDUALBundleName() + " Share');");
+}
 
 void Init(GallerySource &gallerySource, ExternalSource &externalSource)
 {
@@ -86,6 +131,7 @@ void Init(GallerySource &gallerySource, ExternalSource &externalSource)
     int errCode = 0;
     shared_ptr<NativeRdb::RdbStore> store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
     photosStorePtr = store;
+    InitPhotoAlbum();
     restoreService = std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
     restoreService->Init(TEST_BACKUP_PATH, TEST_UPGRADE_FILE_DIR, false);
     restoreService->InitGarbageAlbum();
@@ -268,7 +314,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_not_sync_valid, TestSize.L
     std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='not_sync_weixin.jpg'";
     auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_not_sync_valid end");
 }
 
@@ -354,7 +400,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_a_media_not_sync_valid, Te
     std::string queryNotSyncValid = "SELECT file_id from Photos where display_name ='a_media_not_sync.jpg'";
     auto resultSet = photosStorePtr->QuerySql(queryNotSyncValid);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_a_media_not_sync_valid end");
 }
 
@@ -562,6 +608,374 @@ HWTEST_F(MediaLibraryBackupTest, RestoreAudio_GetAudioInsertValues_file_not_exit
     auto res = upgrade->GetAudioInsertValues(0, fileInfos);
     EXPECT_EQ(res.size(), 0);
     MEDIA_INFO_LOG("RestoreAudio_GetAudioInsertValues_file_not_exit end");
+}
+
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test001 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test001 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'test001';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test001 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test001 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test002, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test002 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test002 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'test002';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    queryTrashed = "SELECT file_id from Photos where display_name = 'a_media_normal_image1.jpg';";
+    resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test002 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test002 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test003, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test003 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test003 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'test003';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    queryTrashed = "SELECT file_id from Photos where display_name = 'a_media_normal_video1.mp4';";
+    resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test003 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test003 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test004, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test004 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test004 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'TmallPic';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test004 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test004 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test005, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test005 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test005 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'UCDownloads';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test005 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test005 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test006, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test006 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test006 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name  = 'xiaohongshu';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test006 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test006 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test007, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test007 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test007 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'Douyin';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test007 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test007 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test008, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test008 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test008 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'Weibo';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test008 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test008 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test009, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test009 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test009 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'Camera';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    queryTrashed = "SELECT file_id from Photos where display_name = 'camera1.jpg';";
+    resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test009 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test009 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test010, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test010 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test010 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'Screenshots';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    queryTrashed = "SELECT file_id from Photos where display_name = 'screenshots1.jpg';";
+    resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test010 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test010 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test011, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test011 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test011 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'Screenrecorder';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    queryTrashed = "SELECT file_id from Photos where display_name = 'screenrecorder1.mp4';";
+    resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test011 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test011 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test012, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test012 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test012 start");
+    restoreService->RestorePhoto();
+    std::string sql = "SELECT album_id from PhotoAlbum where album_name = '" + GetDUALBundleName() + " Share';";
+    auto resultSet = photosStorePtr->QuerySql(sql);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    sql = "SELECT file_id from Photos where display_name = '" + GetDUALBundleName() + "Share1.jpg';";
+    resultSet = photosStorePtr->QuerySql(sql);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test012 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test012 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test101, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test101 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test101 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_type,album_subtype from PhotoAlbum where album_name = 'test101';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    int32_t album_type = GetInt32Val("album_type", resultSet);
+    int32_t album_subtype = GetInt32Val("album_subtype", resultSet);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    EXPECT_EQ(album_type, 0);
+    EXPECT_EQ(album_subtype, 0);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test101 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test101 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test102, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test102 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test102 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'TmallPic';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test102 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test102 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test103, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test103 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test103 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'MTTT';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test103 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test103 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test104, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test104 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test104 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'funnygallery';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test104 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test104 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test105, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test105 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test105 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'xiaohongshu';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test105 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test105 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test106, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test106 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test106 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'Douyin';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test106 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test106 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test107, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test107 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test107 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'save';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test107 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test107 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test108, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test108 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test108 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'Weibo';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test108 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test108 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test109, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test109 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test109 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'Camera';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    queryTrashed = "SELECT file_id from Photos where display_name = 'camera2.jpg';";
+    resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test109 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test109 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test110, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test110 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test110 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'Screenshots';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    queryTrashed = "SELECT file_id from Photos where display_name = 'screenshots2.jpg';";
+    resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test110 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test110 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test111, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test111 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test111 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = 'Screenrecorder';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    queryTrashed = "SELECT file_id from Photos where display_name = 'screenrecorder2.mp4';";
+    resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test111 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test111 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test112, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test112 start";
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test112 start");
+    restoreService->RestorePhoto();
+    std::string queryTrashed = "SELECT album_id from PhotoAlbum where album_name = '" + GetDUALBundleName() +" Share';";
+    auto resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+
+    queryTrashed = "SELECT file_id from Photos where display_name = '" + GetDUALBundleName() + "Share2.jpg';";
+    resultSet = photosStorePtr->QuerySql(queryTrashed);
+    ASSERT_FALSE(resultSet == nullptr);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    MEDIA_INFO_LOG("medialib_backup_test_ablum_test112 end");
+    GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test112 end";
 }
 } // namespace Media
 } // namespace OHOS
