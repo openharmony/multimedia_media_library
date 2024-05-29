@@ -220,7 +220,7 @@ void UpgradeRestore::RestorePhoto(void)
     AnalyzeSource();
     InitGarbageAlbum();
     HandleClone();
-    RestoreFromGalleryAlbum(); // 单双框架相册融合
+    RestoreFromGalleryAlbum(); // 跨端相册融合
     RestoreFromGallery();
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
         (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
@@ -543,6 +543,22 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     return true;
 }
 
+void UpgradeRestore::ParseResultSetForMap(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
+{
+    std::string relativeBucketId = GetStringVal(GALLERY_MEDIA_BUCKET_ID, resultSet);
+    // hiddenAlbum
+    if (relativeBucketId == hiddenAlbumBucketId_ && !hiddenAlbumBucketId_.empty()) {
+        std::string sourcePath = GetStringVal(GALLERY_MEDIA_SOURCE_PATH, resultSet);
+        UpdateHiddenAlbumToMediaAlbumId(sourcePath, info);
+    } else {
+        auto it = galleryAlbumMap_.find(relativeBucketId);
+        if (it != galleryAlbumMap_.end()) {
+            UpdateFileInfo(it->second, info);
+            return;
+        }
+    }
+}
+
 bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
     int32_t localMediaId = GetInt32Val(GALLERY_LOCAL_MEDIA_ID, resultSet);
@@ -555,17 +571,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
         MEDIA_ERR_LOG("ParseResultSetFromGallery fail");
         return isSuccess;
     }
-
-    std::string relativeBucketId = GetStringVal(GALLERY_MEDIA_BUCKET_ID, resultSet);
-    auto it = galleryAlbumMap_.find(relativeBucketId);
-    if (it != galleryAlbumMap_.end())  {
-        if (it->second.albumCNName == SCREEN_SHOT_AND_RECORDER && info.fileType == MediaType::MEDIA_TYPE_VIDEO &&
-           mediaScreenreCorderAlbumId_ > 0) {
-            info.mediaAlbumId = mediaScreenreCorderAlbumId_;
-        } else {
-            info.mediaAlbumId = it->second.mediaAlbumId;
-        }
-    }
+    ParseResultSetForMap(resultSet, info);
     return isSuccess;
 }
 
@@ -614,14 +620,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
     values.PutInt(PhotoColumn::PHOTO_ORIENTATION, fileInfo.orientation);
-    std::string package_name = "";
-    std::string findPath = fileInfo.relativePath;
-    for (auto &nickItem : nickMap_) {
-        if (findPath.find(nickItem.first) == 0) {
-            package_name = nickItem.second;
-            break;
-        }
-    }
+    std::string package_name = fileInfo.packageName;
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
@@ -651,26 +650,31 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
     return true;
 }
 
+void UpgradeRestore::IntegratedAlbum(GalleryAlbumInfo &galleryAlbumInfo)
+{
+    auto albunmNameMatch = [&galleryAlbumInfo](const AlbumInfo &albumInfo) {
+        return galleryAlbumInfo.albumName == albumInfo.albumName ||
+               (!galleryAlbumInfo.albumENName.empty() && galleryAlbumInfo.albumENName == albumInfo.albumName) ||
+               (!galleryAlbumInfo.albumCNName.empty() && galleryAlbumInfo.albumCNName == albumInfo.albumName) ||
+               (!galleryAlbumInfo.albumNickName.empty() && galleryAlbumInfo.albumNickName == albumInfo.albumName) ||
+               (!galleryAlbumInfo.albumListName.empty() && galleryAlbumInfo.albumListName == albumInfo.albumName) ||
+               (!galleryAlbumInfo.albumBundleName.empty() &&
+                galleryAlbumInfo.albumBundleName == albumInfo.albumBundleName);
+    };
+    auto it = std::find_if(photoAlbumInfos_.begin(), photoAlbumInfos_.end(), albunmNameMatch);
+    if (it != photoAlbumInfos_.end()) {
+        galleryAlbumInfo.mediaAlbumId = it->albumIdOld;
+    }
+}
+
 void UpgradeRestore::RestoreFromGalleryAlbum()
 {
     vector<GalleryAlbumInfo> galleryAlbumInfos = QueryGalleryAlbumInfos();
-    vector<AlbumInfo> photoAlbumInfos = QueryPhotoAlbumInfos();
+    photoAlbumInfos_ = QueryPhotoAlbumInfos();
     bool bInsertScreenreCorderAlbum = false;
     // 遍历galleryAlbumInfos，查找对应的相册信息并更新
     for (auto &galleryAlbumInfo : galleryAlbumInfos) {
-        auto albunmNameMatch = [&galleryAlbumInfo](const AlbumInfo &albumInfo) {
-            return galleryAlbumInfo.albumName == albumInfo.albumName ||
-                   (!galleryAlbumInfo.albumENName.empty() && galleryAlbumInfo.albumENName == albumInfo.albumName) ||
-                   (!galleryAlbumInfo.albumCNName.empty() && galleryAlbumInfo.albumCNName == albumInfo.albumName) ||
-                   (!galleryAlbumInfo.albumNickName.empty() && galleryAlbumInfo.albumNickName == albumInfo.albumName) ||
-                   (!galleryAlbumInfo.albumListName.empty() && galleryAlbumInfo.albumListName == albumInfo.albumName) ||
-                   (!galleryAlbumInfo.albumBundleName.empty() &&
-                    galleryAlbumInfo.albumBundleName == albumInfo.albumBundleName);
-        };
-        auto it = std::find_if(photoAlbumInfos.begin(), photoAlbumInfos.end(), albunmNameMatch);
-        if (it != photoAlbumInfos.end()) {
-            galleryAlbumInfo.mediaAlbumId = it->albumIdOld;
-        }
+        IntegratedAlbum(galleryAlbumInfo);
         if (galleryAlbumInfo.albumCNName == SCREEN_SHOT_AND_RECORDER &&
            mediaScreenreCorderAlbumId_ == PHOTOS_TABLE_ALBUM_ID) {
             bInsertScreenreCorderAlbum = true;
@@ -704,6 +708,7 @@ vector<GalleryAlbumInfo> UpgradeRestore::QueryGalleryAlbumInfos()
             }
         }
     }
+    UpdatehiddenAlbumBucketId();
     return result;
 }
 
@@ -759,18 +764,15 @@ bool UpgradeRestore::ParseAlbumResultSet(const shared_ptr<NativeRdb::ResultSet> 
     if (mediaScreenreCorderAlbumId_ == PHOTOS_TABLE_ALBUM_ID && albumInfo.albumBundleName == VIDEO_SCREEN_RECORDER) {
         mediaScreenreCorderAlbumId_ = albumInfo.albumIdOld;
     }
+    albumInfo.albumType = static_cast<PhotoAlbumType>(GetInt32Val(PhotoAlbumColumns::ALBUM_TYPE, resultSet));
+    albumInfo.albumSubType = static_cast<PhotoAlbumSubType>(GetInt32Val(PhotoAlbumColumns::ALBUM_SUBTYPE, resultSet));
     return true;
 }
 
-bool UpgradeRestore::ParseGalleryAlbumResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
-    GalleryAlbumInfo &galleryAlbumInfo)
+void UpgradeRestore::UpdateGalleryAlbumInfo(GalleryAlbumInfo &galleryAlbumInfo)
 {
-    galleryAlbumInfo.albumRelativeBucketId = GetStringVal(GALLERY_ALBUM_BUCKETID, resultSet);
-    galleryAlbumInfo.albumName = GetStringVal(GALLERY_ALBUM_NAME, resultSet);
-    galleryAlbumInfo.albumNickName = GetStringVal(GALLERY_NICK_NAME, resultSet);
-    std::string lPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
-    if (ALBUM_PART_MAP.find(lPath) != ALBUM_PART_MAP.end()) {
-        auto data = ALBUM_PART_MAP.at(lPath);
+    if (ALBUM_PART_MAP.find(galleryAlbumInfo.albumlPath) != ALBUM_PART_MAP.end()) {
+        auto data = ALBUM_PART_MAP.at(galleryAlbumInfo.albumlPath);
         galleryAlbumInfo.albumCNName = data.first;
         galleryAlbumInfo.albumENName = data.second;
     }
@@ -794,6 +796,16 @@ bool UpgradeRestore::ParseGalleryAlbumResultSet(const shared_ptr<NativeRdb::Resu
         galleryAlbumInfo.albumListName = data.first;
         galleryAlbumInfo.albumBundleName = data.second;
     }
+}
+
+bool UpgradeRestore::ParseGalleryAlbumResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet,
+    GalleryAlbumInfo &galleryAlbumInfo)
+{
+    galleryAlbumInfo.albumRelativeBucketId = GetStringVal(GALLERY_ALBUM_BUCKETID, resultSet);
+    galleryAlbumInfo.albumName = GetStringVal(GALLERY_ALBUM_NAME, resultSet);
+    galleryAlbumInfo.albumNickName = GetStringVal(GALLERY_NICK_NAME, resultSet);
+    galleryAlbumInfo.albumlPath = GetStringVal(GALLERY_ALBUM_IPATH, resultSet);
+    UpdateGalleryAlbumInfo(galleryAlbumInfo);
     return true;
 }
 
@@ -810,6 +822,10 @@ void UpgradeRestore::InsertAlbum(vector<GalleryAlbumInfo> &galleryAlbumInfos,
     }
     int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(galleryAlbumInfos, bInsertScreenreCorderAlbum);
+    if (values.size() == 0) {
+        MEDIA_ERR_LOG("no album need insert");
+        return;
+    }
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoAlbumColumns::TABLE, values, rowNum);
     if (errCode != E_OK) {
@@ -882,13 +898,17 @@ void UpgradeRestore::BatchQueryAlbum(vector<GalleryAlbumInfo> &galleryAlbumInfos
         if (galleryAlbumInfo.mediaAlbumId != PHOTOS_TABLE_ALBUM_ID) {
             continue;
         }
-        string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
+        string querySql = "SELECT * FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
             PhotoAlbumColumns::ALBUM_NAME + " = '" + ReplaceAll(galleryAlbumInfo.albumMediaName, "\'", "\'\'") + "'";
         auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
         if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
             continue;
         }
-        galleryAlbumInfo.mediaAlbumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+        AlbumInfo albumInfo;
+        if (ParseAlbumResultSet(resultSet, albumInfo)) {
+            galleryAlbumInfo.mediaAlbumId = albumInfo.albumIdOld;
+            photoAlbumInfos_.emplace_back(albumInfo);
+        }
         if (galleryAlbumInfo.mediaAlbumId <= 0) {
             MEDIA_ERR_LOG("The album_id is abnormal, From Gallery %{public}s",
                 galleryAlbumInfo.albumRelativeBucketId.c_str());
@@ -902,13 +922,123 @@ void UpgradeRestore::UpdateMediaScreenreCorderAlbumId()
     if (mediaScreenreCorderAlbumId_ != PHOTOS_TABLE_ALBUM_ID) {
         return;
     }
-    string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
+    string querySql = "SELECT * FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
         PhotoAlbumColumns::ALBUM_NAME + " = '" + VIDEO_SCREEN_RECORDER_NAME + "'";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return;
     }
-    mediaScreenreCorderAlbumId_ = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+    AlbumInfo albumInfo;
+    if (ParseAlbumResultSet(resultSet, albumInfo)) {
+        mediaScreenreCorderAlbumId_ = albumInfo.albumIdOld;
+        photoAlbumInfos_.emplace_back(albumInfo);
+    }
+}
+
+void UpgradeRestore::UpdatehiddenAlbumBucketId()
+{
+    string querySql = "SELECT " + GALLERY_ALBUM_BUCKETID + " FROM " + GALLERY_ALBUM +
+        " WHERE " + GALLERY_ALBUM_IPATH + " = '" + GALLERT_HIDDEN_ALBUM + "'";
+    std::shared_ptr<NativeRdb::ResultSet> resultSet = nullptr;
+    resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return;
+    }
+    hiddenAlbumBucketId_ = GetStringVal(GALLERY_ALBUM_BUCKETID, resultSet);
+}
+
+static std::string GetRealPath(const std::string &filePath, const std::string &path, bool bFirst)
+{
+    if (filePath.empty() || path.empty()) {
+        return "";
+    }
+    string realPath = "";
+    size_t fileIndex;
+    if (bFirst) {
+        fileIndex = filePath.find_first_of(FILE_SEPARATOR);
+        if (fileIndex != string::npos) {
+            realPath = filePath.substr(fileIndex);
+        }
+    } else {
+        fileIndex = filePath.find_last_of(path);
+        if (fileIndex != string::npos) {
+            realPath = filePath.substr(0, fileIndex);
+        }
+    }
+    return realPath;
+}
+
+void UpgradeRestore::UpdateHiddenAlbumToMediaAlbumId(const std::string &sourcePath, FileInfo &info)
+{
+    // 去掉文件名
+    string filePath = GetRealPath(sourcePath, FILE_SEPARATOR, false);
+    //去掉前缀
+    string realPath = ReplaceAll(filePath, GALLERT_ROOT_PATH, "");
+    string ablumIPath = GetRealPath(realPath, FILE_SEPARATOR, true);
+    if (ablumIPath.empty()) {
+        return;
+    }
+    // 路径匹配
+    for (auto &galleryAlbuminfo : galleryAlbumMap_) {
+        if (ablumIPath == galleryAlbuminfo.second.albumlPath) {
+            UpdateFileInfo(galleryAlbuminfo.second, info);
+            return;
+        }
+    }
+    // 查询不到新增相册
+    InstertHiddenAlbum(ablumIPath, info);
+}
+
+void UpgradeRestore::InstertHiddenAlbum(const std::string &ablumIPath, FileInfo &info)
+{
+    GalleryAlbumInfo galleryAlbumInfo;
+    galleryAlbumInfo.albumlPath = ablumIPath;
+    size_t fileIndex = ablumIPath.find_last_of(FILE_SEPARATOR);
+    if (fileIndex != string::npos) {
+        galleryAlbumInfo.albumName = ablumIPath.substr(fileIndex + 1);
+    }
+    //IPath匹配
+    auto it = nickMap_.find(galleryAlbumInfo.albumlPath);
+    if (it != nickMap_.end())  {
+        galleryAlbumInfo.albumNickName = it->second;
+    }
+    UpdateGalleryAlbumInfo(galleryAlbumInfo);
+    IntegratedAlbum(galleryAlbumInfo);
+    bool bInsertScreenreCorderAlbum = false;
+    if (galleryAlbumInfo.albumCNName == SCREEN_SHOT_AND_RECORDER &&
+        mediaScreenreCorderAlbumId_ == PHOTOS_TABLE_ALBUM_ID) {
+            bInsertScreenreCorderAlbum = true;
+    }
+    // 将符合新增规则的进行插入处理
+    vector<GalleryAlbumInfo> galleryAlbumInfos;
+    galleryAlbumInfos.emplace_back(galleryAlbumInfo);
+    InsertAlbum(galleryAlbumInfos, bInsertScreenreCorderAlbum);
+    for (auto &galleryAlbumInfo : galleryAlbumInfos) {
+        if (galleryAlbumInfo.mediaAlbumId != PHOTOS_TABLE_ALBUM_ID) {
+            UpdateFileInfo(galleryAlbumInfo, info);
+        }
+        galleryAlbumMap_.insert({galleryAlbumInfo.albumName, galleryAlbumInfo});
+    }
+}
+
+void UpgradeRestore::UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, FileInfo &info)
+{
+    if (galleryAlbumInfo.albumCNName == SCREEN_SHOT_AND_RECORDER && info.fileType == MediaType::MEDIA_TYPE_VIDEO &&
+       mediaScreenreCorderAlbumId_ > 0) {
+        info.mediaAlbumId = mediaScreenreCorderAlbumId_;
+        info.packageName = VIDEO_SCREEN_RECORDER_NAME;
+        return;
+    } else {
+        info.mediaAlbumId = galleryAlbumInfo.mediaAlbumId;
+    }
+    auto albunmNameMatch = [mediaAlbumId{info.mediaAlbumId}](const AlbumInfo &albumInfo) {
+        return mediaAlbumId == albumInfo.albumIdOld;
+    };
+    auto it = std::find_if(photoAlbumInfos_.begin(), photoAlbumInfos_.end(), albunmNameMatch);
+    if (it != photoAlbumInfos_.end() && it->albumType == PhotoAlbumType::SOURCE &&
+        it->albumSubType == PhotoAlbumSubType::SOURCE_GENERIC) {
+        info.packageName = it->albumName;
+    }
 }
 } // namespace Media
 } // namespace OHOS
