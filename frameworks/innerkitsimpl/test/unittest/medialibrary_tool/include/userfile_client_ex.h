@@ -41,6 +41,8 @@ public:
     static std::string GetTableNameByUri(const std::string &uri);
     static const std::vector<MediaType> &GetSupportTypes();
     static const std::vector<std::string> &GetSupportTables();
+    static std::shared_ptr<DataShare::DataShareResultSet> GetResultsetByDisplayName(
+        const std::string &tableName, const std::string &displayName);
 };
 } // namespace MediaTool
 } // namespace Media

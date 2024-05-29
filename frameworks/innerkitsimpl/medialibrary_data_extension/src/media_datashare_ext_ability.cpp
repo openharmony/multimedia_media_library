@@ -542,7 +542,8 @@ static bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
     if (UNIFY_TOOL_OP_OBJECT_MAP.find(object) != UNIFY_TOOL_OP_OBJECT_MAP.end()) {
         cmd.SetOprnObject(UNIFY_TOOL_OP_OBJECT_MAP.at(object));
     }
-    if (!PermissionUtils::IsRootShell()) {
+    if (!PermissionUtils::IsRootShell() &&
+        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::QUERY)) {
         MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
         return false;
     }
