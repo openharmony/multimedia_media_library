@@ -90,7 +90,7 @@ int32_t ControlMain::Main(const std::vector<std::string> &args)
             res = Media::E_ERR;
             break;
         }
-        MEDIA_INFO_LOG("Main, env:{%{private}s}", env.ToStr().c_str());
+        MEDIA_INFO_LOG("Mediatool main, env:{%{private}s}", env.ToStr().c_str());
         res = cmd->Start(env);
         if (res != Media::E_OK) {
             MEDIA_ERR_LOG("Main, start, res:%{public}d", res);
