@@ -75,6 +75,13 @@ private:
         bool bInsertScreenreCorderAlbum);
     void BatchQueryAlbum(std::vector<GalleryAlbumInfo> &galleryAlbumInfos);
     void UpdateMediaScreenreCorderAlbumId();
+    void UpdatehiddenAlbumBucketId();
+    void UpdateHiddenAlbumToMediaAlbumId(const std::string &sourcePath, FileInfo &info);
+    void InstertHiddenAlbum(const std::string &ablumIPath, FileInfo &info);
+    void UpdateGalleryAlbumInfo(GalleryAlbumInfo &galleryAlbumInfo);
+    void IntegratedAlbum(GalleryAlbumInfo &galleryAlbumInfo);
+    void ParseResultSetForMap(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
+    void UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, FileInfo &info);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
@@ -90,8 +97,10 @@ private:
     std::set<std::string> cacheSet_;
     std::unordered_map<std::string, std::string> nickMap_;
     std::unordered_map<std::string, GalleryAlbumInfo> galleryAlbumMap_;
+    std::vector<AlbumInfo> photoAlbumInfos_;
     bool sceneCode_;
     std::string audioDbPath_;
+    std::string hiddenAlbumBucketId_;
     int32_t mediaScreenreCorderAlbumId_{-1};
 };
 } // namespace Media
