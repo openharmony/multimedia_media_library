@@ -604,8 +604,14 @@ static void TrashPhotosSendNotify(vector<string> &notifyUris)
     if (notifyUris.empty()) {
         return;
     }
-    watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_REMOVE);
-    watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+    if (notifyUris.size() == 1) {
+        watch->Notify(notifyUris[0], NotifyType::NOTIFY_REMOVE);
+        watch->Notify(notifyUris[0], NotifyType::NOTIFY_ALBUM_REMOVE_ASSET);
+        watch->Notify(notifyUris[0], NotifyType::NOTIFY_ALBUM_ADD_ASSET, trashAlbumId);
+    } else {
+        watch->Notify(PhotoColumn::PHOTO_URI_PREFIX, NotifyType::NOTIFY_REMOVE);
+        watch->Notify(PhotoAlbumColumns::ALBUM_URI_PREFIX, NotifyType::NOTIFY_UPDATE);
+    }
     vector<int64_t> formIds;
     for (const auto &notifyUri : notifyUris) {
         MediaLibraryFormMapOperations::GetFormMapFormId(notifyUri.c_str(), formIds);
