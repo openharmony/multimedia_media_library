@@ -88,6 +88,8 @@ private:
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
         const std::string &editdata);
+    static int32_t RevertToOriginalEffectMode(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+        bool &isNeedScan);
 };
 
 class PhotoEditingRecord {
