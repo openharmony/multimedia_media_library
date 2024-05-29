@@ -32,6 +32,7 @@ namespace OHOS {
 namespace Media {
 
 const std::string MEDIA_LIBRARY_STARTUP_PARAM_PREFIX = "multimedia.medialibrary.startup.";
+const std::string RBDSTORE_DATE_ADDED_TIME_TEMPLATE = "0000000000000";
 const std::string RBDSTORE_FIELD_ID_TEMPLATE = "0000000000";
 constexpr uint32_t BASE_USER_RANGE = 200000;
 const std::unordered_set<OperationObject> OPERATION_OBJECT_SET = {
@@ -341,7 +342,8 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
             resultSet->GetInt(columnIndex, fileId);
         }
 
-        std::string timeId = std::to_string(dateAddedTime) +
+        std::string timeId = RBDSTORE_DATE_ADDED_TIME_TEMPLATE.substr(std::to_string(dateAddedTime).length()) +
+                             std::to_string(dateAddedTime) +
                              RBDSTORE_FIELD_ID_TEMPLATE.substr(std::to_string(fileId).length()) +
                              std::to_string(fileId);
         batchKeys.emplace_back(std::move(timeId));
