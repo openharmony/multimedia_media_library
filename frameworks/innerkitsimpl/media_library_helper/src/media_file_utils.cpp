@@ -1465,6 +1465,24 @@ bool MediaFileUtils::CheckMovingPhotoVideo(const UniqueFd &uniqueFd)
     return true;
 }
 
+std::string MediaFileUtils::GetTableNameByDisplayName(const std::string &displayName)
+{
+    std::string extension;
+    string::size_type currentPos = displayName.rfind('.');
+    if (currentPos != std::string::npos) {
+        extension = displayName.substr(currentPos + 1);
+    }
+
+    auto myTypeName = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
+    MediaType type = MimeTypeUtils::GetMediaTypeFromMimeType(myTypeName);
+    if (type == MEDIA_TYPE_AUDIO) {
+        return AudioColumn::AUDIOS_TABLE;
+    } else if (type == MEDIA_TYPE_IMAGE || type == MEDIA_TYPE_VIDEO) {
+        return PhotoColumn::PHOTOS_TABLE;
+    }
+    return "";
+}
+
 bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
 {
     // duration of moving photo video must be 0~3 s

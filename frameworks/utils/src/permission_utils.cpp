@@ -36,6 +36,7 @@ using namespace OHOS::Security::AccessToken;
 using namespace OHOS::AppExecFwk::Constants;
 
 const int32_t CAPACITY = 50;
+const int32_t HDC_SHELL_UID = 2000;
 
 std::list<std::pair<int32_t, BundleInfo>> PermissionUtils::bundleInfoList_ = {};
 std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> PermissionUtils::bundleInfoMap_ = {};
@@ -420,6 +421,11 @@ bool PermissionUtils::IsNativeSAApp()
 bool PermissionUtils::IsRootShell()
 {
     return IPCSkeleton::GetCallingUid() == 0;
+}
+
+bool PermissionUtils::IsHdcShell()
+{
+    return IPCSkeleton::GetCallingUid() == HDC_SHELL_UID;
 }
 
 string PermissionUtils::GetPackageNameByBundleName(const string &bundleName)
