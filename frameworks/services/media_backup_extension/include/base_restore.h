@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_BASE_RESTORE_H
 
 #include <atomic>
+#include <mutex>
 #include <unordered_map>
 
 #include "backup_const.h"
@@ -83,6 +84,9 @@ protected:
     std::string dualDirName_ = "";
     std::shared_ptr<NativeRdb::RdbStore> mediaLibraryRdb_;
     std::string backupRestoreDir_;
+    std::mutex imageMutex_;
+    std::mutex videoMutex_;
+    std::mutex audioMutex_;
 };
 } // namespace Media
 } // namespace OHOS
