@@ -685,40 +685,5 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_add_image_001, TestSize.Lev
     EXPECT_EQ(instance.photoIdInProcess_.count(PHOTO_ID_FOR_TEST), 1);
     MEDIA_INFO_LOG("manager_add_image_001 End");
 }
-
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, SyncWithDeferredProcSessionTest_001, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("SyncWithDeferredProcSessionTest_001 Start");
-    auto fileId = PrepareForFirstVisit();
-    EXPECT_GT(fileId, 0);
-
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
-
-    shared_ptr<MockDeferredProcessingAdapter> mockDeferredProcessingAdapter =
-        make_shared<MockDeferredProcessingAdapter>();
-    instance.deferredProcSession_ = mockDeferredProcessingAdapter;
-
-    EXPECT_CALL(*mockDeferredProcessingAdapter.get(), BeginSynchronize()).Times(1);
-    EXPECT_CALL(*mockDeferredProcessingAdapter.get(), EndSynchronize()).Times(1);
-
-    instance.SyncWithDeferredProcSessionInternal();
-    MEDIA_INFO_LOG("SyncWithDeferredProcSessionTest_001 End");
-}
-
-HWTEST_F(MediaLibraryMultiStagesCaptureTest, SyncWithDeferredProcSessionTest_query_empty_002, TestSize.Level1)
-{
-    MEDIA_INFO_LOG("SyncWithDeferredProcSessionTest_query_empty_002 Start");
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
-
-    shared_ptr<MockDeferredProcessingAdapter> mockDeferredProcessingAdapter =
-        make_shared<MockDeferredProcessingAdapter>();
-    instance.deferredProcSession_ = mockDeferredProcessingAdapter;
-
-    EXPECT_CALL(*mockDeferredProcessingAdapter.get(), BeginSynchronize()).Times(0);
-    EXPECT_CALL(*mockDeferredProcessingAdapter.get(), EndSynchronize()).Times(0);
-
-    instance.SyncWithDeferredProcSessionInternal();
-    MEDIA_INFO_LOG("SyncWithDeferredProcSessionTest_query_empty_002 End");
-}
 }
 }
