@@ -53,6 +53,7 @@ private:
     int64_t lockTime_;
     EXPORT void DoBackgroundOperation();
     EXPORT void StopBackgroundOperation();
+    EXPORT void StartAnalysisService();
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
     void DoStartMtpService();
