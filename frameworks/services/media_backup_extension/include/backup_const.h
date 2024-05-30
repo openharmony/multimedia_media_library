@@ -50,6 +50,8 @@ const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
 const std::string GARBLE = "***";
 const std::string GALLERT_IMPORT = "/Pictures/cloud/Imports";
+const std::string GALLERT_HIDDEN_ALBUM = "/Pictures/hiddenAlbum";
+const std::string GALLERT_ROOT_PATH = "/storage/emulated/";
 
 // DB field for update scene
 const std::string GALLERY_ID = "_id";
@@ -68,6 +70,7 @@ const std::string GALLERY_HEIGHT = "height";
 const std::string GALLERY_WIDTH = "width";
 const std::string GALLERY_ORIENTATION = "orientation";
 const std::string GALLERY_MEDIA_BUCKET_ID = "relative_bucket_id";
+const std::string GALLERY_MEDIA_SOURCE_PATH = "sourcePath";
 
 // external column
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
@@ -101,6 +104,8 @@ const std::string GALLERY_ALBUM_NAME = "albumName";
 const std::string GALLERY_ALBUM_BUCKETID = "relativeBucketId";
 const std::string GALLERY_ALBUM_IPATH = "lPath";
 const std::string GALLERY_NICK_NAME = "nick_name";
+
+const std::string FILE_SEPARATOR = "/";
 
 constexpr int32_t INDEX_TYPE = 0;
 constexpr int32_t INDEX_CACHE_DIR = 1;
@@ -157,6 +162,7 @@ struct FileInfo {
     std::string userComment;
     std::string relativePath;
     std::string cloudPath;
+    std::string packageName;
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
     int64_t fileSize {0};
@@ -197,6 +203,7 @@ struct GalleryAlbumInfo {
     std::string albumListName;      //白名单相册名称
     std::string albumBundleName;    //白名单包名
     std::string albumMediaName;     //单相册名称
+    std::string albumlPath;     //相册IPath
 };
 
 struct MapInfo {
@@ -241,7 +248,7 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     GALLERY_DISPLAY_NAME + "," + GALLERY_DESCRIPTION + "," + GALLERY_IS_FAVORITE + "," + GALLERY_RECYCLED_TIME +
     "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
-    EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID +
+    EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH +
     " FROM gallery_media WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
     SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0 ORDER BY showDateToken ASC ";
 
@@ -253,7 +260,8 @@ const std::string QUERY_GALLERY_ALBUM_INFO = "SELECT " + GALLERY_ALBUM +
                                      ".*, COALESCE(garbage_album.nick_name, '') AS " +
                                      GALLERY_NICK_NAME + " FROM " + GALLERY_ALBUM + " LEFT JOIN garbage_album ON " +
                                      GALLERY_ALBUM + ".lPath = garbage_album.nick_dir WHERE " + GALLERY_ALBUM +
-                                     ".lPath != '" + GALLERT_IMPORT + "'";
+                                     ".lPath != '" + GALLERT_IMPORT + "'" + " AND " + GALLERY_ALBUM +
+                                     ".lPath != '" + GALLERT_HIDDEN_ALBUM + "'";
 
 const std::string QUERY_AUDIO_COUNT = "SELECT count(1) as count FROM files WHERE media_type = 2 AND _size > 0 \
     AND _data LIKE '/storage/emulated/0/Music%'";

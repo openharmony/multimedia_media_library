@@ -579,6 +579,10 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
         if (fileInfo.cloudPath.empty() || fileInfo.mediaAlbumId <= 0) {
             continue;
         }
+        if (!fileInfo.packageName.empty()) {
+            // add for trigger insert_photo_insert_source_album
+            continue;
+        }
         NativeRdb::ValuesBucket value;
         value.PutInt(PhotoMap::ASSET_ID, fileInfo.fileIdNew);
         value.PutInt(PhotoMap::ALBUM_ID, fileInfo.mediaAlbumId);
