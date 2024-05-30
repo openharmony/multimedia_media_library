@@ -532,6 +532,7 @@ static bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
 {
     OperationObject object = cmd.GetOprnObject();
     if (object != OperationObject::TOOL_AUDIO && object != OperationObject::TOOL_PHOTO) {
+        MEDIA_DEBUG_LOG("Target is not mediatool, not performing mediatool permission check");
         return false;
     }
     static const unordered_map<OperationObject, OperationObject> UNIFY_TOOL_OP_OBJECT_MAP = {
@@ -541,10 +542,13 @@ static bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
     if (UNIFY_TOOL_OP_OBJECT_MAP.find(object) != UNIFY_TOOL_OP_OBJECT_MAP.end()) {
         cmd.SetOprnObject(UNIFY_TOOL_OP_OBJECT_MAP.at(object));
     }
-    if (!PermissionUtils::IsRootShell()) {
+    if (!PermissionUtils::IsRootShell() &&
+        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::QUERY)) {
+        MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
         return false;
     }
     if (!OHOS::system::GetBoolParameter("const.security.developermode.state", true)) {
+        MEDIA_ERR_LOG("Mediatool permission check failed: target is not in developer mode");
         return false;
     }
     return true;

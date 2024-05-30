@@ -38,6 +38,7 @@ ohos_executable("mediatool") {
     "src/command/command.cpp",
     "src/command/delete_command_v10.cpp",
     "src/command/list_command_v10.cpp",
+    "src/command/query_command_v10.cpp",
     "src/command/recv_command_v10.cpp",
     "src/command/send_command_v10.cpp",
     "src/command_line.cpp",
@@ -72,6 +73,7 @@ ohos_executable("mediatool") {
     "device_auth:deviceauth_sdk",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "init:libbegetutil",
     "napi:ace_napi",
     "samgr:samgr_proxy",
   ]

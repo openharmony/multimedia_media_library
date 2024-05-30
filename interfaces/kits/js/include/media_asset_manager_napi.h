@@ -40,6 +40,20 @@ enum class MultiStagesCapturePhotoStatus {
     LOW_QUALITY_STATUS,
 };
 
+struct AssetHandler {
+    std::string photoId;
+    std::string requestId;
+    std::string requestUri;
+    MediaAssetDataHandlerPtr dataHandler;
+    napi_threadsafe_function threadSafeFunc;
+    MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
+    bool needsExtraInfo;
+
+    AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
+        const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
+        : photoId(photoId), requestId(requestId), requestUri(uri), dataHandler(handler), threadSafeFunc(func) {}
+};
+
 struct MediaAssetManagerAsyncContext : NapiError {
     napi_async_work work;
     napi_deferred deferred;
@@ -64,20 +78,12 @@ struct MediaAssetManagerAsyncContext : NapiError {
     bool hasReadPermission;
     bool needsExtraInfo;
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
-};
-
-struct AssetHandler {
-    std::string photoId;
-    std::string requestId;
-    std::string requestUri;
-    MediaAssetDataHandlerPtr dataHandler;
-    napi_threadsafe_function threadSafeFunc;
-    MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
-    bool needsExtraInfo;
-
-    AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
-        const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
-        : photoId(photoId), requestId(requestId), requestUri(uri), dataHandler(handler), threadSafeFunc(func) {}
+    napi_ref dataHandlerRef2;
+    napi_threadsafe_function onDataPreparedPtr;
+    napi_threadsafe_function onDataPreparedPtr2;
+    PhotoSubType subType;
+    bool hasProcessPhoto;
+    AssetHandler *assetHandler = nullptr;
 };
 
 class MultiStagesTaskObserver : public DataShare::DataShareObserver {
@@ -97,10 +103,9 @@ public:
     static MultiStagesCapturePhotoStatus QueryPhotoStatus(int fileId, const string& photoUri,
         std::string &photoId, bool hasReadPermission);
     static void NotifyMediaDataPrepared(AssetHandler *assetHandler);
-    static void NotifyDataPreparedWithoutRegister(napi_env env,
-        const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
+    static void NotifyDataPreparedWithoutRegister(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void OnDataPrepared(napi_env env, napi_value cb, void *context, void *data);
-    static void RegisterTaskObserver(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
+    static void RegisterTaskObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void GetByteArrayNapiObject(const std::string &requestUri, napi_value &arrayBuffer, bool isSource,
         napi_env env);
     static void GetImageSourceNapiObject(const std::string &fileUri, napi_value &imageSourceNapiObj, bool isSource,
@@ -123,10 +128,20 @@ private:
     static void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
     static void CancelProcessImage(const std::string &photoId);
     static void AddImage(const int fileId, DeliveryMode deliveryMode);
-    static void OnHandleRequestImage(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
-    static void OnHandleRequestVideo(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext);
+    static void OnHandleRequestImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
+    static void OnHandleRequestVideo(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
     static void SendFile(napi_env env, int srcFd, int destFd, napi_value &result, off_t fileSize);
     static int32_t GetFdFromSandBoxUri(const std::string &sandBoxUri);
+
+    static napi_status CreateDataHandlerRef(napi_env env, const unique_ptr<MediaAssetManagerAsyncContext> &context,
+        napi_ref &dataHandlerRef);
+    static napi_status CreateOnDataPreparedThreadSafeFunc(napi_env env,
+        const unique_ptr<MediaAssetManagerAsyncContext> &context, napi_threadsafe_function &threadSafeFunc);
+    static void JSRequestExecute(napi_env env, void *data);
+    static void JSRequestVideoFileExecute(napi_env env, void *data);
+    static void JSRequestComplete(napi_env env, napi_status, void *data);
+    static void JSCancelRequestExecute(napi_env env, void *data);
+    static void JSCancelRequestComplete(napi_env env, napi_status, void *data);
 public:
     std::mutex sMediaAssetMutex_;
 };

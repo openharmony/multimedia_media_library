@@ -66,6 +66,7 @@ public:
     static bool IsSystemApp();
     static bool IsNativeSAApp();
     static bool IsRootShell();
+    static bool IsHdcShell();
     static bool CheckIsSystemAppByUid();
     static std::string GetPackageNameByBundleName(const std::string &bundleName);
     static std::string GetAppIdByBundleName(const std::string &bundleName);

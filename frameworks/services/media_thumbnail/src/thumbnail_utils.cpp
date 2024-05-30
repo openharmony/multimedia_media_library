@@ -662,8 +662,15 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
-    rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->
-        EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
+    rdbPredicates.BeginWrap()
+        ->BeginWrap()
+        ->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3")
+        ->EndWrap()
+        ->Or()
+        ->BeginWrap()
+        ->EqualTo(PhotoColumn::PHOTO_POSITION, "2")->And()->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, "0")
+        ->EndWrap()
+        ->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
@@ -784,7 +791,7 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
     int64_t timeNow = UTCTimeMilliSeconds();
     values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
     Size lcdSize;
-    if (GetThumbSize(data, ThumbnailType::LCD, lcdSize)) {
+    if (GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
         SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
     }
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
@@ -1919,13 +1926,24 @@ void ThumbnailUtils::RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats
     DfxManager::GetInstance()->HandleThumbnailGeneration(stats);
 }
 
-bool ThumbnailUtils::GetThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size)
+bool ThumbnailUtils::GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size)
 {
-    if (type != ThumbnailType::THUMB && type != ThumbnailType::LCD) {
+    if (type != ThumbnailType::THUMB && type != ThumbnailType::LCD && type != ThumbnailType::THUMB_ASTC) {
         MEDIA_ERR_LOG("can not get size for such type: %{public}d", type);
         return false;
     }
-    std::string tmpPath = GetLocalThumbnailPathWithThumbType(data.path, type);
+    std::string tmpPath = "";
+    switch (type) {
+        case ThumbnailType::THUMB:
+        case ThumbnailType::THUMB_ASTC:
+            tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
+            break;
+        case ThumbnailType::LCD:
+            tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+            break;
+        default:
+            break;
+    }
     uint32_t err = 0;
     unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
     if (err != E_OK || imageSource == nullptr) {
@@ -1945,10 +1963,11 @@ bool ThumbnailUtils::GetThumbSize(const ThumbnailData &data, const ThumbnailType
 
 void ThumbnailUtils::SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column)
 {
-    if (size.height != 0 && size.width != 0) {
-        std::string tmpSize = std::to_string(size.width) + ":" + std::to_string(size.height);
-        values.PutString(column, tmpSize);
+    if (size.height == 0 || size.width == 0) {
+        return;
     }
+    std::string tmpSize = std::to_string(size.width) + ":" + std::to_string(size.height);
+    values.PutString(column, tmpSize);
 }
 
 } // namespace Media

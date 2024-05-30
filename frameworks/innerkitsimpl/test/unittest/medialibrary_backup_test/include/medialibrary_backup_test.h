@@ -37,6 +37,8 @@ public:
     int OnCreate(NativeRdb::RdbStore &rdbStore) override;
     int OnUpgrade(NativeRdb::RdbStore &rdbStore, int oldVersion, int newVersion) override;
     static const std::string CREATE_PHOTOS;
+    static const std::string CREATE_PHOTOS_ALBUM;
+    static const std::string CREATE_PHOTOS_MAP;
 };
 } // namespace Media
 } // namespace OHOS

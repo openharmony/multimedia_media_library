@@ -39,6 +39,7 @@ const std::string OPT_STR_SEND = "send";
 const std::string OPT_STR_RECV = "recv";
 const std::string OPT_STR_LIST = "list";
 const std::string OPT_STR_DELETE = "delete";
+const std::string OPT_STR_QUERY = "query";
 const std::string OPT_STR_ALL = "all";
 
 const std::string SEND_CREATE_THUMBNAIL_SYNC = "-ts";
@@ -60,6 +61,8 @@ static inline void ShowUsage()
     str.append("    command: list uri | list all\n");
     str.append("  delete database and files in medialibrary\n");
     str.append("    command: delete all\n");
+    str.append("  query displayname in medialibrary\n");
+    str.append("    command: query display_name\n");
     printf("%s", str.c_str());
 }
 
@@ -232,6 +235,16 @@ static bool CheckDelete(ExecEnv &env)
     return true;
 }
 
+static bool CheckQuery(ExecEnv &env)
+{
+    if (env.optArgs.displayName.empty()) {
+        printf("%s input displayName incorrect.\n", STR_FAIL.c_str());
+        return false;
+    }
+    env.queryParam.displayName = env.optArgs.displayName;
+    return true;
+}
+
 static bool Check(ExecEnv &env)
 {
     if (env.optArgs.cmdType == OptCmdType::TYPE_SEND) {
@@ -245,6 +258,9 @@ static bool Check(ExecEnv &env)
     }
     if (env.optArgs.cmdType == OptCmdType::TYPE_DELETE) {
         return CheckDelete(env);
+    }
+    if (env.optArgs.cmdType == OptCmdType::TYPE_QUERY) {
+        return CheckQuery(env);
     }
     return false;
 }
@@ -288,6 +304,9 @@ int32_t CommandLine::Parser(ExecEnv &env)
         env.optArgs.uri = optFirst;
         env.optArgs.cmdType = OptCmdType::TYPE_DELETE;
         PutExtraString(env, MEDIATOOL_ARG_SECOND);
+    } else if (cmd == OPT_STR_QUERY) {
+        env.optArgs.displayName = optFirst;
+        env.optArgs.cmdType = OptCmdType::TYPE_QUERY;
     } else {
         ShowUsage();
         return Media::E_ERR;
