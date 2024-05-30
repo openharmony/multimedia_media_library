@@ -220,6 +220,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     }
     int width = data.source->GetWidth();
     int height = data.source->GetHeight();
+    data.loaderOpts.needUpload = true;
     ConvertDecodeSize(data, {width, height}, desiredSize);
     if ((desiredSize.width != data.source->GetWidth() || desiredSize.height != data.source->GetHeight())) {
         param.dstWidth = desiredSize.width;
@@ -789,6 +790,10 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
     tracer.Start("UpdateLcdInfo opts.store->Update");
     int64_t timeNow = UTCTimeMilliSeconds();
     values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
+    Size lcdSize;
+    if (GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
+        SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
+    }
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
@@ -1919,6 +1924,50 @@ void ThumbnailUtils::RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats
 {
     stats.totalCost = static_cast<int32_t>(MediaFileUtils::UTCTimeMilliSeconds() - stats.startTime);
     DfxManager::GetInstance()->HandleThumbnailGeneration(stats);
+}
+
+bool ThumbnailUtils::GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size)
+{
+    if (type != ThumbnailType::THUMB && type != ThumbnailType::LCD && type != ThumbnailType::THUMB_ASTC) {
+        MEDIA_ERR_LOG("can not get size for such type: %{public}d", type);
+        return false;
+    }
+    std::string tmpPath = "";
+    switch (type) {
+        case ThumbnailType::THUMB:
+        case ThumbnailType::THUMB_ASTC:
+            tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
+            break;
+        case ThumbnailType::LCD:
+            tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+            break;
+        default:
+            break;
+    }
+    uint32_t err = 0;
+    unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
+    if (err != E_OK || imageSource == nullptr) {
+        MEDIA_ERR_LOG("Failed to LoadImageSource for path:%{public}s", tmpPath.c_str());
+        return false;
+    }
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to Get ImageInfo, path:%{public}s", tmpPath.c_str());
+        return false;
+    }
+    size.height = imageInfo.size.height;
+    size.width = imageInfo.size.width;
+    return true;
+}
+
+void ThumbnailUtils::SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column)
+{
+    if (size.height == 0 || size.width == 0) {
+        return;
+    }
+    std::string tmpSize = std::to_string(size.width) + ":" + std::to_string(size.height);
+    values.PutString(column, tmpSize);
 }
 
 } // namespace Media

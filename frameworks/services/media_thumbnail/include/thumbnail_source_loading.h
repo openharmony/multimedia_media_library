@@ -28,6 +28,7 @@ namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 
+EXPORT std::string GetLocalThumbnailPath(const std::string& path, const std::string& key);
 EXPORT Size ConvertDecodeSize(ThumbnailData& data, const Size& sourceSize, Size& desiredSize);
 EXPORT bool GenDecodeOpts(const Size& sourceSize, const Size& targetSize, DecodeOptions& decodeOpts);
 EXPORT std::unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err);
@@ -152,7 +153,12 @@ const std::unordered_map<SourceState, StateFunc> STATE_FUNC_MAP = {
 
 class SourceLoader {
 public:
-    SourceLoader(Size& desiredSize, ThumbnailData& data) : data_(data), desiredSize_(desiredSize) {};
+    SourceLoader(Size& desiredSize, ThumbnailData& data) : data_(data), desiredSize_(desiredSize)
+    {
+        IsSourceAvailable = nullptr;
+        SwitchToNextState = nullptr;
+        IsSizeLargeEnough = nullptr;
+    };
     ~SourceLoader() = default;
     bool RunLoading();
 private:

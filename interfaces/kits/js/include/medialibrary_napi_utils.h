@@ -412,6 +412,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DATE_TRASHED_MS",           MEDIA_DATA_DB_DATE_TRASHED_MS),
     std::make_pair("PHOTO_SUBTYPE",             PhotoColumn::PHOTO_SUBTYPE),
     std::make_pair("DYNAMIC_RANGE_TYPE",        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE),
+    std::make_pair("LCD_SIZE",                  PhotoColumn::PHOTO_LCD_SIZE),
+    std::make_pair("THUMB_SIZE",                PhotoColumn::PHOTO_THUMB_SIZE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
