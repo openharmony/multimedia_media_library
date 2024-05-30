@@ -860,7 +860,6 @@ static void ActivelyStartAnalysisService(const bool isDeleteIndex)
     std::thread(&StartAnalysisServiceAsync, isDeleteIndex).detach();
 }
 
-
 int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
