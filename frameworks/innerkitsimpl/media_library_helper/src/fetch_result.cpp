@@ -79,6 +79,8 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_SHOOTING_MODE_TAG, TYPE_STRING},
         { PhotoColumn::PHOTO_LAST_VISIT_TIME, TYPE_INT64 },
         { PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, TYPE_INT32},
+        { PhotoColumn::PHOTO_LCD_SIZE, TYPE_STRING},
+        { PhotoColumn::PHOTO_THUMB_SIZE, TYPE_STRING},
     };
     return RESULT_TYPE_MAP;
 }

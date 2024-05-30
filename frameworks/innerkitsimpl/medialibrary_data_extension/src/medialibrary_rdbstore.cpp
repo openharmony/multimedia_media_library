@@ -2246,6 +2246,15 @@ void AddDynamicRangeType(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddLcdAndThumbSizeColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_LCD_SIZE + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_THUMB_SIZE + " TEXT",
+    };
+    ExecSqls(sqls, store);
+}
+
 void UpdatePhotoAlbumTigger(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -2546,6 +2555,10 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_TIGGER) {
         UpdatePhotoAlbumTigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_THUMB_LCD_SIZE_COLUMN) {
+        AddLcdAndThumbSizeColumns(store);
     }
 }
 
