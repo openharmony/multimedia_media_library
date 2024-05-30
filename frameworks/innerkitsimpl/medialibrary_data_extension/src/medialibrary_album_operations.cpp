@@ -840,7 +840,7 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     return changedRows;
 }
 
-static void ActivelyStartAnalysisService(const bool isDeleteIndex)
+static void StartAnalysisServiceAsync(const bool isDeleteIndex)
 {
     int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_UPDATE_INDEX;
     if (isDeleteIndex) {
@@ -854,6 +854,12 @@ static void ActivelyStartAnalysisService(const bool isDeleteIndex)
         MEDIA_ERR_LOG("Actively Calling Analyse For update or delete index Fail");
     }
 }
+
+static void ActivelyStartAnalysisService(const bool isDeleteIndex)
+{
+    std::thread(&StartAnalysisServiceAsync, isDeleteIndex).detach();
+}
+
 
 int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 {
