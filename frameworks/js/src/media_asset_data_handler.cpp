@@ -23,7 +23,7 @@ namespace OHOS {
 namespace Media {
 static const std::string MEDIA_ASSET_DATA_HANDLER_CLASS = "MediaAssetDataHandler";
 
-NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env, napi_value dataHandler, ReturnDataType dataType,
+NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env, napi_ref dataHandler, ReturnDataType dataType,
     const std::string &uri, const std::string &destUri, SourceMode sourceMode)
 {
     dataType_ = dataType;
@@ -31,11 +31,7 @@ NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env, napi_value da
     requestUri_ = uri;
     destUri_ = destUri;
     sourceMode_ = sourceMode;
-    napi_status status = napi_create_reference(env_, dataHandler, PARAM1, &dataHandlerRef_);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("napi_create_reference failed");
-        NapiError::ThrowError(env_, OHOS_INVALID_PARAM_CODE, "napi_create_reference fail");
-    }
+    dataHandlerRef_ = dataHandler;
 }
 
 NapiMediaAssetDataHandler::~NapiMediaAssetDataHandler()

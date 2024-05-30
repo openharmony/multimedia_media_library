@@ -27,7 +27,8 @@ enum class OptCmdType : uint32_t {
     TYPE_RECV = 2,
     TYPE_LIST = 3,
     TYPE_DELETE = 4,
-    TYPE_LAST = 5
+    TYPE_QUERY = 5,
+    TYPE_LAST = 6
 };
 
 struct OptionArgs {
@@ -36,6 +37,7 @@ struct OptionArgs {
     std::string path; // dir or file
     std::string uri; // such as "datashare:///media/Photo/54"
     std::string recvPath; // dir or file
+    std::string displayName;
     std::vector<std::string> extraArgs;
 };
 } // namespace MediaTool

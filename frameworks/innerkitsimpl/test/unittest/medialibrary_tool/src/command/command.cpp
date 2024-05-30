@@ -18,6 +18,7 @@
 #include "command/recv_command_v10.h"
 #include "command/send_command_v10.h"
 #include "command/delete_command_v10.h"
+#include "command/query_command_v10.h"
 #include "option_args.h"
 
 namespace OHOS {
@@ -36,6 +37,9 @@ std::unique_ptr<Command> Command::Create(const ExecEnv &env)
     }
     if (env.optArgs.cmdType == OptCmdType::TYPE_DELETE) {
         return std::make_unique<DeleteCommandV10>();
+    }
+    if (env.optArgs.cmdType == OptCmdType::TYPE_QUERY) {
+        return std::make_unique<QueryCommandV10>();
     }
     return nullptr;
 }

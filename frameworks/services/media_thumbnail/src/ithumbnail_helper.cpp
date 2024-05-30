@@ -462,7 +462,7 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
 
 bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
-    int32_t err = UpdateThumbDBState(opts, data);
+    int32_t err = UpdateThumbDbState(opts, data);
     if (err != E_OK) {
         MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
         return false;
@@ -477,7 +477,7 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const Thumb
     return true;
 }
 
-int32_t IThumbnailHelper::UpdateThumbDBState(const ThumbRdbOpt &opts, const ThumbnailData &data, bool isGenerateThumb)
+int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
     int64_t thumbnail_status = 0;
     if (data.loaderOpts.needUpload) {
@@ -487,16 +487,10 @@ int32_t IThumbnailHelper::UpdateThumbDBState(const ThumbRdbOpt &opts, const Thum
     }
     ValuesBucket values;
     int changedRows;
-    if (isGenerateThumb) {
-        values.PutLong(PhotoColumn::PHOTO_HAS_ASTC, thumbnail_status);
-    }
+    values.PutLong(PhotoColumn::PHOTO_HAS_ASTC, thumbnail_status);
     Size thumbSize;
-    if (ThumbnailUtils::GetThumbSize(data, ThumbnailType::THUMB, thumbSize)) {
+    if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::THUMB, thumbSize)) {
         ThumbnailUtils::SetThumbnailSizeValue(values, thumbSize, PhotoColumn::PHOTO_THUMB_SIZE);
-    }
-    Size lcdSize;
-    if (ThumbnailUtils::GetThumbSize(data, ThumbnailType::LCD, lcdSize)) {
-        ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
     }
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
@@ -660,9 +654,7 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
     if (data.loaderOpts.needUpload && !GenThumbnail(opts, data, ThumbnailType::THUMB)) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-            {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+        MEDIA_ERR_LOG("DoCreateAstc GenThumbnail THUMB failed, id: %{public}s", data.id.c_str());
         return false;
     }
     if (!GenThumbnail(opts, data, ThumbnailType::THUMB_ASTC)) {
