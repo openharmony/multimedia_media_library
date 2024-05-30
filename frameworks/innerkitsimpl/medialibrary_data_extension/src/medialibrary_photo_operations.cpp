@@ -621,7 +621,7 @@ static void TrashPhotosSendNotify(vector<string> &notifyUris)
     }
 }
 
-static void ActivelyStartAnalysisService()
+static void StartAnalysisServiceAsync()
 {
     int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_UPDATE_INDEX;
     MessageParcel data;
@@ -631,6 +631,11 @@ static void ActivelyStartAnalysisService()
     if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
         MEDIA_ERR_LOG("Actively Calling Analyse For update index Fail");
     }
+}
+
+static void ActivelyStartAnalysisService()
+{
+    std::thread(&StartAnalysisServiceAsync).detach();
 }
 
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
