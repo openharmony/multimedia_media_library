@@ -307,5 +307,42 @@ bool BackupFileUtils::IsFileValid(const std::string &filePath, int32_t sceneCode
     }
     return true;
 }
+
+std::string BackupFileUtils::GetDetailsPath(const std::string &type,
+    const std::unordered_map<std::string, int32_t> &failedFiles)
+{
+    std::string detailsPath = RESTORE_FAILED_FILES_PATH + "_" + type + ".txt";
+    if (MediaFileUtils::IsFileExists(detailsPath) && !MediaFileUtils::DeleteFile(detailsPath)) {
+        MEDIA_ERR_LOG("%{public}s exists and delete failed", detailsPath.c_str());
+        return "";
+    }
+    if (failedFiles.empty()) {
+        return "";
+    }
+    if (MediaFileUtils::CreateAsset(detailsPath) != E_SUCCESS) {
+        MEDIA_ERR_LOG("Create %{public}s failed", detailsPath.c_str());
+        return "";
+    }
+    std::string failedFilesStr = GetFailedFilesStr(failedFiles);
+    if (!MediaFileUtils::WriteStrToFile(detailsPath, failedFilesStr)) {
+        MEDIA_ERR_LOG("Write to %{public}s failed", detailsPath.c_str());
+        return "";
+    }
+    return detailsPath;
+}
+
+std::string BackupFileUtils::GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles)
+{
+    std::stringstream failedFilesStream;
+    failedFilesStream << "[";
+    size_t index = 0;
+    for (const auto &iter : failedFiles) {
+        failedFilesStream << "\n\"" + iter.first;
+        index + 1 < failedFiles.size() ? failedFilesStream << "\"," : failedFilesStream << "\"";
+        index++;
+    }
+    failedFilesStream << "\n]";
+    return failedFilesStream.str();
+}
 } // namespace Media
 } // namespace OHOS
