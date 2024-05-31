@@ -1783,6 +1783,11 @@ int32_t MediaLibraryPhotoOperations::GetMovingPhotoCachePath(MediaLibraryCommand
         E_INVALID_VALUES, "Failed to check cache file of moving photo");
 
     string cacheDir = GetAssetCacheDir();
+    if (!videoCacheName.empty()) {
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CheckMovingPhotoVideo(cacheDir + "/" + videoCacheName),
+            E_INVALID_MOVING_PHOTO, "Failed to check cache video of moving photo");
+    }
+
     string assetPath = fileAsset->GetPath();
     CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_PATH, "Failed to get image path of moving photo");
     string assetVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);

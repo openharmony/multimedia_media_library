@@ -1675,6 +1675,29 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_006, Test
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_006");
 }
 
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_007");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    string name = "moving_photo_effect_mode.jpg";
+    values.PutString(PhotoColumn::MEDIA_NAME, name);
+    values.PutInt(PhotoColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
+    MediaLibraryPhotoOperations::Create(cmd);
+    int32_t fileId = QueryPhotoIdByDisplayName("moving_photo_effect_mode.jpg");
+    ASSERT_GE(fileId, 0);
+
+    DataSharePredicates predicates;
+    predicates.In(PhotoColumn::MEDIA_ID, fileId);
+    DataShareValuesBucket values;
+    values.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 1);
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
+    EXPECT_EQ(changedRows, 1);
+    MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_007");
+}
+
 HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api9_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api9_test_001");
