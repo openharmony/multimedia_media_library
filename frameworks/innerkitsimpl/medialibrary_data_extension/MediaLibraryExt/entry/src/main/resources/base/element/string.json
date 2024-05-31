@@ -55,6 +55,10 @@
     {
       "name": "permission_read_cloud_sync_config",
       "value": "Allows read cloud sync config"
-    }
+    },
+    {
+      "name": "permission_get_appkey2",
+      "value": "Allows read media after screenlock"
+    }   
   ]
 }
