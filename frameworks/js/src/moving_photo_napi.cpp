@@ -160,17 +160,22 @@ int32_t MovingPhotoNapi::OpenReadOnlyFile(const std::string& uri, bool isReadIma
 
 static int32_t CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd)
 {
-    constexpr size_t BUFFER_SIZE = 4096;
-    char buffer[BUFFER_SIZE];
-    size_t bytesRead;
-    size_t bytesWritten;
-    while ((bytesRead = read(srcFd, buffer, BUFFER_SIZE)) > 0) {
+    constexpr size_t bufferSize = 4096;
+    char buffer[bufferSize];
+    ssize_t bytesRead;
+    ssize_t bytesWritten;
+    while ((bytesRead = read(srcFd, buffer, bufferSize)) > 0) {
         bytesWritten = write(destFd, buffer, bytesRead);
         if (bytesWritten != bytesRead) {
-            NAPI_ERR_LOG("Failed to copy file from srcFd=%{private}d to destFd=%{private}d, errno=%{private}d",
+            NAPI_ERR_LOG("Failed to copy file from srcFd=%{public}d to destFd=%{public}d, errno=%{public}d",
                 srcFd, destFd, errno);
             return E_HAS_FS_ERROR;
         }
+    }
+
+    if (bytesRead < 0) {
+        NAPI_ERR_LOG("Failed to read from srcFd=%{public}d, errno=%{public}d", srcFd, errno);
+        return E_HAS_FS_ERROR;
     }
     return E_OK;
 }
