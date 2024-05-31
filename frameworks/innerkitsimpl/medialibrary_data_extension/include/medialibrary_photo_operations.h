@@ -69,6 +69,7 @@ private:
         const std::string &editData);
     static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t ParseMediaAssetEditData(MediaLibraryCommand &cmd, std::string &editData);
+    static bool IsSetEffectMode(MediaLibraryCommand &cmd);
     static bool IsContainsData(MediaLibraryCommand &cm);
     static bool IsCameraEditData(MediaLibraryCommand &cmd);
     static bool ReadEditdataFromFile(const std::string &editDataPath, std::string &editData);
@@ -81,6 +82,9 @@ private:
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+    static int32_t SubmitEffectModeExecute(MediaLibraryCommand &cmd);
+    static int32_t GetMovingPhotoCachePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+        std::string &imageCachePath, std::string &videoCachePath);
     static bool CheckCacheCmd(MediaLibraryCommand &cmd, int32_t subtype, const std::string &displayName);
     static int32_t MoveCacheFile(MediaLibraryCommand &cmd, int32_t subtype,
         const std::string &cachePath, const std::string &destPath);

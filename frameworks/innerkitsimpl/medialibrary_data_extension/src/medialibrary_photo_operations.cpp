@@ -1042,6 +1042,18 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::PHOTO_SUBTYPE,
 };
 
+static int32_t CheckFileAssetStatus(const shared_ptr<FileAsset>& fileAsset, bool checkMovingPhoto = false)
+{
+    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "FileAsset is nullptr");
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetDateTrashed() == 0, E_IS_RECYCLED, "FileAsset is in recycle");
+    CHECK_AND_RETURN_RET_LOG(fileAsset->GetTimePending() == 0, E_IS_PENDING_ERROR, "FileAsset is in pending");
+    if (checkMovingPhoto) {
+        CHECK_AND_RETURN_RET_LOG(fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO),
+            E_INVALID_VALUES, "FileAsset is not moving photo");
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::RequestEditData(MediaLibraryCommand &cmd)
 {
     string uriString = cmd.GetUriStringWithoutSegment();
@@ -1052,11 +1064,8 @@ int32_t MediaLibraryPhotoOperations::RequestEditData(MediaLibraryCommand &cmd)
 
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI, "Get FileAsset From Uri Failed, uri:%{public}s",
-        uriString.c_str());
-    CHECK_AND_RETURN_RET_LOG(fileAsset->GetTimePending() == 0, E_IS_PENDING_ERROR,
-        "FileAsset is in PendingStatus %{public}ld", (long) fileAsset->GetTimePending());
-    CHECK_AND_RETURN_RET_LOG(fileAsset->GetDateTrashed() == 0, E_IS_RECYCLED, "FileAsset is in recycle");
+    int32_t err = CheckFileAssetStatus(fileAsset);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to check status of fileAsset: %{private}s", uriString.c_str());
 
     string path = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_URI, "Can not get file path, uri=%{private}s",
@@ -1079,7 +1088,7 @@ int32_t MediaLibraryPhotoOperations::RequestEditData(MediaLibraryCommand &cmd)
             CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(dataPathDir), E_HAS_FS_ERROR,
                 "Failed to create dir %{private}s", dataPathDir.c_str());
         }
-        int32_t err = MediaFileUtils::CreateAsset(dataPath);
+        err = MediaFileUtils::CreateAsset(dataPath);
         CHECK_AND_RETURN_RET_LOG(err == E_SUCCESS || err == E_FILE_EXIST, E_HAS_FS_ERROR,
             "Failed to create file %{private}s", dataPath.c_str());
     } else {
@@ -1104,11 +1113,8 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
         E_IS_IN_COMMIT, "File %{public}s is in revert, can not request source", id.c_str());
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, id,
         OperationObject::FILESYSTEM_PHOTO, EDITED_COLUMN_VECTOR);
-    CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_URI,
-        "Get fileAsset from uri failed, uri:%{public}s", uriString.c_str());
-    CHECK_AND_RETURN_RET_LOG(fileAsset->GetTimePending() == 0, E_IS_PENDING_ERROR,
-        "FileAsset is in PendingStatus %{public}ld", (long) fileAsset->GetTimePending());
-    CHECK_AND_RETURN_RET_LOG(fileAsset->GetDateTrashed() == 0, E_IS_RECYCLED, "FileAsset is in recycle");
+    int32_t err = CheckFileAssetStatus(fileAsset);
+    CHECK_AND_RETURN_RET_LOG(err == E_OK, err, "Failed to check status of fileAsset: %{private}s", uriString.c_str());
     string path = fileAsset->GetFilePath();
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_URI,
         "Can not get file path, uri=%{private}s", uriString.c_str());
@@ -1162,17 +1168,8 @@ int32_t MediaLibraryPhotoOperations::CommitEditOpen(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryPhotoOperations::CommitEditOpenExecute(const shared_ptr<FileAsset> &fileAsset)
 {
-    if (fileAsset == nullptr) {
-        return E_INVALID_URI;
-    }
-    if (fileAsset->GetTimePending() != 0) {
-        MEDIA_ERR_LOG("FileAsset is in PendingStatus %{public}ld", (long) fileAsset->GetTimePending());
-        return E_IS_PENDING_ERROR;
-    }
-    if (fileAsset->GetDateTrashed() != 0) {
-        MEDIA_ERR_LOG("FileAsset is in recycle");
-        return E_IS_RECYCLED;
-    }
+    int32_t err = CheckFileAssetStatus(fileAsset);
+    CHECK_AND_RETURN_RET(err == E_OK, err);
     string path = fileAsset->GetFilePath();
     if (path.empty()) {
         MEDIA_ERR_LOG("Can not get file path");
@@ -1217,6 +1214,28 @@ static int32_t UpdateEditTime(int32_t fileId, int64_t time)
         return E_HAS_DB_ERROR;
     }
 
+    return E_OK;
+}
+
+static int32_t UpdateEffectMode(int32_t fileId, int32_t effectMode)
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Failed to get rdbStore when updating effect mode");
+        return E_HAS_DB_ERROR;
+    }
+
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    updateCmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
+    ValuesBucket updateValues;
+    updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
+    updateCmd.SetValueBucket(updateValues);
+    int32_t updateRows = -1;
+    int32_t errCode = rdbStore->Update(updateCmd, updateRows);
+    if (errCode != NativeRdb::E_OK || updateRows < 0) {
+        MEDIA_ERR_LOG("Update effect mode failed. errCode:%{public}d, updateRows:%{public}d.", errCode, updateRows);
+        return E_HAS_DB_ERROR;
+    }
     return E_OK;
 }
 
@@ -1268,18 +1287,8 @@ static void NotifyFormMap(const int32_t fileId, const string& path, const bool i
 int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<FileAsset> &fileAsset,
     const string &editData)
 {
-    if (fileAsset == nullptr) {
-        return E_INVALID_VALUES;
-    }
-
-    if (fileAsset->GetTimePending() != 0) {
-        MEDIA_ERR_LOG("FileAsset is in PendingStatus %{public}ld", static_cast<long>(fileAsset->GetTimePending()));
-        return E_IS_PENDING_ERROR;
-    }
-    if (fileAsset->GetDateTrashed() != 0) {
-        MEDIA_ERR_LOG("FileAsset is in recycle");
-        return E_IS_RECYCLED;
-    }
+    int32_t errCode = CheckFileAssetStatus(fileAsset);
+    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
 
     string path = fileAsset->GetPath();
     CHECK_AND_RETURN_RET_LOG(!path.empty(), E_INVALID_VALUES, "File path is empty");
@@ -1306,7 +1315,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
         to_string(PhotoAlbumSubType::SCREENSHOT),
         to_string(PhotoAlbumSubType::FAVORITE),
     });
-    int32_t errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
+    errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
         fileAsset->GetId());
     ScanFile(path, true, true, true);
@@ -1339,19 +1348,9 @@ int32_t MediaLibraryPhotoOperations::RevertToOrigin(MediaLibraryCommand &cmd)
 
 int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset)
 {
-    if (fileAsset == nullptr) {
-        return E_INVALID_VALUES;
-    }
-
+    int32_t errCode = CheckFileAssetStatus(fileAsset);
+    CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
     int32_t fileId = fileAsset->GetId();
-    if (fileAsset->GetTimePending() != 0) {
-        MEDIA_ERR_LOG("FileAsset is in PendingStatus %{public}ld", static_cast<long>(fileAsset->GetTimePending()));
-        return E_IS_PENDING_ERROR;
-    }
-    if (fileAsset->GetDateTrashed() != 0) {
-        MEDIA_ERR_LOG("FileAsset is in recycle");
-        return E_IS_RECYCLED;
-    }
     if (fileAsset->GetPhotoEditTime() == 0) {
         MEDIA_INFO_LOG("File %{public}d is not edit", fileId);
         return E_OK;
@@ -1385,7 +1384,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
         AddFiltersToPhoto(sourcePath, path, editData);
     }
 
-    int32_t errCode = UpdateEditTime(fileId, 0);
+    errCode = UpdateEditTime(fileId, 0);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
         fileId);
     ScanFile(path, true, true, true);
@@ -1567,6 +1566,12 @@ int32_t MediaLibraryPhotoOperations::ParseMediaAssetEditData(MediaLibraryCommand
     editDataJson[APP_ID] = bundleName;
     editData = editDataJson.dump();
     return E_OK;
+}
+
+bool MediaLibraryPhotoOperations::IsSetEffectMode(MediaLibraryCommand &cmd)
+{
+    int32_t effectMode;
+    return GetInt32FromValuesBucket(cmd.GetValueBucket(), PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
 }
 
 bool MediaLibraryPhotoOperations::IsContainsData(MediaLibraryCommand &cmd)
@@ -1771,8 +1776,103 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     return E_OK;
 }
 
+int32_t MediaLibraryPhotoOperations::GetMovingPhotoCachePath(MediaLibraryCommand& cmd,
+    const shared_ptr<FileAsset>& fileAsset, string& imageCachePath, string& videoCachePath)
+{
+    string imageCacheName;
+    string videoCacheName;
+    const ValuesBucket& values = cmd.GetValueBucket();
+    GetStringFromValuesBucket(values, CACHE_FILE_NAME, imageCacheName);
+    GetStringFromValuesBucket(values, CACHE_MOVING_PHOTO_VIDEO_NAME, videoCacheName);
+    CHECK_AND_RETURN_RET_LOG(!imageCacheName.empty() || !videoCacheName.empty(),
+        E_INVALID_VALUES, "Failed to check cache file of moving photo");
+
+    string cacheDir = GetAssetCacheDir();
+    string assetPath = fileAsset->GetPath();
+    CHECK_AND_RETURN_RET_LOG(!assetPath.empty(), E_INVALID_PATH, "Failed to get image path of moving photo");
+    string assetVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
+    CHECK_AND_RETURN_RET_LOG(!assetVideoPath.empty(), E_INVALID_PATH, "Failed to get video path of moving photo");
+
+    if (imageCacheName.empty()) {
+        imageCacheName = MediaFileUtils::GetTitleFromDisplayName(videoCacheName) + "_image." +
+                         MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(assetPath, cacheDir + "/" + imageCacheName),
+            E_HAS_FS_ERROR, "Failed to copy image to cache");
+    }
+    if (videoCacheName.empty()) {
+        videoCacheName = MediaFileUtils::GetTitleFromDisplayName(imageCacheName) + "_video.mp4";
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CopyFileUtil(assetVideoPath, cacheDir + "/" + videoCacheName),
+            E_HAS_FS_ERROR, "Failed to copy video to cache");
+    }
+
+    imageCachePath = cacheDir + "/" + imageCacheName;
+    videoCachePath = cacheDir + "/" + videoCacheName;
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(imageCachePath), E_NO_SUCH_FILE,
+        "imageCachePath: %{private}s does not exist!", imageCachePath.c_str());
+    CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(videoCachePath), E_NO_SUCH_FILE,
+        "videoCachePath: %{private}s does not exist!", videoCachePath.c_str());
+    return E_OK;
+}
+
+int32_t MediaLibraryPhotoOperations::SubmitEffectModeExecute(MediaLibraryCommand& cmd)
+{
+    int32_t id = -1;
+    int32_t effectMode = -1;
+    const ValuesBucket& values = cmd.GetValueBucket();
+    CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MEDIA_ID, id) && id > 0,
+        E_INVALID_VALUES, "Failed to get file id");
+    CHECK_AND_RETURN_RET_LOG(GetInt32FromValuesBucket(values, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode) &&
+        MediaFileUtils::CheckMovingPhotoEffectMode(effectMode), E_INVALID_VALUES,
+        "Failed to check effect mode: %{public}d", effectMode);
+    vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE,
+        PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED, PhotoColumn::PHOTO_EDIT_TIME };
+    shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(id),
+        OperationObject::FILESYSTEM_PHOTO, columns);
+    int32_t errCode = CheckFileAssetStatus(fileAsset, true);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to check status of fileAsset, id: %{public}d", id);
+
+    string imageCachePath;
+    string videoCachePath;
+    errCode = GetMovingPhotoCachePath(cmd, fileAsset, imageCachePath, videoCachePath);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to get cache file path of moving photo");
+
+    string assetPath = fileAsset->GetPath();
+    string assetVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(assetPath);
+    if (fileAsset->GetPhotoEditTime() == 0) { // save source moving photo
+        string editDataDirPath = GetEditDataDirPath(assetPath);
+        CHECK_AND_RETURN_RET_LOG(!editDataDirPath.empty(), E_INVALID_URI, "Failed to get edit dir path");
+        CHECK_AND_RETURN_RET_LOG(MediaFileUtils::CreateDirectory(editDataDirPath), E_HAS_FS_ERROR,
+            "Failed to create dir %{private}s", editDataDirPath.c_str());
+
+        string sourceImagePath = GetEditDataSourcePath(assetPath);
+        CHECK_AND_RETURN_RET_LOG(!sourceImagePath.empty(), E_INVALID_PATH, "Cannot get source image path");
+        string sourceVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(sourceImagePath);
+        CHECK_AND_RETURN_RET_LOG(!sourceVideoPath.empty(), E_INVALID_PATH, "Cannot get source video path");
+        if (!MediaFileUtils::IsFileExists(sourceVideoPath)) {
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(assetVideoPath, sourceVideoPath) == E_SUCCESS,
+                E_HAS_FS_ERROR, "Move file failed, srcPath:%{private}s, newPath:%{private}s", assetVideoPath.c_str(),
+                sourceVideoPath.c_str());
+        }
+        if (!MediaFileUtils::IsFileExists(sourceImagePath)) {
+            CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ModifyAsset(assetPath, sourceImagePath) == E_SUCCESS,
+                E_HAS_FS_ERROR, "Move file failed, srcPath:%{private}s, newPath:%{private}s", assetPath.c_str(),
+                sourceImagePath.c_str());
+        }
+    }
+
+    CHECK_AND_RETURN_RET_LOG(Move(imageCachePath, assetPath) == E_OK, E_HAS_FS_ERROR, "Failed to move image");
+    CHECK_AND_RETURN_RET_LOG(Move(videoCachePath, assetVideoPath) == E_OK, E_HAS_FS_ERROR, "Failed to move video");
+    CHECK_AND_RETURN_RET_LOG(UpdateEffectMode(id, effectMode) == E_OK, errCode, "Failed to update effect mode");
+    ScanFile(assetPath, true, true, true);
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
 {
+    if (IsSetEffectMode(cmd)) {
+        return SubmitEffectModeExecute(cmd);
+    }
+
     const ValuesBucket& values = cmd.GetValueBucket();
     string fileName;
     CHECK_AND_RETURN_RET_LOG(GetStringFromValuesBucket(values, CACHE_FILE_NAME, fileName),
@@ -1802,7 +1902,8 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
     }
 
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME,
-        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED };
+        PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED,
+        PhotoColumn::PHOTO_EDIT_TIME };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(
         PhotoColumn::MEDIA_ID, to_string(id), OperationObject::FILESYSTEM_PHOTO, columns);
     CHECK_AND_RETURN_RET_LOG(fileAsset != nullptr, E_INVALID_VALUES, "Failed to get FileAsset, fileId=%{public}d", id);
