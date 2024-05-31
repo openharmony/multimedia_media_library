@@ -1175,7 +1175,6 @@ string MediaLibraryNapiUtils::GetStringValueByColumn(shared_ptr<DataShare::DataS
             break;
         }
         default: {
-            NAPI_ERR_LOG("Unsupported dataType: %{public}d", dataType);
             break;
         }
     }
