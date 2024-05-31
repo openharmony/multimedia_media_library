@@ -729,6 +729,19 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoVideoDuratio
     EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(4000), false);
 }
 
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoEffectMode_Test_001, TestSize.Level0)
+{
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(-10), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(-1), false);
+
+    for (int32_t i = 0; i <= 4; i++) {
+        EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(i), true);
+    }
+
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(5), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(20), false);
+}
+
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsMediaLibraryUri_Test_001, TestSize.Level0)
 {
     string uri = "file://media/Photo/12/IMG_2023_001/IMG_2023.jpg";
