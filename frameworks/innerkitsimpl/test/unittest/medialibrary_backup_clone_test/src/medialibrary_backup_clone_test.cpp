@@ -19,6 +19,7 @@
 
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
+#include "backup_restore_service.h"
 #include "clone_source.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_rdb_utils.h"
@@ -55,6 +56,11 @@ const string WHERE_CLAUSE_TRASHED = "date_trashed > 0";
 const string WHERE_CLAUSE_IS_FAVORITE = "is_favorite > 0";
 const string WHERE_CLAUSE_HIDDEN = "hidden > 0";
 const string WHERE_CLAUSE_EDIT = "edit_time > 0";
+const string INVALID_STR = "-1";
+const string EMPTY_STR = "";
+const string TEST_FILE_PATH_PHOTO = "test_file_path_photo";
+const string TEST_FILE_PATH_VIDEO = "test_file_path_video";
+const string TEST_FILE_PATH_AUDIO = "test_file_path_audio";
 const vector<string> CLEAR_SQLS = {
     "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
     "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " != " +
@@ -90,6 +96,7 @@ const int32_t EXPECTED_COUNT_1 = 1;
 const int32_t EXPECTED_COUNT_0 = 0;
 const int32_t EXPECTED_ALBUM_TOTAL_COUNT = 4;
 const int32_t EXPECTED_AUDIO_COUNT = 3;
+const int32_t INVALID_ERROR_CODE = -1;
 
 shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 unique_ptr<CloneRestore> restoreService = nullptr;
@@ -176,7 +183,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_colu
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_PHOTO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     EXPECT_EQ(restoreService->IsReadyForRestore(PhotoColumn::PHOTOS_TABLE), true);
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
@@ -190,7 +197,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_colu
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_PHOTO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     for (const auto &tableName : tableList) {
         EXPECT_EQ(restoreService->IsReadyForRestore(tableName), true);
     }
@@ -216,7 +223,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_album_te
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, PhotoAlbumColumns::TABLE, PhotoMap::TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_PHOTO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     restoreService->RestoreAlbum();
     int32_t sourceAlbumCount = GetAlbumCountByCondition(g_rdbStore->GetRaw(), PhotoAlbumColumns::TABLE,
         PhotoAlbumSubType::SOURCE_GENERIC);
@@ -235,7 +242,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_album_te
     vector<string> tableList = { PhotoColumn::PHOTOS_TABLE, ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_PHOTO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     restoreService->RestoreAlbum();
     int32_t shootingModeAlbumCount = GetAlbumCountByCondition(g_rdbStore->GetRaw(), ANALYSIS_ALBUM_TABLE,
         PhotoAlbumSubType::SHOOTING_MODE, SHOOTING_MODE_PORTRAIT_ALBUM_NAME);
@@ -272,7 +279,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_te
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_PHOTO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     restoreService->RestoreAlbum();
     vector<FileInfo> fileInfos = restoreService->QueryFileInfos(0);
     int32_t photoCount = static_cast<int32_t>(fileInfos.size());
@@ -339,7 +346,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_te
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_PHOTO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     restoreService->RestoreAlbum();
     RestorePhoto();
     int32_t photoCount = GetCountByWhereClause(PhotoColumn::PHOTOS_TABLE, g_rdbStore->GetRaw());
@@ -389,7 +396,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_te
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_PHOTO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     restoreService->RestoreAlbum();
     RestorePhoto();
     int32_t photoCountAfter = GetCountByWhereClause(PhotoColumn::PHOTOS_TABLE, g_rdbStore->GetRaw());
@@ -409,7 +416,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_check_table_colu
     vector<string> tableList = { AudioColumn::AUDIOS_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_AUDIO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_AUDIO);
     EXPECT_EQ(restoreService->IsReadyForRestore(AudioColumn::AUDIOS_TABLE), true);
     ClearCloneSource(cloneSource, TEST_BACKUP_DB_PATH);
 }
@@ -422,7 +429,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     vector<string> tableList = { AudioColumn::AUDIOS_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_AUDIO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_AUDIO);
     vector<FileInfo> fileInfos = restoreService->QueryFileInfos(AudioColumn::AUDIOS_TABLE, 0);
     int32_t audioCount = static_cast<int32_t>(fileInfos.size());
     EXPECT_EQ(audioCount, EXPECTED_AUDIO_COUNT);
@@ -470,7 +477,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     vector<string> tableList = { AudioColumn::AUDIOS_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_AUDIO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_AUDIO);
     RestoreAudio();
     int32_t audioCount = GetCountByWhereClause(AudioColumn::AUDIOS_TABLE, g_rdbStore->GetRaw());
     EXPECT_EQ(audioCount, EXPECTED_AUDIO_COUNT);
@@ -489,7 +496,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_audio_te
     vector<string> tableList = { AudioColumn::AUDIOS_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->CheckTableColumnStatus(CLONE_TABLE_LISTS_AUDIO);
+    restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_AUDIO);
     RestoreAudio();
     int32_t audioCountAfter = GetCountByWhereClause(AudioColumn::AUDIOS_TABLE, g_rdbStore->GetRaw());
     EXPECT_EQ(audioCountBefore, audioCountAfter);
@@ -502,6 +509,105 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_is_file_valid_te
     EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_DB_PATH, CLONE_RESTORE_ID), true);
     EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_BACKUP_PATH, CLONE_RESTORE_ID), false); // directory
     EXPECT_EQ(BackupFileUtils::IsFileValid(TEST_FAKE_FILE_DIR, CLONE_RESTORE_ID), false); // not exist
+}
+
+void ClearRestoreExInfo()
+{
+    restoreService->errorCode_ = RestoreError::SUCCESS;
+    restoreService->errorInfo_.clear();
+    restoreService->failedFilesMap_.clear();
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_001 start");
+    string restoreExInfo = INVALID_STR;
+    BackupRestoreService::GetInstance().StartRestoreEx(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR,
+        restoreExInfo);
+    MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
+    EXPECT_EQ(restoreExInfo, EMPTY_STR); // upgrade is not supported
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_get_backup_info_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_service_get_backup_info_001 start");
+    string backupInfo = INVALID_STR;
+    BackupRestoreService::GetInstance().GetBackupInfo(UPGRADE_RESTORE_ID, backupInfo);
+    MEDIA_INFO_LOG("Get backupInfo: %{public}s", backupInfo.c_str());
+    EXPECT_EQ(backupInfo, EMPTY_STR); // upgrade is not supported
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_get_restore_ex_info_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_base_get_restore_ex_info_001 start");
+    ClearRestoreExInfo();
+    string restoreExInfo = restoreService->GetRestoreExInfo();
+    MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
+    EXPECT_GT(restoreExInfo.size(), 0);
+    nlohmann::json jsonObject = nlohmann::json::parse(restoreExInfo);
+    EXPECT_EQ(jsonObject.empty(), false);
+    EXPECT_EQ(jsonObject.is_discarded(), false);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_set_error_code_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_base_set_error_code_001 start");
+    ClearRestoreExInfo();
+    restoreService->SetErrorCode(RestoreError::INIT_FAILED);
+    MEDIA_INFO_LOG("Get errorCode: %{public}d, errorInfo: %{public}s", restoreService->errorCode_,
+        restoreService->errorInfo_.c_str());
+    EXPECT_GT(restoreService->errorInfo_.size(), 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_set_error_code_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_base_set_error_code_002 start");
+    ClearRestoreExInfo();
+    restoreService->SetErrorCode(INVALID_ERROR_CODE);
+    MEDIA_INFO_LOG("Get errorCode: %{public}d, errorInfo: %{public}s", restoreService->errorCode_,
+        restoreService->errorInfo_.c_str());
+    EXPECT_EQ(restoreService->errorInfo_.size(), 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_base_update_failed_files_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_base_update_failed_files_001 start");
+    ClearRestoreExInfo();
+    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE), TEST_FILE_PATH_PHOTO,
+        RestoreError::FILE_INVALID);
+    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO), TEST_FILE_PATH_VIDEO,
+        RestoreError::MOVE_FAILED);
+    restoreService->UpdateFailedFiles(static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO), TEST_FILE_PATH_AUDIO,
+        RestoreError::PATH_INVALID);
+    MEDIA_INFO_LOG("Get failedFilesMap size: %{public}zu", restoreService->failedFilesMap_.size());
+    EXPECT_GT(restoreService->failedFilesMap_.size(), 0);
+    EXPECT_GT(restoreService->failedFilesMap_.count(STAT_TYPE_PHOTO), 0);
+    EXPECT_GT(restoreService->failedFilesMap_.count(STAT_TYPE_VIDEO), 0);
+    EXPECT_GT(restoreService->failedFilesMap_.count(STAT_TYPE_AUDIO), 0);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_get_backup_info_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_base_get_backup_info_001 start");
+    string backupInfo = restoreService->GetBackupInfo();
+    MEDIA_INFO_LOG("Get backupInfo: %{public}s", backupInfo.c_str());
+    EXPECT_GT(backupInfo.size(), 0);
+    nlohmann::json jsonObject = nlohmann::json::parse(backupInfo);
+    EXPECT_EQ(jsonObject.empty(), false);
+    EXPECT_EQ(jsonObject.is_discarded(), false);
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_get_failed_files_str_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_file_get_failed_files_str_001 start");
+    unordered_map<string, int32_t> failedFiles = {
+        { TEST_FILE_PATH_PHOTO, RestoreError::FILE_INVALID },
+        { TEST_FILE_PATH_VIDEO, RestoreError::MOVE_FAILED },
+        { TEST_FILE_PATH_AUDIO, RestoreError::PATH_INVALID },
+    };
+    string failedFilesStr = BackupFileUtils::GetFailedFilesStr(failedFiles);
+    MEDIA_INFO_LOG("Get failedFilesStr: %{public}s", failedFilesStr.c_str());
+    EXPECT_GT(failedFilesStr.size(), 0);
 }
 } // namespace Media
 } // namespace OHOS
