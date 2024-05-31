@@ -46,6 +46,7 @@ enum class AssetChangeOperation {
     SET_LOCATION,
     SET_CAMERA_SHOT_KEY,
     SAVE_CAMERA_PHOTO,
+    ADD_FILTERS,
 };
 
 enum class AddResourceMode {
@@ -91,16 +92,15 @@ public:
     AddResourceMode GetMovingPhotoVideoMode() const;
     void* GetMovingPhotoVideoBuffer() const;
     size_t GetMovingPhotoVideoSize() const;
-    bool IsSaveCameraPhoto();
-    void SetSaveCameraPhotoMode(bool isSaveCameraPhoto);
     std::string GetCacheMovingPhotoVideoName() const;
     void RecordChangeOperation(AssetChangeOperation changeOperation);
     void SetCacheFileName(std::string& fileName);
     void SetCacheMovingPhotoVideoName(std::string& fileName);
-    int32_t SubmitCache(bool isCreation, bool isSaveCameraPhoto);
+    int32_t SubmitCache(bool isCreation);
     int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
     int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
+    int32_t PutMediaAssetEditData(DataShare::DataShareValuesBucket& valuesBucket);
 
     sptr<PhotoProxy> GetPhotoProxyObj();
     void ReleasePhotoProxyObj();
@@ -129,7 +129,6 @@ private:
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();
-    int32_t PutMediaAssetEditData(DataShare::DataShareValuesBucket& valuesBucket);
     int32_t CopyFileToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo = false);
     int32_t CopyDataBufferToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo = false);
     int32_t CopyMovingPhotoVideo(const std::string& assetUri);
@@ -152,7 +151,6 @@ private:
     AddResourceMode movingPhotoVideoResourceMode_;
     std::vector<ResourceType> addResourceTypes_; // support adding resource multiple times
     std::vector<AssetChangeOperation> assetChangeOperations_;
-    bool isSaveCameraPhoto_ = false;
 };
 
 struct MediaAssetChangeRequestAsyncContext : public NapiError {

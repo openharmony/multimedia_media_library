@@ -40,6 +40,9 @@ public:
     static std::string GetFileNameFromPath(const string &path);
     static std::string GetFileTitle(const string &displayName);
     static bool IsFileValid(const std::string &filePath, int32_t sceneCode);
+    static std::string GetDetailsPath(const std::string &type,
+        const std::unordered_map<std::string, int32_t> &failedFiles);
+    static std::string GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);

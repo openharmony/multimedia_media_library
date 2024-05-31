@@ -448,7 +448,7 @@ bool MediaFileUtils::CopyFile(int32_t rfd, int32_t wfd)
     static const off_t maxSendSize2G = 2LL * 1024 * 1024 * 1024;
     struct stat fst = {0};
     if (fstat(rfd, &fst) != 0) {
-        MEDIA_INFO_LOG("send failed, errno=%{public}d", errno);
+        MEDIA_INFO_LOG("fstat failed, errno=%{public}d", errno);
         return false;
     }
     off_t fileSize = fst.st_size;

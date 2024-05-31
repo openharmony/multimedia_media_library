@@ -154,9 +154,10 @@ enum class EXPORT OperationType : uint32_t {
     SET_LOCATION,
     ANALYSIS_INDEX,
     CANCEL_PROCESS_IMAGE,
-    LOG_MOVING_PHOTO,
+    LOG_MOVING_P
     START_GENERATE_THUMBNAILS,
     STOP_GENERATE_THUMBNAILS,
+    ADD_FILTERS,
 };
 
 namespace MediaOperation {
@@ -367,6 +368,7 @@ inline const std::map<std::string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_GROUP_COVER_URI, OperationType::GROUP_COVER_URI },
     { OPRN_START_GENERATE_THUMBNAILS, OperationType::START_GENERATE_THUMBNAILS },
     { OPRN_STOP_GENERATE_THUMBNAILS, OperationType::STOP_GENERATE_THUMBNAILS },
+    { OPRN_ADD_FILTERS, OperationType::ADD_FILTERS },
 };
 
 inline const std::map<std::string, OperationObject> OPRN_MAP = {
