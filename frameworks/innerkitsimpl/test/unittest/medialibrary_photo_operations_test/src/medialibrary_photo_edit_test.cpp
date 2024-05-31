@@ -208,12 +208,12 @@ int32_t CreatePhotoAsset()
     return ret;
 }
 
-void SubmitCache(DataShareValuesBucket &valuesBucket, bool isAddWater)
+void SubmitCache(DataShareValuesBucket &valuesBucket, bool isAddWater, bool isEdited)
 {
     MEDIA_INFO_LOG("SubmitCache enter");
     MediaLibraryCommand submitCacheCmd(OperationObject::FILESYSTEM_PHOTO,
         OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
-    if (isAddWater) {
+    if (isAddWater && !isEdited) {
         submitCacheCmd.SetBundleName(CAMERA_BUNDLE_NAME);
     }
     string assetUri;
@@ -275,7 +275,7 @@ TakePhotoResult TakePhotoMock(bool isAddWater)
     valuesBucket.Put(PhotoColumn::MEDIA_ID, fileId);
     valuesBucket.Put(CACHE_FILE_NAME, cacheFileName);
     if (!isAddWater) {
-        SubmitCache(valuesBucket, isAddWater);
+        SubmitCache(valuesBucket, isAddWater, false);
         EXPECT_EQ(ValidSourceFile(path), false);
         EXPECT_EQ(ValidEditdata(path), false);
         EXPECT_EQ(ValidEditdataCamera(path), false);
@@ -284,7 +284,7 @@ TakePhotoResult TakePhotoMock(bool isAddWater)
         valuesBucket.Put(EDIT_DATA, EDITDATA_VALUE);
         valuesBucket.Put(COMPATIBLE_FORMAT, COMPATIBLE_FORMAT_VALUE);
         valuesBucket.Put(FORMAT_VERSION, FORMAT_VERSION_VALUE);
-        SubmitCache(valuesBucket, isAddWater);
+        SubmitCache(valuesBucket, isAddWater, false);
         EXPECT_EQ(ValidSourceFile(path), true);
         EXPECT_EQ(ValidEditdata(path), false);
         EXPECT_EQ(ValidEditdataCamera(path), true);
@@ -297,7 +297,7 @@ void EditPhoto(TakePhotoResult result, bool isSetEditData, bool isAddWater)
 {
     string cacheFileName = CreateCacheFile();
     DataShareValuesBucket valuesBucket = GetValuesBucket(result.fileId, cacheFileName, isSetEditData);
-    SubmitCache(valuesBucket, isAddWater);
+    SubmitCache(valuesBucket, isAddWater, true);
     EXPECT_EQ(ValidSourceFile(result.path), true);
     EXPECT_EQ(ValidEditdata(result.path), true);
     EXPECT_EQ(ValidPhoto(result.path), true);

@@ -154,6 +154,7 @@ enum class EXPORT OperationType : uint32_t {
     ANALYSIS_INDEX,
     CANCEL_PROCESS_IMAGE,
     LOG_MOVING_PHOTO,
+    ADD_FILTERS,
 };
 
 namespace MediaOperation {
@@ -361,6 +362,7 @@ inline const std::map<std::string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_GROUP_DISMISS, OperationType::DISMISS },
     { OPRN_GROUP_ALBUM_NAME, OperationType::GROUP_ALBUM_NAME },
     { OPRN_GROUP_COVER_URI, OperationType::GROUP_COVER_URI },
+    { OPRN_ADD_FILTERS, OperationType::ADD_FILTERS },
 };
 
 inline const std::map<std::string, OperationObject> OPRN_MAP = {

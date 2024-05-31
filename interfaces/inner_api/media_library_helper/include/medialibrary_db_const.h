@@ -349,7 +349,6 @@ const std::string APP_ID = "app_id";
 // write cache
 const std::string CACHE_FILE_NAME = "cache_file_name";
 const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name";
-const std::string IS_SAVE_CAMERA_PHOTO = "is_save_camera_photo";
 
 // moving photo param
 const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO
