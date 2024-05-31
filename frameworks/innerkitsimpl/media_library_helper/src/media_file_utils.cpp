@@ -1428,6 +1428,9 @@ bool MediaFileUtils::CheckMovingPhotoVideo(const string &path)
 
 bool MediaFileUtils::CheckMovingPhotoVideo(const UniqueFd &uniqueFd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaFileUtils::CheckMovingPhotoVideo");
+
     if (uniqueFd.Get() <= 0) {
         MEDIA_ERR_LOG("Failed to open video of moving photo, errno = %{public}d", errno);
         return false;
