@@ -191,11 +191,12 @@ napi_value MediaLibraryBackupNapi::JSStartRestoreEx(napi_env env, napi_callback_
     RestoreExBlock *block = new (std::nothrow) RestoreExBlock {
         env, sceneCode, galleryAppName, mediaAppName, backupDir, restoreExInfo, nativeDeferred };
     work->data = reinterpret_cast<void *>(block);
-    uv_queue_work(loop, work,
+    uv_queue_work(
+        loop, work,
         [](uv_work_t *work) {
             RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
-            BackupRestoreService::GetInstance().StartRestoreEx(block->sceneCode,
-                block->galleryAppName, block->mediaAppName, block->backupDir, block->restoreExInfo);
+            BackupRestoreService::GetInstance().StartRestoreEx(block->sceneCode, block->galleryAppName,
+                block->mediaAppName, block->backupDir, block->restoreExInfo);
         },
         [](uv_work_t *work, int _status) {
             RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
@@ -204,9 +205,8 @@ napi_value MediaLibraryBackupNapi::JSStartRestoreEx(napi_env env, napi_callback_
             napi_resolve_deferred(block->env, block->nativeDeferred, restoreExResult);
             delete block;
             delete work;
-        }
-    );
-    return result;    
+        });
+    return result;
 }
 
 napi_value MediaLibraryBackupNapi::JSGetBackupInfo(napi_env env, napi_callback_info info)
