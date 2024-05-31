@@ -113,7 +113,7 @@ HWTEST_F(MediaLibraryThumbnailWorkerTest, ThumbnailWorker_IgnoreTaskByRequestId_
 
     ThumbRdbOpt opts;
     ThumbnailData thumbData;
-    uint64_t requestId = 1;
+    int32_t requestId = 1;
     std::shared_ptr<ThumbnailTaskData> taskData = std::make_shared<ThumbnailTaskData>(opts, thumbData, requestId);
     std::shared_ptr<ThumbnailGenerateTask> task = std::make_shared<ThumbnailGenerateTask>(ThumbnailTestTask, taskData);
     int32_t status = foregroundWorkerPtr_->AddTask(task, ThumbnailTaskPriority::HIGH);

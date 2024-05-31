@@ -408,6 +408,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::STORY_COVER,
         OperationObject::STORY_PLAY,
         OperationObject::USER_PHOTOGRAPHY,
+        OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);

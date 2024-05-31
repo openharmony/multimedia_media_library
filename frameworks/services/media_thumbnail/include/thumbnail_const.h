@@ -45,6 +45,7 @@ enum class GenerateScene : int32_t {
     LOCAL = 0,
     CLOUD,
     BACKGROUND,
+    FOREGROUND,
 };
 
 enum class LoadSourceType : int32_t {
@@ -93,6 +94,7 @@ constexpr int32_t MAX_TIMEID_LENGTH_OLD_VERSION = 10;
 constexpr int32_t MAX_DATE_ADDED_LENGTH = 13;
 constexpr int32_t DECODE_SCALE_BASE = 2;
 constexpr int32_t FLAT_ANGLE = 180;
+constexpr int32_t THUMBNAIL_GENERATE_BATCH_COUNT = 200;
 const std::string KVSTORE_FIELD_ID_TEMPLATE = "0000000000";
 const std::string KVSTORE_DATE_ADDED_TEMPLATE = "0000000000000";
 const std::string DEFAULT_EXIF_ORIENTATION = "1";

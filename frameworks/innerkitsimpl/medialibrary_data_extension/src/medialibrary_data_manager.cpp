@@ -819,6 +819,9 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
+        case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE: {
+            return ProcessThumbnailBatchCmd(cmd, value, predicates);
+        }
         default:
             break;
     }
@@ -1434,36 +1437,6 @@ int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundl
     return ret;
 }
 
-
-int32_t MediaLibraryDataManager::GetAgingDataSize(const int64_t &time, int &count)
-{
-    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
-    if (refCnt_.load() <= 0) {
-        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
-        return E_FAIL;
-    }
-
-    if (thumbnailService_ == nullptr) {
-        return E_THUMBNAIL_SERVICE_NULLPTR;
-    }
-    return thumbnailService_->GetAgingDataSize(time, count);
-}
-
-
-int32_t MediaLibraryDataManager::QueryNewThumbnailCount(const int64_t &time, int &count)
-{
-    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
-    if (refCnt_.load() <= 0) {
-        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
-        return E_FAIL;
-    }
-
-    if (thumbnailService_ == nullptr) {
-        return E_THUMBNAIL_SERVICE_NULLPTR;
-    }
-    return thumbnailService_->QueryNewThumbnailCount(time, count);
-}
-
 void MediaLibraryDataManager::SetStartupParameter()
 {
     static constexpr uint32_t BASE_USER_RANGE = 200000; // for get uid
@@ -1475,6 +1448,37 @@ void MediaLibraryDataManager::SetStartupParameter()
         MEDIA_ERR_LOG("Failed to set startup, result: %{public}d", ret);
     } else {
         MEDIA_INFO_LOG("Set startup success: %{public}s", to_string(uid).c_str());
+    }
+}
+
+int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
+    const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates)
+{
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+
+    int32_t requestId = 0;
+    ValueObject valueObject;
+    if (value.GetObject(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, valueObject)) {
+        valueObject.GetInt(requestId);
+    } else {
+        return -EINVAL;
+    }
+    if (requestId <= 0) {
+        MEDIA_ERR_LOG("invalid request id");
+        return E_INVALID_VALUES;
+    }
+
+    if (cmd.GetOprnType() == OperationType::START_GENERATE_THUMBNAILS) {
+        NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+        return thumbnailService_->CreateAstcBatchOnDemand(rdbPredicate, requestId);
+    } else if (cmd.GetOprnType() == OperationType::STOP_GENERATE_THUMBNAILS) {
+        thumbnailService_->CancelAstcBatchTask(requestId);
+        return E_OK;
+    } else {
+        MEDIA_ERR_LOG("invalid mediaLibrary command");
+        return E_INVALID_ARGUMENTS;
     }
 }
 }  // namespace Media

@@ -46,13 +46,13 @@ public:
     ThumbnailTaskData(ThumbRdbOpt &opts, ThumbnailData &data) : opts_(opts), thumbnailData_(data) {}
 
     ThumbnailTaskData(ThumbRdbOpt &opts, ThumbnailData &data,
-        uint64_t requestId) : opts_(opts), thumbnailData_(data), requestId_(requestId) {}
+        int32_t requestId) : opts_(opts), thumbnailData_(data), requestId_(requestId) {}
 
     ~ThumbnailTaskData() = default;
 
     ThumbRdbOpt opts_;
     ThumbnailData thumbnailData_;
-    uint64_t requestId_ = 0;
+    int32_t requestId_ = 0;
 };
 
 using ThumbnailGenerateExecute = void (*)(std::shared_ptr<ThumbnailTaskData> &data);
@@ -73,12 +73,16 @@ public:
     EXPORT int32_t ReleaseTaskQueue(const ThumbnailTaskPriority &taskPriority);
     EXPORT int32_t AddTask(
         const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority);
-    EXPORT void IgnoreTaskByRequestId(uint64_t requestId);
+    EXPORT void IgnoreTaskByRequestId(int32_t requestId);
 
 private:
     void StartWorker();
     void WaitForTask();
-    bool NeedIgnoreTask(uint64_t requestId);
+
+    bool NeedIgnoreTask(int32_t requestId);
+    void IncreaseTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
+    void DecreaseTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
+    void NotifyTaskFinished(int32_t requestId);
 
     std::atomic<bool> isThreadRunning_ = false;
     std::list<std::thread> threads_;
@@ -89,7 +93,9 @@ private:
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> highPriorityTaskQueue_;
     SafeQueue<std::shared_ptr<ThumbnailGenerateTask>> lowPriorityTaskQueue_;
 
-    std::atomic<uint64_t> ignoreRequestId_ = 0;
+    std::atomic<int32_t> ignoreRequestId_ = 0;
+    std::map<int32_t, int32_t> requestIdTaskMap_;
+    std::mutex requestIdMapLock_;
 };
 } // namespace Media
 } // namespace OHOS
