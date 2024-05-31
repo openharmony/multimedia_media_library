@@ -22,6 +22,7 @@
 
 #include "backup_const.h"
 #include "medialibrary_rdb_transaction.h"
+#include "nlohmann/json.hpp"
 #include "rdb_helper.h"
 #include "result_set.h"
 
@@ -38,6 +39,10 @@ public:
     virtual NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) const;
     virtual NativeRdb::ValuesBucket GetAudioInsertValue(const FileInfo &fileInfo, const std::string &newPath) const;
+    virtual std::string GetBackupInfo();
+    void StartRestoreEx(const std::string &backupRetorePath, const std::string &upgradePath,
+        std::string &restoreExInfo);
+    std::string GetRestoreExInfo();
 
 protected:
     int32_t Init(void);
@@ -71,10 +76,20 @@ protected:
     void InsertPhotoMap(std::vector<FileInfo> &fileInfos);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
+    nlohmann::json GetErrorInfoJson();
+    nlohmann::json GetCountInfoJson(const std::vector<std::string> &countInfoTypes);
+    SubCountInfo GetSubCountInfo(const std::string &type);
+    std::unordered_map<std::string, int32_t> GetFailedFiles(const std::string &type);
+    nlohmann::json GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo);
+    void SetErrorCode(int32_t errorCode);
+    void UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode);
+    void UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode);
+    void UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
     std::atomic<uint64_t> migrateFileNumber_;
+    std::atomic<uint64_t> migrateVideoFileNumber_;
     std::atomic<uint64_t> migrateAudioDatabaseNumber_;
     std::atomic<uint64_t> migrateAudioFileNumber_;
     std::atomic<uint32_t> imageNumber_;
@@ -87,6 +102,9 @@ protected:
     std::mutex imageMutex_;
     std::mutex videoMutex_;
     std::mutex audioMutex_;
+    int32_t errorCode_{RestoreError::SUCCESS};
+    std::string errorInfo_;
+    std::unordered_map<std::string, std::unordered_map<std::string, int32_t>> failedFilesMap_;
 };
 } // namespace Media
 } // namespace OHOS

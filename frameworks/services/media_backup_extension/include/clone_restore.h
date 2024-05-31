@@ -29,6 +29,7 @@ public:
     int32_t Init(const std::string &backupRestoreDir, const std::string &upgradeFilePath, bool isUpgrade) override;
     NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
         int32_t sourceType) const override;
+    std::string GetBackupInfo() override;
 
 private:
     void RestorePhoto(void) override;
@@ -73,7 +74,8 @@ private:
     void BatchInsertMap(std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
     NativeRdb::ValuesBucket GetInsertValue(const MapInfo &mapInfo) const;
     NativeRdb::ValuesBucket GetInsertValue(const AlbumInfo &albumInfo, const std::string &tableName) const;
-    void CheckTableColumnStatus(const std::vector<std::vector<std::string>> &cloneTableList);
+    void CheckTableColumnStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::vector<std::vector<std::string>> &cloneTableList);
     bool HasColumns(const std::unordered_map<std::string, std::string> &columnInfoMap,
         const std::unordered_set<std::string> &columnSet);
     bool HasColumn(const std::unordered_map<std::string, std::string> &columnInfoMap, const std::string &columnName);
@@ -94,6 +96,9 @@ private:
         std::vector<FileInfo> &fileInfos, int32_t sourceType, const std::unordered_set<int32_t> &excludedFileIdSet);
     NativeRdb::ValuesBucket GetInsertValue(const std::string &tableName, const FileInfo &fileInfo,
         const std::string &newPath, int32_t sourceType) const;
+    int32_t QueryTotalNumberByMediaType(std::shared_ptr<NativeRdb::RdbStore> rdbStore, const std::string &tableName,
+        MediaType mediaType);
+    std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};

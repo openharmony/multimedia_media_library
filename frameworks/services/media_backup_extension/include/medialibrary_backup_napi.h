@@ -35,6 +35,8 @@ public:
 
 private:
     static napi_value JSStartRestore(napi_env env, napi_callback_info info);
+    static napi_value JSStartRestoreEx(napi_env env, napi_callback_info info);
+    static napi_value JSGetBackupInfo(napi_env env, napi_callback_info info);
 };
 } // namespace Media
 } // namespace OHOS

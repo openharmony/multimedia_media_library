@@ -52,6 +52,7 @@ const std::string GARBLE = "***";
 const std::string GALLERT_IMPORT = "/Pictures/cloud/Imports";
 const std::string GALLERT_HIDDEN_ALBUM = "/Pictures/hiddenAlbum";
 const std::string GALLERT_ROOT_PATH = "/storage/emulated/";
+const std::string RESTORE_FAILED_FILES_PATH = "/storage/media/local/files/Docs/Documents/restore_failed_files";
 
 // DB field for update scene
 const std::string GALLERY_ID = "_id";
@@ -94,6 +95,24 @@ const std::string PRAGMA_TABLE_TYPE = "type";
 const std::string AUDIO_DATA = "_data";
 const std::string AUDIO_DATE_MODIFIED = "date_modified";
 const std::string AUDIO_DATE_TAKEN = "datetaken";
+
+// statistics
+const std::string STAT_KEY_RESULT_INFO = "resultInfo";
+const std::string STAT_KEY_TYPE = "type";
+const std::string STAT_KEY_ERROR_CODE = "errorCode";
+const std::string STAT_KEY_ERROR_INFO = "errorInfo";
+const std::string STAT_KEY_INFOS = "infos";
+const std::string STAT_KEY_BACKUP_INFO = "backupInfo";
+const std::string STAT_KEY_SUCCESS_COUNT = "successCount";
+const std::string STAT_KEY_FAILED_COUNT = "failedCount";
+const std::string STAT_KEY_DETAILS = "details";
+const std::string STAT_KEY_NUMBER = "number";
+const std::string STAT_VALUE_ERROR_INFO = "ErrorInfo";
+const std::string STAT_VALUE_COUNT_INFO = "CountInfo";
+const std::string STAT_TYPE_PHOTO = "photo";
+const std::string STAT_TYPE_VIDEO = "video";
+const std::string STAT_TYPE_AUDIO = "audio";
+const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO };
 
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
@@ -138,6 +157,25 @@ enum DUAL_MEDIA_TYPE {
     VIDEO_TYPE,
 };
 
+enum RestoreError {
+    SUCCESS = 0,
+    INIT_FAILED,
+    FILE_INVALID,
+    PATH_INVALID,
+    GET_PATH_FAILED,
+    INSERT_FAILED,
+    MOVE_FAILED,
+};
+
+const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
+    { RestoreError::INIT_FAILED, "Init failed" },
+    { RestoreError::FILE_INVALID, "File is invalid" },
+    { RestoreError::PATH_INVALID, "File path is invalid" },
+    { RestoreError::GET_PATH_FAILED, "Get path failed" },
+    { RestoreError::INSERT_FAILED, "Insert failed" },
+    { RestoreError::MOVE_FAILED, "Move failed" },
+};
+
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
     { PrefixType::CLOUD, "/storage/cloud/files" },
     { PrefixType::LOCAL, "/storage/media/local/files" },
@@ -153,6 +191,11 @@ const std::vector<std::vector<std::string>> CLONE_TABLE_LISTS_PHOTO = {
     { PhotoColumn::PHOTOS_TABLE },
     { PhotoAlbumColumns::TABLE, PhotoMap::TABLE },
     { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE },
+};
+
+const std::vector<std::vector<std::string>> CLONE_TABLE_LISTS_OLD_DEVICE = {
+    { PhotoColumn::PHOTOS_TABLE },
+    { AudioColumn::AUDIOS_TABLE },
 };
 
 struct FileInfo {
@@ -209,6 +252,13 @@ struct GalleryAlbumInfo {
 struct MapInfo {
     int32_t albumId {-1};
     int32_t fileId {-1};
+};
+
+struct SubCountInfo {
+    uint64_t successCount {0};
+    std::unordered_map<std::string, int32_t> failedFiles;
+    SubCountInfo(int64_t successCount, const std::unordered_map<std::string, int32_t> &failedFiles)
+        : successCount(successCount), failedFiles(failedFiles) {}
 };
 
 // sql for external
