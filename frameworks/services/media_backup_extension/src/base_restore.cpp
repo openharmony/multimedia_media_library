@@ -95,6 +95,7 @@ int32_t BaseRestore::Init(void)
     }
     migrateDatabaseNumber_ = 0;
     migrateFileNumber_ = 0;
+    migrateVideoFileNumber_ = 0;
     migrateAudioDatabaseNumber_ = 0;
     migrateAudioFileNumber_ = 0;
     imageNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, IMAGE_ASSET_TYPE);
@@ -600,6 +601,123 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
         MEDIA_ERR_LOG("Batch insert map failed, errCode: %{public}d", errCode);
     }
     totalRowNum += rowNum;
+}
+
+void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::string &upgradePath,
+    std::string &restoreExInfo)
+{
+    StartRestore(backupRetoreDir, upgradePath);
+    restoreExInfo = GetRestoreExInfo();
+}
+
+std::string BaseRestore::GetRestoreExInfo()
+{
+    nlohmann::json restoreExInfoJson;
+    restoreExInfoJson[STAT_KEY_RESULT_INFO] = { GetErrorInfoJson(), GetCountInfoJson(STAT_TYPES) };
+    return restoreExInfoJson.dump();
+}
+
+nlohmann::json BaseRestore::GetErrorInfoJson()
+{
+    nlohmann::json errorInfoJson = {
+        { STAT_KEY_TYPE, STAT_VALUE_ERROR_INFO },
+        { STAT_KEY_ERROR_CODE, std::to_string(errorCode_) },
+        { STAT_KEY_ERROR_INFO, errorInfo_ }
+    };
+    return errorInfoJson;
+}
+
+nlohmann::json BaseRestore::GetCountInfoJson(const std::vector<std::string> &countInfoTypes)
+{
+    nlohmann::json countInfoJson;
+    countInfoJson[STAT_KEY_TYPE] = STAT_VALUE_COUNT_INFO;
+    for (const auto &type : countInfoTypes) {
+        SubCountInfo subCountInfo = GetSubCountInfo(type);
+        MEDIA_INFO_LOG("SubCountInfo %{public}s success: %{public}lld, failed: %{public}zu", type.c_str(),
+            (long long)subCountInfo.successCount, subCountInfo.failedFiles.size());
+        countInfoJson[STAT_KEY_INFOS].push_back(GetSubCountInfoJson(type, subCountInfo));
+    }
+    return countInfoJson;
+}
+
+SubCountInfo BaseRestore::GetSubCountInfo(const std::string &type)
+{
+    std::unordered_map<std::string, int32_t> failedFiles = GetFailedFiles(type);
+    if (type == STAT_TYPE_PHOTO) {
+        return SubCountInfo(migrateFileNumber_ - migrateVideoFileNumber_, failedFiles);
+    }
+    if (type == STAT_TYPE_VIDEO) {
+        return SubCountInfo(migrateVideoFileNumber_, failedFiles);
+    }
+    return SubCountInfo(migrateAudioFileNumber_, failedFiles);
+}
+
+std::unordered_map<std::string, int32_t> BaseRestore::GetFailedFiles(const std::string &type)
+{
+    std::unordered_map<std::string, int32_t> failedFiles;
+    auto iter = failedFilesMap_.find(type);
+    if (iter != failedFilesMap_.end()) {
+        return iter->second;
+    }
+    return failedFiles;
+}
+
+nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo)
+{
+    nlohmann::json subCountInfoJson;
+    subCountInfoJson[STAT_KEY_BACKUP_INFO] = type;
+    subCountInfoJson[STAT_KEY_SUCCESS_COUNT] = subCountInfo.successCount;
+    subCountInfoJson[STAT_KEY_FAILED_COUNT] = subCountInfo.failedFiles.size();
+    subCountInfoJson[STAT_KEY_DETAILS] = BackupFileUtils::GetDetailsPath(type, subCountInfo.failedFiles);
+    return subCountInfoJson;
+}
+
+std::string BaseRestore::GetBackupInfo()
+{
+    return "";
+}
+
+void BaseRestore::SetErrorCode(int32_t errorCode)
+{
+    errorCode_ = errorCode;
+    auto iter = RESTORE_ERROR_MAP.find(errorCode_);
+    if (iter == RESTORE_ERROR_MAP.end()) {
+        errorInfo_ = "";
+        return;
+    }
+    errorInfo_ = iter->second;
+}
+
+void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode)
+{
+    if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
+        failedFilesMap_[STAT_TYPE_PHOTO][filePath] = errorCode;
+        return;
+    }
+    if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+        failedFilesMap_[STAT_TYPE_VIDEO][filePath] = errorCode;
+        return;
+    }
+    if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO)) {
+        failedFilesMap_[STAT_TYPE_AUDIO][filePath] = errorCode;
+        return;
+    }
+    MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileType);
+}
+
+void BaseRestore::UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode)
+{
+    SetErrorCode(errorCode);
+    UpdateFailedFileByFileType(fileType, filePath, errorCode);
+}
+
+void BaseRestore::UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode)
+{
+    SetErrorCode(errorCode);
+    for (const auto &fileInfo : fileInfos) {
+        std::string localPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
+        UpdateFailedFileByFileType(fileInfo.fileType, localPath, errorCode);
+    }
 }
 } // namespace Media
 } // namespace OHOS

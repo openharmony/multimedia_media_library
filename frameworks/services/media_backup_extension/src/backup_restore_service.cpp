@@ -66,5 +66,42 @@ void BackupRestoreService::StartRestore(int32_t sceneCode, const std::string &ga
     }
     restoreService->StartRestore(backupDir, UPGRADE_FILE_DIR);
 }
+
+void BackupRestoreService::StartRestoreEx(int32_t sceneCode, const std::string &galleryAppName,
+    const std::string &mediaAppName, const std::string &backupDir, std::string &restoreExInfo)
+{
+    std::unique_ptr<BaseRestore> restoreService;
+    MEDIA_INFO_LOG("Start restore service: %{public}d", sceneCode);
+    if (sceneCode != CLONE_RESTORE_ID) {
+        MEDIA_ERR_LOG("StartRestoreEx current scene is not supported");
+        restoreExInfo = "";
+        return;
+    }
+    restoreService = std::make_unique<CloneRestore>();
+    if (restoreService == nullptr) {
+        MEDIA_ERR_LOG("Create media restore service failed.");
+        restoreExInfo = "";
+        return;
+    }
+    restoreService->StartRestoreEx(backupDir, UPGRADE_FILE_DIR, restoreExInfo);
+}
+
+void BackupRestoreService::GetBackupInfo(int32_t sceneCode, std::string &backupInfo)
+{
+    std::unique_ptr<BaseRestore> restoreService;
+    MEDIA_INFO_LOG("Start restore service: %{public}d", sceneCode);
+    if (sceneCode != CLONE_RESTORE_ID) {
+        MEDIA_ERR_LOG("StartRestoreEx current scene is not supported");
+        backupInfo = "";
+        return;
+    }
+    restoreService = std::make_unique<CloneRestore>();
+    if (restoreService == nullptr) {
+        MEDIA_ERR_LOG("Create media restore service failed.");
+        backupInfo = "";
+        return;
+    }
+    backupInfo = restoreService->GetBackupInfo();
+}
 } // namespace Media
 } // namespace OHOS

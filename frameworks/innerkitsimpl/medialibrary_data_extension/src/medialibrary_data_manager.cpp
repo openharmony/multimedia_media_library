@@ -542,7 +542,8 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     cmd.SetValueBucket(value);
 
     OperationType oprnType = cmd.GetOprnType();
-    if (oprnType == OperationType::CREATE || oprnType == OperationType::SUBMIT_CACHE) {
+    if (oprnType == OperationType::CREATE || oprnType == OperationType::SUBMIT_CACHE
+        || oprnType == OperationType::ADD_FILTERS) {
         if (SetCmdBundleAndDevice(cmd) != ERR_OK) {
             MEDIA_ERR_LOG("MediaLibraryDataManager SetCmdBundleAndDevice failed.");
         }
