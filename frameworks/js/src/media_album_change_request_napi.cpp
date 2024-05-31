@@ -88,6 +88,9 @@ static napi_value ParsePhotoAlbum(napi_env env, napi_value arg, shared_ptr<Photo
 
 napi_value MediaAlbumChangeRequestNapi::Constructor(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaAlbumChangeRequestNapi::Constructor");
+
     napi_value newTarget = nullptr;
     CHECK_ARGS(env, napi_get_new_target(env, info, &newTarget), JS_INNER_FAIL);
     CHECK_COND_RET(newTarget != nullptr, nullptr, "Failed to check new.target");
@@ -258,6 +261,9 @@ static bool CheckDuplicatedAssetArray(const vector<string>& arrayToCheck, const 
 
 napi_value MediaAlbumChangeRequestNapi::JSGetAlbum(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAlbum");
+
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
     CHECK_ARGS_THROW_INVALID_PARAM(
         env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO));
@@ -299,6 +305,9 @@ static napi_value ParseArgsCreateAlbum(
 
 napi_value MediaAlbumChangeRequestNapi::JSCreateAlbumRequest(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCreateAlbumRequest");
+
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsCreateAlbum(env, info, asyncContext), "Failed to parse args");
 
@@ -363,6 +372,9 @@ static napi_value ParseArgsDeleteAlbums(
 
 static void DeleteAlbumsExecute(napi_env env, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteAlbumsExecute");
+
     auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
     Uri deleteAlbumUri(PAH_DELETE_PHOTO_ALBUM);
     int ret = UserFileClient::Delete(deleteAlbumUri, context->predicates);
@@ -397,6 +409,9 @@ static void DeleteAlbumsCompleteCallback(napi_env env, napi_status status, void*
 
 napi_value MediaAlbumChangeRequestNapi::JSDeleteAlbums(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeleteAlbums");
+
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAlbums(env, info, asyncContext), "Failed to parse args");
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(
@@ -405,6 +420,9 @@ napi_value MediaAlbumChangeRequestNapi::JSDeleteAlbums(napi_env env, napi_callba
 
 napi_value MediaAlbumChangeRequestNapi::JSAddAssets(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSAddAssets");
+
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_ONE) == napi_ok,
@@ -432,6 +450,9 @@ napi_value MediaAlbumChangeRequestNapi::JSAddAssets(napi_env env, napi_callback_
 
 napi_value MediaAlbumChangeRequestNapi::JSRemoveAssets(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRemoveAssets");
+
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ONE, ARGS_ONE) == napi_ok,
@@ -460,6 +481,9 @@ napi_value MediaAlbumChangeRequestNapi::JSRemoveAssets(napi_env env, napi_callba
 
 napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSMoveAssets");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -503,6 +527,9 @@ napi_value MediaAlbumChangeRequestNapi::JSMoveAssets(napi_env env, napi_callback
 
 napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRecoverAssets");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -536,6 +563,9 @@ napi_value MediaAlbumChangeRequestNapi::JSRecoverAssets(napi_env env, napi_callb
 
 napi_value MediaAlbumChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeleteAssets");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -612,6 +642,9 @@ static napi_value GetAssetsIdArray(napi_env env, napi_value arg, vector<string> 
 
 napi_value MediaAlbumChangeRequestNapi::JSSetIsMe(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetIsMe");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -652,6 +685,9 @@ bool MediaAlbumChangeRequestNapi::CheckDismissAssetVaild(std::vector<std::string
 
 napi_value MediaAlbumChangeRequestNapi::JSDismissAssets(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDismissAssets");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -681,6 +717,9 @@ napi_value MediaAlbumChangeRequestNapi::JSDismissAssets(napi_env env, napi_callb
 
 napi_value MediaAlbumChangeRequestNapi::JSMergeAlbum(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSMergeAlbum");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -715,6 +754,9 @@ napi_value MediaAlbumChangeRequestNapi::JSMergeAlbum(napi_env env, napi_callback
 
 napi_value MediaAlbumChangeRequestNapi::JSSetDisplayLevel(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetDisplayLevel");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -742,6 +784,9 @@ napi_value MediaAlbumChangeRequestNapi::JSSetDisplayLevel(napi_env env, napi_cal
 
 napi_value MediaAlbumChangeRequestNapi::JSDismiss(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDismiss");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -762,6 +807,9 @@ napi_value MediaAlbumChangeRequestNapi::JSDismiss(napi_env env, napi_callback_in
 
 napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetAlbumName");
+
     auto asyncContext = make_unique<MediaAlbumChangeRequestAsyncContext>();
     string albumName;
     CHECK_COND_WITH_MESSAGE(env,
@@ -784,6 +832,9 @@ napi_value MediaAlbumChangeRequestNapi::JSSetAlbumName(napi_env env, napi_callba
 
 napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetCoverUri");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -810,6 +861,8 @@ napi_value MediaAlbumChangeRequestNapi::JSSetCoverUri(napi_env env, napi_callbac
 
 napi_value MediaAlbumChangeRequestNapi::JSPlaceBefore(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSPlaceBefore");
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -834,6 +887,9 @@ napi_value MediaAlbumChangeRequestNapi::JSPlaceBefore(napi_env env, napi_callbac
 
 static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateAlbumExecute");
+
     auto changeRequest = context.objectInfo;
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
 
@@ -897,6 +953,9 @@ static bool FetchNewCount(MediaAlbumChangeRequestAsyncContext& context, shared_p
 
 static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AddAssetsExecute");
+
     auto changeRequest = context.objectInfo;
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     int32_t albumId = photoAlbum->GetAlbumId();
@@ -924,6 +983,9 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool RemoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("RemoveAssetsExecute");
+
     auto changeRequest = context.objectInfo;
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     int32_t albumId = photoAlbum->GetAlbumId();
@@ -947,6 +1009,9 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsExecute");
+
     auto changeRequest = context.objectInfo;
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     int32_t albumId = photoAlbum->GetAlbumId();
@@ -996,6 +1061,9 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool RecoverAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("RecoverAssetsExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     predicates.In(PhotoColumn::MEDIA_ID, context.objectInfo->GetRecoverAssetArray());
@@ -1019,6 +1087,9 @@ static bool RecoverAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool DeleteAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteAssetsExecute");
+
     DataShare::DataSharePredicates predicates;
     predicates.In(PhotoColumn::MEDIA_ID, context.objectInfo->GetDeleteAssetArray());
     DataShare::DataShareValuesBucket valuesBucket;
@@ -1042,6 +1113,9 @@ static bool DeleteAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool OrderAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("OrderAlbumExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
@@ -1066,6 +1140,9 @@ static bool OrderAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool DismissAssetExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("DismissAssetExecute");
+
     string disMissAssetAssetsUri = PAH_DISMISS_ASSET;
     Uri uri(disMissAssetAssetsUri);
 
@@ -1087,6 +1164,9 @@ static bool DismissAssetExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool MergeAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MergeAlbumExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
@@ -1162,6 +1242,9 @@ static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumC
 static bool SetAlbumPropertyExecute(
     MediaAlbumChangeRequestAsyncContext& context, const AlbumChangeOperation changeOperation)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetAlbumPropertyExecute");
+
     // In the scenario of creation, the new name will be applied when the album is created.
     if (changeOperation == AlbumChangeOperation::SET_ALBUM_NAME &&
         context.albumChangeOperations.front() == AlbumChangeOperation::CREATE_ALBUM) {
@@ -1205,6 +1288,9 @@ static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeReques
 
 static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ApplyAlbumChangeRequestExecute");
+
     auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
     unordered_set<AlbumChangeOperation> appliedOperations;
     for (const auto& changeOperation : context->albumChangeOperations) {
@@ -1239,6 +1325,9 @@ static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
 
 static void ApplyAlbumChangeRequestCompleteCallback(napi_env env, napi_status status, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ApplyAlbumChangeRequestCompleteCallback");
+
     auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();

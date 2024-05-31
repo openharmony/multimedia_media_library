@@ -153,6 +153,9 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
 
 napi_value MediaAssetChangeRequestNapi::Constructor(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaAssetChangeRequestNapi::Constructor");
+
     napi_value newTarget = nullptr;
     CHECK_ARGS(env, napi_get_new_target(env, info, &newTarget), JS_INNER_FAIL);
     CHECK_COND_RET(newTarget != nullptr, nullptr, "Failed to check new.target");
@@ -445,6 +448,9 @@ string MediaAssetChangeRequestNapi::GetCacheMovingPhotoVideoName() const
 
 napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetAsset");
+
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_ARGS_THROW_INVALID_PARAM(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO));
@@ -691,6 +697,9 @@ static napi_value ParseArgsCreateAsset(
 
 napi_value MediaAssetChangeRequestNapi::JSCreateAssetRequest(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCreateAssetRequest");
+
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsCreateAsset(env, info, asyncContext), "Failed to parse args");
 
@@ -781,6 +790,9 @@ napi_value MediaAssetChangeRequestNapi::CreateAssetRequestFromRealPath(napi_env 
 
 napi_value MediaAssetChangeRequestNapi::JSCreateImageAssetRequest(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCreateImageAssetRequest");
+
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsCreateAssetFromFileUri(env, info, MediaType::MEDIA_TYPE_IMAGE, asyncContext),
         "Failed to parse args");
@@ -789,6 +801,9 @@ napi_value MediaAssetChangeRequestNapi::JSCreateImageAssetRequest(napi_env env, 
 
 napi_value MediaAssetChangeRequestNapi::JSCreateVideoAssetRequest(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCreateVideoAssetRequest");
+
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsCreateAssetFromFileUri(env, info, MediaType::MEDIA_TYPE_VIDEO, asyncContext),
         "Failed to parse args");
@@ -857,6 +872,9 @@ static napi_value ParseArgsDeleteAssets(
 
 static void DeleteAssetsExecute(napi_env env, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteAssetsExecute");
+
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
     string trashUri = PAH_TRASH_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(trashUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
@@ -891,6 +909,9 @@ static void DeleteAssetsCompleteCallback(napi_env env, napi_status status, void*
 
 napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSDeleteAssets");
+
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env, ParseArgsDeleteAssets(env, info, asyncContext), "Failed to parse args");
     if (MediaLibraryNapiUtils::IsSystemApp()) {
@@ -937,6 +958,9 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
 
 napi_value MediaAssetChangeRequestNapi::JSSetEditData(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetEditData");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -972,6 +996,9 @@ napi_value MediaAssetChangeRequestNapi::JSSetEditData(napi_env env, napi_callbac
 
 napi_value MediaAssetChangeRequestNapi::JSSetFavorite(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetFavorite");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -993,6 +1020,9 @@ napi_value MediaAssetChangeRequestNapi::JSSetFavorite(napi_env env, napi_callbac
 
 napi_value MediaAssetChangeRequestNapi::JSSetHidden(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetHidden");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -1014,6 +1044,9 @@ napi_value MediaAssetChangeRequestNapi::JSSetHidden(napi_env env, napi_callback_
 
 napi_value MediaAssetChangeRequestNapi::JSSetTitle(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetTitle");
+
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     string title;
     CHECK_COND_WITH_MESSAGE(env,
@@ -1043,6 +1076,9 @@ napi_value MediaAssetChangeRequestNapi::JSSetTitle(napi_env env, napi_callback_i
 
 napi_value MediaAssetChangeRequestNapi::JSSetLocation(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetLocation");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -1111,6 +1147,9 @@ static int SavePhotoProxyImage(const UniqueFd& destFd, sptr<PhotoProxy> photoPro
 
 napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetUserComment");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -1133,6 +1172,9 @@ napi_value MediaAssetChangeRequestNapi::JSSetUserComment(napi_env env, napi_call
 
 napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaFileUtils::JSSetEffectMode");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -1161,6 +1203,9 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
 
 napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSetCameraShotKey");
+
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -1183,6 +1228,9 @@ napi_value MediaAssetChangeRequestNapi::JSSetCameraShotKey(napi_env env, napi_ca
 
 napi_value MediaAssetChangeRequestNapi::JSSaveCameraPhoto(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSSaveCameraPhoto");
+
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok,
@@ -1237,6 +1285,9 @@ static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& contex
 
 static void GetWriteCacheHandlerExecute(napi_env env, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("GetWriteCacheHandlerExecute");
+
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
     int32_t ret = OpenWriteCacheHandler(*context);
     if (ret < 0) {
@@ -1312,6 +1363,9 @@ static napi_value CheckWriteOperation(napi_env env, MediaAssetChangeRequestNapi*
 
 napi_value MediaAssetChangeRequestNapi::JSGetWriteCacheHandler(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("JSGetWriteCacheHandler");
+
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ONE) == napi_ok,
@@ -1328,6 +1382,9 @@ napi_value MediaAssetChangeRequestNapi::JSGetWriteCacheHandler(napi_env env, nap
 
 static bool CheckMovingPhotoVideo(void* dataBuffer, size_t size)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CheckMovingPhotoVideo");
+
     auto dataSource = make_shared<MediaDataSource>(dataBuffer, static_cast<int64_t>(size));
     auto avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
     if (avMetadataHelper == nullptr) {
@@ -1358,6 +1415,9 @@ static bool CheckMovingPhotoVideo(void* dataBuffer, size_t size)
 
 napi_value MediaAssetChangeRequestNapi::AddMovingPhotoVideoResource(napi_env env, napi_callback_info info)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AddMovingPhotoVideoResource");
+
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
     CHECK_COND_WITH_MESSAGE(env,
         MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_TWO, ARGS_TWO) == napi_ok,
@@ -1717,6 +1777,9 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffe
 
 static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SubmitCacheExecute");
+
     bool isCreation = IsCreation(context);
     bool isSetEffectMode = IsSetEffectMode(context);
     auto changeRequest = context.objectInfo;
@@ -1771,6 +1834,9 @@ static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
 
 static bool CreateFromFileUriExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateFromFileUriExecute");
+
     if (!HasWritePermission()) {
         return WriteBySecurityComponent(context);
     }
@@ -1842,6 +1908,9 @@ static bool AddResourceByMode(MediaAssetChangeRequestAsyncContext& context,
 
 static bool AddMovingPhotoVideoExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AddMovingPhotoVideoExecute");
+
     int32_t cacheVideoFd = OpenWriteCacheHandler(context, true);
     if (cacheVideoFd < 0) {
         NAPI_ERR_LOG("Failed to open cache moving photo video, err: %{public}d", cacheVideoFd);
@@ -1865,6 +1934,9 @@ static bool HasAddResource(MediaAssetChangeRequestAsyncContext& context, Resourc
 
 static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AddResourceExecute");
+
     if (!HasWritePermission()) {
         return WriteBySecurityComponent(context);
     }
@@ -1912,6 +1984,9 @@ static bool UpdateAssetProperty(MediaAssetChangeRequestAsyncContext& context, st
 
 static bool SetFavoriteExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetFavoriteExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
@@ -1922,6 +1997,9 @@ static bool SetFavoriteExecute(MediaAssetChangeRequestAsyncContext& context)
 
 static bool SetHiddenExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetHiddenExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
@@ -1933,6 +2011,9 @@ static bool SetHiddenExecute(MediaAssetChangeRequestAsyncContext& context)
 
 static bool SetTitleExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetTitleExecute");
+
     // In the scenario of creation, the new title will be applied when the asset is created.
     AssetChangeOperation firstOperation = context.assetChangeOperations.front();
     if (firstOperation == AssetChangeOperation::CREATE_FROM_SCRATCH ||
@@ -1950,6 +2031,9 @@ static bool SetTitleExecute(MediaAssetChangeRequestAsyncContext& context)
 
 static bool SetUserCommentExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetUserCommentExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
@@ -1960,6 +2044,9 @@ static bool SetUserCommentExecute(MediaAssetChangeRequestAsyncContext& context)
 
 static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetEffectModeExecute");
+
     // SET_MOVING_PHOTO_EFFECT_MODE will be applied together with ADD_RESOURCE
     auto changeRequest = context.objectInfo;
     if (changeRequest->Contains(AssetChangeOperation::ADD_RESOURCE)) {
@@ -1976,6 +2063,9 @@ static bool SetEffectModeExecute(MediaAssetChangeRequestAsyncContext& context)
 
 static bool SetPhotoQualityExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetPhotoQualityExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
@@ -1988,6 +2078,9 @@ static bool SetPhotoQualityExecute(MediaAssetChangeRequestAsyncContext& context)
 
 static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetLocationExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
@@ -1999,6 +2092,9 @@ static bool SetLocationExecute(MediaAssetChangeRequestAsyncContext& context)
 
 static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetCameraShotKeyExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
@@ -2014,6 +2110,9 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
 
 static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AddFiltersExecute");
+
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
     CHECK_COND_RET(fileAsset != nullptr, E_FAIL, "Failed to check fileAsset");
     string uri = PAH_ADD_FILTERS;
@@ -2045,6 +2144,9 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
 
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ApplyAssetChangeRequestExecute");
+
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
     if (context == nullptr || context->objectInfo == nullptr ||
         context->objectInfo->GetFileAssetInstance() == nullptr) {
@@ -2084,6 +2186,8 @@ static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
 
 static void ApplyAssetChangeRequestCompleteCallback(napi_env env, napi_status status, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ApplyAssetChangeRequestCompleteCallback");
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();
