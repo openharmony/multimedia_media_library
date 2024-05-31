@@ -189,8 +189,8 @@ void ThumbnailService::Init(const shared_ptr<RdbStore> &rdbStore,
 
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::BACKGROUND);
-    if (thumbnailWorker == nullptr) {
-        MEDIA_ERR_LOG("thumbnailWorker is null");
+    if (thumbnailWorker == nullptr || rdbStorePtr_ == nullptr) {
+        MEDIA_ERR_LOG("thumbnailWorker or rdbStorePtr_ is null");
         return;
     }
     ThumbRdbOpt opts = {
@@ -617,5 +617,26 @@ int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
     return E_OK;
 }
 
+int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)
+{
+    CancelAstcBatchTask(requestId - 1);
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE
+    };
+    return ThumbnailGenerateHelper::CreateAstcBatchOnDemand(opts, rdbPredicate, requestId);
+}
+
+void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
+{
+    MEDIA_INFO_LOG("CancelAstcBatchTask requestId: %{public}d", requestId);
+    std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
+        ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
+    if (thumbnailWorker == nullptr) {
+        MEDIA_ERR_LOG("thumbnailWorker is null");
+        return;
+    }
+    thumbnailWorker->IgnoreTaskByRequestId(requestId);
+}
 } // namespace Media
 } // namespace OHOS

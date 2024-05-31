@@ -78,6 +78,8 @@ public:
     static void CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data);
     static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts, ThumbnailData &thumbData,
         const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
+    static void AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
+        ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId = 0);
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);

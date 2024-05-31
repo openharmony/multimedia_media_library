@@ -47,7 +47,6 @@
 #include "parameter.h"
 #include "post_proc.h"
 #include "rdb_errno.h"
-#include "rdb_predicates.h"
 #include "thumbnail_const.h"
 #include "thumbnail_source_loading.h"
 #include "unique_fd.h"
@@ -1970,5 +1969,40 @@ void ThumbnailUtils::SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size
     values.PutString(column, tmpSize);
 }
 
+bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
+    std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_NAME,
+    };
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicate.Limit(THUMBNAIL_GENERATE_BATCH_COUNT);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicate, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        return false;
+    }
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err);
+        if (!data.path.empty()) {
+            infos.push_back(data);
+        }
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
 } // namespace Media
 } // namespace OHOS

@@ -24,6 +24,7 @@
 #include "datashare_result_set.h"
 #include "image_source.h"
 #include "rdb_helper.h"
+#include "rdb_predicates.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
 #include "thumbnail_data.h"
@@ -101,6 +102,9 @@ public:
     EXPORT static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNoAstcInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
+    static bool QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
+        std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err);
+
 #ifdef DISTRIBUTED
     static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
 #endif

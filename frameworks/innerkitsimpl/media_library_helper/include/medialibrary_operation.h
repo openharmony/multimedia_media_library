@@ -100,6 +100,7 @@ enum class EXPORT OperationObject : uint32_t {
     HIGHLIGHT_COVER,
     PAH_MOVING_PHOTO,
     MISCELLANEOUS,
+    PAH_BATCH_THUMBNAIL_OPERATE,
 };
 
 enum class EXPORT OperationType : uint32_t {
@@ -154,6 +155,8 @@ enum class EXPORT OperationType : uint32_t {
     ANALYSIS_INDEX,
     CANCEL_PROCESS_IMAGE,
     LOG_MOVING_PHOTO,
+    START_GENERATE_THUMBNAILS,
+    STOP_GENERATE_THUMBNAILS,
 };
 
 namespace MediaOperation {
@@ -195,6 +198,7 @@ inline const std::map<std::string, OperationObject> OPRN_OBJ_MAP = {
     { MEDIA_QUERYOPRN_QUERYVOLUME, OperationObject::MEDIA_VOLUME },
     { PAH_MULTISTAGES_CAPTURE, OperationObject::PAH_MULTISTAGES_CAPTURE },
     { MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OperationObject::PAH_MOVING_PHOTO },
+    { PAH_BATCH_THUMBNAIL_OPERATE, OperationObject::PAH_BATCH_THUMBNAIL_OPERATE },
 
     // use in Vision
     { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -361,6 +365,8 @@ inline const std::map<std::string, OperationType> OPRN_TYPE_MAP = {
     { OPRN_GROUP_DISMISS, OperationType::DISMISS },
     { OPRN_GROUP_ALBUM_NAME, OperationType::GROUP_ALBUM_NAME },
     { OPRN_GROUP_COVER_URI, OperationType::GROUP_COVER_URI },
+    { OPRN_START_GENERATE_THUMBNAILS, OperationType::START_GENERATE_THUMBNAILS },
+    { OPRN_STOP_GENERATE_THUMBNAILS, OperationType::STOP_GENERATE_THUMBNAILS },
 };
 
 inline const std::map<std::string, OperationObject> OPRN_MAP = {
