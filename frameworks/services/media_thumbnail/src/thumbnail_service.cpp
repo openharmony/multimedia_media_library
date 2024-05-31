@@ -552,26 +552,6 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     return E_OK;
 }
 
-int32_t RenameDownloadThumbnail(ThumbnailData &data, const string &suffix)
-{
-    string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
-    string tempFileName = fileName + suffix;
-    int32_t errCode = MediaFileUtils::ModifyAsset(fileName, tempFileName);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Rename download thumbnail failed, err: %{public}d, name: %{public}s", errCode, fileName.c_str());
-        return errCode;
-    }
-
-    fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
-    tempFileName = fileName + suffix;
-    errCode = MediaFileUtils::ModifyAsset(fileName, tempFileName);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Rename download lcd failed, err: %{public}d, name: %{public}s", errCode, fileName.c_str());
-        return errCode;
-    }
-    return E_OK;
-}
-
 int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
 {
     ThumbnailData data;
@@ -594,19 +574,6 @@ int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
     }
 
     if (data.orientation != 0) {
-        err = RenameDownloadThumbnail(data, THUMBNAIL_TEMP_ORIENT_SUFFIX);
-        if (err != E_OK) {
-            MEDIA_ERR_LOG("RenameDownloadThumbnail failed, path: %{public}s", data.path.c_str());
-            return err;
-        }
-
-        string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
-        string dirName = MediaFileUtils::GetParentPath(fileName);
-        if (MediaFileUtils::DeleteDir(dirName)) {
-            MEDIA_INFO_LOG("Succeed in deleting THM_EX directory, path: %{public}s, id: %{public}s",
-                dirName.c_str(), data.id.c_str());
-        }
-
         IThumbnailHelper::AddThumbnailGenerateTask(
             IThumbnailHelper::CreateAstcEx, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
         return E_OK;
