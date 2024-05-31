@@ -1019,6 +1019,7 @@ vector<FileInfo> CloneRestore::QueryFileInfos(const string &tableName, int32_t o
 bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<NativeRdb::ResultSet> &resultSet,
     FileInfo &fileInfo)
 {
+    fileInfo.fileType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
     string oldPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     if (!ConvertPathToRealPath(oldPath, filePath_, fileInfo.filePath, fileInfo.relativePath)) {
         UpdateFailedFiles(fileInfo.fileType, BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD,
@@ -1035,7 +1036,6 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
     }
     
     fileInfo.fileIdOld = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    fileInfo.fileType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
     fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);
     fileInfo.dateModified = GetInt64Val(MediaColumn::MEDIA_DATE_MODIFIED, resultSet);
