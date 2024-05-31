@@ -147,6 +147,17 @@
           ],
           "when": "always"
         }
+      },
+      {
+        "name": "ohos.permission.PROTECT_SCREEN_LOCK_DATA",
+        "reason": "$string:permission_get_appkey2",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility"
+          ],
+          "when": "always"
+        }
       }
     ],
     "proxyDatas": [
