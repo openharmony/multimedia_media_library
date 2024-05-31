@@ -250,6 +250,11 @@ bool MediaAssetChangeRequestNapi::Contains(AssetChangeOperation changeOperation)
            assetChangeOperations_.end();
 }
 
+bool MediaAssetChangeRequestNapi::ContainsResource(ResourceType resourceType) const
+{
+    return std::find(addResourceTypes_.begin(), addResourceTypes_.end(), resourceType) != addResourceTypes_.end();
+}
+
 bool MediaAssetChangeRequestNapi::IsMovingPhoto() const
 {
     return fileAsset_ != nullptr &&
@@ -263,8 +268,7 @@ bool MediaAssetChangeRequestNapi::CheckMovingPhotoResource(ResourceType resource
         return false;
     }
 
-    bool isResourceTypeVaild =
-        std::find(addResourceTypes_.begin(), addResourceTypes_.end(), resourceType) == addResourceTypes_.end();
+    bool isResourceTypeVaild = !ContainsResource(resourceType);
     int addResourceTimes =
         std::count(assetChangeOperations_.begin(), assetChangeOperations_.end(), AssetChangeOperation::ADD_RESOURCE);
     return isResourceTypeVaild && addResourceTimes <= 1; // currently, add resource no more than once
@@ -302,10 +306,8 @@ bool MediaAssetChangeRequestNapi::CheckEffectModeWriteOperation()
         return false;
     }
 
-    bool isImageExist = std::find(addResourceTypes_.begin(), addResourceTypes_.end(), ResourceType::IMAGE_RESOURCE) !=
-                        addResourceTypes_.end();
-    bool isVideoExist = std::find(addResourceTypes_.begin(), addResourceTypes_.end(), ResourceType::VIDEO_RESOURCE) !=
-                        addResourceTypes_.end();
+    bool isImageExist = ContainsResource(ResourceType::IMAGE_RESOURCE);
+    bool isVideoExist = ContainsResource(ResourceType::VIDEO_RESOURCE);
     if (iter->second.at(ResourceType::IMAGE_RESOURCE) && !isImageExist) {
         NAPI_ERR_LOG("Failed to check image resource for effect mode: %{public}d", static_cast<int32_t>(effectMode));
         return false;
@@ -336,10 +338,8 @@ bool MediaAssetChangeRequestNapi::CheckMovingPhotoWriteOperation()
 
     int addResourceTimes =
         std::count(assetChangeOperations_.begin(), assetChangeOperations_.end(), AssetChangeOperation::ADD_RESOURCE);
-    bool isImageExist = std::find(addResourceTypes_.begin(), addResourceTypes_.end(), ResourceType::IMAGE_RESOURCE) !=
-                        addResourceTypes_.end();
-    bool isVideoExist = std::find(addResourceTypes_.begin(), addResourceTypes_.end(), ResourceType::VIDEO_RESOURCE) !=
-                        addResourceTypes_.end();
+    bool isImageExist = ContainsResource(ResourceType::IMAGE_RESOURCE);
+    bool isVideoExist = ContainsResource(ResourceType::VIDEO_RESOURCE);
     return addResourceTimes == 2 && isImageExist && isVideoExist; // must add resource 2 times with image and video
 }
 
@@ -1474,6 +1474,13 @@ static bool IsCreation(MediaAssetChangeRequestAsyncContext& context)
     return isCreateFromScratch || isCreateFromUri;
 }
 
+static bool IsSetEffectMode(MediaAssetChangeRequestAsyncContext& context)
+{
+    auto assetChangeOperations = context.assetChangeOperations;
+    return std::find(assetChangeOperations.begin(), assetChangeOperations.end(),
+               AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE) != assetChangeOperations.end();
+}
+
 static int32_t SendFile(const UniqueFd& srcFd, const UniqueFd& destFd)
 {
     if (srcFd.Get() < 0 || destFd.Get() < 0) {
@@ -1666,7 +1673,7 @@ int32_t MediaAssetChangeRequestNapi::PutMediaAssetEditData(DataShare::DataShareV
     return E_OK;
 }
 
-int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation)
+int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSetEffectMode)
 {
     CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
     CHECK_COND_RET(MediaFileUtils::CheckDisplayName(cacheFileName_) == E_OK, E_FAIL, "Failed to check cacheFileName_");
@@ -1693,6 +1700,10 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation)
         valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
         ret = PutMediaAssetEditData(valuesBucket);
         CHECK_COND_RET(ret == E_OK, ret, "Failed to put editData");
+        if (isSetEffectMode) {
+            valuesBucket.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, fileAsset_->GetMovingPhotoEffectMode());
+            valuesBucket.Put(CACHE_MOVING_PHOTO_VIDEO_NAME, cacheMovingPhotoVideoName_);
+        }
         ret = UserFileClient::Insert(submitCacheUri, valuesBucket);
     }
 
@@ -1707,9 +1718,9 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation)
 static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     bool isCreation = IsCreation(context);
-
+    bool isSetEffectMode = IsSetEffectMode(context);
     auto changeRequest = context.objectInfo;
-    int32_t ret = changeRequest->SubmitCache(isCreation);
+    int32_t ret = changeRequest->SubmitCache(isCreation, isSetEffectMode);
     if (ret < 0) {
         context.SaveError(ret);
         NAPI_ERR_LOG("Failed to write cache, ret: %{public}d", ret);
@@ -1846,15 +1857,28 @@ static bool AddMovingPhotoVideoExecute(MediaAssetChangeRequestAsyncContext& cont
     return true;
 }
 
+static bool HasAddResource(MediaAssetChangeRequestAsyncContext& context, ResourceType resourceType)
+{
+    return std::find(context.addResourceTypes.begin(), context.addResourceTypes.end(), resourceType) !=
+           context.addResourceTypes.end();
+}
+
 static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
 {
     if (!HasWritePermission()) {
         return WriteBySecurityComponent(context);
     }
 
-    if (context.objectInfo->IsMovingPhoto() && !AddMovingPhotoVideoExecute(context)) {
+    auto changeRequest = context.objectInfo;
+    if (changeRequest->IsMovingPhoto() && HasAddResource(context, ResourceType::VIDEO_RESOURCE) &&
+        !AddMovingPhotoVideoExecute(context)) {
         NAPI_ERR_LOG("Faild to write cache file for video of moving photo");
         return false;
+    }
+
+    // image resource is not mandatory when setting effect mode of moving photo
+    if (changeRequest->IsMovingPhoto() && !HasAddResource(context, ResourceType::IMAGE_RESOURCE)) {
+        return SubmitCacheExecute(context);
     }
 
     int32_t cacheFd = OpenWriteCacheHandler(context);
@@ -1864,7 +1888,7 @@ static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
     }
 
     UniqueFd uniqueFd(cacheFd);
-    AddResourceMode mode = context.objectInfo->GetAddResourceMode();
+    AddResourceMode mode = changeRequest->GetAddResourceMode();
     if (!AddResourceByMode(context, uniqueFd, mode)) {
         NAPI_ERR_LOG("Faild to write cache file");
         return false;
@@ -2091,6 +2115,7 @@ napi_value MediaAssetChangeRequestNapi::ApplyChanges(napi_env env, napi_callback
 
     CHECK_COND_WITH_MESSAGE(env, CheckChangeOperations(env), "Failed to check asset change request operations");
     asyncContext->assetChangeOperations = assetChangeOperations_;
+    asyncContext->addResourceTypes = addResourceTypes_;
     assetChangeOperations_.clear();
     addResourceTypes_.clear();
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "ApplyMediaAssetChangeRequest",

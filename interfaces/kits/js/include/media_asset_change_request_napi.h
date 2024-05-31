@@ -83,6 +83,7 @@ public:
 
     std::shared_ptr<FileAsset> GetFileAssetInstance() const;
     bool Contains(AssetChangeOperation changeOperation) const;
+    bool ContainsResource(ResourceType resourceType) const;
     bool IsMovingPhoto() const;
     bool CheckMovingPhotoResource(ResourceType resourceType) const;
     std::string GetFileRealPath() const;
@@ -97,7 +98,7 @@ public:
     void RecordChangeOperation(AssetChangeOperation changeOperation);
     void SetCacheFileName(std::string& fileName);
     void SetCacheMovingPhotoVideoName(std::string& fileName);
-    int32_t SubmitCache(bool isCreation);
+    int32_t SubmitCache(bool isCreation, bool isSetEffectMode);
     int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
     int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
@@ -165,6 +166,7 @@ struct MediaAssetChangeRequestAsyncContext : public NapiError {
 
     MediaAssetChangeRequestNapi* objectInfo;
     std::vector<AssetChangeOperation> assetChangeOperations;
+    std::vector<ResourceType> addResourceTypes;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     std::vector<std::string> uris;
