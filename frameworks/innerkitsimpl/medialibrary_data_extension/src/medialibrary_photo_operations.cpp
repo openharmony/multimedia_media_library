@@ -15,7 +15,6 @@
 
 #include "medialibrary_photo_operations.h"
 
-#include <filesystem>
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
@@ -1428,16 +1427,12 @@ static int32_t Move(const string& srcPath, const string& destPath)
         return E_INVALID_VALUES;
     }
 
-    std::error_code errCode;
-    filesystem::path dest(destPath);
-    if (filesystem::exists(dest) && !filesystem::remove(dest, errCode)) {
-        MEDIA_ERR_LOG("Failed to remove %{private}s, errCode: %{public}d", destPath.c_str(), errCode.value());
-        return errCode.value();
+    int32_t ret = rename(srcPath.c_str(), destPath.c_str());
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Failed to rename, src: %{public}s, dest: %{public}s, ret: %{public}d, errno: %{public}d",
+            srcPath.c_str(), destPath.c_str(), ret, errno);
     }
-
-    filesystem::path src(srcPath);
-    filesystem::rename(src, dest, errCode);
-    return errCode.value();
+    return ret;
 }
 
 int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
