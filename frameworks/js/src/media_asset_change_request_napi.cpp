@@ -391,16 +391,6 @@ string MediaAssetChangeRequestNapi::GetCacheMovingPhotoVideoName() const
     return cacheMovingPhotoVideoName_;
 }
 
-bool MediaAssetChangeRequestNapi::IsSaveCameraPhoto()
-{
-    return isSaveCameraPhoto_;
-}
-
-void MediaAssetChangeRequestNapi::SetSaveCameraPhotoMode(bool isSaveCameraPhoto)
-{
-    isSaveCameraPhoto_ = isSaveCameraPhoto;
-}
-
 napi_value MediaAssetChangeRequestNapi::JSGetAsset(napi_env env, napi_callback_info info)
 {
     auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
@@ -921,6 +911,10 @@ napi_value MediaAssetChangeRequestNapi::JSSetEditData(napi_env env, napi_callbac
     CHECK_COND_WITH_MESSAGE(env, !editData->GetData().empty(), "Invalid data");
     changeRequest->editData_ = editData;
     changeRequest->RecordChangeOperation(AssetChangeOperation::SET_EDIT_DATA);
+    if (changeRequest->Contains(AssetChangeOperation::SAVE_CAMERA_PHOTO) &&
+        !changeRequest->Contains(AssetChangeOperation::ADD_FILTERS)) {
+        changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_FILTERS);
+    }
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -1118,6 +1112,10 @@ napi_value MediaAssetChangeRequestNapi::JSSaveCameraPhoto(napi_env env, napi_cal
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
     changeRequest->RecordChangeOperation(AssetChangeOperation::SAVE_CAMERA_PHOTO);
+    if (changeRequest->Contains(AssetChangeOperation::SET_EDIT_DATA) &&
+        !changeRequest->Contains(AssetChangeOperation::ADD_FILTERS)) {
+        changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_FILTERS);
+    }
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -1588,9 +1586,10 @@ int32_t MediaAssetChangeRequestNapi::PutMediaAssetEditData(DataShare::DataShareV
     return E_OK;
 }
 
-int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSaveCameraPhoto)
+int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation)
 {
     CHECK_COND_RET(fileAsset_ != nullptr, E_FAIL, "Failed to check fileAsset_");
+    CHECK_COND_RET(MediaFileUtils::CheckDisplayName(cacheFileName_) == E_OK, E_FAIL, "Failed to check cacheFileName_");
 
     string uri = PAH_SUBMIT_CACHE;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
@@ -1613,9 +1612,6 @@ int32_t MediaAssetChangeRequestNapi::SubmitCache(bool isCreation, bool isSaveCam
         valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset_->GetId());
         valuesBucket.Put(CACHE_FILE_NAME, cacheFileName_);
         ret = PutMediaAssetEditData(valuesBucket);
-        if (isSaveCameraPhoto) {
-            valuesBucket.Put(IS_SAVE_CAMERA_PHOTO, isSaveCameraPhoto);
-        }
         CHECK_COND_RET(ret == E_OK, ret, "Failed to put editData");
         ret = UserFileClient::Insert(submitCacheUri, valuesBucket);
     }
@@ -1633,7 +1629,7 @@ static bool SubmitCacheExecute(MediaAssetChangeRequestAsyncContext& context)
     bool isCreation = IsCreation(context);
 
     auto changeRequest = context.objectInfo;
-    int32_t ret = changeRequest->SubmitCache(isCreation, context.objectInfo->IsSaveCameraPhoto());
+    int32_t ret = changeRequest->SubmitCache(isCreation);
     if (ret < 0) {
         context.SaveError(ret);
         NAPI_ERR_LOG("Failed to write cache, ret: %{public}d", ret);
@@ -1893,8 +1889,22 @@ static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context
 
 static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
 {
-    context.objectInfo->SetSaveCameraPhotoMode(true);
-    return SubmitCacheExecute(context);
+    return true;
+}
+
+static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    CHECK_COND_RET(fileAsset != nullptr, E_FAIL, "Failed to check fileAsset");
+    string uri = PAH_ADD_FILTERS;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri addFiltersUri(uri);
+
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
+    int ret = context.objectInfo->PutMediaAssetEditData(valuesBucket);
+    CHECK_COND_RET(ret == E_OK, ret, "Failed to put editData");
+    return UserFileClient::Insert(addFiltersUri, valuesBucket);
 }
 
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
@@ -1909,6 +1919,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_LOCATION, SetLocationExecute },
     { AssetChangeOperation::SET_CAMERA_SHOT_KEY, SetCameraShotKeyExecute },
     { AssetChangeOperation::SAVE_CAMERA_PHOTO, SaveCameraPhotoExecute },
+    { AssetChangeOperation::ADD_FILTERS, AddFiltersExecute },
 };
 
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
