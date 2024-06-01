@@ -1175,6 +1175,7 @@ static int32_t CheckSystemApiKeys(napi_env env, const string &key)
         MediaColumn::MEDIA_HIDDEN,
         PhotoColumn::PHOTO_USER_COMMENT,
         PhotoColumn::CAMERA_SHOT_KEY,
+        PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
         PENDING_STATUS,
         MEDIA_DATA_DB_DATE_TRASHED_MS,
     };

@@ -42,6 +42,7 @@ enum class AssetChangeOperation {
     SET_HIDDEN,
     SET_TITLE,
     SET_USER_COMMENT,
+    SET_MOVING_PHOTO_EFFECT_MODE,
     SET_PHOTO_QUALITY_AND_PHOTOID,
     SET_LOCATION,
     SET_CAMERA_SHOT_KEY,
@@ -82,6 +83,7 @@ public:
 
     std::shared_ptr<FileAsset> GetFileAssetInstance() const;
     bool Contains(AssetChangeOperation changeOperation) const;
+    bool ContainsResource(ResourceType resourceType) const;
     bool IsMovingPhoto() const;
     bool CheckMovingPhotoResource(ResourceType resourceType) const;
     std::string GetFileRealPath() const;
@@ -96,7 +98,7 @@ public:
     void RecordChangeOperation(AssetChangeOperation changeOperation);
     void SetCacheFileName(std::string& fileName);
     void SetCacheMovingPhotoVideoName(std::string& fileName);
-    int32_t SubmitCache(bool isCreation);
+    int32_t SubmitCache(bool isCreation, bool isSetEffectMode);
     int32_t CopyToMediaLibrary(bool isCreation, AddResourceMode mode);
     int32_t CreateAssetBySecurityComponent(std::string& assetUri);
     napi_value ApplyChanges(napi_env env, napi_callback_info info) override;
@@ -123,12 +125,14 @@ private:
     EXPORT static napi_value JSGetWriteCacheHandler(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSAddResource(napi_env env, napi_callback_info info);
     EXPORT static napi_value AddMovingPhotoVideoResource(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSSetEffectMode(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetLocation(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSetCameraShotKey(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSSaveCameraPhoto(napi_env env, napi_callback_info info);
 
     bool CheckChangeOperations(napi_env env);
     bool CheckMovingPhotoWriteOperation();
+    bool CheckEffectModeWriteOperation();
     int32_t CopyFileToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo = false);
     int32_t CopyDataBufferToMediaLibrary(const UniqueFd& destFd, bool isMovingPhotoVideo = false);
     int32_t CopyMovingPhotoVideo(const std::string& assetUri);
@@ -162,6 +166,7 @@ struct MediaAssetChangeRequestAsyncContext : public NapiError {
 
     MediaAssetChangeRequestNapi* objectInfo;
     std::vector<AssetChangeOperation> assetChangeOperations;
+    std::vector<ResourceType> addResourceTypes;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     std::vector<std::string> uris;

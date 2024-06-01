@@ -314,6 +314,10 @@ const std::vector<std::string> dynamicRangeTypeEnum {
     "SDR", "HDR"
 };
 
+const std::vector<std::string> movingPhotoEffectModeEnum {
+    "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE"
+};
+
 const std::vector<std::string> fileKeyEnumValues {
     MEDIA_DATA_DB_ID,
     MEDIA_DATA_DB_RELATIVE_PATH,
@@ -414,6 +418,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DYNAMIC_RANGE_TYPE",        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE),
     std::make_pair("LCD_SIZE",                  PhotoColumn::PHOTO_LCD_SIZE),
     std::make_pair("THUMB_SIZE",                PhotoColumn::PHOTO_THUMB_SIZE),
+    std::make_pair("MOVING_PHOTO_EFFECT_MODE",  PhotoColumn::MOVING_PHOTO_EFFECT_MODE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {

@@ -147,6 +147,7 @@ thread_local napi_ref MediaLibraryNapi::sRequestPhotoTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sResourceTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHighlightAlbumInfoType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHighlightUserActionType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sMovingPhotoEffectModeEnumRef_ = nullptr;
 
 constexpr int32_t DEFAULT_REFCOUNT = 1;
 constexpr int32_t DEFAULT_ALBUM_COUNT = 1;
@@ -259,9 +260,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
 
 napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value exports)
 {
-    NapiClassInfo info = {
-        PHOTOACCESSHELPER_NAPI_CLASS_NAME,
-        &photoAccessHelperConstructor_,
+    NapiClassInfo info = { PHOTOACCESSHELPER_NAPI_CLASS_NAME, &photoAccessHelperConstructor_,
         MediaLibraryNapiConstructor,
         {
             DECLARE_NAPI_FUNCTION("getAssets", PhotoAccessGetPhotoAssets),
@@ -309,6 +308,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("SourceMode", CreateSourceModeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightAlbumInfoType", CreateHighlightAlbumInfoTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("HighlightUserActionType", CreateHighlightUserActionTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("MovingPhotoEffectMode", CreateMovingPhotoEffectModeEnum(env)),
     };
     MediaLibraryNapiUtils::NapiAddStaticProps(env, exports, staticProps);
     return exports;
@@ -4253,6 +4253,11 @@ napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
 {
     const int32_t startIdx = 1;
     return CreateNumberEnumProperty(env, resourceTypeEnum, sResourceTypeEnumRef_, startIdx);
+}
+
+napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, movingPhotoEffectModeEnum, sMovingPhotoEffectModeEnumRef_);
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,

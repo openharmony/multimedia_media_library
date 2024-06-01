@@ -81,6 +81,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, TYPE_INT32},
         { PhotoColumn::PHOTO_LCD_SIZE, TYPE_STRING},
         { PhotoColumn::PHOTO_THUMB_SIZE, TYPE_STRING},
+        { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32},
     };
     return RESULT_TYPE_MAP;
 }

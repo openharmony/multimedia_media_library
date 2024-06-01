@@ -1428,6 +1428,9 @@ bool MediaFileUtils::CheckMovingPhotoVideo(const string &path)
 
 bool MediaFileUtils::CheckMovingPhotoVideo(const UniqueFd &uniqueFd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaFileUtils::CheckMovingPhotoVideo");
+
     if (uniqueFd.Get() <= 0) {
         MEDIA_ERR_LOG("Failed to open video of moving photo, errno = %{public}d", errno);
         return false;
@@ -1489,6 +1492,12 @@ bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
     constexpr int32_t MIN_DURATION_MS = 0;
     constexpr int32_t MAX_DURATION_MS = 3000;
     return duration > MIN_DURATION_MS && duration <= MAX_DURATION_MS;
+}
+
+bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
+{
+    return effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
+           effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END);
 }
 
 bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
