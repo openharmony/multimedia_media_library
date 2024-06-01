@@ -738,8 +738,8 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_CheckMovingPhotoEffectMode_T
         EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(i), true);
     }
 
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(5), false);
-    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoVideoDuration(20), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(5), false);
+    EXPECT_EQ(MediaFileUtils::CheckMovingPhotoEffectMode(20), false);
 }
 
 HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_IsMediaLibraryUri_Test_001, TestSize.Level0)

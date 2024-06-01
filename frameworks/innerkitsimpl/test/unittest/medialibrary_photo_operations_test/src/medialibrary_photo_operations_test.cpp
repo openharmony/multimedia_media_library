@@ -1679,21 +1679,22 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_update_api10_test_007, Test
 {
     MEDIA_INFO_LOG("start tdd photo_oprn_update_api10_test_007");
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
-    ValuesBucket values;
+    ValuesBucket values1;
     string name = "moving_photo_effect_mode.jpg";
-    values.PutString(PhotoColumn::MEDIA_NAME, name);
-    values.PutInt(PhotoColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
-    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
+    values1.PutString(PhotoColumn::MEDIA_NAME, name);
+    values1.PutInt(PhotoColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values1.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
+    cmd.SetValueBucket(values1);
     MediaLibraryPhotoOperations::Create(cmd);
     int32_t fileId = QueryPhotoIdByDisplayName("moving_photo_effect_mode.jpg");
     ASSERT_GE(fileId, 0);
 
     DataSharePredicates predicates;
-    predicates.In(PhotoColumn::MEDIA_ID, fileId);
-    DataShareValuesBucket values;
-    values.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 1);
-    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
-    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(cmd, values, predicates);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    DataShareValuesBucket values2;
+    values2.Put(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 1);
+    MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE, MediaLibraryApi::API_10);
+    int32_t changedRows = MediaLibraryDataManager::GetInstance()->Update(updateCmd, values2, predicates);
     EXPECT_EQ(changedRows, 1);
     MEDIA_INFO_LOG("end tdd photo_oprn_update_api10_test_007");
 }
