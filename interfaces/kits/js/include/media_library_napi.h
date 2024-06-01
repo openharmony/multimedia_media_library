@@ -219,12 +219,19 @@ private:
     EXPORT static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSOnCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSOnCallbackMediaLibrary(napi_env env, napi_callback_info info);
+
     EXPORT static napi_value JSOffCallback(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSRelease(napi_env env, napi_callback_info info);
 
+    EXPORT static napi_value JSReleaseMedialibrary(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetActivePeersMedialibrary(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAllPeersMedialibrary(napi_env env, napi_callback_info info);
+
     EXPORT static napi_value JSGetActivePeers(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAllPeers(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreateUndefined(napi_env env);
     EXPORT static napi_value CreateMediaTypeEnum(napi_env env);
     EXPORT static napi_value CreateFileKeyEnum(napi_env env);
     EXPORT static napi_value CreateDirectoryTypeEnum(napi_env env);
