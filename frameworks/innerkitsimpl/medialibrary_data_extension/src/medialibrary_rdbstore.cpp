@@ -2202,6 +2202,18 @@ void UpdateHighlightCoverTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+void UpdateHighlightTablePrimaryKey(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_highlight_album",
+        "DROP TABLE IF EXISTS tab_highlight_cover_info",
+        CREATE_HIGHLIGHT_ALBUM_TABLE,
+        CREATE_HIGHLIGHT_COVER_INFO_TABLE,
+    };
+    MEDIA_INFO_LOG("update primary key of highlight db");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void AddBussinessRecordAlbum(RdbStore &store)
 {
     string updateDirtyForShootingMode = "UPDATE Photos SET dirty = 2 WHERE cloud_id is not null AND " +
@@ -2569,6 +2581,10 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_THUMB_LCD_SIZE_COLUMN) {
         AddLcdAndThumbSizeColumns(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_HIGHLIGHT_TABLE_PRIMARY_KEY) {
+        UpdateHighlightTablePrimaryKey(store);
     }
 
     if (oldVersion < VERSION_ADD_MOVING_PHOTO_EFFECT_MODE) {

@@ -103,6 +103,11 @@ HWTEST_F(MediaLibraryStoryTest, Story_InsertAlbum_Test_001, TestSize.Level0)
     valuesBucket.Put(HIGHLIGHT_RENDER_VIEWED_DURATION, 5);
     valuesBucket.Put(HIGHLIGHT_ART_LAYOUT_VIEWED_TIMES, 6);
     valuesBucket.Put(HIGHLIGHT_ART_LAYOUT_VIEWED_DURATION, 6);
+    valuesBucket.Put(HIGHLIGHT_MUSIC_EDIT_COUNT, 3);
+    valuesBucket.Put(HIGHLIGHT_FILTER_EDIT_COUNT, 4);
+    valuesBucket.Put(HIGHLIGHT_IS_MUTED, false);
+    valuesBucket.Put(HIGHLIGHT_IS_FAVORITE, true);
+    valuesBucket.Put(HIGHLIGHT_THEME, "生日");
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Story_InsertAlbum_Test_001::retVal = %{public}d. End", retVal);
@@ -163,6 +168,11 @@ HWTEST_F(MediaLibraryStoryTest, Story_DeleteAlbum_Test_001, TestSize.Level0)
     valuesBucket.Put(MAX_DATE_ADDED, 1432973383150);
     valuesBucket.Put(GENERATE_TIME, 1432973383181);
     valuesBucket.Put(HIGHLIGHT_VERSION, 2);
+    valuesBucket.Put(HIGHLIGHT_MUSIC_EDIT_COUNT, 3);
+    valuesBucket.Put(HIGHLIGHT_FILTER_EDIT_COUNT, 4);
+    valuesBucket.Put(HIGHLIGHT_IS_MUTED, false);
+    valuesBucket.Put(HIGHLIGHT_IS_FAVORITE, true);
+    valuesBucket.Put(HIGHLIGHT_THEME, "生日");
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(ALBUM_ID, to_string(3));

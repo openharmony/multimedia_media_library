@@ -46,6 +46,11 @@ const std::string HIGHLIGHT_RENDER_VIEWED_TIMES = "render_viewed_times";
 const std::string HIGHLIGHT_RENDER_VIEWED_DURATION = "render_viewed_duration";
 const std::string HIGHLIGHT_ART_LAYOUT_VIEWED_TIMES = "art_layout_viewed_times";
 const std::string HIGHLIGHT_ART_LAYOUT_VIEWED_DURATION = "art_layout_viewed_duration";
+const std::string HIGHLIGHT_MUSIC_EDIT_COUNT = "music_edit_count";
+const std::string HIGHLIGHT_FILTER_EDIT_COUNT = "filter_edit_count";
+const std::string HIGHLIGHT_IS_MUTED = "is_muted";
+const std::string HIGHLIGHT_IS_FAVORITE = "is_favorite";
+const std::string HIGHLIGHT_THEME = "theme";
 
 const std::string URI_HIGHLIGHT_ALBUM = MEDIALIBRARY_DATA_URI + "/" + HIGHLIGHT_ALBUM_TABLE;
 } // namespace Media
