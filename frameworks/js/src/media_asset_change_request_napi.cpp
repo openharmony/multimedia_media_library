@@ -1493,7 +1493,7 @@ static bool IsSetEffectMode(MediaAssetChangeRequestAsyncContext& context)
 {
     auto assetChangeOperations = context.assetChangeOperations;
     return std::find(assetChangeOperations.begin(), assetChangeOperations.end(),
-               AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE) != assetChangeOperations.end();
+        AssetChangeOperation::SET_MOVING_PHOTO_EFFECT_MODE) != assetChangeOperations.end();
 }
 
 static int32_t SendFile(const UniqueFd& srcFd, const UniqueFd& destFd)
