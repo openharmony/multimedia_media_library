@@ -116,7 +116,7 @@ void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executo
 }
 
 void IThumbnailHelper::AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
-        ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId)
+    ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId)
 {
     std::shared_ptr<ThumbnailGenerateWorker> thumbnailWorker =
         ThumbnailGenerateWorkerManager::GetInstance().GetThumbnailWorker(ThumbnailTaskType::FOREGROUND);
