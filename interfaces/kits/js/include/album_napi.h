@@ -47,7 +47,6 @@ static const std::string PHOTOACCESSHELPER_ALBUM_NAPI_CLASS_NAME = "PhotoAccessH
 
 class AlbumNapi {
 public:
-    EXPORT static napi_value Init(napi_env env, napi_value exports);
     EXPORT static napi_value UserFileMgrInit(napi_env env, napi_value exports);
     EXPORT static napi_value PhotoAccessHelperInit(napi_env env, napi_value exports);
     static napi_value CreateAlbumNapi(napi_env env, std::unique_ptr<AlbumAsset> &albumData);
