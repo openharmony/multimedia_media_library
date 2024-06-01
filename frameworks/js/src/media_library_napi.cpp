@@ -5113,10 +5113,7 @@ static napi_value ParseArgsStartCreateThumbnailTask(napi_env env,
 
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(
         env, info, context, ARGS_TWO, ARGS_TWO), JS_ERR_PARAMETER_INVALID);
-    if (context->callbackRef == nullptr) {
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Can not get callback function");
-        return nullptr;
-    }
+    CHECK_COND_WITH_MESSAGE(env, context->callbackRef, "Can not get callback function");
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env,
         context->argv[PARAM0], ASSET_FETCH_OPT, context), JS_INNER_FAIL);
     
@@ -5130,7 +5127,7 @@ static void RegisterThumbnailGenerateObserver(napi_env env,
 {
     std::shared_ptr<ThumbnailBatchGenerateObserver> dataObserver;
     if (thumbnailGenerateObserverMap.Find(requestId, dataObserver)) {
-        NAPI_INFO_LOG("RequestId exist in observer map, no need to register, requestId: %{public}d", requestId);
+        NAPI_INFO_LOG("RequestId: %{public}d exist in observer map, no need to register", requestId);
         return;
     }
     dataObserver = std::make_shared<ThumbnailBatchGenerateObserver>();
@@ -5198,7 +5195,6 @@ void MediaLibraryNapi::OnThumbnailGenerated(napi_env env, napi_value cb, void *c
 
     napi_status status = napi_get_reference_value(env, dataHandler->callbackRef_, &cb);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("OnThumbnailGenerated napi_get_reference_value fail");
         NapiError::ThrowError(env, JS_INNER_FAIL, "napi_get_reference_value fail");
         return;
     }
@@ -5206,7 +5202,6 @@ void MediaLibraryNapi::OnThumbnailGenerated(napi_env env, napi_value cb, void *c
     napi_value result = nullptr;
     status = napi_call_function(env, nullptr, cb, 0, nullptr, &result);
     if (status != napi_ok) {
-        NAPI_ERR_LOG("call js function failed %{public}d", static_cast<int32_t>(status));
         NapiError::ThrowError(env, JS_INNER_FAIL, "calling onDataPrepared failed");
     }
 }

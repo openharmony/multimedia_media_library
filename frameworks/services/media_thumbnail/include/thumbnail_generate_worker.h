@@ -80,8 +80,8 @@ private:
     void WaitForTask();
 
     bool NeedIgnoreTask(int32_t requestId);
-    void IncreaseTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
-    void DecreaseTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
+    void IncreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
+    void DecreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
     void NotifyTaskFinished(int32_t requestId);
 
     std::atomic<bool> isThreadRunning_ = false;

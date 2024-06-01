@@ -80,7 +80,7 @@ int32_t ThumbnailGenerateWorker::ReleaseTaskQueue(const ThumbnailTaskPriority &t
 int32_t ThumbnailGenerateWorker::AddTask(
     const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority)
 {
-    IncreaseTaskNum(task);
+    IncreaseRequestIdTaskNum(task);
     if (taskPriority == ThumbnailTaskPriority::HIGH) {
         highPriorityTaskQueue_.Push(task);
     } else if (taskPriority == ThumbnailTaskPriority::LOW) {
@@ -125,7 +125,7 @@ void ThumbnailGenerateWorker::StartWorker()
                 continue;
             }
             task->executor_(task->data_);
-            DecreaseTaskNum(task);
+            DecreaseRequestIdTaskNum(task);
             continue;
         }
 
@@ -134,7 +134,7 @@ void ThumbnailGenerateWorker::StartWorker()
                 continue;
             }
             task->executor_(task->data_);
-            DecreaseTaskNum(task);
+            DecreaseRequestIdTaskNum(task);
         }
     }
 }
@@ -144,7 +144,7 @@ bool ThumbnailGenerateWorker::NeedIgnoreTask(int32_t requestId)
     return ignoreRequestId_ != 0 && ignoreRequestId_ == requestId;
 }
 
-void ThumbnailGenerateWorker::IncreaseTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)
+void ThumbnailGenerateWorker::IncreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)
 {
     if (task == nullptr || task->data_->requestId_ == 0) {
         // If requestId is 0, no need to manager this task.
@@ -161,7 +161,7 @@ void ThumbnailGenerateWorker::IncreaseTaskNum(const std::shared_ptr<ThumbnailGen
     ++(pos->second);
 }
 
-void ThumbnailGenerateWorker::DecreaseTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)
+void ThumbnailGenerateWorker::DecreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)
 {
     if (task == nullptr || task->data_->requestId_ == 0) {
         // If requestId is 0, no need to manager this task.
