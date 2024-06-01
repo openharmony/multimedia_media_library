@@ -82,9 +82,6 @@ static napi_value GetAssetArray(napi_env env, napi_value arg, vector<shared_ptr<
 
 napi_value MediaAssetsChangeRequestNapi::Constructor(napi_env env, napi_callback_info info)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("MediaAssetsChangeRequestNapi::Constructor");
-
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "The constructor can be called only by system apps");
         return nullptr;
@@ -171,9 +168,6 @@ bool MediaAssetsChangeRequestNapi::CheckChangeOperations(napi_env env)
 
 napi_value MediaAssetsChangeRequestNapi::JSSetFavorite(napi_env env, napi_callback_info info)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("JSSetFavorite");
-
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -197,9 +191,6 @@ napi_value MediaAssetsChangeRequestNapi::JSSetFavorite(napi_env env, napi_callba
 
 napi_value MediaAssetsChangeRequestNapi::JSSetHidden(napi_env env, napi_callback_info info)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("JSSetHidden");
-
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;
@@ -223,9 +214,6 @@ napi_value MediaAssetsChangeRequestNapi::JSSetHidden(napi_env env, napi_callback
 
 napi_value MediaAssetsChangeRequestNapi::JSSetUserComment(napi_env env, napi_callback_info info)
 {
-    MediaLibraryTracer tracer;
-    tracer.Start("JSSetUserComment");
-
     if (!MediaLibraryNapiUtils::IsSystemApp()) {
         NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
         return nullptr;

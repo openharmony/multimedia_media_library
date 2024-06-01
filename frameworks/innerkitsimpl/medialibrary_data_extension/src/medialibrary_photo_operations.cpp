@@ -1869,6 +1869,9 @@ int32_t MediaLibraryPhotoOperations::SubmitEffectModeExecute(MediaLibraryCommand
 
 int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::SubmitCache");
+
     if (IsSetEffectMode(cmd)) {
         return SubmitEffectModeExecute(cmd);
     }
