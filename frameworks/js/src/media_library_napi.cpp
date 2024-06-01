@@ -5213,7 +5213,7 @@ void MediaLibraryNapi::OnThumbnailGenerated(napi_env env, napi_value cb, void *c
 
 static int32_t AssignRequestId()
 {
-    return ++requestIdCouner_;
+    return ++requestIdCounter_;
 }
 
 static int32_t GetRequestId()
