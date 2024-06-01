@@ -129,7 +129,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
 
     vector<ThumbnailData> infos;
     int32_t err = 0;
-    if (!ThumbnailUtils::QueryNoAstcInfos(opts, infos, predicate, err)) {
+    if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, infos, predicate, err)) {
         MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
         return err;
     }
