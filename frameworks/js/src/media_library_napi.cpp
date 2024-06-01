@@ -51,6 +51,7 @@
 #include "photo_album_column.h"
 #include "photo_album_napi.h"
 #include "result_set_utils.h"
+#include "safe_map.h"
 #include "smart_album_napi.h"
 #include "story_album_column.h"
 #include "string_ex.h"
@@ -86,6 +87,10 @@ const string DATE_FUNCTION = "DATE(";
 mutex MediaLibraryNapi::sUserFileClientMutex_;
 mutex MediaLibraryNapi::sOnOffMutex_;
 string ChangeListenerNapi::trashAlbumUri_;
+static SafeMap<int32_t, std::shared_ptr<ThumbnailBatchGenerateObserver>> thumbnailGenerateObserverMap;
+static SafeMap<int32_t, std::shared_ptr<ThumbnailGenerateHandler>> thumbnailGenerateHandlerMap;
+static std::atomic<int32_t> requestIdCounter_ = 0;
+static std::atomic<int32_t> requestIdCallback_ = 0;
 static map<string, ListenerType> ListenerTypeMaps = {
     {"audioChange", AUDIO_LISTENER},
     {"videoChange", VIDEO_LISTENER},
@@ -280,6 +285,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("removeFormInfo", PhotoAccessRemoveFormInfo),
             DECLARE_NAPI_FUNCTION("getAssetsSync", PhotoAccessGetPhotoAssetsSync),
             DECLARE_NAPI_FUNCTION("getFileAssetsInfo", PhotoAccessGetFileAssetsInfo),
+            DECLARE_NAPI_FUNCTION("startCreateThumbnailTask", PhotoAccessStartCreateThumbnailTask),
+            DECLARE_NAPI_FUNCTION("stopCreateThumbnailTask", PhotoAccessStopCreateThumbnailTask),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -5094,6 +5101,228 @@ napi_value MediaLibraryNapi::PhotoAccessRemoveFormInfo(napi_env env, napi_callba
     CHECK_NULLPTR_RET(ParseArgsRemoveFormInfo(env, info, asyncContext));
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessRemoveFormInfo",
         PhotoAccessRemoveFormInfoExec, RemoveFormInfoAsyncCallbackComplete);
+}
+
+static napi_value ParseArgsStartCreateThumbnailTask(napi_env env,
+    napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(
+        env, info, context, ARGS_TWO, ARGS_TWO), JS_ERR_PARAMETER_INVALID);
+    CHECK_COND_WITH_MESSAGE(env, context->callbackRef, "Can not get callback function");
+    CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env,
+        context->argv[PARAM0], ASSET_FETCH_OPT, context), JS_INNER_FAIL);
+    
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+static void RegisterThumbnailGenerateObserver(napi_env env,
+    std::unique_ptr<MediaLibraryAsyncContext> &asyncContext, int32_t requestId)
+{
+    std::shared_ptr<ThumbnailBatchGenerateObserver> dataObserver;
+    if (thumbnailGenerateObserverMap.Find(requestId, dataObserver)) {
+        NAPI_INFO_LOG("RequestId: %{public}d exist in observer map, no need to register", requestId);
+        return;
+    }
+    dataObserver = std::make_shared<ThumbnailBatchGenerateObserver>();
+    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
+    UserFileClient::RegisterObserverExt(Uri(observerUri), dataObserver, false);
+    thumbnailGenerateObserverMap.Insert(requestId, dataObserver);
+}
+
+static void UnregisterThumbnailGenerateObserver(int32_t requestId)
+{
+    std::shared_ptr<ThumbnailBatchGenerateObserver> dataObserver;
+    if (!thumbnailGenerateObserverMap.Find(requestId, dataObserver)) {
+        return;
+    }
+
+    std::string observerUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
+    UserFileClient::UnregisterObserverExt(Uri(observerUri), dataObserver);
+    thumbnailGenerateObserverMap.Erase(requestId);
+}
+
+static void DeleteThumbnailHandler(int32_t requestId)
+{
+    std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
+    if (!thumbnailGenerateHandlerMap.Find(requestId, dataHandler)) {
+        return;
+    }
+    napi_release_threadsafe_function(dataHandler->threadSafeFunc_, napi_tsfn_release);
+    thumbnailGenerateHandlerMap.Erase(requestId);
+}
+
+static void ReleaseThumbnailTask(int32_t requestId)
+{
+    UnregisterThumbnailGenerateObserver(requestId);
+    DeleteThumbnailHandler(requestId);
+}
+
+static void CreateThumbnailHandler(napi_env env,
+    std::unique_ptr<MediaLibraryAsyncContext> &asyncContext, int32_t requestId)
+{
+    napi_value workName = nullptr;
+    napi_create_string_utf8(env, "ThumbSafeThread", NAPI_AUTO_LENGTH, &workName);
+    napi_threadsafe_function threadSafeFunc;
+    napi_status status = napi_create_threadsafe_function(env, asyncContext->argv[PARAM1], NULL, workName, 0, 1,
+        NULL, NULL, NULL, MediaLibraryNapi::OnThumbnailGenerated, &threadSafeFunc);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_create_threadsafe_function fail");
+        ReleaseThumbnailTask(requestId);
+        asyncContext->SaveError(JS_INNER_FAIL);
+        return;
+    }
+    std::shared_ptr<ThumbnailGenerateHandler> dataHandler =
+        std::make_shared<ThumbnailGenerateHandler>(asyncContext->callbackRef, threadSafeFunc);
+    thumbnailGenerateHandlerMap.Insert(requestId, dataHandler);
+}
+
+void MediaLibraryNapi::OnThumbnailGenerated(napi_env env, napi_value cb, void *context, void *data)
+{
+    if (env == nullptr) {
+        return;
+    }
+    std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
+    if (!thumbnailGenerateHandlerMap.Find(requestIdCallback_, dataHandler)) {
+        return;
+    }
+
+    napi_status status = napi_get_reference_value(env, dataHandler->callbackRef_, &cb);
+    if (status != napi_ok) {
+        NapiError::ThrowError(env, JS_INNER_FAIL, "napi_get_reference_value fail");
+        return;
+    }
+
+    napi_value result = nullptr;
+    status = napi_call_function(env, nullptr, cb, 0, nullptr, &result);
+    if (status != napi_ok) {
+        NapiError::ThrowError(env, JS_INNER_FAIL, "calling onDataPrepared failed");
+    }
+}
+
+static int32_t AssignRequestId()
+{
+    return ++requestIdCounter_;
+}
+
+static int32_t GetRequestId()
+{
+    return requestIdCounter_;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessStartCreateThumbnailTask(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessStartCreateThumbnailTask");
+    std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsStartCreateThumbnailTask(env, info, asyncContext));
+
+    ReleaseThumbnailTask(GetRequestId());
+    int32_t requestId = AssignRequestId();
+    RegisterThumbnailGenerateObserver(env, asyncContext, requestId);
+    CreateThumbnailHandler(env, asyncContext, requestId);
+
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, requestId);
+    string updateUri = PAH_START_GENERATE_THUMBNAILS;
+    MediaLibraryNapiUtils::UriAppendKeyValue(updateUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(updateUri);
+    int changedRows = UserFileClient::Update(uri, asyncContext->predicates, valuesBucket);
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_undefined(env, &result));
+    if (changedRows < 0) {
+        ReleaseThumbnailTask(requestId);
+        asyncContext->SaveError(changedRows);
+        NAPI_ERR_LOG("Create thumbnail task, update failed, err: %{public}d", changedRows);
+        napi_create_int32(env, changedRows, &result);
+        return result;
+    }
+    napi_create_int32(env, requestId, &result);
+    return result;
+}
+
+void ThumbnailBatchGenerateObserver::OnChange(const ChangeInfo &changeInfo)
+{
+    if (changeInfo.changeType_ != static_cast<int32_t>(NotifyType::NOTIFY_THUMB_ADD)) {
+        return;
+    }
+
+    for (auto &uri : changeInfo.uris_) {
+        string uriString = uri.ToString();
+        auto pos = uriString.find_last_of('/');
+        if (pos == std::string::npos) {
+            continue;
+        }
+        requestIdCallback_ = std::stoi(uriString.substr(pos + 1));
+        std::shared_ptr<ThumbnailGenerateHandler> dataHandler;
+        if (!thumbnailGenerateHandlerMap.Find(requestIdCallback_, dataHandler)) {
+            continue;
+        }
+
+        napi_status status = napi_acquire_threadsafe_function(dataHandler->threadSafeFunc_);
+        if (status != napi_ok) {
+            ReleaseThumbnailTask(requestIdCallback_);
+            NAPI_ERR_LOG("napi_acquire_threadsafe_function fail, status: %{public}d", static_cast<int32_t>(status));
+            continue;
+        }
+        status = napi_call_threadsafe_function(dataHandler->threadSafeFunc_, NULL, napi_tsfn_blocking);
+        if (status != napi_ok) {
+            ReleaseThumbnailTask(requestIdCallback_);
+            NAPI_ERR_LOG("napi_call_threadsafe_function fail, status: %{public}d", static_cast<int32_t>(status));
+            continue;
+        }
+    }
+}
+
+static napi_value ParseArgsStopCreateThumbnailTask(napi_env env,
+    napi_callback_info info, unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env,
+        info, context, ARGS_ONE, ARGS_ONE), JS_ERR_PARAMETER_INVALID);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);
+    return result;
+}
+
+napi_value MediaLibraryNapi::PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessStopCreateThumbnailTask");
+    std::unique_ptr<MediaLibraryAsyncContext> asyncContext = std::make_unique<MediaLibraryAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsStopCreateThumbnailTask(env, info, asyncContext));
+
+    int32_t requestId = 0;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetInt32(env,
+        asyncContext->argv[PARAM0], requestId) == napi_ok, "Failed to get requestId");
+    if (requestId <= 0) {
+        NAPI_WARN_LOG("Invalid requestId: %{public}d", requestId);
+        RETURN_NAPI_UNDEFINED(env);
+    }
+    ReleaseThumbnailTask(requestId);
+
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, requestId);
+    string updateUri = PAH_STOP_GENERATE_THUMBNAILS;
+    MediaLibraryNapiUtils::UriAppendKeyValue(updateUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(updateUri);
+    int changedRows = UserFileClient::Update(uri, asyncContext->predicates, valuesBucket);
+    if (changedRows < 0) {
+        asyncContext->SaveError(changedRows);
+        NAPI_ERR_LOG("Stop create thumbnail task, update failed, err: %{public}d", changedRows);
+    }
+    RETURN_NAPI_UNDEFINED(env);
 }
 
 napi_value MediaLibraryNapi::JSGetPhotoAssets(napi_env env, napi_callback_info info)

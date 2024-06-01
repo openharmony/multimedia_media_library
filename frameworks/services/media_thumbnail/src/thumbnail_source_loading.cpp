@@ -430,15 +430,6 @@ void LocalOriginSource::SwitchToNextState(ThumbnailData& data, SourceState& stat
 
 bool LocalOriginSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
 {
-    if (minSize < SHORT_SIDE_THRESHOLD) {
-        if (!data.loaderOpts.sourceLoadingBeginWithThumb) {
-            return true;
-        }
-        if (!data.loaderOpts.isCloudLoading && !data.loaderOpts.isForeGroundLoading) {
-            return true;
-        }
-        return false;
-    }
     return true;
 }
 

@@ -356,6 +356,8 @@ const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_
 // db sandbox directory
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
 
+// requestId for generating thumbnail in batches
+const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
 } // namespace Media
 } // namespace OHOS
 

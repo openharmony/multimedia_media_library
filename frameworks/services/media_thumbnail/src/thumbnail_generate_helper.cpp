@@ -119,6 +119,35 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatch(ThumbRdbOpt &opts)
     return E_OK;
 }
 
+int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
+    ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId)
+{
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is not init");
+        return E_ERR;
+    }
+
+    vector<ThumbnailData> infos;
+    int32_t err = 0;
+    if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, infos, predicate, err)) {
+        MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
+        return err;
+    }
+    if (infos.empty()) {
+        MEDIA_INFO_LOG("No need create Astc.");
+        return E_THUMBNAIL_ASTC_ALL_EXIST;
+    }
+
+    MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
+    for (auto& info : infos) {
+        opts.row = info.id;
+        info.loaderOpts.isForeGroundLoading = true;
+        ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
+        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts, info, requestId);
+    }
+    return E_OK;
+}
+
 int32_t ThumbnailGenerateHelper::CreateLcdBatch(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {
