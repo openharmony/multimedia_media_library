@@ -1039,6 +1039,7 @@ const static vector<string> EDITED_COLUMN_VECTOR = {
     PhotoColumn::MEDIA_TIME_PENDING,
     PhotoColumn::MEDIA_DATE_TRASHED,
     PhotoColumn::PHOTO_SUBTYPE,
+    PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
 };
 
 static int32_t CheckFileAssetStatus(const shared_ptr<FileAsset>& fileAsset, bool checkMovingPhoto = false)
@@ -1127,14 +1128,14 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
             id.c_str(), fileAsset->GetPhotoSubType());
         movingPhotoVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
     }
-    if (fileAsset->GetPhotoEditTime() == 0) {
+    if (fileAsset->GetPhotoEditTime() == 0 && fileAsset->GetMovingPhotoEffectMode() == 0) {
         return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? movingPhotoVideoPath : path, "r");
     }
     string sourcePath = isMovingPhotoVideoRequest ?
         MediaFileUtils::GetMovingPhotoVideoPath(GetEditDataSourcePath(path)) :
         GetEditDataSourcePath(path);
     if (sourcePath.empty() || !MediaFileUtils::IsFileExists(sourcePath)) {
-        return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? path : movingPhotoVideoPath, "r");
+        return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? movingPhotoVideoPath : path, "r");
     } else {
         return OpenFileWithPrivacy(sourcePath, "r");
     }
