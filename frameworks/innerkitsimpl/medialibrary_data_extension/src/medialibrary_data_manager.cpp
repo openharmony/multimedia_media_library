@@ -805,9 +805,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
         }
         case OperationObject::GEO_DICTIONARY:
-        case OperationObject::GEO_KNOWLEDGE: {
+        case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
-        }
 
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
@@ -820,9 +819,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
-        case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE: {
+        case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
             return ProcessThumbnailBatchCmd(cmd, value, predicates);
-        }
         default:
             break;
     }
