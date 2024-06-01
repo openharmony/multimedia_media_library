@@ -40,12 +40,6 @@ shared_ptr<DfxWorker> DfxWorker::GetInstance()
 
 DfxWorker::DfxWorker() : isThreadRunning_(false)
 {
-    shortTime_ = stoi(system::GetParameter("persist.multimedia.medialibrary.dfx.shorttime", FIVE_MINUTE)) *
-        TO_MILLION * ONE_MINUTE;
-    middleTime_ = stoi(system::GetParameter("persist.multimedia.medialibrary.dfx.middletime", SIX_HOUR)) *
-        ONE_MINUTE * ONE_MINUTE;
-    oneDay_ = stoi(system::GetParameter("persist.multimedia.medialibrary.dfx.oneday", TWENTY_FOUR_HOURS)) * ONE_MINUTE *
-        ONE_MINUTE;
 }
 
 DfxWorker::~DfxWorker()
@@ -62,19 +56,35 @@ DfxWorker::~DfxWorker()
 void DfxWorker::Init()
 {
     MEDIA_INFO_LOG("init");
-    cycleThread_ = thread(bind(&DfxWorker::InitCycleThread, this));
-    cycleThread_.detach();
     isThreadRunning_ = true;
     delayThread_ = thread(bind(&DfxWorker::InitDelayThread, this));
 }
 
-void DfxWorker::InitCycleThread()
+static void HandleLoopTask(DfxData *data)
 {
-    MEDIA_INFO_LOG("InitCycleThread");
-    string name("DfxCycleThread");
-    pthread_setname_np(pthread_self(), name.c_str());
-    Prepare();
-    InitLoop();
+    MEDIA_INFO_LOG("HandleLoopTask");
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs =
+       NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
+        return;
+    }
+    int64_t lastReportTime = prefs->GetLong(LAST_REPORT_TIME, 0);
+    int64_t lastMiddleReportTime = prefs->GetInt(LAST_MIDDLE_REPORT_TIME, 0);
+    DfxManager::GetInstance()->HandleFiveMinuteTask();
+    if (MediaFileUtils::UTCTimeSeconds() - lastMiddleReportTime >= SIX_HOUR) {
+        MEDIA_INFO_LOG("Report Middle Xml");
+        lastMiddleReportTime = DfxManager::GetInstance()->HandleMiddleReport();
+        prefs->PutLong(LAST_MIDDLE_REPORT_TIME, lastMiddleReportTime);
+        prefs->FlushSync();
+    }
+    if (MediaFileUtils::UTCTimeSeconds() - lastReportTime >= ONE_DAY) {
+        MEDIA_INFO_LOG("Report one day Xml");
+        lastReportTime = DfxManager::GetInstance()->HandleOneDayReport();
+        prefs->PutLong(LAST_REPORT_TIME, lastReportTime);
+        prefs->FlushSync();
+    }
 }
 
 void DfxWorker::Prepare()
@@ -86,8 +96,6 @@ void DfxWorker::Prepare()
         MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
         return;
     }
-    lastReportTime_ = prefs->GetLong(LAST_REPORT_TIME, 0);
-    lastMiddleReportTime_ = prefs->GetInt(LAST_MIDDLE_REPORT_TIME, 0);
     thumbnailVersion_ = prefs->GetInt(THUMBNAIL_ERROR_VERSION, 0);
     deleteStatisticVersion_ = prefs->GetInt(DELETE_STATISTIC_VERSION, 0);
     if (IsThumbnailUpdate()) {
@@ -139,56 +147,57 @@ bool DfxWorker::IsDeleteStatisticUpdate()
     return false;
 }
 
-void DfxWorker::InitLoop()
-{
-    int32_t errCode;
-    shared_ptr<NativePreferences::Preferences> prefs =
-        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
-    if (!prefs) {
-        MEDIA_ERR_LOG("get preferences error: %{public}d", errCode);
-        return;
-    }
-    while (!isEnd_) {
-        DfxManager::GetInstance()->HandleFiveMinuteTask();
-        if (MediaFileUtils::UTCTimeSeconds() - lastMiddleReportTime_ >= middleTime_) {
-            MEDIA_INFO_LOG("Report Middle Xml");
-            lastMiddleReportTime_ = DfxManager::GetInstance()->HandleMiddleReport();
-            prefs->PutLong(LAST_MIDDLE_REPORT_TIME, lastMiddleReportTime_);
-            prefs->FlushSync();
-        }
-        if (MediaFileUtils::UTCTimeSeconds() - lastReportTime_ >= oneDay_) {
-            MEDIA_INFO_LOG("Report one day Xml");
-            lastReportTime_ = DfxManager::GetInstance()->HandleOneDayReport();
-            prefs->PutLong(LAST_REPORT_TIME, lastReportTime_);
-            prefs->FlushSync();
-        }
-        this_thread::sleep_for(chrono::milliseconds(shortTime_));
-    }
-}
-
 void DfxWorker::InitDelayThread()
 {
+    Prepare();
+    bool isStartLoopTask = true;
     MEDIA_INFO_LOG("InitDelayThread");
     string name("DfxDelayThread");
     pthread_setname_np(pthread_self(), name.c_str());
     while (isThreadRunning_) {
+        if (isStartLoopTask) {
+            HandleLoopTask(nullptr);
+            StartLoopTaskDelay();
+            isStartLoopTask = false;
+        }
         WaitForTask();
         if (!isThreadRunning_) {
             break;
         }
-        if (!IsTaskQueueEmpty()) {
-            shared_ptr<DfxTask> task = GetTask();
-            if (task != nullptr) {
-                task->executor_(task->data_);
-                task = nullptr;
-            }
+        if (IsTaskQueueEmpty()) {
+            continue;
         }
+        auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
+        auto executeTime = std::chrono::time_point_cast<std::chrono::milliseconds>(GetWaitTime());
+        auto delay = now.time_since_epoch().count() - executeTime.time_since_epoch().count();
+        if (delay < 0) {
+            continue;
+        }
+        shared_ptr<DfxTask> task = GetTask();
+        if (task == nullptr) {
+            continue;
+        }
+        task->executor_(task->data_);
+        if (task->isDelayTask_) {
+            StartLoopTaskDelay();
+        }
+        task = nullptr;
     }
 }
 
-void DfxWorker::AddTask(const shared_ptr<DfxTask> &task)
+void DfxWorker::StartLoopTaskDelay()
+{
+    auto loopTask = make_shared<DfxTask>(HandleLoopTask, nullptr);
+    AddTask(loopTask, FIVE_MINUTE);
+}
+
+void DfxWorker::AddTask(const shared_ptr<DfxTask> &task, int64_t delayTime)
 {
     lock_guard<mutex> lockGuard(taskLock_);
+    if (delayTime > 0) {
+        task->executeTime_ = std::chrono::system_clock::now() + std::chrono::milliseconds(delayTime);
+        task->isDelayTask_ = true;
+    }
     taskQueue_.push(task);
     workCv_.notify_one();
 }
@@ -202,8 +211,13 @@ bool DfxWorker::IsTaskQueueEmpty()
 void DfxWorker::WaitForTask()
 {
     std::unique_lock<std::mutex> lock(workLock_);
-    workCv_.wait(lock,
-        [this]() { return !isThreadRunning_ || !IsTaskQueueEmpty(); });
+    if (IsTaskQueueEmpty()) {
+        workCv_.wait(lock,
+            [this]() { return !isThreadRunning_ || !IsTaskQueueEmpty(); });
+    } else {
+        workCv_.wait_until(lock, GetWaitTime(),
+            [this]() { return !isThreadRunning_ || !IsTaskQueueEmpty(); });
+    }
 }
 
 shared_ptr<DfxTask> DfxWorker::GetTask()
@@ -212,9 +226,15 @@ shared_ptr<DfxTask> DfxWorker::GetTask()
     if (taskQueue_.empty()) {
         return nullptr;
     }
-    shared_ptr<DfxTask> task = taskQueue_.front();
+    shared_ptr<DfxTask> task = taskQueue_.top();
     taskQueue_.pop();
     return task;
+}
+
+std::chrono::system_clock::time_point DfxWorker::GetWaitTime()
+{
+    shared_ptr<DfxTask> task = taskQueue_.top();
+    return task->executeTime_;
 }
 
 void DfxWorker::End()

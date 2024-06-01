@@ -16,6 +16,7 @@
 #ifndef OHOS_MEDIA_DFX_WORKER_H
 #define OHOS_MEDIA_DFX_WORKER_H
 
+#include <chrono>
 #include <thread>
 #include <queue>
 #include <condition_variable>
@@ -32,7 +33,8 @@ using DfxExecute = void (*)(DfxData *data);
 
 class DfxTask {
 public:
-    DfxTask(DfxExecute executor, DfxData *data) : executor_(executor), data_(data) {}
+    DfxTask(DfxExecute executor, DfxData *data) : executor_(executor), data_(data),
+        executeTime_{std::chrono::system_clock::now()}, isDelayTask_(false) {}
     DfxTask() : DfxTask(nullptr, nullptr) {}
     virtual ~DfxTask()
     {
@@ -42,7 +44,15 @@ public:
 
     DfxExecute executor_;
     DfxData *data_;
+    std::chrono::system_clock::time_point executeTime_;
+    bool isDelayTask_;
+
+    bool operator>(const DfxTask &dfxTask) const
+    {
+        return this->executeTime_ > dfxTask.executeTime_;
+    }
 };
+
 class DfxWorker {
 public:
     DfxWorker();
@@ -50,35 +60,31 @@ public:
     static std::shared_ptr<DfxWorker> GetInstance();
     void Init();
     void End();
-    void AddTask(const std::shared_ptr<DfxTask> &task);
+    void AddTask(const std::shared_ptr<DfxTask> &task, int64_t delayTime = 0);
+    std::chrono::system_clock::time_point GetWaitTime();
 
 private:
-    void InitCycleThread();
     void InitDelayThread();
     void Prepare();
     bool IsThumbnailUpdate();
     bool IsDeleteStatisticUpdate();
-    void InitLoop();
+    void StartLoopTaskDelay();
     bool IsTaskQueueEmpty();
     void WaitForTask();
     std::shared_ptr<DfxTask> GetTask();
 
 private:
-    int64_t lastReportTime_;
-    int64_t lastMiddleReportTime_;
     int32_t thumbnailVersion_;
     int32_t deleteStatisticVersion_;
     static std::shared_ptr<DfxWorker> dfxWorkerInstance_;
     std::thread cycleThread_;
     std::thread delayThread_;
     bool isEnd_ = false;
-    int32_t shortTime_;
-    int32_t middleTime_;
-    int32_t oneDay_;
     std::mutex taskLock_;
     std::mutex workLock_;
     std::condition_variable workCv_;
-    std::queue<std::shared_ptr<DfxTask>> taskQueue_;
+    std::priority_queue<std::shared_ptr<DfxTask>, std::vector<std::shared_ptr<DfxTask>>,
+        std::greater<std::shared_ptr<DfxTask>>> taskQueue_;
     bool isThreadRunning_;
 };
 } // namespace Media

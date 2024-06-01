@@ -33,7 +33,10 @@ constexpr int32_t CLOUD_LCD_TIME_OUT = 800;
 constexpr int32_t RDB_TIME_OUT = 100;
 constexpr int32_t TO_MILLION = 1000;
 constexpr int32_t ONE_MINUTE = 60;
+constexpr int32_t FIVE_MINUTE = 5 * 60 * 1000;
+constexpr int32_t SIX_HOUR = 6 * 60 * 60;
 constexpr int32_t HALF_DAY = 12 * 60 * 60;
+constexpr int32_t ONE_DAY = 24 * 60 * 60;
 
 constexpr int32_t NOT_INIT = -1;
 constexpr int32_t COMMON_IMAGE = 0;
@@ -78,10 +81,6 @@ enum DfxType {
 
 const std::string NULL_STRING = "";
 const std::string SPLIT_CHAR = "|";
-
-const std::string FIVE_MINUTE = "5";
-const std::string SIX_HOUR = "6";
-const std::string TWENTY_FOUR_HOURS = "24";
 
 const std::string THUMBNAIL_ERROR_XML = "/data/storage/el2/base/preferences/thumbnail_error.xml";
 const std::string COMMON_BEHAVIOR_XML = "/data/storage/el2/base/preferences/common_behavior.xml";
