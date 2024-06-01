@@ -93,8 +93,6 @@ public:
     EXPORT std::shared_ptr<MediaDataShareExtAbility> GetOwner();
     EXPORT void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);
     EXPORT int GetThumbnail(const std::string &uri);
-    int32_t GetAgingDataSize(const int64_t &time, int &count);
-    int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
     EXPORT void SetStartupParameter();
     EXPORT void ReCreateMediaDir();
 
@@ -132,6 +130,8 @@ private:
     int32_t UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
         const DataShare::DataSharePredicates &predicates);
     void InitRefreshAlbum();
+    int32_t ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
+        const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates);
     std::shared_mutex mgrSharedMutex_;
 #ifdef DISTRIBUTED
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;

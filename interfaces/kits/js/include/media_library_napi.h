@@ -171,6 +171,24 @@ public:
     std::string uri_;
     napi_ref ref_;
 };
+
+class ThumbnailBatchGenerateObserver : public DataShare::DataShareObserver {
+public:
+    ThumbnailBatchGenerateObserver() = default;
+    ~ThumbnailBatchGenerateObserver() = default;
+
+    void OnChange(const ChangeInfo &changeInfo) override;
+};
+
+class ThumbnailGenerateHandler {
+public:
+    ThumbnailGenerateHandler(napi_ref ref, napi_threadsafe_function func) : callbackRef_(ref), threadSafeFunc_(func) {}
+    ~ThumbnailGenerateHandler() = default;
+
+    napi_ref callbackRef_;
+    napi_threadsafe_function threadSafeFunc_;
+};
+
 class MediaLibraryNapi {
 public:
     EXPORT static napi_value Init(napi_env env, napi_value exports);
@@ -179,6 +197,7 @@ public:
 
     static void ReplaceSelection(std::string &selection, std::vector<std::string> &selectionArgs,
         const std::string &key, const std::string &keyInstead, const int32_t mode = ReplaceSelectionMode::DEFAULT);
+    static void OnThumbnailGenerated(napi_env env, napi_value cb, void *context, void *data);
 
     EXPORT MediaLibraryNapi();
     EXPORT ~MediaLibraryNapi();
@@ -265,6 +284,8 @@ private:
     EXPORT static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetFileAssetsInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessStartCreateThumbnailTask(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
