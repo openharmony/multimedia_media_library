@@ -259,9 +259,7 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
 
 napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value exports)
 {
-    NapiClassInfo info = {
-        PHOTOACCESSHELPER_NAPI_CLASS_NAME,
-        &photoAccessHelperConstructor_,
+    NapiClassInfo info = { PHOTOACCESSHELPER_NAPI_CLASS_NAME, &photoAccessHelperConstructor_,
         MediaLibraryNapiConstructor,
         {
             DECLARE_NAPI_FUNCTION("getAssets", PhotoAccessGetPhotoAssets),
