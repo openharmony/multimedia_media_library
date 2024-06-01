@@ -239,6 +239,9 @@ napi_value MediaAssetsChangeRequestNapi::JSSetUserComment(napi_env env, napi_cal
 static bool SetAssetsPropertyExecute(
     MediaAssetsChangeRequestAsyncContext& context, const AssetsChangeOperation& changeOperation)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetAssetsPropertyExecute");
+
     string uri;
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
@@ -276,6 +279,9 @@ static bool SetAssetsPropertyExecute(
 
 static void ApplyAssetsChangeRequestExecute(napi_env env, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ApplyAssetsChangeRequestExecute");
+
     auto* context = static_cast<MediaAssetsChangeRequestAsyncContext*>(data);
     unordered_set<AssetsChangeOperation> appliedOperations;
     for (const auto& changeOperation : context->assetsChangeOperations) {
@@ -295,6 +301,9 @@ static void ApplyAssetsChangeRequestExecute(napi_env env, void* data)
 
 static void ApplyAssetsChangeRequestCompleteCallback(napi_env env, napi_status status, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ApplyAssetsChangeRequestCompleteCallback");
+
     auto* context = static_cast<MediaAssetsChangeRequestAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();
