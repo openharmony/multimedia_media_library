@@ -110,8 +110,6 @@ void PermissionUtils::GetAppIdFromCache(int uid, string &appId)
 
 void PermissionUtils::UpdateLatestBundleInfo(int uid, const BundleInfo &bundleInfo)
 {
-    MEDIA_INFO_LOG("uid: %{public}d, {%{public}s, %{public}s, %{public}s}", uid, bundleInfo.bundleName.c_str(),
-        bundleInfo.packageName.c_str(), bundleInfo.appId.c_str());
     auto iter = bundleInfoMap_.find(uid);
     if (iter != bundleInfoMap_.end()) {
         bundleInfoList_.erase(iter->second);
