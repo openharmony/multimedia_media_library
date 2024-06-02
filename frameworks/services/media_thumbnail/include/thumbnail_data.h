@@ -54,6 +54,9 @@ public:
 
         // if true, read source from cloud if not found in local
         bool isForeGroundLoading {false};
+
+        // if true, create HDR pixelMap
+        EXPORT bool isHdr {false};
     };
 
     EXPORT ThumbnailData() = default;

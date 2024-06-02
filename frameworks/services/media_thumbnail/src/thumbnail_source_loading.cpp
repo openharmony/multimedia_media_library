@@ -191,7 +191,9 @@ bool SourceLoader::CreateImage(std::unique_ptr<ImageSource>& imageSource, ImageI
     MediaLibraryTracer tracer;
     tracer.Start("imageSource->CreateImage");
     DecodeOptions decodeOpts;
-    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    if (data_.loaderOpts.isHdr && imageSource->IsHdrImage()) {
+        decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
+    }
     Size targetSize = ConvertDecodeSize(data_, imageInfo.size, desiredSize_);
     if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
         MEDIA_DEBUG_LOG("SourceLoader Failed to generate decodeOpts, pixelmap path %{private}s",
