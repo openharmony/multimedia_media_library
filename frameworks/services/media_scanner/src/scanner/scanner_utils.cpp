@@ -207,7 +207,6 @@ bool ScannerUtils::CheckSkipScanList(const string &path)
         { ROOT_MEDIA_DIR + Videos },
         { ROOT_MEDIA_DIR + Doc },
         { ROOT_MEDIA_DIR + Download },
-        { ROOT_MEDIA_DIR + "Docs" },
     };
     for (const auto &pathPrefix : list) {
         if (path.find(pathPrefix) != string::npos) {
