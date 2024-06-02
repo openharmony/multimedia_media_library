@@ -215,6 +215,12 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
         data->SetOrientation(intTempMeta);
     }
 
+    if (imageSource->IsHdrImage()) {
+        data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::HDR));
+    } else {
+        data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::SDR));
+    }
+
     ExtractLocationMetadata(imageSource, data);
     ExtractImageExif(imageSource, data);
     return E_OK;
