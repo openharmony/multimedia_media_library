@@ -442,6 +442,12 @@ napi_value MovingPhotoNapi::NewMovingPhotoNapi(napi_env env, const string& photo
     CHECK_COND_RET(status == napi_ok, nullptr, "Failed to get new instance of moving photo, napi status: %{public}d",
         static_cast<int>(status));
     CHECK_COND_RET(instance != nullptr, nullptr, "Instance is nullptr");
+
+    MovingPhotoNapi* movingPhotoNapi = nullptr;
+    status = napi_unwrap(env, instance, reinterpret_cast<void**>(&movingPhotoNapi));
+    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to unwarp instance of MovingPhotoNapi");
+    CHECK_COND_RET(movingPhotoNapi != nullptr, nullptr, "movingPhotoNapi is nullptr");
+    movingPhotoNapi->SetSourceMode(sourceMode);
     return instance;
 }
 
