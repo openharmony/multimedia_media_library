@@ -41,10 +41,10 @@ const int32_t HDC_SHELL_UID = 2000;
 std::list<std::pair<int32_t, BundleInfo>> PermissionUtils::bundleInfoList_ = {};
 std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> PermissionUtils::bundleInfoMap_ = {};
 
-bool g_hasDelayTask;
-std::mutex AddPhotoPermissionRecordLock_;
-std::thread DelayTask_;
-std::vector<Security::AccessToken::AddPermParamInfo> infos;
+bool g_isDelayTask;
+std::mutex addPhotoPermissionRecordLock_;
+std::thread delayTask_;
+std::vector<Security::AccessToken::AddPermParamInfo> infos_;
 
 sptr<AppExecFwk::IBundleMgr> PermissionUtils::bundleMgr_ = nullptr;
 mutex PermissionUtils::bundleMgrMutex_;
@@ -246,9 +246,9 @@ void AddPermissionRecord(const AccessTokenID &token, const string &perm, const b
 
 vector<AddPermParamInfo> GetPermissionRecord()
 {
-    lock_guard<mutex> lock(AddPhotoPermissionRecordLock_);
-    vector<AddPermParamInfo> result = infos;
-    infos.clear();
+    lock_guard<mutex> lock(addPhotoPermissionRecordLock_);
+    vector<AddPermParamInfo> result = infos_;
+    infos_.clear();
     return result;
 }
 
@@ -270,27 +270,27 @@ void DelayAddPermissionRecord()
 {
     string name("DelayAddPermissionRecord");
     pthread_setname_np(pthread_self(), name.c_str());
-    MEDIA_DEBUG_LOG("DelayTask start");
+    MEDIA_INFO_LOG("DelayTask start");
     std::this_thread::sleep_for(std::chrono::minutes(1));
     AddPermissionRecord();
-    g_hasDelayTask = false;
-    MEDIA_DEBUG_LOG("DelayTask end");
+    g_isDelayTask = false;
+    MEDIA_INFO_LOG("DelayTask end");
 }
 
 void DelayTaskInit()
 {
-    if (!g_hasDelayTask) {
-        MEDIA_DEBUG_LOG("DelayTaskInit");
-        DelayTask_ = thread(DelayAddPermissionRecord);
-        DelayTask_.detach();
-        g_hasDelayTask = true;
+    if (!g_isDelayTask) {
+        MEDIA_INFO_LOG("DelayTaskInit");
+        delayTask_ = thread(DelayAddPermissionRecord);
+        delayTask_.detach();
+        g_isDelayTask = true;
     }
 }
 
 void CollectPermissionRecord(const AccessTokenID &token, const string &perm,
     const bool permGranted, const PermissionUsedType type)
 {
-    lock_guard<mutex> lock(AddPhotoPermissionRecordLock_);
+    lock_guard<mutex> lock(addPhotoPermissionRecordLock_);
     DelayTaskInit();
 
     if (!ShouldAddPermissionRecord(token)) {
@@ -298,7 +298,7 @@ void CollectPermissionRecord(const AccessTokenID &token, const string &perm,
     }
 
     AddPermParamInfo info = {token, perm, permGranted, !permGranted, type};
-    infos.push_back(info);
+    infos_.push_back(info);
 }
 
 void PermissionUtils::CollectPermissionInfo(const string &permission,
