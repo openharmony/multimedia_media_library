@@ -129,7 +129,6 @@ const std::string THUMBNAIL_OPER = "oper";
 const std::string THUMBNAIL_HEIGHT = "height";
 const std::string THUMBNAIL_WIDTH = "width";
 const std::string THUMBNAIL_PATH = "path";
-const std::string THUMBNAIL_TEMP_ORIENT_SUFFIX = ".temp.orient";
 
 // create thumbnail in close operation
 const std::string CLOSE_CREATE_THUMB_STATUS = "create_thumbnail_sync_status";

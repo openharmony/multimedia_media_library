@@ -118,6 +118,11 @@ bool ThumbnailUtils::DeleteThumbExDir(ThumbnailData &data)
 {
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
     string dirName = MediaFileUtils::GetParentPath(fileName);
+    if (access(dirName.c_str(), F_OK) != 0) {
+        MEDIA_INFO_LOG("No need to delete THM_EX, directory not exists path: %{public}s, id: %{public}s",
+            dirName.c_str(), data.id.c_str());
+        return true;
+    }
     if (!MediaFileUtils::DeleteDir(dirName)) {
         MEDIA_INFO_LOG("Failed to delete THM_EX directory, path: %{public}s, id: %{public}s",
             dirName.c_str(), data.id.c_str());
@@ -660,6 +665,8 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_POSITION,
+        MEDIA_DATA_DB_ORIENTATION,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");

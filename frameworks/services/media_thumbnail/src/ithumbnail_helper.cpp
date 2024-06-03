@@ -184,6 +184,70 @@ WaitStatus ThumbnailWait::InsertAndWait(const string &id, ThumbnailType type)
     }
 }
 
+WaitStatus CheckCloudReadResult(CloudLoadType cloudLoadType, CloudReadStatus status)
+{
+    switch (status) {
+        case CloudReadStatus::FAIL:
+            MEDIA_INFO_LOG("Fail to cloud read thumbnail, type: %{public}d", cloudLoadType);
+            return WaitStatus::WAIT_FAILED;
+            break;
+        case CloudReadStatus::SUCCESS:
+            MEDIA_INFO_LOG("Success to cloud read thumbnail, type: %{public}d", cloudLoadType);
+            return WaitStatus::WAIT_SUCCESS;
+            break;
+        case CloudReadStatus::START:
+            MEDIA_INFO_LOG("Continue to cloud read thumbnail, type: %{public}d", cloudLoadType);
+            return WaitStatus::WAIT_CONTINUE;
+            break;
+        default:
+            break;
+    }
+    return WaitStatus::WAIT_FAILED;
+}
+
+WaitStatus ThumbnailWait::CloudInsertAndWait(const string &id, CloudLoadType cloudLoadType)
+{
+    id_ = id + ".cloud";
+    unique_lock<shared_mutex> writeLck(mutex_);
+    auto iter = thumbnailMap_.find(id_);
+    if (iter != thumbnailMap_.end()) {
+        auto thumbnailWait = iter->second;
+        unique_lock<mutex> lck(thumbnailWait->mtx_);
+        writeLck.unlock();
+        MEDIA_INFO_LOG("Waiting for thumbnail generation, id: %{public}s", id_.c_str());
+        thumbnailWait->cond_.wait(lck, [weakPtr = weak_ptr(thumbnailWait)]() {
+            if (auto sharedPtr = weakPtr.lock()) {
+                return sharedPtr->isSyncComplete_;
+            } else {
+                return true;
+            }
+        });
+        thumbnailWait->isSyncComplete_ = false;
+        thumbnailWait->cloudLoadType_ = cloudLoadType;
+        unique_lock<shared_mutex> evokeLck(mutex_);
+        thumbnailMap_.emplace(ThumbnailMap::value_type(id_, thumbnailWait));
+        evokeLck.unlock();
+
+        if (cloudLoadType == CLOUD_DOWNLOAD) {
+            MEDIA_INFO_LOG("Continue to generate thumbnail");
+            return WaitStatus::WAIT_CONTINUE;
+        }
+        if (cloudLoadType == CLOUD_READ_THUMB) {
+            return CheckCloudReadResult(cloudLoadType, thumbnailWait->CloudLoadThumbnailStatus_);
+        }
+        if (cloudLoadType == CLOUD_READ_LCD) {
+            return CheckCloudReadResult(cloudLoadType, thumbnailWait->CloudLoadLcdStatus_);
+        }
+        MEDIA_INFO_LOG("Cloud generate thumbnail successfully");
+        return WaitStatus::WAIT_SUCCESS;
+    } else {
+        shared_ptr<ThumbnailSyncStatus> thumbnailWait = make_shared<ThumbnailSyncStatus>();
+        thumbnailWait->cloudLoadType_ = cloudLoadType;
+        thumbnailMap_.insert(ThumbnailMap::value_type(id_, thumbnailWait));
+        return WaitStatus::INSERT;
+    }
+}
+
 void ThumbnailWait::CheckAndWait(const string &id, bool isLcd)
 {
     id_ = id;
@@ -219,6 +283,39 @@ void ThumbnailWait::UpdateThumbnailMap()
     }
 }
 
+void ThumbnailWait::UpdateCloudLoadThumbnailMap(CloudLoadType cloudLoadType, bool isLoadSuccess)
+{
+    unique_lock<shared_mutex> writeLck(mutex_);
+    auto iter = thumbnailMap_.find(id_);
+    if (iter != thumbnailMap_.end()) {
+        auto thumbnailWait = iter->second;
+        {
+            unique_lock<mutex> lck(thumbnailWait->mtx_);
+            writeLck.unlock();
+            switch (cloudLoadType) {
+                case CLOUD_READ_THUMB:
+                    thumbnailWait->CloudLoadThumbnailStatus_ =
+                        isLoadSuccess ? CloudReadStatus::SUCCESS : CloudReadStatus::FAIL;
+                    break;
+                case CLOUD_READ_LCD:
+                    thumbnailWait->CloudLoadLcdStatus_ =
+                        isLoadSuccess ? CloudReadStatus::SUCCESS : CloudReadStatus::FAIL;
+                    break;
+                case CLOUD_DOWNLOAD:
+                    thumbnailWait->CloudLoadThumbnailStatus_ =
+                        isLoadSuccess ? CloudReadStatus::SUCCESS : CloudReadStatus::FAIL;
+                    thumbnailWait->CloudLoadLcdStatus_ =
+                        isLoadSuccess ? CloudReadStatus::SUCCESS : CloudReadStatus::FAIL;
+                    break;
+                default:
+                    break;
+            }
+        }
+    } else {
+        MEDIA_ERR_LOG("Update CloudLoadThumbnailMap failed, id: %{public}s", id_.c_str());
+    }
+}
+
 void ThumbnailWait::Notify()
 {
     unique_lock<shared_mutex> writeLck(mutex_);
@@ -231,7 +328,11 @@ void ThumbnailWait::Notify()
             writeLck.unlock();
             thumbnailWait->isSyncComplete_ = true;
         }
-        thumbnailWait->cond_.notify_all();
+        if (thumbnailWait->cloudLoadType_ == CloudLoadType::NONE) {
+            thumbnailWait->cond_.notify_all();
+        } else {
+            thumbnailWait->cond_.notify_one();
+        }
     }
 }
 
@@ -540,7 +641,7 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = true;
-    data.loaderOpts.sourceLoadingBeginWithThumb = false;
+    data.loaderOpts.sourceLoadingBeginWithThumb = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateThumbnail failed, try to load source failed, id: %{public}s", data.id.c_str());
         return false;
@@ -698,23 +799,65 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
+bool GenerateRotatedThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType)
+{
+    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
+        MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, rotate lcd failed: %{public}s", data.path.c_str());
+        return false;
+    }
+    if (thumbType != ThumbnailType::LCD && !IThumbnailHelper::DoRotateThumbnail(opts, data)) {
+        MEDIA_ERR_LOG("Get default thumbnail pixelmap, rotate thumbnail failed: %{public}s", data.path.c_str());
+        return false;
+    }
+    return true;
+}
+
+unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
+{
+    SourceOptions opts;
+    uint32_t err = 0;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, err);
+    if (imageSource == nullptr) {
+        MEDIA_ERR_LOG("Decode thumbnail from fd failed, CreateImageSource err: %{public}d", err);
+        return nullptr;
+    }
+
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Decode thumbnail from fd failed, GetImageInfo err: %{public}d", err);
+        return nullptr;
+    }
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    if (pixelMap == nullptr) {
+        MEDIA_ERR_LOG("Decode thumbnail from fd failed, CreatePixelMap err: %{public}d", err);
+        return nullptr;
+    }
+    return pixelMap;
+}
+
 bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB_ASTC);
-    if (ret != WaitStatus::INSERT) {
+    auto ret = thumbnailWait.CloudInsertAndWait(data.id, CloudLoadType::CLOUD_DOWNLOAD);
+    if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
     
     MEDIA_INFO_LOG("Start DoCreateAstcEx, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
-    if (!DoCreateLcd(opts, data)) {
-        MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_EX_SUFFIX);
+    if (access(fileName.c_str(), F_OK) != 0) {
+        MEDIA_ERR_LOG("No available file in THM_EX, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
 
-    string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX) + THUMBNAIL_TEMP_ORIENT_SUFFIX;
-    if (!MediaFileUtils::DeleteFile(fileName)) {
-        MEDIA_ERR_LOG("Fail to delete lcd temp file, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+    if (!DoCreateLcd(opts, data)) {
+        MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        return false;
     }
 
     data.loaderOpts.decodeInThumbSize = true;
@@ -728,10 +871,45 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX) + THUMBNAIL_TEMP_ORIENT_SUFFIX;
-    if (!MediaFileUtils::DeleteFile(fileName)) {
-        MEDIA_ERR_LOG("Fail to delete thumbnail temp file, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+    if (!ThumbnailUtils::DeleteThumbExDir(data)) {
+        MEDIA_ERR_LOG("Fail to delete THM_EX directory, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
     }
+
+    thumbnailWait.UpdateCloudLoadThumbnailMap(CloudLoadType::CLOUD_DOWNLOAD, true);
+    return true;
+}
+
+bool IThumbnailHelper::DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType)
+{
+    ThumbnailWait thumbnailWait(true);
+    auto ret = thumbnailWait.CloudInsertAndWait(data.id, thumbType == ThumbnailType::LCD ?
+        CloudLoadType::CLOUD_READ_LCD : CloudLoadType::CLOUD_READ_THUMB);
+    if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
+        close(fd);
+        return ret == WaitStatus::WAIT_SUCCESS;
+    }
+    
+    auto dataSource = DecodeThumbnailFromFd(fd);
+    if (dataSource == nullptr) {
+        MEDIA_ERR_LOG("GetThumbnailPixelMap failed, dataSource is nullptr, path: %{public}s", data.path.c_str());
+        close(fd);
+        thumbnailWait.UpdateCloudLoadThumbnailMap(thumbType == ThumbnailType::LCD ?
+            CloudLoadType::CLOUD_READ_LCD : CloudLoadType::CLOUD_READ_THUMB, false);
+        return false;
+    }
+    close(fd);
+
+    data.source = std::move(dataSource);
+    data.source->rotate(static_cast<float>(data.orientation));
+    if (!GenerateRotatedThumbnail(opts, data, thumbType)) {
+        MEDIA_ERR_LOG("GenerateRotatedThumbnail failed, path: %{public}s", data.path.c_str());
+        thumbnailWait.UpdateCloudLoadThumbnailMap(thumbType == ThumbnailType::LCD ?
+            CloudLoadType::CLOUD_READ_LCD : CloudLoadType::CLOUD_READ_THUMB, false);
+        return false;
+    }
+
+    thumbnailWait.UpdateCloudLoadThumbnailMap(thumbType == ThumbnailType::LCD ?
+        CloudLoadType::CLOUD_READ_LCD : CloudLoadType::CLOUD_READ_THUMB, true);
     return true;
 }
 

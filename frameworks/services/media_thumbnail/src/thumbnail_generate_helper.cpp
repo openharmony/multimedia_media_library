@@ -46,6 +46,11 @@ int32_t ThumbnailGenerateHelper::CreateThumbnails(ThumbRdbOpt &opts, bool isSync
     ThumbnailUtils::GetThumbnailInfo(opts, thumbnailData);
     thumbnailData.needResizeLcd = true;
     ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::LOCAL, LoadSourceType::LOCAL_PHOTO);
+    if (ThumbnailUtils::DeleteThumbExDir(thumbnailData)) {
+        MEDIA_ERR_LOG("Delete THM_EX directory, path: %{public}s, id: %{public}s", thumbnailData.path.c_str(),
+            thumbnailData.id.c_str());
+    }
+
     if (isSync) {
         IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
@@ -113,8 +118,14 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatch(ThumbRdbOpt &opts)
         opts.row = infos[i].id;
         ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::BACKGROUND,
             LoadSourceType::LOCAL_PHOTO);
-        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc,
-            opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+        if (infos[i].orientation != 0) {
+            IThumbnailHelper::AddThumbnailGenerateTask(infos[i].isLocalFile ?
+                IThumbnailHelper::CreateThumbnail : IThumbnailHelper::CreateAstcEx, opts, infos[i],
+                ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+        } else {
+            IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc,
+                opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+        }
     }
     return E_OK;
 }
@@ -244,27 +255,6 @@ bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailTyp
     return true;
 }
 
-bool GenerateRotatedThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
-    std::string &fileName)
-{
-    if (MediaFileUtils::IsFileExists(fileName)) {
-        MEDIA_INFO_LOG("file: %{public}s exists and needs to be deleted", fileName.c_str());
-        if (!MediaFileUtils::DeleteFile(fileName)) {
-            MEDIA_ERR_LOG("delete file: %{public}s failed", fileName.c_str());
-            return -errno;
-        }
-    }
-    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
-        MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, rotate lcd failed: %{public}s", data.path.c_str());
-        return false;
-    }
-    if (thumbType != ThumbnailType::LCD && !IThumbnailHelper::DoRotateThumbnail(opts, data)) {
-        MEDIA_ERR_LOG("Get default thumbnail pixelmap, rotate thumbnail failed: %{public}s", data.path.c_str());
-        return false;
-    }
-    return true;
-}
-
 int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
     std::string &fileName)
 {
@@ -279,21 +269,19 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
         }
     }
 
-    // Check if temp file through cloud doawnloading exists
-    string tempFileName = fileName + THUMBNAIL_TEMP_ORIENT_SUFFIX;
-    if (access(tempFileName.c_str(), F_OK) == 0) {
-        data.loaderOpts.isCloudLoading = true;
-        if (!IThumbnailHelper::DoCreateAstcEx(opts, data)) {
-            MEDIA_ERR_LOG("Get pixelmap from temp file failed, path: %{public}s", tempFileName.c_str());
-            return E_THUMBNAIL_LOCAL_CREATE_FAIL;
-        }
-
-        // Clear orientation as rotated file has already been generated
-        data.orientation = 0;
-    }
-
     // No need to create thumbnails if corresponding file exists
     if (access(fileName.c_str(), F_OK) == 0) {
+        MEDIA_INFO_LOG("File exists, path: %{public}s", fileName.c_str());
+        return E_OK;
+    }
+
+    // Check if unrotated file exists
+    string fileParentPath = MediaFileUtils::GetParentPath(fileName);
+    string tempFileName = fileParentPath + "/THM_EX" + fileName.substr(fileParentPath.length());
+    if (access(tempFileName.c_str(), F_OK) == 0) {
+        fileName = tempFileName;
+        data.loaderOpts.isCloudLoading = true;
+        MEDIA_INFO_LOG("Unrotated file exists, path: %{public}s", fileName.c_str());
         return E_OK;
     }
 
@@ -306,34 +294,6 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
         fileName = GetThumbnailPath(data.path, thumbSuffix);
     }
     return E_OK;
-}
-
-unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
-{
-    SourceOptions opts;
-    uint32_t err = 0;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, err);
-    if (imageSource == nullptr) {
-        MEDIA_ERR_LOG("Decode thumbnail from fd failed, CreateImageSource err: %{public}d", err);
-        return nullptr;
-    }
-
-    ImageInfo imageInfo;
-    err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Decode thumbnail from fd failed, GetImageInfo err: %{public}d", err);
-        return nullptr;
-    }
-
-    DecodeOptions decodeOpts;
-    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
-    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
-    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
-    if (pixelMap == nullptr) {
-        MEDIA_ERR_LOG("Decode thumbnail from fd failed, CreatePixelMap err: %{public}d", err);
-        return nullptr;
-    }
-    return pixelMap;
 }
 
 bool IsLocalThumbnailAvailable(ThumbnailData &data, ThumbnailType thumbType)
@@ -415,28 +375,17 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
             thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
         return -errno;
     }
-    if (!thumbnailData.isLocalFile && thumbnailData.orientation != 0) {
-        thumbnailData.loaderOpts.isCloudLoading = true;
-        auto dataSource = DecodeThumbnailFromFd(fd);
-        if (dataSource == nullptr) {
-            MEDIA_ERR_LOG("GetThumbnailPixelMap failed, dataSource is nullptr, path: %{public}s",
-                DfxUtils::GetSafePath(thumbnailData.path).c_str());
-            DfxManager::GetInstance()->HandleThumbnailError(fileName,
-                thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
-            return -errno;
-        }
-        close(fd);
-
-        thumbnailData.source = std::move(dataSource);
-        thumbnailData.source->rotate(static_cast<float>(thumbnailData.orientation));
-        if (!GenerateRotatedThumbnail(opts, thumbnailData, thumbType, fileName)) {
-            MEDIA_ERR_LOG("GenerateRotatedThumbnail failed, path: %{public}s",
-                DfxUtils::GetSafePath(thumbnailData.path).c_str());
-            DfxManager::GetInstance()->HandleThumbnailError(fileName,
-                thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
-            return -errno;
-        }
+    if (thumbnailData.loaderOpts.isCloudLoading && thumbnailData.orientation != 0) {
+        IThumbnailHelper::DoRotateThumbnailEx(opts, thumbnailData, fd, thumbType);
+        fileName = GetThumbnailPath(thumbnailData.path,
+            thumbType == ThumbnailType::LCD ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
         fd = open(fileName.c_str(), O_RDONLY);
+        if (fd < 0) {
+            MEDIA_ERR_LOG("Rotate thumb failed, path: %{public}s", DfxUtils::GetSafePath(thumbnailData.path).c_str());
+            DfxManager::GetInstance()->HandleThumbnailError(fileName,
+                thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
+            return -errno;
+        }
     }
     UpdateThumbStatus(opts, thumbType, thumbnailData, err, isLocalThumbnailAvailable);
     return fd;

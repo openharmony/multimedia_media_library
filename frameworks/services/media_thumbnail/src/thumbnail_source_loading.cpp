@@ -42,12 +42,12 @@ std::string GetLocalThumbnailPath(const std::string &path, const std::string &ke
     return LOCAL_MEDIA_PATH + ((key == "") ? "" : ".thumbs/") + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
 }
 
-std::string GetCloudLcdTempPath(const std::string &path)
+std::string GetLcdExPath(const std::string &path)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
-    std::string suffix = "/" + THUMBNAIL_LCD_SUFFIX + ".jpg" + THUMBNAIL_TEMP_ORIENT_SUFFIX;
+    std::string suffix = "/THM_EX/" + THUMBNAIL_LCD_SUFFIX + ".jpg";
     return LOCAL_MEDIA_PATH + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
 }
     
@@ -365,7 +365,7 @@ std::unique_ptr<ImageSource> LocalLcdSource::IsSourceAvailable(ThumbnailData& da
 {
     std::string tmpPath;
     if (data.loaderOpts.isCloudLoading) {
-        tmpPath = GetCloudLcdTempPath(data.path);
+        tmpPath = GetLcdExPath(data.path);
     } else {
         tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
     }
