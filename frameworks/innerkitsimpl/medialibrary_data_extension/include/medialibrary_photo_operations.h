@@ -72,7 +72,7 @@ private:
     static bool IsSetEffectMode(MediaLibraryCommand &cmd);
     static bool IsContainsData(MediaLibraryCommand &cm);
     static bool IsCameraEditData(MediaLibraryCommand &cmd);
-    static bool ReadEditdataFromFile(const std::string &editDataPath, std::string &editData);
+    static int32_t ReadEditdataFromFile(const std::string &editDataPath, std::string &editData);
     static int32_t SaveEditDataCamera(MediaLibraryCommand &cmd, const std::string &assetPath,
         std::string &editData);
     static int32_t SaveSourceAndEditData(const std::shared_ptr<FileAsset> &fileAsset, const std::string &editData);
