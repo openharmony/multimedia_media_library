@@ -62,7 +62,7 @@ void CloudSyncNotifyHandler::ThumbNailObserverOnchange(const list<Uri> &uris, co
 void CloudSyncNotifyHandler::MakeResponsibilityChain()
 {
     string uriString = notifyInfo_.uris.front().ToString();
-    if (uriString.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) {
+    if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {
         ThumbNailObserverOnchange(notifyInfo_.uris, notifyInfo_.type);
     }
 
