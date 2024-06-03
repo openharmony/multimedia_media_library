@@ -1444,6 +1444,13 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
     return isDelete;
 }
 
+bool ThumbnailUtils::DoDeleteMonthAndYearAstc(ThumbRdbOpt &opts)
+{
+    MEDIA_INFO_LOG("Start DoDeleteMonthAndYearAstc, id: %{public}s", opts.row.c_str());
+    return DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC) &&
+        DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC);
+}
+
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, const shared_ptr<SingleKvStore> &kvStore)
 {

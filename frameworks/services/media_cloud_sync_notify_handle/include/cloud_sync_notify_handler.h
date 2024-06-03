@@ -28,9 +28,13 @@ public:
     ~CloudSyncNotifyHandler() = default;
     
     void MakeResponsibilityChain();
-    void ThumbNailObserverOnchange(const std::list<Uri> &uris, const DataShare::DataShareObserver::ChangeType &type);
+    void ThumbnailObserverOnchange(const std::list<Uri> &uris, const DataShare::DataShareObserver::ChangeType &type);
 
     CloudSyncNotifyInfo notifyInfo_;
+
+private:
+    void HandleInsertEvent(const std::list<Uri> &uris);
+    void HandleDeleteEvent(const std::list<Uri> &uris);
 };
 } //namespace Media
 } //namespace OHOS
