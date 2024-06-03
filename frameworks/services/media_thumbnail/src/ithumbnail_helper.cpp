@@ -409,6 +409,10 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
             DfxUtils::GetSafePath(opts.path).c_str());
         Media::InitializationOptions initOpts;
         auto copySource = PixelMap::Create(*data.source, initOpts);
+        if (copySource == nullptr) {
+            MEDIA_ERR_LOG("Pixelmap is nullptr!");
+            return false;
+        }
         lcdSource = std::move(copySource);
         float widthScale = (1.0f * lcdDesiredWidth) / data.source->GetWidth();
         float heightScale = (1.0f * lcdDesiredHeight) / data.source->GetHeight();
