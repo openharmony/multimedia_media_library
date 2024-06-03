@@ -27,9 +27,12 @@ namespace OHOS {
 namespace Media {
 using ChangeType = DataShare::DataShareObserver::ChangeType;
 
-static inline bool IsFileIdValid(const string& fileId)
+static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 {
-    for (char const& ch : fileId) {
+    if (cloudNotifyInfo.empty() || cloudNotifyInfo == "0") {
+        return false;
+    }
+    for (char const& ch : cloudNotifyInfo) {
         if (isdigit(ch) == 0) {
             return false;
         }
@@ -37,13 +40,8 @@ static inline bool IsFileIdValid(const string& fileId)
     return true;
 }
 
-void CloudSyncNotifyHandler::ThumbNailObserverOnchange(const list<Uri> &uris, const ChangeType &type)
-{
-    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
-    if (type != ChangeType::INSERT) {
-        MEDIA_DEBUG_LOG("change type is %{public}d, not insert", type);
-        return;
-    }
+ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
+ {
     for (auto &uri : uris) {
         string uriString = uri.ToString();
         auto pos = uriString.find_last_of('/');
@@ -51,11 +49,52 @@ void CloudSyncNotifyHandler::ThumbNailObserverOnchange(const list<Uri> &uris, co
             continue;
         }
         string idString = uriString.substr(pos + 1);
-        if (idString.empty() || !IsFileIdValid(idString)) {
-            MEDIA_DEBUG_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
+        if (!IsCloudNotifyInfoValid(idString)) {
+            MEDIA_WARN_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
+
         ThumbnailService::GetInstance()->CreateAstcFromFileId(idString);
+    }
+ }
+
+ void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
+ {
+    for (auto &uri : uris) {
+        string uriString = uri.ToString();
+        auto dateAddedPos = uriString.rfind('/');
+        if (dateAddedPos == string::npos) {
+            continue;
+        }
+        auto fileIdPos = uriString.rfind('/', dateAddedPos - 1);
+        if (fileIdPos == string::npos) {
+            continue;
+        }
+
+        string dateAdded = uriString.substr(dateAddedPos + 1);
+        string fileId = uriString.substr(fileIdPos + 1, dateAddedPos - fileIdPos - 1);
+        if (!IsCloudNotifyInfoValid(dateAdded) || !IsCloudNotifyInfoValid(fileId)) {
+            MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
+            continue;
+        }
+
+        ThumbnailService::GetInstance()->DeleteAstcWithFileIdAndDateAdded(fileId, dateAdded);
+    }
+ }
+
+void CloudSyncNotifyHandler::ThumbnailObserverOnchange(const list<Uri> &uris, const ChangeType &type)
+{
+    MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
+    switch (type) {
+        case ChangeType::INSERT:
+            HandleInsertEvent(uris);
+            break;
+        case ChangeType::DELETE:
+            HandleDeleteEvent(uris);
+            break;
+        default:
+            MEDIA_DEBUG_LOG("change type is %{public}d, not need ThumbnailObserverOnchange", type);
+            break;
     }
 }
 
@@ -63,7 +102,7 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
 {
     string uriString = notifyInfo_.uris.front().ToString();
     if (uriString.find(PhotoColumn::PHOTO_TYPE_URI) != string::npos) {
-        ThumbNailObserverOnchange(notifyInfo_.uris, notifyInfo_.type);
+        ThumbnailObserverOnchange(notifyInfo_.uris, notifyInfo_.type);
     }
 
     shared_ptr<BaseHandler> chain = nullptr;
