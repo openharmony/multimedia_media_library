@@ -2070,7 +2070,7 @@ static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
     tracer.Start("AddFiltersExecute");
 
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    CHECK_COND_RET(fileAsset != nullptr, E_FAIL, "Failed to check fileAsset");
+    CHECK_COND_RET(fileAsset != nullptr, false, "Failed to check fileAsset");
     string uri = PAH_ADD_FILTERS;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri addFiltersUri(uri);
@@ -2078,8 +2078,14 @@ static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::MEDIA_ID, fileAsset->GetId());
     int ret = context.objectInfo->PutMediaAssetEditData(valuesBucket);
-    CHECK_COND_RET(ret == E_OK, ret, "Failed to put editData");
-    return UserFileClient::Insert(addFiltersUri, valuesBucket);
+    CHECK_COND_RET(ret == E_OK, false, "Failed to put editData");
+    ret = UserFileClient::Insert(addFiltersUri, valuesBucket);
+    if (ret < 0) {
+        context.SaveError(ret);
+        NAPI_ERR_LOG("Failed to add filters, ret: %{public}d", ret);
+        return false;
+    }
+    return true;
 }
 
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
