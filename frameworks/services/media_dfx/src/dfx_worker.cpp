@@ -216,7 +216,7 @@ void DfxWorker::WaitForTask()
             [this]() { return !isThreadRunning_ || !IsTaskQueueEmpty(); });
     } else {
         workCv_.wait_until(lock, GetWaitTime(),
-            [this]() { return !isThreadRunning_ || !IsTaskQueueEmpty(); });
+            [this]() { return !isThreadRunning_ || IsTaskQueueEmpty(); });
     }
 }
 
