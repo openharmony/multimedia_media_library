@@ -177,6 +177,9 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
     } else if (subType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID, to_string(albumId));
+    } else {
+        NAPI_ERR_LOG("Invalid highlight album subType");
+        return;
     }
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
