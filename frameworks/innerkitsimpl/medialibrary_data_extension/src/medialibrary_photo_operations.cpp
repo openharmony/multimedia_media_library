@@ -1924,7 +1924,6 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
-    int ret;
     string editDataSourcePath = GetEditDataSourcePath(path);
     string editDataCameraPath = GetEditDataCameraPath(path);
 
@@ -1953,7 +1952,6 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
             return E_OK;
         }
     }
-    return ret;
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
