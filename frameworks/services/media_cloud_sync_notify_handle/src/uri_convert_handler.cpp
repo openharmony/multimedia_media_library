@@ -28,6 +28,9 @@ using ChangeType = DataShare::DataShareObserver::ChangeType;
 static inline void AddNewNotify(CloudSyncHandleData &newHandleData,
     const list<Uri> &sendUris, const ChangeType &sendType)
 {
+    if (sendUris.size() <= 0) {
+        return;
+    }
     if (newHandleData.notifyInfo.find(sendType) == newHandleData.notifyInfo.end()) {
         newHandleData.notifyInfo[sendType] = sendUris;
     } else {
@@ -44,7 +47,10 @@ void UriConvertHandler::Handle(const CloudSyncHandleData &handleData)
     CloudSyncNotifyInfo newNotifyInfo;
     CloudSyncHandleData newHandleData = handleData;
 
-    if (handleData.orgInfo.type == ChangeType::UPDATE) {
+    if (handleData.orgInfo.type == ChangeType::OTHER) {
+        AddNewNotify(newHandleData, { Uri(PhotoColumn::PHOTO_URI_PREFIX) }, ChangeType::DELETE);
+        AddNewNotify(newHandleData, { Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX) }, ChangeType::DELETE);
+    } else {
         newNotifyInfo.type = handleData.orgInfo.type;
         for (auto &uri : handleData.orgInfo.uris) {
             string uriString = uri.ToString();
@@ -53,9 +59,6 @@ void UriConvertHandler::Handle(const CloudSyncHandleData &handleData)
             newNotifyInfo.uris.push_back(newUri);
         }
         AddNewNotify(newHandleData, newNotifyInfo.uris, newNotifyInfo.type);
-    } else if (handleData.orgInfo.type == ChangeType::OTHER) {
-        AddNewNotify(newHandleData, { Uri(PhotoColumn::PHOTO_URI_PREFIX) }, ChangeType::DELETE);
-        AddNewNotify(newHandleData, { Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX) }, ChangeType::DELETE);
     }
  
     if (nextHandler_ != nullptr) {

@@ -62,6 +62,7 @@ void CloudSyncNotifyHandler::ThumbNailObserverOnchange(const list<Uri> &uris, co
 void CloudSyncNotifyHandler::MakeResponsibilityChain()
 {
     string uriString = notifyInfo_.uris.front().ToString();
+    MEDIA_DEBUG_LOG("observer get first uri is : %{public}s", uriString.c_str());
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {
         ThumbNailObserverOnchange(notifyInfo_.uris, notifyInfo_.type);
     }
@@ -81,8 +82,11 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
     }
     CloudSyncHandleData handleData;
     handleData.orgInfo = notifyInfo_;
+    if (chain == nullptr) {
+        MEDIA_DEBUG_LOG("uri OR type is Invalid");
+        return;
+    }
     chain->Handle(handleData);
-    return;
 }
 } //namespace Media
 } //namespace OHOS
