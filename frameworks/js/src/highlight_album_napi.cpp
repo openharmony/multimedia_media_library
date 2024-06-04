@@ -175,7 +175,7 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
     Uri uri (uriStr);
     if (subType == PhotoAlbumSubType::HIGHLIGHT) {
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
-    } else {
+    } else if (subType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
         predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID, to_string(albumId));
     }
     int errCode = 0;
