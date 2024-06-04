@@ -233,6 +233,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
     data->SetFilePath(fileInfo.filePath);
     data->SetFileMediaType(fileInfo.fileType);
+    data->SetFileDateModified(fileInfo.dateModified);
     BackupFileUtils::FillMetadata(data);
     MediaType mediaType = data->GetFileMediaType();
 
