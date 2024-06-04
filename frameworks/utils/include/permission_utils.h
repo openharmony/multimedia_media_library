@@ -75,6 +75,7 @@ public:
     static bool CheckPhotoCallerPermission(const std::string &permission);
     static void CollectPermissionInfo(const std::string &permission, const bool permGranted,
         const Security::AccessToken::PermissionUsedType type);
+    static void ClearBundleInfoInCache();
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
@@ -87,7 +88,6 @@ private:
     static void UpdateBundleNameInCache(int uid, const std::string &bundleName);
     static void UpdatePackageNameInCache(int uid, const std::string &packageName);
     static void UpdateAppIdInCache(int uid, const std::string &appId);
-    static void ClearBundleInfoInCache();
 
     static std::list<std::pair<int32_t, BundleInfo>> bundleInfoList_; // 用来快速获取使用频率最低的uid
     static std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> bundleInfoMap_;
