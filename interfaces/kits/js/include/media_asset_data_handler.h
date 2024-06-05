@@ -47,7 +47,7 @@ constexpr const char* ON_DATA_PREPARED_FUNC = "onDataPrepared";
 
 class NapiMediaAssetDataHandler {
 public:
-    NapiMediaAssetDataHandler(napi_env env, napi_value dataHandler, ReturnDataType dataType, const std::string &uri,
+    NapiMediaAssetDataHandler(napi_env env, napi_ref dataHandler, ReturnDataType dataType, const std::string &uri,
         const std::string &destUri, SourceMode sourceMode);
     ~NapiMediaAssetDataHandler();
     napi_env GetEnv();

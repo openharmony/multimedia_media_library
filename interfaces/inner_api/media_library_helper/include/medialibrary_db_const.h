@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 76;
+const int32_t MEDIA_RDB_VERSION = 81;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -104,6 +104,11 @@ enum {
     VERSION_ADD_FACE_OCCLUSION_AND_POSE_TYPE_COLUMN = 74,
     VERSION_MOVE_KVDB = 75,
     VERSION_ADD_DYNAMIC_RANGE_TYPE = 76,
+    VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME = 77,
+    VERSION_UPDATE_PHOTO_ALBUM_TIGGER = 78,
+    VERSION_ADD_THUMB_LCD_SIZE_COLUMN = 79,
+    VERSION_ADD_MOVING_PHOTO_EFFECT_MODE = 80,
+    VERSION_UPDATE_HIGHLIGHT_TABLE_PRIMARY_KEY = 81,
 };
 
 enum {
@@ -139,6 +144,7 @@ const std::string ML_FILE_URI_PREFIX = "file://media";
 const std::string ML_URI_NETWORKID = "networkid";
 const std::string ML_URI_NETWORKID_EQUAL = "?networkid=";
 const std::string ML_URI_TIME_ID = "&time_id=";
+const std::string ML_URI_OFFSET = "&offset=";
 const std::string ML_URI_DATE_ADDED = "date_added";
 const std::string ML_URI_AUTHORITY = "media";
 const std::string ML_DATA_SHARE_SCHEME = "datashare";
@@ -345,7 +351,6 @@ const std::string APP_ID = "app_id";
 // write cache
 const std::string CACHE_FILE_NAME = "cache_file_name";
 const std::string CACHE_MOVING_PHOTO_VIDEO_NAME = "cache_moving_photo_video_name";
-const std::string IS_SAVE_CAMERA_PHOTO = "is_save_camera_photo";
 
 // moving photo param
 const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_OPRN_KEYWORD=OPEN_MOVING_PHOTO_VIDEO
@@ -353,6 +358,8 @@ const std::string OPEN_MOVING_PHOTO_VIDEO = "open_video"; // MEDIA_MOVING_PHOTO_
 // db sandbox directory
 const std::string MEDIA_DB_DIR = "/data/medialibrary/database";
 
+// requestId for generating thumbnail in batches
+const std::string THUMBNAIL_BATCH_GENERATE_REQUEST_ID = "thumbnail_request_id";
 } // namespace Media
 } // namespace OHOS
 

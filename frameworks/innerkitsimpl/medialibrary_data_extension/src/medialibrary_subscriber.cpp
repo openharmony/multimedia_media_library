@@ -34,6 +34,7 @@
 #include "thermal_mgr_client.h"
 #endif
 
+#include "media_actively_calling_analyse.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -44,6 +45,8 @@
 #include "ability_manager_client.h"
 #include "resource_type.h"
 #include "dfx_manager.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_rdb_utils.h"
 
 using namespace OHOS::AAFwk;
 
@@ -123,6 +126,9 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     bool currentStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
+    if (currentStatus) {
+        StartAnalysisService();
+    }
     if (currentStatus_ == currentStatus) {
         return;
     }
@@ -135,6 +141,24 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         DoBackgroundOperation();
     } else {
         StopBackgroundOperation();
+    }
+}
+
+void MedialibrarySubscriber::StartAnalysisService()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    bool hasData = MediaLibraryRdbUtils::HasDataToAnalysis(rdbStore);\
+    if (!hasData) {
+        MEDIA_INFO_LOG("No data to analysis");
+        return;
+    }
+    int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_BACKGROUND_TASK;
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_ASYNC);
+    MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
+    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
+        MEDIA_ERR_LOG("StartAnalysisService Fail");
     }
 }
 

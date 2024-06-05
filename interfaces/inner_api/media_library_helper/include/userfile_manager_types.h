@@ -116,6 +116,7 @@ enum PhotoAlbumSubType : int32_t {
     GEOGRAPHY_CITY,
     SHOOTING_MODE,
     PORTRAIT,
+    GROUP_PHOTO,
     HIGHLIGHT = 4104,
     HIGHLIGHT_SUGGESTIONS,
     ANALYSIS_END = HIGHLIGHT_SUGGESTIONS,
@@ -133,6 +134,16 @@ enum class PhotoSubType : int32_t {
 enum class DynamicRangeType : int32_t {
     SDR,
     HDR
+};
+
+enum class MovingPhotoEffectMode : int32_t {
+    EFFECT_MODE_START = 0,
+    DEFAULT = EFFECT_MODE_START,
+    BOUNCE_PLAY,
+    LOOP_PLAY,
+    LONG_EXPOSURE,
+    MULTI_EXPOSURE,
+    EFFECT_MODE_END = MULTI_EXPOSURE
 };
 
 const std::string URI_PARAM_API_VERSION = "api_version";

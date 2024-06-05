@@ -17,6 +17,7 @@
 
 #include "base_restore.h"
 
+#include "background_task_mgr_helper.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
 #include "application_context.h"
@@ -27,7 +28,6 @@
 #include "media_file_utils.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_asset_operations.h"
-#include "medialibrary_data_manager.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_type_const.h"
@@ -35,6 +35,7 @@
 #include "metadata.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
+#include "resource_type.h"
 #include "userfilemgr_uri.h"
 #include "medialibrary_notify.h"
 
@@ -82,19 +83,18 @@ int32_t BaseRestore::Init(void)
         MEDIA_ERR_LOG("Failed to get context");
         return E_FAIL;
     }
+    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo =
+        BackgroundTaskMgr::EfficiencyResourceInfo(BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
+    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
     int32_t err = BackupDatabaseUtils::InitDb(mediaLibraryRdb_, MEDIA_DATA_ABILITY_DB_NAME, DATABASE_PATH, BUNDLE_NAME,
         true, context->GetArea());
     if (err != E_OK) {
         MEDIA_ERR_LOG("medialibrary rdb fail, err = %{public}d", err);
         return E_FAIL;
     }
-    int32_t errCode = MediaLibraryDataManager::GetInstance()->InitMediaLibraryMgr(context, nullptr);
-    if (errCode != E_OK) {
-        MEDIA_ERR_LOG("When restore, InitMediaLibraryMgr fail, errcode = %{public}d", errCode);
-        return errCode;
-    }
     migrateDatabaseNumber_ = 0;
     migrateFileNumber_ = 0;
+    migrateVideoFileNumber_ = 0;
     migrateAudioDatabaseNumber_ = 0;
     migrateAudioFileNumber_ = 0;
     imageNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, IMAGE_ASSET_TYPE);
@@ -177,9 +177,11 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         std::string cloudPath;
         int32_t uniqueId;
         if (fileInfos[i].fileType == MediaType::MEDIA_TYPE_IMAGE) {
+            lock_guard<mutex> lock(imageMutex_);
             uniqueId = imageNumber_;
             imageNumber_++;
         } else {
+            lock_guard<mutex> lock(videoMutex_);
             uniqueId = videoNumber_;
             videoNumber_++;
         }
@@ -225,11 +227,25 @@ static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
 }
 
+static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
+    const FileInfo &fileInfo)
+{
+    bool hasOrientation = value.HasColumn(PhotoColumn::PHOTO_ORIENTATION);
+    if (hasOrientation && fileInfo.fileType != MEDIA_TYPE_VIDEO) {
+        return; // image use orientation in rdb
+    }
+    if (hasOrientation) {
+        value.Delete(PhotoColumn::PHOTO_ORIENTATION);
+    }
+    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata->GetOrientation()); // video use orientation in metadata
+}
+
 void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
     data->SetFilePath(fileInfo.filePath);
     data->SetFileMediaType(fileInfo.fileType);
+    data->SetFileDateModified(fileInfo.dateModified);
     BackupFileUtils::FillMetadata(data);
     MediaType mediaType = data->GetFileMediaType();
 
@@ -244,7 +260,6 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
-    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
     value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
     value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
     value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
@@ -252,6 +267,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
     value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
     InsertDateAdded(data, value);
+    InsertOrientation(data, value, fileInfo);
     int64_t dateAdded = 0;
     ValueObject valueObject;
     if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {
@@ -300,7 +316,12 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
             continue;
         }
         std::string cloudPath;
-        int32_t uniqueId = audioNumber_;
+        int32_t uniqueId;
+        {
+            lock_guard<mutex> lock(audioMutex_);
+            uniqueId = audioNumber_;
+            audioNumber_++;
+        }
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
             MediaFileUtils::GetExtensionFromPath(fileInfos[i].displayName), cloudPath);
         if (errCode != E_OK) {
@@ -317,7 +338,6 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             continue;
         }
-        audioNumber_++;
         values.emplace_back(value);
     }
     return values;
@@ -579,6 +599,10 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
         if (fileInfo.cloudPath.empty() || fileInfo.mediaAlbumId <= 0) {
             continue;
         }
+        if (!fileInfo.packageName.empty()) {
+            // add for trigger insert_photo_insert_source_album
+            continue;
+        }
         NativeRdb::ValuesBucket value;
         value.PutInt(PhotoMap::ASSET_ID, fileInfo.fileIdNew);
         value.PutInt(PhotoMap::ALBUM_ID, fileInfo.mediaAlbumId);
@@ -590,6 +614,123 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
         MEDIA_ERR_LOG("Batch insert map failed, errCode: %{public}d", errCode);
     }
     totalRowNum += rowNum;
+}
+
+void BaseRestore::StartRestoreEx(const std::string &backupRetoreDir, const std::string &upgradePath,
+    std::string &restoreExInfo)
+{
+    StartRestore(backupRetoreDir, upgradePath);
+    restoreExInfo = GetRestoreExInfo();
+}
+
+std::string BaseRestore::GetRestoreExInfo()
+{
+    nlohmann::json restoreExInfoJson;
+    restoreExInfoJson[STAT_KEY_RESULT_INFO] = { GetErrorInfoJson(), GetCountInfoJson(STAT_TYPES) };
+    return restoreExInfoJson.dump();
+}
+
+nlohmann::json BaseRestore::GetErrorInfoJson()
+{
+    nlohmann::json errorInfoJson = {
+        { STAT_KEY_TYPE, STAT_VALUE_ERROR_INFO },
+        { STAT_KEY_ERROR_CODE, std::to_string(errorCode_) },
+        { STAT_KEY_ERROR_INFO, errorInfo_ }
+    };
+    return errorInfoJson;
+}
+
+nlohmann::json BaseRestore::GetCountInfoJson(const std::vector<std::string> &countInfoTypes)
+{
+    nlohmann::json countInfoJson;
+    countInfoJson[STAT_KEY_TYPE] = STAT_VALUE_COUNT_INFO;
+    for (const auto &type : countInfoTypes) {
+        SubCountInfo subCountInfo = GetSubCountInfo(type);
+        MEDIA_INFO_LOG("SubCountInfo %{public}s success: %{public}lld, failed: %{public}zu", type.c_str(),
+            (long long)subCountInfo.successCount, subCountInfo.failedFiles.size());
+        countInfoJson[STAT_KEY_INFOS].push_back(GetSubCountInfoJson(type, subCountInfo));
+    }
+    return countInfoJson;
+}
+
+SubCountInfo BaseRestore::GetSubCountInfo(const std::string &type)
+{
+    std::unordered_map<std::string, int32_t> failedFiles = GetFailedFiles(type);
+    if (type == STAT_TYPE_PHOTO) {
+        return SubCountInfo(migrateFileNumber_ - migrateVideoFileNumber_, failedFiles);
+    }
+    if (type == STAT_TYPE_VIDEO) {
+        return SubCountInfo(migrateVideoFileNumber_, failedFiles);
+    }
+    return SubCountInfo(migrateAudioFileNumber_, failedFiles);
+}
+
+std::unordered_map<std::string, int32_t> BaseRestore::GetFailedFiles(const std::string &type)
+{
+    std::unordered_map<std::string, int32_t> failedFiles;
+    auto iter = failedFilesMap_.find(type);
+    if (iter != failedFilesMap_.end()) {
+        return iter->second;
+    }
+    return failedFiles;
+}
+
+nlohmann::json BaseRestore::GetSubCountInfoJson(const std::string &type, const SubCountInfo &subCountInfo)
+{
+    nlohmann::json subCountInfoJson;
+    subCountInfoJson[STAT_KEY_BACKUP_INFO] = type;
+    subCountInfoJson[STAT_KEY_SUCCESS_COUNT] = subCountInfo.successCount;
+    subCountInfoJson[STAT_KEY_FAILED_COUNT] = subCountInfo.failedFiles.size();
+    subCountInfoJson[STAT_KEY_DETAILS] = BackupFileUtils::GetDetailsPath(type, subCountInfo.failedFiles);
+    return subCountInfoJson;
+}
+
+std::string BaseRestore::GetBackupInfo()
+{
+    return "";
+}
+
+void BaseRestore::SetErrorCode(int32_t errorCode)
+{
+    errorCode_ = errorCode;
+    auto iter = RESTORE_ERROR_MAP.find(errorCode_);
+    if (iter == RESTORE_ERROR_MAP.end()) {
+        errorInfo_ = "";
+        return;
+    }
+    errorInfo_ = iter->second;
+}
+
+void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode)
+{
+    if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
+        failedFilesMap_[STAT_TYPE_PHOTO][filePath] = errorCode;
+        return;
+    }
+    if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO)) {
+        failedFilesMap_[STAT_TYPE_VIDEO][filePath] = errorCode;
+        return;
+    }
+    if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_AUDIO)) {
+        failedFilesMap_[STAT_TYPE_AUDIO][filePath] = errorCode;
+        return;
+    }
+    MEDIA_ERR_LOG("Unsupported file type: %{public}d", fileType);
+}
+
+void BaseRestore::UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode)
+{
+    SetErrorCode(errorCode);
+    UpdateFailedFileByFileType(fileType, filePath, errorCode);
+}
+
+void BaseRestore::UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode)
+{
+    SetErrorCode(errorCode);
+    for (const auto &fileInfo : fileInfos) {
+        std::string localPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
+        UpdateFailedFileByFileType(fileInfo.fileType, localPath, errorCode);
+    }
 }
 } // namespace Media
 } // namespace OHOS

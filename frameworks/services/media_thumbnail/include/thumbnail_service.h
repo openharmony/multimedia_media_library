@@ -22,6 +22,7 @@
 #include "media_file_uri.h"
 #include "pixel_map.h"
 #include "rdb_helper.h"
+#include "rdb_predicates.h"
 #include "result_set_bridge.h"
 #include "single_kvstore.h"
 #include "userfile_manager_types.h"
@@ -59,6 +60,8 @@ public:
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
     int32_t CreateAstcFromFileId(const std::string &id);
+    int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
+    void CancelAstcBatchTask(int32_t requestId);
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();

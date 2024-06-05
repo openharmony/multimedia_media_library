@@ -17,6 +17,7 @@
 #define FRAMEWORKS_SERVICES_THUMBNAIL_SERVICE_INCLUDE_THUMBNAIL_GENERATE_HELPER_H_
 
 #include "rdb_helper.h"
+#include "rdb_predicates.h"
 #include "single_kvstore.h"
 #include "thumbnail_utils.h"
 
@@ -30,6 +31,7 @@ public:
     static int32_t CreateThumbnailBatch(ThumbRdbOpt &opts);
     static int32_t CreateAstcBatch(ThumbRdbOpt &opts);
     static int32_t CreateLcdBatch(ThumbRdbOpt &opts);
+    static int32_t CreateAstcBatchOnDemand(ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId);
     static int32_t GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count);
     static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType);
 private:

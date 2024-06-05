@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -171,6 +171,24 @@ public:
     std::string uri_;
     napi_ref ref_;
 };
+
+class ThumbnailBatchGenerateObserver : public DataShare::DataShareObserver {
+public:
+    ThumbnailBatchGenerateObserver() = default;
+    ~ThumbnailBatchGenerateObserver() = default;
+
+    void OnChange(const ChangeInfo &changeInfo) override;
+};
+
+class ThumbnailGenerateHandler {
+public:
+    ThumbnailGenerateHandler(napi_ref ref, napi_threadsafe_function func) : callbackRef_(ref), threadSafeFunc_(func) {}
+    ~ThumbnailGenerateHandler() = default;
+
+    napi_ref callbackRef_;
+    napi_threadsafe_function threadSafeFunc_;
+};
+
 class MediaLibraryNapi {
 public:
     EXPORT static napi_value Init(napi_env env, napi_value exports);
@@ -179,6 +197,7 @@ public:
 
     static void ReplaceSelection(std::string &selection, std::vector<std::string> &selectionArgs,
         const std::string &key, const std::string &keyInstead, const int32_t mode = ReplaceSelectionMode::DEFAULT);
+    static void OnThumbnailGenerated(napi_env env, napi_value cb, void *context, void *data);
 
     EXPORT MediaLibraryNapi();
     EXPORT ~MediaLibraryNapi();
@@ -200,12 +219,19 @@ private:
     EXPORT static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSOnCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSOnCallbackMediaLibrary(napi_env env, napi_callback_info info);
+
     EXPORT static napi_value JSOffCallback(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSRelease(napi_env env, napi_callback_info info);
 
+    EXPORT static napi_value JSReleaseMedialibrary(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetActivePeersMedialibrary(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAllPeersMedialibrary(napi_env env, napi_callback_info info);
+
     EXPORT static napi_value JSGetActivePeers(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAllPeers(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreateUndefined(napi_env env);
     EXPORT static napi_value CreateMediaTypeEnum(napi_env env);
     EXPORT static napi_value CreateFileKeyEnum(napi_env env);
     EXPORT static napi_value CreateDirectoryTypeEnum(napi_env env);
@@ -264,6 +290,9 @@ private:
     EXPORT static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetFileAssetsInfo(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessStartCreateThumbnailTask(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);
@@ -277,6 +306,7 @@ private:
     EXPORT static napi_value CreateResourceTypeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightAlbumInfoTypeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightUserActionTypeEnum(napi_env env);
+    EXPORT static napi_value CreateMovingPhotoEffectModeEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -325,6 +355,7 @@ private:
     static thread_local napi_ref sSourceModeEnumRef_;
     static thread_local napi_ref sHighlightAlbumInfoType_;
     static thread_local napi_ref sHighlightUserActionType_;
+    static thread_local napi_ref sMovingPhotoEffectModeEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

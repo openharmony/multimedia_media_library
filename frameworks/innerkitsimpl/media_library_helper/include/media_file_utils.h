@@ -139,6 +139,7 @@ public:
     EXPORT static std::string Encode(const std::string &uri);
     EXPORT static bool CheckDisplayLevel(const int32_t &displayLevel);
     EXPORT static std::string GetHighlightPath(const std::string &uri);
+    EXPORT static std::string GetTableNameByDisplayName(const std::string &displayName);
 #ifdef MEDIALIBRARY_COMPATIBILITY
     EXPORT static std::string GetTableFromVirtualUri(const std::string &uri);
 #endif
@@ -157,6 +158,7 @@ public:
     EXPORT static bool CheckMovingPhotoVideo(const std::string &path);
     EXPORT static bool CheckMovingPhotoVideo(const UniqueFd &uniqueFd);
     EXPORT static bool CheckMovingPhotoVideoDuration(int32_t duration);
+    EXPORT static bool CheckMovingPhotoEffectMode(int32_t effectMode);
     EXPORT static bool GetFileSize(const std::string &filePath, size_t& size);
     EXPORT static bool SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret);
     EXPORT static bool IsMediaLibraryUri(const std::string& uri);

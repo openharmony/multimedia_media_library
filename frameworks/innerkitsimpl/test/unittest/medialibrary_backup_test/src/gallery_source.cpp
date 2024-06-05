@@ -15,6 +15,8 @@
 
 #include "gallery_source.h"
 
+#include "backup_const_map.h"
+
 namespace OHOS {
 namespace Media {
 const string GalleryOpenCall::CREATE_GALLERY_MEDIA = string("CREATE TABLE IF NOT EXISTS gallery_media ") +
@@ -27,10 +29,21 @@ const string GalleryOpenCall::CREATE_GALLERY_MEDIA = string("CREATE TABLE IF NOT
 const string GalleryOpenCall::CREATE_GARBAGE_ALBUM = string("CREATE TABLE IF NOT EXISTS garbage_album") +
     "(app_name TEXT, cache_dir TEXT, nick_name TEXT, nick_dir TEXT, type INTEGER, relative_bucket_id TEXT);";
 
+const string GalleryOpenCall::CREATE_GALLERY_ALBUM = string("CREATE TABLE IF NOT EXISTS gallery_album ") +
+    "(albumId TEXT PRIMARY KEY NOT NULL, albumName TEXT, relativeBucketId TEXT, createTime INTEGER, lPath TEXT, " +
+    "source TEXT,photoNum INTEGER DEFAULT 0, totalSize INTEGER DEFAULT 0, garbage INTEGER DEFAULT 0, " +
+    "dirty INTEGER DEFAULT 0, hide INTEGER DEFAULT 0, emptyShow INTEGER DEFAULT 0, sortIndex INTEGER DEFAULT 0, " +
+    "uploadStatus INTEGER DEFAULT 0,cloud INTEGER DEFAULT 1,sideStatus INTEGER DEFAULT 0, timeStamp INTEGER, " +
+    "hdcUploadStatus INTEGER, hdc INTEGER DEFAULT 1);";
+
+
 int GalleryOpenCall::OnCreate(NativeRdb::RdbStore &store)
 {
-    store.ExecuteSql(CREATE_GALLERY_MEDIA);
-    return store.ExecuteSql(CREATE_GARBAGE_ALBUM);
+    int ret = 0;
+    ret += store.ExecuteSql(CREATE_GALLERY_MEDIA);
+    ret += store.ExecuteSql(CREATE_GARBAGE_ALBUM);
+    ret += store.ExecuteSql(CREATE_GALLERY_ALBUM);
+    return ret;
 }
 
 int GalleryOpenCall::OnUpgrade(NativeRdb::RdbStore &store, int oldVersion, int newVersion)
@@ -48,7 +61,10 @@ void GallerySource::Init(const string &dbPath)
     InitGalleryMediaOne();
     InitGalleryMediaTwo();
     InitGalleryMediaThree();
+    InitGalleryMediaFour();
     InitGarbageAlbum();
+    InitGalleryAlbumOne();
+    InitGalleryAlbumTwo();
 }
 
 void GallerySource::InitGalleryMediaOne()
@@ -147,6 +163,46 @@ void GallerySource::InitGalleryMediaThree()
         "'/storage/emulated/0/A/media/Baidu/a_media_normal_image.jpg', 418436, 1708602162000, 1708602162," +
         "'a_media_normal_image', 'NULL', 'a_media_normal_image.jpg', 0, -1960413976, 0, 1, 65537, 2000, 3556, NULL, " +
         "1264692236, 1708602162000, 0, 0)");
+    galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(22, 20, \
+        '/storage/emulated/0/A/media/Baidu/a_media_normal_image1.jpg', \
+        418436, 1708602162000, 1708602162,'a_media_normal_image1', 'NULL', \
+        'a_media_normal_image1.jpg', 0, -1960413976, 0, 1, 65537, \
+        2000, 3556, NULL, 2, 1708602162000, 0, 0)");
+    galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(23, 21, \
+        '/storage/emulated/0/A/media/Baidu/a_media_normal_video1.mp4', \
+        418436, 1708602162000, 1708602162,'a_media_normal_video1', 'NULL', \
+        'a_media_normal_video1.mp4', 0, -1960413976, 0, 1, 65537, \
+        2000, 3556, NULL, 3, 1708602162000, 0, 0)");
+    galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(24, 22, '/DCIM/Camera/camera1.jpg', \
+        418436, 1708602162000, 1708602162,'camera1', 'NULL', 'camera1.jpg', 0, -1960413976, 0, 1, 65537, \
+        2000, 3556, NULL, 3, 1708602162000, 0, 0)");
+    galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(25, 23, '/Screenshots/screenshots1.mp4', \
+        418436, 1708602162000, 1708602162,'screenshots1', 'NULL', 'screenshots1.mp4', 0, -1960413976, 0, 1, 65537, \
+        2000, 3556, NULL, 3, 1708602162000, 0, 0)");
+    galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(26, 24, '/Screenrecorder/screenrecorder1.jpg', \
+        418436, 1708602162000, 1708602162,'screenrecorder1', 'NULL', 'screenrecorder1.jpg', \
+        0, -1960413976, 0, 1, 65537, 2000, 3556, NULL, 3, 1708602162000, 0, 0)");
+}
+
+void GallerySource::InitGalleryMediaFour()
+{
+    galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(27, 25, '/" +
+        GetDUALBundleName() + " Share/" + GetDUALBundleName() + "Share1.jpg', 418436, 1708602162000, 1708602162, '" +
+        GetDUALBundleName() + "Share1', 'NULL', '" + GetDUALBundleName() +
+        "Share1.jpg', 0, -1960413976, 0, 1, 65537, 2000, 3556, NULL, 3, 1708602162000, 0, 0)");
+    galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(28, 26, '/DCIM/Camera/camera2.jpg', \
+        418436, 1708602162000, 1708602162,'camera2', 'NULL', 'camera2.jpg', 0, -1960413976, 0, 1, 65537, \
+        2000, 3556, NULL, 3, 1708602162000, 0, 0)");
+    galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(29, 27, '/Screenshots/screenshots2.jpg', \
+        418436, 1708602162000, 1708602162,'screenshots2', 'NULL', 'screenshots2.jpg', 0, -1960413976, 0, 1, 65537, \
+        2000, 3556, NULL, 3, 1708602162000, 0, 0)");
+    galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(30, 28, '/Screenrecorder/screenrecorder2.mp4', \
+        418436, 1708602162000, 1708602162,'screenrecorder2', 'NULL', 'screenrecorder2.mp4', 0, \
+        -1960413976, 0, 1, 65537, 2000, 3556, NULL, 3, 1708602162000, 0, 0)");
+    galleryStorePtr_->ExecuteSql("INSERT INTO gallery_media VALUES(31, 29, '/" + GetDUALBundleName() + " Share/" +
+        GetDUALBundleName() + "Share2.jpg', 418436, 1708602162000, 1708602162,'" + GetDUALBundleName() +
+        "Share2', 'NULL', '" + GetDUALBundleName() + "Share2.jpg', 0, -1960413976, 0, 1, 65537, \
+        2000, 3556, NULL, 3, 1708602162000, 0, 0)");
 }
 
 void GallerySource::InitGarbageAlbum()
@@ -159,6 +215,72 @@ void GallerySource::InitGarbageAlbum()
         "'/tencent/MicroMsg/WeiXin', 0, null);");
     galleryStorePtr_->ExecuteSql(string("INSERT INTO garbage_album VALUES(null, null, 'sgame', ") +
         "'/DCIM/Sgame', 0, null);");
+    galleryStorePtr_->ExecuteSql("INSERT INTO garbage_album (nick_name, nick_dir) \
+        VALUES ('天猫', '/TmallPic');");
+}
+
+void GallerySource::InitGalleryAlbumOne()
+{
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test001', 'test001', '1', '/test001');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test002', 'test002', '2', '/test002');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test003', 'test003', '3', '/test003');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test004', 'TmallPic', '4', '/TmallPic');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test005', 'UCDownloads',  '5', '/UCDownloads');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test006', 'xiaohongshu',  '6', '/xiaohongshu');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test007', 'Douyin', '7', '/Douyin');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test008', 'Weibo', '8', '/sina/weibo/save');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test008', 'Weibo', '8', '/sina/weibo/weibo');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test008', 'Weibo', '8', '/sina/weibo/storage/photoalbum_save/weibo');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test009', 'Camera', '9', '/DCIM/Camera');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test010', 'Screenshots', '10', '/Screenshots');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test011', 'Screenrecorder', '11', '/Screenrecorder');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test012', '" + GetDUALBundleName() + " Share', '12', '/" + GetDUALBundleName() + " Share');"));
+}
+
+void GallerySource::InitGalleryAlbumTwo()
+{
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test101', 'test101', '101', '/test101');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test102', 'TmallPic', '102', '/TmallPic');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test103', 'MTTT', '103', '/MTTT');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test104', 'funnygallery', '104', '/funnygallery');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test105', 'xiaohongshu', '105', '/xiaohongshu');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test106', 'Douyin', '106', '/Douyin');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test107', 'save', '107', '/sdcard/Pictures/sina');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test108', 'Weibo', '108', '/sina/weibo/save');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test108', 'Weibo', '108', '/sina/weibo/weibo');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test108', 'Weibo', '108', '/sina/weibo/storage/photoalbum_save/weibo');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test109', 'Camera', '109', '/DCIM/Camera');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test110', 'Screenshots', '110', '/Screenshots');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test111', 'Screenrecorder', '111', '/Screenrecorder');"));
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO gallery_album (albumId, albumName,relativeBucketId, lPath) \
+        VALUES ('test112', '" + GetDUALBundleName() + " Share', '112', '/" + GetDUALBundleName() + " Share');"));
 }
 } // namespace Media
 } // namespace OHOS

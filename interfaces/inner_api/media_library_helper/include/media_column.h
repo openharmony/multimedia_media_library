@@ -93,6 +93,7 @@ public:
     static const std::string PHOTO_ALL_EXIF EXPORT;
     static const std::string PHOTO_CLEAN_FLAG EXPORT;
     static const std::string PHOTO_DYNAMIC_RANGE_TYPE EXPORT;
+    static const std::string MOVING_PHOTO_EFFECT_MODE EXPORT;
     static const std::string PHOTO_HAS_ASTC EXPORT;
 
     static const std::string PHOTO_SYNCING EXPORT;
@@ -108,6 +109,8 @@ public:
     static const std::string PHOTO_QUALITY EXPORT;
     static const std::string PHOTO_FIRST_VISIT_TIME EXPORT;
     static const std::string PHOTO_DEFERRED_PROC_TYPE EXPORT;
+    static const std::string PHOTO_LCD_SIZE EXPORT;
+    static const std::string PHOTO_THUMB_SIZE EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
@@ -159,6 +162,9 @@ public:
     static const std::string PHOTO_TYPE_URI EXPORT;
     static const std::string DEFAULT_PHOTO_URI EXPORT;
     static const std::string PHOTO_CACHE_URI_PREFIX EXPORT;
+
+    // cloud sync uri
+    static const std::string PHOTO_CLOUD_URI_PREFIX EXPORT;
 
     // all columns
     static const std::set<std::string> PHOTO_COLUMNS EXPORT;

@@ -198,23 +198,23 @@ static int32_t IsInProcessInMapRecord(const std::string &requestId, AssetHandler
 }
 
 static AssetHandler* InsertDataHandler(NotifyMode notifyMode, napi_env env,
-    const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
+    MediaAssetManagerAsyncContext *asyncContext)
 {
+    napi_ref dataHandlerRef;
+    napi_threadsafe_function threadSafeFunc;
+    if (notifyMode == NotifyMode::FAST_NOTIFY) {
+        dataHandlerRef = asyncContext->dataHandlerRef;
+        asyncContext->dataHandlerRef = nullptr;
+        threadSafeFunc = asyncContext->onDataPreparedPtr;
+    } else {
+        dataHandlerRef = asyncContext->dataHandlerRef2;
+        asyncContext->dataHandlerRef2 = nullptr;
+        threadSafeFunc = asyncContext->onDataPreparedPtr2;
+    }
     std::shared_ptr<NapiMediaAssetDataHandler> mediaAssetDataHandler = make_shared<NapiMediaAssetDataHandler>(
-        env, asyncContext->dataHandler, asyncContext->returnDataType, asyncContext->photoUri, asyncContext->destUri,
+        env, dataHandlerRef, asyncContext->returnDataType, asyncContext->photoUri, asyncContext->destUri,
         asyncContext->sourceMode);
     mediaAssetDataHandler->SetNotifyMode(notifyMode);
-
-    napi_value workName = nullptr;
-    napi_create_string_utf8(env, "Data Prepared", NAPI_AUTO_LENGTH, &workName);
-    napi_threadsafe_function threadSafeFunc;
-    napi_status status = napi_create_threadsafe_function(env, asyncContext->dataHandler, NULL, workName, 0, 1,
-        NULL, NULL, NULL, MediaAssetManagerNapi::OnDataPrepared, &threadSafeFunc);
-    if (status != napi_ok) {
-        NAPI_ERR_LOG("napi_create_threadsafe_function fail");
-        asyncContext->SaveError(JS_INNER_FAIL);
-        return nullptr;
-    }
 
     AssetHandler *assetHandler = CreateAssetHandler(asyncContext->photoId, asyncContext->requestId,
         asyncContext->photoUri, mediaAssetDataHandler, threadSafeFunc);
@@ -494,8 +494,7 @@ static std::string GenerateRequestId()
     return str;
 }
 
-void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env,
-    const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
+void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
     Uri uri(asyncContext->photoUri);
@@ -613,28 +612,22 @@ napi_value MediaAssetManagerNapi::JSRequestImageData(napi_env env, napi_callback
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "failed to parse requestImagedata args");
         return nullptr;
     }
-
-    asyncContext->requestId = GenerateRequestId();
-    OnHandleRequestImage(env, asyncContext);
-
-    int32_t subtype = GetPhotoSubtype(env, asyncContext->argv[PARAM1]);
-    if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        string uri = LOG_MOVING_PHOTO;
-        Uri logMovingPhotoUri(uri);
-        DataShare::DataShareValuesBucket valuesBucket;
-        string result;
-        valuesBucket.Put("package_name", asyncContext->callingPkgName);
-        valuesBucket.Put("adapted", false);
-        UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result);
+    if (CreateDataHandlerRef(env, asyncContext, asyncContext->dataHandlerRef) != napi_ok
+            || CreateOnDataPreparedThreadSafeFunc(env, asyncContext, asyncContext->onDataPreparedPtr) != napi_ok) {
+        NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
+        return nullptr;
+    }
+    if (CreateDataHandlerRef(env, asyncContext, asyncContext->dataHandlerRef2) != napi_ok
+            || CreateOnDataPreparedThreadSafeFunc(env, asyncContext, asyncContext->onDataPreparedPtr2) != napi_ok) {
+        NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
+        return nullptr;
     }
 
-    napi_value promise;
-    napi_value requestId;
-    napi_deferred deferred;
-    napi_create_promise(env, &deferred, &promise);
-    napi_create_string_utf8(env, asyncContext->requestId.c_str(), NAPI_AUTO_LENGTH, &requestId);
-    napi_resolve_deferred(env, deferred, requestId);
-    return promise;
+    asyncContext->requestId = GenerateRequestId();
+    asyncContext->subType = static_cast<PhotoSubType>(GetPhotoSubtype(env, asyncContext->argv[PARAM1]));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestImageData", JSRequestExecute,
+        JSRequestComplete);
 }
 
 napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_info info)
@@ -660,28 +653,22 @@ napi_value MediaAssetManagerNapi::JSRequestImage(napi_env env, napi_callback_inf
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "failed to parse requestImage args");
         return nullptr;
     }
-
-    asyncContext->requestId = GenerateRequestId();
-    OnHandleRequestImage(env, asyncContext);
-
-    int32_t subtype = GetPhotoSubtype(env, asyncContext->argv[PARAM1]);
-    if (subtype == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        string uri = LOG_MOVING_PHOTO;
-        Uri logMovingPhotoUri(uri);
-        DataShare::DataShareValuesBucket valuesBucket;
-        string result;
-        valuesBucket.Put("package_name", asyncContext->callingPkgName);
-        valuesBucket.Put("adapted", false);
-        UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result);
+    if (CreateDataHandlerRef(env, asyncContext, asyncContext->dataHandlerRef) != napi_ok
+            || CreateOnDataPreparedThreadSafeFunc(env, asyncContext, asyncContext->onDataPreparedPtr) != napi_ok) {
+        NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
+        return nullptr;
+    }
+    if (CreateDataHandlerRef(env, asyncContext, asyncContext->dataHandlerRef2) != napi_ok
+            || CreateOnDataPreparedThreadSafeFunc(env, asyncContext, asyncContext->onDataPreparedPtr2) != napi_ok) {
+        NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
+        return nullptr;
     }
 
-    napi_value promise;
-    napi_value requestId;
-    napi_deferred deferred;
-    napi_create_promise(env, &deferred, &promise);
-    napi_create_string_utf8(env, asyncContext->requestId.c_str(), NAPI_AUTO_LENGTH, &requestId);
-    napi_resolve_deferred(env, deferred, requestId);
-    return promise;
+    asyncContext->requestId = GenerateRequestId();
+    asyncContext->subType = static_cast<PhotoSubType>(GetPhotoSubtype(env, asyncContext->argv[PARAM1]));
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestImage", JSRequestExecute,
+        JSRequestComplete);
 }
 
 napi_value MediaAssetManagerNapi::JSRequestVideoFile(napi_env env, napi_callback_info info)
@@ -719,20 +706,18 @@ napi_value MediaAssetManagerNapi::JSRequestVideoFile(napi_env env, napi_callback
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "request video file type invalid");
         return nullptr;
     }
+    if (CreateDataHandlerRef(env, asyncContext, asyncContext->dataHandlerRef) != napi_ok
+            || CreateOnDataPreparedThreadSafeFunc(env, asyncContext, asyncContext->onDataPreparedPtr) != napi_ok) {
+        NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
+        return nullptr;
+    }
 
     asyncContext->requestId = GenerateRequestId();
-    OnHandleRequestVideo(env, asyncContext);
-    napi_value promise;
-    napi_value requestId;
-    napi_deferred deferred;
-    napi_create_promise(env, &deferred, &promise);
-    napi_create_string_utf8(env, asyncContext->requestId.c_str(), NAPI_AUTO_LENGTH, &requestId);
-    napi_resolve_deferred(env, deferred, requestId);
-    return promise;
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestVideoFile",
+        JSRequestVideoFileExecute, JSRequestComplete);
 }
 
-void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env,
-    const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
+void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
     MultiStagesCapturePhotoStatus status = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
     switch (asyncContext->deliveryMode) {
@@ -769,8 +754,7 @@ void MediaAssetManagerNapi::OnHandleRequestImage(napi_env env,
     }
 }
 
-void MediaAssetManagerNapi::OnHandleRequestVideo(napi_env env,
-    const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
+void MediaAssetManagerNapi::OnHandleRequestVideo(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
     switch (asyncContext->deliveryMode) {
         case DeliveryMode::FAST:
@@ -790,15 +774,14 @@ void MediaAssetManagerNapi::OnHandleRequestVideo(napi_env env,
 }
 
 void MediaAssetManagerNapi::NotifyDataPreparedWithoutRegister(napi_env env,
-    const unique_ptr<MediaAssetManagerAsyncContext> &asyncContext)
+    MediaAssetManagerAsyncContext *asyncContext)
 {
     AssetHandler *assetHandler = InsertDataHandler(NotifyMode::FAST_NOTIFY, env, asyncContext);
     if (assetHandler == nullptr) {
         NAPI_ERR_LOG("assetHandler is nullptr");
         return;
     }
-
-    NotifyMediaDataPrepared(assetHandler);
+    asyncContext->assetHandler = assetHandler;
 }
 
 static string PhotoQualityToString(MultiStagesCapturePhotoStatus photoQuality)
@@ -1039,6 +1022,7 @@ static napi_value ParseArgsForRequestMovingPhoto(napi_env env, size_t argc, cons
     context->fileId = fileAssetPtr->GetId();
     context->returnDataType = ReturnDataType::TYPE_MOVING_PHOTO;
     context->hasReadPermission = HasReadPermission();
+    context->subType = PhotoSubType::MOVING_PHOTO;
 
     CHECK_COND_WITH_MESSAGE(env,
         ParseArgGetRequestOption(env, argv[PARAM2], context->deliveryMode, context->sourceMode) == napi_ok,
@@ -1063,26 +1047,20 @@ napi_value MediaAssetManagerNapi::JSRequestMovingPhoto(napi_env env, napi_callba
         JS_INNER_FAIL);
     CHECK_NULLPTR_RET(ParseArgsForRequestMovingPhoto(env, asyncContext->argc, asyncContext->argv, asyncContext));
     CHECK_COND(env, InitUserFileClient(env, info), JS_INNER_FAIL);
-
+    if (CreateDataHandlerRef(env, asyncContext, asyncContext->dataHandlerRef) != napi_ok
+            || CreateOnDataPreparedThreadSafeFunc(env, asyncContext, asyncContext->onDataPreparedPtr) != napi_ok) {
+        NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
+        return nullptr;
+    }
+    if (CreateDataHandlerRef(env, asyncContext, asyncContext->dataHandlerRef2) != napi_ok
+            || CreateOnDataPreparedThreadSafeFunc(env, asyncContext, asyncContext->onDataPreparedPtr2) != napi_ok) {
+        NAPI_ERR_LOG("CreateDataHandlerRef or CreateOnDataPreparedThreadSafeFunc failed");
+        return nullptr;
+    }
     asyncContext->requestId = GenerateRequestId();
-    OnHandleRequestImage(env, asyncContext);
 
-    string uri = LOG_MOVING_PHOTO;
-    Uri logMovingPhotoUri(uri);
-    DataShare::DataShareValuesBucket valuesBucket;
-    string result;
-    valuesBucket.Put("package_name", asyncContext->callingPkgName);
-    valuesBucket.Put("adapted", true);
-    UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result);
-
-    napi_value promise;
-    napi_value requestId;
-    napi_deferred deferred;
-    napi_create_promise(env, &deferred, &promise);
-    napi_create_string_utf8(env, asyncContext->requestId.c_str(), NAPI_AUTO_LENGTH, &requestId);
-    napi_resolve_deferred(env, deferred, requestId);
-
-    return promise;
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSRequestMovingPhoto", JSRequestExecute,
+        JSRequestComplete);
 }
 
 void MediaAssetManagerNapi::WriteDataToDestPath(std::string requestUri, std::string responseUri,
@@ -1192,14 +1170,15 @@ napi_value MediaAssetManagerNapi::JSCancelRequest(napi_env env, napi_callback_in
     string requestId;
     CHECK_ARGS_THROW_INVALID_PARAM(env,
         MediaLibraryNapiUtils::GetParamStringWithLength(env, argv[ARGS_ONE], REQUEST_ID_MAX_LEN, requestId));
-
     std::string photoId = "";
     bool hasFastRequestInProcess = IsFastRequestCanceled(requestId, photoId);
     bool hasMapRecordInProcess = IsMapRecordCanceled(requestId, photoId);
     if (hasFastRequestInProcess || hasMapRecordInProcess) {
-        MediaAssetManagerNapi::CancelProcessImage(photoId);
+        unique_ptr<MediaAssetManagerAsyncContext> asyncContext = make_unique<MediaAssetManagerAsyncContext>();
+        asyncContext->photoId = photoId;
+        return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSCancelRequest", JSCancelRequestExecute,
+            JSCancelRequestComplete);
     }
-
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -1282,6 +1261,131 @@ int32_t MediaAssetManagerNapi::GetFdFromSandBoxUri(const std::string &sandBoxUri
         return E_ERR;
     }
     return MediaFileUtils::OpenFile(absDestPath, MEDIA_FILEMODE_WRITETRUNCATE);
+}
+
+napi_status MediaAssetManagerNapi::CreateDataHandlerRef(napi_env env,
+    const unique_ptr<MediaAssetManagerAsyncContext> &context, napi_ref &dataHandlerRef)
+{
+    napi_status status = napi_create_reference(env, context->dataHandler, PARAM1, &dataHandlerRef);
+    if (status != napi_ok) {
+        dataHandlerRef = nullptr;
+        NAPI_ERR_LOG("napi_create_reference failed");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "napi_create_reference fail");
+    }
+    return status;
+}
+
+napi_status MediaAssetManagerNapi::CreateOnDataPreparedThreadSafeFunc(napi_env env,
+    const unique_ptr<MediaAssetManagerAsyncContext> &context, napi_threadsafe_function &threadSafeFunc)
+{
+    napi_value workName = nullptr;
+    napi_create_string_utf8(env, "Data Prepared", NAPI_AUTO_LENGTH, &workName);
+    napi_status status = napi_create_threadsafe_function(env, context->dataHandler, NULL, workName, 0, 1,
+        NULL, NULL, NULL, MediaAssetManagerNapi::OnDataPrepared, &threadSafeFunc);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("napi_create_threadsafe_function fail");
+        threadSafeFunc = nullptr;
+        NapiError::ThrowError(env, JS_INNER_FAIL, "napi_create_threadsafe_function fail");
+    }
+    return status;
+}
+
+void MediaAssetManagerNapi::JSRequestExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRequestExecute");
+    MediaAssetManagerAsyncContext *context = static_cast<MediaAssetManagerAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    OnHandleRequestImage(env, context);
+    if (context->subType == PhotoSubType::MOVING_PHOTO) {
+        string uri = LOG_MOVING_PHOTO;
+        Uri logMovingPhotoUri(uri);
+        DataShare::DataShareValuesBucket valuesBucket;
+        string result;
+        valuesBucket.Put("package_name", context->callingPkgName);
+        valuesBucket.Put("adapted", context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO);
+        UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result);
+    }
+}
+
+void MediaAssetManagerNapi::JSRequestVideoFileExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRequestVideoFileExecute");
+    MediaAssetManagerAsyncContext *context = static_cast<MediaAssetManagerAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    OnHandleRequestVideo(env, context);
+}
+
+void MediaAssetManagerNapi::JSRequestComplete(napi_env env, napi_status, void *data)
+{
+    MediaAssetManagerAsyncContext *context = static_cast<MediaAssetManagerAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    if (context->dataHandlerRef != nullptr) {
+        napi_delete_reference(env, context->dataHandlerRef);
+    }
+    if (context->dataHandlerRef2 != nullptr) {
+        napi_delete_reference(env, context->dataHandlerRef2);
+    }
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSRequestComplete");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    if (context->assetHandler) {
+        NotifyMediaDataPrepared(context->assetHandler);
+        context->assetHandler = nullptr;
+    }
+    if (context->error == ERR_DEFAULT) {
+        napi_value requestId;
+        napi_create_string_utf8(env, context->requestId.c_str(), NAPI_AUTO_LENGTH, &requestId);
+        jsContext->data = requestId;
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+        napi_get_undefined(env, &jsContext->data);
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+void MediaAssetManagerNapi::JSCancelRequestExecute(napi_env env, void *data)
+{
+    MediaAssetManagerAsyncContext *context = static_cast<MediaAssetManagerAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    MediaAssetManagerNapi::CancelProcessImage(context->photoId);
+}
+
+void MediaAssetManagerNapi::JSCancelRequestComplete(napi_env env, napi_status, void *data)
+{
+    MediaAssetManagerAsyncContext *context = static_cast<MediaAssetManagerAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCancelRequestComplete");
+
+    unique_ptr<JSAsyncContextOutput> jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    if (context->error == ERR_DEFAULT) {
+        napi_get_undefined(env, &jsContext->error);
+        jsContext->status = true;
+    } else {
+        context->HandleError(env, jsContext->error);
+    }
+    napi_get_undefined(env, &jsContext->data);
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
 }
 } // namespace Media
 } // namespace OHOS

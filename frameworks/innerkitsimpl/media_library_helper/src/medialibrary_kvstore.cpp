@@ -24,8 +24,12 @@
 using namespace OHOS::DistributedKv;
 namespace OHOS::Media {
 const OHOS::DistributedKv::AppId KVSTORE_APPID = {"com.ohos.medialibrary.medialibrarydata"};
-const OHOS::DistributedKv::StoreId KVSTORE_MONTH_STOREID = {"medialibrary_month_astc"};
-const OHOS::DistributedKv::StoreId KVSTORE_YEAR_STOREID = {"medialibrary_year_astc"};
+const OHOS::DistributedKv::StoreId KVSTORE_MONTH_STOREID = {"medialibrary_month_astc_data"};
+const OHOS::DistributedKv::StoreId KVSTORE_YEAR_STOREID = {"medialibrary_year_astc_data"};
+
+// Different storeId used to distinguish different database
+const OHOS::DistributedKv::StoreId KVSTORE_MONTH_STOREID_OLD_VERSION = {"medialibrary_month_astc"};
+const OHOS::DistributedKv::StoreId KVSTORE_YEAR_STOREID_OLD_VERSION = {"medialibrary_year_astc"};
 
 int32_t MediaLibraryKvStore::Init(
     const KvStoreRoleType &roleType, const KvStoreValueType &valueType, const std::string &baseDir)
@@ -37,23 +41,8 @@ int32_t MediaLibraryKvStore::Init(
         MEDIA_ERR_LOG("failed to GetKvStoreOption");
         return E_ERR;
     }
-
     MEDIA_INFO_LOG("InitKvStore baseDir %{public}s", options.group.groupDir.c_str());
-    Status status;
-    if (valueType == KvStoreValueType::MONTH_ASTC) {
-        status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_MONTH_STOREID, kvStorePtr_);
-    } else if (valueType == KvStoreValueType::YEAR_ASTC) {
-        status = dataManager_.GetSingleKvStore(options, KVSTORE_APPID, KVSTORE_YEAR_STOREID, kvStorePtr_);
-    } else {
-        MEDIA_ERR_LOG("invalid value type");
-        return E_ERR;
-    }
-
-    if (status != Status::SUCCESS || kvStorePtr_ == nullptr) {
-        MEDIA_ERR_LOG("init KvStore failed, status %{public}d", status);
-        return static_cast<int32_t>(status);
-    }
-    return E_OK;
+    return E_ERR;
 }
 
 int32_t MediaLibraryKvStore::Insert(const std::string &key, const std::vector<uint8_t> &value)
@@ -100,9 +89,11 @@ int32_t MediaLibraryKvStore::Query(const std::string &key, std::vector<uint8_t> 
 
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryKvStore::Query");
+    std::vector<uint8_t> tmp;
     Key k(key);
-    Value v(value);
+    Value v(tmp);
     Status status = kvStorePtr_->Get(k, v);
+    value = v.Data();
     if (status != Status::SUCCESS) {
         MEDIA_ERR_LOG("query failed, status %{public}d", status);
     }

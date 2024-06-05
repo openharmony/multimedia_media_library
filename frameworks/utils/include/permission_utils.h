@@ -66,6 +66,7 @@ public:
     static bool IsSystemApp();
     static bool IsNativeSAApp();
     static bool IsRootShell();
+    static bool IsHdcShell();
     static bool CheckIsSystemAppByUid();
     static std::string GetPackageNameByBundleName(const std::string &bundleName);
     static std::string GetAppIdByBundleName(const std::string &bundleName);
@@ -74,6 +75,7 @@ public:
     static bool CheckPhotoCallerPermission(const std::string &permission);
     static void CollectPermissionInfo(const std::string &permission, const bool permGranted,
         const Security::AccessToken::PermissionUsedType type);
+    static void ClearBundleInfoInCache();
 
 private:
     static sptr<AppExecFwk::IBundleMgr> GetSysBundleManager();
@@ -83,7 +85,9 @@ private:
     static void GetPackageNameFromCache(int uid, std::string &packageName);
     static void GetAppIdFromCache(int uid, std::string &appId);
     static void UpdateLatestBundleInfo(int uid, const BundleInfo &bundleInfo);
-    static void ClearBundleInfoInCache();
+    static void UpdateBundleNameInCache(int uid, const std::string &bundleName);
+    static void UpdatePackageNameInCache(int uid, const std::string &packageName);
+    static void UpdateAppIdInCache(int uid, const std::string &appId);
 
     static std::list<std::pair<int32_t, BundleInfo>> bundleInfoList_; // 用来快速获取使用频率最低的uid
     static std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> bundleInfoMap_;

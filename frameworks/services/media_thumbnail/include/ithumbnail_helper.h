@@ -36,8 +36,22 @@ namespace Media {
 enum WaitStatus {
     INSERT,
     WAIT_SUCCESS,
+    WAIT_CONTINUE,
     WAIT_FAILED,
     TIMEOUT,
+};
+
+enum CloudLoadType {
+    NONE,
+    CLOUD_READ_THUMB,
+    CLOUD_READ_LCD,
+    CLOUD_DOWNLOAD,
+};
+
+enum CloudReadStatus {
+    START,
+    SUCCESS,
+    FAIL,
 };
 
 class ThumbnailSyncStatus {
@@ -46,6 +60,9 @@ public:
     std::mutex mtx_;
     bool isSyncComplete_{false};
     bool isCreateThumbnailSuccess_{false};
+    std::atomic<CloudReadStatus> CloudLoadThumbnailStatus_{START};
+    std::atomic<CloudReadStatus> CloudLoadLcdStatus_{START};
+    std::atomic<CloudLoadType> cloudLoadType_{NONE};
 };
 
 using ThumbnailMap = std::map<std::string, std::shared_ptr<ThumbnailSyncStatus>>;
@@ -54,9 +71,11 @@ public:
     ThumbnailWait(bool release);
     ~ThumbnailWait();
 
-    WaitStatus InsertAndWait(const std::string &id, bool isLcd);
+    WaitStatus InsertAndWait(const std::string &id, ThumbnailType type);
+    WaitStatus CloudInsertAndWait(const std::string &id, CloudLoadType cloudLoadType);
     void CheckAndWait(const std::string &id, bool isLcd);
     void UpdateThumbnailMap();
+    void UpdateCloudLoadThumbnailMap(CloudLoadType cloudLoadType, bool isLoadSuccess);
 
 private:
     void Notify();
@@ -78,12 +97,15 @@ public:
     static void CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data);
     static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts, ThumbnailData &thumbData,
         const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
+    static void AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
+        ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId = 0);
     static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
     static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
+    static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
     static bool IsPureCloudImage(ThumbRdbOpt &opts);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
@@ -91,7 +113,7 @@ private:
     static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
     static bool UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
-    static int32_t UpdateAstcState(const ThumbRdbOpt &opts, const ThumbnailData &data);
+    static int32_t UpdateThumbDbState(const ThumbRdbOpt &opts, const ThumbnailData &data);
     static bool IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);

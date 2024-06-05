@@ -18,6 +18,7 @@
 #include <pthread.h>
 
 #include "medialibrary_errno.h"
+#include "medialibrary_notify.h"
 #include "media_log.h"
 
 namespace OHOS {
@@ -79,6 +80,7 @@ int32_t ThumbnailGenerateWorker::ReleaseTaskQueue(const ThumbnailTaskPriority &t
 int32_t ThumbnailGenerateWorker::AddTask(
     const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority)
 {
+    IncreaseRequestIdTaskNum(task);
     if (taskPriority == ThumbnailTaskPriority::HIGH) {
         highPriorityTaskQueue_.Push(task);
     } else if (taskPriority == ThumbnailTaskPriority::LOW) {
@@ -91,13 +93,17 @@ int32_t ThumbnailGenerateWorker::AddTask(
     return E_OK;
 }
 
-void ThumbnailGenerateWorker::IgnoreTaskByRequestId(uint64_t requestId)
+void ThumbnailGenerateWorker::IgnoreTaskByRequestId(int32_t requestId)
 {
     if (highPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty()) {
-        MEDIA_INFO_LOG("task queue empty, no need to ignore task");
+        MEDIA_INFO_LOG("task queue empty, no need to ignore task requestId: %{public}d", requestId);
         return;
     }
     ignoreRequestId_.store(requestId);
+
+    std::unique_lock<std::mutex> lock(requestIdMapLock_);
+    requestIdTaskMap_.erase(requestId);
+    MEDIA_INFO_LOG("IgnoreTaskByRequestId, requestId: %{public}d", requestId);
 }
 
 void ThumbnailGenerateWorker::WaitForTask()
@@ -114,22 +120,76 @@ void ThumbnailGenerateWorker::StartWorker()
     while (isThreadRunning_) {
         WaitForTask();
         std::shared_ptr<ThumbnailGenerateTask> task;
-        if (!highPriorityTaskQueue_.Empty() && highPriorityTaskQueue_.Pop(task) &&
-            task != nullptr && !NeedIgnoreTask(task->data_->requestId_)) {
+        if (!highPriorityTaskQueue_.Empty() && highPriorityTaskQueue_.Pop(task) && task != nullptr) {
+            if (NeedIgnoreTask(task->data_->requestId_)) {
+                continue;
+            }
             task->executor_(task->data_);
+            DecreaseRequestIdTaskNum(task);
             continue;
         }
 
-        if (!lowPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Pop(task) &&
-            task != nullptr && !NeedIgnoreTask(task->data_->requestId_)) {
+        if (!lowPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Pop(task) && task != nullptr) {
+            if (NeedIgnoreTask(task->data_->requestId_)) {
+                continue;
+            }
             task->executor_(task->data_);
+            DecreaseRequestIdTaskNum(task);
         }
     }
 }
 
-bool ThumbnailGenerateWorker::NeedIgnoreTask(uint64_t requestId)
+bool ThumbnailGenerateWorker::NeedIgnoreTask(int32_t requestId)
 {
     return ignoreRequestId_ != 0 && ignoreRequestId_ == requestId;
+}
+
+void ThumbnailGenerateWorker::IncreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)
+{
+    if (task == nullptr || task->data_->requestId_ == 0) {
+        // If requestId is 0, no need to manager this task.
+        return;
+    }
+
+    std::unique_lock<std::mutex> lock(requestIdMapLock_);
+    int32_t requestId = task->data_->requestId_;
+    auto pos = requestIdTaskMap_.find(requestId);
+    if (pos == requestIdTaskMap_.end()) {
+        requestIdTaskMap_.insert(std::make_pair(requestId, 1));
+        return;
+    }
+    ++(pos->second);
+}
+
+void ThumbnailGenerateWorker::DecreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task)
+{
+    if (task == nullptr || task->data_->requestId_ == 0) {
+        // If requestId is 0, no need to manager this task.
+        return;
+    }
+
+    std::unique_lock<std::mutex> lock(requestIdMapLock_);
+    int32_t requestId = task->data_->requestId_;
+    auto pos = requestIdTaskMap_.find(requestId);
+    if (pos == requestIdTaskMap_.end()) {
+        return;
+    }
+
+    if (--(pos->second) == 0) {
+        requestIdTaskMap_.erase(requestId);
+        NotifyTaskFinished(requestId);
+    }
+}
+
+void ThumbnailGenerateWorker::NotifyTaskFinished(int32_t requestId)
+{
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch == nullptr) {
+        MEDIA_ERR_LOG("watch is nullptr");
+        return;
+    }
+    std::string notifyUri = PhotoColumn::PHOTO_URI_PREFIX + std::to_string(requestId);
+    watch->Notify(notifyUri, NotifyType::NOTIFY_THUMB_ADD);
 }
 } // namespace Media
 } // namespace OHOS

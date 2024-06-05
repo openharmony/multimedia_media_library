@@ -43,6 +43,7 @@ ohos_shared_library("media_library") {
     "src/file_asset.cpp",
     "src/form_map.cpp",
     "src/media_asset_edit_data.cpp",
+    "src/media_asset_rdbstore.cpp",
     "src/media_change_effect.cpp",
     "src/media_column.cpp",
     "src/media_file_uri.cpp",
@@ -77,21 +78,22 @@ ohos_shared_library("media_library") {
   external_deps = [
     "ability_base:zuri",
     "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
     "access_token:el5_filekey_manager_sdk",
     "app_file_service:sandbox_helper_native",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
-    "graphic_2d:librender_service_client",
-    "graphic_surface:surface",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "image_framework:image_native",
+    "init:libbegetutil",
     "ipc:ipc_core",
     "kv_store:distributeddata_inner",
     "player_framework:media_client",
     "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
   ]
 
   defines = []
@@ -101,6 +103,8 @@ ohos_shared_library("media_library") {
       defined(global_parts_info.multimedia_image_effect) &&
       global_parts_info.multimedia_image_effect) {
     defines += [ "IMAGE_EFFECT_SUPPORT" ]
+    external_deps += [ "graphic_2d:librender_service_client" ]
+    external_deps += [ "graphic_surface:surface" ]
     external_deps += [ "image_effect:image_effect_impl" ]
   }
 

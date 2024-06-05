@@ -22,7 +22,7 @@
 #include <shared_mutex>
 
 #include "ability_context.h"
-#include "cloud_thumbnail_observer.h"
+#include "cloud_sync_observer.h"
 #include "context/context.h"
 #include "dir_asset.h"
 #include "datashare_predicates.h"
@@ -93,8 +93,6 @@ public:
     EXPORT std::shared_ptr<MediaDataShareExtAbility> GetOwner();
     EXPORT void SetOwner(const std::shared_ptr<MediaDataShareExtAbility> &datashareExtension);
     EXPORT int GetThumbnail(const std::string &uri);
-    int32_t GetAgingDataSize(const int64_t &time, int &count);
-    int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
     EXPORT void SetStartupParameter();
     EXPORT void ReCreateMediaDir();
 
@@ -132,6 +130,8 @@ private:
     int32_t UpdateInternal(MediaLibraryCommand &cmd, NativeRdb::ValuesBucket &value,
         const DataShare::DataSharePredicates &predicates);
     void InitRefreshAlbum();
+    int32_t ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
+        const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates);
     std::shared_mutex mgrSharedMutex_;
 #ifdef DISTRIBUTED
     std::shared_ptr<DistributedKv::SingleKvStore> kvStorePtr_;
@@ -144,7 +144,8 @@ private:
     static std::unordered_map<std::string, DirAsset> dirQuerySetMap_;
     std::atomic<int> refCnt_ {0};
     std::shared_ptr<MediaDataShareExtAbility> extension_;
-    std::shared_ptr<CloudThumbnailObserver> cloudDataObserver_;
+    std::shared_ptr<CloudSyncObserver> cloudPhotoObserver_;
+    std::shared_ptr<CloudSyncObserver> cloudPhotoAlbumObserver_;
 };
 
 // Scanner callback objects

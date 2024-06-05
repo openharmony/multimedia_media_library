@@ -23,6 +23,7 @@
 #include "media_log.h"
 #include "media_refresh_album_column.h"
 #include "medialibrary_business_record_column.h"
+#include "medialibrary_data_manager_utils.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_tracer.h"
@@ -35,17 +36,33 @@
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
+#include "vision_total_column.h"
+#include "location_column.h"
+#include "search_column.h"
+#include "story_cover_info_column.h"
 
 namespace OHOS::Media {
 using namespace std;
 using namespace NativeRdb;
 
+constexpr int32_t E_ERR = -1;
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_SUCCESS = 0;
 constexpr int32_t E_EMPTY_ALBUM_ID = 1;
 constexpr size_t ALBUM_UPDATE_THRESHOLD = 1000;
 constexpr int32_t SINGLE_FACE = 1;
 constexpr int32_t ALBUM_COVER_SATISFIED = 1;
+constexpr double LOCATION_DB_ZERO = 0;
+constexpr double LOCATION_LATITUDE_MAX = 90.0;
+constexpr double LOCATION_LATITUDE_MIN = -90.0;
+constexpr double LOCATION_LONGITUDE_MAX = 180.0;
+constexpr double LOCATION_LONGITUDE_MIN = -180.0;
+constexpr int32_t SEARCH_UPDATE_STATUS = 2;
+constexpr int32_t FACE_RECOGNITION = 1;
+constexpr int32_t FACE_FEATURE = 2;
+constexpr int32_t FACE_CLUSTERED = 3;
+constexpr int32_t CLOUD_POSITION_STATUS = 2;
+
 
 // 注意，端云同步代码仓也有相同常量，添加新相册时，请通知端云同步进行相应修改
 const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
@@ -1233,6 +1250,30 @@ int32_t MediaLibraryRdbUtils::GetAlbumIdsForPortrait(const shared_ptr<NativeRdb:
     return E_OK;
 }
 
+int32_t MediaLibraryRdbUtils::GetAlbumSubtypeArgument(const RdbPredicates &predicates)
+{
+    string whereClause = predicates.GetWhereClause();
+    vector<string> whereArgs = predicates.GetWhereArgs();
+    size_t subtypePos = whereClause.find(PhotoAlbumColumns::ALBUM_SUBTYPE + " = ?");
+    if (subtypePos == string::npos) {
+        return E_ERR;
+    }
+    size_t argsIndex = 0;
+    for (size_t i = 0; i < subtypePos; i++) {
+        if (whereClause[i] == '?') {
+            argsIndex++;
+        }
+    }
+    if (argsIndex > whereArgs.size() - 1) {
+        return E_ERR;
+    }
+    const string &subtype = whereArgs[argsIndex];
+    if (subtype.empty() || !MediaLibraryDataManagerUtils::IsNumber(subtype)) {
+        return E_ERR;
+    }
+    return std::stoi(subtype);
+}
+
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore> &rdbStore,
     std::unordered_map<int32_t, int32_t> &updateResult, const vector<string> &anaAlbumAlbumIds,
     const vector<string> &fileIds)
@@ -1887,5 +1928,209 @@ void MediaLibraryRdbUtils::AddVirtualColumnsOfDateType(vector<string>& columns)
             columns.push_back(dateTypeSeconds[i]);
         }
     }
+}
+
+vector<string> GetPhotoAndKnowledgeConnection()
+{
+    vector<string> clauses;
+    clauses.push_back(
+        PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LATITUDE);
+    clauses.push_back(
+        PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LONGITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE);
+    return clauses;
+}
+
+int QueryCount(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const RdbPredicates &predicates)
+{
+    const vector<string> columns = { MEDIA_COLUMN_COUNT_1 };
+    auto fetchResult = QueryGoToFirst(rdbStore, predicates, columns);
+    if (fetchResult == nullptr) {
+        return 0;
+    }
+    return GetFileCount(fetchResult);
+}
+
+int GetNewKnowledgeDataCount(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.BeginWrap()->BeginWrap()
+        ->LessThan(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE, LOCATION_LATITUDE_MAX)
+        ->And()->GreaterThan(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE, LOCATION_DB_ZERO)
+        ->EndWrap()->Or()->BeginWrap()
+        ->LessThan(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE, LOCATION_DB_ZERO)
+        ->And()->GreaterThan(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE, LOCATION_LATITUDE_MIN)
+        ->EndWrap()->EndWrap()->And()->BeginWrap()->BeginWrap()
+        ->LessThan(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LONGITUDE, LOCATION_LONGITUDE_MAX)->And()
+        ->GreaterThan(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LONGITUDE, LOCATION_DB_ZERO)->EndWrap()
+        ->Or()->BeginWrap()->LessThan(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LONGITUDE, LOCATION_DB_ZERO)
+        ->And()->GreaterThan(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LONGITUDE, LOCATION_LONGITUDE_MIN)
+        ->EndWrap()->EndWrap();
+    auto clauses = GetPhotoAndKnowledgeConnection();
+    predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(clauses);
+    predicates.And()->BeginWrap()
+        ->IsNull(GEO_KNOWLEDGE_TABLE + "." + LATITUDE)
+        ->Or()->IsNull(GEO_KNOWLEDGE_TABLE + "." + LONGITUDE)
+        ->Or()->IsNull(GEO_KNOWLEDGE_TABLE + "." + LANGUAGE)
+        ->EndWrap();
+
+    return QueryCount(rdbStore, predicates);
+}
+
+int GetUpdateKnowledgeDataCount(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    RdbPredicates predicates(GEO_KNOWLEDGE_TABLE);
+    predicates.LessThan(GEO_KNOWLEDGE_TABLE + "." + LOCATION_KEY, 0);
+    return QueryCount(rdbStore, predicates);
+}
+
+int GetNewDictionaryDataCount(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    RdbPredicates predicates(GEO_KNOWLEDGE_TABLE);
+    vector<string> clauses;
+    clauses.push_back(GEO_KNOWLEDGE_TABLE + "." + CITY_ID + " = " + GEO_DICTIONARY_TABLE + "." + CITY_ID);
+    clauses.push_back(GEO_KNOWLEDGE_TABLE + "." + LANGUAGE + " = " + GEO_DICTIONARY_TABLE + "." + LANGUAGE);
+    predicates.LeftOuterJoin(GEO_DICTIONARY_TABLE)->On(clauses);
+    predicates.BeginWrap()->IsNull(GEO_DICTIONARY_TABLE + "." + CITY_ID)
+        ->And()->IsNotNull(GEO_KNOWLEDGE_TABLE + "." + COUNTRY)->EndWrap();
+    vector<string> columns;
+    auto resultSet = QueryGoToFirst(rdbStore, predicates, columns);
+    if (resultSet == nullptr) {
+        return 0;
+    }
+    set<string> citySet;
+    do {
+        string cityId = GetStringValFromColumn(resultSet, CITY_ID);
+        string cityName = GetStringValFromColumn(resultSet, CITY_NAME);
+        if (cityId == "" || cityName == "") {
+            continue;
+        }
+        citySet.insert(cityId);
+    } while (!resultSet->GoToNextRow());
+    return citySet.size();
+}
+
+bool HasLocationData(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    int newDataCount = GetNewKnowledgeDataCount(rdbStore);
+    int updateDataCount = GetUpdateKnowledgeDataCount(rdbStore);
+    MEDIA_INFO_LOG("loc newDataCount:%{public}d, updateDataCount:%{public}d", newDataCount, updateDataCount);
+
+    int newDictionaryCount = GetNewDictionaryDataCount(rdbStore);
+    MEDIA_INFO_LOG("newDictionaryCount:%{public}d", newDictionaryCount);
+    return (newDataCount + updateDataCount + newDictionaryCount) > 0;
+}
+
+int GetCvDataCount(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    vector<string> clauses;
+    clauses.push_back(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID  + " = " +
+        VISION_TOTAL_TABLE + "." + PhotoColumn::MEDIA_ID);
+    predicates.InnerJoin(VISION_TOTAL_TABLE)->On(clauses);
+    predicates.BeginWrap()->EqualTo(VISION_TOTAL_TABLE + "." + STATUS, 0)->And()
+        ->BeginWrap()->EqualTo(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_TIME_PENDING, 0)->And()
+        ->EqualTo(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_DATE_TRASHED, 0)->And()
+        ->BeginWrap()->NotEqualTo(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_POSITION, CLOUD_POSITION_STATUS)
+        ->Or()->BeginWrap()
+        ->EqualTo(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_POSITION, CLOUD_POSITION_STATUS)->And()
+        ->EqualTo(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_THUMB_STATUS, 0)
+        ->EndWrap()->EndWrap()->EndWrap()->EndWrap();
+    return QueryCount(rdbStore, predicates);
+}
+
+bool HasCvData(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    int count = GetCvDataCount(rdbStore);
+    MEDIA_INFO_LOG("cv count:%{public}d", count);
+    return count > 0;
+}
+
+int GetSearchBaseCount(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    RdbPredicates predicates(SEARCH_TOTAL_TABLE);
+    vector<string> clasues;
+    clasues.push_back(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_FILE_ID + " = " +
+        PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID);
+    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On(clasues);
+    predicates.EqualTo(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_PHOTO_STATUS, 0)
+        ->And()
+        ->EqualTo(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_TIME_PENDING, 0)
+        ->And()
+        ->GreaterThanOrEqualTo(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_FILE_ID, 0);
+    return QueryCount(rdbStore, predicates);
+}
+
+int GetSearchUpdateCount(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    RdbPredicates predicates(SEARCH_TOTAL_TABLE);
+    vector<string> clauses;
+    clauses.push_back(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_FILE_ID + " = " +
+        PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID);
+    vector<string> clausesTotal;
+    clausesTotal.push_back(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_FILE_ID + " = " +
+        VISION_TOTAL_TABLE + "." + PhotoColumn::MEDIA_ID);
+    vector<string> clausesGeo;
+    clausesGeo.push_back(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_LATITUDE + " = " + GEO_KNOWLEDGE_TABLE + "." + LATITUDE);
+    clausesGeo.push_back(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_LONGITUDE +
+        " = " + GEO_KNOWLEDGE_TABLE + "." + LONGITUDE);
+    predicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On(clauses);
+    predicates.InnerJoin(VISION_TOTAL_TABLE)->On(clausesTotal);
+    predicates.LeftOuterJoin(GEO_KNOWLEDGE_TABLE)->On(clausesGeo);
+    predicates.GreaterThanOrEqualTo(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_FILE_ID, 0)->And()
+        ->EqualTo(PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_TIME_PENDING, 0)->And()
+        ->GreaterThan(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_PHOTO_STATUS, 0)->And()
+        ->BeginWrap()->EqualTo(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_PHOTO_STATUS, SEARCH_UPDATE_STATUS)->Or()
+        ->BeginWrap()->EqualTo(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_CV_STATUS, SEARCH_UPDATE_STATUS)->And()
+        ->EqualTo(VISION_TOTAL_TABLE + "." + FACE, FACE_CLUSTERED)->EndWrap()->Or()
+        ->BeginWrap()->EqualTo(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_CV_STATUS, 0)->And()
+        ->BeginWrap()->NotEqualTo(VISION_TOTAL_TABLE + "." + OCR, 0)->Or()
+        ->NotEqualTo(VISION_TOTAL_TABLE + "." + LABEL, 0)->Or()
+        ->BeginWrap()->NotEqualTo(VISION_TOTAL_TABLE + "." + FACE, 0)->And()
+        ->NotEqualTo(VISION_TOTAL_TABLE + "." + FACE, FACE_RECOGNITION)->And()
+        ->NotEqualTo(VISION_TOTAL_TABLE + "." + FACE, FACE_FEATURE)->EndWrap()->EndWrap()->EndWrap()->Or()
+        ->BeginWrap()->EqualTo(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_GEO_STATUS, 0)->And()
+        ->BeginWrap()->NotEqualTo(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_LATITUDE, 0)->Or()
+        ->NotEqualTo(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_LONGITUDE, 0)->EndWrap()->And()
+        ->IsNotNull(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_LATITUDE)->And()
+        ->IsNotNull(SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_LONGITUDE)->And()
+        ->BeginWrap()->IsNotNull(GEO_KNOWLEDGE_TABLE + "." + LATITUDE)->And()
+        ->IsNotNull(GEO_KNOWLEDGE_TABLE + "." + LONGITUDE)->EndWrap()->EndWrap()->EndWrap();
+    return QueryCount(rdbStore, predicates);
+}
+
+bool HasSearchData(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    int baseCount = GetSearchBaseCount(rdbStore);
+    int upateCount = GetSearchUpdateCount(rdbStore);
+    MEDIA_INFO_LOG("baseCount:%{public}d, upateCount:%{public}d", baseCount, upateCount);
+    return (baseCount + upateCount) > 0;
+}
+
+bool HasHighLightData(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
+    vector<string> clauses;
+    clauses.push_back(ANALYSIS_ALBUM_TABLE + "." + ALBUM_ID + " = " +
+        HIGHLIGHT_COVER_INFO_TABLE + "." + ALBUM_ID);
+    predicates.InnerJoin(HIGHLIGHT_COVER_INFO_TABLE)->On(clauses);
+    predicates.EqualTo(ANALYSIS_ALBUM_TABLE + "." + ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIGHLIGHT))->And()
+        ->NotEqualTo(ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_COVER_URI,
+        HIGHLIGHT_COVER_INFO_TABLE + "." + COVER_KEY);
+    int count = QueryCount(rdbStore, predicates);
+    MEDIA_INFO_LOG("highligh count:%{public}d", count);
+    return (count > 0);
+}
+
+bool MediaLibraryRdbUtils::HasDataToAnalysis(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("HasDataToAnalysis rdbstore is null");
+        return false;
+    }
+    bool loc = HasLocationData(rdbStore);
+    bool cv = HasCvData(rdbStore);
+    bool search = HasSearchData(rdbStore);
+    bool highlight = HasHighLightData(rdbStore);
+    return (loc || cv || search || highlight);
 }
 } // namespace OHOS::Media

@@ -958,6 +958,7 @@ static const vector<string> onCreateSqlStrs = {
     CREATE_USER_PHOTOGRAPHY_INFO_TABLE,
     INSERT_PHOTO_INSERT_SOURCE_ALBUM,
     INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+    INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     CREATE_SOURCE_ALBUM_INDEX,
     FormMap::CREATE_FORM_MAP_TABLE,
     CREATE_DICTIONARY_INDEX,
@@ -1548,6 +1549,15 @@ static void AddSearchTable(RdbStore &store)
         CREATE_ANALYSIS_UPDATE_SEARCH_TRIGGER,
     };
     MEDIA_INFO_LOG("start init search db");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void UpdateInsertPhotoUpdateAlbumTrigger(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+    };
+    MEDIA_INFO_LOG("start update insert photo update album");
     ExecSqls(executeSqlStrs, store);
 }
 
@@ -2192,6 +2202,18 @@ void UpdateHighlightCoverTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+void UpdateHighlightTablePrimaryKey(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_highlight_album",
+        "DROP TABLE IF EXISTS tab_highlight_cover_info",
+        CREATE_HIGHLIGHT_ALBUM_TABLE,
+        CREATE_HIGHLIGHT_COVER_INFO_TABLE,
+    };
+    MEDIA_INFO_LOG("update primary key of highlight db");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void AddBussinessRecordAlbum(RdbStore &store)
 {
     string updateDirtyForShootingMode = "UPDATE Photos SET dirty = 2 WHERE cloud_id is not null AND " +
@@ -2226,14 +2248,6 @@ void AddOwnerAppId(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void ResetAstcInPhotosTable(RdbStore &store)
-{
-    const vector<string> sqls = {
-        "UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_HAS_ASTC + " = 0"
-    };
-    ExecSqls(sqls, store);
-}
-
 void AddDynamicRangeType(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2241,6 +2255,35 @@ void AddDynamicRangeType(RdbStore &store)
             PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE + " INT DEFAULT 0"
     };
     MEDIA_INFO_LOG("start add dynamic_range_type column");
+    ExecSqls(sqls, store);
+}
+
+void AddLcdAndThumbSizeColumns(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_LCD_SIZE + " TEXT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_THUMB_SIZE + " TEXT",
+    };
+    ExecSqls(sqls, store);
+}
+
+void UpdatePhotoAlbumTigger(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP TRIGGER IF EXISTS album_modify_trigger",
+        PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER,
+    };
+    MEDIA_INFO_LOG("Start update album modify trigger");
+    ExecSqls(executeSqlStrs, store);
+}
+
+void AddMovingPhotoEffectMode(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::MOVING_PHOTO_EFFECT_MODE + " INT DEFAULT 0"
+    };
+    MEDIA_INFO_LOG("start add moving_photo_effect_mode column");
     ExecSqls(sqls, store);
 }
 
@@ -2528,8 +2571,24 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
         AddFaceOcclusionAndPoseTypeColumn(store);
     }
 
-    if (oldVersion < VERSION_MOVE_KVDB) {
-        ResetAstcInPhotosTable(store);
+    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_BUNDLENAME) {
+        UpdateInsertPhotoUpdateAlbumTrigger(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTO_ALBUM_TIGGER) {
+        UpdatePhotoAlbumTigger(store);
+    }
+
+    if (oldVersion < VERSION_ADD_THUMB_LCD_SIZE_COLUMN) {
+        AddLcdAndThumbSizeColumns(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_HIGHLIGHT_TABLE_PRIMARY_KEY) {
+        UpdateHighlightTablePrimaryKey(store);
+    }
+
+    if (oldVersion < VERSION_ADD_MOVING_PHOTO_EFFECT_MODE) {
+        AddMovingPhotoEffectMode(store);
     }
 }
 

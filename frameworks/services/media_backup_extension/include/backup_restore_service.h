@@ -26,6 +26,9 @@ public:
     static BackupRestoreService &GetInstance(void);
     void StartRestore(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName,
         const std::string &backupDir);
+    void StartRestoreEx(int32_t sceneCode, const std::string &galleryAppName, const std::string &mediaAppName,
+        const std::string &backupDir, std::string &restoreExInfo);
+    void GetBackupInfo(int32_t sceneCode, std::string &backupInfo);
 
 private:
     BackupRestoreService() = default;

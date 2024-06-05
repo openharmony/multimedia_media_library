@@ -66,10 +66,20 @@ double GetLongitudeLatitude(string inputStr, const string& ref = "")
     return (ref.compare("W") == 0 || ref.compare("S") == 0) ? -ret : ret;
 }
 
+/* used for video */
 static time_t convertTimeStr2TimeStamp(string &timeStr)
 {
     struct tm timeinfo;
     strptime(timeStr.c_str(), "%Y-%m-%d %H:%M:%S",  &timeinfo);
+    time_t timeStamp = mktime(&timeinfo);
+    return timeStamp;
+}
+
+/* used for Image */
+static time_t convertTimeStrToTimeStamp(string &timeStr)
+{
+    struct tm timeinfo;
+    strptime(timeStr.c_str(), "%Y:%m:%d %H:%M:%S",  &timeinfo);
     time_t timeStamp = mktime(&timeinfo);
     return timeStamp;
 }
@@ -107,27 +117,24 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
     int32_t intTempMeta = 0;
     string propertyStr;
     uint32_t err;
-    try {
-        nlohmann::json exifJson;
-        err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
-        exifJson[PHOTO_DATA_IMAGE_ORIENTATION] = (err == 0) ? intTempMeta: 0;
 
-        err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
-        exifJson[PHOTO_DATA_IMAGE_GPS_LONGITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
+    nlohmann::json exifJson;
+    err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
+    exifJson[PHOTO_DATA_IMAGE_ORIENTATION] = (err == 0) ? intTempMeta: 0;
 
-        err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
-        exifJson[PHOTO_DATA_IMAGE_GPS_LATITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LONGITUDE, propertyStr);
+    exifJson[PHOTO_DATA_IMAGE_GPS_LONGITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
 
-        for (auto &exifKey : exifInfoKeys) {
-            err = imageSource->GetImagePropertyString(0, exifKey, propertyStr);
-            exifJson[exifKey] = (err == 0) ? propertyStr: "";
-        }
-        exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
-            AppFileService::SandboxHelper::Encode(exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
-        data->SetAllExif(exifJson.dump());
-    } catch (std::system_error &e) {
-        MEDIA_ERR_LOG("exception, err: %{public}s", e.what());
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
+    exifJson[PHOTO_DATA_IMAGE_GPS_LATITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
+
+    for (auto &exifKey : exifInfoKeys) {
+        err = imageSource->GetImagePropertyString(0, exifKey, propertyStr);
+        exifJson[exifKey] = (err == 0) ? propertyStr: "";
     }
+    exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
+        AppFileService::SandboxHelper::Encode(exifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
+    data->SetAllExif(exifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace));
 
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_USER_COMMENT, propertyStr);
     if (err == 0) {
@@ -189,9 +196,9 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
 
     string propertyStr;
     int64_t int64TempMeta = 0;
-    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL_FOR_MEDIA, propertyStr);
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_DATE_TIME_ORIGINAL, propertyStr);
     if (err == 0) {
-        int64TempMeta = convertTimeStr2TimeStamp(propertyStr);
+        int64TempMeta = convertTimeStrToTimeStamp(propertyStr);
         if (int64TempMeta < 0) {
             data->SetDateTaken(data->GetFileDateModified() / MSEC_TO_SEC);
         } else {
@@ -206,6 +213,12 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
     err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
     if (err == 0) {
         data->SetOrientation(intTempMeta);
+    }
+
+    if (imageSource->IsHdrImage()) {
+        data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::HDR));
+    } else {
+        data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::SDR));
     }
 
     ExtractLocationMetadata(imageSource, data);
@@ -316,10 +329,13 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
 void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
 {
     float floatTempMeta;
-    meta->GetData(Tag::MEDIA_LONGITUDE, floatTempMeta);
-    data->SetLongitude((double)floatTempMeta);
-    meta->GetData(Tag::MEDIA_LATITUDE, floatTempMeta);
-    data->SetLatitude((double)floatTempMeta);
+
+    if (meta->GetData(Tag::MEDIA_LATITUDE, floatTempMeta)) {
+        data->SetLatitude((double)floatTempMeta);
+    }
+    if (meta->GetData(Tag::MEDIA_LONGITUDE, floatTempMeta)) {
+        data->SetLongitude((double)floatTempMeta);
+    }
 }
 
 void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,

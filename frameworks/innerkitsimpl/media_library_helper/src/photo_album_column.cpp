@@ -101,6 +101,8 @@ const string PhotoAlbumColumns::HIDDEN_ALBUM_URI_PREFIX = "file://media/HiddenAl
 const string PhotoAlbumColumns::DEFAULT_HIDDEN_ALBUM_URI = "file://media/HiddenAlbum";
 const string PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX = "file://media/AnalysisAlbum/";
 
+const string PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX = "file://cloudsync/PhotoAlbum/";
+
 // Create tables
 const string PhotoAlbumColumns::CREATE_TABLE = CreateTable() +
     TABLE + " (" +
@@ -147,6 +149,7 @@ const std::string PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER =
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
     " AND old." + ALBUM_DIRTY + " = " + "new." + ALBUM_DIRTY +
     " AND is_caller_self_func() = 'true'" +
+    " AND " + PhotoAlbumColumns::CheckUploadPhotoAlbumColumns() +
     " BEGIN UPDATE " + TABLE + " SET dirty = " +
     std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_MDIRTY)) +
     " WHERE " + ALBUM_ID + " = old." + ALBUM_ID + "; SELECT cloud_sync_func(); END;";
@@ -357,5 +360,25 @@ void PhotoAlbumColumns::GetSystemAlbumPredicates(const PhotoAlbumSubType subtype
             return;
         }
     }
+}
+
+std::string PhotoAlbumColumns::CheckUploadPhotoAlbumColumns()
+{
+    // Since date_modified has been checked in mdirty and fdirty, omit it here.
+    const std::vector<std::string> uploadPhotoAlbumColumns = {
+        ALBUM_NAME,
+    };
+
+    std::string result = "(";
+    size_t size = uploadPhotoAlbumColumns.size();
+    for (size_t i = 0; i < size; i++) {
+        std::string column = uploadPhotoAlbumColumns[i];
+        if (i != size - 1) {
+            result += "new." + column + " <> old." + column + " OR ";
+        } else {
+            result += "new." + column + " <> old." + column + ")";
+        }
+    }
+    return result;
 }
 } // namespace OHOS::Media
