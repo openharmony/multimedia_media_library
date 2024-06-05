@@ -97,6 +97,12 @@ Note:If the text contains special characters, please escape them according to th
 		<filteritem type="filepath" name="frameworks/innerkitsimpl/medialibrary_data_extension/MediaLibraryExt/entry/src/main/ets/DataShareExtAbility/DataShareExtAbility.ts" desc="Media library files "/>
 		<filteritem type="filepath" name="frameworks/innerkitsimpl/medialibrary_data_extension/MediaLibraryExt/entry/src/ohosTest/ets/TestAbility/TestAbility.ts" desc="Media library files "/>
             </filefilter>
+        <filefilter name="binaryFileTypePolicyFilter" desc="Files not to check">
+            <filteritem type="filename" name="*.png" desc="self developed file"/>
+            <filteritem type="filename" name="*.jpg" desc="self developed file"/>
+            <filteritem type="filename" name="*.mp3" desc="self developed file"/>
+            <filteritem type="filename" name="*.mp4" desc="self developed file"/>
+        </filefilter>
         </filefilterlist>
     </oatconfig>
 </configuration>
