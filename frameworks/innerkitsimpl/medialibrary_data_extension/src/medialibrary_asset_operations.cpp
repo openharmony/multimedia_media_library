@@ -103,6 +103,9 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
         case OperationType::SUBMIT_CACHE:
             errCode = MediaLibraryPhotoOperations::SubmitCache(cmd);
             break;
+        case OperationType::ADD_FILTERS:
+            errCode = MediaLibraryPhotoOperations::AddFilters(cmd);
+            break;
         default:
             MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
             break;
@@ -1725,7 +1728,8 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_ID, { IsString } },
     { PhotoColumn::PHOTO_QUALITY, { IsInt32 } },
     { PhotoColumn::PHOTO_FIRST_VISIT_TIME, { IsInt64 } },
-    { PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, { IsInt32 } }
+    { PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, { IsInt32 } },
+    { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, { IsInt32 } }
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)

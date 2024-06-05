@@ -448,7 +448,7 @@ bool MediaFileUtils::CopyFile(int32_t rfd, int32_t wfd)
     static const off_t maxSendSize2G = 2LL * 1024 * 1024 * 1024;
     struct stat fst = {0};
     if (fstat(rfd, &fst) != 0) {
-        MEDIA_INFO_LOG("send failed, errno=%{public}d", errno);
+        MEDIA_INFO_LOG("fstat failed, errno=%{public}d", errno);
         return false;
     }
     off_t fileSize = fst.st_size;
@@ -1428,6 +1428,9 @@ bool MediaFileUtils::CheckMovingPhotoVideo(const string &path)
 
 bool MediaFileUtils::CheckMovingPhotoVideo(const UniqueFd &uniqueFd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaFileUtils::CheckMovingPhotoVideo");
+
     if (uniqueFd.Get() <= 0) {
         MEDIA_ERR_LOG("Failed to open video of moving photo, errno = %{public}d", errno);
         return false;
@@ -1465,12 +1468,36 @@ bool MediaFileUtils::CheckMovingPhotoVideo(const UniqueFd &uniqueFd)
     return true;
 }
 
+std::string MediaFileUtils::GetTableNameByDisplayName(const std::string &displayName)
+{
+    std::string extension;
+    string::size_type currentPos = displayName.rfind('.');
+    if (currentPos != std::string::npos) {
+        extension = displayName.substr(currentPos + 1);
+    }
+
+    auto myTypeName = MimeTypeUtils::GetMimeTypeFromExtension(extension, MEDIA_MIME_TYPE_MAP);
+    MediaType type = MimeTypeUtils::GetMediaTypeFromMimeType(myTypeName);
+    if (type == MEDIA_TYPE_AUDIO) {
+        return AudioColumn::AUDIOS_TABLE;
+    } else if (type == MEDIA_TYPE_IMAGE || type == MEDIA_TYPE_VIDEO) {
+        return PhotoColumn::PHOTOS_TABLE;
+    }
+    return "";
+}
+
 bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
 {
     // duration of moving photo video must be 0~3 s
     constexpr int32_t MIN_DURATION_MS = 0;
     constexpr int32_t MAX_DURATION_MS = 3000;
     return duration > MIN_DURATION_MS && duration <= MAX_DURATION_MS;
+}
+
+bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
+{
+    return effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
+           effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END);
 }
 
 bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)

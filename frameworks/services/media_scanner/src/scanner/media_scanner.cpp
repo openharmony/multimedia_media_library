@@ -86,9 +86,11 @@ int32_t MediaScannerObj::ScanFile()
 
 int32_t MediaScannerObj::ScanDir()
 {
-    MEDIA_INFO_LOG("scan dir %{private}s", dir_.c_str());
-
+    MEDIA_INFO_LOG("scan dir %{public}s", dir_.c_str());
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t ret = ScanDirInternal();
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("scan dir cost: %{public}ld", (long)(end - start));
     if (ret != E_OK) {
         MEDIA_ERR_LOG("ScanDirInternal err %{public}d", ret);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, ret},
@@ -755,7 +757,7 @@ int32_t MediaScannerObj::WalkFileTree(const string &path, int32_t parentId)
             if (ScannerUtils::IsDirHidden(currentPath, skipPhoto_)) {
                 continue;
             }
-
+            MEDIA_INFO_LOG("Walk dir %{public}s", currentPath.c_str());
             int32_t albumId = InsertOrUpdateAlbumInfo(currentPath, parentId, ent->d_name);
             if (albumId == UNKNOWN_ID) {
                 err = E_DATA;

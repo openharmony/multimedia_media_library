@@ -68,6 +68,8 @@ config("napi_config") {
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
     "${MEDIALIB_SERVICES_PATH}/media_active_task/include",
+    "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
+    "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
@@ -105,9 +107,6 @@ ohos_shared_library("medialibrary_nutils") {
   public_configs = [ ":public_napi_config" ]
   configs = [ ":napi_config" ]
   sources = [
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/form_map.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/media_file_uri.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/src/media_file_utils.cpp",
     "${MEDIALIB_JS_PATH}/src/album_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/delete_callback.cpp",
     "${MEDIALIB_JS_PATH}/src/fetch_file_result_napi.cpp",
@@ -118,7 +117,6 @@ ohos_shared_library("medialibrary_nutils") {
     "${MEDIALIB_JS_PATH}/src/media_asset_data_handler.cpp",
     "${MEDIALIB_JS_PATH}/src/media_asset_edit_data_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_asset_manager_napi.cpp",
-    "${MEDIALIB_JS_PATH}/src/media_asset_rdbstore.cpp",
     "${MEDIALIB_JS_PATH}/src/media_assets_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_change_request_napi.cpp",
     "${MEDIALIB_JS_PATH}/src/media_library_comm_napi.cpp",
@@ -195,7 +193,7 @@ ohos_shared_library("medialibrary_nutils") {
     }
   }
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
@@ -263,7 +261,7 @@ ohos_shared_library("medialibrary") {
     }
   }
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
@@ -324,7 +322,7 @@ ohos_shared_library("userfilemanager") {
     }
   }
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
@@ -432,7 +430,7 @@ ohos_shared_library("photoaccesshelper") {
     }
   }
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [
@@ -477,6 +475,56 @@ ohos_shared_library("photopickercomponent") {
   sources = [ "${MEDIALIB_JS_PATH}/src/photopickercomponent.cpp" ]
 
   deps = [ ":photopickercomponent_abc" ]
+
+  external_deps = [
+    "hilog:libhilog",
+    "napi:ace_napi",
+  ]
+
+  if (!link_opt) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+      integer_overflow = true
+      ubsan = true
+      boundary_sanitize = true
+      stack_protector_ret = true
+    }
+  }
+
+  relative_install_dir = "module/file"
+  subsystem_name = "multimedia"
+  part_name = "media_library"
+}
+
+js_declaration("albumpickercomponent_js") {
+  part_name = "media_library"
+  sources = [ "./@ohos.file.AlbumPickerComponent.d.ets" ]
+}
+
+# compile .js to .abc.
+es2abc_gen_abc("gen_albumpickercomponent_abc") {
+  src_js = rebase_path("${MEDIALIB_JS_PATH}/src/albumpickercomponent.js")
+  dst_file = rebase_path(target_out_dir + "/albumpickercomponent.abc")
+  in_puts = [ "${MEDIALIB_JS_PATH}/src/albumpickercomponent.js" ]
+  out_puts = [ target_out_dir + "/albumpickercomponent.abc" ]
+  extra_args = [ "--module" ]
+}
+
+abc_output_path = get_label_info(":albumpickercomponent_abc", "target_out_dir")
+albumpickercomponent_abc_obj_path =
+    abc_output_path + "/albumpickercomponent_abc.o"
+gen_js_obj("albumpickercomponent_abc") {
+  input = "$target_out_dir/albumpickercomponent.abc"
+  output = albumpickercomponent_abc_obj_path
+  dep = ":gen_albumpickercomponent_abc"
+}
+
+ohos_shared_library("albumpickercomponent") {
+  sources = [ "${MEDIALIB_JS_PATH}/src/albumpickercomponent.cpp" ]
+
+  deps = [ ":albumpickercomponent_abc" ]
 
   external_deps = [
     "hilog:libhilog",

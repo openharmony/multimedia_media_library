@@ -1,4 +1,4 @@
-# Copyright (C) 2021-2022 Huawei Device Co., Ltd.
+# Copyright (C) 2021-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,6 +15,11 @@ import("//build/ohos.gni")
 import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
+config("media_library_manager_config") {
+  include_dirs =
+      [ "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include" ]
+}
+
 ohos_shared_library("media_library_manager") {
   install_enable = true
 
@@ -23,9 +28,12 @@ ohos_shared_library("media_library_manager") {
   include_dirs = [
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
-    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
+    "${MEDIALIB_INTERFACES_PATH}/kits/js/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
   ]
+
+  public_configs = [ ":media_library_manager_config" ]
 
   deps = [ "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library" ]
 
@@ -48,6 +56,7 @@ ohos_shared_library("media_library_manager") {
     "hitrace:hitrace_meter",
     "image_framework:image_native",
     "kv_store:distributeddata_inner",
+    "relational_store:rdb_data_share_adapter",
   ]
 
   ldflags = [ "-Wl,--gc-sections" ]
@@ -75,7 +84,7 @@ ohos_shared_library("media_library_manager") {
   defines = []
   defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [

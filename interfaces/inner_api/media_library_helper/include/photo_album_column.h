@@ -82,6 +82,9 @@ public:
     static const std::string DEFAULT_HIDDEN_ALBUM_URI EXPORT;
     static const std::string ANALYSIS_ALBUM_URI_PREFIX EXPORT;
 
+    // cloud sync uri
+    static const std::string ALBUM_CLOUD_URI_PREFIX EXPORT;
+
     EXPORT static bool IsPhotoAlbumColumn(const std::string &columnName);
     EXPORT static bool IsLocationAlbumColumn(const std::string &columnName);
 
@@ -95,6 +98,7 @@ public:
         const bool hiddenState);
     EXPORT static void GetSourceAlbumPredicates(const int32_t albumId, NativeRdb::RdbPredicates &predicates,
         const bool hiddenState);
+    EXPORT static std::string CheckUploadPhotoAlbumColumns();
 };
 } // namespace OHOS::Media
 #endif // INTERFACES_INNERKITS_NATIVE_INCLUDE_PHOTO_ALBUM_COLUMN_H

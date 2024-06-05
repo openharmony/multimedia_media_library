@@ -182,6 +182,9 @@ public:
     EXPORT int64_t GetPhotoEditTime() const;
     EXPORT void SetPhotoEditTime(int64_t photoEditTime);
 
+    EXPORT int32_t GetMovingPhotoEffectMode() const;
+    EXPORT void SetMovingPhotoEffectMode(int32_t effectMode);
+
 private:
     const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;

@@ -24,6 +24,7 @@
 #include "datashare_result_set.h"
 #include "image_source.h"
 #include "rdb_helper.h"
+#include "rdb_predicates.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
 #include "thumbnail_data.h"
@@ -56,7 +57,7 @@ public:
     EXPORT static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size,
         std::unique_ptr<PixelMap> &pixelMap);
     EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
-        bool isHigh = false, bool isAstc = false);
+        bool isHigh = false, bool isAstc = false, bool forceSdr = true);
     EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
     // RDB Store Query
@@ -101,6 +102,9 @@ public:
     EXPORT static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNoAstcInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
+    static bool QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
+        std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err);
+
 #ifdef DISTRIBUTED
     static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
 #endif
@@ -115,10 +119,18 @@ public:
     static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     static bool ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx);
     EXPORT static bool ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize);
+    EXPORT static std::string GetThumbnailSuffix(ThumbnailType type);
 
     static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
         LoadSourceType sourceType);
     static void RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats);
+
+    static bool QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
+        const std::string &table, std::vector<ThumbnailData> &infos);
+    static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
+    static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
+    static bool GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
+    static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
@@ -155,7 +167,6 @@ private:
     static bool ScaleFastThumb(ThumbnailData &data, const Size &size);
 
     static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
-    static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
     static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
 };
 } // namespace Media

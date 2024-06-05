@@ -45,6 +45,7 @@ enum class GenerateScene : int32_t {
     LOCAL = 0,
     CLOUD,
     BACKGROUND,
+    FOREGROUND,
 };
 
 enum class LoadSourceType : int32_t {
@@ -89,10 +90,11 @@ constexpr int32_t MAXIMUM_LCD_LONG_SIDE = 4096;
 constexpr int32_t ASPECT_RATIO_THRESHOLD = 3;
 constexpr int32_t MIN_COMPRESS_BUF_SIZE = 8192;
 constexpr int32_t MAX_FIELD_LENGTH = 10;
-constexpr int32_t MAX_TIMEID_LENGTH = 10;
+constexpr int32_t MAX_TIMEID_LENGTH_OLD_VERSION = 10;
 constexpr int32_t MAX_DATE_ADDED_LENGTH = 13;
 constexpr int32_t DECODE_SCALE_BASE = 2;
 constexpr int32_t FLAT_ANGLE = 180;
+constexpr int32_t THUMBNAIL_GENERATE_BATCH_COUNT = 200;
 const std::string KVSTORE_FIELD_ID_TEMPLATE = "0000000000";
 const std::string KVSTORE_DATE_ADDED_TEMPLATE = "0000000000000";
 const std::string DEFAULT_EXIF_ORIENTATION = "1";
@@ -127,7 +129,6 @@ const std::string THUMBNAIL_OPER = "oper";
 const std::string THUMBNAIL_HEIGHT = "height";
 const std::string THUMBNAIL_WIDTH = "width";
 const std::string THUMBNAIL_PATH = "path";
-const std::string THUMBNAIL_TEMP_ORIENT_SUFFIX = ".temp.orient";
 
 // create thumbnail in close operation
 const std::string CLOSE_CREATE_THUMB_STATUS = "create_thumbnail_sync_status";

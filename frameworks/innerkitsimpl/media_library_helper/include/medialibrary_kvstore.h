@@ -24,6 +24,7 @@ namespace Media {
 const std::string MEDIA_LIBRARY_DB_DIR = "/data/medialibrary/database";
 const std::string KV_STORE_OWNER_DIR = MEDIA_LIBRARY_DB_DIR;
 const std::string KV_STORE_VISITOR_DIR = MEDIA_LIBRARY_DB_DIR;
+const std::string KV_STORE_OWNER_DIR_OLD_VERSION = "/storage/cloud/files/.thumbs/Photo";
 
 enum class KvStoreRoleType : int32_t {
     OWNER,
@@ -33,6 +34,8 @@ enum class KvStoreRoleType : int32_t {
 enum class KvStoreValueType : int32_t {
     MONTH_ASTC,
     YEAR_ASTC,
+    MONTH_ASTC_OLD_VERSION,
+    YEAR_ASTC_OLD_VERSION,
 };
 
 class MediaLibraryKvStore {

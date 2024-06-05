@@ -42,6 +42,7 @@
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
@@ -246,9 +247,11 @@ int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::Abil
 
     InitRefreshAlbum();
 
-    cloudDataObserver_ = std::make_shared<CloudThumbnailObserver>();
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
-    shareHelper->RegisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_, true);
+    cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
+    cloudPhotoAlbumObserver_ = std::make_shared<CloudSyncObserver>();
+    shareHelper->RegisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_, true);
+    shareHelper->RegisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_, true);
 
     refCnt_++;
     return E_OK;
@@ -283,7 +286,8 @@ void MediaLibraryDataManager::ClearMediaLibraryMgr()
     }
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
-    shareHelper->UnregisterObserverExt(Uri(PHOTO_URI_PREFIX), cloudDataObserver_);
+    shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
+    shareHelper->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
     rdbStore_ = nullptr;
     MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 
@@ -538,7 +542,8 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     cmd.SetValueBucket(value);
 
     OperationType oprnType = cmd.GetOprnType();
-    if (oprnType == OperationType::CREATE || oprnType == OperationType::SUBMIT_CACHE) {
+    if (oprnType == OperationType::CREATE || oprnType == OperationType::SUBMIT_CACHE
+        || oprnType == OperationType::ADD_FILTERS) {
         if (SetCmdBundleAndDevice(cmd) != ERR_OK) {
             MEDIA_ERR_LOG("MediaLibraryDataManager SetCmdBundleAndDevice failed.");
         }
@@ -790,8 +795,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
         }
         case OperationObject::ANALYSIS_PHOTO_ALBUM: {
-            if (cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
-                cmd.GetOprnType() <= OperationType::PORTRAIT_COVER_URI) {
+            if ((cmd.GetOprnType() >= OperationType::PORTRAIT_DISPLAY_LEVEL &&
+                 cmd.GetOprnType() <= OperationType::GROUP_COVER_URI)) {
                 return MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(cmd.GetOprnType(), value, predicates);
             }
             break;
@@ -800,9 +805,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             return MediaLibraryAlbumOperations::HandlePhotoAlbum(cmd.GetOprnType(), value, predicates);
         }
         case OperationObject::GEO_DICTIONARY:
-        case OperationObject::GEO_KNOWLEDGE: {
+        case OperationObject::GEO_KNOWLEDGE:
             return MediaLibraryLocationOperations::UpdateOperation(cmd);
-        }
 
         case OperationObject::STORY_ALBUM:
         case OperationObject::STORY_COVER:
@@ -815,6 +819,8 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
             MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);
             return E_OK;
         }
+        case OperationObject::PAH_BATCH_THUMBNAIL_OPERATE:
+            return ProcessThumbnailBatchCmd(cmd, value, predicates);
         default:
             break;
     }
@@ -1127,6 +1133,21 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
     return QueryInternal(cmd, columns, predicates);
 }
 
+shared_ptr<NativeRdb::ResultSet> QueryAnalysisAlbum(MediaLibraryCommand &cmd,
+    const vector<string> &columns, const DataSharePredicates &predicates)
+{
+    RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, cmd.GetTableName());
+    int32_t albumSubtype = MediaLibraryRdbUtils::GetAlbumSubtypeArgument(rdbPredicates);
+    MEDIA_DEBUG_LOG("Query analysis album of subtype: %{public}d", albumSubtype);
+    if (albumSubtype == PhotoAlbumSubType::GROUP_PHOTO) {
+        return MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, columns);
+    }
+    if (CheckIsPortraitAlbum(cmd)) {
+        return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
+    }
+    return MediaLibraryRdbStore::Query(rdbPredicates, columns);
+}
+
 shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLibraryCommand &cmd,
     const vector<string> &columns, const DataSharePredicates &predicates)
 {
@@ -1137,12 +1158,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
             return MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
         case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
-        case OperationObject::ANALYSIS_PHOTO_ALBUM: {
-            if (CheckIsPortraitAlbum(cmd)) {
-                return MediaLibraryAlbumOperations::QueryPortraitAlbum(cmd, columns);
-            }
-            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
-        }
+        case OperationObject::ANALYSIS_PHOTO_ALBUM:
+            return QueryAnalysisAlbum(cmd, columns, predicates);
         case OperationObject::PHOTO_MAP:
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return PhotoMapOperations::QueryPhotoAssets(
@@ -1419,36 +1436,6 @@ int32_t MediaLibraryDataManager::RevertPendingByPackage(const std::string &bundl
     return ret;
 }
 
-
-int32_t MediaLibraryDataManager::GetAgingDataSize(const int64_t &time, int &count)
-{
-    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
-    if (refCnt_.load() <= 0) {
-        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
-        return E_FAIL;
-    }
-
-    if (thumbnailService_ == nullptr) {
-        return E_THUMBNAIL_SERVICE_NULLPTR;
-    }
-    return thumbnailService_->GetAgingDataSize(time, count);
-}
-
-
-int32_t MediaLibraryDataManager::QueryNewThumbnailCount(const int64_t &time, int &count)
-{
-    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
-    if (refCnt_.load() <= 0) {
-        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
-        return E_FAIL;
-    }
-
-    if (thumbnailService_ == nullptr) {
-        return E_THUMBNAIL_SERVICE_NULLPTR;
-    }
-    return thumbnailService_->QueryNewThumbnailCount(time, count);
-}
-
 void MediaLibraryDataManager::SetStartupParameter()
 {
     static constexpr uint32_t BASE_USER_RANGE = 200000; // for get uid
@@ -1460,6 +1447,37 @@ void MediaLibraryDataManager::SetStartupParameter()
         MEDIA_ERR_LOG("Failed to set startup, result: %{public}d", ret);
     } else {
         MEDIA_INFO_LOG("Set startup success: %{public}s", to_string(uid).c_str());
+    }
+}
+
+int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryCommand &cmd,
+    const NativeRdb::ValuesBucket &value, const DataShare::DataSharePredicates &predicates)
+{
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+
+    int32_t requestId = 0;
+    ValueObject valueObject;
+    if (value.GetObject(THUMBNAIL_BATCH_GENERATE_REQUEST_ID, valueObject)) {
+        valueObject.GetInt(requestId);
+    } else {
+        return -EINVAL;
+    }
+    if (requestId <= 0) {
+        MEDIA_ERR_LOG("invalid request id");
+        return E_INVALID_VALUES;
+    }
+
+    if (cmd.GetOprnType() == OperationType::START_GENERATE_THUMBNAILS) {
+        NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
+        return thumbnailService_->CreateAstcBatchOnDemand(rdbPredicate, requestId);
+    } else if (cmd.GetOprnType() == OperationType::STOP_GENERATE_THUMBNAILS) {
+        thumbnailService_->CancelAstcBatchTask(requestId);
+        return E_OK;
+    } else {
+        MEDIA_ERR_LOG("invalid mediaLibrary command");
+        return E_INVALID_ARGUMENTS;
     }
 }
 }  // namespace Media

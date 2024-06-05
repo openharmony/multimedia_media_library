@@ -158,7 +158,29 @@ int32_t MovingPhotoNapi::OpenReadOnlyFile(const std::string& uri, bool isReadIma
     return isReadImage ? OpenReadOnlyImage(curUri, isMediaLibUri) : OpenReadOnlyVideo(curUri, isMediaLibUri);
 }
 
-static int32_t writeToSandboxUri(int32_t srcFd, const string& sandboxUri)
+static int32_t CopyFileFromMediaLibrary(int32_t srcFd, int32_t destFd)
+{
+    constexpr size_t bufferSize = 4096;
+    char buffer[bufferSize];
+    ssize_t bytesRead;
+    ssize_t bytesWritten;
+    while ((bytesRead = read(srcFd, buffer, bufferSize)) > 0) {
+        bytesWritten = write(destFd, buffer, bytesRead);
+        if (bytesWritten != bytesRead) {
+            NAPI_ERR_LOG("Failed to copy file from srcFd=%{public}d to destFd=%{public}d, errno=%{public}d",
+                srcFd, destFd, errno);
+            return E_HAS_FS_ERROR;
+        }
+    }
+
+    if (bytesRead < 0) {
+        NAPI_ERR_LOG("Failed to read from srcFd=%{public}d, errno=%{public}d", srcFd, errno);
+        return E_HAS_FS_ERROR;
+    }
+    return E_OK;
+}
+
+static int32_t WriteToSandboxUri(int32_t srcFd, const string& sandboxUri)
 {
     UniqueFd srcUniqueFd(srcFd);
 
@@ -166,23 +188,20 @@ static int32_t writeToSandboxUri(int32_t srcFd, const string& sandboxUri)
     string destPath = fileUri.GetRealPath();
     if (!MediaFileUtils::IsFileExists(destPath) && !MediaFileUtils::CreateFile(destPath)) {
         NAPI_ERR_LOG("Create empty dest file in sandbox failed, path:%{private}s", destPath.c_str());
-        return JS_INNER_FAIL;
+        return E_HAS_FS_ERROR;
     }
     int32_t destFd = MediaFileUtils::OpenFile(destPath, MEDIA_FILEMODE_READWRITE);
     if (destFd < 0) {
         NAPI_ERR_LOG("Open dest file failed, error: %{public}d", errno);
-        return JS_INNER_FAIL;
+        return E_HAS_FS_ERROR;
     }
     UniqueFd destUniqueFd(destFd);
 
     if (ftruncate(destUniqueFd.Get(), 0) == -1) {
         NAPI_ERR_LOG("Truncate old file in sandbox failed, error:%{public}d", errno);
-        return JS_INNER_FAIL;
+        return E_HAS_FS_ERROR;
     }
-    CHECK_COND_RET(MediaFileUtils::CopyFile(srcUniqueFd.Get(), destUniqueFd.Get()), JS_INNER_FAIL,
-        "Copy file failed");
-
-    return E_OK;
+    return CopyFileFromMediaLibrary(srcUniqueFd.Get(), destUniqueFd.Get());
 }
 
 static bool HandleFd(int32_t& fd)
@@ -206,13 +225,13 @@ static int32_t RequestContentToSandbox(MovingPhotoAsyncContext* context)
     if (!context->destImageUri.empty()) {
         int32_t imageFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, true);
         CHECK_COND_RET(HandleFd(imageFd), imageFd, "Open source image file failed");
-        int32_t ret = writeToSandboxUri(imageFd, context->destImageUri);
+        int32_t ret = WriteToSandboxUri(imageFd, context->destImageUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write image to sandbox failed");
     }
     if (!context->destVideoUri.empty()) {
         int32_t videoFd = MovingPhotoNapi::OpenReadOnlyFile(movingPhotoUri, false);
         CHECK_COND_RET(HandleFd(videoFd), videoFd, "Open source video file failed");
-        int32_t ret = writeToSandboxUri(videoFd, context->destVideoUri);
+        int32_t ret = WriteToSandboxUri(videoFd, context->destVideoUri);
         CHECK_COND_RET(ret == E_OK, ret, "Write video to sandbox failed");
     }
 
@@ -339,7 +358,7 @@ static void RequestContentExecute(napi_env env, void *data)
             break;
         default:
             NAPI_ERR_LOG("Invalid request content mode: %{public}d", static_cast<int32_t>(context->requestContentMode));
-            context->SaveError(OHOS_INVALID_PARAM_CODE);
+            context->error = OHOS_INVALID_PARAM_CODE;
             return;
     }
     if (ret != E_OK) {
@@ -363,7 +382,7 @@ static void RequestContentComplete(napi_env env, napi_status status, void *data)
                 context->movingPhotoUri.c_str(), context->resourceType);
             free(context->arrayBufferData);
             context->arrayBufferData = nullptr;
-            context->SaveError(JS_INNER_FAIL);
+            context->error = JS_INNER_FAIL;
         }
     } else if (context->arrayBufferData != nullptr) {
         free(context->arrayBufferData);
@@ -423,6 +442,12 @@ napi_value MovingPhotoNapi::NewMovingPhotoNapi(napi_env env, const string& photo
     CHECK_COND_RET(status == napi_ok, nullptr, "Failed to get new instance of moving photo, napi status: %{public}d",
         static_cast<int>(status));
     CHECK_COND_RET(instance != nullptr, nullptr, "Instance is nullptr");
+
+    MovingPhotoNapi* movingPhotoNapi = nullptr;
+    status = napi_unwrap(env, instance, reinterpret_cast<void**>(&movingPhotoNapi));
+    CHECK_COND_RET(status == napi_ok, nullptr, "Failed to unwarp instance of MovingPhotoNapi");
+    CHECK_COND_RET(movingPhotoNapi != nullptr, nullptr, "movingPhotoNapi is nullptr");
+    movingPhotoNapi->SetSourceMode(sourceMode);
     return instance;
 }
 

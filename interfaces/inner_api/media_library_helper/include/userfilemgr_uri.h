@@ -65,6 +65,12 @@ const std::string OPRN_SET_LOCATION = "set_location";
 const std::string OPRN_SET_PHOTO_QUALITY = "set_photo_quality";
 const std::string OPRN_CANCEL_PROCESS_IMAGE = "cancel_process_image";
 const std::string OPRN_MOVING_PHOTO_SCAN = "moving_photo_scan";
+const std::string OPRN_GROUP_DISMISS = "dismiss";
+const std::string OPRN_GROUP_ALBUM_NAME = "group_album_name";
+const std::string OPRN_GROUP_COVER_URI = "group_cover_uri";
+const std::string OPRN_START_GENERATE_THUMBNAILS = "start_generate_thumbnails";
+const std::string OPRN_STOP_GENERATE_THUMBNAILS = "stop_generate_thumbnails";
+const std::string OPRN_ADD_FILTERS = "add_filters";
 
 // Asset operations constants
 const std::string MEDIA_FILEOPRN = "file_operation";
@@ -215,6 +221,7 @@ const std::string PAH_ANA_TOTAL = "phaccess_ana_total_operation";
 const std::string PAH_MULTISTAGES_CAPTURE = "phaccess_multistages_capture_operation";
 const std::string PAH_HIGHLIGHT_COVER = "phaccess_highlight_cover_operation";
 const std::string PAH_HIGHLIGHT_PLAY = "phaccess_highlight_play_operation";
+const std::string PAH_BATCH_THUMBNAIL_OPERATE = "phaccess_batch_thumbnail_operation";
 
 // PhotoAccessHelper photo operation constants
 const std::string PAH_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE;
@@ -226,6 +233,7 @@ const std::string PAH_QUERY_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/
 const std::string PAH_EDIT_USER_COMMENT_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SET_USER_COMMENT;
 const std::string PAH_HIDE_PHOTOS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_HIDE;
 const std::string PAH_SUBMIT_CACHE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_SUBMIT_CACHE;
+const std::string PAH_ADD_FILTERS = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_ADD_FILTERS;
 const std::string PAH_BATCH_UPDATE_FAVORITE = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_FAV;
 const std::string PAH_BATCH_UPDATE_USER_COMMENT =
     MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_BATCH_UPDATE_USER_COMMENT;
@@ -238,6 +246,12 @@ const std::string PAH_ADD_IMAGE = MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_
 const std::string PAH_SET_LOCATION = MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_SET_LOCATION;
 const std::string PAH_CANCEL_PROCESS_IMAGE =
     MEDIALIBRARY_DATA_URI + "/" + PAH_MULTISTAGES_CAPTURE + "/" + OPRN_CANCEL_PROCESS_IMAGE;
+
+// Generate thumbnails in batches operation uri
+const std::string PAH_START_GENERATE_THUMBNAILS =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_START_GENERATE_THUMBNAILS;
+const std::string PAH_STOP_GENERATE_THUMBNAILS =
+    MEDIALIBRARY_DATA_URI + "/" + PAH_BATCH_THUMBNAIL_OPERATE + "/" + OPRN_STOP_GENERATE_THUMBNAILS;
 
 // PhotoAccessHelper album operation constants
 const std::string PAH_CREATE_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ALBUM + "/" + OPRN_CREATE;
@@ -266,6 +280,12 @@ const std::string PAH_DISMISS_ASSET = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MAP 
     OPRN_DISMISS_ASSET;
 const std::string PAH_PORTRAIT_ANAALBUM_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
     OPRN_PORTRAIT_COVER_URI;
+const std::string PAH_GROUP_ANAALBUM_DISMISS = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
+    OPRN_GROUP_DISMISS;
+const std::string PAH_GROUP_ANAALBUM_ALBUM_NAME = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
+    OPRN_GROUP_ALBUM_NAME;
+const std::string PAH_GROUP_ANAALBUM_COVER_URI = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" +
+    OPRN_GROUP_COVER_URI;
 
 const std::string PAH_QUERY_ANA_PHOTO_ALBUM = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_ALBUM + "/" + OPRN_QUERY;
 const std::string PAH_QUERY_ANA_PHOTO_MAP = MEDIALIBRARY_DATA_URI + "/" + PAH_ANA_MAP + "/" + OPRN_QUERY;

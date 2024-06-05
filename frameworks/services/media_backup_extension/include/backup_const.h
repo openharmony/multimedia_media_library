@@ -50,6 +50,9 @@ const std::string UPGRADE_FILE_DIR = "/storage/media/local/files/data";
 const std::string GARBLE_DUAL_FRAME_CLONE_DIR = "/storage/media/local/files/data/storage/emulated";
 const std::string GARBLE = "***";
 const std::string GALLERT_IMPORT = "/Pictures/cloud/Imports";
+const std::string GALLERT_HIDDEN_ALBUM = "/Pictures/hiddenAlbum";
+const std::string GALLERT_ROOT_PATH = "/storage/emulated/";
+const std::string RESTORE_FAILED_FILES_PATH = "/storage/media/local/files/Docs/Documents/restore_failed_files";
 
 // DB field for update scene
 const std::string GALLERY_ID = "_id";
@@ -68,6 +71,7 @@ const std::string GALLERY_HEIGHT = "height";
 const std::string GALLERY_WIDTH = "width";
 const std::string GALLERY_ORIENTATION = "orientation";
 const std::string GALLERY_MEDIA_BUCKET_ID = "relative_bucket_id";
+const std::string GALLERY_MEDIA_SOURCE_PATH = "sourcePath";
 
 // external column
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
@@ -92,6 +96,24 @@ const std::string AUDIO_DATA = "_data";
 const std::string AUDIO_DATE_MODIFIED = "date_modified";
 const std::string AUDIO_DATE_TAKEN = "datetaken";
 
+// statistics
+const std::string STAT_KEY_RESULT_INFO = "resultInfo";
+const std::string STAT_KEY_TYPE = "type";
+const std::string STAT_KEY_ERROR_CODE = "errorCode";
+const std::string STAT_KEY_ERROR_INFO = "errorInfo";
+const std::string STAT_KEY_INFOS = "infos";
+const std::string STAT_KEY_BACKUP_INFO = "backupInfo";
+const std::string STAT_KEY_SUCCESS_COUNT = "successCount";
+const std::string STAT_KEY_FAILED_COUNT = "failedCount";
+const std::string STAT_KEY_DETAILS = "details";
+const std::string STAT_KEY_NUMBER = "number";
+const std::string STAT_VALUE_ERROR_INFO = "ErrorInfo";
+const std::string STAT_VALUE_COUNT_INFO = "CountInfo";
+const std::string STAT_TYPE_PHOTO = "photo";
+const std::string STAT_TYPE_VIDEO = "video";
+const std::string STAT_TYPE_AUDIO = "audio";
+const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, STAT_TYPE_AUDIO };
+
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
 const std::string AUDIO_DB_NAME = "audio_MediaInfo.db";
@@ -101,6 +123,8 @@ const std::string GALLERY_ALBUM_NAME = "albumName";
 const std::string GALLERY_ALBUM_BUCKETID = "relativeBucketId";
 const std::string GALLERY_ALBUM_IPATH = "lPath";
 const std::string GALLERY_NICK_NAME = "nick_name";
+
+const std::string FILE_SEPARATOR = "/";
 
 constexpr int32_t INDEX_TYPE = 0;
 constexpr int32_t INDEX_CACHE_DIR = 1;
@@ -133,6 +157,25 @@ enum DUAL_MEDIA_TYPE {
     VIDEO_TYPE,
 };
 
+enum RestoreError {
+    SUCCESS = 0,
+    INIT_FAILED,
+    FILE_INVALID,
+    PATH_INVALID,
+    GET_PATH_FAILED,
+    INSERT_FAILED,
+    MOVE_FAILED,
+};
+
+const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
+    { RestoreError::INIT_FAILED, "Init failed" },
+    { RestoreError::FILE_INVALID, "File is invalid" },
+    { RestoreError::PATH_INVALID, "File path is invalid" },
+    { RestoreError::GET_PATH_FAILED, "Get path failed" },
+    { RestoreError::INSERT_FAILED, "Insert failed" },
+    { RestoreError::MOVE_FAILED, "Move failed" },
+};
+
 const std::unordered_map<PrefixType, std::string> PREFIX_MAP = {
     { PrefixType::CLOUD, "/storage/cloud/files" },
     { PrefixType::LOCAL, "/storage/media/local/files" },
@@ -150,6 +193,11 @@ const std::vector<std::vector<std::string>> CLONE_TABLE_LISTS_PHOTO = {
     { ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE },
 };
 
+const std::vector<std::vector<std::string>> CLONE_TABLE_LISTS_OLD_DEVICE = {
+    { PhotoColumn::PHOTOS_TABLE },
+    { AudioColumn::AUDIOS_TABLE },
+};
+
 struct FileInfo {
     std::string filePath;
     std::string displayName;
@@ -157,6 +205,7 @@ struct FileInfo {
     std::string userComment;
     std::string relativePath;
     std::string cloudPath;
+    std::string packageName;
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
     int64_t fileSize {0};
@@ -197,11 +246,19 @@ struct GalleryAlbumInfo {
     std::string albumListName;      //白名单相册名称
     std::string albumBundleName;    //白名单包名
     std::string albumMediaName;     //单相册名称
+    std::string albumlPath;     //相册IPath
 };
 
 struct MapInfo {
     int32_t albumId {-1};
     int32_t fileId {-1};
+};
+
+struct SubCountInfo {
+    uint64_t successCount {0};
+    std::unordered_map<std::string, int32_t> failedFiles;
+    SubCountInfo(int64_t successCount, const std::unordered_map<std::string, int32_t> &failedFiles)
+        : successCount(successCount), failedFiles(failedFiles) {}
 };
 
 // sql for external
@@ -241,7 +298,7 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     GALLERY_DISPLAY_NAME + "," + GALLERY_DESCRIPTION + "," + GALLERY_IS_FAVORITE + "," + GALLERY_RECYCLED_TIME +
     "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
-    EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID +
+    EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH +
     " FROM gallery_media WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
     SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0 ORDER BY showDateToken ASC ";
 
@@ -253,7 +310,8 @@ const std::string QUERY_GALLERY_ALBUM_INFO = "SELECT " + GALLERY_ALBUM +
                                      ".*, COALESCE(garbage_album.nick_name, '') AS " +
                                      GALLERY_NICK_NAME + " FROM " + GALLERY_ALBUM + " LEFT JOIN garbage_album ON " +
                                      GALLERY_ALBUM + ".lPath = garbage_album.nick_dir WHERE " + GALLERY_ALBUM +
-                                     ".lPath != '" + GALLERT_IMPORT + "'";
+                                     ".lPath != '" + GALLERT_IMPORT + "'" + " AND " + GALLERY_ALBUM +
+                                     ".lPath != '" + GALLERT_HIDDEN_ALBUM + "'";
 
 const std::string QUERY_AUDIO_COUNT = "SELECT count(1) as count FROM files WHERE media_type = 2 AND _size > 0 \
     AND _data LIKE '/storage/emulated/0/Music%'";
