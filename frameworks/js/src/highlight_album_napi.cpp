@@ -165,7 +165,7 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
             tabStr + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
             HIGHLIGHT_ALBUM_TABLE + "." + ID
         };
-        predicates.InnerJoin(tabStr)->On(onClause);
+        predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
     } else {
         NAPI_ERR_LOG("Invalid highlightAlbumInfoType");
         return;
