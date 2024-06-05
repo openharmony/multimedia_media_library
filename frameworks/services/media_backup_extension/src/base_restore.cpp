@@ -227,6 +227,19 @@ static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::Valu
     value.PutLong(MediaColumn::MEDIA_DATE_ADDED, dateAdded);
 }
 
+static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value,
+    const FileInfo &fileInfo)
+{
+    bool hasOrientation = value.HasColumn(PhotoColumn::PHOTO_ORIENTATION);
+    if (hasOrientation && fileInfo.fileType != MEDIA_TYPE_VIDEO) {
+        return; // image use orientation in rdb
+    }
+    if (hasOrientation) {
+        value.Delete(PhotoColumn::PHOTO_ORIENTATION);
+    }
+    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata->GetOrientation()); // video use orientation in metadata
+}
+
 void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
@@ -247,7 +260,6 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutLong(MediaColumn::MEDIA_TIME_PENDING, 0);
     value.PutInt(PhotoColumn::PHOTO_HEIGHT, data->GetFileHeight());
     value.PutInt(PhotoColumn::PHOTO_WIDTH, data->GetFileWidth());
-    value.PutInt(PhotoColumn::PHOTO_ORIENTATION, data->GetOrientation());
     value.PutDouble(PhotoColumn::PHOTO_LONGITUDE, data->GetLongitude());
     value.PutDouble(PhotoColumn::PHOTO_LATITUDE, data->GetLatitude());
     value.PutString(PhotoColumn::PHOTO_ALL_EXIF, data->GetAllExif());
@@ -255,6 +267,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     value.PutString(PhotoColumn::PHOTO_SHOOTING_MODE_TAG, data->GetShootingModeTag());
     value.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, data->GetLastVisitTime());
     InsertDateAdded(data, value);
+    InsertOrientation(data, value, fileInfo);
     int64_t dateAdded = 0;
     ValueObject valueObject;
     if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {
