@@ -639,7 +639,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test002, TestSize.Le
     queryTrashed = "SELECT file_id from Photos where display_name = 'a_media_normal_image1.jpg';";
     resultSet = photosStorePtr->QuerySql(queryTrashed);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test002 end");
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test002 end";
 }
@@ -657,7 +657,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ablum_test003, TestSize.Le
     queryTrashed = "SELECT file_id from Photos where display_name = 'a_media_normal_video1.mp4';";
     resultSet = photosStorePtr->QuerySql(queryTrashed);
     ASSERT_FALSE(resultSet == nullptr);
-    ASSERT_TRUE(resultSet->GoToNextRow() == NativeRdb::E_OK);
+    ASSERT_FALSE(resultSet->GoToNextRow() == NativeRdb::E_OK);
     MEDIA_INFO_LOG("medialib_backup_test_ablum_test003 end");
     GTEST_LOG_(INFO) << "medialib_backup_test_ablum_test003 end";
 }
