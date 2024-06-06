@@ -73,6 +73,7 @@
 #include "mimetype_utils.h"
 #include "multistages_capture_manager.h"
 #include "permission_utils.h"
+#include "photo_album_column.h"
 #include "photo_map_operations.h"
 #include "resource_type.h"
 #include "rdb_store.h"

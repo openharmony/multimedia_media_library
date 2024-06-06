@@ -54,6 +54,7 @@ ohos_shared_library("media_library") {
     "src/medialibrary_helper_container.cpp",
     "src/medialibrary_kvstore.cpp",
     "src/medialibrary_kvstore_manager.cpp",
+    "src/medialibrary_operation.cpp",
     "src/medialibrary_threadpool.cpp",
     "src/mimetype_utils.cpp",
     "src/native_album_asset.cpp",
