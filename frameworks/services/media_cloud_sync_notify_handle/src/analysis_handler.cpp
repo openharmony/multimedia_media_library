@@ -77,8 +77,11 @@ static list<Uri> UpdateAnalysisAlbumsForCloudSync(const shared_ptr<NativeRdb::Rd
     return sendUris;
 }
 
-static inline void AddNewNotify(CloudSyncHandleData &handleData, const list<Uri> &sendUris)
+static void AddNewNotify(CloudSyncHandleData &handleData, const list<Uri> &sendUris)
 {
+    if (sendUris.size() <= 0) {
+        return;
+    }
     ChangeType changeType = static_cast<ChangeType>(NotifyType::NOTIFY_UPDATE);
     if (handleData.notifyInfo.find(changeType) == handleData.notifyInfo.end()) {
         handleData.notifyInfo[changeType] = sendUris;
