@@ -223,7 +223,7 @@ bool SourceLoader::CreateImage(std::unique_ptr<ImageSource>& imageSource, ImageI
     }
 
     if (data_.mediaType == MEDIA_TYPE_VIDEO) {
-        data.orientation = 0;
+        data_.orientation = 0;
     }
 
     MEDIA_DEBUG_LOG("SourceLoader status:%{public}s, width:%{public}d, height:%{public}d",
