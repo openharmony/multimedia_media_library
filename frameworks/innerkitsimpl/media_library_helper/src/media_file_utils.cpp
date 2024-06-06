@@ -221,7 +221,7 @@ bool MediaFileUtils::IsFileExists(const string &fileName)
 bool MediaFileUtils::IsTrueFileExists(const string &fileName)
 {
     struct stat statInfo {};
-    if (!(fileName.empty())) {
+    if (!fileName.empty()) {
         if (stat(fileName.c_str(), &statInfo) == E_SUCCESS) {
             //if the given path is a directory path, return
             if (statInfo.st_mode & S_IFDIR) {
