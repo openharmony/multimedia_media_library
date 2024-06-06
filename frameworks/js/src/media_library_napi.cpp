@@ -279,6 +279,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("saveFormInfo", PhotoAccessSaveFormInfo),
             DECLARE_NAPI_FUNCTION("removeFormInfo", PhotoAccessRemoveFormInfo),
             DECLARE_NAPI_FUNCTION("getAssetsSync", PhotoAccessGetPhotoAssetsSync),
+            DECLARE_NAPI_FUNCTION("getAlbumsSync", PhotoAccessGetPhotoAlbumsSync),
             DECLARE_NAPI_FUNCTION("getFileAssetsInfo", PhotoAccessGetFileAssetsInfo),
             DECLARE_NAPI_FUNCTION("startCreateThumbnailTask", PhotoAccessStartCreateThumbnailTask),
             DECLARE_NAPI_FUNCTION("stopCreateThumbnailTask", PhotoAccessStopCreateThumbnailTask),
@@ -3943,6 +3944,37 @@ static void JSGetPhotoAlbumsExecute(napi_env env, void *data)
         PhotoAlbumSubType::GEOGRAPHY_LOCATION);
 }
 
+static napi_value JSGetPhotoAlbumsExecuteSync(napi_env env, MediaLibraryAsyncContext& asyncContext)
+{
+    auto context = &asyncContext;
+    string queryUri;
+    if (context->hiddenOnly || context->hiddenAlbumFetchMode == ASSETS_MODE) {
+        queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+            UFM_QUERY_HIDDEN_ALBUM : PAH_QUERY_HIDDEN_ALBUM;
+    } else if (context->isAnalysisAlbum) {
+        queryUri = context->isLocationAlbum == PhotoAlbumSubType::GEOGRAPHY_LOCATION ?
+            PAH_QUERY_GEO_PHOTOS : PAH_QUERY_ANA_PHOTO_ALBUM;
+    } else {
+        queryUri = (context->resultNapiType == ResultNapiType::TYPE_USERFILE_MGR) ?
+            UFM_QUERY_PHOTO_ALBUM : PAH_QUERY_PHOTO_ALBUM;
+    }
+    Uri uri(queryUri);
+    int errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    CHECK_NULLPTR_RET(resultSet);
+
+    auto fetchPhotoAlbumResult = make_unique<FetchResult<PhotoAlbum>>(move(resultSet));
+    fetchPhotoAlbumResult->SetResultNapiType(context->resultNapiType);
+    fetchPhotoAlbumResult->SetHiddenOnly(context->hiddenOnly);
+    fetchPhotoAlbumResult->SetLocationOnly(context->isLocationAlbum == PhotoAlbumSubType::GEOGRAPHY_LOCATION);
+    if (fetchPhotoAlbumResult->GetCount() <= 0) {
+        return nullptr;
+    }
+    auto photoAlbum = fetchPhotoAlbumResult->GetFirstObject();
+    CHECK_NULLPTR_RET(photoAlbum);
+    return PhotoAlbumNapi::CreatePhotoAlbumNapi(env, photoAlbum);
+}
+
 static void JSGetPhotoAlbumsCompleteCallback(napi_env env, napi_status status, void *data)
 {
     MediaLibraryTracer tracer;
@@ -4727,6 +4759,17 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbums(napi_env env, napi_callba
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "GetPhotoAlbums", JSGetPhotoAlbumsExecute,
         JSGetPhotoAlbumsCompleteCallback);
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetPhotoAlbumsSync(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessGetPhotoAlbumsSync");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    CHECK_NULLPTR_RET(ParseArgsGetPhotoAlbum(env, info, asyncContext));
+    return JSGetPhotoAlbumsExecuteSync(env, *asyncContext);
 }
 
 napi_value MediaLibraryNapi::CreatePositionTypeEnum(napi_env env)
