@@ -84,6 +84,7 @@ EXPORT const std::unordered_set<int32_t> PORTRAIT_PAGE_MODE = {
 class MediaFileUtils {
 public:
     EXPORT static bool IsFileExists(const std::string &fileName);
+    EXPORT static bool IsFileValid(const std::string &fileName);
     EXPORT static bool IsDirEmpty(const std::string &path);
     EXPORT static bool CreateFile(const std::string &filePath);
     EXPORT static bool DeleteFile(const std::string &fileName);
