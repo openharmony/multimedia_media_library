@@ -218,7 +218,7 @@ bool MediaFileUtils::IsFileExists(const string &fileName)
     return ((stat(fileName.c_str(), &statInfo)) == E_SUCCESS);
 }
 
-bool MediaFileUtils::IsTrueFileExists(const string &fileName)
+bool MediaFileUtils::IsFileValid(const string &fileName)
 {
     struct stat statInfo {};
     if (!fileName.empty()) {
