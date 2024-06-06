@@ -364,7 +364,7 @@ void UpgradeRestore::RestoreBatch(int32_t offset)
 {
     MEDIA_INFO_LOG("start restore from gallery, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfos(offset);
-    InsertPhoto(UPGRADE_RESTORE_ID, infos, SourceType::GALLERY);
+    InsertPhoto(sceneCode_, infos, SourceType::GALLERY);
 }
 
 void UpgradeRestore::RestoreFromExternal(bool isCamera)
@@ -387,7 +387,7 @@ void UpgradeRestore::RestoreExternalBatch(int32_t offset, int32_t maxId, bool is
 {
     MEDIA_INFO_LOG("start restore from external, offset: %{public}d", offset);
     std::vector<FileInfo> infos = QueryFileInfosFromExternal(offset, maxId, isCamera);
-    InsertPhoto(UPGRADE_RESTORE_ID, infos, type);
+    InsertPhoto(sceneCode_, infos, type);
 }
 
 int32_t UpgradeRestore::QueryNotSyncTotalNumber(int32_t maxId, bool isCamera)
