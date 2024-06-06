@@ -194,6 +194,13 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         fileInfos[i].cloudPath = cloudPath;
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
+        if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID &&
+            HasSameFile(mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
+            (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
+            MEDIA_WARN_LOG("File %{public}s already exists.",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
+            continue;
+        }
         values.emplace_back(value);
     }
     return values;
@@ -273,6 +280,7 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
     if (value.GetObject(MediaColumn::MEDIA_DATE_ADDED, valueObject)) {
         valueObject.GetLong(dateAdded);
     }
+    fileInfo.dateAdded = dateAdded;
     value.PutString(PhotoColumn::PHOTO_DATE_YEAR,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_YEAR_FORMAT, dateAdded));
     value.PutString(PhotoColumn::PHOTO_DATE_MONTH,
@@ -539,10 +547,18 @@ bool BaseRestore::IsSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStor
 bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
     FileInfo &fileInfo)
 {
-    string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
-        tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
-        MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
-        MediaColumn::MEDIA_DATE_MODIFIED + " = " + to_string(fileInfo.dateModified);
+    string querySql;
+    if (tableName == AudioColumn::AUDIOS_TABLE) {
+        querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+            tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
+            MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
+            MediaColumn::MEDIA_DATE_MODIFIED + " = " + to_string(fileInfo.dateModified);
+    } else {
+        querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+            tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
+            MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
+            MediaColumn::MEDIA_DATE_ADDED + " = " + to_string(fileInfo.dateAdded);
+    }
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return false;
