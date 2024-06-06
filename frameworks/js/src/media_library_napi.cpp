@@ -2330,6 +2330,9 @@ static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetc
     for (const auto &column : fetchColumn) {
         if (PhotoAlbumColumns::IsPhotoAlbumColumn(column)) {
             validFetchColumns.insert(column);
+        } else if (column.compare(MEDIA_DATA_DB_URI) == 0) {
+            // uri is default property of album
+            continue;
         } else {
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
