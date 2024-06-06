@@ -30,13 +30,14 @@ public:
     void OnChange(const ChangeInfo &changeInfo) override
     {
         changeInfo_ = changeInfo;
-        std::unique_lock<std::mutex> lock(mutex_);
+        bChange_ = true;
         condition_.notify_one();
     }
 
     ChangeInfo changeInfo_;
     std::mutex mutex_;
     std::condition_variable condition_;
+    std::atomic<bool> bChange_ {false};
 };
 class NotifyTest : public testing::Test {
 public:

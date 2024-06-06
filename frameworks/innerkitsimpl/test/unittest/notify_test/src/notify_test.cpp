@@ -36,7 +36,10 @@
 #include "rdb_predicates.h"
 #include "result_set_utils.h"
 #include "system_ability_definition.h"
-
+#include "analysis_handler.h"
+#include "cloud_sync_notify_handler.h"
+#include "notify_handler.h"
+#include "uri_convert_handler.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -185,6 +188,71 @@ void CheckCloseAssetNotify(bool isCreate)
             EXPECT_TRUE(false);
         }
     }
+}
+
+static void CheckInfo(shared_ptr<TestObserver> obs, const std::string &uriPrefix, const std::string &uriPostfix,
+    const DataShareObserver::ChangeType &changeType)
+{
+    unique_lock<mutex> lock(obs->mutex_);
+    if (obs->condition_.wait_for(lock, 1s) == cv_status::no_timeout ||
+        obs->bChange_.load()) {
+        if (changeType == DataShareObserver::ChangeType::OTHER) {
+            EXPECT_EQ(obs->changeInfo_.changeType_, DataShareObserver::ChangeType::DELETE);
+        } else {
+            EXPECT_EQ(obs->changeInfo_.changeType_, changeType);
+        }
+        EXPECT_EQ(obs->changeInfo_.uris_.size(), LIST_SIZE);
+        if (uriPrefix == PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX &&
+            changeType == DataShareObserver::ChangeType::OTHER) {
+            EXPECT_EQ(obs->changeInfo_.uris_.begin()->ToString(), PhotoAlbumColumns::ALBUM_URI_PREFIX);
+        } else if (uriPrefix == PhotoColumn::PHOTO_CLOUD_URI_PREFIX &&
+            changeType == DataShareObserver::ChangeType::OTHER) {
+            EXPECT_EQ(obs->changeInfo_.uris_.begin()->ToString(), PhotoColumn::PHOTO_URI_PREFIX);
+        } else if (uriPrefix == PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX) {
+            EXPECT_EQ(obs->changeInfo_.uris_.begin()->ToString(), PhotoAlbumColumns::ALBUM_URI_PREFIX + uriPostfix);
+        } else if (uriPrefix == PhotoColumn::PHOTO_CLOUD_URI_PREFIX) {
+            EXPECT_EQ(obs->changeInfo_.uris_.begin()->ToString(), PhotoColumn::PHOTO_URI_PREFIX + uriPostfix);
+        }
+    } else {
+        EXPECT_TRUE(false);
+    }
+}
+
+static void CheckCloudSyncNotify(const std::string &uriPrefix, const std::string &uriPostfix,
+    const DataShareObserver::ChangeType &changeType)
+{
+    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    ASSERT_TRUE(rdbStore != nullptr);
+
+    string assetStr = "";
+    if (uriPrefix == PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX) {
+        assetStr = PhotoAlbumColumns::ALBUM_URI_PREFIX;
+    }
+    if (uriPrefix == PhotoColumn::PHOTO_CLOUD_URI_PREFIX) {
+        assetStr = PhotoColumn::PHOTO_URI_PREFIX;
+    }
+    string uriStr = uriPrefix + uriPostfix;
+    Uri uri(uriStr);
+    shared_ptr<TestObserver> obs = make_shared<TestObserver>();
+    if (sDataShareHelper_ == nullptr) {
+        return;
+    }
+    Uri uri2(assetStr);
+    sDataShareHelper_->RegisterObserverExt(uri2, obs, true);
+    list<Uri> uris;
+    uris.push_back(uri);
+    CloudSyncNotifyInfo _cloudSyncNotifyInfo;
+    _cloudSyncNotifyInfo.uris = uris;
+    _cloudSyncNotifyInfo.type = changeType;
+    CloudSyncNotifyHandler _cloudSyncNotifyHandler(_cloudSyncNotifyInfo);
+    _cloudSyncNotifyHandler.MakeResponsibilityChain();
+    
+    CheckInfo(obs, uriPrefix, uriPostfix, changeType);
+    sDataShareHelper_->UnregisterObserverExt(uri2, obs);
+    MediaLibraryUnistoreManager::GetInstance().Stop();
+    obs = nullptr;
 }
 
 void NotifyTest::SetUpTestCase()
@@ -406,5 +474,203 @@ HWTEST_F(NotifyTest, close_asset_on_change_002, TestSize.Level0)
     MEDIA_INFO_LOG("close_asset_on_change_002 enter");
     CheckCloseAssetNotify(false);
     MEDIA_INFO_LOG("close_asset_on_change_002 exit");
+}
+
+/**
+ * @tc.name: cloud_notify_001
+ * @tc.desc: test cloud notify for ChangeType::UPDATE
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, cloud_notify_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("cloud_notify_001 enter");
+    CheckCloudSyncNotify(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX, "1", DataShareObserver::ChangeType::UPDATE);
+    MEDIA_INFO_LOG("cloud_notify_001 exit");
+}
+
+/**
+ * @tc.name: cloud_notify_002
+ * @tc.desc: test cloud notify for ChangeType::DELETE
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, cloud_notify_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("cloud_notify_002 enter");
+    CheckCloudSyncNotify(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX, "2", DataShareObserver::ChangeType::DELETE);
+    MEDIA_INFO_LOG("cloud_notify_002 exit");
+}
+
+/**
+ * @tc.name: cloud_notify_003
+ * @tc.desc: test cloud notify for ChangeType::INSERT
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, cloud_notify_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("cloud_notify_003 enter");
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "3", DataShareObserver::ChangeType::INSERT);
+    MEDIA_INFO_LOG("cloud_notify_003 exit");
+}
+
+/**
+ * @tc.name: cloud_notify_004
+ * @tc.desc: test cloud notify for ChangeType::DELETE
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, cloud_notify_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("cloud_notify_004 enter");
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "4", DataShareObserver::ChangeType::DELETE);
+    MEDIA_INFO_LOG("cloud_notify_004 exit");
+}
+
+/**
+ * @tc.name: cloud_notify_005
+ * @tc.desc: test cloud notify for ChangeType::UPDATE
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, cloud_notify_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("cloud_notify_005 enter");
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "5", DataShareObserver::ChangeType::UPDATE);
+    MEDIA_INFO_LOG("cloud_notify_005 exit");
+}
+
+/**
+ * @tc.name: cloud_notify_006
+ * @tc.desc: test cloud notify for ChangeType::OTHER
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, cloud_notify_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("cloud_notify_006 enter");
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "6", DataShareObserver::ChangeType::OTHER);
+    MEDIA_INFO_LOG("cloud_notify_006 exit");
+}
+
+/**
+ * @tc.name: cloud_notify_007
+ * @tc.desc: test cloud notify for ChangeType::INSERT
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, cloud_notify_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("cloud_notify_007 enter");
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::INSERT);
+    MEDIA_INFO_LOG("cloud_notify_007 exit");
+}
+
+/**
+ * @tc.name: cloud_notify_008
+ * @tc.desc: test cloud notify for ChangeType::DELETE
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, cloud_notify_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("cloud_notify_008 enter");
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::DELETE);
+    MEDIA_INFO_LOG("cloud_notify_008 exit");
+}
+
+/**
+ * @tc.name: cloud_notify_009
+ * @tc.desc: test cloud notify for ChangeType::UPDATE
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, cloud_notify_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("cloud_notify_009 enter");
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::UPDATE);
+    MEDIA_INFO_LOG("cloud_notify_009 exit");
+}
+
+/**
+ * @tc.name: cloud_notify_010
+ * @tc.desc: test cloud notify for ChangeType::OTHER
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, cloud_notify_010, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("cloud_notify_010 enter");
+    CheckCloudSyncNotify(PhotoColumn::PHOTO_CLOUD_URI_PREFIX, "", DataShareObserver::ChangeType::OTHER);
+    MEDIA_INFO_LOG("cloud_notify_010 exit");
+}
+
+/**
+ * @tc.name: handle_empty_data_001
+ * @tc.desc: test AnalysisHandler Handle
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, handle_empty_data_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("handle_empty_data_001 enter");
+    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    ASSERT_TRUE(rdbStore != nullptr);
+    CloudSyncHandleData emptyHandleData;
+    emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
+    AnalysisHandler handler;
+    handler.Handle(emptyHandleData);
+    MEDIA_INFO_LOG("handle_empty_data_001 exit");
+}
+
+/**
+ * @tc.name: handle_empty_data_002
+ * @tc.desc: test UriConvertHandler Handle
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, handle_empty_data_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("handle_empty_data_002 enter");
+    CloudSyncHandleData emptyHandleData;
+    emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
+    UriConvertHandler handler;
+    handler.Handle(emptyHandleData);
+    MEDIA_INFO_LOG("handle_empty_data_002 exit");
+}
+
+/**
+ * @tc.name: handle_empty_data_003
+ * @tc.desc: test NotifyHandler Handle
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, handle_empty_data_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("handle_empty_data_003 enter");
+    CloudSyncHandleData emptyHandleData;
+    emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
+    NotifyHandler handler;
+    handler.Handle(emptyHandleData);
+    MEDIA_INFO_LOG("handle_empty_data_003 exit");
+}
+
+/**
+ * @tc.name: handle_special_change_type_001
+ * @tc.desc: test NotifyHandler Handle
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(NotifyTest, handle_special_change_type_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("handle_special_change_type_001 enter");
+    CloudSyncHandleData specialHandleData;
+    specialHandleData.notifyInfo[static_cast<DataShare::DataShareObserver::ChangeType>(-1)] = {};
+    NotifyHandler handler;
+    handler.Handle(specialHandleData);
+    MEDIA_INFO_LOG("handle_special_change_type_001 exit");
 }
 } // namespace OHOS::Media
