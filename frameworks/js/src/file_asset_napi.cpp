@@ -2645,10 +2645,6 @@ static void PhotoAccessHelperSetUserCommentExecute(napi_env env, void *data)
     tracer.Start("PhotoAccessHelperSetUserCommentExecute");
 
     auto *context = static_cast<FileAssetAsyncContext *>(data);
-    if (context->objectPtr->GetMediaType() != MEDIA_TYPE_IMAGE) {
-        context->error = -EINVAL;
-        return;
-    }
 
     string uri = PAH_EDIT_USER_COMMENT_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
