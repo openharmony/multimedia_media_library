@@ -78,6 +78,7 @@ ohos_shared_library("media_library") {
 
   external_deps = [
     "ability_base:zuri",
+    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
     "access_token:el5_filekey_manager_sdk",
