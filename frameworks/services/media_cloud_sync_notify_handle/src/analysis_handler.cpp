@@ -17,7 +17,10 @@
 
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_utils.h"
+#include "photo_album_column.h"
+#include "photo_map_column.h"
 #include "result_set_utils.h"
+#include "vision_column.h"
 
 using namespace std;
 
