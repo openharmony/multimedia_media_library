@@ -1382,7 +1382,7 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
         string editData;
         CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
             "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-        CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData) == E_OK, E_FAIL,
+        CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData, fileId) == E_OK, E_FAIL,
             "Failed to add filters to photo");
     }
 
@@ -1703,7 +1703,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     string editData;
     SaveEditDataCamera(cmd, assetPath, editData);
     // 生成水印
-    return AddFiltersToPhoto(sourcePath, assetPath, editData);
+    return AddFiltersToPhoto(sourcePath, assetPath, editData, fileAsset->GetId());
 }
 
 int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
@@ -1920,7 +1920,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
 }
 
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, const std::string &path,
-    const uint8_t *addr, const long bytes)
+    const uint8_t *addr, const long bytes, int32_t fileId)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
@@ -1947,7 +1947,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
             string editData;
             CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
                 "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-            CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(editDataSourcePath, path, editData) == E_OK, E_FAIL,
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(editDataSourcePath, path, editData, fileId) == E_OK, E_FAIL,
                 "Failed to add filters to photo");
             return E_OK;
         }
@@ -1955,7 +1955,7 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
-    const std::string &outputPath, const std::string &editdata)
+    const std::string &outputPath, const std::string &editdata, int32_t fileId)
 {
     MEDIA_INFO_LOG("AddFiltersToPhoto inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
         inputPath.c_str(), outputPath.c_str(), editdata.c_str());
@@ -1965,6 +1965,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
         MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPhoto: TakeEffect error. ret = %d", ret);
         return E_ERR;
     }
+    MEDIA_INFO_LOG("AddFiltersToPhoto finish");
+    MediaLibraryObjectUtils::ScanFileAsync(outputPath, to_string(fileId), MediaLibraryApi::API_10);
     return E_OK;
 }
 
