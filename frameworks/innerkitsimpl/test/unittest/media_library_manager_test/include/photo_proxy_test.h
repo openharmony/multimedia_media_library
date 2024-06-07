@@ -140,6 +140,21 @@ public:
     {
         photoQuality_ = quality;
     }
+
+    double GetLatitude() override
+    {
+        return 0.0;
+    }
+
+    double GetLongitude() override
+    {
+        return 0.0;
+    }
+
+    int32_t GetShootingMode() override
+    {
+        return 0;
+    }
 private:
     void *fileDataAddr_ = nullptr;
     int32_t fileSize_ = 0;

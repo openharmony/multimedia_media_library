@@ -62,6 +62,9 @@ private:
         const sptr<PhotoProxy> &photoProxy, int32_t fileId, int32_t subType);
     static void DealWithLowQualityPhoto(std::shared_ptr<DataShare::DataShareHelper> &dataShareHelper, int fd,
         const std::string &uri, const sptr<PhotoProxy> &photoProxy);
+    static void SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t size,
+        const sptr<PhotoProxy> &photoProxy, int fd);
+    static std::string LocationValueToString(double value);
 
     sptr<PhotoProxy> photoProxy_;
     int32_t fileId_;
