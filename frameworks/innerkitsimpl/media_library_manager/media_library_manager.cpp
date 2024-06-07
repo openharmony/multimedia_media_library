@@ -56,7 +56,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sDataShareHelper_ = nullptr;
+sptr<IRemoteObject> MediaLibraryManager::token_ = nullptr;
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
 constexpr int32_t DEFAULT_MONTH_THUMBNAIL_SIZE = 128;
@@ -78,9 +78,6 @@ MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
 {
     token_ = token;
-    if (sDataShareHelper_ == nullptr) {
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
-    }
 }
 
 static void UriAppendKeyValue(string &uri, const string &key, const string &value)
@@ -120,9 +117,11 @@ static int32_t parseCreateArguments(const string &displayName, DataShareValuesBu
 
 string MediaLibraryManager::CreateAsset(const string &displayName)
 {
-    if (sDataShareHelper_ == nullptr || displayName.empty()) {
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr || displayName.empty()) {
         MEDIA_ERR_LOG("Failed to create Asset, datashareHelper is nullptr");
-        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+        return "";
     }
     DataShareValuesBucket valuesBucket;
     auto ret = parseCreateArguments(displayName, valuesBucket);
@@ -134,7 +133,7 @@ string MediaLibraryManager::CreateAsset(const string &displayName)
     GetCreateUri(createFileUri);
     Uri createUri(createFileUri);
     string outUri;
-    int index = sDataShareHelper_->InsertExt(createUri, valuesBucket, outUri);
+    int index = dataShareHelper->InsertExt(createUri, valuesBucket, outUri);
     if (index < 0) {
         MEDIA_ERR_LOG("Failed to create Asset, insert database error!");
         return "";
@@ -175,12 +174,15 @@ int32_t MediaLibraryManager::OpenAsset(string &uri, const string openMode)
     if (!MEDIA_OPEN_MODES.count(originOpenMode)) {
         return E_ERR;
     }
-    if (sDataShareHelper_ == nullptr) {
+
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr) {
         MEDIA_ERR_LOG("Failed to open Asset, datashareHelper is nullptr");
         return E_ERR;
     }
     Uri openUri(uri);
-    return sDataShareHelper_->OpenFile(openUri, openMode);
+    return dataShareHelper->OpenFile(openUri, openMode);
 }
 
 int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
@@ -189,12 +191,14 @@ int32_t MediaLibraryManager::CloseAsset(const string &uri, const int32_t fd)
     DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_URI, uri);
 
-    if (sDataShareHelper_ != nullptr) {
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper != nullptr) {
         string abilityUri = MEDIALIBRARY_DATA_URI;
         Uri closeAssetUri(abilityUri + "/" + MEDIA_FILEOPRN + "/" + MEDIA_FILEOPRN_CLOSEASSET);
 
         if (close(fd) == E_SUCCESS) {
-            retVal = sDataShareHelper_->Insert(closeAssetUri, valuesBucket);
+            retVal = dataShareHelper->Insert(closeAssetUri, valuesBucket);
         }
 
         if (retVal == E_FAIL) {
@@ -260,11 +264,13 @@ std::shared_ptr<DataShareResultSet> MediaLibraryManager::GetResultSetFromDb(stri
     predicates.And()->EqualTo(MEDIA_DATA_DB_IS_TRASH, to_string(NOT_TRASHED));
     DatashareBusinessError businessError;
 
-    if (sDataShareHelper_ == nullptr) {
-        MEDIA_ERR_LOG("sDataShareHelper_ is null");
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr) {
+        MEDIA_ERR_LOG("dataShareHelper is null");
         return nullptr;
     }
-    return sDataShareHelper_->Query(uri, predicates, columns, &businessError);
+    return dataShareHelper->Query(uri, predicates, columns, &businessError);
 }
 
 static int32_t SolvePath(const string &filePath, string &tempPath, string &userId)
@@ -413,7 +419,9 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
 
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
 {
-    if (sDataShareHelper_ == nullptr) {
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr) {
         MEDIA_ERR_LOG("Failed to open thumbnail, datashareHelper is nullptr");
         return E_ERR;
     }
@@ -443,7 +451,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         MEDIA_ERR_LOG("OpenThumbnail path is empty");
     }
     Uri openUri(uriStr);
-    return sDataShareHelper_->OpenFile(openUri, "R");
+    return dataShareHelper->OpenFile(openUri, "R");
 }
 
 /**
@@ -806,7 +814,9 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
         return E_ERR;
     }
 
-    if (sDataShareHelper_ == nullptr) {
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    if (dataShareHelper == nullptr) {
         MEDIA_ERR_LOG("Failed to read video of moving photo, datashareHelper is nullptr");
         return E_ERR;
     }
@@ -814,7 +824,7 @@ int32_t MediaLibraryManager::ReadMovingPhotoVideo(const string &uri)
     string videoUri = uri;
     MediaFileUtils::UriAppendKeyValue(videoUri, MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OPEN_MOVING_PHOTO_VIDEO);
     Uri openVideoUri(videoUri);
-    return sDataShareHelper_->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
+    return dataShareHelper->OpenFile(openVideoUri, MEDIA_FILEMODE_READONLY);
 }
 
 std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
@@ -836,7 +846,9 @@ std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
 shared_ptr<PhotoAssetProxy> MediaLibraryManager::CreatePhotoAssetProxy(CameraShotType cameraShotType,
     uint32_t callingUid, int32_t userId)
 {
-    shared_ptr<PhotoAssetProxy> photoAssetProxy = make_shared<PhotoAssetProxy>(sDataShareHelper_, cameraShotType,
+    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
+        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
+    shared_ptr<PhotoAssetProxy> photoAssetProxy = make_shared<PhotoAssetProxy>(dataShareHelper, cameraShotType,
         callingUid, userId);
     return photoAssetProxy;
 }
