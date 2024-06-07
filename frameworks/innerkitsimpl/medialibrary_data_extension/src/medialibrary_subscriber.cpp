@@ -126,9 +126,6 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
     bool currentStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
-    if (currentStatus) {
-        StartAnalysisService();
-    }
     if (currentStatus_ == currentStatus) {
         return;
     }
