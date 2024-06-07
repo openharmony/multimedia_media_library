@@ -30,12 +30,14 @@
 #include "medialibrary_tracer.h"
 #include "userfilemgr_uri.h"
 #include "datashare_helper.h"
+#include "media_exif.h"
 
 using namespace std;
 
 namespace OHOS {
 namespace Media {
 const string API_VERSION = "api_version";
+const double TIMER_MULTIPLIER = 60.0;
 
 PhotoAssetProxy::PhotoAssetProxy() {}
 
@@ -228,8 +230,74 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
     MEDIA_INFO_LOG("pack pixelMap success, packedSize: %{public}" PRId64, packedSize);
 
     auto ret = SaveImage(fd, uri, photoProxy->GetPhotoId(), buffer, packedSize);
+    SetShootingModeAndGpsInfo(buffer, packedSize, photoProxy, fd);
     delete[] buffer;
     return ret;
+}
+
+void PhotoAssetProxy::SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t size,
+    const sptr<PhotoProxy> &photoProxy, int fd)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("SetShootingModeAndGpsInfo");
+    int32_t shootingMode = photoProxy->GetShootingMode();
+    double latitude = photoProxy->GetLatitude();
+    double longitude = photoProxy->GetLongitude();
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    tracer.Start("SetShootingModeAndGpsInfo");
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    tracer.Finish();
+    if (imageSource == nullptr) {
+        MEDIA_ERR_LOG("imageSource is nullptr");
+        return;
+    }
+    uint32_t index = 0;
+    uint32_t ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_ISO_SPEED_LATITUDE_ZZZ,
+        to_string(shootingMode), fd);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("modify image property shooting mode fail %{public}d", ret);
+    }
+
+    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LONGITUDE, LocationValueToString(longitude), fd);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("modify image property longitude fail %{public}d", ret);
+    }
+
+    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF, longitude > 0.0 ? "E" : "W", fd);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("modify image property longitude ref fail %{public}d", ret);
+    }
+
+    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE, LocationValueToString(latitude), fd);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("modify image property latitude fail %{public}d", ret);
+    }
+
+    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, latitude > 0.0 ? "N" : "S", fd);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("modify image property latitude ref fail %{public}d", ret);
+    }
+}
+ 
+std::string PhotoAssetProxy::LocationValueToString(double value)
+{
+    string result = "";
+    double stringValue = value;
+    if (value < 0.0) {
+        stringValue = 0.0 - value;
+    }
+
+    int degrees = static_cast<int32_t>(stringValue);
+    result = result + to_string(degrees) + ", ";
+    stringValue -= (double)degrees;
+    stringValue *= TIMER_MULTIPLIER;
+    int minutes = (int)stringValue;
+    result = result + to_string(minutes) + ", ";
+    stringValue -= (double)minutes;
+    stringValue *= TIMER_MULTIPLIER;
+    result = result + to_string(stringValue);
+    return result;
 }
 
 int32_t PhotoAssetProxy::UpdatePhotoQuality(shared_ptr<DataShare::DataShareHelper> &dataShareHelper,
