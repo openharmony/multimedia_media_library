@@ -376,6 +376,11 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
         return -errno;
     }
     if (thumbnailData.loaderOpts.isCloudLoading && thumbnailData.orientation != 0) {
+        if (thumbnailData.mediaType == MEDIA_TYPE_VIDEO) {
+            MEDIA_INFO_LOG("No need to rotate video file, path: %{public}s",
+                DfxUtils::GetSafePath(thumbnailData.path).c_str());
+            thumbnailData.orientation = 0;
+        }
         IThumbnailHelper::DoRotateThumbnailEx(opts, thumbnailData, fd, thumbType);
         fileName = GetThumbnailPath(thumbnailData.path,
             thumbType == ThumbnailType::LCD ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
