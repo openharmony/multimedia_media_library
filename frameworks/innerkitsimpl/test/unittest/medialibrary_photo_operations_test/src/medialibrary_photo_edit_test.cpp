@@ -139,7 +139,7 @@ int32_t WriteFile(int destfd)
 void WriteDefferedPhoto(bool &isEdited, std::string &path)
 {
     MEDIA_INFO_LOG("WriteDefferedPhoto start");
-    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhoto(isEdited, path, BUF, sizeof(BUF));
+    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhoto(isEdited, path, BUF, sizeof(BUF), 1);
     EXPECT_EQ(ret, E_OK);
     MEDIA_INFO_LOG("WriteDefferedPhoto end");
 }
