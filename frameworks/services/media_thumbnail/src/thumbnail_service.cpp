@@ -605,5 +605,19 @@ void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
     }
     thumbnailWorker->IgnoreTaskByRequestId(requestId);
 }
+
+void ThumbnailService::DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .row = fileId,
+        .dateAdded = dateAdded
+    };
+
+    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::DeleteMonthAndYearAstc,
+        opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+}
 } // namespace Media
 } // namespace OHOS

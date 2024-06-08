@@ -107,6 +107,7 @@ public:
     static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
     static bool IsPureCloudImage(ThumbRdbOpt &opts);
+    static void DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData> &data);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     static bool GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data);

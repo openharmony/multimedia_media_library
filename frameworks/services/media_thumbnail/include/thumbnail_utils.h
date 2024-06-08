@@ -78,6 +78,7 @@ public:
 #endif
 
     EXPORT static bool DeleteOriginImage(ThumbRdbOpt &opts);
+    EXPORT static bool DoDeleteMonthAndYearAstc(ThumbRdbOpt &opts);
     // Steps
     EXPORT static bool LoadSourceImage(ThumbnailData &data);
     static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
