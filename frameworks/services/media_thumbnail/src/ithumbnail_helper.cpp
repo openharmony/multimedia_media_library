@@ -100,6 +100,18 @@ void IThumbnailHelper::CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data)
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
+void IThumbnailHelper::DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("DeleteMonthAndYearAstc failed, data is null");
+        return;
+    }
+    if (!ThumbnailUtils::DoDeleteMonthAndYearAstc(data->opts_)) {
+        MEDIA_ERR_LOG("DeleteMonthAndYearAstc failed, key is %{public}s and %{public}s",
+            data->opts_.row.c_str(), data->opts_.dateAdded.c_str());
+    }
+}
+
 void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
     ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority)
 {
