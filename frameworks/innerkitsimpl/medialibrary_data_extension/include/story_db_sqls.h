@@ -67,7 +67,7 @@ const std::string CREATE_HIGHLIGHT_COVER_INFO_TABLE =
     RADIUS + " INT, " +
     SATURATION + " REAL, " +
     BRIGHTNESS + " REAL, " +
-    BACKGROUND_COLOER_TYPE + " INT, " +
+    BACKGROUND_COLOR_TYPE + " INT, " +
     SHADOW_LEVEL + " INT, " +
     TITLE_SCALE_X + " REAL, " +
     TITLE_SCALE_Y + " REAL, " +

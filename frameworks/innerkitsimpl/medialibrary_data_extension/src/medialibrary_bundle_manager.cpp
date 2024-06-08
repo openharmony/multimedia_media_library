@@ -83,6 +83,7 @@ void MediaLibraryBundleManager::Clear()
     lock_guard<mutex> lock(uninstallMutex_);
     cacheList_.clear();
     cacheMap_.clear();
+    PermissionUtils::ClearBundleInfoInCache();
 }
 } // Media
 } // OHOS

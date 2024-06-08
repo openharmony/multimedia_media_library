@@ -27,7 +27,6 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 using namespace OHOS::DataShare;
-using namespace OHOS::Media::MediaOperation;
 
 namespace OHOS {
 namespace Media {

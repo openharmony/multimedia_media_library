@@ -139,7 +139,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     let path: string = backupDir + '/storage/media/local/files/';
     console.timeEnd(TAG + ' RESTORE EX');
     console.time(TAG + ' MOVE REST FILES');
-    this.moveRestFiles(path);
+    await this.moveRestFiles(path);
     console.timeEnd(TAG + ' MOVE REST FILES');
     return restoreExInfo;
   }
@@ -170,15 +170,9 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
           continue;
         }
         for (let subCountInfo of info.infos) {
+          let type = subCountInfo.backupInfo;
           let detailsPath = subCountInfo.details;
-          if (detailsPath.length === 0) {
-            console.log(TAG, `${subCountInfo.backupInfo} has no failed files`);
-            subCountInfo.details = null;
-            continue;
-          }
-          let file = await fs.open(detailsPath);
-          subCountInfo.details = file.fd;
-          console.log(TAG, `details path: ${detailsPath}, fd: ${file.fd}`);
+          subCountInfo.details = await this.getDetails(type, detailsPath);
         }
       }
       return JSON.stringify(jsonObject);
@@ -186,6 +180,16 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       console.error(TAG, `getRestoreExInfo error message: ${err.message}, code: ${err.code}`);
       return JSON.stringify(DEFAULT_RESTORE_EX_INFO);
     }
+  }
+
+  private async getDetails(type: string, detailsPath: string): Promise<null | number> {
+    if (detailsPath.length === 0) {
+      console.log(TAG, `${type} has no failed files`);
+      return null;
+    }
+    let file = await fs.open(detailsPath);
+    console.log(TAG, `${type} details path: ${detailsPath}, fd: ${file.fd}`);
+    return file.fd;
   }
 
   private isRestoreExResultValid(restoreExResult: string): boolean {
@@ -217,8 +221,8 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
       console.error(TAG, `errorInfo ${errorInfo[STAT_KEY_TYPE]} != ${STAT_VALUE_ERROR_INFO}`);
       return false;
     }
-    if (!this.checkType(errorInfo[STAT_KEY_ERROR_CODE], JS_TYPE_STRING) ||
-      !this.checkType(errorInfo[STAT_KEY_ERROR_INFO], JS_TYPE_STRING)) {
+    if (!this.checkType(typeof errorInfo[STAT_KEY_ERROR_CODE], JS_TYPE_STRING) ||
+      !this.checkType(typeof errorInfo[STAT_KEY_ERROR_INFO], JS_TYPE_STRING)) {
       return false;
     }
     return true;
@@ -266,7 +270,7 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   private isBackupInfoValid(backupInfo: string): boolean {
     try {
       let jsonObject = JSON.parse(backupInfo);
-      if (jsonObject.length != STAT_TYPES.length) {
+      if (jsonObject.length !== STAT_TYPES.length) {
         console.error(TAG, `backupInfo num ${jsonObject.length} != ${STAT_TYPES.length}`);
         return false;
       }
@@ -307,9 +311,9 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
     return true;
   }
 
-  private checkType(variable: any, expectedType: string): boolean {
-    if (typeof variable !== expectedType) {
-      console.error(TAG, `checkType ${typeof variable} != ${expectedType}`);
+  private checkType(varType: string, expectedType: string): boolean {
+    if (varType !== expectedType) {
+      console.error(TAG, `checkType ${varType} != ${expectedType}`);
       return false;
     }
     return true;

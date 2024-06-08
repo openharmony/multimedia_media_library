@@ -129,8 +129,8 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
     tracer.Finish();
     string data = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
     bool isEdited = (GetInt64Val(PhotoColumn::PHOTO_EDIT_TIME, resultSet) > 0);
-    int fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhoto(isEdited, data, addr, bytes);
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    int ret = MediaLibraryPhotoOperations::ProcessMultistagesPhoto(isEdited, data, addr, bytes, fileId);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Save high quality image failed. ret: %{public}d, errno: %{public}d", ret, errno);
         MultiStagesCaptureDfxResult::Report(imageId,

@@ -23,21 +23,10 @@
 #include "abs_rdb_predicates.h"
 #include "datashare_predicates.h"
 #include "dir_asset.h"
-#include "form_map.h"
-#include "location_column.h"
-#include "media_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_operation.h"
-#include "photo_album_column.h"
-#include "photo_map_column.h"
-#include "search_column.h"
-#include "story_album_column.h"
-#include "story_cover_info_column.h"
-#include "story_play_info_column.h"
-#include "user_photography_info_column.h"
 #include "uri.h"
 #include "values_bucket.h"
-#include "vision_column.h"
 
 namespace OHOS {
 namespace Media {
