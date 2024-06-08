@@ -1989,6 +1989,7 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_NAME,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicate.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     rdbPredicate.Limit(THUMBNAIL_GENERATE_BATCH_COUNT);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicate, column);
     if (!CheckResultSetCount(resultSet, err)) {
