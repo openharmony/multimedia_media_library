@@ -1429,6 +1429,8 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
             return isDelete;
         }
     }
+    MEDIA_INFO_LOG("Start DeleteOriginImage, id: %{public}s, path: %{public}s",
+        opts.row.c_str(), tmpData.path.c_str());
     if (!opts.dateAdded.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
         isDelete = true;
     }
