@@ -56,17 +56,17 @@ bool IsLocalSourceAvailable(const std::string& path)
     char tmpPath[PATH_MAX] = { 0 };
     if (realpath(path.c_str(), tmpPath) == nullptr) {
         // it's alright if source loading fails here, just move on to next source
-        MEDIA_ERR_LOG("SourceLoader path to realPath is nullptr: %{public}s", path.c_str());
+        MEDIA_ERR_LOG("SourceLoader path to realPath is nullptr: %{public}s, errno: %{public}d", path.c_str(), errno);
         return false;
     }
 
     FILE* filePtr = fopen(tmpPath, "rb");
     if (filePtr == nullptr) {
-        MEDIA_ERR_LOG("SourceLoader open local file fail: %{public}s", path.c_str());
+        MEDIA_ERR_LOG("SourceLoader open local file fail: %{public}s, errno: %{public}d", path.c_str(), errno);
         return false;
     }
     if (fclose(filePtr) != E_OK) {
-        MEDIA_ERR_LOG("SourceLoader close filePtr fail: %{public}s", path.c_str());
+        MEDIA_ERR_LOG("SourceLoader close filePtr fail: %{public}s, errno: %{public}d", path.c_str(), errno);
         return false;
     }
     return true;
@@ -76,7 +76,7 @@ bool IsCloudSourceAvailable(const std::string& path)
 {
     int fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("SourceLoader open cloud file fail: %{public}s", path.c_str());
+        MEDIA_ERR_LOG("SourceLoader open cloud file fail: %{public}s, errno: %{public}d", path.c_str(), errno);
         return false;
     }
     close(fd);
