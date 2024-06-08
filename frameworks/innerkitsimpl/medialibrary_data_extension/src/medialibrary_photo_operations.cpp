@@ -1380,8 +1380,10 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
             "Can not modify %{private}s to %{private}s", sourcePath.c_str(), path.c_str());
     } else {
         string editData;
-        ReadEditdataFromFile(editDataCameraPath, editData);
-        AddFiltersToPhoto(sourcePath, path, editData);
+        CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
+            "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
+        CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(sourcePath, path, editData, fileId) == E_OK, E_FAIL,
+            "Failed to add filters to photo");
     }
 
     errCode = UpdateEditTime(fileId, 0);
@@ -1588,12 +1590,13 @@ bool MediaLibraryPhotoOperations::IsCameraEditData(MediaLibraryCommand &cmd)
     return IsContainsData(cmd) && (count(CAMERA_BUNDLE_NAMES.begin(), CAMERA_BUNDLE_NAMES.end(), bundleName) > 0);
 }
 
-bool MediaLibraryPhotoOperations::ReadEditdataFromFile(const std::string &editDataPath, std::string &editData)
+int32_t MediaLibraryPhotoOperations::ReadEditdataFromFile(const std::string &editDataPath, std::string &editData)
 {
     string editDataStr;
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::ReadStrFromFile(editDataPath, editDataStr), E_HAS_FS_ERROR,
         "Can not read editdata from %{private}s", editDataPath.c_str());
     if (!nlohmann::json::accept(editDataStr)) {
+        MEDIA_WARN_LOG("Failed to verify the editData format, editData is: %{private}s", editDataStr.c_str());
         editData = editDataStr;
         return E_OK;
     }
@@ -1700,7 +1703,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersExecute(MediaLibraryCommand& cmd,
     string editData;
     SaveEditDataCamera(cmd, assetPath, editData);
     // 生成水印
-    return AddFiltersToPhoto(sourcePath, assetPath, editData);
+    return AddFiltersToPhoto(sourcePath, assetPath, editData, fileAsset->GetId());
 }
 
 int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand& cmd,
@@ -1917,38 +1920,42 @@ int32_t MediaLibraryPhotoOperations::SubmitCache(MediaLibraryCommand& cmd)
 }
 
 int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, const std::string &path,
-    const uint8_t *addr, const long bytes)
+    const uint8_t *addr, const long bytes, int32_t fileId)
 {
     MediaLibraryTracer tracer;
     tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto");
-    int ret;
     string editDataSourcePath = GetEditDataSourcePath(path);
     string editDataCameraPath = GetEditDataCameraPath(path);
 
     if (isEdited) {
         // 图片编辑过了只替换低质量裸图
-        ret = FileUtils::SaveImage(editDataSourcePath, (void*)addr, bytes);
+        return FileUtils::SaveImage(editDataSourcePath, (void*)addr, bytes);
     } else {
         if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
             // 图片没编辑过且没有editdata_camera，只落盘在Photo目录
-            ret = FileUtils::SaveImage(path, (void*)addr, bytes);
+            return FileUtils::SaveImage(path, (void*)addr, bytes);
         } else {
             // 图片没编辑过且有editdata_camera
             MediaLibraryTracer tracer;
             tracer.Start("MediaLibraryPhotoOperations::ProcessMultistagesPhoto AddFiltersToPhoto");
             // (1) 先替换低质量裸图
-            ret = FileUtils::SaveImage(editDataSourcePath, (void*)addr, bytes);
+            int ret = FileUtils::SaveImage(editDataSourcePath, (void*)addr, bytes);
+            if (ret != E_OK) {
+                return ret;
+            }
             // (2) 生成高质量水印滤镜图片
             string editData;
-            ReadEditdataFromFile(editDataCameraPath, editData);
-            ret = AddFiltersToPhoto(editDataSourcePath, path, editData);
+            CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
+                "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
+            CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(editDataSourcePath, path, editData, fileId) == E_OK, E_FAIL,
+                "Failed to add filters to photo");
+            return E_OK;
         }
     }
-    return ret;
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
-    const std::string &outputPath, const std::string &editdata)
+    const std::string &outputPath, const std::string &editdata, int32_t fileId)
 {
     MEDIA_INFO_LOG("AddFiltersToPhoto inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
         inputPath.c_str(), outputPath.c_str(), editdata.c_str());
@@ -1958,6 +1965,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
         MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPhoto: TakeEffect error. ret = %d", ret);
         return E_ERR;
     }
+    MEDIA_INFO_LOG("AddFiltersToPhoto finish");
+    MediaLibraryObjectUtils::ScanFileAsync(outputPath, to_string(fileId), MediaLibraryApi::API_10);
     return E_OK;
 }
 

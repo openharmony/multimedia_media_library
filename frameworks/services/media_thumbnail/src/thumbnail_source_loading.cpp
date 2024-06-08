@@ -42,13 +42,13 @@ std::string GetLocalThumbnailPath(const std::string &path, const std::string &ke
     return LOCAL_MEDIA_PATH + ((key == "") ? "" : ".thumbs/") + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
 }
 
-std::string GetCloudLcdTempPath(const std::string &path)
+std::string GetLcdExPath(const std::string &path)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
     }
-    std::string suffix = "/" + THUMBNAIL_LCD_SUFFIX + ".jpg" + THUMBNAIL_TEMP_ORIENT_SUFFIX;
-    return LOCAL_MEDIA_PATH + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
+    std::string suffix = "/THM_EX/" + THUMBNAIL_LCD_SUFFIX + ".jpg";
+    return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
 }
     
 bool IsLocalSourceAvailable(const std::string& path)
@@ -221,6 +221,11 @@ bool SourceLoader::CreateImage(std::unique_ptr<ImageSource>& imageSource, ImageI
             MEDIA_ERR_LOG("SourceLoader Failed to get ImageProperty, path: %{private}s", data_.path.c_str());
         }
     }
+
+    if (data_.mediaType == MEDIA_TYPE_VIDEO) {
+        data_.orientation = 0;
+    }
+
     MEDIA_DEBUG_LOG("SourceLoader status:%{public}s, width:%{public}d, height:%{public}d",
         STATE_NAME_MAP.at(state_).c_str(), imageInfo.size.width, imageInfo.size.height);
     return true;
@@ -317,7 +322,7 @@ bool SourceLoader::IsFinal()
 
 void BeginSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
 {
-    if (data.mediaType == MEDIA_TYPE_VIDEO) {
+    if (data.mediaType == MEDIA_TYPE_VIDEO || data.loaderOpts.isCloudLoading) {
         state = SourceState::CLOUD_THUMB;
         return;
     }
@@ -363,12 +368,7 @@ bool LocalThumbSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
 
 std::unique_ptr<ImageSource> LocalLcdSource::IsSourceAvailable(ThumbnailData& data, int32_t& error)
 {
-    std::string tmpPath;
-    if (data.loaderOpts.isCloudLoading) {
-        tmpPath = GetCloudLcdTempPath(data.path);
-    } else {
-        tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
-    }
+    std::string tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
     if (!IsLocalSourceAvailable(tmpPath)) {
         return nullptr;
     }
@@ -439,7 +439,7 @@ std::unique_ptr<ImageSource> CloudThumbSource::IsSourceAvailable(ThumbnailData& 
 {
     std::string tmpPath = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    if (!IsCloudSourceAvailable(tmpPath)) {
+    if (data.orientation != 0 || !IsCloudSourceAvailable(tmpPath)) {
         return nullptr;
     }
     int32_t totalCost = static_cast<int32_t>(MediaFileUtils::UTCTimeMilliSeconds() - startTime);
@@ -470,7 +470,12 @@ bool CloudThumbSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
 
 std::unique_ptr<ImageSource> CloudLcdSource::IsSourceAvailable(ThumbnailData& data, int32_t& error)
 {
-    std::string tmpPath = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+    std::string tmpPath;
+    if (data.orientation != 0) {
+        tmpPath = GetLcdExPath(data.path);
+    } else {
+        tmpPath = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
+    }
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     if (!IsCloudSourceAvailable(tmpPath)) {
         return nullptr;

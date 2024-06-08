@@ -1343,7 +1343,9 @@ static void AddVideoLabelTable(RdbStore &store)
     static const vector<string> executeSqlStrs = {
         CREATE_TAB_ANALYSIS_VIDEO_LABEL,
         DROP_INSERT_VISION_TRIGGER,
-        CREATE_VISION_INSERT_TRIGGER_FOR_ADD_VIDEO_LABEL
+        DROP_UPDATE_VISION_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_ADD_VIDEO_LABEL,
+        CREATE_VISION_UPDATE_TRIGGER_FOR_ADD_VIDEO_LABEL,
     };
     MEDIA_INFO_LOG("start add video label tables");
     ExecSqls(executeSqlStrs, store);
@@ -1617,6 +1619,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     AddHeadAndPoseTables(*rdbStore_);
     AddSegmentationColumns(*rdbStore_);
     AddFaceOcclusionAndPoseTypeColumn(*rdbStore_);
+    AddVideoLabelTable(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -2287,6 +2290,16 @@ void AddMovingPhotoEffectMode(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_UPDATE_VISION_TRIGGER,
+        CREATE_VISION_UPDATE_TRIGGER_FOR_ADD_VIDEO_LABEL,
+    };
+    MEDIA_INFO_LOG("start update vision trigger for video label");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2589,6 +2602,10 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_MOVING_PHOTO_EFFECT_MODE) {
         AddMovingPhotoEffectMode(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_VISION_TRIGGER_FOR_VIDEO_LABEL) {
+        UpdateVisionTriggerForVideoLabel(store);
     }
 }
 

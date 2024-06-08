@@ -106,6 +106,7 @@ napi_value PhotoAlbumNapi::PhotoAccessInit(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("recoverAssets", PhotoAccessHelperRecoverPhotos),
             DECLARE_NAPI_FUNCTION("deleteAssets", PhotoAccessHelperDeletePhotos),
             DECLARE_NAPI_FUNCTION("setCoverUri", PhotoAccessHelperSetCoverUri),
+            DECLARE_NAPI_FUNCTION("getAssetsSync", JSPhotoAccessGetPhotoAssetsSync),
         }
     };
 
@@ -1057,6 +1058,38 @@ static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
     context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
 }
 
+static napi_value JSPhotoAccessGetPhotoAssetsExecuteSync(napi_env env, PhotoAlbumNapiAsyncContext& asyncContext)
+{
+    auto context = &asyncContext;
+    Uri uri(PAH_QUERY_PHOTO_MAP);
+    ConvertColumnsForPortrait(context);
+    ConvertColumnsForFeaturedSinglePortrait(context);
+    int32_t errCode = 0;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    CHECK_NULLPTR_RET(resultSet);
+    auto fetchResult = make_unique<FetchResult<FileAsset>>(move(resultSet));
+    fetchResult->SetResultNapiType(ResultNapiType::TYPE_PHOTOACCESS_HELPER);
+
+    std::vector<std::unique_ptr<FileAsset>> fileAssetArray;
+    auto file = fetchResult->GetFirstObject();
+    while (file != nullptr) {
+        fileAssetArray.push_back(move(file));
+        file = fetchResult->GetNextObject();
+    }
+    napi_value jsFileArray = nullptr;
+    int len = fileAssetArray.size();
+    napi_create_array_with_length(env, len, &jsFileArray);
+    size_t i = 0;
+    for (i = 0; i < len; i++) {
+        napi_value jsFileAsset = FileAssetNapi::CreateFileAsset(env, fileAssetArray[i]);
+        if ((jsFileAsset == nullptr) || (napi_set_element(env, jsFileArray, i, jsFileAsset) != napi_ok)) {
+            NAPI_ERR_LOG("Failed to get file asset napi object");
+            break;
+        }
+    }
+    return (i == len) ? jsFileArray : nullptr;
+}
+
 static void GetPhotoMapQueryResult(napi_env env, PhotoAlbumNapiAsyncContext *context,
     unique_ptr<JSAsyncContextOutput> &jsContext)
 {
@@ -1114,6 +1147,16 @@ napi_value PhotoAlbumNapi::JSPhoteAccessGetPhotoAssets(napi_env env, napi_callba
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoAssets",
         JSPhotoAccessGetPhotoAssetsExecute, JSGetPhotoAssetsCallbackComplete);
+}
+
+napi_value PhotoAlbumNapi::JSPhotoAccessGetPhotoAssetsSync(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSPhotoAccessGetPhotoAssetsSync");
+
+    unique_ptr<PhotoAlbumNapiAsyncContext> asyncContext = make_unique<PhotoAlbumNapiAsyncContext>();
+    CHECK_NULLPTR_RET(ParseArgsGetPhotoAssets(env, info, asyncContext));
+    return JSPhotoAccessGetPhotoAssetsExecuteSync(env, *asyncContext);
 }
 
 static napi_value TrashAlbumParseArgs(napi_env env, napi_callback_info info,

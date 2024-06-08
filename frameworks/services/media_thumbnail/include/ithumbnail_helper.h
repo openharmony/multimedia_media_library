@@ -36,8 +36,22 @@ namespace Media {
 enum WaitStatus {
     INSERT,
     WAIT_SUCCESS,
+    WAIT_CONTINUE,
     WAIT_FAILED,
     TIMEOUT,
+};
+
+enum CloudLoadType {
+    NONE,
+    CLOUD_READ_THUMB,
+    CLOUD_READ_LCD,
+    CLOUD_DOWNLOAD,
+};
+
+enum CloudReadStatus {
+    START,
+    SUCCESS,
+    FAIL,
 };
 
 class ThumbnailSyncStatus {
@@ -46,6 +60,9 @@ public:
     std::mutex mtx_;
     bool isSyncComplete_{false};
     bool isCreateThumbnailSuccess_{false};
+    std::atomic<CloudReadStatus> CloudLoadThumbnailStatus_{START};
+    std::atomic<CloudReadStatus> CloudLoadLcdStatus_{START};
+    std::atomic<CloudLoadType> cloudLoadType_{NONE};
 };
 
 using ThumbnailMap = std::map<std::string, std::shared_ptr<ThumbnailSyncStatus>>;
@@ -55,8 +72,10 @@ public:
     ~ThumbnailWait();
 
     WaitStatus InsertAndWait(const std::string &id, ThumbnailType type);
+    WaitStatus CloudInsertAndWait(const std::string &id, CloudLoadType cloudLoadType);
     void CheckAndWait(const std::string &id, bool isLcd);
     void UpdateThumbnailMap();
+    void UpdateCloudLoadThumbnailMap(CloudLoadType cloudLoadType, bool isLoadSuccess);
 
 private:
     void Notify();
@@ -86,6 +105,7 @@ public:
     static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
+    static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
     static bool IsPureCloudImage(ThumbRdbOpt &opts);
     static void DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData> &data);
 private:

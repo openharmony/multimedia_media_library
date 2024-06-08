@@ -118,15 +118,16 @@ void HighlightAlbumNapi::Destructor(napi_env env, void* nativeObject, void* fina
 }
 
 static const map<int32_t, struct HighlightAlbumInfo> HIGHLIGHT_ALBUM_INFO_MAP = {
-    { COVER_INFO, { PAH_QUERY_HIGHLIGHT_COVER, { SUB_TITLE, CLUSTER_TYPE, CLUSTER_SUB_TYPE,
+    { COVER_INFO, { PAH_QUERY_HIGHLIGHT_COVER, { ID, HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+        AI_ALBUM_ID, SUB_TITLE, CLUSTER_TYPE, CLUSTER_SUB_TYPE,
         CLUSTER_CONDITION, MIN_DATE_ADDED, MAX_DATE_ADDED, GENERATE_TIME, HIGHLIGHT_VERSION,
         REMARKS, HIGHLIGHT_STATUS, RATIO, BACKGROUND, FOREGROUND, WORDART, IS_COVERED, COLOR,
-        RADIUS, SATURATION, BRIGHTNESS, BACKGROUND_COLOER_TYPE, SHADOW_LEVEL, TITLE_SCALE_X,
+        RADIUS, SATURATION, BRIGHTNESS, BACKGROUND_COLOR_TYPE, SHADOW_LEVEL, TITLE_SCALE_X,
         TITLE_SCALE_Y, TITLE_RECT_WIDTH, TITLE_RECT_HEIGHT, BACKGROUND_SCALE_X, BACKGROUND_SCALE_Y,
         BACKGROUND_RECT_WIDTH, BACKGROUND_RECT_HEIGHT, LAYOUT_INDEX, COVER_ALGO_VERSION, COVER_KEY,
         HIGHLIGHT_IS_MUTED, HIGHLIGHT_IS_FAVORITE, HIGHLIGHT_THEME } } },
-    { PLAY_INFO, { PAH_QUERY_HIGHLIGHT_PLAY, { MUSIC, FILTER, HIGHLIGHT_PLAY_INFO,
-        IS_CHOSEN, PLAY_INFO_VERSION, PLAY_INFO_ID } } },
+    { PLAY_INFO, { PAH_QUERY_HIGHLIGHT_PLAY, { ID, HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID,
+        MUSIC, FILTER, HIGHLIGHT_PLAY_INFO, IS_CHOSEN, PLAY_INFO_VERSION, PLAY_INFO_ID } } },
 };
 
 static const map<int32_t, std::string> HIGHLIGHT_USER_ACTION_MAP = {
@@ -150,28 +151,36 @@ static void JSGetHighlightAlbumInfoExecute(napi_env env, void *data)
     auto *context = static_cast<HighlightAlbumNapiAsyncContext*>(data);
     string uriStr;
     std::vector<std::string> fetchColumn;
-    string tabStr;
     DataShare::DataSharePredicates predicates;
     if (HIGHLIGHT_ALBUM_INFO_MAP.find(context->highlightAlbumInfoType) != HIGHLIGHT_ALBUM_INFO_MAP.end()) {
         uriStr = HIGHLIGHT_ALBUM_INFO_MAP.at(context->highlightAlbumInfoType).uriStr;
         fetchColumn = HIGHLIGHT_ALBUM_INFO_MAP.at(context->highlightAlbumInfoType).fetchColumn;
+        string tabStr;
         if (context->highlightAlbumInfoType == COVER_INFO) {
             tabStr = HIGHLIGHT_COVER_INFO_TABLE;
-            vector<string> onClause = {
-                HIGHLIGHT_COVER_INFO_TABLE + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
-                HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID
-            };
-            predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
         } else {
             tabStr = HIGHLIGHT_PLAY_INFO_TABLE;
         }
+        vector<string> onClause = {
+            tabStr + "." + PhotoAlbumColumns::ALBUM_ID + " = " +
+            HIGHLIGHT_ALBUM_TABLE + "." + ID
+        };
+        predicates.InnerJoin(HIGHLIGHT_ALBUM_TABLE)->On(onClause);
     } else {
         NAPI_ERR_LOG("Invalid highlightAlbumInfoType");
         return;
     }
     int albumId = context->objectInfo->GetPhotoAlbumInstance()->GetAlbumId();
+    int subType = context->objectInfo->GetPhotoAlbumInstance()->GetPhotoAlbumSubType();
     Uri uri (uriStr);
-    predicates.EqualTo(tabStr + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    if (subType == PhotoAlbumSubType::HIGHLIGHT) {
+        predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
+    } else if (subType == PhotoAlbumSubType::HIGHLIGHT_SUGGESTIONS) {
+        predicates.EqualTo(HIGHLIGHT_ALBUM_TABLE + "." + AI_ALBUM_ID, to_string(albumId));
+    } else {
+        NAPI_ERR_LOG("Invalid highlight album subType");
+        return;
+    }
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
     if (resultSet != nullptr) {
