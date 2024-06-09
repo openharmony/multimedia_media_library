@@ -34,6 +34,7 @@
 namespace OHOS {
 namespace Media {
 namespace MediaTool {
+constexpr int32_t SHELL_UID = 2000;
 static int32_t InitPermission()
 {
     std::vector<std::string> perms;
@@ -65,7 +66,7 @@ static int32_t Init(ExecEnv &env, const std::vector<std::string> &args)
     getcwd(buffer.data(), PATH_MAX);
     env.workPath.append(buffer.data());
     env.workPath = IncludeTrailingPathDelimiter(env.workPath);
-    return InitPermission();
+    return getuid() == SHELL_UID ? Media::E_OK : InitPermission();
 }
 
 int32_t ControlMain::Main(const std::vector<std::string> &args)
