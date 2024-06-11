@@ -55,6 +55,7 @@ ohos_unittest("medialibrary_rdb_test") {
     "ability_runtime:ability_manager",
     "ability_runtime:app_context",
     "ability_runtime:dataobs_manager",
+    "ability_runtime:extensionkit_native",
     "ability_runtime:runtime",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
