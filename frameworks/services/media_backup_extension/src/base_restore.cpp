@@ -589,22 +589,43 @@ void BaseRestore::InsertPhotoMap(std::vector<FileInfo> &fileInfos)
 
 void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
 {
+    string sql = "SELECT " + MediaColumn::MEDIA_ID + " , " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE ";
+    bool firstSql = false;
     for (auto &fileInfo : fileInfos) {
-        if (fileInfo.cloudPath.empty() && fileInfo.mediaAlbumId <= 0) {
+        if (!fileInfo.packageName.empty()) {
             continue;
         }
-        string sql = "SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-            MediaColumn::MEDIA_FILE_PATH + " = '" + fileInfo.cloudPath + "'";
-        auto result = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, sql);
-        if (result == nullptr || result->GoToFirstRow() != NativeRdb::E_OK) {
+        if (fileInfo.cloudPath.empty() || fileInfo.mediaAlbumId <= 0) {
+            MEDIA_ERR_LOG("Album error file name = %{public}s.", fileInfo.displayName.c_str());
             continue;
         }
+        if (firstSql) {
+            sql += " OR ";
+        } else {
+            firstSql = true;
+        }
+        sql += MediaColumn::MEDIA_FILE_PATH + " = '" + fileInfo.cloudPath + "'";
+    }
+    if (firstSql == false) {
+        MEDIA_ERR_LOG("There is no need to continue the query.");
+        return;
+    }
+    auto result = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, sql);
+    if (result == nullptr) {
+        MEDIA_ERR_LOG("Query resultSql is null.");
+        return;
+    }
+    while (result->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, result);
-        if (fileId <= 0) {
-            MEDIA_ERR_LOG("Get fileId invalid: %{public}d", fileId);
-            continue;
+        std::string path = GetStringVal(MediaColumn::MEDIA_FILE_PATH, result);
+        auto pathMatch = [path {path}](const auto &fileInfo) {
+            return fileInfo.cloudPath == path;
+        };
+        auto it = std::find_if(fileInfos.begin(), fileInfos.end(), pathMatch);
+        if (it != fileInfos.end() && fileId > 0) {
+            it->fileIdNew = fileId;
         }
-        fileInfo.fileIdNew = fileId;
     }
 }
 
@@ -612,11 +633,12 @@ void BaseRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &tot
 {
     vector<NativeRdb::ValuesBucket> values;
     for (const auto &fileInfo : fileInfos) {
-        if (fileInfo.cloudPath.empty() || fileInfo.mediaAlbumId <= 0) {
-            continue;
-        }
         if (!fileInfo.packageName.empty()) {
             // add for trigger insert_photo_insert_source_album
+            continue;
+        }
+        if (fileInfo.cloudPath.empty() || fileInfo.mediaAlbumId <= 0 || fileInfo.fileIdNew <= 0) {
+            MEDIA_ERR_LOG("AlbumMap error file name = %{public}s.", fileInfo.displayName.c_str());
             continue;
         }
         NativeRdb::ValuesBucket value;
