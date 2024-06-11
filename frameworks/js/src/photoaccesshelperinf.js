@@ -340,8 +340,8 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
     config.parameters.recommendationOptions = option.recommendationOptions;
     config.parameters.preselectedUris = option.preselectedUris;
-    config.parameters.isPreviewForSingleSelectionSupported = option.isPreviewForSingleSelectionSupported === undefined || option.isPreviewForSingleSelectionSupported;
-    config.parameters.isOriginalSupported = option.isOriginalSupported === undefined || option.isOriginalSupported;
+    config.parameters.isPreviewForSingleSelectionSupported = option.isPreviewForSingleSelectionSupported;
+    config.parameters.isOriginalSupported = option.isOriginalSupported;
   }
 
   return config;
