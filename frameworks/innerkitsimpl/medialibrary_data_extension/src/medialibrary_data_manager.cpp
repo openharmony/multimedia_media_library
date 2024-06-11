@@ -195,7 +195,8 @@ void MediaLibraryDataManager::ReCreateMediaDir()
     }
 }
 
-int32_t MediaLibraryDataManager::InitMediaLibraryMgr(const shared_ptr<OHOS::AbilityRuntime::Context> &context,
+__attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
+    const shared_ptr<OHOS::AbilityRuntime::Context> &context,
     const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext)
 {
     lock_guard<shared_mutex> lock(mgrSharedMutex_);
