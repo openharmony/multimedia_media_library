@@ -56,6 +56,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+shared_ptr<DataShare::DataShareHelper> MediaLibraryManager::sDataShareHelper_ = nullptr;
 sptr<IRemoteObject> MediaLibraryManager::token_ = nullptr;
 constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
@@ -78,6 +79,9 @@ MediaLibraryManager *MediaLibraryManager::GetMediaLibraryManager()
 void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &token)
 {
     token_ = token;
+    if (sDataShareHelper_ == nullptr) {
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    }
 }
 
 static void UriAppendKeyValue(string &uri, const string &key, const string &value)
@@ -419,10 +423,9 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
 
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
 {
-    shared_ptr<DataShare::DataShareHelper> dataShareHelper =
-        DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        MEDIA_ERR_LOG("Failed to open thumbnail, datashareHelper is nullptr");
+    // To ensure performance.
+    if (sDataShareHelper_ == nullptr) {
+        MEDIA_ERR_LOG("Failed to open thumbnail, sDataShareHelper_ is nullptr");
         return E_ERR;
     }
     if (!path.empty()) {
@@ -451,7 +454,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         MEDIA_ERR_LOG("OpenThumbnail path is empty");
     }
     Uri openUri(uriStr);
-    return dataShareHelper->OpenFile(openUri, "R");
+    return sDataShareHelper_->OpenFile(openUri, "R");
 }
 
 /**
