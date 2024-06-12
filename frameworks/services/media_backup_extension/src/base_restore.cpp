@@ -589,9 +589,10 @@ void BaseRestore::InsertPhotoMap(std::vector<FileInfo> &fileInfos)
 
 void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
 {
-    string sql = "SELECT " + MediaColumn::MEDIA_ID + " , " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+    string querySql = "SELECT " + MediaColumn::MEDIA_ID + " , " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE ";
     bool firstSql = false;
+    std::vector<std::string> cloudPathArgs;
     for (auto &fileInfo : fileInfos) {
         if (!fileInfo.packageName.empty()) {
             continue;
@@ -601,17 +602,18 @@ void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
             continue;
         }
         if (firstSql) {
-            sql += " OR ";
+            querySql += " OR ";
         } else {
             firstSql = true;
         }
-        sql += MediaColumn::MEDIA_FILE_PATH + " = '" + fileInfo.cloudPath + "'";
+        querySql += MediaColumn::MEDIA_FILE_PATH + " = ? ";
+        cloudPathArgs.push_back(fileInfo.cloudPath);
     }
     if (firstSql == false) {
         MEDIA_ERR_LOG("There is no need to continue the query.");
         return;
     }
-    auto result = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, sql);
+    auto result = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql, cloudPathArgs);
     if (result == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
         return;
