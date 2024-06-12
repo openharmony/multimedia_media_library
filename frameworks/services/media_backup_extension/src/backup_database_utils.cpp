@@ -200,13 +200,14 @@ int32_t BackupDatabaseUtils::QueryExternalVideoCount(std::shared_ptr<NativeRdb::
 }
 
 std::shared_ptr<NativeRdb::ResultSet> BackupDatabaseUtils::GetQueryResultSet(
-    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &querySql)
+    const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &querySql,
+    const std::vector<std::string> &sqlArgs)
 {
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr");
         return nullptr;
     }
-    return rdbStore->QuerySql(querySql);
+    return rdbStore->QuerySql(querySql, sqlArgs);
 }
 
 std::unordered_map<std::string, std::string> BackupDatabaseUtils::GetColumnInfoMap(
