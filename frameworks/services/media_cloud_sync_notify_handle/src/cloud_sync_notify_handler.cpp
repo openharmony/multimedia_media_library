@@ -122,7 +122,7 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
     CloudSyncHandleData handleData;
     handleData.orgInfo = notifyInfo_;
     if (chain == nullptr) {
-        MEDIA_DEBUG_LOG("uri OR type is Invalid");
+        MEDIA_ERR_LOG("uri OR type is Invalid");
         return;
     }
     chain->Handle(handleData);
