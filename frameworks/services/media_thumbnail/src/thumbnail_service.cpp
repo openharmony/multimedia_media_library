@@ -572,7 +572,17 @@ int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
         MEDIA_ERR_LOG("QueryThumbnailDataFromFileId failed, path: %{public}s", data.path.c_str());
         return err;
     }
-
+    ValuesBucket values;
+    Size lcdSize;
+    if (data.mediaType == MEDIA_TYPE_VIDEO && ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
+        ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
+        int changedRows;
+        int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { data.id });
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("RdbStore lcd size failed! %{public}d", err);
+        }
+    }
     if (data.orientation != 0) {
         IThumbnailHelper::AddThumbnailGenerateTask(
             IThumbnailHelper::CreateAstcEx, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
