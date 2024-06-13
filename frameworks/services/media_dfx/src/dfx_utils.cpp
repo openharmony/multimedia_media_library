@@ -79,7 +79,7 @@ string DfxUtils::GetSafeDiaplayName(string &displayName)
     if (title == "") {
         return title;
     }
-    int32_t length = title.size();
+    uint32_t length = title.size();
     string safeDisplayName;
     if (length <= GARBLE_SMALL) {
         safeDisplayName = GARBLE + title.substr(length - GARBLE_LAST_ONE) + extension;
