@@ -46,6 +46,8 @@ enum class GenerateScene : int32_t {
     CLOUD,
     BACKGROUND,
     FOREGROUND,
+    RESTORE,
+    UPGRADE,
 };
 
 enum class LoadSourceType : int32_t {
@@ -62,6 +64,7 @@ enum class ThumbnailReady : int32_t {
     GENERATE_THUMB_COMPLETED,
     THUMB_TO_UPLOAD,
     THUMB_UPLOAD_COMPLETED,
+    THUMB_UPGRADE,
 };
 
 const std::unordered_map<ThumbnailType, std::string> TYPE_NAME_MAP = {

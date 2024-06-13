@@ -583,7 +583,7 @@ int32_t MediaLibraryDataManager::HandleThumbnailOperations(MediaLibraryCommand &
     int32_t result = E_FAIL;
     switch (cmd.GetOprnType()) {
         case OperationType::GENERATE:
-            result = thumbnailService_->GenerateThumbnails();
+            result = thumbnailService_->GenerateThumbnailBackground();
             break;
         case OperationType::AGING:
             result = thumbnailService_->LcdAging();
@@ -852,7 +852,7 @@ void MediaLibraryDataManager::InterruptBgworker()
     asyncWorker->Interrupt();
 }
 
-int32_t MediaLibraryDataManager::GenerateThumbnails()
+int32_t MediaLibraryDataManager::GenerateThumbnailBackground()
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
@@ -863,7 +863,21 @@ int32_t MediaLibraryDataManager::GenerateThumbnails()
     if (thumbnailService_ == nullptr) {
         return E_THUMBNAIL_SERVICE_NULLPTR;
     }
-    return thumbnailService_->GenerateThumbnails();
+    return thumbnailService_->GenerateThumbnailBackground();
+}
+
+int32_t MediaLibraryDataManager::UpgradeThumbnailBackground()
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+    return thumbnailService_->UpgradeThumbnailBackground();
 }
 
 static void CacheAging()
@@ -992,9 +1006,9 @@ void MediaLibraryDataManager::CreateThumbnailAsync(const string &uri, const stri
             MEDIA_ERR_LOG("failed to get thumbnail, the file:%{private}s is pending", uri.c_str());
             return;
         }
-        int32_t err = thumbnailService_->CreateThumbnail(uri, path);
+        int32_t err = thumbnailService_->CreateThumbnailFileScaned(uri, path);
         if (err != E_SUCCESS) {
-            MEDIA_ERR_LOG("ThumbnailService CreateThumbnail failed : %{public}d", err);
+            MEDIA_ERR_LOG("ThumbnailService CreateThumbnailFileScaned failed : %{public}d", err);
         }
     }
 }

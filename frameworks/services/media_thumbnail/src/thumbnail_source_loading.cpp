@@ -33,6 +33,52 @@ namespace Media {
 
 const std::string LOCAL_MEDIA_PATH = "/storage/media/local/files/";
 
+const std::unordered_map<SourceState, SourceState> SourceLoader::LOCAL_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::LOCAL_ORIGIN },
+    { SourceState::LOCAL_ORIGIN, SourceState::FINISH },
+};
+
+const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::CLOUD_THUMB },
+    { SourceState::CLOUD_THUMB, SourceState::CLOUD_LCD },
+    { SourceState::CLOUD_LCD, SourceState::CLOUD_ORIGIN },
+    { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
+};
+
+const std::unordered_map<SourceState, SourceState> SourceLoader::ALL_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::LOCAL_THUMB },
+    { SourceState::LOCAL_THUMB, SourceState::LOCAL_LCD },
+    { SourceState::LOCAL_LCD, SourceState::LOCAL_ORIGIN },
+    { SourceState::LOCAL_ORIGIN, SourceState::CLOUD_THUMB },
+    { SourceState::CLOUD_THUMB, SourceState::CLOUD_LCD },
+    { SourceState::CLOUD_LCD, SourceState::CLOUD_ORIGIN },
+    { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
+};
+
+const std::unordered_map<SourceState, SourceState> SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::CLOUD_LCD },
+    { SourceState::CLOUD_LCD, SourceState::CLOUD_ORIGIN },
+    { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
+};
+
+const std::unordered_map<SourceState, SourceState> SourceLoader::LOCAL_LCD_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::LOCAL_LCD },
+    { SourceState::LOCAL_LCD, SourceState::LOCAL_ORIGIN },
+    { SourceState::LOCAL_ORIGIN, SourceState::FINISH },
+};
+
+const std::unordered_map<SourceState, SourceState> SourceLoader::UPGRADE_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::LOCAL_ORIGIN },
+    { SourceState::LOCAL_ORIGIN, SourceState::CLOUD_ORIGIN },
+    { SourceState::CLOUD_ORIGIN, SourceState::FINISH },
+};
+
+const std::unordered_map<SourceState, SourceState> SourceLoader::UPGRADE_VIDEO_SOURCE_LOADING_STATES = {
+    { SourceState::BEGIN, SourceState::LOCAL_ORIGIN },
+    { SourceState::LOCAL_ORIGIN, SourceState::CLOUD_LCD },
+    { SourceState::CLOUD_LCD, SourceState::FINISH },
+};
+
 std::string GetLocalThumbnailPath(const std::string &path, const std::string &key)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
@@ -113,7 +159,7 @@ bool GenDecodeOpts(const Size &sourceSize, const Size &targetSize, DecodeOptions
     return true;
 }
 
-Size ConvertDecodeSize(ThumbnailData& data, const Size& sourceSize, Size& desiredSize)
+Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desiredSize)
 {
     int width = sourceSize.width;
     int height = sourceSize.height;
@@ -162,10 +208,25 @@ Size ConvertDecodeSize(ThumbnailData& data, const Size& sourceSize, Size& desire
     }
 }
 
+void SwitchToNextState(ThumbnailData &data, SourceState &state)
+{
+    if (state == SourceState::FINISH) {
+        MEDIA_INFO_LOG("SwitchToNextState current state is FINISH.");
+        return;
+    }
+    auto iter = data.loaderOpts.loadingStates.find(state);
+    if (iter == data.loaderOpts.loadingStates.end()) {
+        MEDIA_WARN_LOG("SwitchToNextState find next state error, current state:%{public}d",
+            static_cast<int32_t>(state));
+        return;
+    }
+    state = iter->second;
+}
+
 unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("ImageSource::CreateImageSource");
+    tracer.Start("LoadImageSource");
 
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, err);
@@ -178,39 +239,54 @@ unique_ptr<ImageSource> LoadImageSource(const std::string &path, uint32_t &err)
     return imageSource;
 }
 
+bool SourceLoader::CreateVideoFramePixelMap()
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateVideoFramePixelMap");
+    return ThumbnailUtils::LoadVideoFile(data_, desiredSize_);
+}
+
 void SourceLoader::SetCurrentStateFunction()
 {
     StateFunc stateFunc = STATE_FUNC_MAP.at(state_);
-    IsSourceAvailable = stateFunc.IsSourceAvailable;
-    SwitchToNextState = stateFunc.SwitchToNextState;
+    GetSourcePath = stateFunc.GetSourcePath;
     IsSizeLargeEnough = stateFunc.IsSizeLargeEnough;
 }
 
-bool SourceLoader::CreateImage(std::unique_ptr<ImageSource>& imageSource, ImageInfo& imageInfo)
+bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("imageSource->CreateImage");
+    tracer.Start("SourceLoader CreateImagePixelMap");
+    uint32_t err = 0;
+    std::unique_ptr<ImageSource> imageSource = LoadImageSource(sourcePath, err);
+    if (err != E_OK || imageSource == nullptr) {
+        MEDIA_ERR_LOG("SourceLoader LoadImageSource error:%{public}d, errorno:%{public}d", err, errno);
+        return false;
+    }
+
+    ImageInfo imageInfo;
+    if (!IsSizeAcceptable(imageSource, imageInfo)) {
+        MEDIA_ERR_LOG("SourceLoader CreateImagePixelMap size not acceptable, "
+            "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
+        return false;
+    }
     DecodeOptions decodeOpts;
     if (data_.loaderOpts.isHdr && imageSource->IsHdrImage()) {
         decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
     }
     Size targetSize = ConvertDecodeSize(data_, imageInfo.size, desiredSize_);
     if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
-        MEDIA_DEBUG_LOG("SourceLoader Failed to generate decodeOpts, pixelmap path %{private}s",
+        MEDIA_ERR_LOG("SourceLoader Failed to generate decodeOpts, pixelmap path %{private}s",
             data_.path.c_str());
-        error_ = E_ERR;
         return false;
     }
-    uint32_t err = 0;
     data_.source = imageSource->CreatePixelMap(decodeOpts, err);
     if ((err != E_OK) || (data_.source == nullptr)) {
         DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_CREATE_PIXELMAP, err);
-        error_ = E_ERR;
         return false;
     }
     if (!NeedAutoResize(targetSize) && !ThumbnailUtils::ScaleTargetPixelMap(data_.source, targetSize)) {
         MEDIA_ERR_LOG("SourceLoader Failed to scale target, pixelmap path %{private}s", data_.path.c_str());
-        error_ = E_ERR;
         return false;
     }
     tracer.Finish();
@@ -228,6 +304,25 @@ bool SourceLoader::CreateImage(std::unique_ptr<ImageSource>& imageSource, ImageI
 
     MEDIA_DEBUG_LOG("SourceLoader status:%{public}s, width:%{public}d, height:%{public}d",
         STATE_NAME_MAP.at(state_).c_str(), imageInfo.size.width, imageInfo.size.height);
+    return true;
+}
+
+bool SourceLoader::CreateSourcePixelMap()
+{
+    if (state_ == SourceState::LOCAL_ORIGIN && data_.mediaType == MEDIA_TYPE_VIDEO) {
+        return CreateVideoFramePixelMap();
+    }
+    std::string sourcePath = GetSourcePath(data_, error_);
+    if (sourcePath.empty()) {
+        MEDIA_ERR_LOG("SourceLoader source path unavailable,"
+            "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
+        return false;
+    }
+    if (!CreateImagePixelMap(sourcePath)) {
+        MEDIA_ERR_LOG("SourceLoader fail to create image pixel map,"
+            "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -251,20 +346,9 @@ bool SourceLoader::RunLoading()
             } else if (state_ >= SourceState::CLOUD_THUMB && state_ <= SourceState::CLOUD_ORIGIN) {
                 data_.stats.sourceType = static_cast<LoadSourceType>(state_);
             }
-            std::unique_ptr<ImageSource> imageSource = IsSourceAvailable(data_, error_);
-            if (imageSource == nullptr) {
-                MEDIA_DEBUG_LOG("SourceLoader source unavailable, "
-                    "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
-                break;
-            }
-            ImageInfo imageInfo;
-            if (!IsSizeAcceptable(imageSource, imageInfo)) {
-                MEDIA_ERR_LOG("SourceLoader source unacceptable, "
-                    "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
-                break;
-            }
-            if (!CreateImage(imageSource, imageInfo)) {
-                MEDIA_ERR_LOG("SourceLoader  fail to create image, "
+
+            if (!CreateSourcePixelMap()) {
+                MEDIA_ERR_LOG("SourceLoader fail to create source pixel map, "
                     "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
                 break;
             }
@@ -294,7 +378,7 @@ bool SourceLoader::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, I
 
     int32_t minSize = imageInfo.size.width < imageInfo.size.height ? imageInfo.size.width : imageInfo.size.height;
     if (!IsSizeLargeEnough(data_, minSize)) {
-        MEDIA_DEBUG_LOG("SourceLoader size not acceptable, width:%{public}d, height:%{public}d", imageInfo.size.width,
+        MEDIA_ERR_LOG("SourceLoader size not acceptable, width:%{public}d, height:%{public}d", imageInfo.size.width,
             imageInfo.size.height);
         return false;
     }
@@ -320,78 +404,33 @@ bool SourceLoader::IsFinal()
     return false;
 }
 
-void BeginSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
-{
-    if (data.mediaType == MEDIA_TYPE_VIDEO || data.loaderOpts.isCloudLoading) {
-        state = SourceState::CLOUD_THUMB;
-        return;
-    }
-    if (data.loaderOpts.sourceLoadingBeginWithThumb) {
-        state = SourceState::LOCAL_THUMB;
-    } else {
-        state = SourceState::LOCAL_ORIGIN;
-    }
-}
-
-std::unique_ptr<ImageSource> LocalThumbSource::IsSourceAvailable(ThumbnailData& data, int32_t& error)
+std::string LocalThumbSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     std::string tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
-    if (data.loaderOpts.isCloudLoading || !IsLocalSourceAvailable(tmpPath)) {
-        return nullptr;
+    if (!IsLocalSourceAvailable(tmpPath)) {
+        return "";
     }
-    uint32_t err = E_OK;
-    std::unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
-    if (err != E_OK || imageSource == nullptr) {
-        error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader LocalThumbSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
-        return nullptr;
-    }
-    return imageSource;
+    return tmpPath;
 }
 
-void LocalThumbSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
+bool LocalThumbSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
-    if (data.loaderOpts.sourceLoadingBeginWithThumb) {
-        state = SourceState::LOCAL_LCD;
-    } else {
-        state = SourceState::FINISH;
-    }
-}
-
-bool LocalThumbSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
-{
-    if (minSize < SHORT_SIDE_THRESHOLD && data.loaderOpts.sourceLoadingBeginWithThumb) {
+    if (minSize < SHORT_SIDE_THRESHOLD) {
         return false;
     }
     return true;
 }
 
-std::unique_ptr<ImageSource> LocalLcdSource::IsSourceAvailable(ThumbnailData& data, int32_t& error)
+std::string LocalLcdSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     std::string tmpPath = GetLocalThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX);
     if (!IsLocalSourceAvailable(tmpPath)) {
-        return nullptr;
+        return "";
     }
-    uint32_t err = E_OK;
-    std::unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
-    if (err != E_OK || imageSource == nullptr) {
-        error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader LocalLcdSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
-        return nullptr;
-    }
-    return imageSource;
+    return tmpPath;
 }
 
-void LocalLcdSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
-{
-    if (data.loaderOpts.sourceLoadingBeginWithThumb) {
-        state = SourceState::LOCAL_ORIGIN;
-    } else {
-        state = SourceState::FINISH;
-    }
-}
-
-bool LocalLcdSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
+bool LocalLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
     if (minSize < SHORT_SIDE_THRESHOLD) {
         return false;
@@ -399,68 +438,33 @@ bool LocalLcdSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
     return true;
 }
 
-std::unique_ptr<ImageSource> LocalOriginSource::IsSourceAvailable(ThumbnailData& data, int32_t& error)
+std::string LocalOriginSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     std::string tmpPath = GetLocalThumbnailPath(data.path, "");
     if (!IsLocalSourceAvailable(tmpPath)) {
-        return nullptr;
+        return "";
     }
-    uint32_t err = E_OK;
-    std::unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
-    if (err != E_OK || imageSource == nullptr) {
-        error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader LocalOriginSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
-        return nullptr;
-    }
-    return imageSource;
+    return tmpPath;
 }
 
-void LocalOriginSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
-{
-    if (data.loaderOpts.sourceLoadingBeginWithThumb) {
-        if (data.loaderOpts.isForeGroundLoading) {
-            state = SourceState::CLOUD_THUMB;
-        } else if (data.loaderOpts.isCloudLoading) {
-            state = SourceState::CLOUD_LCD;
-        } else {
-            state = SourceState::CLOUD_THUMB;
-        }
-    } else {
-        state = SourceState::FINISH;
-    }
-}
-
-bool LocalOriginSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
+bool LocalOriginSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
     return true;
 }
 
-std::unique_ptr<ImageSource> CloudThumbSource::IsSourceAvailable(ThumbnailData& data, int32_t& error)
+std::string CloudThumbSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     std::string tmpPath = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX);
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
-    if (data.orientation != 0 || !IsCloudSourceAvailable(tmpPath)) {
-        return nullptr;
+    if (data.orientation != 0) {
+        return "";
     }
     int32_t totalCost = static_cast<int32_t>(MediaFileUtils::UTCTimeMilliSeconds() - startTime);
     data.stats.openThumbCost = totalCost;
-
-    uint32_t err = E_OK;
-    std::unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
-    if (err != E_OK || imageSource == nullptr) {
-        error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader CloudThumbSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
-        return nullptr;
-    }
-    return imageSource;
+    return tmpPath;
 }
 
-void CloudThumbSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
-{
-    state = SourceState::CLOUD_LCD;
-}
-
-bool CloudThumbSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
+bool CloudThumbSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
     if (minSize < SHORT_SIDE_THRESHOLD) {
         return false;
@@ -468,7 +472,7 @@ bool CloudThumbSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
     return true;
 }
 
-std::unique_ptr<ImageSource> CloudLcdSource::IsSourceAvailable(ThumbnailData& data, int32_t& error)
+std::string CloudLcdSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
     std::string tmpPath;
     if (data.orientation != 0) {
@@ -478,31 +482,14 @@ std::unique_ptr<ImageSource> CloudLcdSource::IsSourceAvailable(ThumbnailData& da
     }
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     if (!IsCloudSourceAvailable(tmpPath)) {
-        return nullptr;
+        return "";
     }
     int32_t totalCost = static_cast<int32_t>(MediaFileUtils::UTCTimeMilliSeconds() - startTime);
     data.stats.openLcdCost = totalCost;
-
-    uint32_t err = E_OK;
-    std::unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
-    if (err != E_OK || imageSource == nullptr) {
-        error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader CloudLcdSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
-        return nullptr;
-    }
-    return imageSource;
+    return tmpPath;
 }
 
-void CloudLcdSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
-{
-    if (data.mediaType == MEDIA_TYPE_VIDEO) {
-        state = SourceState::FINISH;
-    } else {
-        state = SourceState::CLOUD_ORIGIN;
-    }
-}
-
-bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
+bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
         return true;
@@ -513,31 +500,23 @@ bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
     return true;
 }
 
-std::unique_ptr<ImageSource> CloudOriginSource::IsSourceAvailable(ThumbnailData& data, int32_t& error)
+std::string CloudOriginSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 {
+    if (data.mediaType == MEDIA_TYPE_VIDEO) {
+        // avoid opening cloud origin video file.
+        MEDIA_ERR_LOG("avoid opening cloud origin video file path:%{private}s", data.path.c_str());
+        return "";
+    }
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     if (!IsCloudSourceAvailable(data.path)) {
-        return nullptr;
+        return "";
     }
     int32_t totalCost = static_cast<int32_t>(MediaFileUtils::UTCTimeMilliSeconds() - startTime);
     data.stats.openOriginCost = totalCost;
-
-    uint32_t err = E_OK;
-    std::unique_ptr<ImageSource> imageSource = LoadImageSource(data.path, err);
-    if (err != E_OK || imageSource == nullptr) {
-        error = E_ERR;
-        MEDIA_ERR_LOG("SourceLoader CloudOriginSource LoadSource error:%{public}d, errorno:%{public}d", err, errno);
-        return nullptr;
-    }
-    return imageSource;
+    return data.path;
 }
 
-void CloudOriginSource::SwitchToNextState(ThumbnailData& data, SourceState& state)
-{
-    state = SourceState::FINISH;
-}
-
-bool CloudOriginSource::IsSizeLargeEnough(ThumbnailData& data, int32_t& minSize)
+bool CloudOriginSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
     return true;
 }
