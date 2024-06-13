@@ -89,8 +89,8 @@ class IThumbnailHelper {
 public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
-    static void CreateThumbnails(std::shared_ptr<ThumbnailTaskData> &data);
-    static bool DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data);
+    static void CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
+    static bool DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
     static void CreateLcd(std::shared_ptr<ThumbnailTaskData> &data);
     static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
     static void CreateAstc(std::shared_ptr<ThumbnailTaskData> &data);

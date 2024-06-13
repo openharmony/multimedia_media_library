@@ -51,7 +51,7 @@ void CloudThumbnailObserver::OnChange(const ChangeInfo &changeInfo)
             MEDIA_DEBUG_LOG("cloud observer get no valid fileId and uri : %{public}s", uriString.c_str());
             continue;
         }
-        ThumbnailService::GetInstance()->CreateAstcFromFileId(idString);
+        ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString);
     }
 }
 } // namespace Media
