@@ -286,7 +286,7 @@ const std::vector<std::string> systemAlbumSubType {
 };
 
 const std::vector<std::string> analysisAlbumSubType {
-    "CLASSIFY", "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY", "SHOOTING_MODE", "PORTRAIT", "GROUP_PHOTO",
+    "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY", "SHOOTING_MODE", "PORTRAIT", "GROUP_PHOTO",
     "HIGHLIGHT", "HIGHLIGHT_SUGGESTIONS"
 };
 
