@@ -73,6 +73,8 @@ protected:
         FileInfo &fileInfo);
     bool HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
         FileInfo &fileInfo);
+    bool HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
+        FileInfo &fileInfo);
     void InsertPhotoMap(std::vector<FileInfo> &fileInfos);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);

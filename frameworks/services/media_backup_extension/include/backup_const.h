@@ -206,6 +206,7 @@ struct FileInfo {
     std::string relativePath;
     std::string cloudPath;
     std::string packageName;
+    std::string bundleName;
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
     int64_t fileSize {0};
