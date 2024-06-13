@@ -222,7 +222,7 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
     packOption.format = "image/jpeg";
     imagePacker.StartPacking(buffer, pixelSize, packOption);
     imagePacker.AddImage(*pixelMap);
-    int32_t packResult = imagePacker.FinalizePacking(packedSize);
+    uint32_t packResult = imagePacker.FinalizePacking(packedSize);
     if (packResult != E_OK || buffer == nullptr) {
         MEDIA_ERR_LOG("packet pixelMap failed packResult: %{public}d", packResult);
         return E_ERR;

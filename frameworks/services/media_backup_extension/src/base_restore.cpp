@@ -178,11 +178,11 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         int32_t uniqueId;
         if (fileInfos[i].fileType == MediaType::MEDIA_TYPE_IMAGE) {
             lock_guard<mutex> lock(imageMutex_);
-            uniqueId = imageNumber_;
+            uniqueId = static_cast<int32_t>(imageNumber_);
             imageNumber_++;
         } else {
             lock_guard<mutex> lock(videoMutex_);
-            uniqueId = videoNumber_;
+            uniqueId = static_cast<int32_t>(videoNumber_);
             videoNumber_++;
         }
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,
@@ -327,7 +327,7 @@ std::vector<NativeRdb::ValuesBucket> BaseRestore::GetAudioInsertValues(int32_t s
         int32_t uniqueId;
         {
             lock_guard<mutex> lock(audioMutex_);
-            uniqueId = audioNumber_;
+            uniqueId = static_cast<int32_t>(audioNumber_);
             audioNumber_++;
         }
         int32_t errCode = BackupFileUtils::CreateAssetPathById(uniqueId, fileInfos[i].fileType,

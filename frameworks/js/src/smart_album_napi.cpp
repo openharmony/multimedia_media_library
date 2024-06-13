@@ -727,7 +727,7 @@ static void JSAddAssetExecute(SmartAlbumNapiAsyncContext *context)
     Uri addAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
         MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM);
     context->changedRows = UserFileClient::BatchInsert(addAssetUri, values);
-    if (context->changedRows != context->assetIds.size()) {
+    if (context->changedRows != static_cast<int32_t>(context->assetIds.size())) {
         context->error = E_INVALID_VALUES;
     }
 }
@@ -751,7 +751,7 @@ static void JSRemoveAssetExecute(SmartAlbumNapiAsyncContext *context)
     Uri removeAssetUri(MEDIALIBRARY_DATA_URI + "/" + MEDIA_SMARTALBUMMAPOPRN + "/" +
         MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM);
     context->changedRows = UserFileClient::BatchInsert(removeAssetUri, values);
-    if (context->changedRows != context->assetIds.size()) {
+    if (context->changedRows != static_cast<int32_t>(context->assetIds.size())) {
         context->error = E_INVALID_VALUES;
     }
 }
