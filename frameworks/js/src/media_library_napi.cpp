@@ -4172,9 +4172,11 @@ napi_value MediaLibraryNapi::CreateAlbumSubTypeEnum(napi_env env)
         CHECK_ARGS(env, AddIntegerNamedProperty(env, result, systemAlbumSubType[i],
             PhotoAlbumSubType::SYSTEM_START + i), JS_INNER_FAIL);
     }
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "CLASSIFY", PhotoAlbumSubType::CLASSIFY),
+        JS_INNER_FAIL);
     for (size_t i = 0; i < analysisAlbumSubType.size(); i++) {
         CHECK_ARGS(env, AddIntegerNamedProperty(env, result, analysisAlbumSubType[i],
-            PhotoAlbumSubType::ANALYSIS_START + i), JS_INNER_FAIL);
+            PhotoAlbumSubType::GEOGRAPHY_LOCATION + i), JS_INNER_FAIL);
     }
     CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "ANY", PhotoAlbumSubType::ANY), JS_INNER_FAIL);
 
