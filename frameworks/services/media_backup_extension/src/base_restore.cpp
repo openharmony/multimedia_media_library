@@ -195,7 +195,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
         if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID &&
-            HasSameFile(mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
+            HasSameFileForDualClone(mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
             (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
             MEDIA_WARN_LOG("File %{public}s already exists.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
@@ -204,6 +204,33 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         values.emplace_back(value);
     }
     return values;
+}
+
+bool BaseRestore::HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const std::string &tableName, FileInfo &fileInfo)
+{
+    string querySql = "SELECT Photos." + MediaColumn::MEDIA_ID + ", Photos." +
+        MediaColumn::MEDIA_FILE_PATH + " FROM Photos INNER JOIN PhotoMap ON Photos.file_id = PhotoMap.map_asset " + \
+        "INNER JOIN PhotoAlbum ON PhotoAlbum.album_id = PhotoMap.map_album Where Photos.size = " +
+        to_string(fileInfo.fileSize) + " AND Photos.display_name = '" +
+        fileInfo.displayName + "' AND (PhotoAlbum.album_name = '" + fileInfo.packageName + \
+         "' OR PhotoAlbum.bundle_name = '" + fileInfo.bundleName + "')";
+    if (fileInfo.fileType != MEDIA_TYPE_VIDEO) {
+        querySql += " AND Photos.orientation = " + to_string(fileInfo.orientation);
+    }
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return false;
+    }
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (fileId <= 0 || cloudPath.empty()) {
+        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
+        return false;
+    }
+    fileInfo.fileIdNew = fileId;
+    fileInfo.cloudPath = cloudPath;
+    return true;
 }
 
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
@@ -589,9 +616,10 @@ void BaseRestore::InsertPhotoMap(std::vector<FileInfo> &fileInfos)
 
 void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
 {
-    string sql = "SELECT " + MediaColumn::MEDIA_ID + " , " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+    string querySql = "SELECT " + MediaColumn::MEDIA_ID + " , " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE ";
     bool firstSql = false;
+    std::vector<std::string> cloudPathArgs;
     for (auto &fileInfo : fileInfos) {
         if (!fileInfo.packageName.empty()) {
             continue;
@@ -601,17 +629,18 @@ void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
             continue;
         }
         if (firstSql) {
-            sql += " OR ";
+            querySql += " OR ";
         } else {
             firstSql = true;
         }
-        sql += MediaColumn::MEDIA_FILE_PATH + " = '" + fileInfo.cloudPath + "'";
+        querySql += MediaColumn::MEDIA_FILE_PATH + " = ? ";
+        cloudPathArgs.push_back(fileInfo.cloudPath);
     }
     if (firstSql == false) {
         MEDIA_ERR_LOG("There is no need to continue the query.");
         return;
     }
-    auto result = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, sql);
+    auto result = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql, cloudPathArgs);
     if (result == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
         return;

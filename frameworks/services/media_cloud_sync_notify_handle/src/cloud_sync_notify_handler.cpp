@@ -54,7 +54,7 @@ void CloudSyncNotifyHandler::HandleInsertEvent(const std::list<Uri> &uris)
             continue;
         }
 
-        ThumbnailService::GetInstance()->CreateAstcFromFileId(idString);
+        ThumbnailService::GetInstance()->CreateAstcCloudDownload(idString);
     }
 }
 

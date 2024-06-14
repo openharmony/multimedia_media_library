@@ -40,11 +40,12 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-int32_t ThumbnailGenerateHelper::CreateThumbnails(ThumbRdbOpt &opts, bool isSync)
+int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync)
 {
     ThumbnailData thumbnailData;
     ThumbnailUtils::GetThumbnailInfo(opts, thumbnailData);
     thumbnailData.needResizeLcd = true;
+    thumbnailData.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     ThumbnailUtils::RecordStartGenerateStats(thumbnailData.stats, GenerateScene::LOCAL, LoadSourceType::LOCAL_PHOTO);
     if (ThumbnailUtils::DeleteThumbExDir(thumbnailData)) {
         MEDIA_ERR_LOG("Delete THM_EX directory, path: %{public}s, id: %{public}s", thumbnailData.path.c_str(),
@@ -52,19 +53,19 @@ int32_t ThumbnailGenerateHelper::CreateThumbnails(ThumbRdbOpt &opts, bool isSync
     }
 
     if (isSync) {
-        IThumbnailHelper::DoCreateThumbnails(opts, thumbnailData);
+        IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
         if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
             MediaLibraryPhotoOperations::StoreThumbnailSize(opts.row, opts.path);
         }
     } else {
-        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnails,
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
             opts, thumbnailData, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::HIGH);
     }
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::CreateThumbnailBatch(ThumbRdbOpt &opts)
+int32_t ThumbnailGenerateHelper::CreateThumbnailBackground(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("rdbStore is not init");
@@ -85,6 +86,8 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBatch(ThumbRdbOpt &opts)
 
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
+        infos[i].loaderOpts.loadingStates = infos[i].isLocalFile ? SourceLoader::LOCAL_SOURCE_LOADING_STATES :
+            SourceLoader::CLOUD_SOURCE_LOADING_STATES;
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateThumbnail,
             opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
@@ -92,7 +95,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBatch(ThumbRdbOpt &opts)
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::CreateAstcBatch(ThumbRdbOpt &opts)
+int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {
         MEDIA_ERR_LOG("rdbStore is not init");
@@ -118,7 +121,11 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatch(ThumbRdbOpt &opts)
         opts.row = infos[i].id;
         ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::BACKGROUND,
             LoadSourceType::LOCAL_PHOTO);
+        infos[i].loaderOpts.loadingStates = infos[i].isLocalFile ? SourceLoader::LOCAL_SOURCE_LOADING_STATES :
+            SourceLoader::CLOUD_SOURCE_LOADING_STATES;
         if (infos[i].orientation != 0) {
+            infos[i].loaderOpts.loadingStates = infos[i].isLocalFile ? SourceLoader::LOCAL_SOURCE_LOADING_STATES :
+                SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
             IThumbnailHelper::AddThumbnailGenerateTask(infos[i].isLocalFile ?
                 IThumbnailHelper::CreateThumbnail : IThumbnailHelper::CreateAstcEx, opts, infos[i],
                 ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
@@ -152,14 +159,48 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
     MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
     for (auto& info : infos) {
         opts.row = info.id;
-        info.loaderOpts.isForeGroundLoading = true;
+        info.loaderOpts.loadingStates = SourceLoader::ALL_SOURCE_LOADING_STATES;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
         IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts, info, requestId);
     }
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::CreateLcdBatch(ThumbRdbOpt &opts)
+int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts)
+{
+    ThumbnailData data;
+    ThumbnailUtils::RecordStartGenerateStats(data.stats, GenerateScene::CLOUD, LoadSourceType::LOCAL_PHOTO);
+    int err = 0;
+    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, opts.fileId, data, err);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("QueryThumbnailDataFromFileId failed, path: %{public}s", data.path.c_str());
+        return err;
+    }
+    ValuesBucket values;
+    Size lcdSize;
+    if (data.mediaType == MEDIA_TYPE_VIDEO && ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
+        ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
+        int changedRows;
+        int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { data.id });
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("RdbStore lcd size failed! %{public}d", err);
+        }
+    }
+    data.loaderOpts.loadingStates = SourceLoader::CLOUD_SOURCE_LOADING_STATES;
+    if (data.orientation != 0) {
+        data.loaderOpts.loadingStates = SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
+        IThumbnailHelper::AddThumbnailGenerateTask(
+            IThumbnailHelper::CreateAstcEx, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+        return E_OK;
+    }
+
+    IThumbnailHelper::AddThumbnailGenerateTask(
+        IThumbnailHelper::CreateAstc, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+    return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {
         return E_ERR;
@@ -186,6 +227,8 @@ int32_t ThumbnailGenerateHelper::CreateLcdBatch(ThumbRdbOpt &opts)
 
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
+        infos[i].loaderOpts.loadingStates = infos[i].isLocalFile ? SourceLoader::LOCAL_LCD_SOURCE_LOADING_STATES :
+            SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcd,
             opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
     }
@@ -244,6 +287,7 @@ int32_t ThumbnailGenerateHelper::GetNewThumbnailCount(ThumbRdbOpt &opts, const i
 
 bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType)
 {
+    data.loaderOpts.loadingStates = SourceLoader::LOCAL_SOURCE_LOADING_STATES;
     if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s", data.path.c_str());
         return false;
@@ -280,7 +324,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
     string tempFileName = fileParentPath + "/THM_EX" + fileName.substr(fileParentPath.length());
     if (access(tempFileName.c_str(), F_OK) == 0) {
         fileName = tempFileName;
-        data.loaderOpts.isCloudLoading = true;
+        data.isOpeningCloudFile = true;
         MEDIA_INFO_LOG("Unrotated file exists, path: %{public}s", fileName.c_str());
         return E_OK;
     }
@@ -375,7 +419,7 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
             thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
         return -errno;
     }
-    if (thumbnailData.loaderOpts.isCloudLoading && thumbnailData.orientation != 0) {
+    if (thumbnailData.isOpeningCloudFile && thumbnailData.orientation != 0) {
         if (thumbnailData.mediaType == MEDIA_TYPE_VIDEO) {
             MEDIA_INFO_LOG("No need to rotate video file, path: %{public}s",
                 DfxUtils::GetSafePath(thumbnailData.path).c_str());
@@ -395,5 +439,45 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
     UpdateThumbStatus(opts, thumbType, thumbnailData, err, isLocalThumbnailAvailable);
     return fd;
 }
+
+int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts)
+{
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is not init");
+        return E_ERR;
+    }
+
+    vector<ThumbnailData> infos;
+    int32_t err = GetThumbnailDataNeedUpgrade(opts, infos);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to GetThumbnailDataNeedUpgrade %{public}d", err);
+        return err;
+    }
+    if (infos.empty()) {
+        MEDIA_INFO_LOG("No need upgrade thumbnail.");
+        return E_OK;
+    }
+    MEDIA_INFO_LOG("will upgrade %{public}zu photo thumbnails.", infos.size());
+    for (uint32_t i = 0; i < infos.size(); i++) {
+        opts.row = infos[i].id;
+        ThumbnailUtils::RecordStartGenerateStats(infos[i].stats, GenerateScene::UPGRADE, LoadSourceType::LOCAL_PHOTO);
+        infos[i].loaderOpts.loadingStates = (infos[i].mediaType == MEDIA_TYPE_VIDEO) ?
+            SourceLoader::UPGRADE_VIDEO_SOURCE_LOADING_STATES : SourceLoader::UPGRADE_SOURCE_LOADING_STATES;
+        IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
+            opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
+    }
+    return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas)
+{
+    int32_t err = E_ERR;
+    if (!ThumbnailUtils::QueryUpgradeThumbnailInfos(opts, outDatas, err)) {
+        MEDIA_ERR_LOG("Failed to QueryUpgradeThumbnailInfos %{public}d", err);
+        return err;
+    }
+    return E_OK;
+}
+
 } // namespace Media
 } // namespace OHOS

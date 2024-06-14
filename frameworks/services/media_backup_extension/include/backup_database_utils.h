@@ -48,7 +48,7 @@ public:
     static int32_t QueryExternalVideoCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
     static int32_t QueryExternalAudioCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
     static std::shared_ptr<NativeRdb::ResultSet> GetQueryResultSet(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        const std::string &querySql);
+        const std::string &querySql, const std::vector<std::string> &sqlArgs = {});
     static std::unordered_map<std::string, std::string> GetColumnInfoMap(
         const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName);
     static void UpdateUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t number,
