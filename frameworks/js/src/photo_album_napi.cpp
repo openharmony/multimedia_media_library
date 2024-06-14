@@ -1077,7 +1077,7 @@ static napi_value JSPhotoAccessGetPhotoAssetsExecuteSync(napi_env env, PhotoAlbu
         file = fetchResult->GetNextObject();
     }
     napi_value jsFileArray = nullptr;
-    int len = fileAssetArray.size();
+    size_t len = fileAssetArray.size();
     napi_create_array_with_length(env, len, &jsFileArray);
     size_t i = 0;
     for (i = 0; i < len; i++) {
