@@ -40,9 +40,10 @@ public:
     void ReportAlbumInfo(const std::string &albumName, int32_t albumImageCount, int32_t albumVideoCount,
         bool isLocal);
     void ReportDirtyCloudPhoto(const std::string &data, int32_t dirty, int32_t cloudVersion);
-    void ReportCommonVersion();
+    void ReportCommonVersion(int32_t dbVersion);
     void ReportAnalysisVersion(const std::string &analysisName, int32_t version);
     void ReportAdaptationToMovingPhoto();
+    static void ReportStartResult(int32_t scene, int32_t errorCode, int32_t startTime);
 };
 } // namespace Media
 } // namespace OHOS

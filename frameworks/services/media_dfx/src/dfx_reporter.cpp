@@ -267,13 +267,14 @@ void DfxReporter::ReportDirtyCloudPhoto(const std::string &data, int32_t dirty, 
     }
 }
 
-void DfxReporter::ReportCommonVersion()
+void DfxReporter::ReportCommonVersion(int32_t dbVersion)
 {
+    MEDIA_INFO_LOG("dbVersion: %{public}d, thumbnailVersion: %{public}d", dbVersion, THUMBNAIL_VERSION);
     int ret = HiSysEventWrite(
         MEDIA_LIBRARY,
         "MEDIALIB_COMMON_VERSION",
         HiviewDFX::HiSysEvent::EventType::STATISTIC,
-        "DB_VERSION", MEDIA_RDB_VERSION,
+        "DB_VERSION", dbVersion,
         "THUMBNAIL_VERSION", THUMBNAIL_VERSION);
     if (ret != 0) {
         MEDIA_ERR_LOG("ReportCommonVersion error:%{public}d", ret);
@@ -324,6 +325,22 @@ void DfxReporter::ReportAdaptationToMovingPhoto()
 
     prefs->Clear();
     prefs->FlushSync();
+}
+
+void DfxReporter::ReportStartResult(int32_t scene, int32_t error, int32_t start)
+{
+    int32_t cost = static_cast<int32_t>(MediaFileUtils::UTCTimeMilliSeconds() - start);
+    MEDIA_ERR_LOG("SCENE:%{public}d, ERROR:%{public}d, TIME:%{public}d", scene, error, cost);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_START_RESULT",
+        HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
+        "SCENE", scene,
+        "ERROR", error,
+        "TIME", cost);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report startResult error:%{public}d", ret);
+    }
 }
 } // namespace Media
 } // namespace OHOS
