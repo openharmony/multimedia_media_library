@@ -542,7 +542,7 @@ int32_t MediaFileUri::CreateAssetBucket(int32_t fileId, int32_t &bucketNum)
     int divider = ASSET_DIR_START_NUM;
     while (fileId > start * ASSET_IN_BUCKET_NUM_MAX) {
         divider = start;
-        start *= 2;
+         start <<= 1;
     }
 
     int fileIdRemainder = fileId % divider;
