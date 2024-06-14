@@ -621,6 +621,10 @@ public:
     static napi_value CreateValueByIndex(napi_env env, int32_t index, std::string name,
         std::shared_ptr<NativeRdb::AbsSharedResultSet> &resultSet, const std::shared_ptr<FileAsset> &asset);
 
+    template <class AsyncContext>
+    static napi_status ParsePredicates(napi_env env,
+        const napi_value arg, AsyncContext &context, const FetchOptionType &fetchOptType);
+
 private:
     static napi_status hasFetchOpt(napi_env env, const napi_value arg, bool &hasFetchOpt);
 };
