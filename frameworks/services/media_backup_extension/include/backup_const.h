@@ -323,10 +323,9 @@ const std::string QUERY_ALL_AUDIOS_FROM_EXTERNAL = "SELECT " + EXTERNAL_IS_FAVOR
     _size > 0 AND _data LIKE '/storage/emulated/0/Music%'";
 
 const std::string QUERY_ALL_AUDIOS_FROM_AUDIODB = "SELECT " + AUDIO_DATA + "," + AUDIO_DATE_MODIFIED + "," +
-    AUDIO_DATE_TAKEN + " FROM mediainfo WHERE _data LIKE '/storage/emulated/0/Music%'";
+    AUDIO_DATE_TAKEN + " FROM mediainfo";
 
-const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM mediainfo WHERE \
-    _data LIKE '/storage/emulated/0/Music%'";
+const std::string QUERY_DUAL_CLONE_AUDIO_COUNT = "SELECT count(1) as count FROM mediainfo";
 } // namespace Media
 } // namespace OHOS
 
