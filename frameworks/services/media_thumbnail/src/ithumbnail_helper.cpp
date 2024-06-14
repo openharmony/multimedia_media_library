@@ -31,13 +31,14 @@
 #include "media_log.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
+#include "post_event_utils.h"
 #include "result_set_utils.h"
 #include "rdb_predicates.h"
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
-#include "post_event_utils.h"
+#include "thumbnail_source_loading.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -45,13 +46,13 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> &data)
+void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
-        MEDIA_ERR_LOG("CreateThumbnails failed, data is null");
+        MEDIA_ERR_LOG("CreateLcdAndThumbnail failed, data is null");
         return;
     }
-    DoCreateThumbnails(data->opts_, data->thumbnailData_);
+    DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
     if (data->opts_.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
         MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, data->opts_.path);
@@ -354,6 +355,11 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
         return true;
     }
 
+    if (data.loaderOpts.loadingStates.empty()) {
+        MEDIA_ERR_LOG("try load source failed, the loading source states is empty.");
+        return false;
+    }
+
     if (!ThumbnailUtils::LoadSourceImage(data)) {
         if (opts.path.empty()) {
             MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
@@ -401,7 +407,6 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = false;
-    data.loaderOpts.sourceLoadingBeginWithThumb = data.loaderOpts.isCloudLoading;
     data.loaderOpts.isHdr = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("load source is nullptr path: %{public}s", opts.path.c_str());
@@ -453,7 +458,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
 
 bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (data.loaderOpts.isCloudLoading) {
+    if (!data.isLocalFile) {
         MEDIA_INFO_LOG("Create lcd when cloud loading, no need to create THM_EX, path: %{public}s， id: %{public}s",
             DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
@@ -539,7 +544,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
 
 bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (data.loaderOpts.isCloudLoading) {
+    if (!data.isLocalFile) {
         MEDIA_INFO_LOG("Create thumb when cloud loading, no need to create THM_EX, path: %{public}s, id: %{public}s",
             DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
@@ -661,7 +666,6 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = true;
-    data.loaderOpts.sourceLoadingBeginWithThumb = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateThumbnail failed, try to load source failed, id: %{public}s", data.id.c_str());
         return false;
@@ -736,9 +740,10 @@ bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoCreateThumbnails, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
+    MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
+        data.id.c_str(), data.path.c_str());
     if (!DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
@@ -748,6 +753,9 @@ bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data
     }
 
     data.loaderOpts.decodeInThumbSize = true;
+    if (data.source != nullptr && data.source->IsHdr() == true) {
+        data.source->ToSdr();
+    }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
@@ -756,9 +764,6 @@ bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data
         MEDIA_ERR_LOG("Fail to scale from LCD_EX to THM_EX, path: %{public}s",
             DfxUtils::GetSafePath(data.path).c_str());
         data.sourceEx = nullptr;
-    }
-    if (data.source != nullptr && data.source->IsHdr() == true) {
-        data.source->ToSdr();
     }
 
     if (!DoCreateThumbnail(opts, data)) {
@@ -788,7 +793,6 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     MEDIA_INFO_LOG("Start DoCreateAstc, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
     data.loaderOpts.decodeInThumbSize = true;
-    data.loaderOpts.sourceLoadingBeginWithThumb = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
         return false;

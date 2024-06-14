@@ -317,7 +317,7 @@ int32_t ThumbnailService::ParseThumbnailParam(const std::string &uri, string &fi
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &path, bool isSync)
+int32_t ThumbnailService::CreateThumbnailFileScaned(const std::string &uri, const string &path, bool isSync)
 {
     string fileId;
     string networkId;
@@ -343,9 +343,9 @@ int32_t ThumbnailService::CreateThumbnail(const std::string &uri, const string &
         .screenSize = screenSize_
     };
 
-    err = ThumbnailGenerateHelper::CreateThumbnails(opts, isSync);
+    err = ThumbnailGenerateHelper::CreateThumbnailFileScaned(opts, isSync);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("CreateThumbnails failed : %{public}d", err);
+        MEDIA_ERR_LOG("CreateThumbnailFileScaned failed : %{public}d", err);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
             {KEY_OPT_FILE, uri}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
@@ -380,7 +380,7 @@ void ThumbnailService::StopAllWorker()
     ThumbnailGenerateWorkerManager::GetInstance().ClearAllTask();
 }
 
-int32_t ThumbnailService::GenerateThumbnails()
+int32_t ThumbnailService::GenerateThumbnailBackground()
 {
     if (!CheckSizeValid()) {
         return E_THUMBNAIL_INVALID_SIZE;
@@ -401,26 +401,39 @@ int32_t ThumbnailService::GenerateThumbnails()
         };
 
         if ((tableName == PhotoColumn::PHOTOS_TABLE) && ThumbnailUtils::IsSupportGenAstc()) {
-            // CreateAstcBatch contains thumbnails created.
-            err = ThumbnailGenerateHelper::CreateAstcBatch(opts);
+            // CreateAstcBackground contains thumbnails created.
+            err = ThumbnailGenerateHelper::CreateAstcBackground(opts);
             if (err != E_OK) {
-                MEDIA_ERR_LOG("CreateAstcBatch failed : %{public}d", err);
+                MEDIA_ERR_LOG("CreateAstcBackground failed : %{public}d", err);
             }
         } else {
-            err = ThumbnailGenerateHelper::CreateThumbnailBatch(opts);
+            err = ThumbnailGenerateHelper::CreateThumbnailBackground(opts);
             if (err != E_OK) {
-                MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
+                MEDIA_ERR_LOG("CreateThumbnailBackground failed : %{public}d", err);
             }
         }
 
         if (tableName != AudioColumn::AUDIOS_TABLE) {
-            err = ThumbnailGenerateHelper::CreateLcdBatch(opts);
+            err = ThumbnailGenerateHelper::CreateLcdBackground(opts);
             if (err != E_OK) {
-                MEDIA_ERR_LOG("CreateLcdBatch failed : %{public}d", err);
+                MEDIA_ERR_LOG("CreateLcdBackground failed : %{public}d", err);
             }
         }
     }
 
+    return err;
+}
+
+int32_t ThumbnailService::UpgradeThumbnailBackground()
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE
+    };
+    int32_t err = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("UpgradeThumbnailBackground failed : %{public}d", err);
+    }
     return err;
 }
 
@@ -544,7 +557,7 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
         int32_t tempCount = 0;
         err = ThumbnailGenerateHelper::GetNewThumbnailCount(opts, time, tempCount);
         if (err != E_OK) {
-            MEDIA_ERR_LOG("CreateThumbnailBatch failed : %{public}d", err);
+            MEDIA_ERR_LOG("GetNewThumbnailCount failed : %{public}d", err);
             return err;
         }
         count += tempCount;
@@ -552,46 +565,20 @@ int32_t ThumbnailService::QueryNewThumbnailCount(const int64_t &time, int32_t &c
     return E_OK;
 }
 
-int32_t ThumbnailService::CreateAstcFromFileId(const string &id)
+int32_t ThumbnailService::CreateAstcCloudDownload(const string &id)
 {
-    ThumbnailData data;
-    data.loaderOpts.isCloudLoading = true;
-    ThumbnailUtils::RecordStartGenerateStats(data.stats, GenerateScene::CLOUD,
-        LoadSourceType::LOCAL_PHOTO);
-    int err = 0;
     ThumbRdbOpt opts = {
         .store = rdbStorePtr_,
-#ifdef DISTRIBUTED
-        .kvStore = kvStorePtr_,
-#endif
-        .table = PhotoColumn::PHOTOS_TABLE
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .fileId = id,
     };
 
-    ThumbnailUtils::QueryThumbnailDataFromFileId(opts, id, data, err);
+    int err = ThumbnailGenerateHelper::CreateAstcCloudDownload(opts);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("QueryThumbnailDataFromFileId failed, path: %{public}s", data.path.c_str());
+        MEDIA_ERR_LOG("CreateAstcCloudDownload failed : %{public}d", err);
         return err;
     }
-    ValuesBucket values;
-    Size lcdSize;
-    if (data.mediaType == MEDIA_TYPE_VIDEO && ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
-        ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
-        int changedRows;
-        int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
-        vector<string> { data.id });
-        if (err != NativeRdb::E_OK) {
-            MEDIA_ERR_LOG("RdbStore lcd size failed! %{public}d", err);
-        }
-    }
-    if (data.orientation != 0) {
-        IThumbnailHelper::AddThumbnailGenerateTask(
-            IThumbnailHelper::CreateAstcEx, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
-        return E_OK;
-    }
-
-    IThumbnailHelper::AddThumbnailGenerateTask(
-        IThumbnailHelper::CreateAstc, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
-    return E_OK;
+    return err;
 }
 
 int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)

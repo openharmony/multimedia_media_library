@@ -848,6 +848,7 @@ vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(vector<GalleryAl
         value.PutInt(PhotoAlbumColumns::ALBUM_TYPE, static_cast<int32_t>(PhotoAlbumType::SOURCE));
         value.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC));
         value.PutString(PhotoAlbumColumns::ALBUM_NAME, VIDEO_SCREEN_RECORDER_NAME);
+        value.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, VIDEO_SCREEN_RECORDER);
         values.emplace_back(value);
     }
     std::unordered_map<std::string, std::string> nameMap;
@@ -875,6 +876,7 @@ vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(vector<GalleryAl
         value.PutInt(PhotoAlbumColumns::ALBUM_TYPE, static_cast<int32_t>(PhotoAlbumType::SOURCE));
         value.PutInt(PhotoAlbumColumns::ALBUM_SUBTYPE, static_cast<int32_t>(PhotoAlbumSubType::SOURCE_GENERIC));
         value.PutString(PhotoAlbumColumns::ALBUM_NAME, galleryAlbumInfos[i].albumMediaName);
+        value.PutString(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, galleryAlbumInfos[i].albumBundleName);
         values.emplace_back(value);
     }
     return values;
@@ -1027,6 +1029,7 @@ void UpgradeRestore::UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, Fi
        mediaScreenreCorderAlbumId_ > 0) {
         info.mediaAlbumId = mediaScreenreCorderAlbumId_;
         info.packageName = VIDEO_SCREEN_RECORDER_NAME;
+        info.bundleName = VIDEO_SCREEN_RECORDER;
         return;
     } else {
         info.mediaAlbumId = galleryAlbumInfo.mediaAlbumId;
@@ -1038,6 +1041,7 @@ void UpgradeRestore::UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, Fi
     if (it != photoAlbumInfos_.end() && it->albumType == PhotoAlbumType::SOURCE &&
         it->albumSubType == PhotoAlbumSubType::SOURCE_GENERIC) {
         info.packageName = it->albumName;
+        info.bundleName = it->albumBundleName;
     }
 }
 } // namespace Media

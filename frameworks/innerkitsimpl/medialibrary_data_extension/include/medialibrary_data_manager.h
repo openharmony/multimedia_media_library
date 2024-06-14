@@ -71,7 +71,10 @@ public:
     EXPORT int32_t OpenFile(MediaLibraryCommand &cmd, const std::string &mode);
     EXPORT std::string GetType(const Uri &uri);
     EXPORT void NotifyChange(const Uri &uri);
-    EXPORT int32_t GenerateThumbnails();
+    EXPORT int32_t GenerateThumbnailBackground();
+
+    // upgrade existed thumbnails to fix such as size, rotation and quality etc. problems
+    EXPORT int32_t UpgradeThumbnailBackground();
     void InterruptBgworker();
     EXPORT int32_t DoAging();
     EXPORT int32_t DoTrashAging(std::shared_ptr<int> countPtr = nullptr);

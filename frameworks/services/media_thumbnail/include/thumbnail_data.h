@@ -23,6 +23,18 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+enum class SourceState : int32_t {
+    BEGIN = -3,
+    LOCAL_THUMB,
+    LOCAL_LCD,
+    LOCAL_ORIGIN,
+    CLOUD_THUMB,
+    CLOUD_LCD,
+    CLOUD_ORIGIN,
+    ERROR,
+    FINISH,
+};
+
 class ThumbnailData {
 public:
     struct GenerateStats {
@@ -43,20 +55,11 @@ public:
     struct SourceLoaderOptions {
         // if false, target decode size is LCD size
         bool decodeInThumbSize {false};
-
-        // if true, load source begin with thumb to lcd, then origin,
-        // if false, load source begin with origin
-        bool sourceLoadingBeginWithThumb {false};
         bool needUpload {false};
-
-        // if true, source can be read from cloud
-        bool isCloudLoading {false};
-
-        // if true, read source from cloud if not found in local
-        bool isForeGroundLoading {false};
 
         // if true, create HDR pixelMap
         EXPORT bool isHdr {false};
+        std::unordered_map<SourceState, SourceState> loadingStates;
     };
 
     EXPORT ThumbnailData() = default;
@@ -77,6 +80,7 @@ public:
     // Loaded lcd source can be resized to generate thumbnail in order
     EXPORT bool needResizeLcd {false};
     EXPORT bool isLocalFile {true};
+    EXPORT bool isOpeningCloudFile {false};
     EXPORT std::shared_ptr<PixelMap> source;
     EXPORT std::shared_ptr<PixelMap> sourceEx;
     EXPORT std::vector<uint8_t> thumbnail;

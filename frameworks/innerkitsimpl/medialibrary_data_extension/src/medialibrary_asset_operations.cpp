@@ -1836,15 +1836,15 @@ bool AssetInputParamVerification::IsUniqueValue(ValueObject &value, MediaLibrary
     return true;
 }
 
-static void CreateThumbnail(const string &uri, const string &path, bool isSync)
+static void CreateThumbnailFileScaned(const string &uri, const string &path, bool isSync)
 {
     if (ThumbnailService::GetInstance() == nullptr) {
         return;
     }
     if (!uri.empty()) {
-        int32_t err = ThumbnailService::GetInstance()->CreateThumbnail(uri, path, isSync);
+        int32_t err = ThumbnailService::GetInstance()->CreateThumbnailFileScaned(uri, path, isSync);
         if (err != E_SUCCESS) {
-            MEDIA_ERR_LOG("ThumbnailService CreateThumbnail failed : %{public}d", err);
+            MEDIA_ERR_LOG("ThumbnailService CreateThumbnailFileScaned failed : %{public}d", err);
         }
     }
 }
@@ -1865,7 +1865,7 @@ int32_t MediaLibraryAssetOperations::ScanAssetCallback::OnScanFinished(const int
     if (this->isInvalidateThumb) {
         InvalidateThumbnail(fileId, type);
     }
-    CreateThumbnail(uri, path, this->isCreateThumbSync);
+    CreateThumbnailFileScaned(uri, path, this->isCreateThumbSync);
     return E_OK;
 }
 
