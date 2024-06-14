@@ -53,7 +53,7 @@ MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<
     stopFlag_ = make_shared<bool>(false);
 }
 
-MediaScannerObj::MediaScannerObj(MediaScannerObj::ScanType type) : type_(type)
+MediaScannerObj::MediaScannerObj(MediaScannerObj::ScanType type, MediaLibraryApi api) : type_(type), api_(api)
 {
 }
 
