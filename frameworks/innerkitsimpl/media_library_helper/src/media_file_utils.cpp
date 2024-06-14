@@ -1529,7 +1529,12 @@ bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
         size = 0;
         return false;
     }
-    size = statbuf.st_size;
+    if (statbuf.st_size < 0) {
+        MEDIA_WARN_LOG("File size is negative, path: %{public}s", filePath.c_str());
+        size = 0;
+        return false;
+    }
+    size = static_cast<size_t>(statbuf.st_size);
     return true;
 }
 

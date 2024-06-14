@@ -268,29 +268,38 @@ static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext
         return fd;
     }
     UniqueFd uniqueFd(fd);
-    size_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
+    
+    off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
     if (fileLen < 0) {
         NAPI_ERR_LOG("Failed to get file length, error: %{public}d", errno);
         return E_HAS_FS_ERROR;
     }
-    int32_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
+
+    off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
     if (ret < 0) {
         NAPI_ERR_LOG("Failed to reset file offset, error: %{public}d", errno);
         return E_HAS_FS_ERROR;
     }
 
-    context->arrayBufferData = malloc(fileLen);
+    if (fileLen > static_cast<off_t>(SIZE_MAX)) {
+        NAPI_ERR_LOG("File length is too large to fit in a size_t, length: %{public}" PRId64, fileLen);
+        return E_HAS_FS_ERROR;
+    }
+
+    size_t fileSize = static_cast<size_t>(fileLen);
+
+    context->arrayBufferData = malloc(fileSize);
     if (!context->arrayBufferData) {
         NAPI_ERR_LOG("Failed to malloc array buffer data, moving photo uri is %{public}s, resource type is %{public}d",
             context->movingPhotoUri.c_str(), static_cast<int32_t>(context->resourceType));
         return E_HAS_FS_ERROR;
     }
-    context->arrayBufferLength = fileLen;
+    context->arrayBufferLength = fileSize;
 
-    size_t readBytes = read(uniqueFd.Get(), context->arrayBufferData, fileLen);
-    if (readBytes != fileLen) {
+    size_t readBytes = read(uniqueFd.Get(), context->arrayBufferData, fileSize);
+    if (readBytes != fileSize) {
         NAPI_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, "
-            "error: %{public}d", readBytes, fileLen, errno);
+            "error: %{public}d", readBytes, fileSize, errno);
         return E_HAS_FS_ERROR;
     }
     return E_OK;
