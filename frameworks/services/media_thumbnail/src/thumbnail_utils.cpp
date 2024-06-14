@@ -657,6 +657,47 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     return true;
 }
 
+bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_NAME,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, std::to_string(
+        static_cast<int32_t>(ThumbnailReady::THUMB_UPGRADE)));
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err);
+        if (!data.path.empty()) {
+            infos.push_back(data);
+        }
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
 bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
@@ -1108,10 +1149,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
 
     bool ret = false;
     Size desiredSize;
-    if (data.mediaType == MEDIA_TYPE_VIDEO && !data.loaderOpts.isCloudLoading &&
-        !data.loaderOpts.isForeGroundLoading) {
-        ret = LoadVideoFile(data, desiredSize);
-    } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
+    if (data.mediaType == MEDIA_TYPE_AUDIO) {
         ret = LoadAudioFile(data, desiredSize);
     } else {
         ret = LoadImageFile(data, desiredSize);
@@ -1131,7 +1169,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
     }
     data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (data.orientation != 0) {
-        if (!data.loaderOpts.isCloudLoading) {
+        if (data.isLocalFile) {
             Media::InitializationOptions opts;
             auto copySource = PixelMap::Create(*data.source, opts);
             data.sourceEx = std::move(copySource);

@@ -125,15 +125,13 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
-    bool currentStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
-    if (currentStatus_ == currentStatus) {
+    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
+    MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+        currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
+    if (currentStatus_ == newStatus) {
         return;
     }
-
-    currentStatus_ = currentStatus;
-    MEDIA_INFO_LOG("Current status change:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
-    
+    currentStatus_ = newStatus;
     if (currentStatus_) {
         DoBackgroundOperation();
     } else {
@@ -238,9 +236,14 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         return;
     }
 
-    auto result = dataManager->GenerateThumbnails();
+    auto result = dataManager->GenerateThumbnailBackground();
     if (result != E_OK) {
-        MEDIA_ERR_LOG("GenerateThumbnails faild");
+        MEDIA_ERR_LOG("GenerateThumbnailBackground faild");
+    }
+
+    result = dataManager->UpgradeThumbnailBackground();
+    if (result != E_OK) {
+        MEDIA_ERR_LOG("UpgradeThumbnailBackground faild");
     }
 
     result = dataManager->DoAging();
