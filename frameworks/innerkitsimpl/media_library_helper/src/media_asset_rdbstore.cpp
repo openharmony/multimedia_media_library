@@ -22,6 +22,8 @@
 #include "media_log.h"
 #include "parameter.h"
 #include "parameters.h"
+#include "photo_album_column.h"
+#include "photo_map_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;

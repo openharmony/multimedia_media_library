@@ -46,7 +46,7 @@ public:
         const std::vector<std::string> &columns);
     EXPORT static int32_t AddFilters(MediaLibraryCommand &cmd);
     EXPORT static int32_t ProcessMultistagesPhoto(bool isEdited, const std::string &path,
-        const uint8_t *addr, const long bytes);
+        const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
     EXPORT static void DropThumbnailSize(const std::string& photoId);
 
@@ -69,9 +69,10 @@ private:
         const std::string &editData);
     static int32_t DoRevertEdit(const std::shared_ptr<FileAsset> &fileAsset);
     static int32_t ParseMediaAssetEditData(MediaLibraryCommand &cmd, std::string &editData);
+    static bool IsSetEffectMode(MediaLibraryCommand &cmd);
     static bool IsContainsData(MediaLibraryCommand &cm);
     static bool IsCameraEditData(MediaLibraryCommand &cmd);
-    static bool ReadEditdataFromFile(const std::string &editDataPath, std::string &editData);
+    static int32_t ReadEditdataFromFile(const std::string &editDataPath, std::string &editData);
     static int32_t SaveEditDataCamera(MediaLibraryCommand &cmd, const std::string &assetPath,
         std::string &editData);
     static int32_t SaveSourceAndEditData(const std::shared_ptr<FileAsset> &fileAsset, const std::string &editData);
@@ -81,13 +82,18 @@ private:
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
     static int32_t SubmitCacheExecute(MediaLibraryCommand &cmd,
         const std::shared_ptr<FileAsset> &fileAsset, const std::string &cachePath);
+    static int32_t SubmitEffectModeExecute(MediaLibraryCommand &cmd);
+    static int32_t GetMovingPhotoCachePath(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+        std::string &imageCachePath, std::string &videoCachePath);
     static bool CheckCacheCmd(MediaLibraryCommand &cmd, int32_t subtype, const std::string &displayName);
     static int32_t MoveCacheFile(MediaLibraryCommand &cmd, int32_t subtype,
         const std::string &cachePath, const std::string &destPath);
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
-        const std::string &editdata);
+        const std::string &editdata, int32_t fileId);
+    static int32_t RevertToOriginalEffectMode(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
+        bool &isNeedScan);
 };
 
 class PhotoEditingRecord {

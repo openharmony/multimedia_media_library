@@ -54,6 +54,7 @@ ohos_shared_library("media_library") {
     "src/medialibrary_helper_container.cpp",
     "src/medialibrary_kvstore.cpp",
     "src/medialibrary_kvstore_manager.cpp",
+    "src/medialibrary_operation.cpp",
     "src/medialibrary_threadpool.cpp",
     "src/mimetype_utils.cpp",
     "src/native_album_asset.cpp",
@@ -77,6 +78,7 @@ ohos_shared_library("media_library") {
 
   external_deps = [
     "ability_base:zuri",
+    "ability_runtime:ability_connect_callback_stub",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
     "access_token:el5_filekey_manager_sdk",

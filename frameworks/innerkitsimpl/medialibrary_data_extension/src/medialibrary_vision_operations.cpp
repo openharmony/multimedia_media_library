@@ -128,6 +128,16 @@ static int32_t DeleteFromVisionTables(string &fileId, string &selectionTotal,
     return MediaLibraryDataManager::GetInstance()->Delete(cmdTable, predicate);
 }
 
+static int32_t DeleteFromVisionTablesForVideo(string &fileId, const string &tableName)
+{
+    string uriTable = MEDIALIBRARY_DATA_URI + "/" + tableName;
+    Uri uri = Uri(uriTable);
+    DataSharePredicates predicate;
+    predicate.EqualTo(FILE_ID, fileId);
+    MediaLibraryCommand cmdTable(uri);
+    return MediaLibraryDataManager::GetInstance()->Delete(cmdTable, predicate);
+}
+
 static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
 {
     if (taskData == nullptr) {
@@ -143,6 +153,7 @@ static void UpdateVisionTableForEdit(AsyncTaskData *taskData)
 
     string selectionTotal = FILE_ID + " = " + fileId + " AND " + LABEL + " = 1";
     DeleteFromVisionTables(fileId, selectionTotal, LABEL, PAH_ANA_LABEL);
+    DeleteFromVisionTablesForVideo(fileId, PAH_ANA_VIDEO_LABEL);
 
     selectionTotal = FILE_ID + " = " + fileId + " AND " + AESTHETICS_SCORE + " = 1";
     DeleteFromVisionTables(fileId, selectionTotal, AESTHETICS_SCORE, PAH_ANA_ATTS);

@@ -67,7 +67,7 @@ namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
 
-const string secuityComponentMode = "rw";
+const string SECURITY_COMPONENT_MODE = "rw";
 
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
 {
@@ -584,7 +584,7 @@ static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd)
             queryResultSet->GetRowCount(count);
             if (count != 0) {
                 ret = true;
-                CollectPermissionInfo(cmd, secuityComponentMode, true,
+                CollectPermissionInfo(cmd, SECURITY_COMPONENT_MODE, true,
                     PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
             }
         }
@@ -646,7 +646,7 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
             CollectPermissionInfo(command, unifyMode, false, PermissionUsedTypeValue::PICKER_TYPE);
             if (!CheckIsOwner(uri, command)) {
                 MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
-                CollectPermissionInfo(command, secuityComponentMode, false,
+                CollectPermissionInfo(command, SECURITY_COMPONENT_MODE, false,
                     PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
                 return err;
             }

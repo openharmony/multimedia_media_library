@@ -46,6 +46,7 @@ struct ThumbRdbOpt {
     EXPORT std::string uri;
     EXPORT std::string dateAdded;
     EXPORT std::string fileUri;
+    EXPORT std::string fileId;
     EXPORT Size screenSize;
 };
 
@@ -57,7 +58,7 @@ public:
     EXPORT static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size,
         std::unique_ptr<PixelMap> &pixelMap);
     EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
-        bool isHigh = false, bool isAstc = false);
+        bool isHigh = false, bool isAstc = false, bool forceSdr = true);
     EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
     // RDB Store Query
@@ -78,6 +79,7 @@ public:
 #endif
 
     EXPORT static bool DeleteOriginImage(ThumbRdbOpt &opts);
+    EXPORT static bool DoDeleteMonthAndYearAstc(ThumbRdbOpt &opts);
     // Steps
     EXPORT static bool LoadSourceImage(ThumbnailData &data);
     static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
@@ -100,6 +102,7 @@ public:
 #endif
     EXPORT static bool QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+    EXPORT static bool QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNoAstcInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
     static bool QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
@@ -131,6 +134,7 @@ public:
     static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
     static bool GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
     static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
+    EXPORT static bool LoadVideoFile(ThumbnailData &data, Size &desiredSize);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
@@ -149,7 +153,6 @@ private:
     EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     EXPORT static bool LoadImageFile(ThumbnailData &data, Size &desiredSize);
-    EXPORT static bool LoadVideoFile(ThumbnailData &data, Size &desiredSize);
     static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
         Size &desiredSize, uint32_t &errCode);
     EXPORT static bool LoadAudioFile(ThumbnailData &data, Size &desiredSize);

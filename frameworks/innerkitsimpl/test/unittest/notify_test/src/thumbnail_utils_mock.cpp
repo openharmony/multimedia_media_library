@@ -12,25 +12,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define MLOG_TAG "Thumbnail"
 
-#ifndef IVISION_SERVICE_CV
-#define IVISION_SERVICE_CV
+#include "thumbnail_utils.h"
+#include "gtest/gtest.h"
 
-#include "iremote_broker.h"
+using namespace std;
+using namespace OHOS::DistributedKv;
+using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-class IMediaAnalyseService : public IRemoteBroker {
-public:
-    enum ActivateServiceType {
-        START_SERVICE_OCR = 1,
-        START_DELETE_INDEX = 31,
-        START_UPDATE_INDEX = 32,
-        START_BACKGROUND_TASK = 33,
-    };
-public:
-    DECLARE_INTERFACE_DESCRIPTOR(u"Multimedia.MediaAnalyseService.API");
-};
-} //namespace MEDIA
+
+bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
+{
+    GTEST_LOG_(INFO) << "LoadSourceImage start";
+    return true;
 }
-#endif
+
+void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
+    ThumbnailData &data, int &err)
+{
+    GTEST_LOG_(INFO) << "QueryThumbnailDataFromFileId start";
+}
+} // namespace Media
+} // namespace OHOS

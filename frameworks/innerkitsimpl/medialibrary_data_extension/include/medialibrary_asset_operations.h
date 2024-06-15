@@ -68,6 +68,7 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::PHOTO_LCD_VISIT_TIME, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_EDIT_TIME, MEMBER_TYPE_INT64 },
     { PhotoColumn::PHOTO_SUBTYPE, MEMBER_TYPE_INT32 },
+    { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, MEMBER_TYPE_INT32 },
     { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
     { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING }
 };

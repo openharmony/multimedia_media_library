@@ -30,7 +30,6 @@ using namespace std;
 
 namespace OHOS {
 namespace Media {
-thread_local napi_ref FetchFileResultNapi::sConstructor_ = nullptr;
 thread_local napi_ref FetchFileResultNapi::userFileMgrConstructor_ = nullptr;
 thread_local napi_ref FetchFileResultNapi::photoAccessHelperConstructor_ = nullptr;
 
@@ -49,40 +48,6 @@ void FetchFileResultNapi::FetchFileResultNapiDestructor(napi_env env, void *nati
         delete fetchFileResultObj;
         fetchFileResultObj = nullptr;
     }
-}
-
-napi_value FetchFileResultNapi::Init(napi_env env, napi_value exports)
-{
-    napi_status status;
-    napi_value ctorObj;
-    int32_t refCount = 1;
-
-    napi_property_descriptor fetch_file_result_props[] = {
-        DECLARE_NAPI_FUNCTION("getCount", JSGetCount),
-        DECLARE_NAPI_FUNCTION("isAfterLast", JSIsAfterLast),
-        DECLARE_NAPI_FUNCTION("getFirstObject", JSGetFirstObject),
-        DECLARE_NAPI_FUNCTION("getNextObject", JSGetNextObject),
-        DECLARE_NAPI_FUNCTION("getLastObject", JSGetLastObject),
-        DECLARE_NAPI_FUNCTION("getPositionObject", JSGetPositionObject),
-        DECLARE_NAPI_FUNCTION("getAllObject", JSGetAllObject),
-        DECLARE_NAPI_FUNCTION("close", JSClose)
-    };
-
-    status = napi_define_class(env, FETCH_FILE_RESULT_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
-                               FetchFileResultNapiConstructor, nullptr,
-                               sizeof(fetch_file_result_props) / sizeof(fetch_file_result_props[PARAM0]),
-                               fetch_file_result_props, &ctorObj);
-    if (status == napi_ok) {
-        status = napi_create_reference(env, ctorObj, refCount, &sConstructor_);
-        if (status == napi_ok) {
-            status = napi_set_named_property(env, exports, FETCH_FILE_RESULT_CLASS_NAME.c_str(), ctorObj);
-            if (status == napi_ok) {
-                return exports;
-            }
-        }
-    }
-    NAPI_DEBUG_LOG("Init success");
-    return nullptr;
 }
 
 void FetchFileResultNapi::GetFetchResult(unique_ptr<FetchFileResultNapi> &obj)
@@ -176,7 +141,8 @@ void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<FileAsset>>
             break;
         }
         default:
-            constructorRef = sConstructor_;
+            NAPI_ERR_LOG("Invalid result napi type: %{public}d", static_cast<int>(fileResult->GetResultNapiType()));
+            constructorRef = nullptr;
             break;
     }
 }
@@ -194,7 +160,8 @@ void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<AlbumAsset>
             break;
         }
         default:
-            constructorRef = sConstructor_;
+            NAPI_ERR_LOG("Invalid result napi type: %{public}d", static_cast<int>(fileResult->GetResultNapiType()));
+            constructorRef = nullptr;
             break;
     }
 }
@@ -212,7 +179,8 @@ void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<SmartAlbumA
             break;
         }
         default:
-            constructorRef = sConstructor_;
+            NAPI_ERR_LOG("Invalid result napi type: %{public}d", static_cast<int>(fileResult->GetResultNapiType()));
+            constructorRef = nullptr;
             break;
     }
 }
@@ -230,7 +198,8 @@ void FetchFileResultNapi::SolveConstructorRef(unique_ptr<FetchResult<PhotoAlbum>
             break;
         }
         default:
-            constructorRef = sConstructor_;
+            NAPI_ERR_LOG("Invalid result napi type: %{public}d", static_cast<int>(fileResult->GetResultNapiType()));
+            constructorRef = nullptr;
             break;
     }
 }

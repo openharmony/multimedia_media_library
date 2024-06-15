@@ -1343,7 +1343,9 @@ static void AddVideoLabelTable(RdbStore &store)
     static const vector<string> executeSqlStrs = {
         CREATE_TAB_ANALYSIS_VIDEO_LABEL,
         DROP_INSERT_VISION_TRIGGER,
-        CREATE_VISION_INSERT_TRIGGER_FOR_ADD_VIDEO_LABEL
+        DROP_UPDATE_VISION_TRIGGER,
+        CREATE_VISION_INSERT_TRIGGER_FOR_ADD_VIDEO_LABEL,
+        CREATE_VISION_UPDATE_TRIGGER_FOR_ADD_VIDEO_LABEL,
     };
     MEDIA_INFO_LOG("start add video label tables");
     ExecSqls(executeSqlStrs, store);
@@ -1617,6 +1619,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     AddHeadAndPoseTables(*rdbStore_);
     AddSegmentationColumns(*rdbStore_);
     AddFaceOcclusionAndPoseTypeColumn(*rdbStore_);
+    AddVideoLabelTable(*rdbStore_);
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
@@ -2202,6 +2205,18 @@ void UpdateHighlightCoverTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+void UpdateHighlightTablePrimaryKey(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        "DROP TABLE IF EXISTS tab_highlight_album",
+        "DROP TABLE IF EXISTS tab_highlight_cover_info",
+        CREATE_HIGHLIGHT_ALBUM_TABLE,
+        CREATE_HIGHLIGHT_COVER_INFO_TABLE,
+    };
+    MEDIA_INFO_LOG("update primary key of highlight db");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void AddBussinessRecordAlbum(RdbStore &store)
 {
     string updateDirtyForShootingMode = "UPDATE Photos SET dirty = 2 WHERE cloud_id is not null AND " +
@@ -2262,6 +2277,26 @@ void UpdatePhotoAlbumTigger(RdbStore &store)
         PhotoAlbumColumns::CREATE_ALBUM_MDIRTY_TRIGGER,
     };
     MEDIA_INFO_LOG("Start update album modify trigger");
+    ExecSqls(executeSqlStrs, store);
+}
+
+void AddMovingPhotoEffectMode(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
+            PhotoColumn::MOVING_PHOTO_EFFECT_MODE + " INT DEFAULT 0"
+    };
+    MEDIA_INFO_LOG("start add moving_photo_effect_mode column");
+    ExecSqls(sqls, store);
+}
+
+static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_UPDATE_VISION_TRIGGER,
+        CREATE_VISION_UPDATE_TRIGGER_FOR_ADD_VIDEO_LABEL,
+    };
+    MEDIA_INFO_LOG("start update vision trigger for video label");
     ExecSqls(executeSqlStrs, store);
 }
 
@@ -2559,6 +2594,18 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_THUMB_LCD_SIZE_COLUMN) {
         AddLcdAndThumbSizeColumns(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_HIGHLIGHT_TABLE_PRIMARY_KEY) {
+        UpdateHighlightTablePrimaryKey(store);
+    }
+
+    if (oldVersion < VERSION_ADD_MOVING_PHOTO_EFFECT_MODE) {
+        AddMovingPhotoEffectMode(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_VISION_TRIGGER_FOR_VIDEO_LABEL) {
+        UpdateVisionTriggerForVideoLabel(store);
     }
 }
 

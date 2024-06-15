@@ -363,6 +363,9 @@ static napi_value ParseArgsDeleteAlbums(
 
 static void DeleteAlbumsExecute(napi_env env, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteAlbumsExecute");
+
     auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
     Uri deleteAlbumUri(PAH_DELETE_PHOTO_ALBUM);
     int ret = UserFileClient::Delete(deleteAlbumUri, context->predicates);
@@ -834,6 +837,9 @@ napi_value MediaAlbumChangeRequestNapi::JSPlaceBefore(napi_env env, napi_callbac
 
 static bool CreateAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CreateAlbumExecute");
+
     auto changeRequest = context.objectInfo;
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
 
@@ -897,6 +903,9 @@ static bool FetchNewCount(MediaAlbumChangeRequestAsyncContext& context, shared_p
 
 static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("AddAssetsExecute");
+
     auto changeRequest = context.objectInfo;
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     int32_t albumId = photoAlbum->GetAlbumId();
@@ -924,6 +933,9 @@ static bool AddAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool RemoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("RemoveAssetsExecute");
+
     auto changeRequest = context.objectInfo;
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     int32_t albumId = photoAlbum->GetAlbumId();
@@ -947,6 +959,9 @@ static bool RemoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MoveAssetsExecute");
+
     auto changeRequest = context.objectInfo;
     auto photoAlbum = changeRequest->GetPhotoAlbumInstance();
     int32_t albumId = photoAlbum->GetAlbumId();
@@ -996,6 +1011,9 @@ static bool MoveAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool RecoverAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("RecoverAssetsExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     predicates.In(PhotoColumn::MEDIA_ID, context.objectInfo->GetRecoverAssetArray());
@@ -1019,6 +1037,9 @@ static bool RecoverAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool DeleteAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("DeleteAssetsExecute");
+
     DataShare::DataSharePredicates predicates;
     predicates.In(PhotoColumn::MEDIA_ID, context.objectInfo->GetDeleteAssetArray());
     DataShare::DataShareValuesBucket valuesBucket;
@@ -1042,6 +1063,9 @@ static bool DeleteAssetsExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool OrderAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("OrderAlbumExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
@@ -1066,6 +1090,9 @@ static bool OrderAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool DismissAssetExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("DismissAssetExecute");
+
     string disMissAssetAssetsUri = PAH_DISMISS_ASSET;
     Uri uri(disMissAssetAssetsUri);
 
@@ -1087,6 +1114,9 @@ static bool DismissAssetExecute(MediaAlbumChangeRequestAsyncContext& context)
 
 static bool MergeAlbumExecute(MediaAlbumChangeRequestAsyncContext& context)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MergeAlbumExecute");
+
     DataShare::DataSharePredicates predicates;
     DataShare::DataShareValuesBucket valuesBucket;
     auto photoAlbum = context.objectInfo->GetPhotoAlbumInstance();
@@ -1162,6 +1192,9 @@ static bool GetAlbumUpdateValue(shared_ptr<PhotoAlbum>& photoAlbum, const AlbumC
 static bool SetAlbumPropertyExecute(
     MediaAlbumChangeRequestAsyncContext& context, const AlbumChangeOperation changeOperation)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("SetAlbumPropertyExecute");
+
     // In the scenario of creation, the new name will be applied when the album is created.
     if (changeOperation == AlbumChangeOperation::SET_ALBUM_NAME &&
         context.albumChangeOperations.front() == AlbumChangeOperation::CREATE_ALBUM) {
@@ -1205,6 +1238,9 @@ static const unordered_map<AlbumChangeOperation, bool (*)(MediaAlbumChangeReques
 
 static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ApplyAlbumChangeRequestExecute");
+
     auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
     unordered_set<AlbumChangeOperation> appliedOperations;
     for (const auto& changeOperation : context->albumChangeOperations) {
@@ -1239,6 +1275,9 @@ static void ApplyAlbumChangeRequestExecute(napi_env env, void* data)
 
 static void ApplyAlbumChangeRequestCompleteCallback(napi_env env, napi_status status, void* data)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("ApplyAlbumChangeRequestCompleteCallback");
+
     auto* context = static_cast<MediaAlbumChangeRequestAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
     auto jsContext = make_unique<JSAsyncContextOutput>();
