@@ -64,7 +64,6 @@ public:
     EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
     EXPORT void CancelAstcBatchTask(int32_t requestId);
     void DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded);
-
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();
