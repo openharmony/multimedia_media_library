@@ -256,8 +256,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CancelAstcBatchTask_test_001
 
     NativeRdb::RdbPredicates predicate { PhotoColumn::PHOTOS_TABLE };
     int32_t requestId = 1;
-    int32_t result = serverTest->CancelAstcBatchTask(requestId);
-    int32_t result = serverTest->CancelAstcBatchTask(++requestId);
+    serverTest->CancelAstcBatchTask(requestId);
+    serverTest->CancelAstcBatchTask(++requestId);
     serverTest->ReleaseService();
 }
 } // namespace Media
