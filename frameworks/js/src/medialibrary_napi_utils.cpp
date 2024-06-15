@@ -1432,7 +1432,7 @@ void MediaLibraryNapiUtils::FixSpecialDateType(string &selections)
 }
 
 template <class AsyncContext>
-napi_status ParsePredicates(napi_env env, const napi_value arg,
+napi_status MediaLibraryNapiUtils::ParsePredicates(napi_env env, const napi_value arg,
     AsyncContext &context, const FetchOptionType &fetchOptType)
 {
     JSProxy::JSProxy<DataShareAbsPredicates> *jsProxy = nullptr;
