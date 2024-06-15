@@ -1431,6 +1431,19 @@ void MediaLibraryNapiUtils::FixSpecialDateType(string &selections)
     }
 }
 
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::ParsePredicates(napi_env env, const napi_value arg,
+    AsyncContext &context, const FetchOptionType &fetchOptType)
+{
+    JSProxy::JSProxy<DataShareAbsPredicates> *jsProxy = nullptr;
+    napi_unwrap(env, arg, reinterpret_cast<void **>(&jsProxy));
+    shared_ptr<DataShareAbsPredicates> predicate = jsProxy->GetInstance();
+    CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE,
+        napi_invalid_arg, "invalid predicate");
+    CHECK_COND_RET(GetLocationPredicate(context, predicate) == TRUE, napi_invalid_arg, "invalid predicate");
+    return napi_ok;
+}
+
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
     unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
     const FetchOptionType &fetchOptType);
@@ -1636,5 +1649,8 @@ template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<Fil
 
 template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<AlbumNapiAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<AlbumNapiAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::ParsePredicates<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
+    const napi_value arg, unique_ptr<MediaLibraryAsyncContext> &context, const FetchOptionType &fetchOptType);
 } // namespace Media
 } // namespace OHOS
