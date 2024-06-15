@@ -2127,7 +2127,9 @@ static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
         bool valid = false;
         auto iter = EXECUTE_MAP.find(changeOperation);
         if (iter != EXECUTE_MAP.end()) {
+            tracer.Start("ApplyAssetChangeRequestExecute " + to_string(static_cast<int32_t>(changeOperation)));
             valid = iter->second(*context);
+            tracer.Finish();
         } else if (changeOperation == AssetChangeOperation::CREATE_FROM_SCRATCH ||
                    changeOperation == AssetChangeOperation::SET_EDIT_DATA) {
             // Perform CREATE_FROM_SCRATCH and SET_EDIT_DATA during GET_WRITE_CACHE_HANDLER or ADD_RESOURCE.
