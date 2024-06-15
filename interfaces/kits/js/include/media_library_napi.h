@@ -219,12 +219,19 @@ private:
     EXPORT static napi_value JSDeleteAsset(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSOnCallback(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSOnCallbackMediaLibrary(napi_env env, napi_callback_info info);
+
     EXPORT static napi_value JSOffCallback(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSRelease(napi_env env, napi_callback_info info);
 
+    EXPORT static napi_value JSReleaseMedialibrary(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetActivePeersMedialibrary(napi_env env, napi_callback_info info);
+    EXPORT static napi_value JSGetAllPeersMedialibrary(napi_env env, napi_callback_info info);
+
     EXPORT static napi_value JSGetActivePeers(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetAllPeers(napi_env env, napi_callback_info info);
+    EXPORT static napi_value CreateUndefined(napi_env env);
     EXPORT static napi_value CreateMediaTypeEnum(napi_env env);
     EXPORT static napi_value CreateFileKeyEnum(napi_env env);
     EXPORT static napi_value CreateDirectoryTypeEnum(napi_env env);
@@ -281,6 +288,7 @@ private:
     EXPORT static napi_value PhotoAccessCreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessDeletePhotoAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoAlbums(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetPhotoAlbumsSync(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessSaveFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessRemoveFormInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetFileAssetsInfo(napi_env env, napi_callback_info info);
@@ -299,6 +307,7 @@ private:
     EXPORT static napi_value CreateResourceTypeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightAlbumInfoTypeEnum(napi_env env);
     EXPORT static napi_value CreateHighlightUserActionTypeEnum(napi_env env);
+    EXPORT static napi_value CreateMovingPhotoEffectModeEnum(napi_env env);
 
     EXPORT static napi_value CreatePhotoAlbum(napi_env env, napi_callback_info info);
     EXPORT static napi_value DeletePhotoAlbums(napi_env env, napi_callback_info info);
@@ -347,6 +356,7 @@ private:
     static thread_local napi_ref sSourceModeEnumRef_;
     static thread_local napi_ref sHighlightAlbumInfoType_;
     static thread_local napi_ref sHighlightUserActionType_;
+    static thread_local napi_ref sMovingPhotoEffectModeEnumRef_;
 
     static std::mutex sOnOffMutex_;
 };

@@ -52,6 +52,9 @@ public:
     virtual PhotoFormat GetFormat() = 0; // RGBA、JPG
     virtual PhotoQuality GetPhotoQuality() = 0; // 后续相机框架可能通过AddPhotoProxy传入高质量图
     virtual void Release() = 0;
+    virtual double GetLatitude() = 0;
+    virtual double GetLongitude() = 0;
+    virtual int32_t GetShootingMode() = 0;
 };
 } // Media
 } // OHOS

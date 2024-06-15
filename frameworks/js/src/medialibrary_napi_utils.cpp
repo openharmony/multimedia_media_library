@@ -1632,6 +1632,9 @@ template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<M
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<FileAssetAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<FileAssetAsyncContext> &context, int32_t &value);
 
+template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaAssetChangeRequestAsyncContext>>(
+    napi_env env, napi_callback_info info, unique_ptr<MediaAssetChangeRequestAsyncContext> &context, int32_t &value);
+
 template napi_status MediaLibraryNapiUtils::ParseArgsNumberCallback<unique_ptr<MediaAlbumChangeRequestAsyncContext>>(
     napi_env env, napi_callback_info info, unique_ptr<MediaAlbumChangeRequestAsyncContext> &context, int32_t &value);
 

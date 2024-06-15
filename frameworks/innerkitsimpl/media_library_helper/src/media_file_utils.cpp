@@ -218,6 +218,27 @@ bool MediaFileUtils::IsFileExists(const string &fileName)
     return ((stat(fileName.c_str(), &statInfo)) == E_SUCCESS);
 }
 
+bool MediaFileUtils::IsFileValid(const string &fileName)
+{
+    struct stat statInfo {};
+    if (!fileName.empty()) {
+        if (stat(fileName.c_str(), &statInfo) == E_SUCCESS) {
+            //if the given path is a directory path, return
+            if (statInfo.st_mode & S_IFDIR) {
+                MEDIA_ERR_LOG("file is a directory");
+                return false;
+            }
+
+            //if the file is empty
+            if (statInfo.st_size == 0) {
+                MEDIA_WARN_LOG("file is empty");
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 bool MediaFileUtils::IsDirEmpty(const string &path)
 {
     DIR *dir = opendir(path.c_str());
@@ -1428,6 +1449,9 @@ bool MediaFileUtils::CheckMovingPhotoVideo(const string &path)
 
 bool MediaFileUtils::CheckMovingPhotoVideo(const UniqueFd &uniqueFd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaFileUtils::CheckMovingPhotoVideo");
+
     if (uniqueFd.Get() <= 0) {
         MEDIA_ERR_LOG("Failed to open video of moving photo, errno = %{public}d", errno);
         return false;
@@ -1491,6 +1515,12 @@ bool MediaFileUtils::CheckMovingPhotoVideoDuration(int32_t duration)
     return duration > MIN_DURATION_MS && duration <= MAX_DURATION_MS;
 }
 
+bool MediaFileUtils::CheckMovingPhotoEffectMode(int32_t effectMode)
+{
+    return effectMode >= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_START) &&
+           effectMode <= static_cast<int32_t>(MovingPhotoEffectMode::EFFECT_MODE_END);
+}
+
 bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
 {
     struct stat statbuf;
@@ -1499,7 +1529,12 @@ bool MediaFileUtils::GetFileSize(const std::string& filePath, size_t& size)
         size = 0;
         return false;
     }
-    size = statbuf.st_size;
+    if (statbuf.st_size < 0) {
+        MEDIA_WARN_LOG("File size is negative, path: %{public}s", filePath.c_str());
+        size = 0;
+        return false;
+    }
+    size = static_cast<size_t>(statbuf.st_size);
     return true;
 }
 

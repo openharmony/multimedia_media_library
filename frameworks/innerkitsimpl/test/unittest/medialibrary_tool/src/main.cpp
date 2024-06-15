@@ -23,10 +23,11 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace OHOS::Media::MediaTool;
 
+constexpr int32_t SHELL_UID = 2000;
 int main(int argc, char *argv[])
 {
     int32_t id = getuid();
-    if (id != 0) {
+    if (id != 0 && id != SHELL_UID) {
         return 0;
     }
     std::vector<std::string> args;

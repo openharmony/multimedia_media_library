@@ -46,6 +46,8 @@ enum class GenerateScene : int32_t {
     CLOUD,
     BACKGROUND,
     FOREGROUND,
+    RESTORE,
+    UPGRADE,
 };
 
 enum class LoadSourceType : int32_t {
@@ -62,6 +64,7 @@ enum class ThumbnailReady : int32_t {
     GENERATE_THUMB_COMPLETED,
     THUMB_TO_UPLOAD,
     THUMB_UPLOAD_COMPLETED,
+    THUMB_UPGRADE,
 };
 
 const std::unordered_map<ThumbnailType, std::string> TYPE_NAME_MAP = {
@@ -129,7 +132,6 @@ const std::string THUMBNAIL_OPER = "oper";
 const std::string THUMBNAIL_HEIGHT = "height";
 const std::string THUMBNAIL_WIDTH = "width";
 const std::string THUMBNAIL_PATH = "path";
-const std::string THUMBNAIL_TEMP_ORIENT_SUFFIX = ".temp.orient";
 
 // create thumbnail in close operation
 const std::string CLOSE_CREATE_THUMB_STATUS = "create_thumbnail_sync_status";

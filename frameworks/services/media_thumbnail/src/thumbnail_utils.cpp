@@ -118,6 +118,11 @@ bool ThumbnailUtils::DeleteThumbExDir(ThumbnailData &data)
 {
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_EX_SUFFIX);
     string dirName = MediaFileUtils::GetParentPath(fileName);
+    if (access(dirName.c_str(), F_OK) != 0) {
+        MEDIA_INFO_LOG("No need to delete THM_EX, directory not exists path: %{public}s, id: %{public}s",
+            dirName.c_str(), data.id.c_str());
+        return true;
+    }
     if (!MediaFileUtils::DeleteDir(dirName)) {
         MEDIA_INFO_LOG("Failed to delete THM_EX directory, path: %{public}s, id: %{public}s",
             dirName.c_str(), data.id.c_str());
@@ -279,12 +284,14 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
     return sourceLoader.RunLoading();
 }
 
-bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isHigh, bool isAstc)
+bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isHigh, bool isAstc,
+    bool forceSdr)
 {
     PackOption option = {
         .format = isAstc ? THUMBASTC_FORMAT : THUMBNAIL_FORMAT,
         .quality = isAstc ? ASTC_LOW_QUALITY : (isHigh ? THUMBNAIL_HIGH : THUMBNAIL_MID),
-        .numberHint = NUMBER_HINT_1
+        .numberHint = NUMBER_HINT_1,
+        .desiredDynamicRange = forceSdr ? EncodeDynamicRange::SDR : EncodeDynamicRange::AUTO
     };
     data.resize(max(pixelMap->GetByteCount(), MIN_COMPRESS_BUF_SIZE));
 
@@ -650,6 +657,47 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     return true;
 }
 
+bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_NAME,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, std::to_string(
+        static_cast<int32_t>(ThumbnailReady::THUMB_UPGRADE)));
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err);
+        if (!data.path.empty()) {
+            infos.push_back(data);
+        }
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
 bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
@@ -658,6 +706,8 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_POSITION,
+        MEDIA_DATA_DB_ORIENTATION,
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
@@ -1099,10 +1149,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
 
     bool ret = false;
     Size desiredSize;
-    if (data.mediaType == MEDIA_TYPE_VIDEO && !data.loaderOpts.isCloudLoading &&
-        !data.loaderOpts.isForeGroundLoading) {
-        ret = LoadVideoFile(data, desiredSize);
-    } else if (data.mediaType == MEDIA_TYPE_AUDIO) {
+    if (data.mediaType == MEDIA_TYPE_AUDIO) {
         ret = LoadAudioFile(data, desiredSize);
     } else {
         ret = LoadImageFile(data, desiredSize);
@@ -1122,7 +1169,7 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
     }
     data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (data.orientation != 0) {
-        if (!data.loaderOpts.isCloudLoading) {
+        if (data.isLocalFile) {
             Media::InitializationOptions opts;
             auto copySource = PixelMap::Create(*data.source, opts);
             data.sourceEx = std::move(copySource);
@@ -1420,6 +1467,8 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
             return isDelete;
         }
     }
+    MEDIA_INFO_LOG("Start DeleteOriginImage, id: %{public}s, path: %{public}s",
+        opts.row.c_str(), tmpData.path.c_str());
     if (!opts.dateAdded.empty() && DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC)) {
         isDelete = true;
     }
@@ -1440,6 +1489,13 @@ bool ThumbnailUtils::DeleteOriginImage(ThumbRdbOpt &opts)
     }
     string fileName = GetThumbnailPath(tmpData.path, "");
     return isDelete;
+}
+
+bool ThumbnailUtils::DoDeleteMonthAndYearAstc(ThumbRdbOpt &opts)
+{
+    MEDIA_INFO_LOG("Start DoDeleteMonthAndYearAstc, id: %{public}s", opts.row.c_str());
+    return DeleteAstcDataFromKvStore(opts, ThumbnailType::MTH_ASTC) &&
+        DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC);
 }
 
 #ifdef DISTRIBUTED

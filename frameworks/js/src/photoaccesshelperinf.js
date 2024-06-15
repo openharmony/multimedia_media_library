@@ -340,6 +340,8 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isEditSupported = option.isEditSupported === undefined || option.isEditSupported;
     config.parameters.recommendationOptions = option.recommendationOptions;
     config.parameters.preselectedUris = option.preselectedUris;
+    config.parameters.isPreviewForSingleSelectionSupported = option.isPreviewForSingleSelectionSupported;
+    config.parameters.isOriginalSupported = option.isOriginalSupported;
   }
 
   return config;
@@ -412,6 +414,7 @@ function BaseSelectOptions() {
   this.maxSelectNumber = -1;
   this.isSearchSupported = true;
   this.isPhotoTakingSupported = true;
+  this.isPreviewForSingleSelectionSupported = true;
 }
 
 function PhotoSelectOptions() {
@@ -420,6 +423,7 @@ function PhotoSelectOptions() {
   this.isSearchSupported = true;
   this.isPhotoTakingSupported = true;
   this.isEditSupported = true;
+  this.isOriginalSupported = false;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto) {
@@ -511,4 +515,5 @@ export default {
   MediaAlbumChangeRequest: photoAccessHelper.MediaAlbumChangeRequest,
   MediaAssetManager: photoAccessHelper.MediaAssetManager,
   MovingPhoto: photoAccessHelper.MovingPhoto,
+  MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,
 };

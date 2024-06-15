@@ -136,6 +136,16 @@ enum class DynamicRangeType : int32_t {
     HDR
 };
 
+enum class MovingPhotoEffectMode : int32_t {
+    EFFECT_MODE_START = 0,
+    DEFAULT = EFFECT_MODE_START,
+    BOUNCE_PLAY,
+    LOOP_PLAY,
+    LONG_EXPOSURE,
+    MULTI_EXPOSURE,
+    EFFECT_MODE_END = MULTI_EXPOSURE
+};
+
 const std::string URI_PARAM_API_VERSION = "api_version";
 
 enum class MediaLibraryApi : uint32_t {

@@ -31,13 +31,14 @@
 #include "media_log.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
+#include "post_event_utils.h"
 #include "result_set_utils.h"
 #include "rdb_predicates.h"
 #include "rdb_helper.h"
 #include "single_kvstore.h"
 #include "thumbnail_const.h"
 #include "thumbnail_generate_worker_manager.h"
-#include "post_event_utils.h"
+#include "thumbnail_source_loading.h"
 
 using namespace std;
 using namespace OHOS::DistributedKv;
@@ -45,13 +46,13 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-void IThumbnailHelper::CreateThumbnails(std::shared_ptr<ThumbnailTaskData> &data)
+void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
-        MEDIA_ERR_LOG("CreateThumbnails failed, data is null");
+        MEDIA_ERR_LOG("CreateLcdAndThumbnail failed, data is null");
         return;
     }
-    DoCreateThumbnails(data->opts_, data->thumbnailData_);
+    DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
     if (data->opts_.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
         MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, data->opts_.path);
@@ -98,6 +99,18 @@ void IThumbnailHelper::CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data)
     }
     DoCreateAstcEx(data->opts_, data->thumbnailData_);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
+}
+
+void IThumbnailHelper::DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData> &data)
+{
+    if (data == nullptr) {
+        MEDIA_ERR_LOG("DeleteMonthAndYearAstc failed, data is null");
+        return;
+    }
+    if (!ThumbnailUtils::DoDeleteMonthAndYearAstc(data->opts_)) {
+        MEDIA_ERR_LOG("DeleteMonthAndYearAstc failed, key is %{public}s and %{public}s",
+            data->opts_.row.c_str(), data->opts_.dateAdded.c_str());
+    }
 }
 
 void IThumbnailHelper::AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
@@ -184,6 +197,70 @@ WaitStatus ThumbnailWait::InsertAndWait(const string &id, ThumbnailType type)
     }
 }
 
+WaitStatus CheckCloudReadResult(CloudLoadType cloudLoadType, CloudReadStatus status)
+{
+    switch (status) {
+        case CloudReadStatus::FAIL:
+            MEDIA_INFO_LOG("Fail to cloud read thumbnail, type: %{public}d", cloudLoadType);
+            return WaitStatus::WAIT_FAILED;
+            break;
+        case CloudReadStatus::SUCCESS:
+            MEDIA_INFO_LOG("Success to cloud read thumbnail, type: %{public}d", cloudLoadType);
+            return WaitStatus::WAIT_SUCCESS;
+            break;
+        case CloudReadStatus::START:
+            MEDIA_INFO_LOG("Continue to cloud read thumbnail, type: %{public}d", cloudLoadType);
+            return WaitStatus::WAIT_CONTINUE;
+            break;
+        default:
+            break;
+    }
+    return WaitStatus::WAIT_FAILED;
+}
+
+WaitStatus ThumbnailWait::CloudInsertAndWait(const string &id, CloudLoadType cloudLoadType)
+{
+    id_ = id + ".cloud";
+    unique_lock<shared_mutex> writeLck(mutex_);
+    auto iter = thumbnailMap_.find(id_);
+    if (iter != thumbnailMap_.end()) {
+        auto thumbnailWait = iter->second;
+        unique_lock<mutex> lck(thumbnailWait->mtx_);
+        writeLck.unlock();
+        MEDIA_INFO_LOG("Waiting for thumbnail generation, id: %{public}s", id_.c_str());
+        thumbnailWait->cond_.wait(lck, [weakPtr = weak_ptr(thumbnailWait)]() {
+            if (auto sharedPtr = weakPtr.lock()) {
+                return sharedPtr->isSyncComplete_;
+            } else {
+                return true;
+            }
+        });
+        thumbnailWait->isSyncComplete_ = false;
+        thumbnailWait->cloudLoadType_ = cloudLoadType;
+        unique_lock<shared_mutex> evokeLck(mutex_);
+        thumbnailMap_.emplace(ThumbnailMap::value_type(id_, thumbnailWait));
+        evokeLck.unlock();
+
+        if (cloudLoadType == CLOUD_DOWNLOAD) {
+            MEDIA_INFO_LOG("Continue to generate thumbnail");
+            return WaitStatus::WAIT_CONTINUE;
+        }
+        if (cloudLoadType == CLOUD_READ_THUMB) {
+            return CheckCloudReadResult(cloudLoadType, thumbnailWait->CloudLoadThumbnailStatus_);
+        }
+        if (cloudLoadType == CLOUD_READ_LCD) {
+            return CheckCloudReadResult(cloudLoadType, thumbnailWait->CloudLoadLcdStatus_);
+        }
+        MEDIA_INFO_LOG("Cloud generate thumbnail successfully");
+        return WaitStatus::WAIT_SUCCESS;
+    } else {
+        shared_ptr<ThumbnailSyncStatus> thumbnailWait = make_shared<ThumbnailSyncStatus>();
+        thumbnailWait->cloudLoadType_ = cloudLoadType;
+        thumbnailMap_.insert(ThumbnailMap::value_type(id_, thumbnailWait));
+        return WaitStatus::INSERT;
+    }
+}
+
 void ThumbnailWait::CheckAndWait(const string &id, bool isLcd)
 {
     id_ = id;
@@ -219,6 +296,39 @@ void ThumbnailWait::UpdateThumbnailMap()
     }
 }
 
+void ThumbnailWait::UpdateCloudLoadThumbnailMap(CloudLoadType cloudLoadType, bool isLoadSuccess)
+{
+    unique_lock<shared_mutex> writeLck(mutex_);
+    auto iter = thumbnailMap_.find(id_);
+    if (iter != thumbnailMap_.end()) {
+        auto thumbnailWait = iter->second;
+        {
+            unique_lock<mutex> lck(thumbnailWait->mtx_);
+            writeLck.unlock();
+            switch (cloudLoadType) {
+                case CLOUD_READ_THUMB:
+                    thumbnailWait->CloudLoadThumbnailStatus_ =
+                        isLoadSuccess ? CloudReadStatus::SUCCESS : CloudReadStatus::FAIL;
+                    break;
+                case CLOUD_READ_LCD:
+                    thumbnailWait->CloudLoadLcdStatus_ =
+                        isLoadSuccess ? CloudReadStatus::SUCCESS : CloudReadStatus::FAIL;
+                    break;
+                case CLOUD_DOWNLOAD:
+                    thumbnailWait->CloudLoadThumbnailStatus_ =
+                        isLoadSuccess ? CloudReadStatus::SUCCESS : CloudReadStatus::FAIL;
+                    thumbnailWait->CloudLoadLcdStatus_ =
+                        isLoadSuccess ? CloudReadStatus::SUCCESS : CloudReadStatus::FAIL;
+                    break;
+                default:
+                    break;
+            }
+        }
+    } else {
+        MEDIA_ERR_LOG("Update CloudLoadThumbnailMap failed, id: %{public}s", id_.c_str());
+    }
+}
+
 void ThumbnailWait::Notify()
 {
     unique_lock<shared_mutex> writeLck(mutex_);
@@ -231,7 +341,11 @@ void ThumbnailWait::Notify()
             writeLck.unlock();
             thumbnailWait->isSyncComplete_ = true;
         }
-        thumbnailWait->cond_.notify_all();
+        if (thumbnailWait->cloudLoadType_ == CloudLoadType::NONE) {
+            thumbnailWait->cond_.notify_all();
+        } else {
+            thumbnailWait->cond_.notify_one();
+        }
     }
 }
 
@@ -240,7 +354,12 @@ bool IThumbnailHelper::TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data)
     if (data.source != nullptr) {
         return true;
     }
-    
+
+    if (data.loaderOpts.loadingStates.empty()) {
+        MEDIA_ERR_LOG("try load source failed, the loading source states is empty.");
+        return false;
+    }
+
     if (!ThumbnailUtils::LoadSourceImage(data)) {
         if (opts.path.empty()) {
             MEDIA_ERR_LOG("LoadSourceImage faild, %{private}s", data.path.c_str());
@@ -288,7 +407,7 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = false;
-    data.loaderOpts.sourceLoadingBeginWithThumb = data.loaderOpts.isCloudLoading;
+    data.loaderOpts.isHdr = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("load source is nullptr path: %{public}s", opts.path.c_str());
         return false;
@@ -316,7 +435,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
         float heightScale = (1.0f * lcdDesiredHeight) / data.source->GetHeight();
         lcdSource->scale(widthScale, heightScale);
     }
-    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO)) {
+    if (!ThumbnailUtils::CompressImage(lcdSource, data.lcd, data.mediaType == MEDIA_TYPE_AUDIO, false, false)) {
         MEDIA_ERR_LOG("CompressImage faild");
         return false;
     }
@@ -339,7 +458,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
 
 bool IThumbnailHelper::IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (data.loaderOpts.isCloudLoading) {
+    if (!data.isLocalFile) {
         MEDIA_INFO_LOG("Create lcd when cloud loading, no need to create THM_EX, path: %{public}s， id: %{public}s",
             DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
@@ -425,7 +544,7 @@ bool IThumbnailHelper::GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, cons
 
 bool IThumbnailHelper::GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    if (data.loaderOpts.isCloudLoading) {
+    if (!data.isLocalFile) {
         MEDIA_INFO_LOG("Create thumb when cloud loading, no need to create THM_EX, path: %{public}s, id: %{public}s",
             DfxUtils::GetSafePath(opts.path).c_str(), data.id.c_str());
         return false;
@@ -507,6 +626,10 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
     ValuesBucket values;
     int changedRows;
     values.PutLong(PhotoColumn::PHOTO_HAS_ASTC, thumbnail_status);
+    Size lcdSize;
+    if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
+        ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
+    }
     Size thumbSize;
     if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::THUMB, thumbSize)) {
         ThumbnailUtils::SetThumbnailSizeValue(values, thumbSize, PhotoColumn::PHOTO_THUMB_SIZE);
@@ -543,7 +666,6 @@ bool IThumbnailHelper::DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = true;
-    data.loaderOpts.sourceLoadingBeginWithThumb = false;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateThumbnail failed, try to load source failed, id: %{public}s", data.id.c_str());
         return false;
@@ -618,9 +740,10 @@ bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
-bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data)
+bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    MEDIA_INFO_LOG("Start DoCreateThumbnails, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
+    MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
+        data.id.c_str(), data.path.c_str());
     if (!DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
@@ -630,6 +753,9 @@ bool IThumbnailHelper::DoCreateThumbnails(ThumbRdbOpt &opts, ThumbnailData &data
     }
 
     data.loaderOpts.decodeInThumbSize = true;
+    if (data.source != nullptr && data.source->IsHdr() == true) {
+        data.source->ToSdr();
+    }
     if (!ThumbnailUtils::ScaleThumbnailFromSource(data, false)) {
         MEDIA_ERR_LOG("Fail to scale from LCD to THM, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
@@ -667,7 +793,6 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     MEDIA_INFO_LOG("Start DoCreateAstc, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
     data.loaderOpts.decodeInThumbSize = true;
-    data.loaderOpts.sourceLoadingBeginWithThumb = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
         return false;
@@ -698,23 +823,65 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
+bool GenerateRotatedThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType)
+{
+    if (thumbType == ThumbnailType::LCD && !IThumbnailHelper::DoCreateLcd(opts, data)) {
+        MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, rotate lcd failed: %{public}s", data.path.c_str());
+        return false;
+    }
+    if (thumbType != ThumbnailType::LCD && !IThumbnailHelper::DoRotateThumbnail(opts, data)) {
+        MEDIA_ERR_LOG("Get default thumbnail pixelmap, rotate thumbnail failed: %{public}s", data.path.c_str());
+        return false;
+    }
+    return true;
+}
+
+unique_ptr<PixelMap> DecodeThumbnailFromFd(int32_t fd)
+{
+    SourceOptions opts;
+    uint32_t err = 0;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, err);
+    if (imageSource == nullptr) {
+        MEDIA_ERR_LOG("Decode thumbnail from fd failed, CreateImageSource err: %{public}d", err);
+        return nullptr;
+    }
+
+    ImageInfo imageInfo;
+    err = imageSource->GetImageInfo(0, imageInfo);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Decode thumbnail from fd failed, GetImageInfo err: %{public}d", err);
+        return nullptr;
+    }
+
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
+    if (pixelMap == nullptr) {
+        MEDIA_ERR_LOG("Decode thumbnail from fd failed, CreatePixelMap err: %{public}d", err);
+        return nullptr;
+    }
+    return pixelMap;
+}
+
 bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     ThumbnailWait thumbnailWait(true);
-    auto ret = thumbnailWait.InsertAndWait(data.id, ThumbnailType::THUMB_ASTC);
-    if (ret != WaitStatus::INSERT) {
+    auto ret = thumbnailWait.CloudInsertAndWait(data.id, CloudLoadType::CLOUD_DOWNLOAD);
+    if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
         return ret == WaitStatus::WAIT_SUCCESS;
     }
     
     MEDIA_INFO_LOG("Start DoCreateAstcEx, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
-    if (!DoCreateLcd(opts, data)) {
-        MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_EX_SUFFIX);
+    if (access(fileName.c_str(), F_OK) != 0) {
+        MEDIA_ERR_LOG("No available file in THM_EX, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
         return false;
     }
 
-    string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_SUFFIX) + THUMBNAIL_TEMP_ORIENT_SUFFIX;
-    if (!MediaFileUtils::DeleteFile(fileName)) {
-        MEDIA_ERR_LOG("Fail to delete lcd temp file, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+    if (!DoCreateLcd(opts, data)) {
+        MEDIA_ERR_LOG("Fail to create lcd, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+        return false;
     }
 
     data.loaderOpts.decodeInThumbSize = true;
@@ -728,10 +895,45 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
         return false;
     }
 
-    fileName = GetThumbnailPath(data.path, THUMBNAIL_THUMB_SUFFIX) + THUMBNAIL_TEMP_ORIENT_SUFFIX;
-    if (!MediaFileUtils::DeleteFile(fileName)) {
-        MEDIA_ERR_LOG("Fail to delete thumbnail temp file, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
+    if (!ThumbnailUtils::DeleteThumbExDir(data)) {
+        MEDIA_ERR_LOG("Fail to delete THM_EX directory, path: %{public}s", DfxUtils::GetSafePath(fileName).c_str());
     }
+
+    thumbnailWait.UpdateCloudLoadThumbnailMap(CloudLoadType::CLOUD_DOWNLOAD, true);
+    return true;
+}
+
+bool IThumbnailHelper::DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType)
+{
+    ThumbnailWait thumbnailWait(true);
+    auto ret = thumbnailWait.CloudInsertAndWait(data.id, thumbType == ThumbnailType::LCD ?
+        CloudLoadType::CLOUD_READ_LCD : CloudLoadType::CLOUD_READ_THUMB);
+    if (ret != WaitStatus::INSERT && ret != WaitStatus::WAIT_CONTINUE) {
+        close(fd);
+        return ret == WaitStatus::WAIT_SUCCESS;
+    }
+    
+    auto dataSource = DecodeThumbnailFromFd(fd);
+    if (dataSource == nullptr) {
+        MEDIA_ERR_LOG("GetThumbnailPixelMap failed, dataSource is nullptr, path: %{public}s", data.path.c_str());
+        close(fd);
+        thumbnailWait.UpdateCloudLoadThumbnailMap(thumbType == ThumbnailType::LCD ?
+            CloudLoadType::CLOUD_READ_LCD : CloudLoadType::CLOUD_READ_THUMB, false);
+        return false;
+    }
+    close(fd);
+
+    data.source = std::move(dataSource);
+    data.source->rotate(static_cast<float>(data.orientation));
+    if (!GenerateRotatedThumbnail(opts, data, thumbType)) {
+        MEDIA_ERR_LOG("GenerateRotatedThumbnail failed, path: %{public}s", data.path.c_str());
+        thumbnailWait.UpdateCloudLoadThumbnailMap(thumbType == ThumbnailType::LCD ?
+            CloudLoadType::CLOUD_READ_LCD : CloudLoadType::CLOUD_READ_THUMB, false);
+        return false;
+    }
+
+    thumbnailWait.UpdateCloudLoadThumbnailMap(thumbType == ThumbnailType::LCD ?
+        CloudLoadType::CLOUD_READ_LCD : CloudLoadType::CLOUD_READ_THUMB, true);
     return true;
 }
 

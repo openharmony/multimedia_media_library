@@ -53,43 +53,6 @@ void AlbumNapi::AlbumNapiDestructor(napi_env env, void *nativeObject, void *fina
     }
 }
 
-napi_value AlbumNapi::Init(napi_env env, napi_value exports)
-{
-    napi_status status;
-    napi_value ctorObj;
-    int32_t refCount = 1;
-
-    napi_property_descriptor album_props[] = {
-        DECLARE_NAPI_GETTER("albumId", JSGetAlbumId),
-        DECLARE_NAPI_GETTER_SETTER("albumName", JSGetAlbumName, JSAlbumNameSetter),
-        DECLARE_NAPI_GETTER("albumUri", JSGetAlbumUri),
-        DECLARE_NAPI_GETTER("dateModified", JSGetAlbumDateModified),
-        DECLARE_NAPI_GETTER("count", JSGetCount),
-        DECLARE_NAPI_GETTER("relativePath", JSGetAlbumRelativePath),
-        DECLARE_NAPI_GETTER("coverUri", JSGetCoverUri),
-        DECLARE_NAPI_FUNCTION("commitModify", JSCommitModify),
-        DECLARE_NAPI_GETTER_SETTER("path", JSGetAlbumPath, JSSetAlbumPath),
-        DECLARE_NAPI_GETTER("virtual", JSGetAlbumVirtual),
-        DECLARE_NAPI_FUNCTION("getFileAssets", JSGetAlbumFileAssets)
-    };
-
-    status = napi_define_class(env, ALBUM_NAPI_CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
-                               AlbumNapiConstructor, nullptr,
-                               sizeof(album_props) / sizeof(album_props[PARAM0]),
-                               album_props, &ctorObj);
-    if (status == napi_ok) {
-        status = napi_create_reference(env, ctorObj, refCount, &sConstructor_);
-        if (status == napi_ok) {
-            status = napi_set_named_property(env, exports, ALBUM_NAPI_CLASS_NAME.c_str(), ctorObj);
-            if (status == napi_ok) {
-                return exports;
-            }
-        }
-    }
-
-    return nullptr;
-}
-
 napi_value AlbumNapi::UserFileMgrInit(napi_env env, napi_value exports)
 {
     NapiClassInfo info = {

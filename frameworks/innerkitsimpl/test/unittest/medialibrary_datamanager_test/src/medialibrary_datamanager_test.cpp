@@ -1040,7 +1040,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_DoAging_Test_001, TestSize
     EXPECT_EQ(ret, E_OK);
     shared_ptr<OHOS::AbilityRuntime::Context> extensionContext;
     mediaLibraryDataManager->InitialiseThumbnailService(extensionContext);
-    mediaLibraryDataManager->GenerateThumbnails();
+    mediaLibraryDataManager->GenerateThumbnailBackground();
     ret = mediaLibraryDataManager->DoAging();
     EXPECT_EQ(ret, E_OK);
 }
@@ -1179,13 +1179,13 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_NotifyChange_Test_001, Tes
     EXPECT_EQ(mediaLibraryDataManager->extension_, nullptr);
 }
 
-HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnails_Test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnailBackground_Test_001, TestSize.Level0)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    int32_t ret = mediaLibraryDataManager->GenerateThumbnails();
+    int32_t ret = mediaLibraryDataManager->GenerateThumbnailBackground();
     EXPECT_EQ(ret, NativeRdb::E_EMPTY_VALUES_BUCKET);
     mediaLibraryDataManager->ClearMediaLibraryMgr();
-    ret = mediaLibraryDataManager->GenerateThumbnails();
+    ret = mediaLibraryDataManager->GenerateThumbnailBackground();
     EXPECT_EQ(ret, NativeRdb::E_EMPTY_VALUES_BUCKET);
 }
 

@@ -141,6 +141,9 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
         data->SetUserComment(GetCompatibleUserComment(propertyStr));
     }
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_PHOTO_MODE, propertyStr);
+    if (err != 0 || propertyStr == "default_exif_value") {
+        err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_ISO_SPEED_LATITUDE_ZZZ, propertyStr);
+    }
     if (err == 0 && !propertyStr.empty()) {
         data->SetShootingModeTag(propertyStr);
         data->SetShootingMode(GetCastShootingMode(propertyStr));
@@ -213,6 +216,12 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
     err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, intTempMeta);
     if (err == 0) {
         data->SetOrientation(intTempMeta);
+    }
+
+    if (imageSource->IsHdrImage()) {
+        data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::HDR));
+    } else {
+        data->SetDynamicRangeType(static_cast<int32_t>(DynamicRangeType::SDR));
     }
 
     ExtractLocationMetadata(imageSource, data);

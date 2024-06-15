@@ -22,15 +22,20 @@
 namespace OHOS {
 namespace Media {
 
+#define EXPORT __attribute__ ((visibility ("default")))
 class CloudSyncNotifyHandler {
 public:
     CloudSyncNotifyHandler(const CloudSyncNotifyInfo &info):notifyInfo_(info) {};
     ~CloudSyncNotifyHandler() = default;
     
-    void MakeResponsibilityChain();
-    void ThumbNailObserverOnchange(const std::list<Uri> &uris, const DataShare::DataShareObserver::ChangeType &type);
+    EXPORT void MakeResponsibilityChain();
+    void ThumbnailObserverOnChange(const std::list<Uri> &uris, const DataShare::DataShareObserver::ChangeType &type);
 
     CloudSyncNotifyInfo notifyInfo_;
+
+private:
+    void HandleInsertEvent(const std::list<Uri> &uris);
+    void HandleDeleteEvent(const std::list<Uri> &uris);
 };
 } //namespace Media
 } //namespace OHOS

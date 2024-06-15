@@ -263,7 +263,20 @@ const std::string CREATE_VISION_UPDATE_TRIGGER = "CREATE TRIGGER IF NOT EXISTS u
     PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
     " WHEN ((NEW.date_trashed > 0 AND OLD.date_trashed = 0)" +
     " OR (NEW.date_trashed = 0 AND OLD.date_trashed > 0))" +
-    " AND NEW.MEDIA_TYPE = 1" +
+    " AND (NEW.MEDIA_TYPE = 1 OR NEW.MEDIA_TYPE = 2)" +
+    " BEGIN " +
+    " UPDATE " + VISION_TOTAL_TABLE +
+    " SET " + STATUS + " = " +
+    " (CASE WHEN NEW.date_trashed > 0 THEN 2 ELSE 0 END)" +
+    " WHERE file_id = OLD.file_id;" +
+    " END;";
+
+const std::string CREATE_VISION_UPDATE_TRIGGER_FOR_ADD_VIDEO_LABEL =
+    "CREATE TRIGGER IF NOT EXISTS update_vision_trigger AFTER UPDATE ON " +
+    PhotoColumn::PHOTOS_TABLE + " FOR EACH ROW " +
+    " WHEN ((NEW.date_trashed > 0 AND OLD.date_trashed = 0)" +
+    " OR (NEW.date_trashed = 0 AND OLD.date_trashed > 0))" +
+    " AND (NEW.MEDIA_TYPE = 1 OR NEW.MEDIA_TYPE = 2)" +
     " BEGIN " +
     " UPDATE " + VISION_TOTAL_TABLE +
     " SET " + STATUS + " = " +
@@ -296,6 +309,7 @@ const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ONCREATE =
     " VALUES (" + " NEW.file_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 );" + " END;";
 
 const std::string DROP_INSERT_VISION_TRIGGER = "DROP TRIGGER IF EXISTS insert_vision_trigger";
+const std::string DROP_UPDATE_VISION_TRIGGER = "DROP TRIGGER IF EXISTS update_vision_trigger";
 
 const std::string CREATE_VISION_INSERT_TRIGGER_FOR_ADD_VIDEO_LABEL =
     "CREATE TRIGGER IF NOT EXISTS insert_vision_trigger AFTER INSERT ON " +

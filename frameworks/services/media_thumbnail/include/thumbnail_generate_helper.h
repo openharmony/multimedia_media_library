@@ -27,13 +27,16 @@ class ThumbnailGenerateHelper {
 public:
     ThumbnailGenerateHelper() = delete;
     virtual ~ThumbnailGenerateHelper() = delete;
-    static int32_t CreateThumbnails(ThumbRdbOpt &opts, bool isSync);
-    static int32_t CreateThumbnailBatch(ThumbRdbOpt &opts);
-    static int32_t CreateAstcBatch(ThumbRdbOpt &opts);
-    static int32_t CreateLcdBatch(ThumbRdbOpt &opts);
+    static int32_t CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync);
+    static int32_t CreateThumbnailBackground(ThumbRdbOpt &opts);
+    static int32_t CreateAstcBackground(ThumbRdbOpt &opts);
+    static int32_t CreateAstcCloudDownload(ThumbRdbOpt &opts);
+    static int32_t CreateLcdBackground(ThumbRdbOpt &opts);
     static int32_t CreateAstcBatchOnDemand(ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId);
+    static int32_t UpgradeThumbnailBackground(ThumbRdbOpt &opts);
     static int32_t GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count);
     static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType);
+
 private:
     static int32_t GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount);
     static int32_t GetNoLcdData(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &outDatas);
@@ -41,6 +44,7 @@ private:
     static int32_t GetNoAstcData(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
     static int32_t GetAvailableFile(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailType thumbType,
         std::string &fileName);
+    static int32_t GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, std::vector<ThumbnailData> &outDatas);
 };
 } // namespace Media
 } // namespace OHOS

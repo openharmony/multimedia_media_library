@@ -132,13 +132,13 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_LcdDistributeAging_test_001,
 }
 #endif
 
-HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnails_test_001, TestSize.Level0)
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
         exit(1);
     }
     shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
-    int32_t ret = serverTest->GenerateThumbnails();
+    int32_t ret = serverTest->GenerateThumbnailBackground();
     EXPECT_EQ(ret, -1);
     shared_ptr<DistributedKv::SingleKvStore> kvStorePtr = make_shared<MockSingleKvStore>();
     shared_ptr<OHOS::AbilityRuntime::Context> context;
@@ -147,14 +147,14 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnails_test_001,
 #else
     serverTest->Init(nullptr, context);
 #endif
-    ret = serverTest->GenerateThumbnails();
+    ret = serverTest->GenerateThumbnailBackground();
     EXPECT_EQ(ret, -1);
 #ifdef DISTRIBUTED
     serverTest->Init(storePtr, kvStorePtr, context);
 #else
     serverTest->Init(storePtr, context);
 #endif
-    ret = serverTest->GenerateThumbnails();
+    ret = serverTest->GenerateThumbnailBackground();
     EXPECT_EQ(ret, E_EMPTY_VALUES_BUCKET);
     serverTest->ReleaseService();
 }
@@ -224,7 +224,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_00
     }
     string url = "";
     ThumbnailService serverTest;
-    int32_t ret = serverTest.CreateThumbnail(url, "", true);
+    int32_t ret = serverTest.CreateThumbnailFileScaned(url, "", true);
     EXPECT_EQ(ret, E_OK);
     serverTest.ReleaseService();
 }

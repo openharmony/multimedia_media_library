@@ -42,13 +42,14 @@ public:
 #ifdef DISTRIBUTED
     EXPORT int32_t LcdDistributeAging(const std::string &udid);
 #endif
-    EXPORT int32_t GenerateThumbnails();
+    EXPORT int32_t GenerateThumbnailBackground();
+    EXPORT int32_t UpgradeThumbnailBackground();
     EXPORT void InterruptBgworker();
     EXPORT void StopAllWorker();
 #ifdef DISTRIBUTED
     EXPORT int32_t InvalidateDistributeThumbnail(const std::string &udid);
 #endif
-    EXPORT int32_t CreateThumbnail(const std::string &uri, const std::string &path,
+    EXPORT int32_t CreateThumbnailFileScaned(const std::string &uri, const std::string &path,
         bool isSync = false);
     void InvalidateThumbnail(const std::string &id, const std::string &tableName,
         const std::string &path = "", const std::string &dateAdded = "");
@@ -59,9 +60,11 @@ public:
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
-    int32_t CreateAstcFromFileId(const std::string &id);
+    int32_t CreateAstcCloudDownload(const std::string &id);
     EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
     EXPORT void CancelAstcBatchTask(int32_t requestId);
+    void DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded);
+
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();

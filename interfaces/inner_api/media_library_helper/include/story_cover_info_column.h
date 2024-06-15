@@ -34,6 +34,8 @@ const std::string COLOR = "color";
 const std::string RADIUS = "radius";
 const std::string SATURATION = "saturation";
 const std::string BRIGHTNESS = "brightness";
+const std::string BACKGROUND_COLOR_TYPE = "background_color_type";
+const std::string SHADOW_LEVEL = "shadow_level";
 const std::string TITLE_SCALE_X = "title_scale_x";
 const std::string TITLE_SCALE_Y = "title_scale_y";
 const std::string TITLE_RECT_WIDTH = "title_rect_width";
@@ -42,6 +44,7 @@ const std::string BACKGROUND_SCALE_X = "background_scale_x";
 const std::string BACKGROUND_SCALE_Y = "background_scale_y";
 const std::string BACKGROUND_RECT_WIDTH = "background_rect_width";
 const std::string BACKGROUND_RECT_HEIGHT  = "background_rect_height";
+const std::string LAYOUT_INDEX = "layout_index";
 const std::string COVER_ALGO_VERSION = "cover_algo_version";
 const std::string COVER_KEY = "cover_key";
 

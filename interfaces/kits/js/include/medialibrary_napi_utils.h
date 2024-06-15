@@ -286,7 +286,7 @@ const std::vector<std::string> systemAlbumSubType {
 };
 
 const std::vector<std::string> analysisAlbumSubType {
-    "CLASSIFY", "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY", "SHOOTING_MODE", "PORTRAIT",
+    "GEOGRAPHY_LOCATION", "GEOGRAPHY_CITY", "SHOOTING_MODE", "PORTRAIT", "GROUP_PHOTO",
     "HIGHLIGHT", "HIGHLIGHT_SUGGESTIONS"
 };
 
@@ -312,6 +312,10 @@ const std::vector<std::string> resourceTypeEnum {
 
 const std::vector<std::string> dynamicRangeTypeEnum {
     "SDR", "HDR"
+};
+
+const std::vector<std::string> movingPhotoEffectModeEnum {
+    "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE"
 };
 
 const std::vector<std::string> fileKeyEnumValues {
@@ -414,6 +418,7 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("DYNAMIC_RANGE_TYPE",        PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE),
     std::make_pair("LCD_SIZE",                  PhotoColumn::PHOTO_LCD_SIZE),
     std::make_pair("THUMB_SIZE",                PhotoColumn::PHOTO_THUMB_SIZE),
+    std::make_pair("MOVING_PHOTO_EFFECT_MODE",  PhotoColumn::MOVING_PHOTO_EFFECT_MODE),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
