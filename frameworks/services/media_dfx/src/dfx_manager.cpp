@@ -223,7 +223,8 @@ static void HandleDirtyCloudPhoto(std::shared_ptr<DfxReporter> &dfxReporter)
 
 static void HandleLocalVersion(std::shared_ptr<DfxReporter> &dfxReporter)
 {
-    dfxReporter->ReportCommonVersion();
+    int32_t dbVersion = DfxDatabaseUtils::QueryDbVersion();
+    dfxReporter->ReportCommonVersion(dbVersion);
     int32_t aestheticsVersion = DfxDatabaseUtils::QueryAnalysisVersion("tab_analysis_aesthetics_score",
         AESTHETICS_VERSION);
     dfxReporter->ReportAnalysisVersion("tab_analysis_aesthetics_score", aestheticsVersion);

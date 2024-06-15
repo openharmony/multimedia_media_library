@@ -102,7 +102,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
 
 int32_t MediaLibraryRdbStore::Init()
 {
-    MEDIA_INFO_LOG("Init rdb store");
+    MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
     if (rdbStore_ != nullptr) {
         return E_OK;
     }
@@ -112,7 +112,7 @@ int32_t MediaLibraryRdbStore::Init()
     rdbStore_ = RdbHelper::GetRdbStore(config_, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("GetRdbStore is failed ");
-        return E_ERR;
+        return errCode;
     }
     MEDIA_INFO_LOG("SUCCESS");
     return E_OK;
@@ -374,6 +374,22 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const string &sql)
         return E_HAS_DB_ERROR;
     }
     return ret;
+}
+
+int32_t MediaLibraryRdbStore::QueryPragma(const string &key, int64_t &value)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+    std::shared_ptr<ResultSet> resultSet = rdbStore_->QuerySql("PRAGMA " + key);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->QuerySql failed");
+        return E_HAS_DB_ERROR;
+    }
+    resultSet->GetLong(0, value);
+    resultSet->Close();
+    return E_OK;
 }
 
 void MediaLibraryRdbStore::BuildValuesSql(const NativeRdb::ValuesBucket &values, vector<ValueObject> &bindArgs,
@@ -994,6 +1010,7 @@ static int32_t ExecuteSql(RdbStore &store)
 
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
+    MEDIA_INFO_LOG("Rdb OnCreate");
     if (ExecuteSql(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
@@ -2639,7 +2656,7 @@ static void AlwaysCheck(RdbStore &store)
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
-    MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
+    MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
     g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {
         VersionAddCloud(store);

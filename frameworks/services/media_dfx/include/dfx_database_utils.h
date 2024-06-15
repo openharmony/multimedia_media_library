@@ -33,6 +33,7 @@ public:
     static AlbumInfo QueryAlbumInfoBySubtype(int32_t albumSubtype);
     static std::vector<PhotoInfo> QueryDirtyCloudPhoto();
     static int32_t QueryAnalysisVersion(const std::string &table, const std::string &column);
+    static int32_t QueryDbVersion();
 
 private:
     static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,

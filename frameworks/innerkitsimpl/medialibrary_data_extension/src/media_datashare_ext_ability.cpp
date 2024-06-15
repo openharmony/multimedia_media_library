@@ -34,6 +34,7 @@
 #include "dfx_manager.h"
 #include "dfx_timer.h"
 #include "dfx_const.h"
+#include "dfx_reporter.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_subscriber.h"
@@ -94,11 +95,12 @@ void MediaDataShareExtAbility::Init(const shared_ptr<AbilityLocalRecord> &record
 
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("%{public}s begin.", __func__);
     Extension::OnStart(want);
     auto context = AbilityRuntime::Context::GetApplicationContext();
     if (context == nullptr) {
-        MEDIA_ERR_LOG("Failed to get context");
+        DfxReporter::ReportStartResult(DfxType::START_CONTEXT_FAIL, 0, startTime);
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
         return;
     }
@@ -106,14 +108,18 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
-        MEDIA_ERR_LOG("Failed to get dataManager");
+        DfxReporter::ReportStartResult(DfxType::START_DATAMANAGER_FAIL, 0, startTime);
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
         return;
     }
     auto extensionContext = GetContext();
-    int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext);
+    int32_t sceneCode = DfxType::START_SUCCESS;
+    int32_t ret = dataManager->InitMediaLibraryMgr(context, extensionContext, sceneCode);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to init MediaLibraryMgr");
+        if (sceneCode == DfxType::START_RDB_STORE_FAIL) {
+            DfxReporter::ReportStartResult(sceneCode, ret, startTime);
+        }
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
         return;
     }
@@ -124,7 +130,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     if (scannerManager != nullptr) {
         scannerManager->Start();
     } else {
-        MEDIA_ERR_LOG("Failed to get scanner manager");
+        DfxReporter::ReportStartResult(DfxType::START_SCANNER_FAIL, 0, startTime);
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
         return;
     }
@@ -133,7 +139,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 
     Media::MedialibrarySubscriber::Subscribe();
     dataManager->SetStartupParameter();
-    MEDIA_INFO_LOG("%{public}s end.", __func__);
+    DfxReporter::ReportStartResult(DfxType::START_SUCCESS, 0, startTime);
 }
 
 void MediaDataShareExtAbility::OnStop()

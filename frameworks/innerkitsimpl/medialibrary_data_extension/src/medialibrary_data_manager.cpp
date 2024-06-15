@@ -197,7 +197,7 @@ void MediaLibraryDataManager::ReCreateMediaDir()
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
-    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext)
+    const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
 {
     lock_guard<shared_mutex> lock(mgrSharedMutex_);
 
@@ -207,13 +207,13 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
         return E_OK;
     }
 
-    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo =
-        BackgroundTaskMgr::EfficiencyResourceInfo(BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
-    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
-
+    InitResourceInfo();
     context_ = context;
     int32_t errCode = InitMediaLibraryRdbStore();
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitMediaLibraryRdbStore");
+    if (errCode != E_OK) {
+        sceneCode = DfxType::START_RDB_STORE_FAIL;
+        return errCode;
+    }
 
     if (!MediaLibraryKvStoreManager::GetInstance().InitMonthAndYearKvStore(KvStoreRoleType::OWNER)) {
         MEDIA_ERR_LOG("failed at InitMonthAndYearKvStore");
@@ -257,6 +257,13 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
 
     refCnt_++;
     return E_OK;
+}
+
+void MediaLibraryDataManager::InitResourceInfo()
+{
+    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo =
+        BackgroundTaskMgr::EfficiencyResourceInfo(BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
+    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
 }
 
 #ifdef DISTRIBUTED
