@@ -28,6 +28,7 @@
 #include "multistages_capture_manager.h"
 #include "multistages_capture_dfx_result.h"
 #include "multistages_capture_dfx_total_time.h"
+#include "multistages_capture_request_task_manager.h"
 #include "result_set_utils.h"
 
 using namespace std;
@@ -41,17 +42,30 @@ MultiStagesCaptureDeferredProcSessionCallback::MultiStagesCaptureDeferredProcSes
 MultiStagesCaptureDeferredProcSessionCallback::~MultiStagesCaptureDeferredProcSessionCallback()
 {}
 
-int32_t MultiStagesCaptureDeferredProcSessionCallback::UpdatePhotoQuality(const string &photoId, int32_t subType)
+int32_t MultiStagesCaptureDeferredProcSessionCallback::UpdatePhotoQuality(const string &photoId)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdatePhotoQuality " + photoId);
     MediaLibraryCommand updateCmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     NativeRdb::ValuesBucket updateValues;
     updateValues.PutInt(PhotoColumn::PHOTO_QUALITY, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
-    if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        updateValues.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-    }
     updateCmd.SetValueBucket(updateValues);
     updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_ID, photoId);
-    return DatabaseAdapter::Update(updateCmd);
+    int32_t updatePhotoIdResult = DatabaseAdapter::Update(updateCmd);
+
+    updateCmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, false);
+    updateCmd.GetAbsRdbPredicates()->NotEqualTo(PhotoColumn::PHOTO_SUBTYPE,
+        to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+    NativeRdb::ValuesBucket updateValuesDirty;
+    updateValuesDirty.PutInt(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    updateCmd.SetValueBucket(updateValuesDirty);
+    auto isTempResult = DatabaseAdapter::Update(updateCmd);
+    if (isTempResult < 0) {
+        MEDIA_ERR_LOG("update is_temp fail, photoId: %{public}s", photoId.c_str());
+    }
+    MEDIA_ERR_LOG("update is_temp %{public}d, photoId: %{public}s", isTempResult, photoId.c_str());
+
+    return updatePhotoIdResult;
 }
 
 int32_t QuerySubType(const string &photoId)
@@ -80,12 +94,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnError(const string &imageI
         case ERROR_IMAGE_PROC_INVALID_PHOTO_ID:
         case ERROR_IMAGE_PROC_FAILED: {
             MultiStagesCaptureManager::GetInstance().RemoveImage(imageId, false);
-
-            // BEGIN: low performance, should delete when moving photo can sync to cloud
-            int32_t subType = QuerySubType(imageId);
-            // END
-
-            UpdatePhotoQuality(imageId, subType);
+            UpdatePhotoQuality(imageId);
             MEDIA_ERR_LOG("error %{public}d, photoid: %{public}s", static_cast<int32_t>(error), imageId.c_str());
             break;
         }
@@ -105,6 +114,11 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
         MEDIA_ERR_LOG("addr is nullptr or bytes(%{public}ld) is 0", bytes);
         return;
     }
+
+    if (!MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(imageId)) {
+        MEDIA_ERR_LOG("this photo was delete or err photoId: %{public}s", imageId.c_str());
+        return;
+    }
     MediaLibraryTracer tracer;
     tracer.Start("OnProcessImageDone " + imageId);
 
@@ -115,8 +129,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
     vector<string> whereArgs { imageId };
     cmd.GetAbsRdbPredicates()->SetWhereClause(where);
     cmd.GetAbsRdbPredicates()->SetWhereArgs(whereArgs);
-    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME,
-        PhotoColumn::PHOTO_SUBTYPE };
+    vector<string> columns { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH, PhotoColumn::PHOTO_EDIT_TIME };
     tracer.Start("Query");
     auto resultSet = DatabaseAdapter::Query(cmd, columns);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != E_OK) {
@@ -140,8 +153,7 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
 
     // 2. 更新数据库 photoQuality 到高质量
-    int32_t subType = GetInt32Val(PhotoColumn::PHOTO_SUBTYPE, resultSet);
-    UpdatePhotoQuality(imageId, subType);
+    UpdatePhotoQuality(imageId);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId);
     MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS));

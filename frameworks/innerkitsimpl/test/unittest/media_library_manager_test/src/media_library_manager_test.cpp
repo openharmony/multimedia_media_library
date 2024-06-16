@@ -438,7 +438,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     EXPECT_EQ(fileAsset->GetDisplayName(), displayNameExpect);
     EXPECT_EQ(fileAsset->GetResultNapiType(), ResultNapiType::TYPE_PHOTOACCESS_HELPER);
 
-    vector<string> columns { PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY };
+    vector<string> columns { PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY,
+        PhotoColumn::PHOTO_IS_TEMP };
     DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
 
@@ -452,6 +453,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
 
     EXPECT_EQ(photoProxyTest->GetPhotoId(), GetStringVal(PhotoColumn::PHOTO_ID, resultSet));
     EXPECT_EQ(-1, GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet));
+    EXPECT_EQ(1, GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet));
 
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 exit");
 }

@@ -65,26 +65,6 @@ public:
     EXPORT void SyncWithDeferredProcSessionInternal();
 
 private:
-    enum class PhotoState : int32_t {
-        NORMAL = 0, // state of photo in normal album
-        TRASHED,    // state of photo in trashed album
-        DELETED,    // state of photo delete from trashed album
-    };
-
-    enum class RequestType : int32_t {
-        CANCEL_REQUEST = -1,
-        REQUEST = 1,
-    };
-
-    struct LowQualityPhotoInfo {
-        int32_t fileId;
-        PhotoState state;
-        int32_t requestCount;
-        LowQualityPhotoInfo() : fileId(0), state(PhotoState::NORMAL), requestCount(0) {}
-        LowQualityPhotoInfo(int32_t fileId, PhotoState state, int32_t count)
-            : fileId(fileId), state(state), requestCount(count) {}
-    };
-
     MultiStagesCaptureManager();
     ~MultiStagesCaptureManager();
     MultiStagesCaptureManager(const MultiStagesCaptureManager &manager) = delete;
@@ -92,25 +72,13 @@ private:
 
     EXPORT std::vector<std::shared_ptr<MultiStagesPhotoInfo>> GetPhotosInfo(
         const NativeRdb::AbsRdbPredicates &predicates);
-    EXPORT void AddPhotoInProgress(int32_t fileId, const std::string &photoId, bool isTrashed);
-    EXPORT void RemovePhotoInProgress(const std::string &photoId, bool isRestorable);
-    void UpdatePhotoInProgress(const std::string &photoId);
-    bool IsPhotoInProcess(const std::string &photoId);
-    int32_t UpdatePhotoInProcessRequestCount(const std::string &photoId, RequestType requestType);
+    void CancelRequestAndRemoveImage(const std::vector<std::string> &columns);
+    void AddImage(MediaLibraryCommand &cmd);
 
     std::unordered_set<int32_t> setOfDeleted_;
 
-    // key: file_id, value: photo_id
-    std::unordered_map<int32_t, std::string> fileId2PhotoId_;
-
-    // key: photo_id
-    std::unordered_map<std::string, std::shared_ptr<LowQualityPhotoInfo>> photoIdInProcess_;
-
     std::shared_ptr<DeferredProcessingAdapter> deferredProcSession_;
-
-    std::mutex deferredProcMutex_;
 };
-
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTI_STAGES_CAPTURE_MANAGER_H
