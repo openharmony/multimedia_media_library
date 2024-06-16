@@ -672,6 +672,15 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     return updatedRows;
 }
 
+static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd)
+{
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(cmd.GetDataSharePred(),
+        PhotoColumn::PHOTOS_TABLE);
+    vector<string> notifyUris = rdbPredicate.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
+    return MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicate, false, true);
+}
+
 static int32_t GetHiddenState(const ValuesBucket &values)
 {
     ValueObject obj;
@@ -923,6 +932,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return BatchSetFavorite(cmd);
         case OperationType::BATCH_UPDATE_USER_COMMENT:
             return BatchSetUserComment(cmd);
+        case OperationType::DISCARD_CAMERA_PHOTO:
+            return DiscardCameraPhoto(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
