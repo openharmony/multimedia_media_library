@@ -284,7 +284,7 @@ int32_t MediaLibraryDataManager::InitDeviceData()
 }
 #endif
 
-void MediaLibraryDataManager::ClearMediaLibraryMgr()
+__attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibraryMgr()
 {
     lock_guard<shared_mutex> lock(mgrSharedMutex_);
 
