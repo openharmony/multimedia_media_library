@@ -467,7 +467,7 @@ int32_t MediaScannerObj::GetFileMetadata()
         return E_SYSCALL;
     }
     if (statInfo.st_size == 0) {
-        MEDIA_INFO_LOG("file size is 0, path: %{private}s", path_.c_str());
+        MEDIA_WARN_LOG("file size is 0, path: %{private}s", path_.c_str());
     }
 
     int errCode = BuildData(statInfo);
