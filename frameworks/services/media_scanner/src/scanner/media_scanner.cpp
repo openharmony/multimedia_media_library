@@ -466,6 +466,10 @@ int32_t MediaScannerObj::GetFileMetadata()
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_SYSCALL;
     }
+    if (statInfo.st_size == 0) {
+        MEDIA_WARN_LOG("file size is 0, path: %{private}s", path_.c_str());
+    }
+
     int errCode = BuildData(statInfo);
     if (errCode != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},
