@@ -583,6 +583,9 @@ static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd)
             int errCode = businessError.GetCode();
             string clientAppId = GetClientAppId();
             string fileId = MediaFileUtils::GetIdFromUri(uri.ToString());
+            if (clientAppId.empty() || fileId.empty()) {
+                return false;
+            }
             DataSharePredicates predicates;
             predicates.And()->EqualTo("file_id", fileId);
             predicates.And()->EqualTo("owner_appid", clientAppId);
