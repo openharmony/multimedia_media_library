@@ -340,7 +340,8 @@ static inline int32_t HandleBundlePermCheck()
 
 static int32_t HandleSecurityComponentPermission(MediaLibraryCommand &cmd)
 {
-    if (cmd.GetUri().ToString().find(OPRN_CREATE_COMPONENT) != string::npos) {
+    if (cmd.GetUri().ToString().find(OPRN_CREATE_COMPONENT) != string::npos ||
+        cmd.GetUri().ToString().find(OPRN_SAVE_CAMERA_PHOTO_COMPONENT) != string::npos) {
 #ifdef MEDIALIBRARY_SECURITY_OPEN
         auto tokenId = PermissionUtils::GetTokenId();
         if (!Security::SecurityComponent::SecCompKit::VerifySavePermission(tokenId)) {

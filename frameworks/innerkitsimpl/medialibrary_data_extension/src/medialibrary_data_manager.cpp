@@ -799,6 +799,7 @@ int32_t MediaLibraryDataManager::UpdateInternal(MediaLibraryCommand &cmd, Native
         case OperationObject::FILESYSTEM_ALBUM: {
             return MediaLibraryAlbumOperations::ModifyAlbumOperation(cmd);
         }
+        case OperationObject::PAH_PHOTO:
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::UpdateOperation(cmd);
@@ -1140,8 +1141,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QuerySet(MediaLibraryC
 
     cmd.SetDataSharePred(predicates);
     // MEDIALIBRARY_TABLE just for RdbPredicates
-    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates,
-        MEDIALIBRARY_TABLE);
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(predicates, MEDIALIBRARY_TABLE);
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
     cmd.GetAbsRdbPredicates()->SetOrder(rdbPredicate.GetOrder());

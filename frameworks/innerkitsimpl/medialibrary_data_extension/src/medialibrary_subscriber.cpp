@@ -38,9 +38,10 @@
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_inotify.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
-#include "medialibrary_inotify.h"
 #include "application_context.h"
 #include "ability_manager_client.h"
 #include "resource_type.h"
@@ -220,12 +221,49 @@ void MedialibrarySubscriber::Init()
     agingCount_ = 0;
 }
 
+void DeleteTemporaryPhotos()
+{
+    auto dataManager = MediaLibraryDataManager::GetInstance();
+    if (dataManager == nullptr) {
+        return;
+    }
+
+    string UriString = PAH_DISCARD_CAMERA_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(UriString, URI_PARAM_API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(UriString);
+    MediaLibraryCommand cmd(uri);
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, true);
+    DataShare::DataSharePredicates predicates;
+
+    // 24H之前的数据
+    int64_t current = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t timeBefore24Hours = current - 24 * 60 * 60 * 1000;
+    string where = PhotoColumn::PHOTO_IS_TEMP + " = 1 AND (" + PhotoColumn::MEDIA_DATE_ADDED + " <= " +
+        to_string(timeBefore24Hours) + " OR " + MediaColumn::MEDIA_ID + " NOT IN (SELECT " + MediaColumn::MEDIA_ID +
+        " FROM (SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+        PhotoColumn::PHOTO_IS_TEMP + " = 1 " + "ORDER BY " + MediaColumn::MEDIA_ID +
+        " DESC LIMIT 50)) AND (select COUNT(1) from " + PhotoColumn::PHOTOS_TABLE +
+        " where " + PhotoColumn::PHOTO_IS_TEMP + " = 1) > 100) ";
+    predicates.SetWhereClause(where);
+
+    auto changedRows = dataManager->Update(cmd, valuesBucket, predicates);
+    if (changedRows < 0) {
+        MEDIA_INFO_LOG("Failed to update property of asset, err: %{public}d", changedRows);
+        return;
+    }
+    MEDIA_INFO_LOG("delete %{public}d temp files exceeding 24 hous or exceed maximum quantity.", changedRows);
+}
+
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     if (!currentStatus_) {
         MEDIA_INFO_LOG("The conditions for DoBackgroundOperation are not met, will return.");
         return;
     }
+
+    // delete temporary photos
+    DeleteTemporaryPhotos();
 
     BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
         BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
