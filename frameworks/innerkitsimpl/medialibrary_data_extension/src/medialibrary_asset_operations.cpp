@@ -1123,10 +1123,10 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
         if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
+            MEDIA_INFO_LOG("create empty file for %{public}s, path: %{private}s", fileAsset->GetUri().c_str(),
+                fileAsset->GetPath().c_str());
             int32_t errCode = CreateDirectoryAndAsset(fileAsset->GetPath());
-            if (errCode != E_OK) {
-                return errCode;
-            }
+            CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
         }
         path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     }
