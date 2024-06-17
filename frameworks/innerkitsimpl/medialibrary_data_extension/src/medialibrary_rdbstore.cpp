@@ -2382,6 +2382,7 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_MULTISTAGES_CAPTURE) {
         AddMultiStagesCaptureColumns(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
@@ -2442,6 +2443,7 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_DYNAMIC_RANGE_TYPE) {
         AddDynamicRangeType(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
@@ -2509,6 +2511,7 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS) {
         ModifySourceAlbumTriggers(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
@@ -2528,6 +2531,7 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_SEGMENTATION_COLUMNS) {
         AddSegmentationColumns(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
@@ -2535,6 +2539,7 @@ static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_IS_LOCAL_ALBUM) {
         AddIsLocalAlbum(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
@@ -2550,6 +2555,7 @@ static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_SHOOTING_MODE_CLOUD) {
         AddBussinessRecordAlbum(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpdatePhotosSearchUpdateTrigger(RdbStore& store)
@@ -2562,7 +2568,16 @@ static void UpdatePhotosSearchUpdateTrigger(RdbStore& store)
     ExecSqls(executeSqlStrs, store);
 }
 
-static void CreatePhotosExtTable(RdbStore& store)
+static void AddIsTemp(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_IS_TEMP + " INT DEFAULT 0"
+    };
+    MEDIA_INFO_LOG("Start add is_temp on Photos in upgrade");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void CreatePhotosExtTable(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         PhotoExtColumn::CREATE_PHOTO_EXT_TABLE
@@ -2623,6 +2638,10 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_VISION_TRIGGER_FOR_VIDEO_LABEL) {
         UpdateVisionTriggerForVideoLabel(store);
+    }
+
+    if (oldVersion < VERSION_ADD_IS_TEMP) {
+        AddIsTemp(store);
     }
 }
 
@@ -2708,9 +2727,9 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeExtendedVisionTable(store, oldVersion);
     UpgradeAlbumTable(store, oldVersion);
     UpgradeHistory(store, oldVersion);
+    UpgradeExtension(store, oldVersion);
 
     AlwaysCheck(store);
-    UpgradeExtension(store, oldVersion);
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);

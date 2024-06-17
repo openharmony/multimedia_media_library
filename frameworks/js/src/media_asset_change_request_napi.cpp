@@ -146,6 +146,7 @@ napi_value MediaAssetChangeRequestNapi::Init(napi_env env, napi_value exports)
             DECLARE_NAPI_FUNCTION("setEffectMode", JSSetEffectMode),
             DECLARE_NAPI_FUNCTION("setCameraShotKey", JSSetCameraShotKey),
             DECLARE_NAPI_FUNCTION("saveCameraPhoto", JSSaveCameraPhoto),
+            DECLARE_NAPI_FUNCTION("discardCameraPhoto", JSDiscardCameraPhoto),
         } };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
     return exports;
@@ -236,7 +237,8 @@ void MediaAssetChangeRequestNapi::ReleasePhotoProxyObj()
 void MediaAssetChangeRequestNapi::RecordChangeOperation(AssetChangeOperation changeOperation)
 {
     if ((changeOperation == AssetChangeOperation::GET_WRITE_CACHE_HANDLER ||
-            changeOperation == AssetChangeOperation::ADD_RESOURCE) &&
+            changeOperation == AssetChangeOperation::ADD_RESOURCE ||
+            changeOperation == AssetChangeOperation::ADD_FILTERS) &&
         Contains(AssetChangeOperation::CREATE_FROM_SCRATCH)) {
         assetChangeOperations_.insert(assetChangeOperations_.begin() + 1, changeOperation);
         return;
@@ -1197,11 +1199,25 @@ napi_value MediaAssetChangeRequestNapi::JSSaveCameraPhoto(napi_env env, napi_cal
     auto changeRequest = asyncContext->objectInfo;
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
-    changeRequest->RecordChangeOperation(AssetChangeOperation::SAVE_CAMERA_PHOTO);
     if (changeRequest->Contains(AssetChangeOperation::SET_EDIT_DATA) &&
         !changeRequest->Contains(AssetChangeOperation::ADD_FILTERS)) {
         changeRequest->RecordChangeOperation(AssetChangeOperation::ADD_FILTERS);
     }
+    changeRequest->RecordChangeOperation(AssetChangeOperation::SAVE_CAMERA_PHOTO);
+    RETURN_NAPI_UNDEFINED(env);
+}
+
+napi_value MediaAssetChangeRequestNapi::JSDiscardCameraPhoto(napi_env env, napi_callback_info info)
+{
+    auto asyncContext = make_unique<MediaAssetChangeRequestAsyncContext>();
+    CHECK_COND_WITH_MESSAGE(env,
+        MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, ARGS_ZERO, ARGS_ZERO) == napi_ok,
+        "Failed to get object info");
+
+    auto changeRequest = asyncContext->objectInfo;
+    auto fileAsset = changeRequest->GetFileAssetInstance();
+    CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
+    changeRequest->RecordChangeOperation(AssetChangeOperation::DISCARD_CAMERA_PHOTO);
     RETURN_NAPI_UNDEFINED(env);
 }
 
@@ -1885,7 +1901,7 @@ static bool AddMovingPhotoVideoExecute(MediaAssetChangeRequestAsyncContext& cont
 static bool HasAddResource(MediaAssetChangeRequestAsyncContext& context, ResourceType resourceType)
 {
     return std::find(context.addResourceTypes.begin(), context.addResourceTypes.end(), resourceType) !=
-           context.addResourceTypes.end();
+        context.addResourceTypes.end();
 }
 
 static bool AddResourceExecute(MediaAssetChangeRequestAsyncContext& context)
@@ -2059,9 +2075,42 @@ static bool SetCameraShotKeyExecute(MediaAssetChangeRequestAsyncContext& context
     return UpdateAssetProperty(context, PAH_UPDATE_PHOTO, predicates, valuesBucket);
 }
 
+static void DiscardHighQualityPhoto(MediaAssetChangeRequestAsyncContext& context)
+{
+    std::string uriStr = PAH_REMOVE_MSC_TASK;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(uriStr);
+    DataShare::DataSharePredicates predicates;
+    int errCode = 0;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    std::vector<std::string> columns { to_string(fileAsset->GetId()) };
+    UserFileClient::Query(uri, predicates, columns, errCode);
+}
+
 static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
 {
-    return true;
+    auto changeOpreations = context.assetChangeOperations;
+    bool containsAddResource = std::find(changeOpreations.begin(), changeOpreations.end(),
+        AssetChangeOperation::ADD_RESOURCE) != changeOpreations.end();
+    if (containsAddResource && !MediaLibraryNapiUtils::IsSystemApp()) {
+        // remove high quality photo
+        NAPI_INFO_LOG("discard high quality photo because add resource by third app");
+        DiscardHighQualityPhoto(context);
+    }
+    DataShare::DataSharePredicates predicates;
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
+    UpdateAssetProperty(context, PAH_UPDATE_PHOTO_COMPONENT, predicates, valuesBucket);
+
+    // udpate dirty=1 if photo_quality=0
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+    predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+    DataShare::DataShareValuesBucket valuesBucketDirty;
+    valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO_COMPONENT, predicates, valuesBucketDirty);
 }
 
 static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
@@ -2088,6 +2137,26 @@ static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
     return true;
 }
 
+static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
+{
+    DataShare::DataSharePredicates predicates;
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, true);
+    auto fileAsset = context.objectInfo->GetFileAssetInstance();
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+
+    string uri = PAH_DISCARD_CAMERA_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri updateAssetUri(uri);
+    int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucket);
+    if (changedRows < 0) {
+        context.SaveError(changedRows);
+        NAPI_ERR_LOG("Failed to update property of asset, err: %{public}d", changedRows);
+        return false;
+    }
+    return true;
+}
+
 static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeRequestAsyncContext&)> EXECUTE_MAP = {
     { AssetChangeOperation::CREATE_FROM_URI, CreateFromFileUriExecute },
     { AssetChangeOperation::GET_WRITE_CACHE_HANDLER, SubmitCacheExecute },
@@ -2102,6 +2171,7 @@ static const unordered_map<AssetChangeOperation, bool (*)(MediaAssetChangeReques
     { AssetChangeOperation::SET_CAMERA_SHOT_KEY, SetCameraShotKeyExecute },
     { AssetChangeOperation::SAVE_CAMERA_PHOTO, SaveCameraPhotoExecute },
     { AssetChangeOperation::ADD_FILTERS, AddFiltersExecute },
+    { AssetChangeOperation::DISCARD_CAMERA_PHOTO, DiscardCameraPhotoExecute },
 };
 
 static void ApplyAssetChangeRequestExecute(napi_env env, void* data)

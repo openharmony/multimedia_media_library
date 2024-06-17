@@ -174,6 +174,7 @@ int32_t MediaLibraryAssetOperations::UpdateOperation(MediaLibraryCommand &cmd)
     }
 
     switch (cmd.GetOprnObject()) {
+        case OperationObject::PAH_PHOTO:
         case OperationObject::FILESYSTEM_PHOTO:
             return MediaLibraryPhotoOperations::Update(cmd);
         case OperationObject::FILESYSTEM_AUDIO:
@@ -563,7 +564,7 @@ static void HandleDateAdded(const int64_t dateAdded, const MediaType type, Value
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
 }
 
-static void HandlerCallingPackage(MediaLibraryCommand &cmd, const FileAsset &fileAsset, ValuesBucket &outValues)
+static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &fileAsset, ValuesBucket &outValues)
 {
     if (!fileAsset.GetOwnerPackage().empty() && PermissionUtils::IsNativeSAApp()) {
         outValues.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, fileAsset.GetOwnerPackage());
@@ -584,6 +585,22 @@ static void HandlerCallingPackage(MediaLibraryCommand &cmd, const FileAsset &fil
     if (!cmd.GetBundleName().empty()) {
         outValues.PutString(MediaColumn::MEDIA_PACKAGE_NAME, GetAssetPackageName(fileAsset, cmd.GetBundleName()));
     }
+}
+
+static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
+{
+    if (!PermissionUtils::IsNativeSAApp()) {
+        MEDIA_DEBUG_LOG("do not have permission to set is_temp");
+        return;
+    }
+
+    bool isTemp = 0;
+    ValueObject value;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_IS_TEMP, value)) {
+        value.GetBool(isTemp);
+    }
+    outValues.PutBool(PhotoColumn::PHOTO_IS_TEMP, isTemp);
+    return;
 }
 
 static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
@@ -616,7 +633,8 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         }
     }
 
-    HandlerCallingPackage(cmd, fileAsset, assetInfo);
+    HandleCallingPackage(cmd, fileAsset, assetInfo);
+    HandleIsTemp(cmd, assetInfo);
 
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
     HandleDateAdded(nowTime,
@@ -1729,7 +1747,9 @@ const std::unordered_map<std::string, std::vector<VerifyFunction>>
     { PhotoColumn::PHOTO_QUALITY, { IsInt32 } },
     { PhotoColumn::PHOTO_FIRST_VISIT_TIME, { IsInt64 } },
     { PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, { IsInt32 } },
-    { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, { IsInt32 } }
+    { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, { IsInt32 } },
+    { PhotoColumn::PHOTO_IS_TEMP, { IsBool } },
+    { PhotoColumn::PHOTO_DIRTY, { IsInt32 } },
 };
 
 bool AssetInputParamVerification::CheckParamForUpdate(MediaLibraryCommand &cmd)
