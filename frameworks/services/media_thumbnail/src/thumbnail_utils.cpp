@@ -1633,6 +1633,16 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         err = resultSet->GetInt(index, position);
         data.isLocalFile = (position == 1);
     }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_HEIGHT, index);
+    if (err == NativeRdb::E_OK) {
+        err = resultSet->GetInt(index, data.photoHeight);
+    }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_WIDTH, index);
+    if (err == NativeRdb::E_OK) {
+        err = resultSet->GetInt(index, data.photoWidth);
+    }
 }
 
 bool ThumbnailUtils::ResizeThumb(int &width, int &height)
@@ -1853,6 +1863,8 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
     vector<string> columns = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_HEIGHT,
+        MEDIA_DATA_DB_WIDTH,
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_ORIENTATION,
