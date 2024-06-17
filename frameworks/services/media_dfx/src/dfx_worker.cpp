@@ -191,6 +191,13 @@ void DfxWorker::StartLoopTaskDelay()
     AddTask(loopTask, FIVE_MINUTE);
 }
 
+static bool compare(const shared_ptr<DfxTask> &taskOne, const shared_ptr<DfxTask> &taskTwo)
+{
+    auto firstTime = std::chrono::time_point_cast<std::chrono::milliseconds>(taskOne->executeTime_);
+    auto secondTime = std::chrono::time_point_cast<std::chrono::milliseconds>(taskTwo->executeTime_);
+    return firstTime.time_since_epoch().count() > secondTime.time_since_epoch().count();
+}
+
 void DfxWorker::AddTask(const shared_ptr<DfxTask> &task, int64_t delayTime)
 {
     lock_guard<mutex> lockGuard(taskLock_);
@@ -198,14 +205,15 @@ void DfxWorker::AddTask(const shared_ptr<DfxTask> &task, int64_t delayTime)
         task->executeTime_ = std::chrono::system_clock::now() + std::chrono::milliseconds(delayTime);
         task->isDelayTask_ = true;
     }
-    taskQueue_.push(task);
+    taskList_.push_back(task);
+    sort(taskList_.begin(), taskList_.end(), compare);
     workCv_.notify_one();
 }
 
 bool DfxWorker::IsTaskQueueEmpty()
 {
     lock_guard<mutex> lock_Guard(taskLock_);
-    return taskQueue_.empty();
+    return taskList_.empty();
 }
 
 void DfxWorker::WaitForTask()
@@ -216,24 +224,33 @@ void DfxWorker::WaitForTask()
             [this]() { return !isThreadRunning_ || !IsTaskQueueEmpty(); });
     } else {
         workCv_.wait_until(lock, GetWaitTime(),
-            [this]() { return !isThreadRunning_ || IsTaskQueueEmpty(); });
+            [this]() { return !isThreadRunning_ || !IsDelayTask(); });
     }
 }
 
 shared_ptr<DfxTask> DfxWorker::GetTask()
 {
     lock_guard<mutex> lockGuard(taskLock_);
-    if (taskQueue_.empty()) {
+    if (taskList_.empty()) {
         return nullptr;
     }
-    shared_ptr<DfxTask> task = taskQueue_.top();
-    taskQueue_.pop();
+    shared_ptr<DfxTask> task = taskList_.back();
+    taskList_.pop_back();
     return task;
+}
+
+
+bool DfxWorker::IsDelayTask()
+{
+    lock_guard<mutex> lockGuard(taskLock_);
+    shared_ptr<DfxTask> task = taskList_.back();
+    return task->isDelayTask_;
 }
 
 std::chrono::system_clock::time_point DfxWorker::GetWaitTime()
 {
-    shared_ptr<DfxTask> task = taskQueue_.top();
+    lock_guard<mutex> lockGuard(taskLock_);
+    shared_ptr<DfxTask> task = taskList_.back();
     return task->executeTime_;
 }
 
