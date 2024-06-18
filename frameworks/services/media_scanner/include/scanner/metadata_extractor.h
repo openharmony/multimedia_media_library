@@ -33,6 +33,7 @@ class MetadataExtractor {
 public:
     EXPORT static int32_t Extract(std::unique_ptr<Metadata> &data);
     EXPORT static int32_t ExtractAVMetadata(std::unique_ptr<Metadata> &data);
+    EXPORT static int32_t ExtractAVMetadataWithScene(std::unique_ptr<Metadata> &data, int32_t scene = 0);
     EXPORT static int32_t ExtractImageMetadata(std::unique_ptr<Metadata> &data);
     static int32_t ExtractImageExif(std::unique_ptr<ImageSource> &imageSource, std::unique_ptr<Metadata> &data);
 

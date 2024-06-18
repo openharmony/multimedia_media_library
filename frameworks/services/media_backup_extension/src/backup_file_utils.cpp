@@ -45,7 +45,7 @@ int32_t BackupFileUtils::FillMetadata(std::unique_ptr<Metadata> &data)
     if (data->GetFileMediaType() == MEDIA_TYPE_IMAGE) {
         err = MetadataExtractor::ExtractImageMetadata(data);
     } else {
-        err = MetadataExtractor::ExtractAVMetadata(data);
+        err = MetadataExtractor::ExtractAVMetadataWithScene(data, Scene::AV_META_SCENE_CLONE);
         MEDIA_INFO_LOG("Extract av metadata end");
     }
     if (err != E_OK) {
