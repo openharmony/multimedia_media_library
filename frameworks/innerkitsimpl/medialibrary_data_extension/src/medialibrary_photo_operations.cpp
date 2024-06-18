@@ -323,7 +323,10 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
 
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         int32_t changedRows = 0;
-        cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+        std::vector<string> perms = { PERM_READ_IMAGEVIDEO, PERM_WRITE_IMAGEVIDEO };
+        if (PermissionUtils::CheckHasPermission(perms)) {
+            cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+        }
         changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
         if (changedRows <= 0) {
             MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
