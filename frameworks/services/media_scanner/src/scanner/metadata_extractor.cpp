@@ -354,21 +354,20 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
 
 int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data)
 {
-    return ExtractAVMetadataWithScene(data);
-}
-
-int32_t MetadataExtractor::ExtractAVMetadataWithScene(std::unique_ptr<Metadata> &data, int32_t scene)
-{
     MediaLibraryTracer tracer;
     tracer.Start("ExtractAVMetadata");
 
     tracer.Start("CreateAVMetadataHelper");
     std::shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
-    avMetadataHelper->SetScene(static_cast<Scene>(scene));
     tracer.Finish();
     if (avMetadataHelper == nullptr) {
         MEDIA_ERR_LOG("AV metadata helper is null");
         return E_AVMETADATA;
+    }
+
+    // notify media_service clone event.
+    if (scene == Scene::AV_META_SCENE_CLONE) {
+        avMetadataHelper->SetScene(static_cast<Scene>(scene));    
     }
 
     string filePath = data->GetFilePath();
