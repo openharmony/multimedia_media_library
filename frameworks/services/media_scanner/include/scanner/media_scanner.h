@@ -74,7 +74,7 @@ public:
 
     EXPORT MediaScannerObj(const std::string &path, const std::shared_ptr<IMediaScannerCallback> &callback,
         MediaScannerObj::ScanType type, MediaLibraryApi api = MediaLibraryApi::API_OLD);
-    EXPORT MediaScannerObj(MediaScannerObj::ScanType type);
+    EXPORT MediaScannerObj(MediaScannerObj::ScanType type, MediaLibraryApi api = MediaLibraryApi::API_OLD);
     EXPORT virtual ~MediaScannerObj() = default;
 
     EXPORT void Scan();

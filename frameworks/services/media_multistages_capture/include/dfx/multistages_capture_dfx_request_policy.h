@@ -47,8 +47,8 @@ private:
     bool ShouldReport();
     void Report();
 
-    int64_t lastReportTime_;
-    volatile bool isReporting_;
+    int64_t lastReportTime_ {0};
+    volatile bool isReporting_ {false};
     std::mutex shouldReportMutex_;
     std::unordered_map<std::string, RequestCount> requestCountMap_;
 };
