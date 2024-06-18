@@ -61,8 +61,8 @@ public:
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
     int32_t CreateAstcCloudDownload(const std::string &id);
-    int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
-    void CancelAstcBatchTask(int32_t requestId);
+    EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
+    EXPORT void CancelAstcBatchTask(int32_t requestId);
     void DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded);
 private:
     EXPORT ThumbnailService();

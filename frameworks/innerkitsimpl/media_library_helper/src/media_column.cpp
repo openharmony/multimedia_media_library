@@ -92,6 +92,7 @@ const std::string PhotoColumn::MOVING_PHOTO_EFFECT_MODE = "moving_photo_effect_m
 const std::string PhotoColumn::PHOTO_LCD_SIZE = "lcd_size";
 const std::string PhotoColumn::PHOTO_THUMB_SIZE = "thumb_size";
 const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc";
+const std::string PhotoColumn::PHOTO_IS_TEMP = "is_temp";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -181,7 +182,8 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     MOVING_PHOTO_EFFECT_MODE + " INT DEFAULT 0, " +
     PHOTO_HAS_ASTC + " INT DEFAULT 0, " +
     PHOTO_LCD_SIZE + " TEXT, " +
-    PHOTO_THUMB_SIZE + " TEXT)";
+    PHOTO_THUMB_SIZE + " TEXT," +
+    PHOTO_IS_TEMP + " INT DEFAULT 0)";
 
 const std::string PhotoColumn::CREATE_CLOUD_ID_INDEX = BaseColumn::CreateIndex() +
     PHOTO_CLOUD_ID_INDEX + " ON " + PHOTOS_TABLE + " (" + PHOTO_CLOUD_ID + " DESC)";
@@ -408,7 +410,8 @@ const std::string MediaColumn::ASSETS_QUERY_FILTER =
     PhotoColumn::PHOTO_SYNC_STATUS + " = 0" + " AND " +
     MediaColumn::MEDIA_DATE_TRASHED + " = 0" + " AND " +
     MediaColumn::MEDIA_HIDDEN + " = 0" + " AND " +
-    MediaColumn::MEDIA_TIME_PENDING + " = 0";
+    MediaColumn::MEDIA_TIME_PENDING + " = 0 " + " AND " +
+    PhotoColumn::PHOTO_IS_TEMP = " = 0";
 
 const std::string PhotoExtColumn::PHOTOS_EXT_TABLE = "tab_photos_ext";
 

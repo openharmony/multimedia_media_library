@@ -37,6 +37,8 @@ public:
 const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT EXISTS test ") +
     "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER, salary REAL, blobType BLOB)";
 
+const int32_t E_THUMBNAIL_ASTC_ALL_EXIST = -2307;
+
 int ConfigTestOpenCall::OnCreate(RdbStore &store)
 {
     return store.ExecuteSql(CREATE_TABLE_TEST);
@@ -225,6 +227,38 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateThumbnailAsync_test_00
     int32_t ret = serverTest.CreateThumbnailFileScaned(url, "", true);
     EXPECT_EQ(ret, E_OK);
     serverTest.ReleaseService();
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CreateAstcBatchOnDemand_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    shared_ptr<OHOS::AbilityRuntime::Context> context;
+    serverTest->Init(storePtr, context);
+
+    NativeRdb::RdbPredicates predicate { PhotoColumn::PHOTOS_TABLE };
+    int32_t requestId = 1;
+    int32_t result = serverTest->CreateAstcBatchOnDemand(predicate, requestId);
+    EXPECT_EQ(result, E_THUMBNAIL_ASTC_ALL_EXIST);
+    serverTest->ReleaseService();
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_CancelAstcBatchTask_test_001, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    shared_ptr<OHOS::AbilityRuntime::Context> context;
+    serverTest->Init(storePtr, context);
+
+    NativeRdb::RdbPredicates predicate { PhotoColumn::PHOTOS_TABLE };
+    int32_t requestId = 1;
+    serverTest->CancelAstcBatchTask(requestId);
+    serverTest->CancelAstcBatchTask(++requestId);
+    serverTest->ReleaseService();
 }
 } // namespace Media
 } // namespace OHOS

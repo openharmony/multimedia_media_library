@@ -48,6 +48,7 @@
 #include "multistages_capture_dfx_total_time.h"
 #include "multistages_capture_dfx_request_policy.h"
 #include "multistages_capture_dfx_trigger_ratio.h"
+#include "multistages_capture_request_task_manager.h"
 #include "multistages_capture_manager.h"
 #undef private
 #undef protected
@@ -569,31 +570,30 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_photo_id_add_and_rmv_001, T
     MEDIA_INFO_LOG("manager_photo_id_add_and_rmv_001 Start");
     string photoId = "202312251533001";
     int32_t fileId = 1;
-    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
-    instance.AddPhotoInProgress(fileId, photoId, false);
-    EXPECT_EQ(instance.fileId2PhotoId_.at(fileId), photoId);
-    EXPECT_EQ(instance.photoIdInProcess_.at(photoId)->fileId, fileId);
-    EXPECT_EQ(instance.photoIdInProcess_.at(photoId)->state, MultiStagesCaptureManager::PhotoState::NORMAL);
+    MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(fileId, photoId, false);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::fileId2PhotoId_.at(fileId), photoId);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_.at(photoId)->fileId, fileId);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_.at(photoId)->state, PhotoState::NORMAL);
 
     string photoId2 = "202312251533002";
     int32_t fileId2 = 2;
-    instance.AddPhotoInProgress(fileId2, photoId2, true);
-    EXPECT_EQ(instance.fileId2PhotoId_.at(fileId2), photoId2);
-    EXPECT_EQ(instance.photoIdInProcess_.at(photoId2)->fileId, fileId2);
-    EXPECT_EQ(instance.photoIdInProcess_.at(photoId2)->state, MultiStagesCaptureManager::PhotoState::TRASHED);
+    MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(fileId2, photoId2, true);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::fileId2PhotoId_.at(fileId2), photoId2);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_.at(photoId2)->fileId, fileId2);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_.at(photoId2)->state, PhotoState::TRASHED);
 
-    instance.RemovePhotoInProgress(photoId, false);
-    EXPECT_EQ(instance.fileId2PhotoId_.count(fileId), 0);
-    EXPECT_EQ(instance.photoIdInProcess_.count(photoId), 0);
+    MultiStagesCaptureRequestTaskManager::RemovePhotoInProgress(photoId, false);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::fileId2PhotoId_.count(fileId), 0);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_.count(photoId), 0);
 
-    instance.RemovePhotoInProgress(photoId2, false);
-    EXPECT_EQ(instance.fileId2PhotoId_.count(fileId2), 0);
-    EXPECT_EQ(instance.photoIdInProcess_.count(photoId2), 0);
+    MultiStagesCaptureRequestTaskManager::RemovePhotoInProgress(photoId2, false);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::fileId2PhotoId_.count(fileId2), 0);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_.count(photoId2), 0);
 
     // remove photo id not in progress
     string invalidPhotoId = "202312251533003";
-    instance.RemovePhotoInProgress(invalidPhotoId, false);
-    instance.RemovePhotoInProgress(invalidPhotoId, true);
+    MultiStagesCaptureRequestTaskManager::RemovePhotoInProgress(invalidPhotoId, false);
+    MultiStagesCaptureRequestTaskManager::RemovePhotoInProgress(invalidPhotoId, true);
     MEDIA_INFO_LOG("manager_photo_id_add_and_rmv_001 End");
 }
 
@@ -681,8 +681,8 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, manager_add_image_001, TestSize.Lev
 
     MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
     instance.AddImage(fileId, PHOTO_ID_FOR_TEST, 0);
-    EXPECT_EQ(instance.fileId2PhotoId_.count(fileId), 1);
-    EXPECT_EQ(instance.photoIdInProcess_.count(PHOTO_ID_FOR_TEST), 1);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::fileId2PhotoId_.count(fileId), 1);
+    EXPECT_EQ(MultiStagesCaptureRequestTaskManager::photoIdInProcess_.count(PHOTO_ID_FOR_TEST), 1);
     MEDIA_INFO_LOG("manager_add_image_001 End");
 }
 
@@ -719,6 +719,101 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, SyncWithDeferredProcSessionTest_que
 
     instance.SyncWithDeferredProcSessionInternal();
     MEDIA_INFO_LOG("SyncWithDeferredProcSessionTest_query_empty_002 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdatePhotoQuality_001, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdatePhotoQuality_001 Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    MultiStagesCaptureDeferredProcSessionCallback *callback = new MultiStagesCaptureDeferredProcSessionCallback();
+    auto result = callback->UpdatePhotoQuality(PHOTO_ID_FOR_TEST);
+    EXPECT_EQ(result, E_OK);
+
+    vector<string> columns = { PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_IS_TEMP };
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::QUERY, MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, to_string(fileId));
+    ASSERT_NE(g_rdbStore, nullptr);
+
+    auto resultSet = g_rdbStore->Query(cmd, columns);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), NativeRdb::E_OK);
+
+    int32_t photoQuality = GetInt32Val(PhotoColumn::PHOTO_QUALITY, resultSet);
+    EXPECT_EQ(photoQuality, static_cast<int32_t>(MultiStagesPhotoQuality::FULL));
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_DIRTY, resultSet), 1);
+    EXPECT_EQ(GetInt32Val(PhotoColumn::PHOTO_IS_TEMP, resultSet), 0);
+
+    MEDIA_INFO_LOG("UpdatePhotoQuality_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_001, TestSize.Level1)
+{
+    // test 1 PhotoColumn::PHOTO_SUBTYPE + PhotoSubType::MOVING_PHOTO
+    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_001 Start");
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    ValuesBucket bucket;
+    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+    MediaLibraryCommand cmd (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    cmd.SetValueBucket(bucket);
+
+    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_001 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_002, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_002 Start");
+    // test 2 PhotoColumn::PHOTO_SUBTYPE + !PhotoSubType::MOVING_PHOTO
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    ValuesBucket bucket;
+    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+    MediaLibraryCommand cmd (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::CAMERA));
+    cmd.SetValueBucket(bucket);
+
+    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_002 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_empty_bucket_003, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_empty_bucket_003 Start");
+    // test3 empty bucket
+    auto fileId = PrepareForFirstVisit();
+    EXPECT_GT(fileId, 0);
+
+    ValuesBucket bucket;
+    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+    MediaLibraryCommand cmd (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    cmd.SetValueBucket(bucket);
+
+    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    EXPECT_EQ(ret, 0);
+    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_empty_bucket_003 End");
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_nodata_004, TestSize.Level1)
+{
+    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_nodata_004 Start");
+    // no data
+    ValuesBucket bucket;
+    MultiStagesCaptureManager &instance = MultiStagesCaptureManager::GetInstance();
+    MediaLibraryCommand cmd (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
+    bucket.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    cmd.SetValueBucket(bucket);
+
+    auto ret = instance.UpdateLowQualityDbInfo(cmd);
+    EXPECT_NE(ret, 0);
+    MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_nodata_004 End");
 }
 }
 }

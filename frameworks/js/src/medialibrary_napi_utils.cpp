@@ -873,15 +873,22 @@ napi_value MediaLibraryNapiUtils::AddDefaultAssetColumns(napi_env env, vector<st
     return result;
 }
 
+inline void SetDefaultPredicatesCondition(DataSharePredicates &predicates, const int32_t dateTrashed,
+    const bool isHidden, const int32_t timePending, const bool isTemp)
+{
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(dateTrashed));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(timePending));
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(isTemp));
+}
+
 int32_t MediaLibraryNapiUtils::GetUserAlbumPredicates(
     const int32_t albumId, DataSharePredicates &predicates, const bool hiddenOnly)
 {
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     return E_SUCCESS;
 }
 
@@ -898,9 +905,7 @@ int32_t MediaLibraryNapiUtils::GetPortraitAlbumPredicates(const int32_t albumId,
     onClause = "ag." + GROUP_TAG + " = " + ANALYSIS_ALBUM_TABLE + "." + GROUP_TAG;
     clauses = { onClause };
     predicates.InnerJoin(tempTable)->On(clauses);
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
     predicates.Distinct();
     return E_SUCCESS;
 }
@@ -910,9 +915,7 @@ int32_t MediaLibraryNapiUtils::GetAnalysisAlbumPredicates(const int32_t albumId,
     string onClause = MediaColumn::MEDIA_ID + " = " + PhotoMap::ASSET_ID;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
     return E_SUCCESS;
 }
 
@@ -991,9 +994,7 @@ int32_t MediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
 
 int32_t MediaLibraryNapiUtils::GetAllLocationPredicates(DataSharePredicates &predicates)
 {
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
     predicates.And()->NotEqualTo(PhotoColumn::PHOTO_LATITUDE, to_string(0));
     predicates.And()->NotEqualTo(PhotoColumn::PHOTO_LONGITUDE, to_string(0));
     return E_SUCCESS;
@@ -1004,9 +1005,7 @@ static int32_t GetFavoritePredicates(DataSharePredicates &predicates, const bool
     predicates.BeginWrap();
     constexpr int32_t IS_FAVORITE = 1;
     predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(IS_FAVORITE));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -1015,9 +1014,7 @@ static int32_t GetVideoPredicates(DataSharePredicates &predicates, const bool hi
 {
     predicates.BeginWrap();
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -1025,9 +1022,7 @@ static int32_t GetVideoPredicates(DataSharePredicates &predicates, const bool hi
 static int32_t GetHiddenPredicates(DataSharePredicates &predicates)
 {
     predicates.BeginWrap();
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(1));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, 1, 0, false);
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -1044,9 +1039,7 @@ static int32_t GetScreenshotPredicates(DataSharePredicates &predicates, const bo
 {
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::SCREENSHOT)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -1055,9 +1048,7 @@ static int32_t GetCameraPredicates(DataSharePredicates &predicates, const bool h
 {
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::CAMERA)));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -1066,9 +1057,7 @@ static int32_t GetAllImagesPredicates(DataSharePredicates &predicates, const boo
 {
     predicates.BeginWrap();
     predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     predicates.EndWrap();
     return E_SUCCESS;
 }
@@ -1080,9 +1069,7 @@ int32_t MediaLibraryNapiUtils::GetSourceAlbumPredicates(const int32_t albumId, D
     predicates.InnerJoin(PhotoMap::TABLE)->On({ onClause });
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(hiddenOnly));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     return E_SUCCESS;
 }
 
@@ -1431,6 +1418,19 @@ void MediaLibraryNapiUtils::FixSpecialDateType(string &selections)
     }
 }
 
+template <class AsyncContext>
+napi_status MediaLibraryNapiUtils::ParsePredicates(napi_env env, const napi_value arg,
+    AsyncContext &context, const FetchOptionType &fetchOptType)
+{
+    JSProxy::JSProxy<DataShareAbsPredicates> *jsProxy = nullptr;
+    napi_unwrap(env, arg, reinterpret_cast<void **>(&jsProxy));
+    shared_ptr<DataShareAbsPredicates> predicate = jsProxy->GetInstance();
+    CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE,
+        napi_invalid_arg, "invalid predicate");
+    CHECK_COND_RET(GetLocationPredicate(context, predicate) == TRUE, napi_invalid_arg, "invalid predicate");
+    return napi_ok;
+}
+
 template bool MediaLibraryNapiUtils::HandleSpecialPredicate<unique_ptr<MediaLibraryAsyncContext>>(
     unique_ptr<MediaLibraryAsyncContext> &context, shared_ptr<DataShareAbsPredicates> &predicate,
     const FetchOptionType &fetchOptType);
@@ -1636,5 +1636,8 @@ template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<Fil
 
 template napi_status MediaLibraryNapiUtils::ParseArgsOnlyCallBack<unique_ptr<AlbumNapiAsyncContext>>(napi_env env,
     napi_callback_info info, unique_ptr<AlbumNapiAsyncContext> &context);
+
+template napi_status MediaLibraryNapiUtils::ParsePredicates<unique_ptr<MediaLibraryAsyncContext>>(napi_env env,
+    const napi_value arg, unique_ptr<MediaLibraryAsyncContext> &context, const FetchOptionType &fetchOptType);
 } // namespace Media
 } // namespace OHOS

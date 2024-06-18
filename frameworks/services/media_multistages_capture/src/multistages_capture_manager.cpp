@@ -30,6 +30,7 @@
 #include "multistages_capture_dfx_request_policy.h"
 #include "multistages_capture_dfx_total_time.h"
 #include "multistages_capture_dfx_trigger_ratio.h"
+#include "multistages_capture_request_task_manager.h"
 #include "request_policy.h"
 #include "result_set_utils.h"
 
@@ -65,64 +66,17 @@ bool MultiStagesCaptureManager::Init()
     return true;
 }
 
-void MultiStagesCaptureManager::AddPhotoInProgress(int32_t fileId, const string &photoId, bool isTrashed)
+void MultiStagesCaptureManager::CancelRequestAndRemoveImage(const vector<string> &columns)
 {
-    fileId2PhotoId_.emplace(fileId, photoId);
-    PhotoState state = PhotoState::NORMAL;
-    if (isTrashed) {
-        state = PhotoState::TRASHED;
-    }
-    photoIdInProcess_.emplace(photoId, make_shared<LowQualityPhotoInfo>(fileId, state, 0));
-}
-
-// 1. RestoreImage,从回收站恢复,isTrashed=false, state TRASHED => NORMAL
-// 2. 删除到回收站,isTrashed=false, state NORMAL => TRASHED
-void MultiStagesCaptureManager::UpdatePhotoInProgress(const string &photoId)
-{
-    if (photoIdInProcess_.count(photoId) == 0) {
-        MEDIA_INFO_LOG("photo id (%{public}s) not in progress", photoId.c_str());
+    if (columns.size() < 1) {
+        MEDIA_ERR_LOG("invalid param");
         return;
     }
-    shared_ptr<LowQualityPhotoInfo> photo = photoIdInProcess_.at(photoId);
-    photo->state = (photo->state == PhotoState::NORMAL) ? PhotoState::TRASHED : PhotoState::NORMAL;
-    photoIdInProcess_[photoId] = photo;
-}
-
-void MultiStagesCaptureManager::RemovePhotoInProgress(const string &photoId, bool isRestorable)
-{
-    if (!isRestorable) {
-        if (photoIdInProcess_.count(photoId) == 0) {
-            MEDIA_INFO_LOG("photo id (%{public}s) not in progress.", photoId.c_str());
-            return;
-        }
-        int32_t fileId = photoIdInProcess_.at(photoId)->fileId;
-        fileId2PhotoId_.erase(fileId);
-        photoIdInProcess_.erase(photoId);
-        return;
-    }
-
-    UpdatePhotoInProgress(photoId);
-}
-
-int32_t MultiStagesCaptureManager::UpdatePhotoInProcessRequestCount(const std::string &photoId, RequestType requestType)
-{
-    if (photoIdInProcess_.count(photoId) == 0) {
-        MEDIA_INFO_LOG("photo id (%{public}s) not in progress.", photoId.c_str());
-        return 0;
-    }
-
-    shared_ptr<LowQualityPhotoInfo> photo = photoIdInProcess_.at(photoId);
-    photo->requestCount += (int32_t) requestType;
-    photoIdInProcess_[photoId] = photo;
-    return photo->requestCount;
-}
-
-bool MultiStagesCaptureManager::IsPhotoInProcess(const string &photoId)
-{
-    if (photoId.empty() || photoIdInProcess_.find(photoId) == photoIdInProcess_.end()) {
-        return false;
-    }
-    return true;
+    int32_t fileId = stoi(columns[0]);
+    string photoId = MultiStagesCaptureRequestTaskManager::GetProcessingPhotoId(fileId);
+    MEDIA_INFO_LOG("fileId: %{public}d, photoId: %{public}s", fileId, photoId.c_str());
+    CancelProcessRequest(photoId);
+    RemoveImage(photoId, false);
 }
 
 shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesCaptureManager::HandleMultiStagesOperation(MediaLibraryCommand &cmd,
@@ -138,25 +92,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesCaptureManager::HandleMultiSta
             break;
         }
         case OperationType::ADD_IMAGE: {
-            MEDIA_DEBUG_LOG("calling addImage");
-            UpdateLowQualityDbInfo(cmd);
-            auto values = cmd.GetValueBucket();
-            string photoId = "";
-            ValueObject valueObject;
-            if (values.GetObject(PhotoColumn::PHOTO_ID, valueObject)) {
-                valueObject.GetString(photoId);
-            }
-            int32_t deferredProcType = -1;
-            if (values.GetObject(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, valueObject)) {
-                valueObject.GetInt(deferredProcType);
-            }
-            int32_t fileId = 0;
-            if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
-                valueObject.GetInt(fileId);
-            }
-            AddImage(fileId, photoId, deferredProcType);
-            MultiStagesCaptureDfxTotalTime::GetInstance().AddStartTime(photoId);
-            MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::AUTO);
+            AddImage(cmd);
             break;
         }
         case OperationType::SET_LOCATION: {
@@ -169,13 +105,17 @@ shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesCaptureManager::HandleMultiSta
             CancelProcessRequest(photoId);
             break;
         }
+        case OperationType::REMOVE_MSC_TASK: {
+            CancelRequestAndRemoveImage(columns);
+            break;
+        }
         default:
             break;
     }
     return nullptr;
 }
 
-void MultiStagesCaptureManager::UpdateLowQualityDbInfo(MediaLibraryCommand &cmd)
+int32_t MultiStagesCaptureManager::UpdateLowQualityDbInfo(MediaLibraryCommand &cmd)
 {
     MediaLibraryCommand cmdLocal (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     auto values = cmd.GetValueBucket();
@@ -195,6 +135,7 @@ void MultiStagesCaptureManager::UpdateLowQualityDbInfo(MediaLibraryCommand &cmd)
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("update failed");
     }
+    return result;
 }
 
 void MultiStagesCaptureManager::UpdateLocation(int32_t fileId, const string &path, double longitude, double latitude)
@@ -221,7 +162,7 @@ void MultiStagesCaptureManager::UpdateLocation(int32_t fileId, const string &pat
 void MultiStagesCaptureManager::AddImageInternal(int32_t fileId, const string &photoId, int32_t deferredProcType,
     bool discardable)
 {
-    AddPhotoInProgress(fileId, photoId, discardable);
+    MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(fileId, photoId, discardable);
 
     #ifdef ABILITY_CAMERA_SUPPORT
     DpsMetadata metadata;
@@ -236,10 +177,34 @@ void MultiStagesCaptureManager::AddImage(int32_t fileId, const string &photoId, 
         MEDIA_ERR_LOG("photo is empty");
         return;
     }
-    MEDIA_INFO_LOG("enter photoId: %{public}s, deferredProcType: %{public}d", photoId.c_str(), deferredProcType);
+    MEDIA_INFO_LOG("enter fileId: %{public}d, photoId: %{public}s, deferredProcType: %{public}d", fileId,
+        photoId.c_str(), deferredProcType);
 
     // called when camera low quality photo saved, isTrashed must be false.
     AddImageInternal(fileId, photoId, deferredProcType, false);
+}
+
+void MultiStagesCaptureManager::AddImage(MediaLibraryCommand &cmd)
+{
+    MEDIA_DEBUG_LOG("calling addImage");
+    UpdateLowQualityDbInfo(cmd);
+    auto values = cmd.GetValueBucket();
+    string photoId = "";
+    ValueObject valueObject;
+    if (values.GetObject(PhotoColumn::PHOTO_ID, valueObject)) {
+        valueObject.GetString(photoId);
+    }
+    int32_t deferredProcType = -1;
+    if (values.GetObject(PhotoColumn::PHOTO_DEFERRED_PROC_TYPE, valueObject)) {
+        valueObject.GetInt(deferredProcType);
+    }
+    int32_t fileId = 0;
+    if (values.GetObject(MediaColumn::MEDIA_ID, valueObject)) {
+        valueObject.GetInt(fileId);
+    }
+    AddImage(fileId, photoId, deferredProcType);
+    MultiStagesCaptureDfxTotalTime::GetInstance().AddStartTime(photoId);
+    MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::AUTO);
 }
 
 void MultiStagesCaptureManager::SyncWithDeferredProcSessionInternal()
@@ -263,7 +228,6 @@ void MultiStagesCaptureManager::SyncWithDeferredProcSessionInternal()
 
     deferredProcSession_->BeginSynchronize();
     do {
-        unique_lock<mutex> lock(deferredProcMutex_, try_to_lock);
         int32_t fileId = GetInt32Val(MEDIA_DATA_DB_ID, resultSet);
         string photoId = GetStringVal(MEDIA_DATA_DB_PHOTO_ID, resultSet);
         bool isTrashed = GetInt32Val(MEDIA_DATA_DB_DATE_TRASHED, resultSet) > 0;
@@ -306,13 +270,13 @@ void MultiStagesCaptureManager::SyncWithDeferredProcSession()
 
 bool MultiStagesCaptureManager::CancelProcessRequest(const string &photoId)
 {
-    if (!IsPhotoInProcess(photoId)) {
+    if (!MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(photoId)) {
         MEDIA_ERR_LOG("photoId is empty or not in process");
         return false;
     }
 
-    unique_lock<mutex> lock(deferredProcMutex_, try_to_lock);
-    int32_t currentRequestCount = UpdatePhotoInProcessRequestCount(photoId, RequestType::CANCEL_REQUEST);
+    int32_t currentRequestCount =
+        MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(photoId, RequestType::CANCEL_REQUEST);
     if (currentRequestCount > 0) {
         MEDIA_ERR_LOG("not cancel request because request count(%{public}d) greater than 0", currentRequestCount);
 
@@ -326,13 +290,12 @@ bool MultiStagesCaptureManager::CancelProcessRequest(const string &photoId)
 
 void MultiStagesCaptureManager::RemoveImage(const string &photoId, bool isRestorable)
 {
-    if (!IsPhotoInProcess(photoId)) {
+    if (!MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(photoId)) {
         MEDIA_ERR_LOG("photoId is empty or not in process ");
         return;
     }
 
-    unique_lock<mutex> lock(deferredProcMutex_, try_to_lock);
-    RemovePhotoInProgress(photoId, isRestorable);
+    MultiStagesCaptureRequestTaskManager::RemovePhotoInProgress(photoId, isRestorable);
     deferredProcSession_->RemoveImage(photoId, isRestorable);
 }
 
@@ -358,15 +321,14 @@ void MultiStagesCaptureManager::RestoreImages(const AbsRdbPredicates &predicates
             continue;
         }
 
-        unique_lock<mutex> lock(deferredProcMutex_, try_to_lock);
-        UpdatePhotoInProgress(photo->photoId);
+        MultiStagesCaptureRequestTaskManager::UpdatePhotoInProgress(photo->photoId);
         deferredProcSession_->RestoreImage(photo->photoId);
     }
 }
 
 void MultiStagesCaptureManager::ProcessImage(int fileId, int deliveryMode, const std::string &appName)
 {
-    string photoId = fileId2PhotoId_[fileId];
+    string photoId = MultiStagesCaptureRequestTaskManager::GetProcessingPhotoId(fileId) ;
     if (photoId.size() == 0) {
         MEDIA_ERR_LOG("processimage image id is invalid, fileId: %{public}d", fileId);
         return;
@@ -378,7 +340,8 @@ void MultiStagesCaptureManager::ProcessImage(int fileId, int deliveryMode, const
     MultiStagesCaptureDfxRequestPolicy::GetInstance().SetPolicy(callerBundleName,
         static_cast<RequestPolicy>(deliveryMode));
     MultiStagesCaptureDfxFirstVisit::GetInstance().Report(photoId);
-    int32_t currentRequestCount = UpdatePhotoInProcessRequestCount(photoId, RequestType::REQUEST);
+    int32_t currentRequestCount =
+        MultiStagesCaptureRequestTaskManager::UpdatePhotoInProcessRequestCount(photoId, RequestType::REQUEST);
     MEDIA_INFO_LOG("processimage, pkg name: %{public}s, photoid %{public}s, mode: %{public}d, count: %{public}d",
         callerBundleName.c_str(), photoId.c_str(), deliveryMode, currentRequestCount);
     if ((deliveryMode == static_cast<int32_t>(RequestPolicy::HIGH_QUALITY_MODE) ||
@@ -419,7 +382,7 @@ vector<shared_ptr<MultiStagesPhotoInfo>> MultiStagesCaptureManager::GetPhotosInf
 
 bool MultiStagesCaptureManager::IsPhotoDeleted(const std::string &photoId)
 {
-    if (!IsPhotoInProcess(photoId)) {
+    if (!MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(photoId)) {
         return false;
     }
 

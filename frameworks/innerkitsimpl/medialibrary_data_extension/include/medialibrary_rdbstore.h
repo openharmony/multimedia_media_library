@@ -74,6 +74,7 @@ public:
     EXPORT static bool HasColumnInTable(RdbStore &store, const std::string &columnName, const std::string &tableName);
     static void AddColumnIfNotExists(
         RdbStore &store, const std::string &columnName, const std::string &columnType, const std::string &tableName);
+    EXPORT static int32_t QueryPragma(const std::string &key, int64_t &value);
 
 private:
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

@@ -323,7 +323,10 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
 
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         int32_t changedRows = 0;
-        cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+        std::vector<string> perms = { PERM_READ_IMAGEVIDEO, PERM_WRITE_IMAGEVIDEO };
+        if (PermissionUtils::CheckHasPermission(perms)) {
+            cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+        }
         changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
         if (changedRows <= 0) {
             MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
@@ -672,6 +675,15 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
     return updatedRows;
 }
 
+static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd)
+{
+    NativeRdb::RdbPredicates rdbPredicate = RdbUtils::ToPredicates(cmd.GetDataSharePred(),
+        PhotoColumn::PHOTOS_TABLE);
+    vector<string> notifyUris = rdbPredicate.GetWhereArgs();
+    MediaLibraryRdbStore::ReplacePredicatesUriToId(rdbPredicate);
+    return MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicate, false, true);
+}
+
 static int32_t GetHiddenState(const ValuesBucket &values)
 {
     ValueObject obj;
@@ -923,6 +935,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return BatchSetFavorite(cmd);
         case OperationType::BATCH_UPDATE_USER_COMMENT:
             return BatchSetUserComment(cmd);
+        case OperationType::DISCARD_CAMERA_PHOTO:
+            return DiscardCameraPhoto(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
