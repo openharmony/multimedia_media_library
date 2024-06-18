@@ -1222,10 +1222,15 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
             UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
         }
         if (fd.Get() < 0) {
+            int err = errno;
+            std::string fileParentPath = MediaFileUtils::GetParentPath(tempFileName);
             MEDIA_ERR_LOG("save failed! status %{public}d, filePath: %{public}s exists: %{public}d, parent path "
-                "exists: %{public}d", errno, Desensitize(tempFileName).c_str(), MediaFileUtils::IsFileExists(
-                    tempFileName), MediaFileUtils::IsFileExists(MediaFileUtils::GetParentPath(tempFileName)));
-            return -errno;
+                "exists: %{public}d", err, Desensitize(tempFileName).c_str(), MediaFileUtils::IsFileExists(
+                    tempFileName), MediaFileUtils::IsFileExists(fileParentPath));
+            if (err == EACCES) {
+                MediaFileUtils::PrintStatInformation(fileParentPath);
+            }
+            return -err;
         }
     }
     int ret = write(fd.Get(), output, writeSize);
