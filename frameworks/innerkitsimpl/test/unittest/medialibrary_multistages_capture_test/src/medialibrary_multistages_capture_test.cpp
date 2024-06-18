@@ -769,7 +769,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_0
 HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_normal_002, TestSize.Level1)
 {
     MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_normal_002 Start");
-    // test 2 PhotoColumn::PHOTO_SUBTYPE + ！PhotoSubType::MOVING_PHOTO
+    // test 2 PhotoColumn::PHOTO_SUBTYPE + !PhotoSubType::MOVING_PHOTO
     auto fileId = PrepareForFirstVisit();
     EXPECT_GT(fileId, 0);
 
