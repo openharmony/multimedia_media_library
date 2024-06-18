@@ -43,7 +43,7 @@ public:
     EXPORT static MultiStagesCaptureManager& GetInstance();
     bool Init();
 
-    void UpdateLowQualityDbInfo(MediaLibraryCommand &cmd);
+    EXPORT int32_t UpdateLowQualityDbInfo(MediaLibraryCommand &cmd);
     void UpdateLocation(int32_t fileId, const std::string &path, double longitude, double latitude);
 
     std::shared_ptr<OHOS::NativeRdb::ResultSet> HandleMultiStagesOperation(MediaLibraryCommand &cmd,

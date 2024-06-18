@@ -115,7 +115,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesCaptureManager::HandleMultiSta
     return nullptr;
 }
 
-void MultiStagesCaptureManager::UpdateLowQualityDbInfo(MediaLibraryCommand &cmd)
+int32_t MultiStagesCaptureManager::UpdateLowQualityDbInfo(MediaLibraryCommand &cmd)
 {
     MediaLibraryCommand cmdLocal (OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     auto values = cmd.GetValueBucket();
@@ -135,6 +135,7 @@ void MultiStagesCaptureManager::UpdateLowQualityDbInfo(MediaLibraryCommand &cmd)
     if (result != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("update failed");
     }
+    return result;
 }
 
 void MultiStagesCaptureManager::UpdateLocation(int32_t fileId, const string &path, double longitude, double latitude)
