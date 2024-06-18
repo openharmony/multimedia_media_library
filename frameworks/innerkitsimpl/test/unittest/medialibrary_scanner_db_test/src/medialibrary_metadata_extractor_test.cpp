@@ -119,16 +119,17 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_FillExtractedMetadata_test_002, Tes
     data->SetFilePath(path);
     data->SetFileDateModified(static_cast<int64_t>(11));
     std::shared_ptr<Media::Meta> meta = std::make_shared<Media::Meta>();
-    meta->SetData(Tag::MEDIA_LONGITUDE, 1.2);
-    meta->SetData(Tag::MEDIA_LATITUDE, 138.2);
+    float tempFloat = 1.2;
+    meta->SetData(Tag::MEDIA_LONGITUDE, tempFloat);
+    meta->SetData(Tag::MEDIA_LATITUDE, tempFloat);
     unordered_map<int32_t, std::string> resultMap;
     resultMap = {{AV_KEY_ALBUM, "a"}, {AV_KEY_ARTIST, "a"}, {AV_KEY_DURATION, "a"}, {AV_KEY_DATE_TIME_FORMAT, "a"},
         {AV_KEY_VIDEO_HEIGHT, "a"}, {AV_KEY_VIDEO_WIDTH, "a"}, {AV_KEY_MIME_TYPE, "a"}, {AV_KEY_MIME_TYPE, "a"},
         {AV_KEY_VIDEO_ORIENTATION, "a"}, {AV_KEY_VIDEO_IS_HDR_VIVID, "a"}, {AV_KEY_TITLE, "a"}, {AV_KEY_GENRE, "a"}};
     MetadataExtractor::FillExtractedMetadata(resultMap, meta, data);
     EXPECT_EQ(data->GetAlbum(), "a");
-    EXPECT_EQ(data->GetLongitude(), 1.2);
-    EXPECT_EQ(data->GetLatitude(), 138.2);
+    EXPECT_EQ(data->GetLongitude(), tempFloat);
+    EXPECT_EQ(data->GetLatitude(), tempFloat);
 }
 } // namespace Media
 } // namespace OHOS
