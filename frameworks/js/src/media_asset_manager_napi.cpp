@@ -988,7 +988,7 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(const std::string &requestUri
         NAPI_ERR_LOG("get image fd failed, %{public}d", errno);
         return;
     }
-    size_t imgLen = lseek(imageFd, 0, SEEK_END);
+    ssize_t imgLen = lseek(imageFd, 0, SEEK_END);
     void* buffer = nullptr;
     napi_create_arraybuffer(env, imgLen, &buffer, &arrayBuffer);
     lseek(imageFd, 0, SEEK_SET);

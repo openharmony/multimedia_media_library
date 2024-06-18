@@ -48,7 +48,7 @@ private:
 
     /* delayed trigger */
     OHOS::Utils::Timer timer_;
-    int32_t timerId_ = 0;
+    uint32_t timerId_ = 0;
     bool isPending_ = false;
     std::mutex syncMutex_;
 

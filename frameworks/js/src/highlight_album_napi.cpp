@@ -329,7 +329,7 @@ static void JSGetHighlightResourceExecute(napi_env env, void *data)
         return;
     }
 
-    size_t readBytes = read(uniqueFd.Get(), arrayBufferData, fileLen);
+    ssize_t readBytes = read(uniqueFd.Get(), arrayBufferData, fileLen);
     if (readBytes != fileLen) {
         NAPI_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, "
             "error: %{public}d", readBytes, fileLen, errno);

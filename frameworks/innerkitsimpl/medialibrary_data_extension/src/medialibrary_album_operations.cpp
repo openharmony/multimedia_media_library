@@ -362,7 +362,7 @@ static size_t QueryCloudPhotoThumbnailVolumn(shared_ptr<MediaLibraryUnistore>& u
         MEDIA_ERR_LOG("Cloud photo count error, count is %{public}d", cloudPhotoCount);
         return 0;
     }
-    size_t size = cloudPhotoCount * averageThumbnailSize;
+    size_t size = static_cast<size_t>(cloudPhotoCount) * averageThumbnailSize;
     return size;
 }
 

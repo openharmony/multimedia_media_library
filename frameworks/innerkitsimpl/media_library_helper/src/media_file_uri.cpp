@@ -517,7 +517,7 @@ void MediaFileUri::GetTimeIdFromUri(const std::vector<std::string> &uriBatch, st
             MEDIA_ERR_LOG("GetTimeIdFromUri find indexEnd for time_id failed: %{private}s", uri.c_str());
             continue;
         }
-        int32_t timeIdLen = indexEnd - indexStart - ML_URI_TIME_ID.length();
+        uint32_t timeIdLen = indexEnd - indexStart - ML_URI_TIME_ID.length();
         if (indexEnd <= uri.size()) {
             timeIdBatch.emplace_back(uri.substr(indexStart + ML_URI_TIME_ID.length(), timeIdLen));
         }
