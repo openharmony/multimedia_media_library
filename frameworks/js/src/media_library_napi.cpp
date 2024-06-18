@@ -3133,6 +3133,7 @@ static napi_value ParseArgsGetAssets(napi_env env, napi_callback_info info,
     predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     if (context->assetType == TYPE_PHOTO) {
         predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+        predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(false));
     }
 
     napi_value result = nullptr;
@@ -3528,8 +3529,8 @@ static napi_value ParseArgsStartCreateThumbnailTask(napi_env env,
     CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(
         env, info, context, ARGS_TWO, ARGS_TWO), JS_ERR_PARAMETER_INVALID);
     CHECK_COND_WITH_MESSAGE(env, context->callbackRef, "Can not get callback function");
-    CHECK_ARGS(env, MediaLibraryNapiUtils::GetFetchOption(env,
-        context->argv[PARAM0], ASSET_FETCH_OPT, context), JS_INNER_FAIL);
+    CHECK_ARGS(env, MediaLibraryNapiUtils::ParsePredicates(env,
+        context->argv[PARAM0], context, ASSET_FETCH_OPT), JS_INNER_FAIL);
     
     napi_value result = nullptr;
     CHECK_ARGS(env, napi_get_boolean(env, true, &result), JS_INNER_FAIL);

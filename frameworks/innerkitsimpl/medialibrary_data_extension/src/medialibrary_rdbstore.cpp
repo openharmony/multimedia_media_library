@@ -102,7 +102,7 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
 
 int32_t MediaLibraryRdbStore::Init()
 {
-    MEDIA_INFO_LOG("Init rdb store");
+    MEDIA_INFO_LOG("Init rdb store: [version: %{public}d]", MEDIA_RDB_VERSION);
     if (rdbStore_ != nullptr) {
         return E_OK;
     }
@@ -112,7 +112,7 @@ int32_t MediaLibraryRdbStore::Init()
     rdbStore_ = RdbHelper::GetRdbStore(config_, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("GetRdbStore is failed ");
-        return E_ERR;
+        return errCode;
     }
     MEDIA_INFO_LOG("SUCCESS");
     return E_OK;
@@ -374,6 +374,22 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const string &sql)
         return E_HAS_DB_ERROR;
     }
     return ret;
+}
+
+int32_t MediaLibraryRdbStore::QueryPragma(const string &key, int64_t &value)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+    std::shared_ptr<ResultSet> resultSet = rdbStore_->QuerySql("PRAGMA " + key);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->QuerySql failed");
+        return E_HAS_DB_ERROR;
+    }
+    resultSet->GetLong(0, value);
+    resultSet->Close();
+    return E_OK;
 }
 
 void MediaLibraryRdbStore::BuildValuesSql(const NativeRdb::ValuesBucket &values, vector<ValueObject> &bindArgs,
@@ -994,6 +1010,7 @@ static int32_t ExecuteSql(RdbStore &store)
 
 int32_t MediaLibraryDataCallBack::OnCreate(RdbStore &store)
 {
+    MEDIA_INFO_LOG("Rdb OnCreate");
     if (ExecuteSql(store) != NativeRdb::E_OK) {
         return NativeRdb::E_ERROR;
     }
@@ -2251,6 +2268,16 @@ void AddOwnerAppId(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddOwnerAppIdToFiles(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + MEDIALIBRARY_TABLE + " ADD COLUMN " + MediaColumn::MEDIA_OWNER_APPID + " TEXT"
+    };
+    MEDIA_INFO_LOG("start add owner_appid column to files table");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("add owner_appid column to files table finished");
+}
+
 void AddDynamicRangeType(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2365,6 +2392,7 @@ static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_MULTISTAGES_CAPTURE) {
         AddMultiStagesCaptureColumns(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
@@ -2425,6 +2453,7 @@ static void UpgradeGalleryFeatureTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_DYNAMIC_RANGE_TYPE) {
         AddDynamicRangeType(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
@@ -2492,6 +2521,7 @@ static void UpgradeVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_MODIFY_SOURCE_ALBUM_TRIGGERS) {
         ModifySourceAlbumTriggers(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
@@ -2511,6 +2541,7 @@ static void UpgradeExtendedVisionTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_SEGMENTATION_COLUMNS) {
         AddSegmentationColumns(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
@@ -2518,6 +2549,7 @@ static void UpgradeAlbumTable(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_IS_LOCAL_ALBUM) {
         AddIsLocalAlbum(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
@@ -2533,6 +2565,7 @@ static void UpgradeHistory(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_SHOOTING_MODE_CLOUD) {
         AddBussinessRecordAlbum(store);
     }
+    // !! Do not add upgrade code here !!
 }
 
 static void UpdatePhotosSearchUpdateTrigger(RdbStore& store)
@@ -2545,7 +2578,16 @@ static void UpdatePhotosSearchUpdateTrigger(RdbStore& store)
     ExecSqls(executeSqlStrs, store);
 }
 
-static void CreatePhotosExtTable(RdbStore& store)
+static void AddIsTemp(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_IS_TEMP + " INT DEFAULT 0"
+    };
+    MEDIA_INFO_LOG("Start add is_temp on Photos in upgrade");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void CreatePhotosExtTable(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
         PhotoExtColumn::CREATE_PHOTO_EXT_TABLE
@@ -2607,6 +2649,14 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_UPDATE_VISION_TRIGGER_FOR_VIDEO_LABEL) {
         UpdateVisionTriggerForVideoLabel(store);
     }
+
+    if (oldVersion < VERSION_ADD_IS_TEMP) {
+        AddIsTemp(store);
+    }
+
+    if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
+        AddOwnerAppIdToFiles(store);
+    }
 }
 
 static void CheckDateAdded(RdbStore &store)
@@ -2639,7 +2689,7 @@ static void AlwaysCheck(RdbStore &store)
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
-    MEDIA_DEBUG_LOG("OnUpgrade old:%d, new:%d", oldVersion, newVersion);
+    MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
     g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {
         VersionAddCloud(store);
@@ -2691,9 +2741,9 @@ int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion,
     UpgradeExtendedVisionTable(store, oldVersion);
     UpgradeAlbumTable(store, oldVersion);
     UpgradeHistory(store, oldVersion);
+    UpgradeExtension(store, oldVersion);
 
     AlwaysCheck(store);
-    UpgradeExtension(store, oldVersion);
     if (!g_upgradeErr) {
         VariantMap map = {{KEY_PRE_VERSION, oldVersion}, {KEY_AFTER_VERSION, newVersion}};
         PostEventUtils::GetInstance().PostStatProcess(StatType::DB_UPGRADE_STAT, map);

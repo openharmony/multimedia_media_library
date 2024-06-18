@@ -116,6 +116,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
+    values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
 
     string uri = PAH_CREATE_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));

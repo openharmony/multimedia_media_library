@@ -158,7 +158,7 @@ std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromAudio(int32_t offse
         MEDIA_ERR_LOG("audioRdb_ is nullptr, Maybe init failed.");
         return result;
     }
-    std::string queryAllAudioByCount = QUERY_ALL_AUDIOS_FROM_AUDIODB + "limit " + std::to_string(offset) + ", " +
+    std::string queryAllAudioByCount = QUERY_ALL_AUDIOS_FROM_AUDIODB + " limit " + std::to_string(offset) + ", " +
         std::to_string(QUERY_COUNT);
     auto resultSet = audioRdb_->QuerySql(queryAllAudioByCount);
     if (resultSet == nullptr) {

@@ -101,6 +101,13 @@ int32_t DfxDatabaseUtils::QueryAnalysisVersion(const std::string &table, const s
     return static_cast<int32_t> (count);
 }
 
+int32_t DfxDatabaseUtils::QueryDbVersion()
+{
+    int64_t dbVersion = 0;
+    MediaLibraryRdbStore::QueryPragma("user_version", dbVersion);
+    return static_cast<int32_t> (dbVersion);
+}
+
 int32_t DfxDatabaseUtils::QueryInt(const NativeRdb::AbsRdbPredicates &predicates,
     const std::vector<std::string> &columns, const std::string &queryColumn, int32_t &value)
 {
