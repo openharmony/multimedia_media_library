@@ -169,6 +169,17 @@ int32_t MediaFileUtils::RemoveDirectory(const string &path)
     return nftw(path.c_str(), UnlinkCb, OPEN_FDS, FTW_DEPTH | FTW_PHYS);
 }
 
+void MediaFileUtils::PrintStatInformation(const std::string& path)
+{
+    struct stat statInfo {};
+    if ((stat(path.c_str(), &statInfo)) == E_SUCCESS) {
+        MEDIA_INFO_LOG("path:%{public}s uid:%{public}d, gid:%{public}d, mode:%{public}d",
+            path.c_str(), statInfo.st_uid, statInfo.st_uid, statInfo.st_mode);
+    } else {
+        MEDIA_INFO_LOG("path:%{public}s is not exist", path.c_str());
+    }
+}
+
 bool MediaFileUtils::Mkdir(const string &subStr, shared_ptr<int> errCodePtr)
 {
     mode_t mask = umask(0);
@@ -176,9 +187,13 @@ bool MediaFileUtils::Mkdir(const string &subStr, shared_ptr<int> errCodePtr)
         if (errCodePtr != nullptr) {
             *errCodePtr = errno;
         }
-        MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
+        int err = errno;
+        MEDIA_ERR_LOG("Failed to create directory %{public}d, path:%{public}s", err, subStr.c_str());
+        if (err == EACCES) {
+            PrintStatInformation(GetParentPath(subStr));
+        }
         umask(mask);
-        return (errno == EEXIST) ? true : false;
+        return (err == EEXIST) ? true : false;
     }
     umask(mask);
     return true;
@@ -968,9 +983,13 @@ int32_t MediaFileUtils::ModifyAsset(const string &oldPath, const string &newPath
     }
     err = rename(oldPath.c_str(), newPath.c_str());
     if (err < 0) {
+        int err = errno;
         MEDIA_ERR_LOG("Failed rename, errno: %{public}d, old path: %{public}s exists: %{public}d, "
-            "new path: %{public}s exists: %{public}d", errno, oldPath.c_str(), IsFileExists(
+            "new path: %{public}s exists: %{public}d", err, oldPath.c_str(), IsFileExists(
                 oldPath), newPath.c_str(), IsFileExists(newPath));
+        if (err == EACCES) {
+            PrintStatInformation(GetParentPath(oldPath));
+        }
         return E_FILE_OPER_FAIL;
     }
 
