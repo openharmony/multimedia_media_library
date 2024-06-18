@@ -1139,7 +1139,10 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
             id.c_str(), fileAsset->GetPhotoSubType());
         movingPhotoVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
     }
-    if (fileAsset->GetPhotoEditTime() == 0 && fileAsset->GetMovingPhotoEffectMode() == 0) {
+
+    string editDataCameraPath = GetEditDataCameraPath(path);
+    bool hasEditDataCamera = MediaFileUtils::IsFileExists(editDataCameraPath);
+    if (fileAsset->GetPhotoEditTime() == 0 && fileAsset->GetMovingPhotoEffectMode() == 0 && !hasEditDataCamera) {
         return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? movingPhotoVideoPath : path, "r");
     }
     string sourcePath = isMovingPhotoVideoRequest ?
@@ -1971,10 +1974,25 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     MEDIA_INFO_LOG("AddFiltersToPhoto inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
         inputPath.c_str(), outputPath.c_str(), editdata.c_str());
     std::string info = editdata;
-    int32_t ret = MediaChangeEffect::TakeEffect(inputPath, outputPath, info);
+    size_t lastSlash = outputPath.rfind('/');
+    CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
+        "Failed to check outputPath: %{public}s", outputPath.c_str());
+    string tempOutputPath = outputPath.substr(0, lastSlash) + "/filters_" + outputPath.substr(lastSlash + 1);
+    int32_t ret = MediaFileUtils::CreateAsset(tempOutputPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS || ret == E_FILE_EXIST, E_HAS_FS_ERROR,
+        "Failed to create temp filters file %{private}s", tempOutputPath.c_str());
+    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPhoto: TakeEffect error. ret = %d", ret);
         return E_ERR;
+    }
+
+    ret = rename(tempOutputPath.c_str(), outputPath.c_str());
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Failed to rename temp filters file, ret: %{public}d, errno: %{public}d", ret, errno);
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
+            "Failed to delete temp filters file, errno: %{public}d", errno);
+        return ret;
     }
     MEDIA_INFO_LOG("AddFiltersToPhoto finish");
     MediaLibraryObjectUtils::ScanFileAsync(outputPath, to_string(fileId), MediaLibraryApi::API_10);
