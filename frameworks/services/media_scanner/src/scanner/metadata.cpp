@@ -43,6 +43,7 @@ Metadata::Metadata()
     orientation_(FILE_ORIENTATION_DEFAULT),
     shootingMode_(FILE_SHOOTINGMODE_DEFAULT),
     lastVisitTime_(FILE_LAST_VISIT_TIME_DEFAULT),
+    dynamicRangeType_(FILE_DYNAMIC_RANGE_TYPE_DEFAULT),
     dateTaken_(FILE_DATE_TAKEN_DEFAULT),
     longitude_(FILE_LONGITUDE_DEFAULT),
     latitude_(FILE_LATITUDE_DEFAULT),
