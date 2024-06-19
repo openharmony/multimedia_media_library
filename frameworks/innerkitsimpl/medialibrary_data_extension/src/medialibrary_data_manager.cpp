@@ -140,15 +140,15 @@ MediaLibraryDataManager* MediaLibraryDataManager::GetInstance()
 
 static DataShare::DataShareExtAbility *MediaDataShareCreator(const unique_ptr<Runtime> &runtime)
 {
-    MEDIA_DEBUG_LOG("MediaLibraryCreator::%{public}s", __func__);
+    MEDIA_INFO_LOG("MediaLibraryCreator::%{public}s", __func__);
     return  MediaDataShareExtAbility::Create(runtime);
 }
 
 __attribute__((constructor)) void RegisterDataShareCreator()
 {
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::%{public}s", __func__);
+    MEDIA_INFO_LOG("MediaLibraryDataManager::%{public}s", __func__);
     DataShare::DataShareExtAbility::SetCreator(MediaDataShareCreator);
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::%{public}s End", __func__);
+    MEDIA_INFO_LOG("MediaLibraryDataManager::%{public}s End", __func__);
 }
 
 static void MakeRootDirs(AsyncTaskData *data)
