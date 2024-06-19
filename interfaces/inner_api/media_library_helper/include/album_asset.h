@@ -80,8 +80,8 @@ private:
     ResultNapiType resultNapiType_;
 
 #ifdef MEDIALIBRARY_COMPATIBILITY
-    PhotoAlbumType albumType_;
-    PhotoAlbumSubType albumSubType_;
+    PhotoAlbumType albumType_ = PhotoAlbumType::USER;
+    PhotoAlbumSubType albumSubType_ = PhotoAlbumSubType::USER_GENERIC;
 #endif
 };
 } // namespace Media
