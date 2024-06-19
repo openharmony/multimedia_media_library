@@ -184,7 +184,7 @@ private:
     string shootingMode_;
     string shootingModeTag_;
     int64_t lastVisitTime_;
-    int32_t dynamicRangeType_ {0};
+    int32_t dynamicRangeType_;
 
     // video, audio, image
     int64_t dateTaken_;
