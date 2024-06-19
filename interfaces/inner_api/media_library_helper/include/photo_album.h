@@ -97,11 +97,11 @@ private:
     int64_t dateModified_ {0};
     int32_t count_;
     int32_t imageCount_ {0};
-    int32_t videoCount_  {0};
-    double latitude_  {0.0};
-    double longitude_  {0.0};
+    int32_t videoCount_ {0};
+    double latitude_ {0.0};
+    double longitude_ {0.0};
     std::string relativePath_;
-    int32_t displayLevel_  {0};
+    int32_t displayLevel_ {0};
 
     ResultNapiType resultNapiType_ = ResultNapiType::TYPE_MEDIALIBRARY;
     bool hiddenOnly_ = false;
