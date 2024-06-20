@@ -1140,15 +1140,11 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
         movingPhotoVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
     }
 
-    string editDataCameraPath = GetEditDataCameraPath(path);
-    bool hasEditDataCamera = MediaFileUtils::IsFileExists(editDataCameraPath);
-    if (fileAsset->GetPhotoEditTime() == 0 && fileAsset->GetMovingPhotoEffectMode() == 0 && !hasEditDataCamera) {
-        return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? movingPhotoVideoPath : path, "r");
-    }
     string sourcePath = isMovingPhotoVideoRequest ?
         MediaFileUtils::GetMovingPhotoVideoPath(GetEditDataSourcePath(path)) :
         GetEditDataSourcePath(path);
     if (sourcePath.empty() || !MediaFileUtils::IsFileExists(sourcePath)) {
+        MEDIA_INFO_LOG("sourcePath does not exist: %{private}s", sourcePath.c_str());
         return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? movingPhotoVideoPath : path, "r");
     } else {
         return OpenFileWithPrivacy(sourcePath, "r");
