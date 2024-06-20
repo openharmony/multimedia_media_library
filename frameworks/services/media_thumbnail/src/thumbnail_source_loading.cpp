@@ -294,7 +294,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
     if (data_.orientation == 0) {
         err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, data_.orientation);
         if (err != E_OK) {
-            MEDIA_DEBUG_LOG("SourceLoader Failed to get ImageProperty, path: %{private}s", data_.path.c_str());
+            MEDIA_ERR_LOG("SourceLoader Failed to get ImageProperty, path: %{private}s", data_.path.c_str());
         }
     }
 
