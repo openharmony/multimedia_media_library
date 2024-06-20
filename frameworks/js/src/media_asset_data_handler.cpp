@@ -34,21 +34,20 @@ NapiMediaAssetDataHandler::NapiMediaAssetDataHandler(napi_env env, napi_ref data
     dataHandlerRef_ = dataHandler;
 }
 
-NapiMediaAssetDataHandler::~NapiMediaAssetDataHandler()
+void NapiMediaAssetDataHandler::DeleteNapiReference(napi_env env)
 {
     if (dataHandlerRef_ != nullptr) {
-        napi_delete_reference(env_, dataHandlerRef_);
+        if (env != nullptr) {
+            napi_delete_reference(env, dataHandlerRef_);
+        } else {
+            napi_delete_reference(env_, dataHandlerRef_);
+        }
     }
 }
 
 ReturnDataType NapiMediaAssetDataHandler::GetReturnDataType()
 {
     return dataType_;
-}
-
-napi_env NapiMediaAssetDataHandler::GetEnv()
-{
-    return env_;
 }
 
 std::string NapiMediaAssetDataHandler::GetRequestUri()
@@ -76,7 +75,7 @@ NotifyMode NapiMediaAssetDataHandler::GetNotifyMode()
     return notifyMode_;
 }
 
-void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_value arg, napi_value extraInfo)
+void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_env env, napi_value arg, napi_value extraInfo)
 {
     if (dataHandlerRef_ == nullptr) {
         NAPI_ERR_LOG("JsOnDataPrepared js function is null");
@@ -84,7 +83,7 @@ void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_value arg, napi_value extr
     }
 
     napi_value callback;
-    napi_status status = napi_get_reference_value(env_, dataHandlerRef_, &callback);
+    napi_status status = napi_get_reference_value(env, dataHandlerRef_, &callback);
     if (status != napi_ok) {
         NAPI_ERR_LOG("JsOnDataPrepared napi_get_reference_value fail, napi status: %{public}d",
             static_cast<int>(status));
@@ -92,7 +91,7 @@ void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_value arg, napi_value extr
     }
 
     napi_value jsOnDataPrepared;
-    status = napi_get_named_property(env_, callback, ON_DATA_PREPARED_FUNC, &jsOnDataPrepared);
+    status = napi_get_named_property(env, callback, ON_DATA_PREPARED_FUNC, &jsOnDataPrepared);
     if (status != napi_ok) {
         NAPI_ERR_LOG("JsOnDataPrepared napi_get_named_property fail, napi status: %{public}d",
             static_cast<int>(status));
@@ -111,10 +110,10 @@ void NapiMediaAssetDataHandler::JsOnDataPrepared(napi_value arg, napi_value extr
         argc = ARGS_ONE;
     }
     napi_value promise;
-    status = napi_call_function(env_, nullptr, jsOnDataPrepared, argc, argv, &promise);
+    status = napi_call_function(env, nullptr, jsOnDataPrepared, argc, argv, &promise);
     if (status != napi_ok) {
         NAPI_ERR_LOG("call js function failed %{public}d", static_cast<int32_t>(status));
-        NapiError::ThrowError(env_, JS_INNER_FAIL, "calling onDataPrepared failed");
+        NapiError::ThrowError(env, JS_INNER_FAIL, "calling onDataPrepared failed");
     }
 }
 } // namespace Media
