@@ -560,10 +560,8 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     // boardcast operation
     if (oprnType == OperationType::SCAN) {
         return MediaScannerManager::GetInstance()->ScanDir(ROOT_MEDIA_DIR, nullptr);
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
     } else if (oprnType == OperationType::DELETE_TOOL) {
         return MediaLibraryAssetOperations::DeleteToolOperation(cmd);
-#endif
     }
 
     bool solved = false;

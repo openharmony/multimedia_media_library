@@ -195,9 +195,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { MEDIA_QUERYOPRN_QUERYVOLUME, OperationType::QUERY },
         { MEDIA_BOARDCASTOPRN, OperationType::SCAN },
         { OPRN_SCAN, OperationType::SCAN },
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
         { OPRN_DELETE_BY_TOOL, OperationType::DELETE_TOOL },
-#endif
         { MEDIA_FILEOPRN_COPYASSET, OperationType::COPY },
         { MEDIA_DIROPRN_DELETEDIR, OperationType::DELETE },
         { MEDIA_DIROPRN_FMS_CREATEDIR, OperationType::CREATE },
