@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 
-#include <string>
-#include <vector>
-#include <unistd.h>
+#define MLOG_TAG "Mediatool"
 
 #include "control_main.h"
+#include "media_log.h"
+#include <string>
+#include <unistd.h>
+#include <vector>
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -28,6 +30,7 @@ int main(int argc, char *argv[])
 {
     int32_t id = getuid();
     if (id != 0 && id != SHELL_UID) {
+        MEDIA_ERR_LOG("Invalid uid");
         return 0;
     }
     std::vector<std::string> args;
