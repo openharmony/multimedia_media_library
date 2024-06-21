@@ -1880,7 +1880,7 @@ static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *d
 
     auto *obj = context->objectInfo;
     nlohmann::json allExifJson;
-    if (!obj->GetAllExif().empty()) {
+    if (!obj->GetAllExif().empty() && nlohmann::json::accept(obj->GetAllExif())) {
         allExifJson = nlohmann::json::parse(obj->GetAllExif());
     }
     if (allExifJson.is_discarded() || obj->GetAllExif().empty()) {

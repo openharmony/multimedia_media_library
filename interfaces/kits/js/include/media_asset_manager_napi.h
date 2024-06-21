@@ -47,7 +47,7 @@ struct AssetHandler {
     MediaAssetDataHandlerPtr dataHandler;
     napi_threadsafe_function threadSafeFunc;
     MultiStagesCapturePhotoStatus photoQuality = MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
-    bool needsExtraInfo;
+    bool needsExtraInfo = false;
 
     AssetHandler(const std::string &photoId, const std::string &requestId, const std::string &uri,
         const MediaAssetDataHandlerPtr &handler, napi_threadsafe_function func)
