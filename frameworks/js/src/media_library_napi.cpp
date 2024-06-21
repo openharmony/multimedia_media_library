@@ -3173,6 +3173,7 @@ static napi_value ParseArgsIndexof(napi_env env, napi_callback_info info,
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
 
     context->fetchColumn.clear();
     MediaFileUri photoUri(uri);
