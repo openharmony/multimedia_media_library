@@ -48,6 +48,7 @@
 #include "dfx_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_utils.h"
+#include "thumbnail_generate_worker_manager.h"
 
 using namespace OHOS::AAFwk;
 
@@ -179,6 +180,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
         case StatusEventType::BATTERY_CHANGED:
             isPowerSufficient_ = want.GetIntParam(COMMON_EVENT_KEY_BATTERY_CAPACITY,
                 COMMON_EVENT_KEY_GET_DEFAULT_PARAM) >= PROPER_DEVICE_BATTERY_CAPACITY;
+            ThumbnailGenerateWorkerManager::GetInstance().TryCloseThumbnailWorkerTimer();
             break;
         case StatusEventType::THERMAL_LEVEL_CHANGED:
             isDeviceTemperatureProper_ = want.GetIntParam(COMMON_EVENT_KEY_DEVICE_TEMPERATURE,
