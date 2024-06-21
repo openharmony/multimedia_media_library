@@ -1365,6 +1365,10 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
         return E_ERR;
     }
     DeleteNotifyAsyncTaskData* taskData = new (std::nothrow) DeleteNotifyAsyncTaskData();
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return E_ERR;
+    }
     taskData->notifyUri = notifyUri;
     taskData->trashDate = trashDate;
     shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(
