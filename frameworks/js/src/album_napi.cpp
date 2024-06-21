@@ -677,6 +677,7 @@ static void UpdateSelection(AlbumNapiAsyncContext *context)
         context->predicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, MEDIA_TYPE_ALBUM);
         context->predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, context->objectPtr->GetAlbumId());
         context->predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+        context->predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
         MediaLibraryNapiUtils::UpdateMediaTypeSelections(context);
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY

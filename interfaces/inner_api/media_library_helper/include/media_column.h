@@ -176,6 +176,8 @@ public:
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();
+
+    static const std::string PHOTOS_QUERY_FILTER EXPORT;
 };
 
 class AudioColumn : public MediaColumn {
