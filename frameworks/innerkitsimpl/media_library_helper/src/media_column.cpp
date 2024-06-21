@@ -410,8 +410,7 @@ const std::string MediaColumn::ASSETS_QUERY_FILTER =
     PhotoColumn::PHOTO_SYNC_STATUS + " = 0" + " AND " +
     MediaColumn::MEDIA_DATE_TRASHED + " = 0" + " AND " +
     MediaColumn::MEDIA_HIDDEN + " = 0" + " AND " +
-    MediaColumn::MEDIA_TIME_PENDING + " = 0 " + " AND " +
-    PhotoColumn::PHOTO_IS_TEMP = " = 0";
+    MediaColumn::MEDIA_TIME_PENDING + " = 0 ";
 
 const std::string PhotoExtColumn::PHOTOS_EXT_TABLE = "tab_photos_ext";
 
@@ -424,5 +423,11 @@ const std::string PhotoExtColumn::CREATE_PHOTO_EXT_TABLE =
     PHOTO_ID + " INTEGER PRIMARY KEY, " +
     THUMBNAIL_SIZE + " BIGINT DEFAULT 0)";
 
+// For Photos table query filter
+const std::string PhotoColumn::PHOTOS_QUERY_FILTER =
+    MediaColumn::MEDIA_DATE_TRASHED + " = 0" + " AND " +
+    MediaColumn::MEDIA_HIDDEN + " = 0" + " AND " +
+    MediaColumn::MEDIA_TIME_PENDING + " = 0 " + " AND " +
+    PhotoColumn::PHOTO_IS_TEMP = " = 0 ";
 }  // namespace Media
 }  // namespace OHOS

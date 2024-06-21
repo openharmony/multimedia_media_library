@@ -322,7 +322,8 @@ int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::
                     ->Limit(count, start)
                     ->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0")
                     ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, "0")
-                    ->EqualTo(MediaColumn::MEDIA_HIDDEN, "0");
+                    ->EqualTo(MediaColumn::MEDIA_HIDDEN, "0")
+                    ->EqualTo(PhotoColumn::PHOTO_IS_TEMP, "0");
     std::vector<std::string> columns = {MediaColumn::MEDIA_ID, MediaColumn::MEDIA_DATE_ADDED};
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     AddQueryFilter(rdbPredicates);
