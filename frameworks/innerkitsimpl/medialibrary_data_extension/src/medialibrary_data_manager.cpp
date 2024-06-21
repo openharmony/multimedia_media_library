@@ -225,7 +225,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
 
     MimeTypeUtils::InitMimeTypeMap();
     errCode = MakeDirQuerySetMap(dirQuerySetMap_);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at MakeDirQuerySetMap");
+    CHECK_AND_WARN_LOG(errCode == E_OK, "failed at MakeDirQuerySetMap");
 
     InitACLPermission();
     InitDatabaseACLPermission();
