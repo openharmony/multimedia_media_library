@@ -190,6 +190,11 @@ napi_value MediaLibraryBackupNapi::JSStartRestoreEx(napi_env env, napi_callback_
     napi_create_promise(env, &nativeDeferred, &result);
     RestoreExBlock *block = new (std::nothrow) RestoreExBlock {
         env, sceneCode, galleryAppName, mediaAppName, backupDir, restoreExInfo, nativeDeferred };
+    if (block == nullptr) {
+        NAPI_ERR_LOG("Failed to new block");
+        delete work;
+        return result;
+    }
     work->data = reinterpret_cast<void *>(block);
     uv_queue_work(
         loop, work,

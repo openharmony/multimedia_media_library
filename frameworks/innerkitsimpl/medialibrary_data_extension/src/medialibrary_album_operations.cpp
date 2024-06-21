@@ -1740,7 +1740,7 @@ void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryUnistore> 
     std::string clearIsMeAlbum = "";
     if (count > 0) {
         string albumName = "";
-        int userDisplayLevel;
+        int userDisplayLevel = 0;
         GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumName);
         GetIntValueFromResultSet(resultSet, USER_DISPLAY_LEVEL, userDisplayLevel);
         int renameOperation = albumName != "" ? 1 : 0;

@@ -187,6 +187,10 @@ void MediaLibraryDataManager::ReCreateMediaDir()
         return;
     }
     AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return;
+    }
     shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
     if (makeRootDirTask != nullptr) {
         asyncWorker->AddTask(makeRootDirTask, true);

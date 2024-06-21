@@ -34,9 +34,14 @@ void CloudSyncObserver::OnChange(const ChangeInfo &changeInfo)
 {
     CloudSyncNotifyInfo notifyInfo = {changeInfo.uris_, changeInfo.changeType_};
     auto *taskData = new (nothrow) CloudSyncNotifyData(notifyInfo);
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return;
+    }
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
         MEDIA_ERR_LOG("Can not get asyncWorker");
+        delete taskData;
         return;
     }
     shared_ptr<MediaLibraryAsyncTask> notifyHandleAsyncTask = make_shared<MediaLibraryAsyncTask>(
