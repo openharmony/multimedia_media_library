@@ -67,6 +67,13 @@
         }                                              \
     } while (0)
 
+#define CHECK_AND_WARN_LOG(cond, fmt, ...)            \
+    do {                                               \
+        if (!(cond)) {                                 \
+            MEDIA_WARN_LOG(fmt, ##__VA_ARGS__);         \
+        }                                              \
+    } while (0)
+
 #define CHECK_AND_RETURN_RET(cond, ret)  \
     do {                                               \
         if (!(cond)) {                                 \
