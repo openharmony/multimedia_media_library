@@ -698,6 +698,47 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
     return true;
 }
 
+bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_NAME,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    rdbPredicates.Limit(ASTC_GENERATE_COUNT_AFTER_RESTORE);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err);
+        if (!data.path.empty()) {
+            infos.push_back(data);
+        }
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
 bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {

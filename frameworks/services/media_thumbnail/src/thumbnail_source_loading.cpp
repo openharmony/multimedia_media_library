@@ -96,7 +96,7 @@ std::string GetLcdExPath(const std::string &path)
     std::string suffix = "/THM_EX/" + THUMBNAIL_LCD_SUFFIX + ".jpg";
     return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
 }
-    
+
 bool IsLocalSourceAvailable(const std::string& path)
 {
     char tmpPath[PATH_MAX] = { 0 };
@@ -195,7 +195,7 @@ Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desire
     int lcdMinSide = std::min(lcdDesiredSize.width, lcdDesiredSize.height);
     int thumbMinSide = std::min(thumbDesiredSize.width, thumbDesiredSize.height);
     Size lcdDecodeSize = lcdMinSide < thumbMinSide ? thumbDecodeSize : lcdDesiredSize;
-    
+
     if (data.loaderOpts.decodeInThumbSize) {
         desiredSize = thumbDesiredSize;
         return thumbDecodeSize;
@@ -312,6 +312,12 @@ bool SourceLoader::CreateSourcePixelMap()
     if (state_ == SourceState::LOCAL_ORIGIN && data_.mediaType == MEDIA_TYPE_VIDEO) {
         return CreateVideoFramePixelMap();
     }
+
+    if (GetSourcePath == nullptr) {
+        MEDIA_ERR_LOG("GetSourcePath is nullptr.");
+        return false;
+    }
+
     std::string sourcePath = GetSourcePath(data_, error_);
     if (sourcePath.empty()) {
         MEDIA_ERR_LOG("SourceLoader source path unavailable,"
@@ -328,6 +334,10 @@ bool SourceLoader::CreateSourcePixelMap()
 
 bool SourceLoader::RunLoading()
 {
+    if (data_.loaderOpts.loadingStates.empty()) {
+        MEDIA_ERR_LOG("source loading run loading failed, the given states is empty");
+        return false;
+    }
     state_ = SourceState::BEGIN;
     data_.source = nullptr;
     SetCurrentStateFunction();
@@ -373,6 +383,11 @@ bool SourceLoader::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, I
     if (err != E_OK) {
         DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_GET_INFO, err);
         error_ = E_ERR;
+        return false;
+    }
+
+    if (IsSizeLargeEnough == nullptr) {
+        MEDIA_ERR_LOG("IsSizeLargeEnough is nullptr.");
         return false;
     }
 
