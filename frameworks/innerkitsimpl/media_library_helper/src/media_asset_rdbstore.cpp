@@ -263,7 +263,7 @@ std::shared_ptr<DataShare::DataShareResultSet> MediaAssetRdbStore::Query(
 
 bool IsNumber(const string& str)
 {
-    if (str.emnpty()) {
+    if (str.empty()) {
         MEDIA_ERR_LOG("IsNumber input is empty");
         return false;
     }
@@ -275,7 +275,7 @@ bool IsNumber(const string& str)
     return true;
 }
 
-int32_t GetInt32Val(const string& column, std::shared_ptr<NativeRdb::AbsShareResultSet>& resultSet)
+int32_t GetInt32Val(const string& column, std::shared_ptr<NativeRdb::AbsSharedResultSet>& resultSet)
 {
     int index;
     int32_t value = -1;

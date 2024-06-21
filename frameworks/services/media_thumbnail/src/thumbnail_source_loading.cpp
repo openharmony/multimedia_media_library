@@ -378,7 +378,7 @@ bool SourceLoader::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, I
 
     int32_t minSize = imageInfo.size.width < imageInfo.size.height ? imageInfo.size.width : imageInfo.size.height;
     if (!IsSizeLargeEnough(data_, minSize)) {
-        MEDIA_ERR_LOG("SourceLoader size not acceptable, width:%{public}d, height:%{public}d", imageInfo.size.width,
+        MEDIA_DEBUG_LOG("SourceLoader size not acceptable, width:%{public}d, height:%{public}d", imageInfo.size.width,
             imageInfo.size.height);
         return false;
     }
@@ -492,6 +492,10 @@ std::string CloudLcdSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
+        return true;
+    }
+    int photoShorterSide = data.photoWidth < data.photoHeight ? data.photoWidth : data.photoHeight;
+    if (photoShorterSide != 0 && photoShorterSide < SHORT_SIDE_THRESHOLD) {
         return true;
     }
     if (minSize < SHORT_SIDE_THRESHOLD) {
