@@ -50,7 +50,7 @@ private:
     int32_t TryGetRdbStore(bool isIngnoreSELinux = false);
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string>& args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string>& args);
-    bool IsQueryGroupPhotoAlbumAssets(const string& albumId);
+    bool IsQueryGroupPhotoAlbumAssets(const std::string& albumId);
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_ {nullptr};
 };
 

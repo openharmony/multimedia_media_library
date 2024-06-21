@@ -38,6 +38,8 @@ public:
 
     EXPORT void ClearAllTask();
 
+    EXPORT void TryCloseThumbnailWorkerTimer();
+
 private:
     ThumbnailGenerateWorkerManager() = default;
     ~ThumbnailGenerateWorkerManager();
