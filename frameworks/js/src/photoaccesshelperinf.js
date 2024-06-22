@@ -342,6 +342,8 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.preselectedUris = option.preselectedUris;
     config.parameters.isPreviewForSingleSelectionSupported = option.isPreviewForSingleSelectionSupported;
     config.parameters.isOriginalSupported = option.isOriginalSupported;
+    config.parameters.subWindowName = option.subWindowName;
+    config.parameters.themeColor = option.themeColor;
   }
 
   return config;
