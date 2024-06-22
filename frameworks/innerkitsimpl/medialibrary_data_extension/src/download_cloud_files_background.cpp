@@ -35,7 +35,7 @@ namespace OHOS {
 namespace Media {
 static constexpr int32_t DOWNLOAD_BATCH_SIZE = 5;
 static constexpr int32_t LOCAL_FILES_COUNT_THRESHOLD = 10000;
-static constexpr int32_t VIDEO_DOWNLOAD_MAX_SIZE = 300 * 1000 * 1000; // 300MB
+static constexpr int32_t VIDEO_DOWNLOAD_MAX_SIZE = 275 * 1000 * 1000; // 275MB
 
 // The task can be performed only when the the ratio of available storage capacity reaches this value
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.3;
@@ -68,11 +68,16 @@ bool DownloadCloudFilesBackground::IsStorageInsufficient()
     int ret = statvfs("/data", &diskInfo);
     if (ret != 0) {
         MEDIA_ERR_LOG("Get file system status information failed, ret=%{public}d", ret);
-        return false;
+        return true;
+    }
+
+    double totalSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_blocks);
+    if (totalSize < 1e-9) {
+        MEDIA_ERR_LOG("Get file system total size failed, totalSize=%{public}f", totalSize);
+        return true;
     }
 
     double freeSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_bfree);
-    double totalSize = static_cast<double>(diskInfo.f_bsize) * static_cast<double>(diskInfo.f_blocks);
     double freeRatio = freeSize / totalSize;
 
     return freeRatio < PROPER_DEVICE_STORAGE_CAPACITY_RATIO;

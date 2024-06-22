@@ -50,6 +50,7 @@ private:
     bool isDeviceTemperatureProper_{false};
     bool isWifiConn_{ false };
     bool currentStatus_{false};
+    bool timerStatus_{false};
     int32_t agingCount_ {0};
     int64_t lockTime_ {0};
     EXPORT void DoBackgroundOperation();
@@ -65,6 +66,7 @@ private:
     void UpdateBackgroundOperationStatus(const AAFwk::Want &want, const StatusEventType statusEventType);
     void UpdateCurrentStatus();
     void CheckHalfDayMissions();
+    void UpdateBackgroundTimer();
 };
 }  // namespace Media
 }  // namespace OHOS
