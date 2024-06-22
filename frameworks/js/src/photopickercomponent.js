@@ -102,7 +102,7 @@ export class PhotoPickerComponent extends ViewPU {
             Column.width("100%")
         }), Column);
         this.observeComponentCreation2(((e, o) => {
-            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P;
+            var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _;
             UIExtensionComponent.create({
                 parameters: {
                     "ability.want.params.uiExtensionTargetType": "photoPicker",
@@ -128,7 +128,8 @@ export class PhotoPickerComponent extends ViewPU {
                     selectMode: null === (T = this.pickerOptions) || void 0 === T ? void 0 : T.selectMode,
                     maxPhotoSelectNumber: null === (m = this.pickerOptions) || void 0 === m ? void 0 : m.maxPhotoSelectNumber,
                     maxVideoSelectNumber: null === (P = this.pickerOptions) || void 0 === P ? void 0 : P.maxVideoSelectNumber,
-                    isOnItemClickedSet: !!this.onItemClicked
+                    isOnItemClickedSet: !!this.onItemClicked,
+                    isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported
                 }
             });
             UIExtensionComponent.height("100%");
