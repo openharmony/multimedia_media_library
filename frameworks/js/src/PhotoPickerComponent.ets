@@ -81,6 +81,7 @@ export struct PhotoPickerComponent {
             maxPhotoSelectNumber: this.pickerOptions?.maxPhotoSelectNumber as number,
             maxVideoSelectNumber: this.pickerOptions?.maxVideoSelectNumber as number,
             isOnItemClickedSet: this.onItemClicked? true : false,
+            isPreviewForSingleSelectionSupported: this.pickerOptions?.isPreviewForSingleSelectionSupported as boolean
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
           this.proxy = proxy;
