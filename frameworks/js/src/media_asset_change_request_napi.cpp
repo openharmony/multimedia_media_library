@@ -1544,9 +1544,12 @@ int32_t MediaAssetChangeRequestNapi::CopyFileToMediaLibrary(const UniqueFd& dest
 {
     string srcRealPath = isMovingPhotoVideo ? movingPhotoVideoRealPath_ : realPath_;
     CHECK_COND_RET(!srcRealPath.empty(), E_FAIL, "Failed to check real path of source");
-    UniqueFd srcFd(open(srcRealPath.c_str(), O_RDONLY));
+
+    string absFilePath;
+    CHECK_COND_RET(PathToRealPath(srcRealPath, absFilePath), E_FAIL, "Not real path %{private}s", srcRealPath.c_str());
+    UniqueFd srcFd(open(absFilePath.c_str(), O_RDONLY));
     if (srcFd.Get() < 0) {
-        NAPI_ERR_LOG("Failed to open %{private}s, errno=%{public}d", srcRealPath.c_str(), errno);
+        NAPI_ERR_LOG("Failed to open %{private}s, errno=%{public}d", absFilePath.c_str(), errno);
         return srcFd.Get();
     }
 
@@ -1788,7 +1791,14 @@ static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
 {
     auto changeRequest = context.objectInfo;
     string realPath = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoPath() : changeRequest->GetFileRealPath();
-    UniqueFd srcFd(open(realPath.c_str(), O_RDONLY));
+
+    string absFilePath;
+    if (!PathToRealPath(realPath, absFilePath)) {
+        NAPI_ERR_LOG("Not real path %{private}s, errno=%{public}d", realPath.c_str(), errno);
+        return false;
+    }
+
+    UniqueFd srcFd(open(absFilePath.c_str(), O_RDONLY));
     if (srcFd.Get() < 0) {
         context.SaveError(srcFd.Get());
         NAPI_ERR_LOG("Failed to open file, errno=%{public}d", errno);

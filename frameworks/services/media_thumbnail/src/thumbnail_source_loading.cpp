@@ -18,6 +18,7 @@
 #include <fcntl.h>
 
 #include "dfx_manager.h"
+#include "directory_ex.h"
 #include "image_source.h"
 #include "media_exif.h"
 #include "media_file_utils.h"
@@ -120,9 +121,15 @@ bool IsLocalSourceAvailable(const std::string& path)
 
 bool IsCloudSourceAvailable(const std::string& path)
 {
-    int fd = open(path.c_str(), O_RDONLY);
+    string absFilePath;
+    if (!PathToRealPath(path, absFilePath)) {
+        MEDIA_ERR_LOG("Not real file path: %{private}s, errno: %{public}d", path.c_str(), errno);
+        return false;
+    }
+
+    int fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("SourceLoader open cloud file fail: %{public}s, errno: %{public}d", path.c_str(), errno);
+        MEDIA_ERR_LOG("open cloud file fail: %{public}s, errno: %{public}d", absFilePath.c_str(), errno);
         return false;
     }
     close(fd);
