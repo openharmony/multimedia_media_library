@@ -23,6 +23,7 @@
 #include "medialibrary_tracer.h"
 #include "photo_album_napi.h"
 #include "smart_album_napi.h"
+#include "media_file_utils.h"
 
 using OHOS::HiviewDFX::HiLog;
 using OHOS::HiviewDFX::HiLogLabel;
@@ -758,8 +759,14 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
     }
 
     if (context->work != nullptr) {
+        int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
         MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
                                                    context->work, *jsContext);
+        int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+        int64_t normalTime = 500;
+        if((long)(end - start) >= normalTime){
+            NAPI_INFO_LOG("InvokeJSAsync dir cost: %{public}ld", (long)(end - start));
+        }
     }
 
     delete context;
