@@ -35,7 +35,7 @@ namespace OHOS {
 namespace Media {
 static constexpr int32_t DOWNLOAD_BATCH_SIZE = 5;
 static constexpr int32_t LOCAL_FILES_COUNT_THRESHOLD = 10000;
-static constexpr int32_t VIDEO_DOWNLOAD_MAX_SIZE = 275 * 1000 * 1000; // 275MB
+static constexpr int32_t VIDEO_DOWNLOAD_MAX_SIZE = 250 * 1000 * 1000; // 250MB
 
 // The task can be performed only when the the ratio of available storage capacity reaches this value
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.3;
