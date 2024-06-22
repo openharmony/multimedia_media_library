@@ -2587,6 +2587,35 @@ static void AddIsTemp(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddIsTempToTrigger(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_DAY_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_FAVORITE_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_ADDED_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+    };
+    MEDIA_INFO_LOG("Add is_temp to trigger in upgrade");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
+        AddOwnerAppIdToFiles(store);
+    }
+
+    if (oldVersion < VERSION_ADD_IS_TEMP_TO_TRIGGER) {
+        AddIsTempToTrigger(store);
+    }
+}
+
 static void CreatePhotosExtTable(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -2654,9 +2683,8 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
         AddIsTemp(store);
     }
 
-    if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
-        AddOwnerAppIdToFiles(store);
-    }
+    UpgradeExtensionMore(store, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 static void CheckDateAdded(RdbStore &store)
