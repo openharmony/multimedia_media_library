@@ -48,6 +48,7 @@ private:
     bool isCharging_ {false};
     bool isPowerSufficient_{false};
     bool isDeviceTemperatureProper_{false};
+    bool isWifiConn_{ false };
     bool currentStatus_{false};
     int32_t agingCount_ {0};
     int64_t lockTime_ {0};
