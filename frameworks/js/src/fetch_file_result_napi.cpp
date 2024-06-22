@@ -764,7 +764,7 @@ static void GetAllObjectCompleteCallback(napi_env env, napi_status status, Fetch
                                                    context->work, *jsContext);
         int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
         int64_t normalTime = 500;
-        if((long)(end - start) >= normalTime){
+        if ((long)(end - start) >= normalTime) {
             NAPI_INFO_LOG("InvokeJSAsync dir cost: %{public}ld", (long)(end - start));
         }
     }
