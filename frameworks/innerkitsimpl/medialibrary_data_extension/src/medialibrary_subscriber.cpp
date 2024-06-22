@@ -147,13 +147,9 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
-    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_ && isWifiConn_;
-
-    MEDIA_INFO_LOG(
-        "update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_,
-        isWifiConn_);
-
+    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
+    MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+        currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
     if (currentStatus_ == newStatus) {
         return;
     }
@@ -216,6 +212,7 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     }
 
     UpdateCurrentStatus();
+    UpdateBackgroundTimer();
 }
 
 void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
@@ -225,7 +222,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
     MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
         isWifiConn_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
-        UpdateCurrentStatus();
+        UpdateBackgroundTimer();
     } else if (BACKGROUND_OPERATION_STATUS_MAP.count(action) != 0) {
         UpdateBackgroundOperationStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
     } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED) == 0) {
@@ -323,7 +320,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (result != E_OK) {
         MEDIA_ERR_LOG("DoTrashAging faild");
     }
-    dataManager->RegisterTimer();
 
     VariantMap map = {{KEY_COUNT, *trashCountPtr}};
     PostEventUtils::GetInstance().PostStatProcess(StatType::AGING_STAT, map);
@@ -338,14 +334,13 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     }
     scannerManager->ScanError();
 
-    MEDIA_INFO_LOG("Do success, current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_, isWifiConn_);
+    MEDIA_INFO_LOG("Do success, current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 }
 
 void MedialibrarySubscriber::StopBackgroundOperation()
 {
     MediaLibraryDataManager::GetInstance()->InterruptBgworker();
-    MediaLibraryDataManager::GetInstance()->UnregisterTimer();
 }
 
 #ifdef MEDIALIBRARY_MTP_ENABLE
@@ -363,6 +358,26 @@ void MedialibrarySubscriber::DoStartMtpService()
 void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleName)
 {
     MediaLibraryDataManager::GetInstance()->RevertPendingByPackage(bundleName);
+}
+
+void MedialibrarySubscriber::UpdateBackgroundTimer()
+{
+    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_ && isWifiConn_;
+
+    MEDIA_INFO_LOG("update timer status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, "
+                   "%{public}d, %{public}d",
+        timerStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_,
+        isWifiConn_);
+
+    if (timerStatus_ == newStatus) {
+        return;
+    }
+    timerStatus_ = newStatus;
+    if (timerStatus_) {
+        MediaLibraryDataManager::GetInstance()->RegisterTimer();
+    } else {
+        MediaLibraryDataManager::GetInstance()->UnregisterTimer();
+    }
 }
 }  // namespace Media
 }  // namespace OHOS
