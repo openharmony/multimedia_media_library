@@ -124,6 +124,11 @@ const std::vector<std::string> CAMERA_BUNDLE_NAMES = {
     "com.huawei.hmos.camera"
 };
 
+enum CloudFilePosition {
+    POSITION_LOCAL = 1 << 0,
+    POSITION_CLOUD = 1 << 1,
+};
+
 const std::string MEDIA_LIBRARY_VERSION = "1.0";
 
 const int32_t DEVICE_SYNCSTATUSING = 0;
