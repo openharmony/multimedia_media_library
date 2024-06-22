@@ -30,6 +30,7 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
+#include "download_cloud_files_background.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
