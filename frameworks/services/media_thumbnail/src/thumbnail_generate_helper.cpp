@@ -22,6 +22,7 @@
 #include "dfx_manager.h"
 #include "dfx_timer.h"
 #include "dfx_utils.h"
+#include "directory_ex.h"
 #include "ithumbnail_helper.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_kvstore_manager.h"
@@ -371,6 +372,7 @@ void UpdateStreamReadThumbDbStatus(ThumbRdbOpt& opts, ThumbnailData& data, Thumb
         case ThumbnailType::THUMB:
         case ThumbnailType::THUMB_ASTC:
             ThumbnailUtils::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_THUMB_SIZE);
+            break;
         default:
             break;
     }
@@ -412,10 +414,17 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
     bool isLocalThumbnailAvailable = IsLocalThumbnailAvailable(thumbnailData, thumbType);
     DfxTimer dfxTimer(thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN,
         INVALID_DFX, thumbType == ThumbnailType::LCD ? CLOUD_LCD_TIME_OUT : CLOUD_DEFAULT_TIME_OUT, false);
-    auto fd = open(fileName.c_str(), O_RDONLY);
+
+    string absFilePath;
+    if (!PathToRealPath(fileName, absFilePath)) {
+        MEDIA_ERR_LOG("file is not real path, file path: %{private}s", fileName.c_str());
+        return E_ERR;
+    }
+
+    auto fd = open(absFilePath.c_str(), O_RDONLY);
     dfxTimer.End();
     if (fd < 0) {
-        DfxManager::GetInstance()->HandleThumbnailError(fileName,
+        DfxManager::GetInstance()->HandleThumbnailError(absFilePath,
             thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
         return -errno;
     }
@@ -426,12 +435,13 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
             thumbnailData.orientation = 0;
         }
         IThumbnailHelper::DoRotateThumbnailEx(opts, thumbnailData, fd, thumbType);
-        fileName = GetThumbnailPath(thumbnailData.path,
+        absFilePath = GetThumbnailPath(thumbnailData.path,
             thumbType == ThumbnailType::LCD ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
-        fd = open(fileName.c_str(), O_RDONLY);
+
+        fd = open(absFilePath.c_str(), O_RDONLY);
         if (fd < 0) {
             MEDIA_ERR_LOG("Rotate thumb failed, path: %{public}s", DfxUtils::GetSafePath(thumbnailData.path).c_str());
-            DfxManager::GetInstance()->HandleThumbnailError(fileName,
+            DfxManager::GetInstance()->HandleThumbnailError(absFilePath,
                 thumbType == ThumbnailType::LCD ? DfxType::CLOUD_LCD_OPEN : DfxType::CLOUD_DEFAULT_OPEN, -errno);
             return -errno;
         }
