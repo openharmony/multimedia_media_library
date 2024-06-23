@@ -158,8 +158,8 @@ public:
     off_t GetFdSize();
     bool IsValid();
 private:
-    void* fdPtr_;
-    off_t size_;
+    void* fdPtr_ = nullptr;
+    off_t size_ = 0;
     bool isValid_ = false;
     bool isNeedRelease_ = false;
 };

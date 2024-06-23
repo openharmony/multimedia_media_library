@@ -41,7 +41,7 @@ class MediaFileUri : public OHOS::Uri {
     std::unordered_map<std::string, std::string> queryMap_;
     std::string MediaFileUriConstruct(MediaType mediaType, const std::string &networkId, const std::string &fileId,
                                       const int32_t &apiVersion, const std::string &extrUri);
-    int uriType_;
+    int uriType_ {0};
     void ParseUri(const std::string& uri);
 public:
     EXPORT explicit MediaFileUri(const std::string &uriStr) : Uri(uriStr) {ParseUri(uriStr);}

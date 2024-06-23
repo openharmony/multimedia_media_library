@@ -26,6 +26,7 @@
 #include "device_manager.h"
 #endif
 #include "dfx_utils.h"
+#include "directory_ex.h"
 #include "distributed_kv_data_manager.h"
 #include "hitrace_meter.h"
 #include "image_packer.h"
@@ -1406,12 +1407,19 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         return E_ERR;
     }
     MEDIA_DEBUG_LOG("path = %{private}s", path.c_str());
-    int32_t fd = open(path.c_str(), O_RDONLY);
+
+    string absFilePath;
+    if (!PathToRealPath(path, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to open a nullptr path %{private}s, errno=%{public}d", path.c_str(), errno);
+        return E_ERR;
+    }
+
+    int32_t fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
-            errno, path.c_str(), MediaFileUtils::IsFileExists(path));
+            errno, absFilePath.c_str(), MediaFileUtils::IsFileExists(absFilePath));
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, absFilePath}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_ERR;
     }
@@ -1420,7 +1428,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed, err %{public}d", errno);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, absFilePath}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         (void)close(fd);
         return E_ERR;
@@ -1428,7 +1436,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     int64_t length = static_cast<int64_t>(st.st_size);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
     if (ret != 0) {
-        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_SET_SOURCE, ret);
+        DfxManager::GetInstance()->HandleThumbnailError(absFilePath, DfxType::AV_SET_SOURCE, ret);
         (void)close(fd);
         return E_ERR;
     }
@@ -1679,6 +1687,16 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         err = resultSet->GetInt(index, position);
         data.isLocalFile = (position == 1);
     }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_HEIGHT, index);
+    if (err == NativeRdb::E_OK) {
+        err = resultSet->GetInt(index, data.photoHeight);
+    }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_WIDTH, index);
+    if (err == NativeRdb::E_OK) {
+        err = resultSet->GetInt(index, data.photoWidth);
+    }
 }
 
 bool ThumbnailUtils::ResizeThumb(int &width, int &height)
@@ -1899,6 +1917,8 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
     vector<string> columns = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_HEIGHT,
+        MEDIA_DATA_DB_WIDTH,
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_ORIENTATION,

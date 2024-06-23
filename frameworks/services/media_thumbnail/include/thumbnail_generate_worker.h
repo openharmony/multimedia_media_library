@@ -22,6 +22,7 @@
 #include <mutex>
 #include <safe_queue.h>
 #include <thread>
+#include <timer.h>
 
 #include "thumbnail_utils.h"
 
@@ -74,6 +75,7 @@ public:
     EXPORT int32_t AddTask(
         const std::shared_ptr<ThumbnailGenerateTask> &task, const ThumbnailTaskPriority &taskPriority);
     EXPORT void IgnoreTaskByRequestId(int32_t requestId);
+    EXPORT void TryCloseTimer();
 
 private:
     void StartWorker();
@@ -83,6 +85,11 @@ private:
     void IncreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
     void DecreaseRequestIdTaskNum(const std::shared_ptr<ThumbnailGenerateTask> &task);
     void NotifyTaskFinished(int32_t requestId);
+    void ClearWorkerThreads();
+    void TryClearWorkerThreads();
+    void RegisterWorkerTimer();
+
+    ThumbnailTaskType taskType_;
 
     std::atomic<bool> isThreadRunning_ = false;
     std::list<std::thread> threads_;
@@ -96,6 +103,12 @@ private:
     std::atomic<int32_t> ignoreRequestId_ = 0;
     std::map<int32_t, int32_t> requestIdTaskMap_;
     std::mutex requestIdMapLock_;
+
+    Utils::Timer timer_{"closeThumbnailWorker"};
+    uint32_t timerId_ = 0;
+    std::atomic<uint32_t> insertTaskCount_ = 0;
+    std::mutex timerMutex_;
+    std::mutex taskMutex_;
 };
 } // namespace Media
 } // namespace OHOS

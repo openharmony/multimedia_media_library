@@ -12,7 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define MLOG_TAG "ControlMain"
+
+#define MLOG_TAG "Mediatool"
+
 #include "control_main.h"
 
 #include <array>
@@ -74,21 +76,25 @@ int32_t ControlMain::Main(const std::vector<std::string> &args)
     ExecEnv env;
     int32_t res = Init(env, args);
     if (res != Media::E_OK) {
+        MEDIA_ERR_LOG("Init failed, res: %{public}d", res);
         return res;
     }
     res = CommandLine::Parser(env);
     if (res != Media::E_OK) {
+        MEDIA_ERR_LOG("Parse args failed, res: %{public}d", res);
         return res;
     }
     do {
         res = UserFileClientEx::Init();
         if (res != Media::E_OK) {
+            MEDIA_ERR_LOG("UserfileClient init failed, res: %{public}d", res);
             break;
         }
         MimeTypeUtils::InitMimeTypeMap();
         std::unique_ptr<Command> cmd = Command::Create(env);
         if (cmd == nullptr) {
             res = Media::E_ERR;
+            MEDIA_ERR_LOG("Create command failed, res: %{public}d", res);
             break;
         }
         MEDIA_INFO_LOG("Mediatool main, env:{%{private}s}", env.ToStr().c_str());

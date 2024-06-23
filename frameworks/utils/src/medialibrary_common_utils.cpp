@@ -160,6 +160,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     MEDIA_DATA_DB_POSITION,
     PhotoColumn::PHOTO_THUMB_STATUS,
     PhotoColumn::PHOTO_SUBTYPE,
+    PhotoColumn::PHOTO_IS_TEMP,
 
     // Photos table columns
     COMPAT_HIDDEN,

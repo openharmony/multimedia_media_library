@@ -217,6 +217,10 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
 
     // encode rgba to jpeg
     auto buffer = new (std::nothrow) uint8_t[pixelSize];
+    if (buffer == nullptr) {
+        MEDIA_ERR_LOG("Failed to new buffer");
+        return E_ERR;
+    }
     int64_t packedSize = 0L;
     Media::ImagePacker imagePacker;
     Media::PackOption packOption;
