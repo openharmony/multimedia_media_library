@@ -74,5 +74,19 @@ void ThumbnailGenerateWorkerManager::ClearAllTask()
         }
     });
 }
+
+void ThumbnailGenerateWorkerManager::TryCloseThumbnailWorkerTimer()
+{
+    if (thumbnailWorkerMap_.IsEmpty()) {
+        MEDIA_INFO_LOG("thumbnail worker empty, no need to close timer");
+        return;
+    }
+
+    thumbnailWorkerMap_.Iterate([](ThumbnailTaskType taskType, ThumbnailWorkerPtr &ptr) {
+        if (ptr != nullptr) {
+            ptr->TryCloseTimer();
+        }
+    });
+}
 } // namespace Media
 } // namespace OHOS

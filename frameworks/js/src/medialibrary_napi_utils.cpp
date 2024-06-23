@@ -986,9 +986,7 @@ int32_t MediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
     predicates.InnerJoin(VISION_POSE_TABLE)->On({ onClause });
 
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
     return E_SUCCESS;
 }
 
