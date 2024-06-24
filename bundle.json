@@ -73,7 +73,8 @@
           "window_manager",
           "background_task_mgr",
           "ffrt",
-          "preferences"
+          "preferences",
+          "wifi"
         ],
         "third_party": [
           "e2fsprogs",

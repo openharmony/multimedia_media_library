@@ -30,6 +30,7 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
+#include "download_cloud_files_background.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -108,6 +109,11 @@ namespace Media {
 unique_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
+recursive_mutex MediaLibraryDataManager::timerMutex_;
+Utils::Timer MediaLibraryDataManager::timer_("download_cloud_files");
+uint32_t MediaLibraryDataManager::timerId_ = 0;
+
+static constexpr int32_t BATCH_DOWNLOAD_INTERVAL = 60 * 1000; // 1min
 
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
@@ -298,6 +304,7 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         return;
     }
 
+    UnregisterTimer();
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
     shareHelper->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
@@ -1518,6 +1525,24 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
         MEDIA_ERR_LOG("invalid mediaLibrary command");
         return E_INVALID_ARGUMENTS;
     }
+}
+
+void MediaLibraryDataManager::RegisterTimer()
+{
+    lock_guard<recursive_mutex> lock(timerMutex_);
+    if (timerId_ > 0) {
+        UnregisterTimer();
+    }
+    timer_.Setup();
+    timerId_ = timer_.Register(DownloadCloudFilesBackground::DownloadCloudFiles, BATCH_DOWNLOAD_INTERVAL);
+}
+
+void MediaLibraryDataManager::UnregisterTimer()
+{
+    lock_guard<recursive_mutex> lock(timerMutex_);
+    timer_.Unregister(timerId_);
+    timer_.Shutdown();
+    timerId_ = 0;
 }
 }  // namespace Media
 }  // namespace OHOS
