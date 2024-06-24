@@ -92,6 +92,8 @@ bool Acl::IsValid()
 {
     if (!entries.count(ACL_TAG::USER_OBJ) || !entries.count(ACL_TAG::GROUP_OBJ) ||
             !entries.count(ACL_TAG::OTHER)) {
+        MEDIA_ERR_LOG("IsValid : %{public}lu, %{public}lu, %{public}lu", entries.count(ACL_TAG::USER_OBJ),
+            entries.count(ACL_TAG::GROUP_OBJ), entries.count(ACL_TAG::OTHER));
         return false;
     }
     if (maskDemand && !entries.count(ACL_TAG::MASK)) {
@@ -365,6 +367,7 @@ int32_t Acl::EntryInsert(AclXattrEntry& entry, const std::string& path, const ch
     } else {
         acl = AclFromMode(path);
     }
+    MEDIA_INFO_LOG("Acl, EntryInsert path: %{public}s", path.c_str());
     if (acl.IsEmpty()) {
         MEDIA_ERR_LOG("Failed to generate ACL from file's mode: %{public}s", std::strerror(errno));
         return E_ERR;

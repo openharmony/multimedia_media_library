@@ -858,6 +858,7 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     string photosFileId = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID;
     string photosHidden = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_HIDDEN;
     string photosTimePending = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_TIME_PENDING;
+    string photosIsTemp = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_TEMP;
 
     string clause = anaPhotoMapAsset + " = " + photosFileId;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ clause });
@@ -871,6 +872,7 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     predicates.EqualTo(photosDateTrashed, to_string(0));
     predicates.EqualTo(photosHidden, to_string(0));
     predicates.EqualTo(photosTimePending, to_string(0));
+    predicates.EqualTo(photosIsTemp, to_string(0));
     predicates.EndWrap();
     predicates.Distinct();
 }

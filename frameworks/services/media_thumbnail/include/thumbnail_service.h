@@ -44,6 +44,7 @@ public:
 #endif
     EXPORT int32_t GenerateThumbnailBackground();
     EXPORT int32_t UpgradeThumbnailBackground();
+    EXPORT int32_t RestoreThumbnailDualFrame();
     EXPORT void InterruptBgworker();
     EXPORT void StopAllWorker();
 #ifdef DISTRIBUTED

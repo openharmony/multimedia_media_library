@@ -203,6 +203,10 @@ int32_t MediaLibraryVisionOperations::EditCommitOperation(MediaLibraryCommand &c
         return E_ERR;
     }
     UpdateVisionAsyncTaskData* taskData = new (std::nothrow) UpdateVisionAsyncTaskData(fileId);
+    if (taskData ==  nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return E_ERR;
+    }
     shared_ptr<MediaLibraryAsyncTask> updateAsyncTask =
         make_shared<MediaLibraryAsyncTask>(UpdateVisionTableForEdit, taskData);
     if (updateAsyncTask != nullptr) {

@@ -227,7 +227,6 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
     }
 }
 
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
 static int32_t DropAllTables(NativeRdb::RdbStore &rdbStore)
 {
     string dropSqlRowName = "drop_table_and_view_sql";
@@ -301,7 +300,6 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
 
     return E_OK;
 }
-#endif
 
 static bool CheckOprnObject(OperationObject object)
 {
@@ -1365,6 +1363,10 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
         return E_ERR;
     }
     DeleteNotifyAsyncTaskData* taskData = new (std::nothrow) DeleteNotifyAsyncTaskData();
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return E_ERR;
+    }
     taskData->notifyUri = notifyUri;
     taskData->trashDate = trashDate;
     shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(

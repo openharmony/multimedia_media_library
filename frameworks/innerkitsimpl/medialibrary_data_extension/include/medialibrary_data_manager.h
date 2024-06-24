@@ -75,6 +75,9 @@ public:
 
     // upgrade existed thumbnails to fix such as size, rotation and quality etc. problems
     EXPORT int32_t UpgradeThumbnailBackground();
+
+    // restore thumbnail for date fronted 500 photos from dual framework upgrade or clone
+    EXPORT int32_t RestoreThumbnailDualFrame();
     void InterruptBgworker();
     EXPORT int32_t DoAging();
     EXPORT int32_t DoTrashAging(std::shared_ptr<int> countPtr = nullptr);

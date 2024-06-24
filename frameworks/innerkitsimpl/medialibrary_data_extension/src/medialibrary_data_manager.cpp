@@ -187,6 +187,10 @@ void MediaLibraryDataManager::ReCreateMediaDir()
         return;
     }
     AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return;
+    }
     shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
     if (makeRootDirTask != nullptr) {
         asyncWorker->AddTask(makeRootDirTask, true);
@@ -225,7 +229,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
 
     MimeTypeUtils::InitMimeTypeMap();
     errCode = MakeDirQuerySetMap(dirQuerySetMap_);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at MakeDirQuerySetMap");
+    CHECK_AND_WARN_LOG(errCode == E_OK, "failed at MakeDirQuerySetMap");
 
     InitACLPermission();
     InitDatabaseACLPermission();
@@ -560,10 +564,8 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     // boardcast operation
     if (oprnType == OperationType::SCAN) {
         return MediaScannerManager::GetInstance()->ScanDir(ROOT_MEDIA_DIR, nullptr);
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
     } else if (oprnType == OperationType::DELETE_TOOL) {
         return MediaLibraryAssetOperations::DeleteToolOperation(cmd);
-#endif
     }
 
     bool solved = false;
@@ -886,6 +888,20 @@ int32_t MediaLibraryDataManager::UpgradeThumbnailBackground()
         return E_THUMBNAIL_SERVICE_NULLPTR;
     }
     return thumbnailService_->UpgradeThumbnailBackground();
+}
+
+int32_t MediaLibraryDataManager::RestoreThumbnailDualFrame()
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+    return thumbnailService_->RestoreThumbnailDualFrame();
 }
 
 static void CacheAging()
