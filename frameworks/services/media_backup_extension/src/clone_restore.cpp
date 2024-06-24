@@ -244,6 +244,31 @@ void CloneRestore::RestoreAlbum(void)
     }
 }
 
+void CloneRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount,
+    int64_t &videoFileMoveCount)
+{
+    vector<std::string> moveFailedData;
+    for (size_t i = 0; i < fileInfos.size(); i++) {
+        if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath) || fileInfos[i].cloudPath.empty()) {
+            continue;
+        }
+        if (MoveAsset(fileInfos[i]) != E_OK) {
+            MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, error:%{public}s",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str(),
+                strerror(errno));
+            UpdateFailedFiles(fileInfos[i].fileType, BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL,
+                fileInfos[i].relativePath), RestoreError::MOVE_FAILED);
+            moveFailedData.push_back(fileInfos[i].cloudPath);
+            continue;
+        }
+        fileMoveCount++;
+        videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
+    }
+    DeleteMoveFailedData(moveFailedData);
+    migrateFileNumber_ += fileMoveCount;
+    migrateVideoFileNumber_ += videoFileMoveCount;
+}
+
 void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
 {
     if (mediaLibraryRdb_ == nullptr) {
@@ -274,22 +299,7 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;
     int64_t videoFileMoveCount = 0;
-    for (size_t i = 0; i < fileInfos.size(); i++) {
-        if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath) || fileInfos[i].cloudPath.empty()) {
-            continue;
-        }
-        if (MoveAsset(fileInfos[i]) != E_OK) {
-            MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s.",
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, CLONE_RESTORE_ID, garbagePath_).c_str());
-            UpdateFailedFiles(fileInfos[i].fileType, BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL,
-                fileInfos[i].relativePath), RestoreError::MOVE_FAILED);
-            continue;
-        }
-        fileMoveCount++;
-        videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
-    }
-    migrateFileNumber_ += fileMoveCount;
-    migrateVideoFileNumber_ += videoFileMoveCount;
+    MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("insert %{public}ld assets cost %{public}ld, query cost %{public}ld, insert %{public}ld maps "
         "cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.", (long)photoRowNum,
