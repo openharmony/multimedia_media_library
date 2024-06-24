@@ -83,6 +83,7 @@ const int32_t THIRD_ENUM = 3;
 const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 100;
 const int64_t MAX_INT64 = 9223372036854775807;
+const uint32_t MAX_UINT32 = 4294967295;
 const string DATE_FUNCTION = "DATE(";
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
@@ -1570,6 +1571,10 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
     napi_value subUriArray = nullptr;
     napi_create_array_with_length(env, len, &subUriArray);
     int subElementIndex = 0;
+     if (len > MAX_UINT32) {
+        NAPI_ERR_LOG("suburi length exceed the limit.");
+        return status;
+    }
     for (uint32_t i = 0; i < len; i++) {
         string subUri = parcel->ReadString();
         if (subUri.empty()) {
