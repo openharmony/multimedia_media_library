@@ -1853,7 +1853,11 @@ bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
 void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
     ThumbnailData &data, int &err)
 {
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    if (opts.table.empty()) {
+        MEDIA_ERR_LOG("Table is empty");
+        return;
+    }
+    RdbPredicates predicates(opts.table);
     predicates.EqualTo(MediaColumn::MEDIA_ID, id);
     vector<string> columns = {
         MEDIA_DATA_DB_ID,
