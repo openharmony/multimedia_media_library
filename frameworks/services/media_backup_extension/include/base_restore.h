@@ -87,6 +87,8 @@ protected:
     void UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode);
     void UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode);
     void UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode);
+    void DeleteMoveFailedData(std::vector<std::string> &moveFailedData);
+    void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t sceneCode);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;

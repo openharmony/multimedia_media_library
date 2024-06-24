@@ -33,6 +33,8 @@ public:
         const std::string &column);
     static int32_t Update(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, int32_t &changeRows,
         NativeRdb::ValuesBucket &valuesBucket, std::unique_ptr<NativeRdb::AbsRdbPredicates> &predicates);
+    static int32_t Delete(NativeRdb::AbsRdbPredicates &predicates, int32_t &changeRows,
+        std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     static int32_t InitGarbageAlbum(std::shared_ptr<NativeRdb::RdbStore> rdbStore, std::set<std::string> &cacheSet,
         std::unordered_map<std::string, std::string> &nickMap);
     static int32_t QueryGalleryAllCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);

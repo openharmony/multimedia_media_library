@@ -431,6 +431,28 @@ NativeRdb::ValuesBucket BaseRestore::GetAudioInsertValue(const FileInfo &fileInf
     return value;
 }
 
+void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t sceneCode)
+{
+    vector<std::string> moveFailedData;
+    for (size_t i = 0; i < fileInfos.size(); i++) {
+        if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
+            continue;
+        }
+        std::string tmpPath = fileInfos[i].cloudPath;
+        std::string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
+        if (!BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode)) {
+            MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, errno:%{public}s",
+                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(), strerror(errno));
+            moveFailedData.push_back(fileInfos[i].cloudPath);
+            continue;
+        }
+        BackupFileUtils::ModifyFile(localPath, fileInfos[i].dateModified);
+        fileMoveCount++;
+    }
+    DeleteMoveFailedData(moveFailedData);
+    migrateFileNumber_ += fileMoveCount;
+}
+
 void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfos, int32_t sourceType)
 {
     MEDIA_INFO_LOG("Start insert %{public}zu photos", fileInfos.size());
@@ -459,25 +481,25 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     migrateDatabaseNumber_ += rowNum;
     int32_t fileMoveCount = 0;
-    for (size_t i = 0; i < fileInfos.size(); i++) {
-        if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
-            continue;
-        }
-        std::string tmpPath = fileInfos[i].cloudPath;
-        std::string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
-        if (!BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode)) {
-            MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s.",
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
-            continue;
-        }
-        BackupFileUtils::ModifyFile(localPath, fileInfos[i].dateModified);
-        fileMoveCount++;
-    }
-    migrateFileNumber_ += fileMoveCount;
+    MoveMigrateFile(fileInfos, fileMoveCount, sceneCode);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld and move " \
         "%{public}ld file cost %{public}ld.", (long)(startInsert - startGenerate), (long)rowNum,
         (long)(startQuery - startInsert), (long)fileMoveCount, (long)(end - startMove));
+}
+
+void BaseRestore::DeleteMoveFailedData(std::vector<std::string> &moveFailedData)
+{
+    if (moveFailedData.empty()) {
+        MEDIA_INFO_LOG("No move failed");
+        return;
+    }
+    MEDIA_INFO_LOG("%{public}d file move failed", static_cast<int>(moveFailedData.size()));
+    NativeRdb::AbsRdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.In(MediaColumn::MEDIA_FILE_PATH, moveFailedData);
+    int32_t changedRows = 0;
+    int deleteRes = BackupDatabaseUtils::Delete(predicates, changedRows, mediaLibraryRdb_);
+    MEDIA_INFO_LOG("changeRows:%{public}d, deleteRes:%{public}d", changedRows, deleteRes);
 }
 
 int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vector<NativeRdb::ValuesBucket> &values,
