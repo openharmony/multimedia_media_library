@@ -281,7 +281,6 @@ ohos_shared_library("medialibrary_data_extension") {
     "relational_store:rdb_data_share_adapter",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
-    "wifi:wifi_sdk",
     "window_manager:libdm",
   ]
 

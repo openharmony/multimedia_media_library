@@ -96,13 +96,13 @@ bool DownloadCloudFilesBackground::IsLocalFilesExceedsThreshold()
     auto resultSet = MediaLibraryRdbStore::Query(predicates, { PhotoColumn::MEDIA_ID });
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query local files!");
-        return false;
+        return true;
     }
     int32_t count = 0;
     int32_t err = resultSet->GetRowCount(count);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
-        return false;
+        return true;
     }
     return count > LOCAL_FILES_COUNT_THRESHOLD;
 }
