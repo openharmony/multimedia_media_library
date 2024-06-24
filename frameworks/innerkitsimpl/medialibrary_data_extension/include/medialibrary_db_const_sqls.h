@@ -27,7 +27,7 @@
 #include "media_smart_map_column.h"
 #include "media_unique_number_column.h"
 #include "medialibrary_db_const.h"
-#include "vision_db_sqls.h"
+#include "vision_db_sqls_more.h"
 
 namespace OHOS {
 namespace Media {
