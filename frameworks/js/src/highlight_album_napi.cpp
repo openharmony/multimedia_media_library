@@ -317,7 +317,7 @@ static void JSGetHighlightResourceExecute(napi_env env, void *data)
         NAPI_ERR_LOG("Failed to get highlight cover file length, error: %{public}d", errno);
         return;
     }
-    int32_t  ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
+    int32_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
     if (ret < 0) {
         NAPI_ERR_LOG("Failed to reset highlight cover file offset, error: %{public}d", errno);
         return;
