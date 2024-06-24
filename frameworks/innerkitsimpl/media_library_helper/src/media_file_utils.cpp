@@ -598,7 +598,7 @@ int32_t MediaFileUtils::CheckRelativePath(const std::string &relativePath)
         return -EINVAL;
     }
 
-    uint32_t firstPoint = (relativePath.front() == '/') ? 1 : 0;
+    size_t firstPoint = (relativePath.front() == '/') ? 1 : 0;
     size_t lastPoint = 0;
     while (true) {
         lastPoint = relativePath.find_first_of('/', firstPoint);
