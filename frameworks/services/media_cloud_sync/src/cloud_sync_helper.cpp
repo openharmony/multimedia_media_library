@@ -36,10 +36,11 @@ shared_ptr<CloudSyncHelper> CloudSyncHelper::GetInstance()
         if (instance_ != nullptr) {
             return instance_;
         }
-        instance_ = shared_ptr<CloudSyncHelper>(new (nothrow)CloudSyncHelper());
-        if (instance_ == nullptr) {
-            MEDIA_ERR_LOG("Failed to new instance");
+        auto *cloudSyncHelper = new (nothrow)CloudSyncHelper();
+        if (cloudSyncHelper == nullptr) {
+            MEDIA_ERR_LOG("Failed to new cloudSyncHelper");
         }
+        instance_ = shared_ptr<CloudSyncHelper>(cloudSyncHelper);
     }
 
     return instance_;
