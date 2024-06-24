@@ -890,6 +890,20 @@ int32_t MediaLibraryDataManager::UpgradeThumbnailBackground()
     return thumbnailService_->UpgradeThumbnailBackground();
 }
 
+int32_t MediaLibraryDataManager::RestoreThumbnailDualFrame()
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+    return thumbnailService_->RestoreThumbnailDualFrame();
+}
+
 static void CacheAging()
 {
     filesystem::path cacheDir(MEDIA_CACHE_DIR);
