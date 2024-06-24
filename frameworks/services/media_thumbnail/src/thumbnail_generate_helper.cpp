@@ -436,8 +436,12 @@ int32_t ThumbnailGenerateHelper::GetThumbnailPixelMap(ThumbRdbOpt &opts, Thumbna
             thumbnailData.orientation = 0;
         }
         IThumbnailHelper::DoRotateThumbnailEx(opts, thumbnailData, fd, thumbType);
-        absFilePath = GetThumbnailPath(thumbnailData.path,
+        fileName = GetThumbnailPath(thumbnailData.path,
             thumbType == ThumbnailType::LCD ? THUMBNAIL_LCD_SUFFIX : THUMBNAIL_THUMB_SUFFIX);
+        if (!PathToRealPath(fileName, absFilePath)) {
+            MEDIA_ERR_LOG("file is not real path, file path: %{private}s", fileName.c_str());
+            return E_ERR;
+        }
 
         fd = open(absFilePath.c_str(), O_RDONLY);
         if (fd < 0) {
