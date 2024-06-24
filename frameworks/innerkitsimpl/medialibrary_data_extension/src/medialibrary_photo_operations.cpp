@@ -1374,9 +1374,13 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     string sourcePath = GetEditDataSourcePath(path);
     CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Cannot get source path, id=%{public}d", fileId);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourcePath), E_NO_SUCH_FILE, "Can not get source file");
-
     string editDataPath = GetEditDataPath(path);
     CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_URI, "Cannot get editdata path, id=%{public}d", fileId);
+
+    errCode = UpdateEditTime(fileId, 0);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
+        fileId);
+
     if (MediaFileUtils::IsFileExists(editDataPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(editDataPath), E_HAS_FS_ERROR,
             "Failed to delete edit data, path:%{private}s", editDataPath.c_str());
@@ -1399,9 +1403,6 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
             "Failed to add filters to photo");
     }
 
-    errCode = UpdateEditTime(fileId, 0);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
-        fileId);
     ScanFile(path, true, true, true);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
