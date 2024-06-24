@@ -465,9 +465,16 @@ bool MediaFileUtils::ReadStrFromFile(const std::string &filePath, std::string &f
         MEDIA_ERR_LOG("Can not get FilePath %{private}s", filePath.c_str());
         return false;
     }
-    ifstream file(filePath);
+
+    string absFilePath;
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to open a nullptr path %{private}s, errno=%{public}d", filePath.c_str(), errno);
+        return false;
+    }
+
+    ifstream file(absFilePath);
     if (!file.is_open()) {
-        MEDIA_ERR_LOG("Can not open FilePath %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("Can not open FilePath %{private}s", absFilePath.c_str());
         return false;
     }
     char ch;

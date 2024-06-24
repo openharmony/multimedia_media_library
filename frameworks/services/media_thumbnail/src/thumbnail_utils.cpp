@@ -26,6 +26,7 @@
 #include "device_manager.h"
 #endif
 #include "dfx_utils.h"
+#include "directory_ex.h"
 #include "distributed_kv_data_manager.h"
 #include "hitrace_meter.h"
 #include "image_packer.h"
@@ -670,6 +671,47 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, std::to_string(
         static_cast<int32_t>(ThumbnailReady::THUMB_UPGRADE)));
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err);
+        if (!data.path.empty()) {
+            infos.push_back(data);
+        }
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
+bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_NAME,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    rdbPredicates.Limit(ASTC_GENERATE_COUNT_AFTER_RESTORE);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -1365,12 +1407,19 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         return E_ERR;
     }
     MEDIA_DEBUG_LOG("path = %{private}s", path.c_str());
-    int32_t fd = open(path.c_str(), O_RDONLY);
+
+    string absFilePath;
+    if (!PathToRealPath(path, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to open a nullptr path %{private}s, errno=%{public}d", path.c_str(), errno);
+        return E_ERR;
+    }
+
+    int32_t fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
-            errno, path.c_str(), MediaFileUtils::IsFileExists(path));
+            errno, absFilePath.c_str(), MediaFileUtils::IsFileExists(absFilePath));
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, absFilePath}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_ERR;
     }
@@ -1379,7 +1428,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed, err %{public}d", errno);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, absFilePath}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         (void)close(fd);
         return E_ERR;
@@ -1387,7 +1436,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     int64_t length = static_cast<int64_t>(st.st_size);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
     if (ret != 0) {
-        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_SET_SOURCE, ret);
+        DfxManager::GetInstance()->HandleThumbnailError(absFilePath, DfxType::AV_SET_SOURCE, ret);
         (void)close(fd);
         return E_ERR;
     }

@@ -11,6 +11,7 @@
       "tablet",
       "2in1"
     ],
+    "compressNativeLibs": true,
     "deliveryWithInstall": true,
     "installationFree": false,
     "pages": "$profile:main_pages",

@@ -1670,12 +1670,16 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
     if (!listener.changeInfo.uris_.empty()) {
         if (listener.changeInfo.changeType_ == DataShare::DataShareObserver::ChangeType::OTHER) {
             NAPI_ERR_LOG("changeInfo.changeType_ is other");
+            delete msg;
+            delete work;
             return;
         }
         if (msg->changeInfo_.size_ > 0) {
             msg->data_ = (uint8_t *)malloc(msg->changeInfo_.size_);
             if (msg->data_ == nullptr) {
                 NAPI_ERR_LOG("new msg->data failed");
+                delete msg;
+                delete work;
                 return;
             }
             int copyRet = memcpy_s(msg->data_, msg->changeInfo_.size_, msg->changeInfo_.data_, msg->changeInfo_.size_);
@@ -3173,6 +3177,7 @@ static napi_value ParseArgsIndexof(napi_env env, napi_callback_info info,
     predicates.And()->EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
     predicates.And()->EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.And()->EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
 
     context->fetchColumn.clear();
     MediaFileUri photoUri(uri);
