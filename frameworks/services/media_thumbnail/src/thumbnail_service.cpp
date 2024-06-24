@@ -437,6 +437,15 @@ int32_t ThumbnailService::UpgradeThumbnailBackground()
     return err;
 }
 
+int32_t ThumbnailService::RestoreThumbnailDualFrame()
+{
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE
+    };
+    return ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
+}
+
 int32_t ThumbnailService::LcdAging()
 {
     int32_t err = 0;

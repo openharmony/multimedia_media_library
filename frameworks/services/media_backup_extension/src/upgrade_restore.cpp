@@ -411,6 +411,9 @@ void UpgradeRestore::HandleRestData(void)
         MEDIA_DEBUG_LOG("Start to delete media data.");
         (void)MediaFileUtils::DeleteDir(mediaData);
     }
+
+    // restore thumbnail for date fronted 500 photos
+    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
 }
 
 int32_t UpgradeRestore::QueryTotalNumber(void)

@@ -49,7 +49,7 @@ const std::unordered_map<SourceState, std::string> STATE_NAME_MAP = {
 class BeginSource {
 public:
     EXPORT static std::string GetSourcePath(ThumbnailData &data, int32_t &error)
-        { return nullptr; }
+        { return ""; }
     EXPORT static bool IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize) { return false; }
 };
 
