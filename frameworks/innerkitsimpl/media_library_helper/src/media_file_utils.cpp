@@ -50,6 +50,7 @@ using namespace std;
 namespace OHOS::Media {
 static const mode_t CHOWN_RWX_USR_GRP = 02771;
 static const mode_t CHOWN_RW_USR_GRP = 0660;
+static const mode_t CHOWN_RO_USR_GRP = 0644;
 constexpr size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
@@ -389,7 +390,7 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
         return errCode;
     }
 
-    int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
+    int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RO_USR_GRP);
     if (dest == -1) {
         MEDIA_ERR_LOG("Open failed for destination file %{public}d", errno);
         close(source);
