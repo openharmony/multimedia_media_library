@@ -1255,7 +1255,7 @@ static string Desensitize(string &str)
 static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
 {
     string tempFileName = fileName + ".tmp";
-    const mode_t fileMode = 0664;
+    const mode_t fileMode = 0644;
     mode_t mask = umask(0);
     UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
     umask(mask);

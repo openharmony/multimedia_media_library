@@ -49,7 +49,7 @@ bool FileUtils::IsFileExist(const string &fileName)
 
 int32_t FileUtils::SaveImage(const string &filePath, void *output, size_t writeSize)
 {
-    const mode_t fileMode = 0664;
+    const mode_t fileMode = 0644;
     MediaLibraryTracer tracer;
     tracer.Start("FileUtils::SaveImage");
     string filePathTemp = filePath + ".high";

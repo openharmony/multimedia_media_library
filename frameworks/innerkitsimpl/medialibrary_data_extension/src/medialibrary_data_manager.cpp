@@ -533,11 +533,13 @@ static int32_t SolveOtherInsertCmd(MediaLibraryCommand &cmd, const DataShareValu
 {
     solved = false;
     switch (cmd.GetOprnObject()) {
-        case OperationObject::MISCELLANEOUS:
+        case OperationObject::MISCELLANEOUS: {
             if (cmd.GetOprnType() == OperationType::LOG_MOVING_PHOTO) {
                 solved = true;
                 return LogMovingPhoto(cmd, dataShareValue);
             }
+            return E_OK;
+        }
         default:
             return E_FAIL;
     }
