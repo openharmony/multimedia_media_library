@@ -341,6 +341,9 @@ const std::string TOOL_UPDATE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + TOOL_AUDIO +
 const std::string TOOL_DELETE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + TOOL_PHOTO + "/" + OPRN_DELETE;
 const std::string TOOL_DELETE_AUDIO = MEDIALIBRARY_DATA_URI + "/" + TOOL_AUDIO + "/" + OPRN_DELETE;
 
+const std::string IS_TOOL_OPEN = "is_mediatool_open_operation";
+const std::string TOOL_OPEN_TRUE = "1";
+
 // Miscellaneous operation constants
 const std::string MISC_OPERATION = "miscellaneous_operation";
 
