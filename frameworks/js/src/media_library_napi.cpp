@@ -3824,7 +3824,7 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
         fileAssetArray.push_back(move(file));
         file = fetchResult->GetNextObject();
     }
-    int len = fileAssetArray.size();
+    size_t len = fileAssetArray.size();
     napi_value jsFileArray = nullptr;
     napi_create_array_with_length(env, len, &jsFileArray);
     size_t i = 0;
