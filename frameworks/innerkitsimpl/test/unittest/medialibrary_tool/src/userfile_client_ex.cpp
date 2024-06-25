@@ -280,10 +280,11 @@ int UserFileClientEx::Open(const std::string &uri, const std::string &mode, bool
     if (uri.empty()) {
         return Media::E_FAIL;
     }
-    MediaFileUtils::UriAppendKeyValue(uri, IS_TOOL_OPEN,
+    std::string uriWithKey {uri};
+    MediaFileUtils::UriAppendKeyValue(uriWithKey, IS_TOOL_OPEN,
         TOOL_OPEN_TRUE);
-    Uri openUri(uri);
-    MEDIA_INFO_LOG("open. uri:%{public}s, mode:%{public}s", uri.c_str(), mode.c_str());
+    Uri openUri(uriWithKey);
+    MEDIA_INFO_LOG("open. uri:%{public}s, mode:%{public}s", uriWithKey.c_str(), mode.c_str());
     return UserFileClient::OpenFile(openUri, mode);
 }
 
