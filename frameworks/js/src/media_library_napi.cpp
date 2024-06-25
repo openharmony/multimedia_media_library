@@ -2338,6 +2338,7 @@ static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetc
             // uri is default property of album
             continue;
         } else {
+            NAPI_ERR_LOG("unknown columns:%{public}s", column.c_str());
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
