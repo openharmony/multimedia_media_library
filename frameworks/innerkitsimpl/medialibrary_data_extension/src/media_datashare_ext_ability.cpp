@@ -48,6 +48,7 @@
 #include "singleton.h"
 #include "system_ability_definition.h"
 #include "uri_permission_manager_client.h"
+#include "userfilemgr_uri.h"
 #include "want.h"
 #ifdef MEDIALIBRARY_SECURITY_OPEN
 #include "sec_comp_kit.h"
@@ -258,6 +259,9 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     const bool containsRead = ContainsFlag(mode, 'r');
     const bool containsWrite = ContainsFlag(mode, 'w');
 
+    if (cmd.GetQuerySetParam(IS_TOOL_OPEN) == TOOL_OPEN_TRUE) {
+        return IsDeveloperMediaTool(cmd)? E_SUCCESS : E_PERMISSION_DENIED;
+    }
     vector<string> perms;
     FillV10Perms(mediaType, containsRead, containsWrite, perms);
     if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO)) {
