@@ -1571,7 +1571,7 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
     napi_value subUriArray = nullptr;
     napi_create_array_with_length(env, len, &subUriArray);
     int subElementIndex = 0;
-     if (len > MAX_UINT32) {
+    if (len > MAX_UINT32) {
         NAPI_ERR_LOG("suburi length exceed the limit.");
         return status;
     }
