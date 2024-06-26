@@ -350,7 +350,8 @@ vector<FileInfo> CloneRestore::QueryFileInfos(int32_t offset)
     return result;
 }
 
-bool CloneRestore::ParseResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &fileInfo)
+bool CloneRestore::ParseResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &fileInfo,
+    string dbName)
 {
     return ParseResultSet(PhotoColumn::PHOTOS_TABLE, resultSet, fileInfo);
 }
