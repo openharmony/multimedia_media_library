@@ -2112,15 +2112,27 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    UpdateAssetProperty(context, PAH_UPDATE_PHOTO_COMPONENT, predicates, valuesBucket);
+    bool ret = UpdateAssetProperty(context, PAH_UPDATE_PHOTO_COMPONENT, predicates, valuesBucket);
+    if (!ret) {
+        NAPI_ERR_LOG("update temp flag fail");
+        return ret;
+    }
 
     // udpate dirty=1 if photo_quality=0
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
-    predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-    DataShare::DataShareValuesBucket valuesBucketDirty;
-    valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO_COMPONENT, predicates, valuesBucketDirty);
+    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+        predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+        DataShare::DataShareValuesBucket valuesBucketDirty;
+        valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        string uri = PAH_UPDATE_PHOTO_COMPONENT;
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri updateAssetUri(uri);
+        int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucketDirty);
+        if (changedRows < 0) {
+            NAPI_WARN_LOG("update dirty fail");
+        }
+    }
+    return ret;
 }
 
 static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)
