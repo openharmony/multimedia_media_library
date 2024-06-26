@@ -151,7 +151,7 @@ void MtpFileObserver::AddFileInotify(const std::string &path, const std::string 
             watchMap_.insert(make_pair(ret, path));
         }
         if (!startThread_) {
-            std::thread watchThread(WatchPathThread, context);
+            std::thread watchThread([context] { context->WatchPathThread(); });
             watchThread.detach();
             startThread_ = true;
         }
