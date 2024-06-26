@@ -1358,5 +1358,93 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAlbum_002, TestSize.Level
     EXPECT_EQ(galleryAlbumInfos[0].albumMediaName, "test1");
     MEDIA_INFO_LOG("medialib_backup_InsertAlbum_002 end");
 }
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_001 start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string xmlPath = "/data/test/backup/test.xml";
+    auto res = upgrade->ParseXml(xmlPath);
+    EXPECT_EQ(res, 0);
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_001 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_002, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_002 start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string xmlPath = "/data/test/backup/test1.xml";
+    auto res = upgrade->ParseXml(xmlPath);
+    EXPECT_EQ(res, -1);
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_002 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_003, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_003 start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string xmlPath = "/data/test/backup/test2.xml";
+    auto res = upgrade->ParseXml(xmlPath);
+    EXPECT_EQ(res, -1);
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_003 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_004, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_004 start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string xmlPath = "/data/test/backup/test3.xml";
+    auto res = upgrade->ParseXml(xmlPath);
+    EXPECT_EQ(res, -1);
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_004 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_005, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_005 start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string xmlPath = "/data/test/backup/test4.xml";
+    auto res = upgrade->ParseXml(xmlPath);
+    EXPECT_EQ(res, -1);
+    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_005 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_001 start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string xmlPath = "";
+    auto res = upgrade->StringToInt(xmlPath);
+    EXPECT_EQ(res, 0);
+    GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_001 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_002, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_002 start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string xmlPath = "   22e";
+    auto res = upgrade->StringToInt(xmlPath);
+    EXPECT_EQ(res, 0);
+    GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_002 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_003, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_003 start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string xmlPath = "777777777777777777777777777777777777777777777777777";
+    auto res = upgrade->StringToInt(xmlPath);
+    EXPECT_EQ(res, 0);
+    GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_003 end";
+}
 } // namespace Media
 } // namespace OHOS
