@@ -2626,7 +2626,7 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
         AddIsTempToTrigger(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_PHOTO_THUMBNMAIL_READY) {
+    if (oldVersion < VERSION_UPDATE_PHOTO_THUMBNAIL_READY) {
         UpdateThumbnailReadyColumn(store);
     }
 }
