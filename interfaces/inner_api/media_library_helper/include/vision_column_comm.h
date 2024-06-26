@@ -23,6 +23,7 @@ namespace Media {
 const std::string ID = "id";
 const std::string FILE_ID = "file_id";
 const std::string PROB = "prob";
+const std::string ANALYSIS_VERSION = "analysis_version";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_COLUMN_COMM_H
