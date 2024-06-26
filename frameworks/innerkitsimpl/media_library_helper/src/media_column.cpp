@@ -91,7 +91,7 @@ const std::string PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE = "dynamic_range_type";
 const std::string PhotoColumn::MOVING_PHOTO_EFFECT_MODE = "moving_photo_effect_mode";
 const std::string PhotoColumn::PHOTO_LCD_SIZE = "lcd_size";
 const std::string PhotoColumn::PHOTO_THUMB_SIZE = "thumb_size";
-const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc";
+const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc"; // This attribute has been replaced by "thumbnail_ready"
 const std::string PhotoColumn::PHOTO_IS_TEMP = "is_temp";
 const std::string PhotoColumn::PHOTO_THUMBNAIL_READY = "thumbnail_ready";
 
