@@ -95,6 +95,7 @@ public:
     static const std::string PHOTO_DYNAMIC_RANGE_TYPE EXPORT;
     static const std::string MOVING_PHOTO_EFFECT_MODE EXPORT;
     static const std::string PHOTO_HAS_ASTC EXPORT;
+    static const std::string PHOTO_THUMBNAIL_READY EXPORT;
 
     static const std::string PHOTO_SYNCING EXPORT;
     static const std::string PHOTO_DATE_YEAR EXPORT;

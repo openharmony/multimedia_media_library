@@ -2268,6 +2268,17 @@ void AddOwnerAppId(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void UpdateThumbnailReadyColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " RENAME COLUMN " + PhotoColumn::PHOTO_HAS_ASTC
+            + " TO " + PhotoColumn::PHOTO_THUMBNAIL_READY,
+    };
+    MEDIA_INFO_LOG("update has_astc to thumbnail_ready begin");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("update has_astc to thumbnail_ready finished");
+}
+
 void AddOwnerAppIdToFiles(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2613,6 +2624,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_IS_TEMP_TO_TRIGGER) {
         AddIsTempToTrigger(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTO_THUMBNMAIL_READY) {
+        UpdateThumbnailReadyColumn(store);
     }
 }
 
