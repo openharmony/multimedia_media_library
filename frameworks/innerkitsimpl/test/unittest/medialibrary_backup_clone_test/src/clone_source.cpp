@@ -22,7 +22,7 @@
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "vision_column.h"
-#include "vision_db_sqls.h"
+#include "vision_db_sqls_more.h"
 
 using namespace std;
 
