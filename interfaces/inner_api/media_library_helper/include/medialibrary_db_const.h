@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 85;
+const int32_t MEDIA_RDB_VERSION = 86;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -113,6 +113,7 @@ enum {
     VERSION_ADD_IS_TEMP = 83,
     VERSION_ADD_OWNER_APPID_TO_FILES_TABLE = 84,
     VERSION_ADD_IS_TEMP_TO_TRIGGER = 85,
+    VERSION_UPDATE_PHOTO_THUMBNMAIL_READY = 86,
 };
 
 enum {
@@ -230,6 +231,7 @@ const std::string MEDIA_DATA_DB_DIRTY = "dirty";
 const std::string MEDIA_DATA_DB_CLOUD_ID = "cloud_id";
 const std::string MEDIA_DATA_DB_META_DATE_MODIFIED = "meta_date_modified";
 const std::string MEDIA_DATA_DB_SYNC_STATUS = "sync_status";
+const std::string MEDIA_DATA_DB_THUMBNAIL_READY = "thumbnail_ready";
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
 const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
