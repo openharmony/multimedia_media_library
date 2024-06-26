@@ -32,6 +32,8 @@
 namespace OHOS {
 namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
+constexpr int32_t BASE_TEN_NUMBER = 10;
+constexpr int32_t SEVEN_NUMBER = 7;
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -53,14 +55,18 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
 int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
 {
     appDataPath_ = backupRetoreDir;
+    string photosPreferencesPath;
     if (sceneCode_ == DUAL_FRAME_CLONE_RESTORE_ID) {
         filePath_ = upgradeFilePath;
         galleryDbPath_ = upgradeFilePath + "/" + GALLERY_DB_NAME;
         audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
+        photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
     } else {
         filePath_ = upgradeFilePath;
         galleryDbPath_ = backupRetoreDir + "/" + galleryAppName_ + "/ce/databases/gallery.db";
         externalDbPath_ = backupRetoreDir + "/" + mediaAppName_ + "/ce/databases/external.db";
+        photosPreferencesPath =
+            backupRetoreDir + "/" + galleryAppName_ + "/ce/shared_prefs/" + galleryAppName_ + "_preferences.xml";
         if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
             MEDIA_ERR_LOG("External db is not exist.");
             return E_FAIL;
@@ -75,7 +81,11 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             MediaLibraryDataManager::GetInstance()->ReCreateMediaDir();
         }
     }
+    return InitDbAndXml(photosPreferencesPath, isUpgrade);
+}
 
+int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
+{
     if (isUpgrade && BaseRestore::Init() != E_OK) {
         return E_FAIL;
     }
@@ -100,8 +110,78 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             return E_FAIL;
         }
     }
+    ParseXml(xmlPath);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
+}
+
+int UpgradeRestore::StringToInt(const std::string& str)
+{
+    if (str.empty()) {
+        return 0;
+    }
+    int base = 0;
+    int num = 0;
+    int sign = 1;
+    int len = str.length();
+    while (num < len && str[num] == ' ') {
+        num++;
+    }
+    if (num < len && (str[num] == '-' || str[num] == '+')) {
+        sign = (str[num++] == '-') ? -1 : 1;
+    }
+    while (num < len && std::isdigit(str[num])) {
+        if (base > INT_MAX / BASE_TEN_NUMBER || (base == INT_MAX / BASE_TEN_NUMBER && str[num] - '0' > SEVEN_NUMBER)) {
+            MEDIA_INFO_LOG("The number is INT_MAX");
+            return 0;
+        }
+        base = BASE_TEN_NUMBER * base + (str[num++] - '0');
+    }
+    if (num < len && !std::isdigit(str[num])) {
+        MEDIA_INFO_LOG("Not digit");
+        return 0;
+    }
+    return base * sign;
+}
+
+int32_t UpgradeRestore::HandleXmlNode(xmlNodePtr cur)
+{
+    if (cur->type == XML_ELEMENT_NODE) {
+        xmlChar* name = xmlGetProp(cur, BAD_CAST"name");
+        if (name != nullptr && xmlStrcmp(name, BAD_CAST"filter_selected_size") == 0) {
+            xmlChar* value = xmlGetProp(cur, BAD_CAST"value");
+            if (value != nullptr) {
+                fileMinSize_ = StringToInt((const char *)(value));
+                xmlFree(value);
+                return E_SUCCESS;
+            }
+            xmlFree(name);
+            return E_ERR;
+        }
+        xmlFree(name);
+    }
+    return E_ERR;
+}
+
+int32_t UpgradeRestore::ParseXml(string path)
+{
+    std::unique_ptr<xmlDoc, decltype(&xmlFreeDoc)> docPtr(
+        xmlReadFile(path.c_str(), nullptr, XML_PARSE_NOBLANKS), xmlFreeDoc);
+    if (docPtr == nullptr) {
+        MEDIA_ERR_LOG("failed to read xml file");
+        return E_ERR;
+    }
+    auto root = xmlDocGetRootElement(docPtr.get());
+    if (root == nullptr) {
+        MEDIA_ERR_LOG("failed to read root node");
+        return E_ERR;
+    }
+    for (xmlNodePtr cur = root->children; cur != NULL; cur = cur->next) {
+        if (HandleXmlNode(cur) == E_SUCCESS) {
+            return E_SUCCESS;
+        }
+    }
+    return E_ERR;
 }
 
 void UpgradeRestore::RestoreAudio(void)
@@ -512,7 +592,8 @@ bool UpgradeRestore::IsValidDir(const string &path)
     }
     return isValid;
 }
-bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
+bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
+    string dbName)
 {
     // only parse image and video
     int32_t mediaType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
@@ -531,9 +612,10 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.title = GetStringVal(GALLERY_TITLE, resultSet);
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
-    if (info.fileSize < GARBAGE_PHOTO_SIZE) {
-        MEDIA_WARN_LOG("maybe garbage path = %{public}s.",
-            BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str());
+    if (info.fileSize < fileMinSize_ && dbName == EXTERNAL_DB_NAME) {
+        MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
+            BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str(), fileMinSize_);
+        return false;
     }
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
@@ -569,7 +651,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.recycledTime = GetInt64Val(GALLERY_RECYCLED_TIME, resultSet);
     info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet);
 
-    bool isSuccess = ParseResultSet(resultSet, info);
+    bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     if (!isSuccess) {
         MEDIA_ERR_LOG("ParseResultSetFromGallery fail");
         return isSuccess;
@@ -585,7 +667,7 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
     if (mediaType == DUAL_MEDIA_TYPE::AUDIO_TYPE) {
         isSuccess = ParseResultSetForAudio(resultSet, info);
     } else {
-        isSuccess = ParseResultSet(resultSet, info);
+        isSuccess = ParseResultSet(resultSet, info, EXTERNAL_DB_NAME);
     }
     if (!isSuccess) {
         MEDIA_ERR_LOG("ParseResultSetFromExternal fail");
