@@ -922,11 +922,10 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
 
     auto callback = std::make_shared<DeleteCallback>(env, uiContent);
     OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
-        std::bind(&DeleteCallback::OnRelease, callback, std::placeholders::_1),
-        std::bind(&DeleteCallback::OnResult, callback, std::placeholders::_1, std::placeholders::_2),
-        std::bind(&DeleteCallback::OnReceive, callback, std::placeholders::_1),
-        std::bind(
-            &DeleteCallback::OnError, callback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+        ([callback](auto arg) { callback->OnRelease(arg); }),
+        ([callback](auto arg1, auto arg2) { callback->OnResult(arg1, arg2); }),
+        ([callback](auto arg) { callback->OnReceive(arg); }),
+        ([callback](auto arg1, auto arg2, auto arg3) { callback->OnError(arg1, arg2, arg3); }),
     };
     OHOS::Ace::ModalUIExtensionConfig config;
     config.isProhibitBack = true;

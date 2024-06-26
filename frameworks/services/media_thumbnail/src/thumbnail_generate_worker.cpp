@@ -57,7 +57,7 @@ int32_t ThumbnailGenerateWorker::Init(const ThumbnailTaskType &taskType)
 
     isThreadRunning_ = true;
     for (auto i = 0; i < threadNum; i++) {
-        std::thread thread(&ThumbnailGenerateWorker::StartWorker, this);
+        std::thread thread([this] { this->StartWorker(); });
         pthread_setname_np(thread.native_handle(), threadName.c_str());
         threads_.emplace_back(std::move(thread));
     }
