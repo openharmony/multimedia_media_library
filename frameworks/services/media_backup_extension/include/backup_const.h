@@ -53,6 +53,7 @@ const std::string GALLERT_IMPORT = "/Pictures/cloud/Imports";
 const std::string GALLERT_HIDDEN_ALBUM = "/Pictures/hiddenAlbum";
 const std::string GALLERT_ROOT_PATH = "/storage/emulated/";
 const std::string RESTORE_FAILED_FILES_PATH = "/storage/media/local/files/Docs/Documents/restore_failed_files";
+const std::string PHOTO_FILTER_SELECTED_SIZE = "filter_selected_size";
 
 // DB field for update scene
 const std::string GALLERY_ID = "_id";
