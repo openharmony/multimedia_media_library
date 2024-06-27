@@ -61,9 +61,8 @@ int32_t MultiStagesCaptureDeferredProcSessionCallback::UpdatePhotoQuality(const 
     updateCmd.SetValueBucket(updateValuesDirty);
     auto isTempResult = DatabaseAdapter::Update(updateCmd);
     if (isTempResult < 0) {
-        MEDIA_ERR_LOG("update is_temp fail, photoId: %{public}s", photoId.c_str());
+        MEDIA_WARN_LOG("update temp flag fail, photoId: %{public}s", photoId.c_str());
     }
-    MEDIA_ERR_LOG("update is_temp %{public}d, photoId: %{public}s", isTempResult, photoId.c_str());
 
     return updatePhotoIdResult;
 }
