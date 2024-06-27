@@ -51,7 +51,8 @@ protected:
     virtual void RestoreAudio(void) = 0;
     virtual void HandleRestData(void) = 0;
 
-    virtual bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
+    virtual bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
+        std::string dbName = "") = 0;
     virtual bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
     virtual void AnalyzeSource() = 0;
     virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
@@ -107,6 +108,7 @@ protected:
     int32_t errorCode_{RestoreError::SUCCESS};
     std::string errorInfo_;
     std::unordered_map<std::string, std::unordered_map<std::string, int32_t>> failedFilesMap_;
+    int fileMinSize_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

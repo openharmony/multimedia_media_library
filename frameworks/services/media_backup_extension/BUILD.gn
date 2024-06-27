@@ -60,6 +60,7 @@ ohos_shared_library("mediabackup") {
     "ffrt:libffrt",
     "hilog:libhilog",
     "kv_store:distributeddata_inner",
+    "libxml2:libxml2",
     "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",

@@ -29,7 +29,7 @@
 #include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #include "uri.h"
-#include "vision_db_sqls.h"
+#include "vision_db_sqls_more.h"
 
 namespace OHOS {
 namespace Media {

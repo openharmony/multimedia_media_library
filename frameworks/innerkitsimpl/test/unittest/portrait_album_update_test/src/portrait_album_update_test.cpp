@@ -49,7 +49,7 @@
 #include "vision_face_tag_column.h"
 #include "vision_image_face_column.h"
 #include "vision_photo_map_column.h"
-#include "vision_db_sqls.h"
+#include "vision_db_sqls_more.h"
 
 namespace OHOS {
 namespace Media {

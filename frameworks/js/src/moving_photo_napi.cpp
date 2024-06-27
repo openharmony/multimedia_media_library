@@ -296,7 +296,7 @@ static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext
     }
     context->arrayBufferLength = fileSize;
 
-    size_t readBytes = read(uniqueFd.Get(), context->arrayBufferData, fileSize);
+    size_t readBytes = static_cast<size_t>(read(uniqueFd.Get(), context->arrayBufferData, fileSize));
     if (readBytes != fileSize) {
         NAPI_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, "
             "error: %{public}d", readBytes, fileSize, errno);
