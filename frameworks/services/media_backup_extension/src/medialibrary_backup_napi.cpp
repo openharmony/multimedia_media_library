@@ -165,6 +165,7 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
         env, sceneCode, galleryAppName, mediaAppName, backupDir, nativeDeferred };
     if (block == nullptr) {
         NAPI_ERR_LOG("Failed to new block");
+        delete work;
         return result;
     }
     work->data = reinterpret_cast<void *>(block);
