@@ -24,7 +24,7 @@
 
 namespace OHOS {
 namespace Media {
-const int32_t MEDIA_RDB_VERSION = 86;
+const int32_t MEDIA_RDB_VERSION = 87;
 enum {
     VERSION_ADD_CLOUD = 2,
     VERSION_ADD_META_MODIFED = 3,
@@ -114,6 +114,7 @@ enum {
     VERSION_ADD_OWNER_APPID_TO_FILES_TABLE = 84,
     VERSION_ADD_IS_TEMP_TO_TRIGGER = 85,
     VERSION_UPDATE_ANALYSIS_TABLES = 86,
+    VERSION_UPDATE_PHOTO_THUMBNAIL_READY = 87,
 };
 
 enum {
@@ -224,13 +225,14 @@ const std::string MEDIA_DATA_DB_LONGITUDE = "longitude";
 const std::string MEDIA_DATA_DB_DATE_TAKEN = "date_taken";
 const std::string MEDIA_DATA_DB_THUMBNAIL = "thumbnail";
 const std::string MEDIA_DATA_DB_THUMB_ASTC = "astc";
-const std::string MEDIA_DATA_DB_HAS_ASTC = "has_astc";
+const std::string MEDIA_DATA_DB_HAS_ASTC = "has_astc"; // This attribute has been replaced by "thumbnail_ready"
 const std::string MEDIA_DATA_DB_CONTENT_CREATE_TIME = "content_create_time";
 const std::string MEDIA_DATA_DB_POSITION = "position";
 const std::string MEDIA_DATA_DB_DIRTY = "dirty";
 const std::string MEDIA_DATA_DB_CLOUD_ID = "cloud_id";
 const std::string MEDIA_DATA_DB_META_DATE_MODIFIED = "meta_date_modified";
 const std::string MEDIA_DATA_DB_SYNC_STATUS = "sync_status";
+const std::string MEDIA_DATA_DB_THUMBNAIL_READY = "thumbnail_ready";
 
 const std::string MEDIA_DATA_DB_LCD = "lcd";
 const std::string MEDIA_DATA_DB_BUCKET_ID = "bucket_id";
