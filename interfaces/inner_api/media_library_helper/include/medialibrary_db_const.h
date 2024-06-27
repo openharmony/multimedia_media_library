@@ -113,6 +113,7 @@ enum {
     VERSION_ADD_IS_TEMP = 83,
     VERSION_ADD_OWNER_APPID_TO_FILES_TABLE = 84,
     VERSION_ADD_IS_TEMP_TO_TRIGGER = 85,
+    VERSION_UPDATE_ANALYSIS_TABLES = 86,
 };
 
 enum {
@@ -123,6 +124,11 @@ enum {
 
 const std::vector<std::string> CAMERA_BUNDLE_NAMES = {
     "com.huawei.hmos.camera"
+};
+
+enum CloudFilePosition {
+    POSITION_LOCAL = 1 << 0,
+    POSITION_CLOUD = 1 << 1,
 };
 
 const std::string MEDIA_LIBRARY_VERSION = "1.0";

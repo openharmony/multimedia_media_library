@@ -102,6 +102,33 @@ static int32_t CheckPermission(void)
     return E_OK;
 }
 
+void MediaLibraryBackupNapi::UvQueueWork(uv_loop_s *loop, uv_work_t *work)
+{
+    uv_queue_work(loop, work, [](uv_work_t *work) {
+        RestoreBlock *block = reinterpret_cast<RestoreBlock *> (work->data);
+        if (block == nullptr) {
+            delete work;
+            return;
+        }
+        BackupRestoreService::GetInstance().StartRestore(block->sceneCode, block->galleryAppName,
+            block->mediaAppName, block->backupDir);
+    }, [](uv_work_t *work, int _status) {
+        RestoreBlock *block = reinterpret_cast<RestoreBlock *> (work->data);
+        napi_handle_scope scope = nullptr;
+        napi_open_handle_scope(block->env, &scope);
+        if (scope == nullptr) {
+            delete work;
+            return;
+        }
+        napi_value resultCode = nullptr;
+        napi_create_int32(block->env, 1, &resultCode);
+        napi_resolve_deferred(block->env, block->nativeDeferred, resultCode);
+        napi_close_handle_scope(block->env, scope);
+        delete block;
+        delete work;
+    });
+}
+
 napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
@@ -136,23 +163,40 @@ napi_value MediaLibraryBackupNapi::JSStartRestore(napi_env env, napi_callback_in
     napi_create_promise(env, &nativeDeferred, &result);
     RestoreBlock *block = new (std::nothrow) RestoreBlock {
         env, sceneCode, galleryAppName, mediaAppName, backupDir, nativeDeferred };
+    if (block == nullptr) {
+        NAPI_ERR_LOG("Failed to new block");
+        return result;
+    }
     work->data = reinterpret_cast<void *>(block);
-    uv_queue_work(loop, work,
-        [](uv_work_t *work) {
-            RestoreBlock *block = reinterpret_cast<RestoreBlock *> (work->data);
-            BackupRestoreService::GetInstance().StartRestore(block->sceneCode, block->galleryAppName,
-                block->mediaAppName, block->backupDir);
-        },
-        [](uv_work_t *work, int _status) {
-            RestoreBlock *block = reinterpret_cast<RestoreBlock *> (work->data);
-            napi_value resultCode = nullptr;
-            napi_create_int32(block->env, 1, &resultCode);
-            napi_resolve_deferred(block->env, block->nativeDeferred, resultCode);
-            delete block;
-            delete work;
-        }
-    );
+    UvQueueWork(loop, work);
     return result;
+}
+
+void MediaLibraryBackupNapi::UvQueueWorkEx(uv_loop_s *loop, uv_work_t *work)
+{
+    uv_queue_work(loop, work, [](uv_work_t *work) {
+        RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
+        BackupRestoreService::GetInstance().StartRestoreEx(block->sceneCode, block->galleryAppName,
+            block->mediaAppName, block->backupDir, block->restoreExInfo);
+    }, [](uv_work_t *work, int _status) {
+        RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
+        if (block == nullptr) {
+            delete work;
+            return;
+        }
+        napi_handle_scope scope = nullptr;
+        napi_open_handle_scope(block->env, &scope);
+        if (scope == nullptr) {
+            delete work;
+            return;
+        }
+        napi_value restoreExResult = nullptr;
+        napi_create_string_utf8(block->env, block->restoreExInfo.c_str(), NAPI_AUTO_LENGTH, &restoreExResult);
+        napi_resolve_deferred(block->env, block->nativeDeferred, restoreExResult);
+        napi_close_handle_scope(block->env, scope);
+        delete block;
+        delete work;
+    });
 }
 
 napi_value MediaLibraryBackupNapi::JSStartRestoreEx(napi_env env, napi_callback_info info)
@@ -196,21 +240,7 @@ napi_value MediaLibraryBackupNapi::JSStartRestoreEx(napi_env env, napi_callback_
         return result;
     }
     work->data = reinterpret_cast<void *>(block);
-    uv_queue_work(
-        loop, work,
-        [](uv_work_t *work) {
-            RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
-            BackupRestoreService::GetInstance().StartRestoreEx(block->sceneCode, block->galleryAppName,
-                block->mediaAppName, block->backupDir, block->restoreExInfo);
-        },
-        [](uv_work_t *work, int _status) {
-            RestoreExBlock *block = reinterpret_cast<RestoreExBlock *> (work->data);
-            napi_value restoreExResult = nullptr;
-            napi_create_string_utf8(block->env, block->restoreExInfo.c_str(), NAPI_AUTO_LENGTH, &restoreExResult);
-            napi_resolve_deferred(block->env, block->nativeDeferred, restoreExResult);
-            delete block;
-            delete work;
-        });
+    UvQueueWorkEx(loop, work);
     return result;
 }
 

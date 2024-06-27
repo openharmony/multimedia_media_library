@@ -50,6 +50,10 @@
 #include "medialibrary_rdb_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 
+#ifdef HAS_WIFI_MANAGER_PART
+#include "wifi_device.h"
+#endif
+
 using namespace OHOS::AAFwk;
 
 namespace OHOS {
@@ -61,6 +65,10 @@ const int32_t PROPER_DEVICE_BATTERY_CAPACITY = 50;
 // Level 0: The device temperature is lower than 35℃
 // Level 1: The device temperature ranges from 35℃ to 37℃
 const int32_t PROPER_DEVICE_TEMPERATURE_LEVEL = 1;
+
+// WIFI should be available in this state
+const int32_t WIFI_STATE_CONNECTED = 4;
+
 const int32_t COMMON_EVENT_KEY_GET_DEFAULT_PARAM = -1;
 const std::string COMMON_EVENT_KEY_BATTERY_CAPACITY = "soc";
 const std::string COMMON_EVENT_KEY_DEVICE_TEMPERATURE = "0";
@@ -71,7 +79,8 @@ const std::vector<std::string> MedialibrarySubscriber::events_ = {
     EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON,
     EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED,
     EventFwk::CommonEventSupport::COMMON_EVENT_BATTERY_CHANGED,
-    EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED
+    EventFwk::CommonEventSupport::COMMON_EVENT_THERMAL_LEVEL_CHANGED,
+    EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE
 };
 
 const std::map<std::string, StatusEventType> BACKGROUND_OPERATION_STATUS_MAP = {
@@ -102,8 +111,19 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
     isDeviceTemperatureProper_ = static_cast<int32_t>(
         thermalMgrClient.GetThermalLevel()) <= PROPER_DEVICE_TEMPERATURE_LEVEL;
 #endif
-    MEDIA_INFO_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d",
-        isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
+#ifdef HAS_WIFI_MANAGER_PART
+    auto wifiDevicePtr = Wifi::WifiDevice::GetInstance(WIFI_DEVICE_ABILITY_ID);
+    if (wifiDevicePtr == nullptr) {
+        MEDIA_ERR_LOG("MedialibrarySubscriber wifiDevicePtr is null");
+    } else {
+        ErrCode ret = wifiDevicePtr->IsConnected(isWifiConn_);
+        if (ret != Wifi::WIFI_OPT_SUCCESS) {
+            MEDIA_ERR_LOG("MedialibrarySubscriber Get-IsConnected-fail: -%{public}d", ret);
+        }
+    }
+#endif
+    MEDIA_INFO_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+        isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_, isWifiConn_);
 }
 
 bool MedialibrarySubscriber::Subscribe(void)
@@ -192,14 +212,18 @@ void MedialibrarySubscriber::UpdateBackgroundOperationStatus(
     }
 
     UpdateCurrentStatus();
+    UpdateBackgroundTimer();
 }
 
 void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eventData)
 {
-    const AAFwk::Want& want = eventData.GetWant();
+    const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
     MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
-    if (BACKGROUND_OPERATION_STATUS_MAP.count(action) != 0) {
+    if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
+        isWifiConn_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
+        UpdateBackgroundTimer();
+    } else if (BACKGROUND_OPERATION_STATUS_MAP.count(action) != 0) {
         UpdateBackgroundOperationStatus(want, BACKGROUND_OPERATION_STATUS_MAP.at(action));
     } else if (action.compare(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED) == 0) {
         string packageName = want.GetElement().GetBundleName();
@@ -334,6 +358,26 @@ void MedialibrarySubscriber::DoStartMtpService()
 void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleName)
 {
     MediaLibraryDataManager::GetInstance()->RevertPendingByPackage(bundleName);
+}
+
+void MedialibrarySubscriber::UpdateBackgroundTimer()
+{
+    bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_ && isWifiConn_;
+
+    MEDIA_INFO_LOG("update timer status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, "
+                   "%{public}d, %{public}d",
+        timerStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_,
+        isWifiConn_);
+
+    if (timerStatus_ == newStatus) {
+        return;
+    }
+    timerStatus_ = newStatus;
+    if (timerStatus_) {
+        MediaLibraryDataManager::GetInstance()->RegisterTimer();
+    } else {
+        MediaLibraryDataManager::GetInstance()->UnregisterTimer();
+    }
 }
 }  // namespace Media
 }  // namespace OHOS

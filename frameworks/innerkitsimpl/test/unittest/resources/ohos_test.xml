@@ -99,6 +99,10 @@
             <option name="shell" value="mkdir -p /data/test/backup/db/medialibrary/ce/databases"/>
             <option name="shell" value="mkdir -p /data/test/backup/db/external/ce/databases"/>
             <option name="shell" value="touch /data/test/backup/1.txt"/>
+            <option name="push" value="backup_testfile/test.xml -> /data/test/backup" src="res"/>
+            <option name="push" value="backup_testfile/test2.xml -> /data/test/backup" src="res"/>
+            <option name="push" value="backup_testfile/test3.xml -> /data/test/backup" src="res"/>
+            <option name="push" value="backup_testfile/test4.xml -> /data/test/backup" src="res"/>
         </preparer>
     </target>
     <target name="medialibrary_scanner_db_test">

@@ -312,12 +312,12 @@ static void JSGetHighlightResourceExecute(napi_env env, void *data)
         return;
     }
     UniqueFd uniqueFd(fd);
-    size_t fileLen = static_cast<size_t>(lseek(uniqueFd.Get(), 0, SEEK_END));
+    off_t fileLen = lseek(uniqueFd.Get(), 0, SEEK_END);
     if (fileLen < 0) {
         NAPI_ERR_LOG("Failed to get highlight cover file length, error: %{public}d", errno);
         return;
     }
-    int32_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
+    off_t ret = lseek(uniqueFd.Get(), 0, SEEK_SET);
     if (ret < 0) {
         NAPI_ERR_LOG("Failed to reset highlight cover file offset, error: %{public}d", errno);
         return;
@@ -331,8 +331,8 @@ static void JSGetHighlightResourceExecute(napi_env env, void *data)
 
     ssize_t readBytes = read(uniqueFd.Get(), arrayBufferData, fileLen);
     if (readBytes != fileLen) {
-        NAPI_ERR_LOG("read file failed, read bytes is %{public}zu, actual length is %{public}zu, "
-            "error: %{public}d", readBytes, fileLen, errno);
+        NAPI_ERR_LOG("read file failed, read bytes is %{public}zu,""actual length is %{public}" PRId64
+            ",error: %{public}d", readBytes, fileLen, errno);
         return;
     }
     context->napiArrayBuffer = arrayBuffer;

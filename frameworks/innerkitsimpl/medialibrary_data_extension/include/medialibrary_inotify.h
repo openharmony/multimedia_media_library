@@ -34,7 +34,7 @@ struct WatchInfo {
     std::string uri_;
     std::string bundleName_;
     MediaLibraryApi api_;
-    int32_t meetEvent_;
+    uint32_t meetEvent_;
 };
 
 class MediaLibraryInotify {

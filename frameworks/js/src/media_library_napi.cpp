@@ -67,6 +67,7 @@
 #include "js_native_api.h"
 #include "js_native_api_types.h"
 #include "delete_callback.h"
+#include "window.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -82,6 +83,7 @@ const int32_t THIRD_ENUM = 3;
 const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 100;
 const int64_t MAX_INT64 = 9223372036854775807;
+const uint32_t MAX_UINT32 = 4294967295;
 const string DATE_FUNCTION = "DATE(";
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
@@ -1569,6 +1571,10 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
     napi_value subUriArray = nullptr;
     napi_create_array_with_length(env, len, &subUriArray);
     int subElementIndex = 0;
+    if (len > MAX_UINT32) {
+        NAPI_ERR_LOG("suburi length exceed the limit.");
+        return status;
+    }
     for (uint32_t i = 0; i < len; i++) {
         string subUri = parcel->ReadString();
         if (subUri.empty()) {
@@ -2338,6 +2344,7 @@ static napi_value AddDefaultPhotoAlbumColumns(napi_env env, vector<string> &fetc
             // uri is default property of album
             continue;
         } else {
+            NAPI_ERR_LOG("unknown columns:%{public}s", column.c_str());
             NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID);
             return nullptr;
         }
@@ -3818,7 +3825,7 @@ static napi_value PhotoAccessGetAssetsExecuteSync(napi_env env, MediaLibraryAsyn
         fileAssetArray.push_back(move(file));
         file = fetchResult->GetNextObject();
     }
-    int len = fileAssetArray.size();
+    size_t len = fileAssetArray.size();
     napi_value jsFileArray = nullptr;
     napi_create_array_with_length(env, len, &jsFileArray);
     size_t i = 0;
@@ -5305,6 +5312,7 @@ static void StartPhotoPickerExecute(napi_env env, void *data)
 
 static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status status, void *data)
 {
+    NAPI_INFO_LOG("StartPhotoPickerAsyncCallbackComplete start");
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
 
@@ -5332,8 +5340,7 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
             break;
         }
     }
-    status = napi_set_named_property(env, result, "uris", jsUris);
-    if (status != napi_ok) {
+    if (napi_set_named_property(env, result, "uris", jsUris) != napi_ok) {
         NAPI_ERR_LOG("napi_set_named_property uris failed");
     }
     napi_value isOrigin = nullptr;
@@ -5356,9 +5363,49 @@ static void StartPhotoPickerAsyncCallbackComplete(napi_env env, napi_status stat
     delete context;
 }
 
+Ace::UIContent *GetSubWindowUIContent(napi_env env, unique_ptr<MediaLibraryAsyncContext> &AsyncContext)
+{
+    bool present = false;
+    napi_status status = napi_has_named_property(env, AsyncContext->argv[ARGS_ONE], "parameters", &present);
+    if (status != napi_ok || !present) {
+        return nullptr;
+    }
+    napi_value paramValue;
+    status = napi_get_named_property(env, AsyncContext->argv[ARGS_ONE], "parameters", &paramValue);
+    CHECK_COND_RET(status == napi_ok, nullptr, "failed to get named property of parameters");
+    present = false;
+    status = napi_has_named_property(env, paramValue, "subWindowName", &present);
+    if (status != napi_ok || !present) {
+        return nullptr;
+    }
+    napi_value subWindowName;
+    status = napi_get_named_property(env, paramValue, "subWindowName", &subWindowName);
+    CHECK_COND_RET(status == napi_ok, nullptr, "failed to get named property of subWindowName");
+    char buffer[ARG_BUF_SIZE];
+    size_t res = 0;
+    status = napi_get_value_string_utf8(env, subWindowName, buffer, ARG_BUF_SIZE, &res);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("failed to get the value of subWindow name");
+        return nullptr;
+    }
+    auto currentWindow = Rosen::Window::Find(string(buffer));
+    if (currentWindow == nullptr) {
+        NAPI_ERR_LOG("GetSubWindowUIContent failed to find context by subWindow name");
+        return nullptr;
+    }
+    return currentWindow->GetUIContent();
+}
+
 Ace::UIContent *GetUIContent(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &AsyncContext)
 {
+    NAPI_INFO_LOG("GetUIContent start");
+    Ace::UIContent *uiContent = GetSubWindowUIContent(env, AsyncContext);
+    if (uiContent != nullptr) {
+        NAPI_INFO_LOG("GetSubWindowUIContent success");
+        return uiContent;
+    }
+
     bool isStageMode = false;
     napi_status status = AbilityRuntime::IsStageContext(env, AsyncContext->argv[ARGS_ZERO], isStageMode);
     if (status != napi_ok || !isStageMode) {
@@ -5385,6 +5432,7 @@ Ace::UIContent *GetUIContent(napi_env env, napi_callback_info info,
 static napi_value StartPickerExtension(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &AsyncContext)
 {
+    NAPI_INFO_LOG("StartPickerExtension start");
     Ace::UIContent *uiContent = GetUIContent(env, info, AsyncContext);
     if (uiContent == nullptr) {
         NAPI_ERR_LOG("get uiContent failed");
@@ -5421,6 +5469,7 @@ template <class AsyncContext>
 static napi_status AsyncContextSetStaticObjectInfo(napi_env env, napi_callback_info info,
     AsyncContext &asyncContext, const size_t minArgs, const size_t maxArgs)
 {
+    NAPI_INFO_LOG("AsyncContextSetStaticObjectInfo start");
     napi_value thisVar = nullptr;
     asyncContext->argc = maxArgs;
     CHECK_STATUS_RET(napi_get_cb_info(env, info, &asyncContext->argc, &(asyncContext->argv[ARGS_ZERO]), &thisVar,
@@ -5437,6 +5486,7 @@ static napi_status AsyncContextSetStaticObjectInfo(napi_env env, napi_callback_i
 static napi_value ParseArgsStartPhotoPicker(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
+    NAPI_INFO_LOG("ParseArgsStartPhotoPicker start");
     constexpr size_t minArgs = ARGS_TWO;
     constexpr size_t maxArgs = ARGS_THREE;
     CHECK_ARGS(env, AsyncContextSetStaticObjectInfo(env, info, context, minArgs, maxArgs),
@@ -5450,6 +5500,7 @@ static napi_value ParseArgsStartPhotoPicker(napi_env env, napi_callback_info inf
 
 napi_value MediaLibraryNapi::StartPhotoPicker(napi_env env, napi_callback_info info)
 {
+    NAPI_INFO_LOG("StartPhotoPicker start");
     unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
     auto pickerCallBack = make_shared<PickerCallBack>();
     asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;

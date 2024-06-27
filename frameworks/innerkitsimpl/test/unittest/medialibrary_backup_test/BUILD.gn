@@ -64,6 +64,7 @@ ohos_unittest("medialibrary_backup_test") {
     "ffrt:libffrt",
     "hilog:libhilog",
     "kv_store:distributeddata_inner",
+    "libxml2:libxml2",
     "napi:ace_napi",
     "player_framework:media_client",
     "relational_store:native_rdb",
