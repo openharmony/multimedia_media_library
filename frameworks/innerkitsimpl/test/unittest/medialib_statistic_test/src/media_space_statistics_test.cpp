@@ -168,7 +168,6 @@ void MediaSpaceStatisticsTest::SetUpTestCase(void)
     g_oneImageSize = GetFile(MEDIA_TYPE_IMAGE)->GetSize();
     g_oneVideoSize = GetFile(MEDIA_TYPE_VIDEO)->GetSize();
     g_oneAudioSize = GetFile(MEDIA_TYPE_AUDIO)->GetSize();
-    g_oneFileSize = GetFile(MEDIA_TYPE_FILE)->GetSize();
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: g_oneImageSize = %{public}lld",
         (long long)g_oneImageSize);
     MEDIA_INFO_LOG("MediaSpaceStatisticsTest::SetUpTestCase:: g_oneVideoSize = %{public}lld",
