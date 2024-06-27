@@ -57,7 +57,7 @@ void DfxWorker::Init()
 {
     MEDIA_INFO_LOG("init");
     isThreadRunning_ = true;
-    delayThread_ = thread(bind(&DfxWorker::InitDelayThread, this));
+    delayThread_ = thread([this] { this->InitDelayThread(); });
 }
 
 static void HandleLoopTask(DfxData *data)

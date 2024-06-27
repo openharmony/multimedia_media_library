@@ -73,7 +73,6 @@ private:
     int32_t thumbnailVersion_ {0};
     int32_t deleteStatisticVersion_ {0};
     static std::shared_ptr<DfxWorker> dfxWorkerInstance_;
-    std::thread cycleThread_;
     std::thread delayThread_;
     bool isEnd_ = false;
     std::mutex taskLock_;
