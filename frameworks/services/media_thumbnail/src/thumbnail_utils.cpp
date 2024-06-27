@@ -668,7 +668,7 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
         MEDIA_DATA_DB_NAME,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, std::to_string(
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, std::to_string(
         static_cast<int32_t>(ThumbnailReady::THUMB_UPGRADE)));
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
@@ -709,7 +709,7 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
         MEDIA_DATA_DB_NAME,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     rdbPredicates.Limit(ASTC_GENERATE_COUNT_AFTER_RESTORE);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
@@ -752,7 +752,7 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         MEDIA_DATA_DB_ORIENTATION,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     rdbPredicates.BeginWrap()
         ->BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3")
@@ -2105,7 +2105,7 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
     };
-    rdbPredicate.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     rdbPredicate.Limit(THUMBNAIL_GENERATE_BATCH_COUNT);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicate, column);
     if (!CheckResultSetCount(resultSet, err)) {

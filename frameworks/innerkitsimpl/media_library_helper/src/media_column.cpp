@@ -91,8 +91,9 @@ const std::string PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE = "dynamic_range_type";
 const std::string PhotoColumn::MOVING_PHOTO_EFFECT_MODE = "moving_photo_effect_mode";
 const std::string PhotoColumn::PHOTO_LCD_SIZE = "lcd_size";
 const std::string PhotoColumn::PHOTO_THUMB_SIZE = "thumb_size";
-const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc";
+const std::string PhotoColumn::PHOTO_HAS_ASTC = "has_astc"; // This attribute has been replaced by "thumbnail_ready"
 const std::string PhotoColumn::PHOTO_IS_TEMP = "is_temp";
+const std::string PhotoColumn::PHOTO_THUMBNAIL_READY = "thumbnail_ready";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -180,7 +181,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DEFERRED_PROC_TYPE + " INT DEFAULT 0, " +
     PHOTO_DYNAMIC_RANGE_TYPE + " INT DEFAULT 0, " +
     MOVING_PHOTO_EFFECT_MODE + " INT DEFAULT 0, " +
-    PHOTO_HAS_ASTC + " INT DEFAULT 0, " +
+    PHOTO_THUMBNAIL_READY + " INT DEFAULT 0, " +
     PHOTO_LCD_SIZE + " TEXT, " +
     PHOTO_THUMB_SIZE + " TEXT," +
     PHOTO_IS_TEMP + " INT DEFAULT 0)";

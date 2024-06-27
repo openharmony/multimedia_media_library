@@ -602,7 +602,7 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const Thumb
 {
     int32_t err = UpdateThumbDbState(opts, data);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("update has_astc failed, err = %{public}d", err);
+        MEDIA_ERR_LOG("update thumbnail_ready failed, err = %{public}d", err);
         return false;
     }
 
@@ -625,7 +625,7 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
     }
     ValuesBucket values;
     int changedRows;
-    values.PutLong(PhotoColumn::PHOTO_HAS_ASTC, thumbnail_status);
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, thumbnail_status);
     Size lcdSize;
     if (ThumbnailUtils::GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
         ThumbnailUtils::SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
@@ -701,7 +701,7 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
         return false;
     }
 
-    // After all thumbnails are generated, the value of column "has_astc" in rdb
+    // After all thumbnails are generated, the value of column "thumbnail_ready" in rdb
     // needs to be updated, and application should receive a notification at the same time.
     if (!UpdateThumbnailState(opts, data)) {
         MEDIA_ERR_LOG("UpdateThumbnailState fail");
