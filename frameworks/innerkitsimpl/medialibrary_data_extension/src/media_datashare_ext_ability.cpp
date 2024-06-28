@@ -235,7 +235,7 @@ static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,
 static bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
 {
     if (!PermissionUtils::IsRootShell() &&
-        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::QUERY)) {
+        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::TOOL_QUERY_BY_DISPLAY_NAME)) {
         MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
         return false;
     }
@@ -320,32 +320,6 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
     }
     return E_SUCCESS;
 }
-
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
-static int32_t MediaToolNativeSACheck(MediaLibraryCommand &cmd)
-{
-    static const set<OperationObject> MEDIATOOL_OBJECT = {
-        OperationObject::TOOL_PHOTO,
-        OperationObject::TOOL_AUDIO
-    };
-    static const set<Media::OperationType> MEDIATOOL_TYPES = {
-        Media::OperationType::DELETE_TOOL
-    };
-
-    OperationObject oprnObject = cmd.GetOprnObject();
-    Media::OperationType oprnType = cmd.GetOprnType();
-    if (MEDIATOOL_OBJECT.find(oprnObject) != MEDIATOOL_OBJECT.end() ||
-        MEDIATOOL_TYPES.find(oprnType) != MEDIATOOL_TYPES.end()) {
-        if (!PermissionUtils::IsNativeSAApp()) {
-            MEDIA_ERR_LOG("Native sa check failed!");
-            return E_CHECK_NATIVE_SA_FAIL;
-        }
-    } else {
-        return E_NEED_FURTHER_CHECK;
-    }
-    return E_SUCCESS;
-}
-#endif
 
 static inline int32_t HandleMediaVolumePerm()
 {
@@ -537,13 +511,6 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     if (err != E_SUCCESS) {
         return err;
     }
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
-    err = MediaToolNativeSACheck(cmd);
-    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
-        UnifyOprnObject(cmd);
-        return err;
-    }
-#endif
     err = MediatoolPermCheck(cmd);
     if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);
