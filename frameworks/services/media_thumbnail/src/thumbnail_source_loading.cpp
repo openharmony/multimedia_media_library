@@ -309,6 +309,8 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
         data_.orientation = 0;
     }
 
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, MEDIA_TYPE_IMAGE, imageInfo.size.width,
+        imageInfo.size.height);
     MEDIA_DEBUG_LOG("SourceLoader status:%{public}s, width:%{public}d, height:%{public}d",
         STATE_NAME_MAP.at(state_).c_str(), imageInfo.size.width, imageInfo.size.height);
     return true;
