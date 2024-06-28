@@ -2657,6 +2657,15 @@ static void AddIsTempToTrigger(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddFrontCameraType(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_FRONT_CAMERA + " TEXT"
+    };
+    MEDIA_INFO_LOG("Start add front column");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
@@ -2673,6 +2682,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_PHOTO_THUMBNAIL_READY) {
         UpdateThumbnailReadyColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_FRONT_CAMERA_TYPE) {
+        AddFrontCameraType(store);
     }
 }
 

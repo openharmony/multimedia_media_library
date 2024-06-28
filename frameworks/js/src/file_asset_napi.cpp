@@ -435,6 +435,11 @@ std::string FileAssetNapi::GetAllExif() const
     return fileAssetPtr->GetAllExif();
 }
 
+std::string FileAssetNapi::GetFrontCamera() const
+{
+    return fileAssetPtr->GetFrontCamera();
+}
+
 std::string FileAssetNapi::GetUserComment() const
 {
     return fileAssetPtr->GetUserComment();
