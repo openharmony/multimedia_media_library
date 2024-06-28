@@ -128,6 +128,9 @@ int32_t MetadataExtractor::ExtractImageExif(std::unique_ptr<ImageSource> &imageS
     err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_GPS_LATITUDE, propertyStr);
     exifJson[PHOTO_DATA_IMAGE_GPS_LATITUDE] = (err == 0) ? GetLongitudeLatitude(propertyStr): 0;
 
+    err = imageSource->GetImagePropertyString(0, PHOTO_DATA_IMAGE_FRONT_CAMERA, propertyStr);
+    data->SetFrontCamera(err == 0 ? propertyStr : "0");
+
     for (auto &exifKey : exifInfoKeys) {
         err = imageSource->GetImagePropertyString(0, exifKey, propertyStr);
         exifJson[exifKey] = (err == 0) ? propertyStr: "";
