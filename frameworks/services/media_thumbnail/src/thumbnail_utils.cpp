@@ -240,7 +240,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     data.orientation = 0;
     data.stats.sourceWidth = data.source->GetWidth();
     data.stats.sourceHeight = data.source->GetHeight();
-    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, desiredSize.width, desiredSize.height);
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, width, height);
     return true;
 }
 
