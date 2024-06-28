@@ -42,7 +42,13 @@ static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.3;
 
 void DownloadCloudFilesBackground::DownloadCloudFiles()
 {
-    if (IsStorageInsufficient() || IsLocalFilesExceedsThreshold()) {
+    MEDIA_INFO_LOG("Start downloading cloud files task");
+    if (IsStorageInsufficient()) {
+        MEDIA_WARN_LOG("Insufficient storage space, stop downloading cloud files");
+        return;
+    }
+    if (IsLocalFilesExceedsThreshold()) {
+        MEDIA_WARN_LOG("The number of local files exceeds the threshold, stop downloading cloud files");
         return;
     }
     auto resultSet = QueryCloudFiles();
