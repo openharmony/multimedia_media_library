@@ -92,7 +92,7 @@ bool Acl::IsValid()
 {
     if (!entries.count(ACL_TAG::USER_OBJ) || !entries.count(ACL_TAG::GROUP_OBJ) ||
             !entries.count(ACL_TAG::OTHER)) {
-        MEDIA_ERR_LOG("IsValid : %{public}d, %{public}d, %{public}d", entries.count(ACL_TAG::USER_OBJ),
+        MEDIA_ERR_LOG("IsValid : %{public}zu, %{public}zu, %{public}zu", entries.count(ACL_TAG::USER_OBJ),
             entries.count(ACL_TAG::GROUP_OBJ), entries.count(ACL_TAG::OTHER));
         return false;
     }
