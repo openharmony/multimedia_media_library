@@ -132,6 +132,8 @@ public:
     static const std::string PHOTO_DATE_YEAR_FORMAT EXPORT;
     static const std::string PHOTO_DATE_MONTH_FORMAT EXPORT;
     static const std::string PHOTO_DATE_DAY_FORMAT EXPORT;
+    static const std::string PHOTO_FRONT_CAMERA EXPORT;
+
     // table name
     static const std::string PHOTOS_TABLE EXPORT;
 
