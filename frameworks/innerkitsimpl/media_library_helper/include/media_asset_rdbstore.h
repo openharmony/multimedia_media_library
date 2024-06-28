@@ -40,7 +40,8 @@ public:
     EXPORT static MediaAssetRdbStore* GetInstance();
     EXPORT std::shared_ptr<DataShare::DataShareResultSet> Query(const DataShare::DataSharePredicates& predicates,
         std::vector<std::string>& columns, OperationObject& object, int& errCode);
-    EXPORT bool IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& object, bool isIgnoreSELinux = false);
+    EXPORT bool IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& object,
+        const DataShare::DataSharePredicates& predicates, bool isIgnoreSELinux = false);
     EXPORT std::shared_ptr<NativeRdb::AbsSharedResultSet> QueryRdb(const DataShare::DataSharePredicates& predicates,
         std::vector<std::string>& columns, OperationObject& object);
     EXPORT int32_t QueryTimeIdBatch(int32_t start, int32_t count, std::vector<std::string> &batchKeys);
@@ -49,6 +50,7 @@ private:
     int32_t TryGetRdbStore(bool isIngnoreSELinux = false);
     EXPORT static const std::string CloudSyncTriggerFunc(const std::vector<std::string>& args);
     EXPORT static const std::string IsCallerSelfFunc(const std::vector<std::string>& args);
+    bool IsQueryGroupPhotoAlbumAssets(const std::string& albumId);
     std::shared_ptr<NativeRdb::RdbStore> rdbStore_ {nullptr};
 };
 
