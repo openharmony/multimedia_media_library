@@ -88,6 +88,7 @@ protected:
     void UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode);
     void UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode);
     void UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode);
+    void GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
@@ -109,6 +110,8 @@ protected:
     std::string errorInfo_;
     std::unordered_map<std::string, std::unordered_map<std::string, int32_t>> failedFilesMap_;
     int fileMinSize_ = 0;
+    int maxFileId_ = 0;
+    int maxCount_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

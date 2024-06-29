@@ -128,6 +128,8 @@ public:
     static const std::string PHOTO_HIDDEN_TIME_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_HIDDEN_TIME_INDEX EXPORT;
     static const std::string PHOTO_FAVORITE_INDEX EXPORT;
+    // for clone query
+    static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // format in PhotoTable year month day
     static const std::string PHOTO_DATE_YEAR_FORMAT EXPORT;
     static const std::string PHOTO_DATE_MONTH_FORMAT EXPORT;
@@ -149,6 +151,7 @@ public:
     static const std::string CREATE_HIDDEN_TIME_INDEX EXPORT;
     static const std::string CREATE_SCHPT_HIDDEN_TIME_INDEX EXPORT;
     static const std::string CREATE_PHOTO_FAVORITE_INDEX EXPORT;
+    static const std::string CREATE_PHOTO_DISPLAYNAME_INDEX EXPORT;
 
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
