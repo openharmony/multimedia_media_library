@@ -996,6 +996,7 @@ static const vector<string> onCreateSqlStrs = {
     MedialibraryBusinessRecordColumn::CREATE_TABLE,
     MedialibraryBusinessRecordColumn::CREATE_BUSINESS_KEY_INDEX,
     PhotoExtColumn::CREATE_PHOTO_EXT_TABLE,
+    PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2666,6 +2667,15 @@ static void AddFrontCameraType(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddDisplayNameIndex(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
+    };
+    MEDIA_INFO_LOG("Add displayname index");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
@@ -2686,6 +2696,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_FRONT_CAMERA_TYPE) {
         AddFrontCameraType(store);
+    }
+
+    if (oldVersion < PHOTOS_CREATE_DISPLAYNAME_INDEX) {
+        AddDisplayNameIndex(store);
     }
 }
 
