@@ -57,6 +57,7 @@ public:
         const std::string &type);
     static int32_t QueryUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &type);
     static std::string GarbleInfoName(const std::string &infoName);
+    static void UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap = false);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
