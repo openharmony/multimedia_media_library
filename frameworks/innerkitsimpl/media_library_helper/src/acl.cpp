@@ -120,7 +120,7 @@ int Acl::InsertEntry(const AclXattrEntry &entry)
         return E_ERR;
     }
     CompareInsertEntry(entry); // must before ReCalcMaskPerm()
-    
+
     maskDemand++;
     /*
         * In either case there's no or already one ACL_MASK entry in the set,
