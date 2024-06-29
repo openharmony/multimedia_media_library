@@ -101,6 +101,16 @@ private:
         MediaType mediaType);
     std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount, int64_t &videoFileMoveCount);
+    void RestorePhotoBatch(int32_t offset);
+    void RestoreAudioBatch(int32_t offset);
+    void InsertPhotoRelated(std::vector<FileInfo> &fileInfos);
+    int32_t QueryMapTotalNumber(const std::string &baseQuerySql);
+    std::vector<MapInfo> QueryMapInfos(const std::string &baseQuerySql, int32_t offset,
+        std::unordered_map<int32_t, FileInfo> &fileInfoMap, const std::unordered_map<int32_t, int32_t> &albumIdMap,
+        std::unordered_set<int32_t> &albumSet);
+    int64_t InsertMapByTable(const std::string &tableName, const std::vector<MapInfo> &mapInfos);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::vector<MapInfo> &mapInfos,
+        const std::string &tableName);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};

@@ -277,5 +277,14 @@ int32_t BackupDatabaseUtils::QueryExternalAudioCount(std::shared_ptr<NativeRdb::
         AND _data LIKE '/storage/emulated/0/Music%'";
     return QueryInt(externalRdb, QUERY_EXTERNAL_AUDIO_COUNT, CUSTOM_COUNT);
 }
+
+void BackupDatabaseUtils::UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap)
+{
+    if (selectionToAdd.empty()) {
+        return;
+    }
+    std::string wrappedSelectionToAdd = needWrap ? "'" + selectionToAdd + "'" : selectionToAdd;
+    selection += selection.empty() ? wrappedSelectionToAdd : ", " + wrappedSelectionToAdd;
+}
 } // namespace Media
 } // namespace OHOS

@@ -108,6 +108,7 @@ protected:
     std::mutex imageMutex_;
     std::mutex videoMutex_;
     std::mutex audioMutex_;
+    std::mutex failedFilesMutex_;
     int32_t errorCode_{RestoreError::SUCCESS};
     std::string errorInfo_;
     std::unordered_map<std::string, std::unordered_map<std::string, int32_t>> failedFilesMap_;
