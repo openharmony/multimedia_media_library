@@ -679,32 +679,32 @@ void CloneRestore::QueryTableAlbumSetMap(FileInfo &fileInfo)
 void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
 {
     string selection;
-    unordered_map<string, FileInfo> fileInfoMap;
-    for (auto &fileInfo : fileInfos) {
-        if (fileInfo.cloudPath.empty()) {
+    unordered_map<string, size_t> fileIndexMap;
+    for (size_t index = 0; index < fileInfos.size(); index++) {
+        if (fileInfos[index].cloudPath.empty()) {
             continue;
         }
-        BackupDatabaseUtils::UpdateSelection(selection, fileInfo.cloudPath, true);
-        fileInfoMap[fileInfo.cloudPath] = fileInfo;
+        BackupDatabaseUtils::UpdateSelection(selection, fileInfos[index].cloudPath, true);
+        fileIndexMap[fileInfos[index].cloudPath] = index;
     }
     string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_FILE_PATH + " IN (" + selection + ")";
-    querySql += " LIMIT " + to_string(fileInfoMap.size());
+    querySql += " LIMIT " + to_string(fileIndexMap.size());
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
     if (resultSet == nullptr) {
         return;
     }
-    while (resultSet->GoToNextRow() != NativeRdb::E_OK) {
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
         string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
         if (fileId <= 0) {
             MEDIA_ERR_LOG("Get fileId invalid: %{public}d", fileId);
             continue;
         }
-        if (fileInfoMap.count(cloudPath) == 0) {
+        if (fileIndexMap.count(cloudPath) == 0) {
             continue;
         }
-        fileInfoMap[cloudPath].fileIdNew = fileId;
+        fileInfos[fileIndexMap.at(cloudPath)].fileIdNew = fileId;
     }
 }
 
@@ -787,6 +787,9 @@ void CloneRestore::BatchQueryAlbum(vector<AlbumInfo> &albumInfos, const string &
 {
     auto &albumIdMap = tableAlbumIdMap_[tableName];
     for (auto &albumInfo : albumInfos) {
+        if (albumInfo.albumIdOld <= 0) {
+            continue;
+        }
         string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + tableName + " WHERE " +
             PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(albumInfo.albumType) + " AND " +
             PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(albumInfo.albumSubType) + " AND " +
@@ -803,17 +806,11 @@ void CloneRestore::BatchQueryAlbum(vector<AlbumInfo> &albumInfos, const string &
     }
 }
 
-void CloneRestore::BatchInsertMap(vector<FileInfo> &fileInfos, int64_t &totalRowNum)
+void CloneRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &totalRowNum)
 {
     string selection;
-    unordered_map<int32_t, FileInfo> fileInfoMap;
-    for (auto &fileInfo : fileInfos) {
-        if (fileInfo.fileIdOld <= 0 || fileInfo.fileIdNew <= 0) {
-            continue;
-        }
-        BackupDatabaseUtils::UpdateSelection(selection, to_string(fileInfo.fileIdOld), false);
-        fileInfoMap[fileInfo.fileIdOld] = fileInfo;
-    }
+    unordered_map<int32_t, int32_t> fileIdMap;
+    SetFileIdReference(fileInfos, selection, fileIdMap);
     for (const auto &tableName : CLONE_ALBUMS) {
         string garbledTableName = BackupDatabaseUtils::GarbleInfoName(tableName);
         string mapTableName = GetValueFromMap(CLONE_ALBUM_MAP, tableName);
@@ -823,20 +820,26 @@ void CloneRestore::BatchInsertMap(vector<FileInfo> &fileInfos, int64_t &totalRow
         }
         auto albumIdMap = GetValueFromMap(tableAlbumIdMap_, tableName);
         if (albumIdMap.empty()) {
-            MEDIA_ERR_LOG("Get album id map of table %{public}s failed", garbledTableName.c_str());
+            MEDIA_INFO_LOG("Get album id map of table %{public}s empty, skip", garbledTableName.c_str());
             continue;
         }
+        string albumSelection;
+        for (auto iter = albumIdMap.begin(); iter != albumIdMap.end(); ++iter) {
+            BackupDatabaseUtils::UpdateSelection(albumSelection, to_string(iter->first), false);
+        }
         unordered_set<int32_t> currentTableAlbumSet;
-        string baseQuerySql = mapTableName + " WHERE " + PhotoMap::ASSET_ID + " IN (" + selection + ")";
+        string baseQuerySql = mapTableName + " INNER JOIN " + tableName + " ON " +
+            mapTableName + "." + PhotoMap::ALBUM_ID + " = " + tableName + "." + PhotoAlbumColumns::ALBUM_ID +
+            " WHERE " + mapTableName + "." + PhotoMap::ALBUM_ID + " IN (" + albumSelection + ") AND " +
+            mapTableName + "." + PhotoMap::ASSET_ID + " IN (" + selection + ")";
         int32_t totalNumber = QueryMapTotalNumber(baseQuerySql);
         MEDIA_INFO_LOG("QueryMapTotalNumber of table %{public}s, totalNumber = %{public}d", garbledTableName.c_str(),
             totalNumber);
         for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
             int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
-            vector<MapInfo> mapInfos = QueryMapInfos(baseQuerySql, offset, fileInfoMap, albumIdMap,
-                currentTableAlbumSet);
+            vector<MapInfo> mapInfos = QueryMapInfos(mapTableName, baseQuerySql, offset, fileIdMap, albumIdMap);
             int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
-            int64_t rowNum = InsertMapByTable(mapTableName, mapInfos);
+            int64_t rowNum = InsertMapByTable(mapTableName, mapInfos, currentTableAlbumSet);
             totalRowNum += rowNum;
             int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
             MEDIA_INFO_LOG("query %{public}zu map infos cost %{public}ld, insert %{public}ld maps cost %{public}ld",
@@ -1256,8 +1259,20 @@ void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos)
     BatchInsertMap(fileInfos, mapRowNum);
     migrateDatabaseMapNumber_ += mapRowNum;
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("query cost %{public}ld, insert map cost %{public}ld",(long)(startInsert - startQuery),
-        (long)(end - startInsert));
+    MEDIA_INFO_LOG("query new file_id cost %{public}ld, insert %{public}ld maps cost %{public}ld",
+        (long)(startInsert - startQuery), (long)mapRowNum, (long)(end - startInsert));
+}
+
+void CloneRestore::SetFileIdReference(const vector<FileInfo> &fileInfos, string &selection,
+    unordered_map<int32_t, int32_t> &fileIdMap)
+{
+    for (const auto &fileInfo : fileInfos) {
+        if (fileInfo.fileIdOld <= 0 || fileInfo.fileIdNew <= 0) {
+            continue;
+        }
+        BackupDatabaseUtils::UpdateSelection(selection, to_string(fileInfo.fileIdOld), false);
+        fileIdMap[fileInfo.fileIdOld] = fileInfo.fileIdNew;
+    }
 }
 
 int32_t CloneRestore::QueryMapTotalNumber(const string &baseQuerySql)
@@ -1266,13 +1281,14 @@ int32_t CloneRestore::QueryMapTotalNumber(const string &baseQuerySql)
     return BackupDatabaseUtils::QueryInt(mediaRdb_, querySql, CUSTOM_COUNT);
 }
 
-vector<MapInfo> CloneRestore::QueryMapInfos(const string &baseQuerySql, int32_t offset,
-    unordered_map<int32_t, FileInfo> &fileInfoMap, const unordered_map<int32_t, int32_t> &albumIdMap,
-    unordered_set<int32_t> &albumSet)
+vector<MapInfo> CloneRestore::QueryMapInfos(const string &tableName, const string &baseQuerySql, int32_t offset,
+    const unordered_map<int32_t, int32_t> &fileIdMap, const unordered_map<int32_t, int32_t> &albumIdMap)
 {
     vector<MapInfo> mapInfos;
     mapInfos.reserve(CLONE_QUERY_COUNT);
-    string querySql = "SELECT " + PhotoMap::ALBUM_ID + ", " + PhotoMap::ASSET_ID + " FROM " + baseQuerySql;
+    string columnMapAlbum = tableName + "." + PhotoMap::ALBUM_ID;
+    string columnMapAsset = tableName + "." + PhotoMap::ASSET_ID;
+    string querySql = "SELECT " + columnMapAlbum + ", " + columnMapAsset + " FROM " + baseQuerySql;
     querySql += " LIMIT " + to_string(offset) + ", " + to_string(CLONE_QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
     if (resultSet == nullptr) {
@@ -1280,23 +1296,23 @@ vector<MapInfo> CloneRestore::QueryMapInfos(const string &baseQuerySql, int32_t 
         return mapInfos;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t albumIdOld = GetInt32Val(PhotoMap::ALBUM_ID, resultSet);
-        int32_t fileIdOld = GetInt32Val(PhotoMap::ASSET_ID, resultSet);
-        if (albumIdOld <= 0 || albumIdMap.count(albumIdOld) == 0 || fileIdOld <= 0 ||
-            fileInfoMap.count(fileIdOld) <= 0) {
+        int32_t albumIdOld = GetInt32Val(columnMapAlbum, resultSet);
+        int32_t fileIdOld = GetInt32Val(columnMapAsset, resultSet);
+        if (albumIdOld <= 0 || albumIdMap.count(albumIdOld) == 0 || fileIdOld <= 0 || fileIdMap.count(fileIdOld) <= 0) {
             continue;
         }
         MapInfo mapInfo;
         mapInfo.albumId = albumIdMap.at(albumIdOld);
-        mapInfo.fileId = fileInfoMap.at(fileIdOld).fileIdNew;
+        mapInfo.fileId = fileIdMap.at(fileIdOld);
         mapInfos.emplace_back(mapInfo);
     }
     return mapInfos;
 }
 
-int64_t CloneRestore::InsertMapByTable(const string &tableName, const vector<MapInfo> &mapInfos)
+int64_t CloneRestore::InsertMapByTable(const string &tableName, const vector<MapInfo> &mapInfos,
+    unordered_set<int32_t> &albumSet)
 {
-    vector<NativeRdb::ValuesBucket> values = GetInsertValues(mapInfos, tableName);
+    vector<NativeRdb::ValuesBucket> values = GetInsertValues(mapInfos, albumSet);
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
     if (errCode != E_OK) {
@@ -1306,12 +1322,14 @@ int64_t CloneRestore::InsertMapByTable(const string &tableName, const vector<Map
     return rowNum;
 }
 
-vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(const vector<MapInfo> &mapInfos, const string &tableName)
+vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(const vector<MapInfo> &mapInfos,
+    unordered_set<int32_t> &albumSet)
 {
     vector<NativeRdb::ValuesBucket> values;
     for (const auto &mapInfo : mapInfos) {
         NativeRdb::ValuesBucket value = GetInsertValue(mapInfo);
         values.emplace_back(value);
+        albumSet.insert(mapInfo.albumId);
     }
     return values;
 }
