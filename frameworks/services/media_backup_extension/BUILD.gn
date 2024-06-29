@@ -59,6 +59,7 @@ ohos_shared_library("mediabackup") {
     "data_share:datashare_consumer",
     "ffrt:libffrt",
     "hilog:libhilog",
+    "init:libbegetutil",
     "kv_store:distributeddata_inner",
     "libxml2:libxml2",
     "napi:ace_napi",

@@ -194,7 +194,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         fileInfos[i].cloudPath = cloudPath;
         NativeRdb::ValuesBucket value = GetInsertValue(fileInfos[i], cloudPath, sourceType);
         SetValueFromMetaData(fileInfos[i], value);
-        if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID &&
+        if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID && maxFileId_ > 0 &&
             HasSameFileForDualClone(mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
             (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
             MEDIA_WARN_LOG("File %{public}s already exists.",
@@ -206,18 +206,38 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     return values;
 }
 
+void BaseRestore::GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    string maxFileId = "max(" + MediaColumn::MEDIA_ID + ")";
+    string querySql = "SELECT " + maxFileId + "," + MEDIA_COLUMN_COUNT_1 + " FROM Photos";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        maxFileId_ = 0;
+        return;
+    }
+    maxFileId_ = GetInt32Val(maxFileId, resultSet);
+    maxCount_ = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
+    MEDIA_INFO_LOG("maxFIleId:%{public}d, maxCount:%{public}d", maxFileId_, maxCount_);
+}
+
 bool BaseRestore::HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const std::string &tableName, FileInfo &fileInfo)
 {
-    string querySql = "SELECT Photos." + MediaColumn::MEDIA_ID + ", Photos." +
-        MediaColumn::MEDIA_FILE_PATH + " FROM Photos INNER JOIN PhotoMap ON Photos.file_id = PhotoMap.map_asset " + \
-        "INNER JOIN PhotoAlbum ON PhotoAlbum.album_id = PhotoMap.map_album Where Photos.size = " +
-        to_string(fileInfo.fileSize) + " AND Photos.display_name = '" +
-        fileInfo.displayName + "' AND (PhotoAlbum.album_name = '" + fileInfo.packageName + \
-         "' OR PhotoAlbum.bundle_name = '" + fileInfo.bundleName + "')";
+    string querySql = "SELECT p." + MediaColumn::MEDIA_ID + " , p." + MediaColumn::MEDIA_FILE_PATH +
+        " FROM (SELECT file_id, size, orientation, data FROM Photos " + \
+        " where file_id <= " + to_string(maxFileId_) + " AND display_name = '" + fileInfo.displayName + "' limit " + \
+        to_string(maxCount_) + ") as p INNER JOIN PhotoMap ON p.file_id = PhotoMap.map_asset " + \
+        "INNER JOIN PhotoAlbum ON PhotoAlbum.album_id = PhotoMap.map_album Where size = " +
+        to_string(fileInfo.fileSize) + \
+        " AND (((PhotoAlbum.bundle_name = '' OR PhotoAlbum.bundle_name is null ) AND PhotoAlbum.album_name = '" +
+        fileInfo.packageName + "') OR (((PhotoAlbum.bundle_name != '' AND PhotoAlbum.bundle_name is not null) " + \
+        "AND PhotoAlbum.bundle_name = '" + fileInfo.bundleName + "') OR PhotoAlbum.album_name = '" +
+        fileInfo.packageName + "'))";
+
     if (fileInfo.fileType != MEDIA_TYPE_VIDEO) {
-        querySql += " AND Photos.orientation = " + to_string(fileInfo.orientation);
+        querySql += " AND p.orientation = " + to_string(fileInfo.orientation);
     }
+    querySql += " LIMIT 1 ";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return false;

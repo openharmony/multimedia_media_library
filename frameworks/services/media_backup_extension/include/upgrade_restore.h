@@ -89,6 +89,8 @@ private:
     int StringToInt(const std::string& str);
     int32_t InitDbAndXml(std::string xmlPath, bool isUpgrade);
     int32_t HandleXmlNode(xmlNodePtr cur);
+    void SetParameterForClone();
+    void StopParameterForClone();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
