@@ -19,7 +19,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "ability_context.h"
+#include "fa_ability_context.h"
 #include "avmetadatahelper.h"
 #include "datashare_result_set.h"
 #include "image_source.h"
