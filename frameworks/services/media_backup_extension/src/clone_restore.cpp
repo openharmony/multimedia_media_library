@@ -1283,7 +1283,7 @@ vector<MapInfo> CloneRestore::QueryMapInfos(const string &tableName, const strin
 int64_t CloneRestore::InsertMapByTable(const string &tableName, const vector<MapInfo> &mapInfos,
     unordered_set<int32_t> &albumSet)
 {
-    vector<NativeRdb::ValuesBucket> values = GetInsertValues(mapInfos, albumSet);
+    vector<NativeRdb::ValuesBucket> values = GetInsertValues(mapInfos);
     int64_t rowNum = 0;
     int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
     if (errCode != E_OK) {
