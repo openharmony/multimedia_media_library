@@ -87,6 +87,7 @@ public:
     static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
     EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static bool UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status);
 #ifdef DISTRIBUTED
     static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
 #endif
@@ -100,7 +101,7 @@ public:
     static bool QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
         std::vector<ThumbnailData> &infos, int &err);
 #endif
-    EXPORT static bool QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, std::vector<ThumbnailData> &infos, int &err);
+    EXPORT static bool QueryNoLcdInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoAstcInfosRestored(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
