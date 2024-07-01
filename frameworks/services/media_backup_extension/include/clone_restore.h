@@ -64,7 +64,6 @@ private:
         const std::unordered_map<std::string, std::string> &commonColumnInfoMap) const;
     void GetQueryWhereClause(const std::string &tableName,
         const std::unordered_map<std::string, std::string> &columnInfoMap);
-    void QueryTableAlbumSetMap(FileInfo &fileInfo);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
     void BatchNotifyPhoto(const std::vector<FileInfo> &fileInfos);
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
@@ -111,8 +110,7 @@ private:
         const std::unordered_map<int32_t, int32_t> &fileIdMap, const std::unordered_map<int32_t, int32_t> &albumIdMap);
     int64_t InsertMapByTable(const std::string &tableName, const std::vector<MapInfo> &mapInfos,
         std::unordered_set<int32_t> &albumSet);
-    std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::vector<MapInfo> &mapInfos,
-        std::unordered_set<int32_t> &albumSet);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::vector<MapInfo> &mapInfos);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
