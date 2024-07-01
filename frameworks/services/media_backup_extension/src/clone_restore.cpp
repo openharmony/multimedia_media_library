@@ -350,7 +350,6 @@ vector<FileInfo> CloneRestore::QueryFileInfos(int32_t offset)
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo fileInfo;
         if (ParseResultSet(resultSet, fileInfo)) {
-            // QueryTableAlbumSetMap(fileInfo);
             result.emplace_back(fileInfo);
         }
     }
@@ -646,34 +645,6 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const AlbumInfo &albumInfo,
         PrepareCommonColumnVal(values, columnName, columnVal, commonColumnInfoMap);
     }
     return values;
-}
-
-void CloneRestore::QueryTableAlbumSetMap(FileInfo &fileInfo)
-{
-    for (const auto &tableName : CLONE_ALBUMS) {
-        auto mapTableName = GetValueFromMap(CLONE_ALBUM_MAP, tableName);
-        if (mapTableName.empty()) {
-            MEDIA_ERR_LOG("Get map of table %{public}s failed", BackupDatabaseUtils::GarbleInfoName(tableName).c_str());
-            return;
-        }
-        auto albumIdMap = GetValueFromMap(tableAlbumIdMap_, tableName);
-        auto &albumSet = fileInfo.tableAlbumSetMap[tableName];
-        string querySql = "SELECT " + PhotoMap::ALBUM_ID + " FROM " + mapTableName + " WHERE " + PhotoMap::ASSET_ID +
-            " = " + to_string(fileInfo.fileIdOld);
-        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Query resultSql is null.");
-            return;
-        }
-        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            int32_t albumIdOld = GetInt32Val(PhotoMap::ALBUM_ID, resultSet);
-            if (albumIdOld <= 0 || albumIdMap.count(albumIdOld) == 0) {
-                continue;
-            }
-            int32_t albumIdNew = albumIdMap.at(albumIdOld);
-            albumSet.insert(albumIdNew);
-        }
-    }
 }
 
 void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
@@ -1319,17 +1290,18 @@ int64_t CloneRestore::InsertMapByTable(const string &tableName, const vector<Map
         MEDIA_ERR_LOG("Batch insert map failed, errCode: %{public}d", errCode);
         return 0;
     }
+    for (const auto &mapInfo : mapInfos) {
+        albumSet.insert(mapInfo.albumId);
+    }
     return rowNum;
 }
 
-vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(const vector<MapInfo> &mapInfos,
-    unordered_set<int32_t> &albumSet)
+vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(const vector<MapInfo> &mapInfos)
 {
     vector<NativeRdb::ValuesBucket> values;
     for (const auto &mapInfo : mapInfos) {
         NativeRdb::ValuesBucket value = GetInsertValue(mapInfo);
         values.emplace_back(value);
-        albumSet.insert(mapInfo.albumId);
     }
     return values;
 }
