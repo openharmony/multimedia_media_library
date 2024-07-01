@@ -102,6 +102,7 @@ void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
 
     vector<string> fileIds;
     if (handleData.orgInfo.type == ChangeType::OTHER) {
+        MEDIA_INFO_LOG("Update the AnalysisAlbum for ChangeType being OTHER");
         unordered_map<int32_t, int32_t> updateResult;
         MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, updateResult);
     } else {
@@ -115,9 +116,16 @@ void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
             MEDIA_ERR_LOG("Failed query AnalysisAlbum");
             return;
         };
- 
-        list<Uri> sendUris = UpdateAnalysisAlbumsForCloudSync(rdbStore, resultSet, fileIds);
-        AddNewNotify(newHandleData, sendUris);
+        int32_t count = -1;
+        int32_t err = resultSet->GetRowCount(count);
+        if (err != E_OK) {
+            MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
+            return;
+        }
+        if (count > 0) {
+            list<Uri> sendUris = UpdateAnalysisAlbumsForCloudSync(rdbStore, resultSet, fileIds);
+            AddNewNotify(newHandleData, sendUris);
+        }
     }
  
     if (nextHandler_ != nullptr) {
