@@ -133,10 +133,11 @@ static AssetHandler* CreateAssetHandler(const std::string &photoId, const std::s
     return assetHandler;
 }
 
-static void DeleteAssetHandlerSafe(AssetHandler *handler)
+static void DeleteAssetHandlerSafe(AssetHandler *handler, napi_env env)
 {
     if (handler != nullptr) {
         NAPI_DEBUG_LOG("[AssetHandler delete] %{public}p.", handler);
+        handler->dataHandler->DeleteNapiReference(env);
         delete handler;
         handler = nullptr;
     }
@@ -857,7 +858,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
     auto dataHandler = assetHandler->dataHandler;
     if (dataHandler == nullptr) {
         NAPI_ERR_LOG("data handler is nullptr");
-        DeleteAssetHandlerSafe(assetHandler);
+        DeleteAssetHandlerSafe(assetHandler, env);
         return;
     }
 
@@ -866,7 +867,7 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
         AssetHandler *tmp;
         if (!inProcessFastRequests.Find(assetHandler->requestId, tmp)) {
             NAPI_ERR_LOG("The request has been canceled");
-            DeleteAssetHandlerSafe(assetHandler);
+            DeleteAssetHandlerSafe(assetHandler, env);
             return;
         }
     }
@@ -883,11 +884,11 @@ void MediaAssetManagerNapi::OnDataPrepared(napi_env env, napi_value cb, void *co
     if (napiValueOfMedia == nullptr) {
         napi_get_undefined(env, &napiValueOfMedia);
     }
-    dataHandler->JsOnDataPrepared(napiValueOfMedia, napiValueOfInfoMap);
+    dataHandler->JsOnDataPrepared(env, napiValueOfMedia, napiValueOfInfoMap);
 
     DeleteDataHandler(notifyMode, assetHandler->requestUri, assetHandler->requestId);
     NAPI_INFO_LOG("delete assetHandler: %{public}p", assetHandler);
-    DeleteAssetHandlerSafe(assetHandler);
+    DeleteAssetHandlerSafe(assetHandler, env);
 }
 
 void MediaAssetManagerNapi::NotifyMediaDataPrepared(AssetHandler *assetHandler)
@@ -897,7 +898,7 @@ void MediaAssetManagerNapi::NotifyMediaDataPrepared(AssetHandler *assetHandler)
     if (status != napi_ok) {
         NAPI_ERR_LOG("napi_call_threadsafe_function fail, %{public}d", static_cast<int32_t>(status));
         napi_release_threadsafe_function(assetHandler->threadSafeFunc, napi_tsfn_release);
-        DeleteAssetHandlerSafe(assetHandler);
+        DeleteAssetHandlerSafe(assetHandler, nullptr);
     }
 }
 
@@ -988,7 +989,7 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(const std::string &requestUri
         NAPI_ERR_LOG("get image fd failed, %{public}d", errno);
         return;
     }
-    size_t imgLen = lseek(imageFd, 0, SEEK_END);
+    ssize_t imgLen = lseek(imageFd, 0, SEEK_END);
     void* buffer = nullptr;
     napi_create_arraybuffer(env, imgLen, &buffer, &arrayBuffer);
     lseek(imageFd, 0, SEEK_SET);
@@ -1140,7 +1141,7 @@ static bool IsFastRequestCanceled(const std::string &requestId, std::string &pho
     return true;
 }
 
-static bool IsMapRecordCanceled(const std::string &requestId, std::string &photoId)
+static bool IsMapRecordCanceled(const std::string &requestId, std::string &photoId, napi_env env)
 {
     AssetHandler *assetHandler = nullptr;
     if (!IsInProcessInMapRecord(requestId, assetHandler)) {
@@ -1154,7 +1155,7 @@ static bool IsMapRecordCanceled(const std::string &requestId, std::string &photo
     }
     photoId = assetHandler->photoId;
     DeleteInProcessMapRecord(assetHandler->requestUri, assetHandler->requestId);
-    DeleteAssetHandlerSafe(assetHandler);
+    DeleteAssetHandlerSafe(assetHandler, env);
     return true;
 }
 
@@ -1172,7 +1173,7 @@ napi_value MediaAssetManagerNapi::JSCancelRequest(napi_env env, napi_callback_in
         MediaLibraryNapiUtils::GetParamStringWithLength(env, argv[ARGS_ONE], REQUEST_ID_MAX_LEN, requestId));
     std::string photoId = "";
     bool hasFastRequestInProcess = IsFastRequestCanceled(requestId, photoId);
-    bool hasMapRecordInProcess = IsMapRecordCanceled(requestId, photoId);
+    bool hasMapRecordInProcess = IsMapRecordCanceled(requestId, photoId, env);
     if (hasFastRequestInProcess || hasMapRecordInProcess) {
         unique_ptr<MediaAssetManagerAsyncContext> asyncContext = make_unique<MediaAssetManagerAsyncContext>();
         asyncContext->photoId = photoId;

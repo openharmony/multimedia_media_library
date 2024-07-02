@@ -53,7 +53,7 @@ MediaScannerObj::MediaScannerObj(const std::string &path, const std::shared_ptr<
     stopFlag_ = make_shared<bool>(false);
 }
 
-MediaScannerObj::MediaScannerObj(MediaScannerObj::ScanType type) : type_(type)
+MediaScannerObj::MediaScannerObj(MediaScannerObj::ScanType type, MediaLibraryApi api) : type_(type), api_(api)
 {
 }
 
@@ -422,7 +422,7 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
         (data_->GetFileSize() == statInfo.st_size) && (!isForceScan_)) {
         scannedIds_.insert(make_pair(data_->GetTableName(), data_->GetFileId()));
         if (path_.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-            MEDIA_ERR_LOG("no need to scan, date_modified:%{public}ld, size:%{public}ld, time_pending:%{public}ld",
+            MEDIA_WARN_LOG("no need to scan, date_modified:%{public}ld, size:%{public}ld, pending:%{public}ld",
                 static_cast<long>(data_->GetFileDateModified()), static_cast<long>(data_->GetFileSize()),
                 static_cast<long>(data_->GetTimePending()));
         }
@@ -466,6 +466,10 @@ int32_t MediaScannerObj::GetFileMetadata()
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_SYSCALL;
     }
+    if (statInfo.st_size == 0) {
+        MEDIA_WARN_LOG("file size is 0, path: %{private}s", path_.c_str());
+    }
+
     int errCode = BuildData(statInfo);
     if (errCode != E_OK) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, errCode},

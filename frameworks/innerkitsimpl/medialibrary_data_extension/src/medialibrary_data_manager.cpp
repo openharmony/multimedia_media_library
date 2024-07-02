@@ -30,6 +30,7 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
+#include "download_cloud_files_background.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -108,6 +109,11 @@ namespace Media {
 unique_ptr<MediaLibraryDataManager> MediaLibraryDataManager::instance_ = nullptr;
 unordered_map<string, DirAsset> MediaLibraryDataManager::dirQuerySetMap_ = {};
 mutex MediaLibraryDataManager::mutex_;
+recursive_mutex MediaLibraryDataManager::timerMutex_;
+Utils::Timer MediaLibraryDataManager::timer_("download_cloud_files");
+uint32_t MediaLibraryDataManager::timerId_ = 0;
+
+static constexpr int32_t BATCH_DOWNLOAD_INTERVAL = 60 * 1000; // 1min
 
 #ifdef DISTRIBUTED
 static constexpr int MAX_QUERY_THUMBNAIL_KEY_COUNT = 20;
@@ -140,15 +146,15 @@ MediaLibraryDataManager* MediaLibraryDataManager::GetInstance()
 
 static DataShare::DataShareExtAbility *MediaDataShareCreator(const unique_ptr<Runtime> &runtime)
 {
-    MEDIA_DEBUG_LOG("MediaLibraryCreator::%{public}s", __func__);
+    MEDIA_INFO_LOG("MediaLibraryCreator::%{public}s", __func__);
     return  MediaDataShareExtAbility::Create(runtime);
 }
 
 __attribute__((constructor)) void RegisterDataShareCreator()
 {
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::%{public}s", __func__);
+    MEDIA_INFO_LOG("MediaLibraryDataManager::%{public}s", __func__);
     DataShare::DataShareExtAbility::SetCreator(MediaDataShareCreator);
-    MEDIA_DEBUG_LOG("MediaLibraryDataManager::%{public}s End", __func__);
+    MEDIA_INFO_LOG("MediaLibraryDataManager::%{public}s End", __func__);
 }
 
 static void MakeRootDirs(AsyncTaskData *data)
@@ -187,6 +193,10 @@ void MediaLibraryDataManager::ReCreateMediaDir()
         return;
     }
     AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return;
+    }
     shared_ptr<MediaLibraryAsyncTask> makeRootDirTask = make_shared<MediaLibraryAsyncTask>(MakeRootDirs, taskData);
     if (makeRootDirTask != nullptr) {
         asyncWorker->AddTask(makeRootDirTask, true);
@@ -225,7 +235,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
 
     MimeTypeUtils::InitMimeTypeMap();
     errCode = MakeDirQuerySetMap(dirQuerySetMap_);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at MakeDirQuerySetMap");
+    CHECK_AND_WARN_LOG(errCode == E_OK, "failed at MakeDirQuerySetMap");
 
     InitACLPermission();
     InitDatabaseACLPermission();
@@ -294,6 +304,7 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         return;
     }
 
+    UnregisterTimer();
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
     shareHelper->UnregisterObserverExt(Uri(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX), cloudPhotoAlbumObserver_);
@@ -522,11 +533,13 @@ static int32_t SolveOtherInsertCmd(MediaLibraryCommand &cmd, const DataShareValu
 {
     solved = false;
     switch (cmd.GetOprnObject()) {
-        case OperationObject::MISCELLANEOUS:
+        case OperationObject::MISCELLANEOUS: {
             if (cmd.GetOprnType() == OperationType::LOG_MOVING_PHOTO) {
                 solved = true;
                 return LogMovingPhoto(cmd, dataShareValue);
             }
+            return E_OK;
+        }
         default:
             return E_FAIL;
     }
@@ -560,10 +573,8 @@ int32_t MediaLibraryDataManager::Insert(MediaLibraryCommand &cmd, const DataShar
     // boardcast operation
     if (oprnType == OperationType::SCAN) {
         return MediaScannerManager::GetInstance()->ScanDir(ROOT_MEDIA_DIR, nullptr);
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
     } else if (oprnType == OperationType::DELETE_TOOL) {
         return MediaLibraryAssetOperations::DeleteToolOperation(cmd);
-#endif
     }
 
     bool solved = false;
@@ -886,6 +897,20 @@ int32_t MediaLibraryDataManager::UpgradeThumbnailBackground()
         return E_THUMBNAIL_SERVICE_NULLPTR;
     }
     return thumbnailService_->UpgradeThumbnailBackground();
+}
+
+int32_t MediaLibraryDataManager::RestoreThumbnailDualFrame()
+{
+    shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
+    if (refCnt_.load() <= 0) {
+        MEDIA_DEBUG_LOG("MediaLibraryDataManager is not initialized");
+        return E_FAIL;
+    }
+
+    if (thumbnailService_ == nullptr) {
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+    return thumbnailService_->RestoreThumbnailDualFrame();
 }
 
 static void CacheAging()
@@ -1502,6 +1527,24 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
         MEDIA_ERR_LOG("invalid mediaLibrary command");
         return E_INVALID_ARGUMENTS;
     }
+}
+
+void MediaLibraryDataManager::RegisterTimer()
+{
+    lock_guard<recursive_mutex> lock(timerMutex_);
+    if (timerId_ > 0) {
+        UnregisterTimer();
+    }
+    timer_.Setup();
+    timerId_ = timer_.Register(DownloadCloudFilesBackground::DownloadCloudFiles, BATCH_DOWNLOAD_INTERVAL);
+}
+
+void MediaLibraryDataManager::UnregisterTimer()
+{
+    lock_guard<recursive_mutex> lock(timerMutex_);
+    timer_.Unregister(timerId_);
+    timer_.Shutdown();
+    timerId_ = 0;
 }
 }  // namespace Media
 }  // namespace OHOS

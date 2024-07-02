@@ -32,7 +32,7 @@ void MtpMonitor::Init()
 
 void MtpMonitor::Start()
 {
-    std::thread(&MtpMonitor::Run, this).detach();
+    std::thread([this] { this->Run(); }).detach();
 }
 
 void MtpMonitor::Stop()

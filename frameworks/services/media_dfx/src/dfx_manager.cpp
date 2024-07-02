@@ -172,6 +172,10 @@ void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::unordered
     }
     string id = bundleName == "" ? to_string(IPCSkeleton::GetCallingUid()) : bundleName;
     auto *taskData = new (nothrow) DeleteBehaviorTask(id, type, size, updateResult, uris, dfxReporter_);
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return;
+    }
     auto deleteBehaviorTask = make_shared<DfxTask>(LogDelete, taskData);
     if (deleteBehaviorTask == nullptr) {
         MEDIA_ERR_LOG("Failed to create async task for deleteBehaviorTask.");

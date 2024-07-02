@@ -43,6 +43,7 @@ Metadata::Metadata()
     orientation_(FILE_ORIENTATION_DEFAULT),
     shootingMode_(FILE_SHOOTINGMODE_DEFAULT),
     lastVisitTime_(FILE_LAST_VISIT_TIME_DEFAULT),
+    dynamicRangeType_(FILE_DYNAMIC_RANGE_TYPE_DEFAULT),
     dateTaken_(FILE_DATE_TAKEN_DEFAULT),
     longitude_(FILE_LONGITUDE_DEFAULT),
     latitude_(FILE_LATITUDE_DEFAULT),
@@ -51,7 +52,8 @@ Metadata::Metadata()
     albumId_(FILE_ALBUM_ID_DEFAULT),
     albumName_(FILE_ALBUM_NAME_DEFAULT),
     recyclePath_(FILE_RECYCLE_PATH_DEFAULT),
-    timePending_(FILE_TIME_PENDING_DEFAULT)
+    timePending_(FILE_TIME_PENDING_DEFAULT),
+    frontcamera_(FILE_FRONT_CAMERA_DEFAULT)
 {
     Init();
 }
@@ -94,6 +96,8 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::PHOTO_SUBTYPE] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetPhotoSubType);
     memberFuncMap_[PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE] = make_pair(ResultSetDataType::TYPE_INT32,
         &Metadata::SetDynamicRangeType);
+    memberFuncMap_[PhotoColumn::PHOTO_FRONT_CAMERA] = make_pair(ResultSetDataType::TYPE_STRING,
+        &Metadata::SetFrontCamera);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -484,6 +488,16 @@ void Metadata::SetDynamicRangeType(const VariantData &type)
 int32_t Metadata::GetDynamicRangeType() const
 {
     return dynamicRangeType_;
+}
+
+void Metadata::SetFrontCamera(const VariantData &frontcamera)
+{
+    frontcamera_ = std::get<string>(frontcamera);
+}
+
+std::string Metadata::GetFrontCamera() const
+{
+    return frontcamera_;
 }
 } // namespace Media
 } // namespace OHOS

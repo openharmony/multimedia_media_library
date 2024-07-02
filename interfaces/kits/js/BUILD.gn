@@ -176,6 +176,7 @@ ohos_shared_library("medialibrary_nutils") {
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
+    "window_manager:libwm",
   ]
 
   defines = []

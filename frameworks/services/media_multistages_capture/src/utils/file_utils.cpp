@@ -49,10 +49,11 @@ bool FileUtils::IsFileExist(const string &fileName)
 
 int32_t FileUtils::SaveImage(const string &filePath, void *output, size_t writeSize)
 {
+    const mode_t fileMode = 0644;
     MediaLibraryTracer tracer;
     tracer.Start("FileUtils::SaveImage");
     string filePathTemp = filePath + ".high";
-    int fd = open(filePathTemp.c_str(), O_CREAT|O_WRONLY|O_TRUNC, 0777);
+    int fd = open(filePathTemp.c_str(), O_CREAT|O_WRONLY|O_TRUNC, fileMode);
     if (fd < 0) {
         MEDIA_ERR_LOG("fd.Get() < 0 fd %{public}d errno: %{public}d", fd, errno);
         return E_ERR;

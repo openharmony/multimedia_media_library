@@ -90,7 +90,7 @@ const unordered_map<string, unordered_set<string>> EXCLUDED_COLUMNS_MAP = {
             PhotoColumn::PHOTO_CLOUD_ID, PhotoColumn::PHOTO_DIRTY, PhotoColumn::PHOTO_META_DATE_MODIFIED,
             PhotoColumn::PHOTO_SYNC_STATUS, PhotoColumn::PHOTO_CLOUD_VERSION, PhotoColumn::PHOTO_POSITION,
             PhotoColumn::PHOTO_THUMB_STATUS, PhotoColumn::PHOTO_CLEAN_FLAG, // cloud related
-            PhotoColumn::PHOTO_HAS_ASTC, // astc related
+            PhotoColumn::PHOTO_THUMBNAIL_READY, // astc related
         }},
     { PhotoAlbumColumns::TABLE,
         {
@@ -360,7 +360,8 @@ vector<FileInfo> CloneRestore::QueryFileInfos(int32_t offset)
     return result;
 }
 
-bool CloneRestore::ParseResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &fileInfo)
+bool CloneRestore::ParseResultSet(const shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &fileInfo,
+    string dbName)
 {
     return ParseResultSet(PhotoColumn::PHOTOS_TABLE, resultSet, fileInfo);
 }

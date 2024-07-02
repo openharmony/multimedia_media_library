@@ -227,7 +227,6 @@ int32_t MediaLibraryAssetOperations::CloseOperation(MediaLibraryCommand &cmd)
     }
 }
 
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
 static int32_t DropAllTables(NativeRdb::RdbStore &rdbStore)
 {
     string dropSqlRowName = "drop_table_and_view_sql";
@@ -301,7 +300,6 @@ int32_t MediaLibraryAssetOperations::DeleteToolOperation(MediaLibraryCommand &cm
 
     return E_OK;
 }
-#endif
 
 static bool CheckOprnObject(OperationObject object)
 {
@@ -631,10 +629,10 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
         if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
             assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo now
         }
+        HandleIsTemp(cmd, assetInfo);
     }
 
     HandleCallingPackage(cmd, fileAsset, assetInfo);
-    HandleIsTemp(cmd, assetInfo);
 
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
     HandleDateAdded(nowTime,
@@ -1123,10 +1121,10 @@ int32_t MediaLibraryAssetOperations::OpenAsset(const shared_ptr<FileAsset> &file
     } else {
         // If below API10, TIME_PENDING is 0 after asset created, so if file is not exist, create an empty one
         if (!MediaFileUtils::IsFileExists(fileAsset->GetPath())) {
+            MEDIA_INFO_LOG("create empty file for %{public}s, path: %{private}s", fileAsset->GetUri().c_str(),
+                fileAsset->GetPath().c_str());
             int32_t errCode = CreateDirectoryAndAsset(fileAsset->GetPath());
-            if (errCode != E_OK) {
-                return errCode;
-            }
+            CHECK_AND_RETURN_RET(errCode == E_OK, errCode);
         }
         path = MediaFileUtils::UpdatePath(fileAsset->GetPath(), fileAsset->GetUri());
     }
@@ -1365,6 +1363,10 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
         return E_ERR;
     }
     DeleteNotifyAsyncTaskData* taskData = new (std::nothrow) DeleteNotifyAsyncTaskData();
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to new taskData");
+        return E_ERR;
+    }
     taskData->notifyUri = notifyUri;
     taskData->trashDate = trashDate;
     shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(

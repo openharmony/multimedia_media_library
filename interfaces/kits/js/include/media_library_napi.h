@@ -87,7 +87,7 @@ public:
         napi_env env_;
         napi_ref ref_;
         OHOS::DataShare::DataShareObserver::ChangeInfo changeInfo_;
-        uint8_t *data_;
+        uint8_t *data_ {nullptr};
         std::string strUri_;
     };
 

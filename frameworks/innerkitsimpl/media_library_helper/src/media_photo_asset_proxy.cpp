@@ -217,13 +217,17 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
 
     // encode rgba to jpeg
     auto buffer = new (std::nothrow) uint8_t[pixelSize];
+    if (buffer == nullptr) {
+        MEDIA_ERR_LOG("Failed to new buffer");
+        return E_ERR;
+    }
     int64_t packedSize = 0L;
     Media::ImagePacker imagePacker;
     Media::PackOption packOption;
     packOption.format = "image/jpeg";
     imagePacker.StartPacking(buffer, pixelSize, packOption);
     imagePacker.AddImage(*pixelMap);
-    int32_t packResult = imagePacker.FinalizePacking(packedSize);
+    uint32_t packResult = imagePacker.FinalizePacking(packedSize);
     if (packResult != E_OK || buffer == nullptr) {
         MEDIA_ERR_LOG("packet pixelMap failed packResult: %{public}d", packResult);
         return E_ERR;

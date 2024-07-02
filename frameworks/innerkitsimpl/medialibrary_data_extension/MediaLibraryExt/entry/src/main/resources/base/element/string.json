@@ -59,6 +59,10 @@
     {
       "name": "permission_get_appkey2",
       "value": "Allows read media after screenlock"
-    }   
+    },
+    {
+      "name": "permission_get_wifi_info",
+      "value": "Allow MedialibrarySubscriber to obtain wifi information"
+    }
   ]
 }

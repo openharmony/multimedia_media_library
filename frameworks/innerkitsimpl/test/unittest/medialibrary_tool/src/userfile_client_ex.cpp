@@ -108,7 +108,7 @@ static inline bool GetUriInfo(const std::string &uri, std::string &uriId)
 {
     MediaFileUri fileUri(uri);
     if (!fileUri.IsValid()) {
-        MEDIA_ERR_LOG("uri %{private}s is invalid", uri.c_str());
+        MEDIA_ERR_LOG("uri %{public}s is invalid", uri.c_str());
         return false;
     }
     uriId = fileUri.GetFileId();
@@ -209,7 +209,7 @@ int32_t UserFileClientEx::InsertExt(const std::string &tableName, const std::str
     }
     std::string insertUriStr = GetInsertUri(tableName);
     if (insertUriStr.empty()) {
-        MEDIA_ERR_LOG("insert failed. tableName:%{public}s, name:%{private}s", tableName.c_str(),
+        MEDIA_ERR_LOG("insert failed. tableName:%{public}s, name:%{public}s", tableName.c_str(),
             name.c_str());
         return Media::E_ERR;
     }
@@ -218,7 +218,7 @@ int32_t UserFileClientEx::InsertExt(const std::string &tableName, const std::str
     values.Put(MediaColumn::MEDIA_NAME, name);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(ScannerUtils::GetFileExtension(name));
     values.Put(MediaColumn::MEDIA_TYPE, MimeTypeUtils::GetMediaTypeFromMimeType(mimeType));
-    MEDIA_INFO_LOG("insertext. insertUri:%{private}s, name:%{private}s", insertUri.ToString().c_str(), name.c_str());
+    MEDIA_INFO_LOG("insertext. insertUri:%{public}s, name:%{public}s", insertUri.ToString().c_str(), name.c_str());
     auto ret = UserFileClient::InsertExt(insertUri, values, outString);
     if (ret <= 0) {
         MEDIA_ERR_LOG("insertext failed. ret:%{public}d", ret);
@@ -240,7 +240,7 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
     resultSet = nullptr;
     std::string id;
     if ((!uri.empty()) && (!GetUriInfo(uri, id))) {
-        MEDIA_ERR_LOG("query failed, uri:%{private}s", uri.c_str());
+        MEDIA_ERR_LOG("query failed, uri:%{public}s", uri.c_str());
         return Media::E_ERR;
     }
     std::string queryUriStr = GetQueryUri(tableName);
@@ -256,8 +256,8 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
     }
     std::vector<std::string> columns;
     int errCode = 0;
-    MEDIA_INFO_LOG("query. queryUri:%{private}s, tableName:%{private}s, uri:%{private}s, "
-        "id:%{private}s", queryUri.ToString().c_str(), tableName.c_str(), uri.c_str(), id.c_str());
+    MEDIA_INFO_LOG("query. queryUri:%{public}s, tableName:%{public}s, uri:%{public}s, "
+        "id:%{public}s", queryUri.ToString().c_str(), tableName.c_str(), uri.c_str(), id.c_str());
     resultSet = UserFileClient::Query(queryUri, predicates, columns, errCode);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("query failed. resultSet:null, errCode:%{public}d.", errCode);
@@ -280,8 +280,11 @@ int UserFileClientEx::Open(const std::string &uri, const std::string &mode, bool
     if (uri.empty()) {
         return Media::E_FAIL;
     }
-    Uri openUri(uri);
-    MEDIA_INFO_LOG("open. uri:%{private}s, mode:%{private}s", uri.c_str(), mode.c_str());
+    std::string uriWithKey {uri};
+    MediaFileUtils::UriAppendKeyValue(uriWithKey, IS_TOOL_OPEN,
+        TOOL_OPEN_TRUE);
+    Uri openUri(uriWithKey);
+    MEDIA_INFO_LOG("open. uri:%{public}s, mode:%{public}s", uriWithKey.c_str(), mode.c_str());
     return UserFileClient::OpenFile(openUri, mode);
 }
 
@@ -293,13 +296,13 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
         return Media::E_ERR;
     }
     if (!UserFileClient::IsValid()) {
-        MEDIA_ERR_LOG("close failed. helper:null. uri:%{private}s, fileFd:%{public}d, mode:%{private}s",
+        MEDIA_ERR_LOG("close failed. helper:null. uri:%{public}s, fileFd:%{public}d, mode:%{public}s",
             uri.c_str(), fileFd, mode.c_str());
         return Media::E_FAIL;
     }
     if (mode == Media::MEDIA_FILEMODE_READONLY) {
         if (close(fileFd) != E_SUCCESS) {
-            MEDIA_ERR_LOG("close failed. uri:%{private}s, fileFd:%{public}d, mode:%{private}s",
+            MEDIA_ERR_LOG("close failed. uri:%{public}s, fileFd:%{public}d, mode:%{public}s",
                 uri.c_str(), fileFd, mode.c_str());
             return Media::E_FAIL;
         }
@@ -316,14 +319,14 @@ int UserFileClientEx::Close(const std::string &uri, const int fileFd, const std:
         return Media::E_FAIL;
     }
     Uri closeUri(closeUriStr);
-    MEDIA_INFO_LOG("close. closeUri:%{private}s, uri:%{private}s", closeUri.ToString().c_str(), uri.c_str());
+    MEDIA_INFO_LOG("close. closeUri:%{public}s, uri:%{public}s", closeUri.ToString().c_str(), uri.c_str());
     auto ret = UserFileClient::Insert(closeUri, valuesBucket);
     if (ret != Media::E_OK) {
-        MEDIA_ERR_LOG("close the file failed. ret:%{public}d, closeUri:%{private}s, uri:%{private}s",
+        MEDIA_ERR_LOG("close the file failed. ret:%{public}d, closeUri:%{public}s, uri:%{public}s",
             ret, closeUri.ToString().c_str(), uri.c_str());
     }
     if (close(fileFd) != E_SUCCESS) {
-        MEDIA_ERR_LOG("close failed. uri:%{private}s, fileFd:%{public}d, mode:%{private}s",
+        MEDIA_ERR_LOG("close failed. uri:%{public}s, fileFd:%{public}d, mode:%{public}s",
             uri.c_str(), fileFd, mode.c_str());
         return Media::E_FAIL;
     }
@@ -460,7 +463,7 @@ std::string UserFileClientEx::GetTableNameByUri(const std::string &uri)
 {
     MediaFileUri fileUri(uri);
     if (!fileUri.IsValid()) {
-        MEDIA_ERR_LOG("uri %{private}s is invalid", uri.c_str());
+        MEDIA_ERR_LOG("uri %{public}s is invalid", uri.c_str());
         return "";
     }
     return fileUri.GetTableName();

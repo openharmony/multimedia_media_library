@@ -46,11 +46,6 @@ public:
     DfxData *data_;
     std::chrono::system_clock::time_point executeTime_;
     bool isDelayTask_;
-
-    bool operator>(const DfxTask &dfxTask) const
-    {
-        return this->executeTime_ > dfxTask.executeTime_;
-    }
 };
 
 class DfxWorker {
@@ -71,20 +66,19 @@ private:
     void StartLoopTaskDelay();
     bool IsTaskQueueEmpty();
     void WaitForTask();
+    bool IsDelayTask();
     std::shared_ptr<DfxTask> GetTask();
 
 private:
     int32_t thumbnailVersion_ {0};
     int32_t deleteStatisticVersion_ {0};
     static std::shared_ptr<DfxWorker> dfxWorkerInstance_;
-    std::thread cycleThread_;
     std::thread delayThread_;
     bool isEnd_ = false;
     std::mutex taskLock_;
     std::mutex workLock_;
     std::condition_variable workCv_;
-    std::priority_queue<std::shared_ptr<DfxTask>, std::vector<std::shared_ptr<DfxTask>>,
-        std::greater<std::shared_ptr<DfxTask>>> taskQueue_;
+    std::vector<std::shared_ptr<DfxTask>> taskList_;
     bool isThreadRunning_;
 };
 } // namespace Media

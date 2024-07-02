@@ -18,6 +18,7 @@
 #include <fcntl.h>
 
 #include "dfx_manager.h"
+#include "directory_ex.h"
 #include "image_source.h"
 #include "media_exif.h"
 #include "media_file_utils.h"
@@ -96,7 +97,7 @@ std::string GetLcdExPath(const std::string &path)
     std::string suffix = "/THM_EX/" + THUMBNAIL_LCD_SUFFIX + ".jpg";
     return ROOT_MEDIA_DIR + ".thumbs/" + path.substr(ROOT_MEDIA_DIR.length()) + suffix;
 }
-    
+
 bool IsLocalSourceAvailable(const std::string& path)
 {
     char tmpPath[PATH_MAX] = { 0 };
@@ -120,9 +121,15 @@ bool IsLocalSourceAvailable(const std::string& path)
 
 bool IsCloudSourceAvailable(const std::string& path)
 {
-    int fd = open(path.c_str(), O_RDONLY);
+    string absFilePath;
+    if (!PathToRealPath(path, absFilePath)) {
+        MEDIA_ERR_LOG("Not real file path: %{private}s, errno: %{public}d", path.c_str(), errno);
+        return false;
+    }
+
+    int fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("SourceLoader open cloud file fail: %{public}s, errno: %{public}d", path.c_str(), errno);
+        MEDIA_ERR_LOG("open cloud file fail: %{public}s, errno: %{public}d", absFilePath.c_str(), errno);
         return false;
     }
     close(fd);
@@ -195,7 +202,7 @@ Size ConvertDecodeSize(ThumbnailData &data, const Size &sourceSize, Size &desire
     int lcdMinSide = std::min(lcdDesiredSize.width, lcdDesiredSize.height);
     int thumbMinSide = std::min(thumbDesiredSize.width, thumbDesiredSize.height);
     Size lcdDecodeSize = lcdMinSide < thumbMinSide ? thumbDecodeSize : lcdDesiredSize;
-    
+
     if (data.loaderOpts.decodeInThumbSize) {
         desiredSize = thumbDesiredSize;
         return thumbDecodeSize;
@@ -302,6 +309,8 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
         data_.orientation = 0;
     }
 
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, MEDIA_TYPE_IMAGE, imageInfo.size.width,
+        imageInfo.size.height);
     MEDIA_DEBUG_LOG("SourceLoader status:%{public}s, width:%{public}d, height:%{public}d",
         STATE_NAME_MAP.at(state_).c_str(), imageInfo.size.width, imageInfo.size.height);
     return true;
@@ -312,6 +321,12 @@ bool SourceLoader::CreateSourcePixelMap()
     if (state_ == SourceState::LOCAL_ORIGIN && data_.mediaType == MEDIA_TYPE_VIDEO) {
         return CreateVideoFramePixelMap();
     }
+
+    if (GetSourcePath == nullptr) {
+        MEDIA_ERR_LOG("GetSourcePath is nullptr.");
+        return false;
+    }
+
     std::string sourcePath = GetSourcePath(data_, error_);
     if (sourcePath.empty()) {
         MEDIA_ERR_LOG("SourceLoader source path unavailable,"
@@ -328,6 +343,10 @@ bool SourceLoader::CreateSourcePixelMap()
 
 bool SourceLoader::RunLoading()
 {
+    if (data_.loaderOpts.loadingStates.empty()) {
+        MEDIA_ERR_LOG("source loading run loading failed, the given states is empty");
+        return false;
+    }
     state_ = SourceState::BEGIN;
     data_.source = nullptr;
     SetCurrentStateFunction();
@@ -376,9 +395,14 @@ bool SourceLoader::IsSizeAcceptable(std::unique_ptr<ImageSource>& imageSource, I
         return false;
     }
 
+    if (IsSizeLargeEnough == nullptr) {
+        MEDIA_ERR_LOG("IsSizeLargeEnough is nullptr.");
+        return false;
+    }
+
     int32_t minSize = imageInfo.size.width < imageInfo.size.height ? imageInfo.size.width : imageInfo.size.height;
     if (!IsSizeLargeEnough(data_, minSize)) {
-        MEDIA_ERR_LOG("SourceLoader size not acceptable, width:%{public}d, height:%{public}d", imageInfo.size.width,
+        MEDIA_DEBUG_LOG("SourceLoader size not acceptable, width:%{public}d, height:%{public}d", imageInfo.size.width,
             imageInfo.size.height);
         return false;
     }
@@ -492,6 +516,10 @@ std::string CloudLcdSource::GetSourcePath(ThumbnailData &data, int32_t &error)
 bool CloudLcdSource::IsSizeLargeEnough(ThumbnailData &data, int32_t &minSize)
 {
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
+        return true;
+    }
+    int photoShorterSide = data.photoWidth < data.photoHeight ? data.photoWidth : data.photoHeight;
+    if (photoShorterSide != 0 && photoShorterSide < SHORT_SIDE_THRESHOLD) {
         return true;
     }
     if (minSize < SHORT_SIDE_THRESHOLD) {

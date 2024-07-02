@@ -27,7 +27,7 @@
 #include "media_smart_map_column.h"
 #include "media_unique_number_column.h"
 #include "medialibrary_db_const.h"
-#include "vision_db_sqls.h"
+#include "vision_db_sqls_more.h"
 
 namespace OHOS {
 namespace Media {
@@ -312,7 +312,8 @@ const std::string CREATE_FILES_MDIRTY_TRIGGER = "CREATE TRIGGER IF NOT EXISTS md
                         " END;";
 
 const std::string CREATE_INSERT_CLOUD_SYNC_TRIGGER =
-                        " CREATE TRIGGER insert_cloud_sync_trigger AFTER INSERT ON " + MEDIALIBRARY_TABLE +
+                        " CREATE TRIGGER IF NOT EXISTS insert_cloud_sync_trigger AFTER INSERT ON " +
+                        MEDIALIBRARY_TABLE +
                         " BEGIN SELECT cloud_sync_func(); END;";
 
 const std::string CREATE_MEDIALIBRARY_ERROR_TABLE = "CREATE TABLE IF NOT EXISTS " + MEDIALIBRARY_ERROR_TABLE + " ("

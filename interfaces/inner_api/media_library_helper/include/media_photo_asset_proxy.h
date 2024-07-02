@@ -22,6 +22,7 @@
 #include "datashare_helper.h"
 #include "file_asset.h"
 #include "photo_proxy.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -67,12 +68,12 @@ private:
     static std::string LocationValueToString(double value);
 
     sptr<PhotoProxy> photoProxy_;
-    int32_t fileId_;
+    int32_t fileId_ {0};
     std::string uri_;
-    CameraShotType cameraShotType_;
-    uint32_t callingUid_;
-    int32_t userId_;
-    PhotoSubType subType_;
+    CameraShotType cameraShotType_ = CameraShotType::IMAGE;
+    uint32_t callingUid_ {0};
+    int32_t userId_ {0};
+    PhotoSubType subType_ = PhotoSubType::DEFAULT;
     std::shared_ptr<DataShare::DataShareHelper> dataShareHelper_;
 };
 } // Media

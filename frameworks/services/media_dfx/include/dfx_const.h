@@ -47,10 +47,10 @@ constexpr int32_t BIG_VIDEO = 4;
 
 constexpr int32_t INVALID_DFX = -1;
 
-constexpr int32_t GARBLE_SMALL = 3;
-constexpr int32_t GARBLE_LARGE = 8;
-constexpr int32_t GARBLE_LAST_TWO = 2;
-constexpr int32_t GARBLE_LAST_ONE = 1;
+constexpr uint32_t GARBLE_SMALL = 3;
+constexpr uint32_t GARBLE_LARGE = 8;
+constexpr uint32_t GARBLE_LAST_TWO = 2;
+constexpr uint32_t GARBLE_LAST_ONE = 1;
 
 constexpr int32_t LATEST_THUMBNAIL_ERROR_VERSION = 1;
 constexpr int32_t LATEST_DELETE_STATISTIC_VERSION = 1;

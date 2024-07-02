@@ -462,6 +462,16 @@ void FileAsset::SetAllExif(const string &allExif)
     member_[PhotoColumn::PHOTO_ALL_EXIF] = allExif;
 }
 
+const std::string &FileAsset::GetFrontCamera() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_FRONT_CAMERA);
+}
+
+void FileAsset::SetFrontCamera(const string &frontCamera)
+{
+    member_[PhotoColumn::PHOTO_FRONT_CAMERA] = frontCamera;
+}
+
 const std::string &FileAsset::GetUserComment() const
 {
     return GetStrMember(PhotoColumn::PHOTO_USER_COMMENT);

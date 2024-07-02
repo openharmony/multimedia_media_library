@@ -970,11 +970,20 @@ int32_t MediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
 
     constexpr int32_t minSize = 224;
+    string imgHeightColumn = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_HEIGHT;
+    string imgWidthColumn = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_WIDTH;
+    string imgFaceHeightColumn = VISION_IMAGE_FACE_TABLE + "." + SCALE_HEIGHT;
+    string imgFaceWidthColumn = VISION_IMAGE_FACE_TABLE + "." + SCALE_WIDTH;
+    string imgFaceHeightClause = "( " + imgFaceHeightColumn + " > " + to_string(minSize) +
+        " OR ( " + imgFaceHeightColumn + " <= 1.0 " + " AND " + imgFaceHeightColumn + " * " + imgHeightColumn +
+        " > " + to_string(minSize) + " ) )";
+    string imgFaceWidthClause = "( " + imgFaceWidthColumn + " > " + to_string(minSize) +
+        " OR ( " + imgFaceWidthColumn + " <= 1.0 " + " AND " + imgFaceWidthColumn + " * " + imgWidthColumn +
+        " > " + to_string(minSize) + " ) )";
     string portraitRotationLimit = "BETWEEN -30 AND 30";
     onClause = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + " = " + VISION_IMAGE_FACE_TABLE + "." +
         MediaColumn::MEDIA_ID + " AND " + VISION_IMAGE_FACE_TABLE + "." + TOTAL_FACES + " = 1 AND " +
-        VISION_IMAGE_FACE_TABLE + "." + SCALE_HEIGHT + " > " + to_string(minSize) + " AND " +
-        VISION_IMAGE_FACE_TABLE + "." + SCALE_WIDTH + " > " + to_string(minSize) + " AND " +
+        imgFaceHeightClause + " AND " + imgFaceWidthClause + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + PITCH + " " + portraitRotationLimit + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + YAW + " " + portraitRotationLimit + " AND " +
         VISION_IMAGE_FACE_TABLE + "." + ROLL + " " + portraitRotationLimit;
@@ -986,9 +995,7 @@ int32_t MediaLibraryNapiUtils::GetFeaturedSinglePortraitAlbumPredicates(
     predicates.InnerJoin(VISION_POSE_TABLE)->On({ onClause });
 
     predicates.EqualTo(PhotoMap::ALBUM_ID, to_string(albumId));
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
     return E_SUCCESS;
 }
 

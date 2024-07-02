@@ -164,6 +164,7 @@ public:
     EXPORT static bool SplitMovingPhotoUri(const std::string& uri, std::vector<std::string>& ret);
     EXPORT static bool IsMediaLibraryUri(const std::string& uri);
     EXPORT static bool SetEPolicy();
+    EXPORT static void PrintStatInformation(const std::string& path);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);

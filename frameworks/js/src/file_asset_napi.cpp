@@ -435,6 +435,11 @@ std::string FileAssetNapi::GetAllExif() const
     return fileAssetPtr->GetAllExif();
 }
 
+std::string FileAssetNapi::GetFrontCamera() const
+{
+    return fileAssetPtr->GetFrontCamera();
+}
+
 std::string FileAssetNapi::GetUserComment() const
 {
     return fileAssetPtr->GetUserComment();
@@ -1880,7 +1885,7 @@ static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *d
 
     auto *obj = context->objectInfo;
     nlohmann::json allExifJson;
-    if (!obj->GetAllExif().empty()) {
+    if (!obj->GetAllExif().empty() && nlohmann::json::accept(obj->GetAllExif())) {
         allExifJson = nlohmann::json::parse(obj->GetAllExif());
     }
     if (allExifJson.is_discarded() || obj->GetAllExif().empty()) {

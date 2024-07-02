@@ -362,7 +362,7 @@ static size_t QueryCloudPhotoThumbnailVolumn(shared_ptr<MediaLibraryUnistore>& u
         MEDIA_ERR_LOG("Cloud photo count error, count is %{public}d", cloudPhotoCount);
         return 0;
     }
-    size_t size = cloudPhotoCount * averageThumbnailSize;
+    size_t size = static_cast<size_t>(cloudPhotoCount) * averageThumbnailSize;
     return size;
 }
 
@@ -717,9 +717,11 @@ void GetIsMeAlbumPredicates(const int32_t value, DataShare::DataSharePredicates 
             MEDIA_ERR_LOG("Not support to query isMe");
             return;
         }
-        selection = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + COUNT + " > " +
-            to_string(PORTRAIT_SECOND_PAGE_MIN_PICTURES_COUNT) + " GROUP BY " + GROUP_TAG +
-            " ORDER BY " + COUNT + " DESC";
+        selection = ANALYSIS_ALBUM_TABLE + "." + ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) +
+            " GROUP BY " + ANALYSIS_ALBUM_TABLE + "." + ALBUM_ID + " HAVING SUM(CASE WHEN " +
+            PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_FRONT_CAMERA + " = 1 THEN 1 ELSE " +
+            " 0 END) > 0 " + " ORDER BY COUNT(CASE WHEN " + PhotoColumn::PHOTOS_TABLE + "." +
+            PhotoColumn::PHOTO_FRONT_CAMERA + " = 1 THEN 1 ELSE 0 END) DESC ";
     } else if (value == QUERY_IS_ME_VALUE) {
         selection = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + IS_ME + " = 1 GROUP BY " + GROUP_TAG;
     } else {
@@ -738,6 +740,16 @@ void GetAlbumNameNotNullPredicates(int32_t value, DataShare::DataSharePredicates
     string selection = ALBUM_SUBTYPE + " = " + to_string(PORTRAIT) + " AND " + PhotoAlbumColumns::ALBUM_NAME +
         " IS NOT NULL GROUP BY " + GROUP_TAG;
     predicates.SetWhereClause(selection);
+}
+
+void GetIsMeInnerJoinPredicates(RdbPredicates &rdbPredicates)
+{
+    std::string onClause = ANALYSIS_ALBUM_TABLE + "." + ALBUM_ID + " = " +
+        ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM;
+    rdbPredicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ onClause });
+    onClause = ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ASSET + " = " +
+        PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID;
+    rdbPredicates.InnerJoin(PhotoColumn::PHOTOS_TABLE)->On({ onClause });
 }
 
 std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortraitAlbum(MediaLibraryCommand &cmd,
@@ -773,6 +785,20 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
         return nullptr;
     }
     auto rdbPredicates = RdbUtils::ToPredicates(predicatesPortrait, ANALYSIS_ALBUM_TABLE);
+    if (whereClause.find(IS_ME) != string::npos &&
+        GetPortraitSubtype(IS_ME, whereClause, whereArgs) == QUERY_PROB_IS_ME_VALUE) {
+        GetIsMeInnerJoinPredicates(rdbPredicates);
+        std::vector<std::string> ismeColumns;
+        for (auto &item : columns) {
+            if (item.find(PhotoAlbumColumns::ALBUM_DATE_MODIFIED, 0) == string::npos) {
+                ismeColumns.push_back(item);
+            }
+        }
+        ismeColumns.push_back(ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_DATE_MODIFIED);
+        ismeColumns.push_back("CAST(" + ANALYSIS_ALBUM_TABLE + "." + PhotoAlbumColumns::ALBUM_DATE_MODIFIED +
+            " / 1000 AS BIGINT) AS date_modified_s");
+        return MediaLibraryRdbStore::Query(rdbPredicates, ismeColumns);
+    }
     return MediaLibraryRdbStore::Query(rdbPredicates, columns);
 }
 
@@ -1740,7 +1766,7 @@ void SetMyOldAlbum(vector<string>& updateSqls, shared_ptr<MediaLibraryUnistore> 
     std::string clearIsMeAlbum = "";
     if (count > 0) {
         string albumName = "";
-        int userDisplayLevel;
+        int userDisplayLevel = 0;
         GetStringValueFromResultSet(resultSet, ALBUM_NAME, albumName);
         GetIntValueFromResultSet(resultSet, USER_DISPLAY_LEVEL, userDisplayLevel);
         int renameOperation = albumName != "" ? 1 : 0;

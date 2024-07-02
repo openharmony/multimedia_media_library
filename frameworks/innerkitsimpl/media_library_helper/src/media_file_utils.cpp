@@ -50,6 +50,7 @@ using namespace std;
 namespace OHOS::Media {
 static const mode_t CHOWN_RWX_USR_GRP = 02771;
 static const mode_t CHOWN_RW_USR_GRP = 0660;
+static const mode_t CHOWN_RO_USR_GRP = 0644;
 constexpr size_t DISPLAYNAME_MAX = 255;
 const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
@@ -169,6 +170,17 @@ int32_t MediaFileUtils::RemoveDirectory(const string &path)
     return nftw(path.c_str(), UnlinkCb, OPEN_FDS, FTW_DEPTH | FTW_PHYS);
 }
 
+void MediaFileUtils::PrintStatInformation(const std::string& path)
+{
+    struct stat statInfo {};
+    if ((stat(path.c_str(), &statInfo)) == E_SUCCESS) {
+        MEDIA_INFO_LOG("path:%{public}s uid:%{public}d, gid:%{public}d, mode:%{public}d",
+            path.c_str(), statInfo.st_uid, statInfo.st_uid, statInfo.st_mode);
+    } else {
+        MEDIA_INFO_LOG("path:%{public}s is not exist", path.c_str());
+    }
+}
+
 bool MediaFileUtils::Mkdir(const string &subStr, shared_ptr<int> errCodePtr)
 {
     mode_t mask = umask(0);
@@ -176,9 +188,13 @@ bool MediaFileUtils::Mkdir(const string &subStr, shared_ptr<int> errCodePtr)
         if (errCodePtr != nullptr) {
             *errCodePtr = errno;
         }
-        MEDIA_ERR_LOG("Failed to create directory %{public}d", errno);
+        int err = errno;
+        MEDIA_ERR_LOG("Failed to create directory %{public}d, path:%{public}s", err, subStr.c_str());
+        if (err == EACCES) {
+            PrintStatInformation(GetParentPath(subStr));
+        }
         umask(mask);
-        return (errno == EEXIST) ? true : false;
+        return (err == EEXIST) ? true : false;
     }
     umask(mask);
     return true;
@@ -374,7 +390,7 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
         return errCode;
     }
 
-    int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RWX_USR_GRP);
+    int32_t dest = open(newPath.c_str(), O_WRONLY | O_CREAT, CHOWN_RO_USR_GRP);
     if (dest == -1) {
         MEDIA_ERR_LOG("Open failed for destination file %{public}d", errno);
         close(source);
@@ -450,9 +466,16 @@ bool MediaFileUtils::ReadStrFromFile(const std::string &filePath, std::string &f
         MEDIA_ERR_LOG("Can not get FilePath %{private}s", filePath.c_str());
         return false;
     }
-    ifstream file(filePath);
+
+    string absFilePath;
+    if (!PathToRealPath(filePath, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to open a nullptr path %{private}s, errno=%{public}d", filePath.c_str(), errno);
+        return false;
+    }
+
+    ifstream file(absFilePath);
     if (!file.is_open()) {
-        MEDIA_ERR_LOG("Can not open FilePath %{private}s", filePath.c_str());
+        MEDIA_ERR_LOG("Can not open FilePath %{private}s", absFilePath.c_str());
         return false;
     }
     char ch;
@@ -576,7 +599,7 @@ int32_t MediaFileUtils::CheckRelativePath(const std::string &relativePath)
         return -EINVAL;
     }
 
-    uint32_t firstPoint = (relativePath.front() == '/') ? 1 : 0;
+    size_t firstPoint = (relativePath.front() == '/') ? 1 : 0;
     size_t lastPoint = 0;
     while (true) {
         lastPoint = relativePath.find_first_of('/', firstPoint);
@@ -968,9 +991,13 @@ int32_t MediaFileUtils::ModifyAsset(const string &oldPath, const string &newPath
     }
     err = rename(oldPath.c_str(), newPath.c_str());
     if (err < 0) {
+        int err = errno;
         MEDIA_ERR_LOG("Failed rename, errno: %{public}d, old path: %{public}s exists: %{public}d, "
-            "new path: %{public}s exists: %{public}d", errno, oldPath.c_str(), IsFileExists(
+            "new path: %{public}s exists: %{public}d", err, oldPath.c_str(), IsFileExists(
                 oldPath), newPath.c_str(), IsFileExists(newPath));
+        if (err == EACCES) {
+            PrintStatInformation(GetParentPath(oldPath));
+        }
         return E_FILE_OPER_FAIL;
     }
 
