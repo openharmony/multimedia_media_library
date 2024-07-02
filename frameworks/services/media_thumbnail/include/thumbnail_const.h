@@ -67,6 +67,12 @@ enum class ThumbnailReady : int32_t {
     THUMB_UPGRADE,
 };
 
+enum class LcdReady : int64_t {
+    GENERATE_LCD_LATER,
+    GENERATE_LCD_FAILED,
+    GENERATE_LCD_COMPLETED,
+};
+
 const std::unordered_map<ThumbnailType, std::string> TYPE_NAME_MAP = {
     { ThumbnailType::LCD, "LCD" },
     { ThumbnailType::THUMB, "THUMB" },

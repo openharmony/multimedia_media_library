@@ -208,27 +208,26 @@ int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
         return E_ERR;
     }
 
-    int lcdCount = 0;
-    int32_t err = GetLcdCount(opts, lcdCount);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("GetLcdCount err %{private}d , lcdCount %{private}d", err, lcdCount);
-        return err;
-    }
-
-    if (lcdCount >= THUMBNAIL_LCD_GENERATE_THRESHOLD) {
-        MEDIA_INFO_LOG("Not need generate Lcd. lcdCount: %{lcdCount}d", lcdCount);
-        return E_OK;
-    }
-
     vector<ThumbnailData> infos;
-    err = GetNoLcdData(opts, THUMBNAIL_LCD_GENERATE_THRESHOLD - lcdCount, infos);
-    if ((err != E_OK) || infos.empty()) {
+    int32_t err = GetNoLcdData(opts, infos);
+    if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to GetNoLcdData %{private}d", err);
         return err;
     }
+    if (infos.empty()) {
+        MEDIA_INFO_LOG("No need create Lcd.");
+        return E_THUMBNAIL_LCD_ALL_EXIST;
+    }
 
+    MEDIA_INFO_LOG("No lcd data size: %{public}d", static_cast<int>(infos.size()));
     for (uint32_t i = 0; i < infos.size(); i++) {
         opts.row = infos[i].id;
+        // Check whether LCD exists, if it does, just update the database
+        if (access(GetThumbnailPath(infos[i].path, THUMBNAIL_LCD_SUFFIX).c_str(), F_OK) == 0 ||
+            access(GetThumbnailPath(infos[i].path, THUMBNAIL_LCD_EX_SUFFIX).c_str(), F_OK) == 0) {
+            ThumbnailUtils::UpdateLcdReadyStatus(opts, infos[i], err, LcdReady::GENERATE_LCD_COMPLETED);
+            continue;
+        }
         infos[i].loaderOpts.loadingStates = infos[i].isLocalFile ? SourceLoader::LOCAL_LCD_SOURCE_LOADING_STATES :
             SourceLoader::CLOUD_LCD_SOURCE_LOADING_STATES;
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcd,
@@ -247,10 +246,10 @@ int32_t ThumbnailGenerateHelper::GetLcdCount(ThumbRdbOpt &opts, int &outLcdCount
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::GetNoLcdData(ThumbRdbOpt &opts, int lcdLimit, vector<ThumbnailData> &outDatas)
+int32_t ThumbnailGenerateHelper::GetNoLcdData(ThumbRdbOpt &opts, vector<ThumbnailData> &outDatas)
 {
     int32_t err = E_ERR;
-    if (!ThumbnailUtils::QueryNoLcdInfos(opts, lcdLimit, outDatas, err)) {
+    if (!ThumbnailUtils::QueryNoLcdInfos(opts, outDatas, err)) {
         MEDIA_ERR_LOG("Failed to QueryNoLcdInfos %{private}d", err);
         return err;
     }
