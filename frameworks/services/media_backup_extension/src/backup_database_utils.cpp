@@ -79,6 +79,16 @@ int32_t BackupDatabaseUtils::Update(std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     return rdbStore->Update(changeRows, valuesBucket, *predicates);
 }
 
+int32_t BackupDatabaseUtils::Delete(NativeRdb::AbsRdbPredicates &predicates, int32_t &changeRows,
+    std::shared_ptr<NativeRdb::RdbStore> &rdbStore)
+{
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdb is nullptr");
+        return E_FAIL;
+    }
+    return rdbStore->Delete(changeRows, predicates);
+}
+
 int32_t BackupDatabaseUtils::InitGarbageAlbum(std::shared_ptr<NativeRdb::RdbStore> galleryRdb,
     std::set<std::string> &cacheSet, std::unordered_map<std::string, std::string> &nickMap)
 {
