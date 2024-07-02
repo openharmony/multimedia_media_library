@@ -26,6 +26,7 @@
 #include "device_manager.h"
 #endif
 #include "dfx_utils.h"
+#include "directory_ex.h"
 #include "distributed_kv_data_manager.h"
 #include "hitrace_meter.h"
 #include "image_packer.h"
@@ -239,7 +240,7 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     data.orientation = 0;
     data.stats.sourceWidth = data.source->GetWidth();
     data.stats.sourceHeight = data.source->GetHeight();
-    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, desiredSize.width, desiredSize.height);
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, width, height);
     return true;
 }
 
@@ -667,9 +668,50 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
         MEDIA_DATA_DB_NAME,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, std::to_string(
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, std::to_string(
         static_cast<int32_t>(ThumbnailReady::THUMB_UPGRADE)));
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
+    if (!CheckResultSetCount(resultSet, err)) {
+        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
+        return false;
+    }
+
+    err = resultSet->GoToFirstRow();
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
+        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
+            {KEY_OPT_TYPE, OptType::THUMB}};
+        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        return false;
+    }
+
+    ThumbnailData data;
+    do {
+        ParseQueryResult(resultSet, data, err);
+        if (!data.path.empty()) {
+            infos.push_back(data);
+        }
+    } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
+bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+{
+    vector<string> column = {
+        MEDIA_DATA_DB_ID,
+        MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_MEDIA_TYPE,
+        MEDIA_DATA_DB_DATE_ADDED,
+        MEDIA_DATA_DB_NAME,
+    };
+    RdbPredicates rdbPredicates(opts.table);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
+    rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
+    rdbPredicates.Limit(ASTC_GENERATE_COUNT_AFTER_RESTORE);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
         MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
@@ -710,7 +752,7 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         MEDIA_DATA_DB_ORIENTATION,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     rdbPredicates.BeginWrap()
         ->BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3")
@@ -1213,7 +1255,7 @@ static string Desensitize(string &str)
 static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
 {
     string tempFileName = fileName + ".tmp";
-    const mode_t fileMode = 0664;
+    const mode_t fileMode = 0644;
     mode_t mask = umask(0);
     UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_CREAT | O_TRUNC, fileMode));
     umask(mask);
@@ -1222,10 +1264,15 @@ static int SaveFile(const string &fileName, uint8_t *output, int writeSize)
             UniqueFd fd(open(tempFileName.c_str(), O_WRONLY | O_TRUNC, fileMode));
         }
         if (fd.Get() < 0) {
+            int err = errno;
+            std::string fileParentPath = MediaFileUtils::GetParentPath(tempFileName);
             MEDIA_ERR_LOG("save failed! status %{public}d, filePath: %{public}s exists: %{public}d, parent path "
-                "exists: %{public}d", errno, Desensitize(tempFileName).c_str(), MediaFileUtils::IsFileExists(
-                    tempFileName), MediaFileUtils::IsFileExists(MediaFileUtils::GetParentPath(tempFileName)));
-            return -errno;
+                "exists: %{public}d", err, Desensitize(tempFileName).c_str(), MediaFileUtils::IsFileExists(
+                    tempFileName), MediaFileUtils::IsFileExists(fileParentPath));
+            if (err == EACCES) {
+                MediaFileUtils::PrintStatInformation(fileParentPath);
+            }
+            return -err;
         }
     }
     int ret = write(fd.Get(), output, writeSize);
@@ -1360,12 +1407,19 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
         return E_ERR;
     }
     MEDIA_DEBUG_LOG("path = %{private}s", path.c_str());
-    int32_t fd = open(path.c_str(), O_RDONLY);
+
+    string absFilePath;
+    if (!PathToRealPath(path, absFilePath)) {
+        MEDIA_ERR_LOG("Failed to open a nullptr path %{private}s, errno=%{public}d", path.c_str(), errno);
+        return E_ERR;
+    }
+
+    int32_t fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
-            errno, path.c_str(), MediaFileUtils::IsFileExists(path));
+            errno, absFilePath.c_str(), MediaFileUtils::IsFileExists(absFilePath));
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, absFilePath}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_ERR;
     }
@@ -1374,7 +1428,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed, err %{public}d", errno);
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
+            {KEY_OPT_FILE, absFilePath}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         (void)close(fd);
         return E_ERR;
@@ -1382,7 +1436,7 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     int64_t length = static_cast<int64_t>(st.st_size);
     int32_t ret = avMetadataHelper->SetSource(fd, 0, length, AV_META_USAGE_PIXEL_MAP);
     if (ret != 0) {
-        DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_SET_SOURCE, ret);
+        DfxManager::GetInstance()->HandleThumbnailError(absFilePath, DfxType::AV_SET_SOURCE, ret);
         (void)close(fd);
         return E_ERR;
     }
@@ -1633,6 +1687,16 @@ void ThumbnailUtils::ParseQueryResult(const shared_ptr<ResultSet> &resultSet, Th
         err = resultSet->GetInt(index, position);
         data.isLocalFile = (position == 1);
     }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_HEIGHT, index);
+    if (err == NativeRdb::E_OK) {
+        err = resultSet->GetInt(index, data.photoHeight);
+    }
+
+    err = resultSet->GetColumnIndex(MEDIA_DATA_DB_WIDTH, index);
+    if (err == NativeRdb::E_OK) {
+        err = resultSet->GetInt(index, data.photoWidth);
+    }
 }
 
 bool ThumbnailUtils::ResizeThumb(int &width, int &height)
@@ -1848,11 +1912,17 @@ bool ThumbnailUtils::CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
 void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
     ThumbnailData &data, int &err)
 {
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    if (opts.table.empty()) {
+        MEDIA_ERR_LOG("Table is empty");
+        return;
+    }
+    RdbPredicates predicates(opts.table);
     predicates.EqualTo(MediaColumn::MEDIA_ID, id);
     vector<string> columns = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_HEIGHT,
+        MEDIA_DATA_DB_WIDTH,
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_ORIENTATION,
@@ -2035,7 +2105,7 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
     };
-    rdbPredicate.EqualTo(PhotoColumn::PHOTO_HAS_ASTC, "0");
+    rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     rdbPredicate.Limit(THUMBNAIL_GENERATE_BATCH_COUNT);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicate, column);
     if (!CheckResultSetCount(resultSet, err)) {

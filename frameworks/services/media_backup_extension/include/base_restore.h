@@ -51,7 +51,8 @@ protected:
     virtual void RestoreAudio(void) = 0;
     virtual void HandleRestData(void) = 0;
 
-    virtual bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
+    virtual bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
+        std::string dbName = "") = 0;
     virtual bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) = 0;
     virtual void AnalyzeSource() = 0;
     virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
@@ -87,6 +88,7 @@ protected:
     void UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode);
     void UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode);
     void UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode);
+    void GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void DeleteMoveFailedData(std::vector<std::string> &moveFailedData);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t sceneCode);
 
@@ -109,6 +111,9 @@ protected:
     int32_t errorCode_{RestoreError::SUCCESS};
     std::string errorInfo_;
     std::unordered_map<std::string, std::unordered_map<std::string, int32_t>> failedFilesMap_;
+    int fileMinSize_ = 0;
+    int maxFileId_ = 0;
+    int maxCount_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

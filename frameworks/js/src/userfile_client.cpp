@@ -150,7 +150,7 @@ shared_ptr<DataShareResultSet> UserFileClient::Query(Uri &uri, const DataSharePr
 
     shared_ptr<DataShareResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object)) {
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates)) {
         resultSet = MediaAssetRdbStore::GetInstance()->Query(predicates, columns, object, errCode);
     } else {
         DatashareBusinessError businessError;
@@ -165,7 +165,7 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> UserFileClient::QueryRdb(Uri &uri
 {
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object)) {
+    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates)) {
         resultSet = MediaAssetRdbStore::GetInstance()->QueryRdb(predicates, columns, object);
     }
     return resultSet;

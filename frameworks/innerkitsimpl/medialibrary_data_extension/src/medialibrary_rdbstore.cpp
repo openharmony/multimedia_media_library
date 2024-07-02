@@ -996,6 +996,7 @@ static const vector<string> onCreateSqlStrs = {
     MedialibraryBusinessRecordColumn::CREATE_TABLE,
     MedialibraryBusinessRecordColumn::CREATE_BUSINESS_KEY_INDEX,
     PhotoExtColumn::CREATE_PHOTO_EXT_TABLE,
+    PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2197,6 +2198,47 @@ void AddStoryTables(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+void UpdateAnalysisTables(RdbStore &store)
+{
+    const vector<string> executeSqlStrs = {
+        "ALTER TABLE " + VISION_OCR_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_LABEL_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_VIDEO_LABEL_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_AESTHETICS_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_SALIENCY_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_OBJECT_TABLE + " ADD COLUMN " + SCALE_X + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_OBJECT_TABLE + " ADD COLUMN " + SCALE_Y + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_OBJECT_TABLE + " ADD COLUMN " + SCALE_WIDTH + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_OBJECT_TABLE + " ADD COLUMN " + SCALE_HEIGHT + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_OBJECT_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_RECOMMENDATION_TABLE + " ADD COLUMN " + SCALE_X + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_RECOMMENDATION_TABLE + " ADD COLUMN " + SCALE_Y + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_RECOMMENDATION_TABLE + " ADD COLUMN " + SCALE_WIDTH + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_RECOMMENDATION_TABLE + " ADD COLUMN " + SCALE_HEIGHT + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_RECOMMENDATION_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_SEGMENTATION_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_COMPOSITION_TABLE + " ADD COLUMN " + SCALE_X + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_COMPOSITION_TABLE + " ADD COLUMN " + SCALE_Y + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_COMPOSITION_TABLE + " ADD COLUMN " + SCALE_WIDTH + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_COMPOSITION_TABLE + " ADD COLUMN " + SCALE_HEIGHT + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_COMPOSITION_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_HEAD_TABLE + " ADD COLUMN " + SCALE_X + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_HEAD_TABLE + " ADD COLUMN " + SCALE_Y + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_HEAD_TABLE + " ADD COLUMN " + SCALE_WIDTH + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_HEAD_TABLE + " ADD COLUMN " + SCALE_HEIGHT + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_HEAD_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_POSE_TABLE + " ADD COLUMN " + SCALE_X + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_POSE_TABLE + " ADD COLUMN " + SCALE_Y + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_POSE_TABLE + " ADD COLUMN " + SCALE_WIDTH + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_POSE_TABLE + " ADD COLUMN " + SCALE_HEIGHT + " REAL DEFAULT 0 ",
+        "ALTER TABLE " + VISION_POSE_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+        "ALTER TABLE " + VISION_FACE_TAG_TABLE + " ADD COLUMN " + ANALYSIS_VERSION + " TEXT ",
+    };
+    MEDIA_INFO_LOG("update analysis tables of db");
+    ExecSqls(executeSqlStrs, store);
+}
+
 void UpdateHighlightTables(RdbStore &store)
 {
     const vector<string> executeSqlStrs = {
@@ -2266,6 +2308,27 @@ void AddOwnerAppId(RdbStore &store)
     };
     MEDIA_INFO_LOG("start add owner_appid column");
     ExecSqls(sqls, store);
+}
+
+void UpdateThumbnailReadyColumn(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " RENAME COLUMN " + PhotoColumn::PHOTO_HAS_ASTC
+            + " TO " + PhotoColumn::PHOTO_THUMBNAIL_READY,
+    };
+    MEDIA_INFO_LOG("update has_astc to thumbnail_ready begin");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("update has_astc to thumbnail_ready finished");
+}
+
+void AddOwnerAppIdToFiles(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + MEDIALIBRARY_TABLE + " ADD COLUMN " + MediaColumn::MEDIA_OWNER_APPID + " TEXT"
+    };
+    MEDIA_INFO_LOG("start add owner_appid column to files table");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("add owner_appid column to files table finished");
 }
 
 void AddDynamicRangeType(RdbStore &store)
@@ -2577,6 +2640,69 @@ static void AddIsTemp(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddIsTempToTrigger(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_DAY_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_FAVORITE_INDEX,
+        "DROP INDEX IF EXISTS " + PhotoColumn::PHOTO_SCHPT_ADDED_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+    };
+    MEDIA_INFO_LOG("Add is_temp to trigger in upgrade");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void AddFrontCameraType(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_FRONT_CAMERA + " TEXT"
+    };
+    MEDIA_INFO_LOG("Start add front column");
+    ExecSqls(sqls, store);
+}
+
+static void AddDisplayNameIndex(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
+    };
+    MEDIA_INFO_LOG("Add displayname index");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
+        AddOwnerAppIdToFiles(store);
+    }
+
+    if (oldVersion < VERSION_ADD_IS_TEMP_TO_TRIGGER) {
+        AddIsTempToTrigger(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_ANALYSIS_TABLES) {
+        UpdateAnalysisTables(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTO_THUMBNAIL_READY) {
+        UpdateThumbnailReadyColumn(store);
+    }
+
+    if (oldVersion < VERSION_ADD_FRONT_CAMERA_TYPE) {
+        AddFrontCameraType(store);
+    }
+
+    if (oldVersion < PHOTOS_CREATE_DISPLAYNAME_INDEX) {
+        AddDisplayNameIndex(store);
+    }
+}
+
 static void CreatePhotosExtTable(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -2643,6 +2769,9 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_IS_TEMP) {
         AddIsTemp(store);
     }
+
+    UpgradeExtensionMore(store, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 static void CheckDateAdded(RdbStore &store)

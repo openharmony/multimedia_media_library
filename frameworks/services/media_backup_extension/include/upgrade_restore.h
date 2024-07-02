@@ -17,6 +17,8 @@
 #define OHOS_MEDIA_UPGRADE_RESTORE_H
 
 #include "base_restore.h"
+#include <libxml/tree.h>
+#include <libxml/parser.h>
 
 namespace OHOS {
 namespace Media {
@@ -42,7 +44,8 @@ private:
     void RestorePhoto(void) override;
     void RestoreAudio(void) override;
     void HandleRestData(void) override;
-    bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
+    bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
+        std::string dbName = "") override;
     bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
     bool ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         int mediaType = DUAL_MEDIA_TYPE::IMAGE_TYPE);
@@ -82,6 +85,12 @@ private:
     void IntegratedAlbum(GalleryAlbumInfo &galleryAlbumInfo);
     void ParseResultSetForMap(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
     void UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, FileInfo &info);
+    int32_t ParseXml(std::string path);
+    int StringToInt(const std::string& str);
+    int32_t InitDbAndXml(std::string xmlPath, bool isUpgrade);
+    int32_t HandleXmlNode(xmlNodePtr cur);
+    void SetParameterForClone();
+    void StopParameterForClone();
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

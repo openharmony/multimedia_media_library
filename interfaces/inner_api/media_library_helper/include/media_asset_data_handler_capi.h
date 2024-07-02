@@ -136,7 +136,7 @@ private:
     std::string requestUri_;
     std::string destUri_;
     NativeSourceMode sourceMode_;
-    NativeNotifyMode notifyMode_;
+    NativeNotifyMode notifyMode_ = NativeNotifyMode::FAST_NOTIFY;
 };
 } // Media
 } // OHOS

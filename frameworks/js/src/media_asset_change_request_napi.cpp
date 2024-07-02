@@ -922,11 +922,10 @@ napi_value MediaAssetChangeRequestNapi::JSDeleteAssets(napi_env env, napi_callba
 
     auto callback = std::make_shared<DeleteCallback>(env, uiContent);
     OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
-        std::bind(&DeleteCallback::OnRelease, callback, std::placeholders::_1),
-        std::bind(&DeleteCallback::OnResult, callback, std::placeholders::_1, std::placeholders::_2),
-        std::bind(&DeleteCallback::OnReceive, callback, std::placeholders::_1),
-        std::bind(
-            &DeleteCallback::OnError, callback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+        ([callback](auto arg) { callback->OnRelease(arg); }),
+        ([callback](auto arg1, auto arg2) { callback->OnResult(arg1, arg2); }),
+        ([callback](auto arg) { callback->OnReceive(arg); }),
+        ([callback](auto arg1, auto arg2, auto arg3) { callback->OnError(arg1, arg2, arg3); }),
     };
     OHOS::Ace::ModalUIExtensionConfig config;
     config.isProhibitBack = true;
@@ -1544,9 +1543,12 @@ int32_t MediaAssetChangeRequestNapi::CopyFileToMediaLibrary(const UniqueFd& dest
 {
     string srcRealPath = isMovingPhotoVideo ? movingPhotoVideoRealPath_ : realPath_;
     CHECK_COND_RET(!srcRealPath.empty(), E_FAIL, "Failed to check real path of source");
-    UniqueFd srcFd(open(srcRealPath.c_str(), O_RDONLY));
+
+    string absFilePath;
+    CHECK_COND_RET(PathToRealPath(srcRealPath, absFilePath), E_FAIL, "Not real path %{private}s", srcRealPath.c_str());
+    UniqueFd srcFd(open(absFilePath.c_str(), O_RDONLY));
     if (srcFd.Get() < 0) {
-        NAPI_ERR_LOG("Failed to open %{private}s, errno=%{public}d", srcRealPath.c_str(), errno);
+        NAPI_ERR_LOG("Failed to open %{private}s, errno=%{public}d", absFilePath.c_str(), errno);
         return srcFd.Get();
     }
 
@@ -1788,7 +1790,14 @@ static bool SendToCacheFile(MediaAssetChangeRequestAsyncContext& context,
 {
     auto changeRequest = context.objectInfo;
     string realPath = isMovingPhotoVideo ? changeRequest->GetMovingPhotoVideoPath() : changeRequest->GetFileRealPath();
-    UniqueFd srcFd(open(realPath.c_str(), O_RDONLY));
+
+    string absFilePath;
+    if (!PathToRealPath(realPath, absFilePath)) {
+        NAPI_ERR_LOG("Not real path %{private}s, errno=%{public}d", realPath.c_str(), errno);
+        return false;
+    }
+
+    UniqueFd srcFd(open(absFilePath.c_str(), O_RDONLY));
     if (srcFd.Get() < 0) {
         context.SaveError(srcFd.Get());
         NAPI_ERR_LOG("Failed to open file, errno=%{public}d", errno);
@@ -2102,15 +2111,27 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    UpdateAssetProperty(context, PAH_UPDATE_PHOTO_COMPONENT, predicates, valuesBucket);
+    bool ret = UpdateAssetProperty(context, PAH_UPDATE_PHOTO_COMPONENT, predicates, valuesBucket);
+    if (!ret) {
+        NAPI_ERR_LOG("update temp flag fail");
+        return ret;
+    }
 
     // udpate dirty=1 if photo_quality=0
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
-    predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
-    predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-    DataShare::DataShareValuesBucket valuesBucketDirty;
-    valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-    return UpdateAssetProperty(context, PAH_UPDATE_PHOTO_COMPONENT, predicates, valuesBucketDirty);
+    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+        predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+        DataShare::DataShareValuesBucket valuesBucketDirty;
+        valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        string uri = PAH_UPDATE_PHOTO_COMPONENT;
+        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+        Uri updateAssetUri(uri);
+        int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucketDirty);
+        if (changedRows < 0) {
+            NAPI_WARN_LOG("update dirty fail");
+        }
+    }
+    return ret;
 }
 
 static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)

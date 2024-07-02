@@ -323,7 +323,10 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
 
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         int32_t changedRows = 0;
-        cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+        std::vector<string> perms = { PERM_READ_IMAGEVIDEO, PERM_WRITE_IMAGEVIDEO };
+        if (PermissionUtils::CheckHasPermission(perms)) {
+            cmd.GetAbsRdbPredicates()->EqualTo(PhotoColumn::MEDIA_ID, id);
+        }
         changedRows = MediaLibraryRdbStore::UpdateLastVisitTime(cmd, changedRows);
         if (changedRows <= 0) {
             MEDIA_ERR_LOG("update lastVisitTime Failed, changedRows = %{public}d.", changedRows);
@@ -1139,13 +1142,12 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
             id.c_str(), fileAsset->GetPhotoSubType());
         movingPhotoVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
     }
-    if (fileAsset->GetPhotoEditTime() == 0 && fileAsset->GetMovingPhotoEffectMode() == 0) {
-        return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? movingPhotoVideoPath : path, "r");
-    }
+
     string sourcePath = isMovingPhotoVideoRequest ?
         MediaFileUtils::GetMovingPhotoVideoPath(GetEditDataSourcePath(path)) :
         GetEditDataSourcePath(path);
     if (sourcePath.empty() || !MediaFileUtils::IsFileExists(sourcePath)) {
+        MEDIA_INFO_LOG("sourcePath does not exist: %{private}s", sourcePath.c_str());
         return OpenFileWithPrivacy(isMovingPhotoVideoRequest ? movingPhotoVideoPath : path, "r");
     } else {
         return OpenFileWithPrivacy(sourcePath, "r");
@@ -1372,9 +1374,13 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     string sourcePath = GetEditDataSourcePath(path);
     CHECK_AND_RETURN_RET_LOG(!sourcePath.empty(), E_INVALID_URI, "Cannot get source path, id=%{public}d", fileId);
     CHECK_AND_RETURN_RET_LOG(MediaFileUtils::IsFileExists(sourcePath), E_NO_SUCH_FILE, "Can not get source file");
-
     string editDataPath = GetEditDataPath(path);
     CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_URI, "Cannot get editdata path, id=%{public}d", fileId);
+
+    errCode = UpdateEditTime(fileId, 0);
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
+        fileId);
+
     if (MediaFileUtils::IsFileExists(editDataPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(editDataPath), E_HAS_FS_ERROR,
             "Failed to delete edit data, path:%{private}s", editDataPath.c_str());
@@ -1397,9 +1403,6 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
             "Failed to add filters to photo");
     }
 
-    errCode = UpdateEditTime(fileId, 0);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
-        fileId);
     ScanFile(path, true, true, true);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
@@ -1971,10 +1974,25 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     MEDIA_INFO_LOG("AddFiltersToPhoto inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
         inputPath.c_str(), outputPath.c_str(), editdata.c_str());
     std::string info = editdata;
-    int32_t ret = MediaChangeEffect::TakeEffect(inputPath, outputPath, info);
+    size_t lastSlash = outputPath.rfind('/');
+    CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
+        "Failed to check outputPath: %{public}s", outputPath.c_str());
+    string tempOutputPath = outputPath.substr(0, lastSlash) + "/filters_" + outputPath.substr(lastSlash + 1);
+    int32_t ret = MediaFileUtils::CreateAsset(tempOutputPath);
+    CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS || ret == E_FILE_EXIST, E_HAS_FS_ERROR,
+        "Failed to create temp filters file %{private}s", tempOutputPath.c_str());
+    ret = MediaChangeEffect::TakeEffect(inputPath, tempOutputPath, info);
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPhoto: TakeEffect error. ret = %d", ret);
         return E_ERR;
+    }
+
+    ret = rename(tempOutputPath.c_str(), outputPath.c_str());
+    if (ret < 0) {
+        MEDIA_ERR_LOG("Failed to rename temp filters file, ret: %{public}d, errno: %{public}d", ret, errno);
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
+            "Failed to delete temp filters file, errno: %{public}d", errno);
+        return ret;
     }
     MEDIA_INFO_LOG("AddFiltersToPhoto finish");
     MediaLibraryObjectUtils::ScanFileAsync(outputPath, to_string(fileId), MediaLibraryApi::API_10);

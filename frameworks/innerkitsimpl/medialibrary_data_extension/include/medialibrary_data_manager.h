@@ -36,6 +36,7 @@
 #include "rdb_predicates.h"
 #include "rdb_store.h"
 #include "result_set_bridge.h"
+#include "timer.h"
 #include "uri.h"
 #include "values_bucket.h"
 #include "thumbnail_service.h"
@@ -75,6 +76,9 @@ public:
 
     // upgrade existed thumbnails to fix such as size, rotation and quality etc. problems
     EXPORT int32_t UpgradeThumbnailBackground();
+
+    // restore thumbnail for date fronted 500 photos from dual framework upgrade or clone
+    EXPORT int32_t RestoreThumbnailDualFrame();
     void InterruptBgworker();
     EXPORT int32_t DoAging();
     EXPORT int32_t DoTrashAging(std::shared_ptr<int> countPtr = nullptr);
@@ -98,6 +102,8 @@ public:
     EXPORT int GetThumbnail(const std::string &uri);
     EXPORT void SetStartupParameter();
     EXPORT void ReCreateMediaDir();
+    EXPORT void RegisterTimer();
+    EXPORT void UnregisterTimer();
 
 private:
     int32_t InitMediaLibraryRdbStore();
@@ -150,6 +156,9 @@ private:
     std::shared_ptr<MediaDataShareExtAbility> extension_;
     std::shared_ptr<CloudSyncObserver> cloudPhotoObserver_;
     std::shared_ptr<CloudSyncObserver> cloudPhotoAlbumObserver_;
+    static std::recursive_mutex timerMutex_;
+    static Utils::Timer timer_;
+    static uint32_t timerId_;
 };
 
 // Scanner callback objects

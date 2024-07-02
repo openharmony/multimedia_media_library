@@ -35,6 +35,7 @@ public:
     virtual ~CloudSyncHelper();
 
     void StartSync();
+    int32_t StartDownloadFile(const std::string &path);
 
 private:
     CloudSyncHelper();
@@ -48,7 +49,7 @@ private:
 
     /* delayed trigger */
     OHOS::Utils::Timer timer_;
-    int32_t timerId_;
+    uint32_t timerId_ = 0;
     bool isPending_ = false;
     std::mutex syncMutex_;
 

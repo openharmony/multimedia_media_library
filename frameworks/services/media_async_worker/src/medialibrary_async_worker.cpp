@@ -63,7 +63,9 @@ void MediaLibraryAsyncWorker::Init()
     isThreadRunning_ = true;
     doneTotal_ = 0;
     for (auto i = 0; i < THREAD_NUM; i++) {
-        threads_.emplace_back(bind(&MediaLibraryAsyncWorker::StartWorker, this, i));
+        threads_.emplace_back(
+            std::thread([this, num = i]() { this->StartWorker(num); })
+        );
     }
 }
 

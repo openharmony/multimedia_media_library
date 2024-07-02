@@ -11,6 +11,7 @@
       "tablet",
       "2in1"
     ],
+    "compressNativeLibs": true,
     "deliveryWithInstall": true,
     "installationFree": false,
     "pages": "$profile:main_pages",
@@ -151,6 +152,17 @@
       {
         "name": "ohos.permission.PROTECT_SCREEN_LOCK_DATA",
         "reason": "$string:permission_get_appkey2",
+        "usedScene":{
+          "abilities":[
+            "MainAbility",
+            "DataShareExtAbility"
+          ],
+          "when": "always"
+        }
+      },
+      {
+        "name": "ohos.permission.GET_WIFI_INFO",
+        "reason": "$string:permission_get_wifi_info",
         "usedScene":{
           "abilities":[
             "MainAbility",

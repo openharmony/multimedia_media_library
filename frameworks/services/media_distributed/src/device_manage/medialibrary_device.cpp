@@ -208,8 +208,10 @@ void MediaLibraryDevice::DevOnlineProcess(const DistributedHardware::DmDeviceInf
     std::vector<std::string> devices = { mldevInfo.networkId };
     MediaLibrarySyncOperation::SyncPullAllTableByNetworkId(syncOpts, devices);
 
-    auto getTargetMLInfoTask = std::make_unique<std::thread>(&MediaLibraryDevice::TryToGetTargetDevMLInfos,
-        this, mldevInfo.deviceUdid, mldevInfo.networkId);
+    auto getTargetMLInfoTask = std::make_unique<std::thread>(
+        [this, deviceUdid = mldevInfo.deviceUdid, networkId = mldevInfo.networkId]() {
+        this->TryToGetTargetDevMLInfos(deviceUdid, networkId);
+    });
     getTargetMLInfoTask->detach();
 }
 

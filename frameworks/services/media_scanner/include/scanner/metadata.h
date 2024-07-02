@@ -136,6 +136,9 @@ public:
     void SetPhotoSubType(const VariantData &photoSubType);
     int32_t GetPhotoSubType() const;
 
+    void SetFrontCamera(const VariantData &forntcamera);
+    EXPORT std::string GetFrontCamera() const;
+
     void SetDynamicRangeType(const VariantData &type);
     EXPORT int32_t GetDynamicRangeType() const;
 
@@ -213,6 +216,9 @@ private:
 
     // packageName
     std::string ownerPackage_;
+
+    // front camera
+    std::string frontcamera_;
 };
 } // namespace Media
 } // namespace OHOS

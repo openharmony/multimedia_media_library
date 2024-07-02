@@ -48,6 +48,7 @@
 #include "singleton.h"
 #include "system_ability_definition.h"
 #include "uri_permission_manager_client.h"
+#include "userfilemgr_uri.h"
 #include "want.h"
 #ifdef MEDIALIBRARY_SECURITY_OPEN
 #include "sec_comp_kit.h"
@@ -231,6 +232,26 @@ static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,
     }
 }
 
+static bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
+{
+    if (!PermissionUtils::IsRootShell() &&
+        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::QUERY)) {
+        MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
+        return false;
+    }
+    if (!OHOS::system::GetBoolParameter("const.security.developermode.state", true)) {
+        MEDIA_ERR_LOG("Mediatool permission check failed: target is not in developer mode");
+        return false;
+    }
+    return true;
+}
+
+static bool IsMediatoolOperation(MediaLibraryCommand &cmd)
+{
+    return cmd.GetOprnObject() == OperationObject::TOOL_PHOTO || cmd.GetOprnObject() == OperationObject::TOOL_AUDIO ||
+        cmd.GetOprnType() == Media::OperationType::DELETE_TOOL;
+}
+
 static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
 {
     MEDIA_DEBUG_LOG("uri: %{private}s mode: %{private}s", cmd.GetUri().ToString().c_str(), mode.c_str());
@@ -238,6 +259,9 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     const bool containsRead = ContainsFlag(mode, 'r');
     const bool containsWrite = ContainsFlag(mode, 'w');
 
+    if (cmd.GetQuerySetParam(IS_TOOL_OPEN) == TOOL_OPEN_TRUE) {
+        return IsDeveloperMediaTool(cmd)? E_SUCCESS : E_PERMISSION_DENIED;
+    }
     vector<string> perms;
     FillV10Perms(mediaType, containsRead, containsWrite, perms);
     if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO)) {
@@ -482,15 +506,25 @@ static void UnifyOprnObject(MediaLibraryCommand &cmd)
         { OperationObject::PAH_PHOTO, OperationObject::FILESYSTEM_PHOTO },
         { OperationObject::PAH_ALBUM, OperationObject::PHOTO_ALBUM },
         { OperationObject::PAH_MAP, OperationObject::PHOTO_MAP },
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
         { OperationObject::TOOL_PHOTO, OperationObject::FILESYSTEM_PHOTO },
         { OperationObject::TOOL_AUDIO, OperationObject::FILESYSTEM_AUDIO },
-#endif
     };
 
     OperationObject obj = cmd.GetOprnObject();
     if (UNIFY_OP_OBJECT_MAP.find(obj) != UNIFY_OP_OBJECT_MAP.end()) {
         cmd.SetOprnObject(UNIFY_OP_OBJECT_MAP.at(obj));
+    }
+}
+
+static int32_t MediatoolPermCheck(MediaLibraryCommand &cmd)
+{
+    if (IsMediatoolOperation(cmd)) {
+        if (!IsDeveloperMediaTool(cmd)) {
+            return E_PERMISSION_DENIED;
+        }
+        return E_SUCCESS;
+    } else {
+        return E_NEED_FURTHER_CHECK;
     }
 }
 
@@ -510,6 +544,11 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
         return err;
     }
 #endif
+    err = MediatoolPermCheck(cmd);
+    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
+        UnifyOprnObject(cmd);
+        return err;
+    }
     err = PhotoAccessHelperPermCheck(cmd, isWrite);
     if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);
@@ -536,32 +575,6 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     return E_SUCCESS;
 }
 
-static bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
-{
-    OperationObject object = cmd.GetOprnObject();
-    if (object != OperationObject::TOOL_AUDIO && object != OperationObject::TOOL_PHOTO) {
-        MEDIA_DEBUG_LOG("Target is not mediatool, not performing mediatool permission check");
-        return false;
-    }
-    static const unordered_map<OperationObject, OperationObject> UNIFY_TOOL_OP_OBJECT_MAP = {
-        { OperationObject::TOOL_PHOTO, OperationObject::FILESYSTEM_PHOTO },
-        { OperationObject::TOOL_AUDIO, OperationObject::FILESYSTEM_AUDIO },
-    };
-    if (UNIFY_TOOL_OP_OBJECT_MAP.find(object) != UNIFY_TOOL_OP_OBJECT_MAP.end()) {
-        cmd.SetOprnObject(UNIFY_TOOL_OP_OBJECT_MAP.at(object));
-    }
-    if (!PermissionUtils::IsRootShell() &&
-        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::QUERY)) {
-        MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
-        return false;
-    }
-    if (!OHOS::system::GetBoolParameter("const.security.developermode.state", true)) {
-        MEDIA_ERR_LOG("Mediatool permission check failed: target is not in developer mode");
-        return false;
-    }
-    return true;
-}
-
 static string GetClientAppId()
 {
     string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
@@ -573,49 +586,37 @@ static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd)
     auto ret = false;
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE || cmd.GetTableName() == AudioColumn::AUDIOS_TABLE ||
         cmd.GetTableName() == MEDIALIBRARY_TABLE) {
-        if (cmd.GetOprnObject() == OperationObject::TOOL_PHOTO || cmd.GetOprnObject() == OperationObject::TOOL_AUDIO) {
-            if (!IsDeveloperMediaTool(cmd)) {
-                return false;
-            }
-        } else {
-            std::vector<std::string> columns;
-            DatashareBusinessError businessError;
-            int errCode = businessError.GetCode();
-            string clientAppId = GetClientAppId();
-            string fileId = MediaFileUtils::GetIdFromUri(uri.ToString());
-            if (clientAppId.empty() || fileId.empty()) {
-                return false;
-            }
-            DataSharePredicates predicates;
-            predicates.And()->EqualTo("file_id", fileId);
-            predicates.And()->EqualTo("owner_appid", clientAppId);
-            auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
-            auto count = 0;
-            queryResultSet->GetRowCount(count);
-            if (count != 0) {
-                ret = true;
-                CollectPermissionInfo(cmd, SECURITY_COMPONENT_MODE, true,
-                    PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
-            }
+        std::vector<std::string> columns;
+        DatashareBusinessError businessError;
+        int errCode = businessError.GetCode();
+        string clientAppId = GetClientAppId();
+        string fileId = MediaFileUtils::GetIdFromUri(uri.ToString());
+        if (clientAppId.empty() || fileId.empty()) {
+            return false;
+        }
+        DataSharePredicates predicates;
+        predicates.And()->EqualTo("file_id", fileId);
+        predicates.And()->EqualTo("owner_appid", clientAppId);
+        auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
+        auto count = 0;
+        queryResultSet->GetRowCount(count);
+        if (count != 0) {
+            ret = true;
+            CollectPermissionInfo(cmd, SECURITY_COMPONENT_MODE, true,
+                PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
         }
     }
     return ret;
 }
 
-static bool CheckDeveloperOrOwner(MediaLibraryCommand &cmd, DataSharePredicates &appidPredicates)
+static bool AddOwnerCheck(MediaLibraryCommand &cmd, DataSharePredicates &appidPredicates)
 {
     if (cmd.GetTableName() != PhotoColumn::PHOTOS_TABLE && cmd.GetTableName() != AudioColumn::AUDIOS_TABLE &&
         cmd.GetTableName() != MEDIALIBRARY_TABLE) {
         return false;
     }
-    if (cmd.GetOprnObject() == OperationObject::TOOL_AUDIO || cmd.GetOprnObject() == OperationObject::TOOL_PHOTO) {
-        if (!IsDeveloperMediaTool(cmd)) {
-            return false;
-        }
-    } else {
-        string clientAppId = GetClientAppId();
-        appidPredicates.And()->EqualTo("owner_appid", clientAppId);
-    }
+    string clientAppId = GetClientAppId();
+    appidPredicates.And()->EqualTo("owner_appid", clientAppId);
     return true;
 }
 
@@ -692,9 +693,7 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
     MediaLibraryCommand cmd(uri);
     int32_t err = CheckPermFromUri(cmd, true);
     if (err != E_SUCCESS) {
-        if (!IsDeveloperMediaTool(cmd)) {
-            return err;
-        }
+        return err;
     }
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
@@ -709,10 +708,8 @@ int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBuc
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err < 0) {
-        if (!IsDeveloperMediaTool(cmd)) {
-            MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
-            return err;
-        }
+        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
+        return err;
     }
 
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
@@ -723,13 +720,18 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     const DataShareValuesBucket &value)
 {
     MediaLibraryCommand cmd(uri);
+    bool isMediatoolOperation = IsMediatoolOperation(cmd);
     int32_t err = CheckPermFromUri(cmd, true);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
 
     DataSharePredicates appidPredicates = predicates;
     if (err != E_SUCCESS) {
-        if (!CheckDeveloperOrOwner(cmd, appidPredicates)) {
+        if (isMediatoolOperation) {
+            MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
+            return err;
+        }
+        if (!AddOwnerCheck(cmd, appidPredicates)) {
             MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
             return err;
         }
@@ -751,10 +753,8 @@ int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err != E_SUCCESS) {
-        if (!IsDeveloperMediaTool(cmd)) {
-            MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
-            return err;
-        }
+        MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
+        return err;
     }
 
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
@@ -768,16 +768,22 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
+    bool isMediatoolOperation = IsMediatoolOperation(cmd);
     int32_t err = CheckPermFromUri(cmd, false);
     int errCode = businessError.GetCode();
     DataSharePredicates appidPredicates = predicates;
     if (err != E_SUCCESS) {
+        if (isMediatoolOperation) {
+            MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
+            businessError.SetCode(err);
+            return nullptr;
+        }
         auto& uriPermissionClient = AAFwk::UriPermissionManagerClient::GetInstance();
         if (uriPermissionClient.VerifyUriPermission(uri, AAFwk::Want::FLAG_AUTH_READ_URI_PERMISSION,
             IPCSkeleton::GetCallingTokenID())) {
             MEDIA_DEBUG_LOG("Permission check pass , uri = %{private}s", uri.ToString().c_str());
         } else {
-            if (!CheckDeveloperOrOwner(cmd, appidPredicates)) {
+            if (!AddOwnerCheck(cmd, appidPredicates)) {
                 MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, err);
                 businessError.SetCode(err);
                 return nullptr;

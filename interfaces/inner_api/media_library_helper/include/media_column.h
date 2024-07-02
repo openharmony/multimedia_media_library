@@ -94,7 +94,8 @@ public:
     static const std::string PHOTO_CLEAN_FLAG EXPORT;
     static const std::string PHOTO_DYNAMIC_RANGE_TYPE EXPORT;
     static const std::string MOVING_PHOTO_EFFECT_MODE EXPORT;
-    static const std::string PHOTO_HAS_ASTC EXPORT;
+    static const std::string PHOTO_HAS_ASTC EXPORT; // This attribute has been replaced by "thumbnail_ready"
+    static const std::string PHOTO_THUMBNAIL_READY EXPORT;
 
     static const std::string PHOTO_SYNCING EXPORT;
     static const std::string PHOTO_DATE_YEAR EXPORT;
@@ -127,10 +128,14 @@ public:
     static const std::string PHOTO_HIDDEN_TIME_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_HIDDEN_TIME_INDEX EXPORT;
     static const std::string PHOTO_FAVORITE_INDEX EXPORT;
+    // for clone query
+    static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // format in PhotoTable year month day
     static const std::string PHOTO_DATE_YEAR_FORMAT EXPORT;
     static const std::string PHOTO_DATE_MONTH_FORMAT EXPORT;
     static const std::string PHOTO_DATE_DAY_FORMAT EXPORT;
+    static const std::string PHOTO_FRONT_CAMERA EXPORT;
+
     // table name
     static const std::string PHOTOS_TABLE EXPORT;
 
@@ -146,6 +151,7 @@ public:
     static const std::string CREATE_HIDDEN_TIME_INDEX EXPORT;
     static const std::string CREATE_SCHPT_HIDDEN_TIME_INDEX EXPORT;
     static const std::string CREATE_PHOTO_FAVORITE_INDEX EXPORT;
+    static const std::string CREATE_PHOTO_DISPLAYNAME_INDEX EXPORT;
 
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
@@ -176,6 +182,8 @@ public:
 
     EXPORT static bool IsPhotoColumn(const std::string &columnName);
     EXPORT static std::string CheckUploadPhotoColumns();
+
+    static const std::string PHOTOS_QUERY_FILTER EXPORT;
 };
 
 class AudioColumn : public MediaColumn {

@@ -71,6 +71,7 @@ public:
     bool IsHidden() const;
     void SetHidden(bool isHidden);
     std::string GetAllExif() const;
+    std::string GetFrontCamera() const;
     std::string GetUserComment() const;
     std::shared_ptr<FileAsset> GetFileAssetInstance() const;
 

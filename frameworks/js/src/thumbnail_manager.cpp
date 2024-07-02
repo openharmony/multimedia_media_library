@@ -189,7 +189,9 @@ void ThumbnailManager::Init()
     init_ = true;
     isThreadRunning_ = true;
     for (auto i = 0; i < THREAD_NUM; i++) {
-        threads_.emplace_back(bind(&ThumbnailManager::ImageWorker, this, i));
+        threads_.emplace_back(
+            std::thread([this, num = i]() { this->ImageWorker(num); })
+        );
         threads_[i].detach();
     }
     return;

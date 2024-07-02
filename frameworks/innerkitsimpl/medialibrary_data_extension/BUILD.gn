@@ -191,6 +191,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_active_task/src/media_actively_calling_analyse.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
+    "src/download_cloud_files_background.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
     "src/medialibrary_album_operations.cpp",
@@ -265,6 +266,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "data_share:datashare_provider",
     "dfs_service:cloudsync_kit_inner",
     "eventhandler:libeventhandler",
+    "ffrt:libffrt",
     "file_api:filemgmt_libn",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
@@ -339,6 +341,12 @@ ohos_shared_library("medialibrary_data_extension") {
       defined(global_parts_info.powermgr_thermal_manager)) {
     external_deps += [ "thermal_manager:thermalsrv_client" ]
     cflags_cc += [ "-DHAS_THERMAL_MANAGER_PART" ]
+  }
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_wifi)) {
+    external_deps += [ "wifi:wifi_sdk" ]
+    cflags_cc += [ "-DHAS_WIFI_MANAGER_PART" ]
   }
 
   subsystem_name = "multimedia"

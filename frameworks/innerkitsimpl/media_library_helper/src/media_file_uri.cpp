@@ -517,7 +517,7 @@ void MediaFileUri::GetTimeIdFromUri(const std::vector<std::string> &uriBatch, st
             MEDIA_ERR_LOG("GetTimeIdFromUri find indexEnd for time_id failed: %{private}s", uri.c_str());
             continue;
         }
-        int32_t timeIdLen = indexEnd - indexStart - ML_URI_TIME_ID.length();
+        uint32_t timeIdLen = indexEnd - indexStart - ML_URI_TIME_ID.length();
         if (indexEnd <= uri.size()) {
             timeIdBatch.emplace_back(uri.substr(indexStart + ML_URI_TIME_ID.length(), timeIdLen));
         }
@@ -542,7 +542,7 @@ int32_t MediaFileUri::CreateAssetBucket(int32_t fileId, int32_t &bucketNum)
     int divider = ASSET_DIR_START_NUM;
     while (fileId > start * ASSET_IN_BUCKET_NUM_MAX) {
         divider = start;
-        start <<= 1;
+        start *= 2; // 2: Left shift offset
     }
 
     int fileIdRemainder = fileId % divider;

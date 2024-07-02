@@ -36,7 +36,8 @@ private:
     void HandleRestData(void) override;
     int32_t QueryTotalNumber(void) override;
     std::vector<FileInfo> QueryFileInfos(int32_t offset) override;
-    bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &fileInfo) override;
+    bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
+        std::string dbName = "") override;
     bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
     void AnalyzeSource() override;
     void RestoreAlbum(void);
