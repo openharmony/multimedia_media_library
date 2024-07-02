@@ -259,22 +259,22 @@ void PhotoAssetProxy::SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t si
     }
     uint32_t index = 0;
     uint32_t ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_ISO_SPEED_LATITUDE_ZZZ,
-        to_string(shootingMode), fd);
+        to_string(shootingMode));
     if (ret != E_OK) {
         MEDIA_ERR_LOG("modify image property shooting mode fail %{public}d", ret);
     }
 
-    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LONGITUDE, LocationValueToString(longitude), fd);
+    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LONGITUDE, LocationValueToString(longitude));
     if (ret != E_OK) {
         MEDIA_ERR_LOG("modify image property longitude fail %{public}d", ret);
     }
 
-    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF, longitude > 0.0 ? "E" : "W", fd);
+    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LONGITUDE_REF, longitude > 0.0 ? "E" : "W");
     if (ret != E_OK) {
         MEDIA_ERR_LOG("modify image property longitude ref fail %{public}d", ret);
     }
 
-    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE, LocationValueToString(latitude), fd);
+    ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE, LocationValueToString(latitude));
     if (ret != E_OK) {
         MEDIA_ERR_LOG("modify image property latitude fail %{public}d", ret);
     }
