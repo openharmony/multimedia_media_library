@@ -548,7 +548,7 @@ bool ThumbnailUtils::QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
     return true;
 }
 
-bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<ThumbnailData> &infos, int &err)
+bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID,
@@ -556,38 +556,20 @@ bool ThumbnailUtils::QueryNoLcdInfos(ThumbRdbOpt &opts, int LcdLimit, vector<Thu
         MEDIA_DATA_DB_MEDIA_TYPE,
     };
     RdbPredicates rdbPredicates(opts.table);
-    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
-        rdbPredicates.EqualTo(PhotoColumn::PHOTO_LAST_VISIT_TIME, "0");
-    }
-    rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_FILE));
-    rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
-    if ((opts.table == PhotoColumn::PHOTOS_TABLE) || (opts.table == AudioColumn::AUDIOS_TABLE)) {
-        rdbPredicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, "0");
-    } else {
-        rdbPredicates.EqualTo(MEDIA_DATA_DB_IS_TRASH, "0");
-    }
-    rdbPredicates.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
-    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
-        // Filter data that Only exists in Cloud to avoid cosuming data of downloading the original image
-        // meaning of Position: 1--only in local, 2--only in cloud, 3--both in local and cloud
-        rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->
-            EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
-    }
-
-    rdbPredicates.Limit(LcdLimit);
+    rdbPredicates.EqualTo(PhotoColumn::PHOTO_LCD_VISIT_TIME, "0");
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {
-        MEDIA_ERR_LOG("CheckResultSetCount failed %{public}d", err);
+        MEDIA_ERR_LOG("QueryNoLcdInfos failed %{public}d", err);
+        if (err == E_EMPTY_VALUES_BUCKET) {
+            return true;
+        }
         return false;
     }
 
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        MEDIA_ERR_LOG("QueryNoLcdInfos failed GoToFirstRow %{public}d", err);
         return false;
     }
 
@@ -879,8 +861,9 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
 
     MediaLibraryTracer tracer;
     tracer.Start("UpdateLcdInfo opts.store->Update");
-    int64_t timeNow = UTCTimeMilliSeconds();
-    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, timeNow);
+    values.PutLong(PhotoColumn::PHOTO_LAST_VISIT_TIME, MediaFileUtils::UTCTimeMilliSeconds());
+    values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, static_cast<int64_t>(LcdReady::GENERATE_LCD_COMPLETED));
+
     Size lcdSize;
     if (GetLocalThumbSize(data, ThumbnailType::LCD, lcdSize)) {
         SetThumbnailSizeValue(values, lcdSize, PhotoColumn::PHOTO_LCD_SIZE);
@@ -912,10 +895,21 @@ bool ThumbnailUtils::UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int
     err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        MEDIA_ERR_LOG("UpdateVisitTime rdbStore Update failed! %{public}d", err);
+        return false;
+    }
+    return true;
+}
+
+bool ThumbnailUtils::UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status)
+{
+    ValuesBucket values;
+    int changedRows;
+    values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, static_cast<int64_t>(status));
+    err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { opts.row });
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("UpdateLcdReadyStatus rdbStore Update failed! %{public}d", err);
         return false;
     }
     return true;

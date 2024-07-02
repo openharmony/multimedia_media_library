@@ -38,6 +38,7 @@ const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT
     "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER, salary REAL, blobType BLOB)";
 
 const int32_t E_THUMBNAIL_ASTC_ALL_EXIST = -2307;
+const int32_t E_THUMBNAIL_LCD_ALL_EXIST = -2308;
 
 int ConfigTestOpenCall::OnCreate(RdbStore &store)
 {
@@ -155,7 +156,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_GenerateThumbnailBackground_
     serverTest->Init(storePtr, context);
 #endif
     ret = serverTest->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, E_EMPTY_VALUES_BUCKET);
+    EXPECT_EQ(ret, E_THUMBNAIL_LCD_ALL_EXIST);
     serverTest->ReleaseService();
 }
 
