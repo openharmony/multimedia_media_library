@@ -497,6 +497,7 @@ static std::string GenerateRequestId()
 
 void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
+    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
     Uri uri(asyncContext->photoUri);
     if (multiStagesObserverMap.find(asyncContext->photoUri) == multiStagesObserverMap.end()) {
