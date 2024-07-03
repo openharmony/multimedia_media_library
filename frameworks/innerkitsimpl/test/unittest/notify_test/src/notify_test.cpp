@@ -30,6 +30,7 @@
 #include "medialibrary_notify.h"
 #undef private
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
@@ -67,8 +68,7 @@ shared_ptr<DataShare::DataShareHelper> sDataShareHelper_ = nullptr;
 
 void CheckGetAlbumIdBySubType(PhotoAlbumSubType photoAlbumSubType, DefaultAlbumId defaultAlbumId)
 {
-    auto context = make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     auto watch = MediaLibraryNotify::GetInstance();
     int albumId = watch->GetAlbumIdBySubType(photoAlbumSubType);
     EXPECT_EQ(defaultAlbumId, albumId);
@@ -222,7 +222,7 @@ static void CheckCloudSyncNotify(const std::string &uriPrefix, const std::string
     const DataShareObserver::ChangeType &changeType)
 {
     auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     ASSERT_TRUE(rdbStore != nullptr);
 
@@ -615,8 +615,7 @@ HWTEST_F(NotifyTest, cloud_notify_010, TestSize.Level0)
 HWTEST_F(NotifyTest, handle_empty_data_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("handle_empty_data_001 enter");
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     ASSERT_TRUE(rdbStore != nullptr);
     CloudSyncHandleData emptyHandleData;
