@@ -17,6 +17,7 @@
 #include "ability_context_impl.h"
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
+#include "medialibrary_unittest_utils.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_smartalbum_operations.h"
 #include "medialibrary_smartalbum_operations_test.h"
@@ -51,8 +52,7 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_HandleSmartAlbumOperation
 
 HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_HandleSmartAlbumOperation_test_002, TestSize.Level0)
 {
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibrarySmartAlbumOperations::HandleSmartAlbumOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
@@ -81,8 +81,7 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_CreateSmartAlbumOperation
     cmd.SetValueBucket(values);
     ret = MediaLibrarySmartAlbumOperations::CreateSmartAlbumOperation(cmd);
     EXPECT_EQ(ret, E_PARENT_SMARTALBUM_IS_NOT_EXISTED);
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     ret = MediaLibrarySmartAlbumOperations::CreateSmartAlbumOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
     string name = "CreateSmartAlbumOperation/test";
@@ -99,8 +98,7 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_CreateSmartAlbumOperation
     cmd.SetTableName(MEDIALIBRARY_TABLE);
     NativeRdb::ValuesBucket values;
     values.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     string name = "medialib_CreateSmartAlbumOperation";
     values.PutString(SMARTALBUM_DB_NAME, name);
     cmd.SetValueBucket(values);
@@ -111,8 +109,7 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_CreateSmartAlbumOperation
 
 HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_DeleteSmartAlbumOperation_test_001, TestSize.Level0)
 {
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     int32_t ret = MediaLibrarySmartAlbumOperations::DeleteSmartAlbumOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
@@ -128,8 +125,7 @@ HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_DeleteSmartAlbumOperation
 HWTEST_F(MediaLibrarySmartalbumOperationTest, medialib_DeleteSmartAlbumOperation_test_002, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     NativeRdb::ValuesBucket values;
     cmd.SetTableName(MEDIALIBRARY_TABLE);
     values.PutInt(SMARTALBUM_DB_ID, TYPE_TRASH);

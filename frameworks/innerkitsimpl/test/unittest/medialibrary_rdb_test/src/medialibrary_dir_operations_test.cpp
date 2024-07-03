@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "media_log.h"
 #include "medialibrary_rdb_test.h"
 #include "medialibrary_dir_operations.h"
 #include "medialibrary_unistore_manager.h"
@@ -49,8 +50,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_002, TestSize.Lev
     int32_t ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     ValuesBucket values;
     cmd.SetValueBucket(values);
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
@@ -71,8 +71,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_003, TestSize.Lev
     int32_t ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     ValuesBucket valuesBucket;
     cmd.SetValueBucket(valuesBucket);
     ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
@@ -101,8 +100,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_HandleDirOperation_test_004, TestSize.Lev
     int32_t ret = MediaLibraryDirOperations::HandleDirOperation(cmd);
     EXPECT_EQ(ret, E_FAIL);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     ValuesBucket values;
     values.PutString(TDD_TEST_PATH, "medialib_HandleDirOperation_test_004");
     values.PutInt(MEDIA_DATA_DB_ID, 11);
@@ -120,8 +118,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_CreateDirOperation_test_001, TestSize.Lev
     int32_t ret = MediaLibraryDirOperations::CreateDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     ValuesBucket values;
     MediaLibraryCommand cmd1(uri, OperationType::CREATE);
     cmd1.SetValueBucket(values);
@@ -145,8 +142,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_TrashDirOperation_test_001, TestSize.Leve
     int32_t ret = MediaLibraryDirOperations::TrashDirOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
     ValuesBucket values;
     cmd.SetValueBucket(values);
     ret = MediaLibraryDirOperations::TrashDirOperation(cmd);
