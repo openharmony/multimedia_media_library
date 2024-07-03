@@ -1539,7 +1539,16 @@ void MediaLibraryRdbUtils::UpdateAllAlbums(const shared_ptr<RdbStore> &rdbStore,
     MediaLibraryTracer tracer;
     tracer.Start("UpdateAllAlbums");
 
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
+    vector<string> systemAlbumsExcludeSource = {
+        to_string(PhotoAlbumSubType::FAVORITE),
+        to_string(PhotoAlbumSubType::VIDEO),
+        to_string(PhotoAlbumSubType::HIDDEN),
+        to_string(PhotoAlbumSubType::TRASH),
+        to_string(PhotoAlbumSubType::SCREENSHOT),
+        to_string(PhotoAlbumSubType::CAMERA),
+        to_string(PhotoAlbumSubType::IMAGE),
+    };
+    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource);
     MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore, updateResult);
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, updateResult, uris);
     MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, updateResult, uris);
