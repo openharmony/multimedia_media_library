@@ -64,7 +64,6 @@ private:
         const std::unordered_map<std::string, std::string> &commonColumnInfoMap) const;
     void GetQueryWhereClause(const std::string &tableName,
         const std::unordered_map<std::string, std::string> &columnInfoMap);
-    void QueryTableAlbumSetMap(FileInfo &fileInfo);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
     void BatchNotifyPhoto(const std::vector<FileInfo> &fileInfos);
     void InsertAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
@@ -72,7 +71,7 @@ private:
         const std::string &tableName);
     bool HasSameAlbum(const AlbumInfo &albumInfo, const std::string &tableName) const;
     void BatchQueryAlbum(std::vector<AlbumInfo> &albumInfos, const std::string &tableName);
-    void BatchInsertMap(std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
+    void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
     NativeRdb::ValuesBucket GetInsertValue(const MapInfo &mapInfo) const;
     NativeRdb::ValuesBucket GetInsertValue(const AlbumInfo &albumInfo, const std::string &tableName) const;
     void CheckTableColumnStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
@@ -101,6 +100,17 @@ private:
         MediaType mediaType);
     std::string GetBackupInfoByCount(int32_t photoCount, int32_t videoCount, int32_t audioCount);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int64_t &fileMoveCount, int64_t &videoFileMoveCount);
+    void RestorePhotoBatch(int32_t offset);
+    void RestoreAudioBatch(int32_t offset);
+    void InsertPhotoRelated(std::vector<FileInfo> &fileInfos);
+    void SetFileIdReference(const std::vector<FileInfo> &fileInfos, std::string &selection,
+        std::unordered_map<int32_t, int32_t> &fileIdMap);
+    int32_t QueryMapTotalNumber(const std::string &baseQuerySql);
+    std::vector<MapInfo> QueryMapInfos(const std::string &tableName, const std::string &baseQuerySql, int32_t offset,
+        const std::unordered_map<int32_t, int32_t> &fileIdMap, const std::unordered_map<int32_t, int32_t> &albumIdMap);
+    int64_t InsertMapByTable(const std::string &tableName, const std::vector<MapInfo> &mapInfos,
+        std::unordered_set<int32_t> &albumSet);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::vector<MapInfo> &mapInfos);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
