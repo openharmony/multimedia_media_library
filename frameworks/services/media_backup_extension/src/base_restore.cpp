@@ -629,6 +629,7 @@ bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbSto
             MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
             MediaColumn::MEDIA_DATE_ADDED + " = " + to_string(fileInfo.dateAdded);
     }
+    querySql += " LIMIT 1";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return false;
@@ -813,6 +814,7 @@ void BaseRestore::SetErrorCode(int32_t errorCode)
 
 void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode)
 {
+    std::lock_guard<mutex> lock(failedFilesMutex_);
     if (fileType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) {
         failedFilesMap_[STAT_TYPE_PHOTO][filePath] = errorCode;
         return;

@@ -20,6 +20,7 @@
 #include "application_context.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
+#include "ffrt.h"
 #include "media_column.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -212,10 +213,9 @@ void CloneRestore::RestorePhoto(void)
     int32_t totalNumber = QueryTotalNumber();
     MEDIA_INFO_LOG("QueryTotalNumber, totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
-        vector<FileInfo> fileInfos = QueryFileInfos(offset);
-        InsertPhoto(fileInfos);
-        BatchNotifyPhoto(fileInfos);
+        ffrt::submit([this, offset]() { RestorePhotoBatch(offset); }, { &offset });
     }
+    ffrt::wait();
 }
 
 void CloneRestore::RestoreAlbum(void)
@@ -279,8 +279,9 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
         MEDIA_ERR_LOG("fileInfos are empty");
         return;
     }
-    int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t startGenerate = MediaFileUtils::UTCTimeMilliSeconds();
     vector<NativeRdb::ValuesBucket> values = GetInsertValues(CLONE_RESTORE_ID, fileInfos, SourceType::PHOTOS);
+    int64_t startInsertPhoto = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t photoRowNum = 0;
     int32_t errCode = BatchInsertWithRetry(PhotoColumn::PHOTOS_TABLE, values, photoRowNum);
     if (errCode != E_OK) {
@@ -289,22 +290,18 @@ void CloneRestore::InsertPhoto(vector<FileInfo> &fileInfos)
     }
     migrateDatabaseNumber_ += photoRowNum;
 
-    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
-    BatchQueryPhoto(fileInfos);
-    int64_t startInsertMap = MediaFileUtils::UTCTimeMilliSeconds();
-    int64_t mapRowNum = 0;
-    BatchInsertMap(fileInfos, mapRowNum);
-    migrateDatabaseMapNumber_ += mapRowNum;
+    int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
+    InsertPhotoRelated(fileInfos);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t fileMoveCount = 0;
     int64_t videoFileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, videoFileMoveCount);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("insert %{public}ld assets cost %{public}ld, query cost %{public}ld, insert %{public}ld maps "
-        "cost %{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.", (long)photoRowNum,
-        (long)(startQuery - startInsertPhoto), (long)(startInsertMap - startQuery), (long)mapRowNum,
-        (long)(startMove - startInsertMap), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
+    MEDIA_INFO_LOG("generate cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related cost "
+        "%{public}ld, and move %{public}ld files (%{public}ld + %{public}ld) cost %{public}ld.",
+        (long)(startInsertPhoto - startGenerate), (long)photoRowNum, (long)(startInsertRelated - startInsertPhoto),
+        (long)(startMove - startInsertRelated), (long)fileMoveCount, (long)(fileMoveCount - videoFileMoveCount),
         (long)videoFileMoveCount, (long)(end - startMove));
 }
 
@@ -353,7 +350,6 @@ vector<FileInfo> CloneRestore::QueryFileInfos(int32_t offset)
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FileInfo fileInfo;
         if (ParseResultSet(resultSet, fileInfo)) {
-            QueryTableAlbumSetMap(fileInfo);
             result.emplace_back(fileInfo);
         }
     }
@@ -651,52 +647,35 @@ NativeRdb::ValuesBucket CloneRestore::GetInsertValue(const AlbumInfo &albumInfo,
     return values;
 }
 
-void CloneRestore::QueryTableAlbumSetMap(FileInfo &fileInfo)
-{
-    for (const auto &tableName : CLONE_ALBUMS) {
-        auto mapTableName = GetValueFromMap(CLONE_ALBUM_MAP, tableName);
-        if (mapTableName.empty()) {
-            MEDIA_ERR_LOG("Get map of table %{public}s failed", BackupDatabaseUtils::GarbleInfoName(tableName).c_str());
-            return;
-        }
-        auto albumIdMap = GetValueFromMap(tableAlbumIdMap_, tableName);
-        auto &albumSet = fileInfo.tableAlbumSetMap[tableName];
-        string querySql = "SELECT " + PhotoMap::ALBUM_ID + " FROM " + mapTableName + " WHERE " + PhotoMap::ASSET_ID +
-            " = " + to_string(fileInfo.fileIdOld);
-        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
-        if (resultSet == nullptr) {
-            MEDIA_ERR_LOG("Query resultSql is null.");
-            return;
-        }
-        while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            int32_t albumIdOld = GetInt32Val(PhotoMap::ALBUM_ID, resultSet);
-            if (albumIdOld <= 0 || albumIdMap.count(albumIdOld) == 0) {
-                continue;
-            }
-            int32_t albumIdNew = albumIdMap.at(albumIdOld);
-            albumSet.insert(albumIdNew);
-        }
-    }
-}
-
 void CloneRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
 {
-    for (auto &fileInfo : fileInfos) {
-        if (fileInfo.cloudPath.empty()) {
+    string selection;
+    unordered_map<string, size_t> fileIndexMap;
+    for (size_t index = 0; index < fileInfos.size(); index++) {
+        if (fileInfos[index].cloudPath.empty()) {
             continue;
         }
-        string querySql = "SELECT " + MediaColumn::MEDIA_ID + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-            MediaColumn::MEDIA_FILE_PATH + " = '" + fileInfo.cloudPath + "'";
-        auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
-        if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-            continue;
-        }
+        BackupDatabaseUtils::UpdateSelection(selection, fileInfos[index].cloudPath, true);
+        fileIndexMap[fileInfos[index].cloudPath] = index;
+    }
+    string querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_FILE_PATH + " IN (" + selection + ")";
+    querySql += " LIMIT " + to_string(fileIndexMap.size());
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
+    if (resultSet == nullptr) {
+        return;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
         if (fileId <= 0) {
             MEDIA_ERR_LOG("Get fileId invalid: %{public}d", fileId);
             continue;
         }
-        fileInfo.fileIdNew = fileId;
+        if (fileIndexMap.count(cloudPath) == 0) {
+            continue;
+        }
+        fileInfos[fileIndexMap.at(cloudPath)].fileIdNew = fileId;
     }
 }
 
@@ -779,6 +758,9 @@ void CloneRestore::BatchQueryAlbum(vector<AlbumInfo> &albumInfos, const string &
 {
     auto &albumIdMap = tableAlbumIdMap_[tableName];
     for (auto &albumInfo : albumInfos) {
+        if (albumInfo.albumIdOld <= 0) {
+            continue;
+        }
         string querySql = "SELECT " + PhotoAlbumColumns::ALBUM_ID + " FROM " + tableName + " WHERE " +
             PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(albumInfo.albumType) + " AND " +
             PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(albumInfo.albumSubType) + " AND " +
@@ -795,37 +777,45 @@ void CloneRestore::BatchQueryAlbum(vector<AlbumInfo> &albumInfos, const string &
     }
 }
 
-void CloneRestore::BatchInsertMap(vector<FileInfo> &fileInfos, int64_t &totalRowNum)
+void CloneRestore::BatchInsertMap(const vector<FileInfo> &fileInfos, int64_t &totalRowNum)
 {
+    string selection;
+    unordered_map<int32_t, int32_t> fileIdMap;
+    SetFileIdReference(fileInfos, selection, fileIdMap);
     for (const auto &tableName : CLONE_ALBUMS) {
+        string garbledTableName = BackupDatabaseUtils::GarbleInfoName(tableName);
         string mapTableName = GetValueFromMap(CLONE_ALBUM_MAP, tableName);
         if (mapTableName.empty()) {
-            MEDIA_ERR_LOG("Get map of table %{public}s failed", BackupDatabaseUtils::GarbleInfoName(tableName).c_str());
+            MEDIA_ERR_LOG("Get map of table %{public}s failed", garbledTableName.c_str());
             continue;
+        }
+        auto albumIdMap = GetValueFromMap(tableAlbumIdMap_, tableName);
+        if (albumIdMap.empty()) {
+            MEDIA_INFO_LOG("Get album id map of table %{public}s empty, skip", garbledTableName.c_str());
+            continue;
+        }
+        string albumSelection;
+        for (auto iter = albumIdMap.begin(); iter != albumIdMap.end(); ++iter) {
+            BackupDatabaseUtils::UpdateSelection(albumSelection, to_string(iter->first), false);
         }
         unordered_set<int32_t> currentTableAlbumSet;
-        vector<NativeRdb::ValuesBucket> values;
-        for (const auto &fileInfo : fileInfos) {
-            if (fileInfo.cloudPath.empty()) {
-                continue;
-            }
-            auto albumSet = GetValueFromMap(fileInfo.tableAlbumSetMap, tableName);
-            for (auto albumIdNew : albumSet) {
-                MapInfo mapInfo;
-                mapInfo.albumId = albumIdNew;
-                mapInfo.fileId = fileInfo.fileIdNew;
-                NativeRdb::ValuesBucket value = GetInsertValue(mapInfo);
-                values.emplace_back(value);
-                currentTableAlbumSet.insert(albumIdNew);
-            }
+        string baseQuerySql = mapTableName + " INNER JOIN " + tableName + " ON " +
+            mapTableName + "." + PhotoMap::ALBUM_ID + " = " + tableName + "." + PhotoAlbumColumns::ALBUM_ID +
+            " WHERE " + mapTableName + "." + PhotoMap::ALBUM_ID + " IN (" + albumSelection + ") AND " +
+            mapTableName + "." + PhotoMap::ASSET_ID + " IN (" + selection + ")";
+        int32_t totalNumber = QueryMapTotalNumber(baseQuerySql);
+        MEDIA_INFO_LOG("QueryMapTotalNumber of table %{public}s, totalNumber = %{public}d", garbledTableName.c_str(),
+            totalNumber);
+        for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+            int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
+            vector<MapInfo> mapInfos = QueryMapInfos(mapTableName, baseQuerySql, offset, fileIdMap, albumIdMap);
+            int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
+            int64_t rowNum = InsertMapByTable(mapTableName, mapInfos, currentTableAlbumSet);
+            totalRowNum += rowNum;
+            int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+            MEDIA_INFO_LOG("query %{public}zu map infos cost %{public}ld, insert %{public}ld maps cost %{public}ld",
+                mapInfos.size(), (long)(startInsert - startQuery), (long)rowNum, (long)(end - startInsert));
         }
-        int64_t rowNum = 0;
-        int32_t errCode = BatchInsertWithRetry(mapTableName, values, rowNum);
-        if (errCode != E_OK) {
-            MEDIA_ERR_LOG("Batch insert map failed, errCode: %{public}d", errCode);
-            continue;
-        }
-        totalRowNum += rowNum;
         UpdateAlbumToNotifySet(tableName, currentTableAlbumSet);
     }
 }
@@ -999,9 +989,9 @@ void CloneRestore::RestoreAudio(void)
     int32_t totalNumber = QueryTotalNumber(AudioColumn::AUDIOS_TABLE);
     MEDIA_INFO_LOG("QueryAudioTotalNumber, totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += CLONE_QUERY_COUNT) {
-        vector<FileInfo> fileInfos = QueryFileInfos(AudioColumn::AUDIOS_TABLE, offset);
-        InsertAudio(fileInfos);
+        ffrt::submit([this, offset]() { RestoreAudioBatch(offset); }, { &offset });
     }
+    ffrt::wait();
 }
 
 vector<FileInfo> CloneRestore::QueryFileInfos(const string &tableName, int32_t offset)
@@ -1212,6 +1202,108 @@ string CloneRestore::GetBackupInfoByCount(int32_t photoCount, int32_t videoCount
         }
     };
     return jsonObject.dump();
+}
+
+void CloneRestore::RestorePhotoBatch(int32_t offset)
+{
+    MEDIA_INFO_LOG("start restore photo, offset: %{public}d", offset);
+    vector<FileInfo> fileInfos = QueryFileInfos(offset);
+    InsertPhoto(fileInfos);
+    BatchNotifyPhoto(fileInfos);
+    MEDIA_INFO_LOG("end restore photo, offset: %{public}d", offset);
+}
+
+void CloneRestore::RestoreAudioBatch(int32_t offset)
+{
+    MEDIA_INFO_LOG("start restore audio, offset: %{public}d", offset);
+    vector<FileInfo> fileInfos = QueryFileInfos(AudioColumn::AUDIOS_TABLE, offset);
+    InsertAudio(fileInfos);
+    MEDIA_INFO_LOG("start restore audio, offset: %{public}d", offset);
+}
+
+void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos)
+{
+    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
+    BatchQueryPhoto(fileInfos);
+    int64_t startInsert = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t mapRowNum = 0;
+    BatchInsertMap(fileInfos, mapRowNum);
+    migrateDatabaseMapNumber_ += mapRowNum;
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("query new file_id cost %{public}ld, insert %{public}ld maps cost %{public}ld",
+        (long)(startInsert - startQuery), (long)mapRowNum, (long)(end - startInsert));
+}
+
+void CloneRestore::SetFileIdReference(const vector<FileInfo> &fileInfos, string &selection,
+    unordered_map<int32_t, int32_t> &fileIdMap)
+{
+    for (const auto &fileInfo : fileInfos) {
+        if (fileInfo.fileIdOld <= 0 || fileInfo.fileIdNew <= 0) {
+            continue;
+        }
+        BackupDatabaseUtils::UpdateSelection(selection, to_string(fileInfo.fileIdOld), false);
+        fileIdMap[fileInfo.fileIdOld] = fileInfo.fileIdNew;
+    }
+}
+
+int32_t CloneRestore::QueryMapTotalNumber(const string &baseQuerySql)
+{
+    string querySql = "SELECT count(1) as count FROM " + baseQuerySql;
+    return BackupDatabaseUtils::QueryInt(mediaRdb_, querySql, CUSTOM_COUNT);
+}
+
+vector<MapInfo> CloneRestore::QueryMapInfos(const string &tableName, const string &baseQuerySql, int32_t offset,
+    const unordered_map<int32_t, int32_t> &fileIdMap, const unordered_map<int32_t, int32_t> &albumIdMap)
+{
+    vector<MapInfo> mapInfos;
+    mapInfos.reserve(CLONE_QUERY_COUNT);
+    string columnMapAlbum = tableName + "." + PhotoMap::ALBUM_ID;
+    string columnMapAsset = tableName + "." + PhotoMap::ASSET_ID;
+    string querySql = "SELECT " + columnMapAlbum + ", " + columnMapAsset + " FROM " + baseQuerySql;
+    querySql += " LIMIT " + to_string(offset) + ", " + to_string(CLONE_QUERY_COUNT);
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaRdb_, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query resultSql is null.");
+        return mapInfos;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t albumIdOld = GetInt32Val(columnMapAlbum, resultSet);
+        int32_t fileIdOld = GetInt32Val(columnMapAsset, resultSet);
+        if (albumIdOld <= 0 || albumIdMap.count(albumIdOld) == 0 || fileIdOld <= 0 || fileIdMap.count(fileIdOld) <= 0) {
+            continue;
+        }
+        MapInfo mapInfo;
+        mapInfo.albumId = albumIdMap.at(albumIdOld);
+        mapInfo.fileId = fileIdMap.at(fileIdOld);
+        mapInfos.emplace_back(mapInfo);
+    }
+    return mapInfos;
+}
+
+int64_t CloneRestore::InsertMapByTable(const string &tableName, const vector<MapInfo> &mapInfos,
+    unordered_set<int32_t> &albumSet)
+{
+    vector<NativeRdb::ValuesBucket> values = GetInsertValues(mapInfos);
+    int64_t rowNum = 0;
+    int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("Batch insert map failed, errCode: %{public}d", errCode);
+        return 0;
+    }
+    for (const auto &mapInfo : mapInfos) {
+        albumSet.insert(mapInfo.albumId);
+    }
+    return rowNum;
+}
+
+vector<NativeRdb::ValuesBucket> CloneRestore::GetInsertValues(const vector<MapInfo> &mapInfos)
+{
+    vector<NativeRdb::ValuesBucket> values;
+    for (const auto &mapInfo : mapInfos) {
+        NativeRdb::ValuesBucket value = GetInsertValue(mapInfo);
+        values.emplace_back(value);
+    }
+    return values;
 }
 } // namespace Media
 } // namespace OHOS
