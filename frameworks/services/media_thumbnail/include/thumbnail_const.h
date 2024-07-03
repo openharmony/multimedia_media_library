@@ -60,7 +60,7 @@ enum class LoadSourceType : int32_t {
 enum class ThumbnailReady : int32_t {
     GENERATE_THUMB_LATER,
     GENERATE_THUMB_NOW,
-    GENERATING_THUMB,
+    GENERATE_THUMB_RETRY,
     GENERATE_THUMB_COMPLETED,
     THUMB_TO_UPLOAD,
     THUMB_UPLOAD_COMPLETED,

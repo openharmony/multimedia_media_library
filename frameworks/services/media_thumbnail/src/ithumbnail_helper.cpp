@@ -52,7 +52,8 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
         MEDIA_ERR_LOG("CreateLcdAndThumbnail failed, data is null");
         return;
     }
-    DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
+    bool isSuccess = DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
+    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
     if (data->opts_.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
         MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, data->opts_.path);
@@ -74,7 +75,8 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateThumbnail failed, data is null");
         return;
     }
-    DoCreateThumbnail(data->opts_, data->thumbnailData_);
+    bool isSuccess = DoCreateThumbnail(data->opts_, data->thumbnailData_);
+    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
     if (data->opts_.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
         MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, data->opts_.path);
@@ -87,7 +89,8 @@ void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateAstc failed, data is null");
         return;
     }
-    DoCreateAstc(data->opts_, data->thumbnailData_);
+    bool isSuccess = DoCreateAstc(data->opts_, data->thumbnailData_);
+    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -97,7 +100,8 @@ void IThumbnailHelper::CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data)
         MEDIA_ERR_LOG("CreateAstcEx failed, data is null");
         return;
     }
-    DoCreateAstcEx(data->opts_, data->thumbnailData_);
+    bool isSuccess = DoCreateAstcEx(data->opts_, data->thumbnailData_);
+    UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
 }
 
@@ -598,7 +602,18 @@ bool IThumbnailHelper::GenMonthAndYearAstcData(ThumbnailData &data, const Thumbn
     return true;
 }
 
-bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
+// After all thumbnails are generated, the value of column "thumbnail_ready" in rdb needs to be updated,
+// And if generate successfully, application should receive a notification at the same time.
+bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess)
+{
+    if (data.fileUri.empty()) {
+        data.fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::DEFAULT_PHOTO_URI + "/", data.id,
+            MediaFileUtils::GetExtraUri(data.displayName, data.path));
+    }
+    return isSuccess ? UpdateSuccessState(opts, data) : UpdateFailState(opts, data);
+}
+
+bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
     int32_t err = UpdateThumbDbState(opts, data);
     if (err != E_OK) {
@@ -612,6 +627,20 @@ bool IThumbnailHelper::UpdateThumbnailState(const ThumbRdbOpt &opts, const Thumb
         return false;
     }
     watch->Notify(data.fileUri, NotifyType::NOTIFY_THUMB_ADD);
+    return true;
+}
+
+bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
+{
+    ValuesBucket values;
+    int changedRows;
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_RETRY));
+    int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
+        vector<string> { data.id });
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
+        return false;
+    }
     return true;
 }
 
@@ -698,13 +727,6 @@ bool IThumbnailHelper::IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData
         return false;
     }
     if (!GenThumbnail(opts, data, ThumbnailType::YEAR_ASTC)) {
-        return false;
-    }
-
-    // After all thumbnails are generated, the value of column "thumbnail_ready" in rdb
-    // needs to be updated, and application should receive a notification at the same time.
-    if (!UpdateThumbnailState(opts, data)) {
-        MEDIA_ERR_LOG("UpdateThumbnailState fail");
         return false;
     }
     return true;
@@ -811,13 +833,6 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
             {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN}, {KEY_OPT_FILE, opts.path}, {KEY_OPT_TYPE, OptType::THUMB}};
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-        return false;
-    }
-
-    data.fileUri = MediaFileUtils::GetUriByExtrConditions(PhotoColumn::DEFAULT_PHOTO_URI + "/", data.id,
-        MediaFileUtils::GetExtraUri(data.displayName, data.path));
-    if (!UpdateThumbnailState(opts, data)) {
-        MEDIA_ERR_LOG("UpdateThumbnailState fail");
         return false;
     }
     return true;

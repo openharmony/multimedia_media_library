@@ -55,7 +55,8 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
     }
 
     if (isSync) {
-        IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
+        bool isSuccess = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
+        IThumbnailHelper::UpdateThumbnailState(opts, thumbnailData, isSuccess);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
         if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
             MediaLibraryPhotoOperations::StoreThumbnailSize(opts.row, opts.path);
@@ -294,9 +295,13 @@ bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailTyp
         MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s", data.path.c_str());
         return false;
     }
-    if (thumbType != ThumbnailType::LCD && !IThumbnailHelper::DoCreateThumbnail(opts, data)) {
-        MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s", data.path.c_str());
-        return false;
+    if (thumbType != ThumbnailType::LCD) {
+        bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data);
+        IThumbnailHelper::UpdateThumbnailState(opts, data, isSuccess);
+        if (!isSuccess) {
+            MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s", data.path.c_str());
+            return false;
+        }
     }
     return true;
 }
