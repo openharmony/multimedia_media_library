@@ -27,8 +27,8 @@ const std::string UPDATE_POSE_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " S
 const std::string UPDATE_POSE_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + POSE + " = -1 WHERE " +
     POSE + " IS NULL";
 const std::string POSE_INDEX = "pose_index";
-const std::string CREATE_POSE_INDEX = "CREATE UNIQUE INDEX " + POSE_INDEX + " ON " + VISION_POSE_TABLE + " (" +
-    FILE_ID + "," + POSE_ID + ")";
+const std::string CREATE_POSE_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + POSE_INDEX + " ON " + VISION_POSE_TABLE +
+    " (" + FILE_ID + "," + POSE_ID + ")";
 
 const std::string ALTER_WIDTH_COLUMN = "ALTER TABLE tab_analysis_ocr ADD COLUMN width INT;";
 const std::string ALTER_HEIGHT_COLUMN = "ALTER TABLE tab_analysis_ocr ADD COLUMN height INT;";
