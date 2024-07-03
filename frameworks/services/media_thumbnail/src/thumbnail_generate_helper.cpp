@@ -23,6 +23,7 @@
 #include "dfx_timer.h"
 #include "dfx_utils.h"
 #include "ffrt.h"
+#include "ffrt_inner.h"
 #include "directory_ex.h"
 #include "ithumbnail_helper.h"
 #include "medialibrary_errno.h"
@@ -42,6 +43,8 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+const int FFRT_MAX_RESTORE_ASTC_THREADS = 8;
+
 int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync)
 {
     ThumbnailData thumbnailData;
@@ -502,6 +505,7 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
     }
 
     MEDIA_INFO_LOG("create astc for restored dual frame photos count:%{public}zu", infos.size());
+    ffrt_set_cpu_worker_max_num(ffrt::qos_default, FFRT_MAX_RESTORE_ASTC_THREADS);
     for (auto &info : infos) {
         opts.row = info.id;
         if (!info.isLocalFile) {
