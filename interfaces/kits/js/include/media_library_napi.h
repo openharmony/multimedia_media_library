@@ -279,6 +279,7 @@ private:
     EXPORT static napi_value StartPhotoPicker(napi_env env, napi_callback_info info);
     EXPORT static napi_value GetPhotoAccessHelperAsync(napi_env env, napi_callback_info info);
     EXPORT static napi_value CreateDeleteRequest(napi_env env, napi_callback_info info);
+    EXPORT static napi_value ShowAssetsCreationDialog(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperTrashAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperOnCallback(napi_env env, napi_callback_info info);
