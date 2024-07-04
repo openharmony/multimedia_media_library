@@ -879,7 +879,7 @@ static void SendHmdfsCallerInfoToIoctl(const int32_t fd, const string &clientbun
     if (strcpy_s(caller_info.bundle_name, sizeof(caller_info.bundle_name), clientbundleName.c_str()) != 0) {
         MEDIA_ERR_LOG("Failed to copy clientbundleName: %{public}s", clientbundleName.c_str());
     } else {
-        MEDIA_DEBUG_LOG("tokenId = %{public}d, clientbundleName = %{public}s", tokenId, clientbundleName.c_str());
+        MEDIA_DEBUG_LOG("clientbundleName = %{public}s", clientbundleName.c_str());
         int32_t ret = ioctl(fd, HMDFS_IOC_GET_CALLER_INFO, caller_info);
         if (ret < 0) {
             MEDIA_DEBUG_LOG("Failed to set caller_info to fd: %{public}d, error: %{public}d", fd, errno);
