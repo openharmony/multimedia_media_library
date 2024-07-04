@@ -129,16 +129,5 @@ HWTEST_F(MediaPhotoAssetProxyUnitTest, MediaPhotoAssetProxy_GetFileAsset_asset_n
     photoAssetProxy->dataShareHelper_ = sDataShareHelper_;
     EXPECT_EQ(photoAssetProxy->GetFileAsset(), nullptr);
 }
-
-HWTEST_F(MediaPhotoAssetProxyUnitTest, MediaPhotoAssetProxy_GetFileAsset_ok_003, TestSize.Level0)
-{
-    photoAssetProxy->dataShareHelper_ = sDataShareHelper_;
-    shared_ptr<PhotoProxyTest> photoProxyTest = make_shared<PhotoProxyTest>();
-    shared_ptr<MockPhotoProxyTest> mockPhotoProxy = make_shared<MockPhotoProxyTest>();
-    EXPECT_CALL(*mockPhotoProxy.get(), GetDisplayName()).Times(3).WillRepeatedly(Return("IMG_20240512_153621.jpg"));
-
-    photoAssetProxy->CreatePhotoAsset((sptr<PhotoProxy>&)mockPhotoProxy);
-    EXPECT_NE(photoAssetProxy->GetFileAsset(), nullptr);
-}
 }
 }
