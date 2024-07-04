@@ -21,9 +21,15 @@ group("unittest") {
 
 ohos_unittest("medialibrary_object_test") {
   module_out_path = "media_library/medialibraryextention"
-  include_dirs = [ "./include" ]
+  include_dirs = [
+    "./include",
+    "../medialibrary_unittest_utils/include",
+  ]
 
-  sources = [ "./src/medialibrary_object_test.cpp" ]
+  sources = [
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./src/medialibrary_object_test.cpp",
+  ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
@@ -33,6 +39,7 @@ ohos_unittest("medialibrary_object_test") {
     "ability_base:zuri",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
+    "ability_runtime:app_context",
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
