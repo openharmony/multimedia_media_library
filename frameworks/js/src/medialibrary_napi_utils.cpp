@@ -1012,7 +1012,7 @@ static int32_t GetFavoritePredicates(DataSharePredicates &predicates, const bool
     predicates.BeginWrap();
     constexpr int32_t IS_FAVORITE = 1;
     predicates.EqualTo(MediaColumn::MEDIA_IS_FAV, to_string(IS_FAVORITE));
-    SetDefaultPredicatesCondition(predicates, 0, 0, 0, false);
+    SetDefaultPredicatesCondition(predicates, 0, hiddenOnly, 0, false);
     predicates.EndWrap();
     return E_SUCCESS;
 }
