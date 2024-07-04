@@ -280,6 +280,7 @@ private:
     EXPORT static napi_value GetPhotoAccessHelperAsync(napi_env env, napi_callback_info info);
     EXPORT static napi_value CreateDeleteRequest(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessHelperAgentCreateAssets(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperTrashAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperOnCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperOffCallback(napi_env env, napi_callback_info info);
@@ -376,6 +377,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool status;
     bool isDelete;
     bool isCreateByComponent;
+    bool isCreateByAgent;
     NapiAssetType assetType;
     AlbumType albumType;
     MediaLibraryNapi *objectInfo;
@@ -383,6 +385,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::vector<std::string> selectionArgs;
     std::string order;
     std::string uri;
+    std::vector<std::string> uriArray;
     std::string networkId;
     std::string extendArgs;
     std::unique_ptr<FetchResult<FileAsset>> fetchFileResult;
@@ -393,6 +396,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     std::unique_ptr<PhotoAlbum> photoAlbumData;
     std::unique_ptr<SmartAlbumAsset> smartAlbumData;
     OHOS::DataShare::DataShareValuesBucket valuesBucket;
+    std::vector<OHOS::DataShare::DataShareValuesBucket> valuesBucketArray;
     unsigned int dirType = 0;
     int32_t privateAlbumType = DEFAULT_PRIVATEALBUMTYPE;
     int32_t retVal;

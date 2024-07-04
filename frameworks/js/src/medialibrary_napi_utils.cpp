@@ -1336,9 +1336,9 @@ bool NapiScopeHandler::IsValid()
 napi_value MediaLibraryNapiUtils::GetNapiValueArray(napi_env env, napi_value arg, vector<napi_value> &values)
 {
     bool isArray = false;
-    CHECK_ARGS(env, napi_is_array(env, arg, &isArray), JS_ERR_PARAMETER_INVALID);
+    CHECK_ARGS(env, napi_is_array(env, arg, &isArray), OHOS_INVALID_PARAM_CODE);
     if (!isArray) {
-        NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to check array type");
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to check array type");
         return nullptr;
     }
 
@@ -1354,7 +1354,7 @@ napi_value MediaLibraryNapiUtils::GetNapiValueArray(napi_env env, napi_value arg
         napi_value value = nullptr;
         CHECK_ARGS(env, napi_get_element(env, arg, i, &value), JS_INNER_FAIL);
         if (value == nullptr) {
-            NapiError::ThrowError(env, JS_ERR_PARAMETER_INVALID, "Failed to get element");
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to get element");
             return nullptr;
         }
         values.push_back(value);
