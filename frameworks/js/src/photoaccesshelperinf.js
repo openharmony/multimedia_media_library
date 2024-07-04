@@ -49,7 +49,7 @@ class BusinessError extends Error {
   }
 }
 
-function checkIsArrayAndSize(array, minSize, maxSize) {
+function checkArrayAndSize(array, minSize, maxSize) {
   // check whether input is array
   if (!Array.isArray(array)) {
     console.error('photoAccessHelper invalid, array is null.');
@@ -86,7 +86,7 @@ function checkParams(uriList, asyncCallback) {
   if (arguments.length > ARGS_TWO) {
     return false;
   }
-  if (!checkIsArrayAndSize(uriList, MIN_DELETE_NUMBER, MAX_DELETE_NUMBER)) {
+  if (!checkArrayAndSize(uriList, MIN_DELETE_NUMBER, MAX_DELETE_NUMBER)) {
     return false;
   }
   if (asyncCallback && typeof asyncCallback !== 'function') {
@@ -248,10 +248,10 @@ function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
   }
 
   // check whether input array is valid
-  if (!checkIsArrayAndSize(srcFileUris, MIN_CONFIRM_NUMBER, MAX_CONFIRM_NUMBER)) {
+  if (!checkArrayAndSize(srcFileUris, MIN_CONFIRM_NUMBER, MAX_CONFIRM_NUMBER)) {
     return false;
   }
-  if (!checkIsArrayAndSize(photoCreationConfigs, MIN_CONFIRM_NUMBER, MAX_CONFIRM_NUMBER)) {
+  if (!checkArrayAndSize(photoCreationConfigs, MIN_CONFIRM_NUMBER, MAX_CONFIRM_NUMBER)) {
     return false;
   }
   if (srcFileUris.length !== photoCreationConfigs.length) {
