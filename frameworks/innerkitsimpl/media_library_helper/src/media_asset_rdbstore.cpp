@@ -154,7 +154,7 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     MediaLibraryDataCallBack rdbDataCallBack;
     rdbStore_ = RdbHelper::GetRdbStore(config, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
     if (rdbStore_ == nullptr || errCode != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Get visitor RdbStore is failed, errCode: %{public}d", errCode);
+        MEDIA_WARN_LOG("Get visitor RdbStore is failed, errCode: %{public}d", errCode);
         rdbStore_ = nullptr;
         return errCode;
     }
