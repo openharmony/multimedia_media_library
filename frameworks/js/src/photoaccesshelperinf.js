@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,8 @@
 const photoAccessHelper = requireInternal('file.photoAccessHelper');
 const bundleManager = requireNapi('bundle.bundleManager');
 
+const ARGS_ZERO = 0;
+const ARGS_ONE = 1;
 const ARGS_TWO = 2;
 const ARGS_THREE = 3;
 
@@ -31,9 +33,12 @@ const ERROR_MSG_WRITE_PERMISSION = 'not have ohos.permission.WRITE_IMAGEVIDEO';
 const ERROR_MSG_USER_DENY = 'user deny';
 const ERROR_MSG_PARAMERTER_INVALID = 'input parmaeter invalid';
 const ERROR_MSG_INNER_FAIL = 'System inner fail';
+const ERROR_MSG_OHOS_INNER_FAIL = 'Internal system error';
 
 const MAX_DELETE_NUMBER = 300;
 const MIN_DELETE_NUMBER = 1;
+const MAX_CONFIRM_NUMBER = 100;
+const MIN_CONFIRM_NUMBER = 1;
 
 let gContext = undefined;
 
@@ -43,22 +48,52 @@ class BusinessError extends Error {
     this.code = code || PERMISSION_DENIED;
   }
 }
+
+function checkIsArrayAndSize(array, minSize, maxSize) {
+  // check whether input is array
+  if (!Array.isArray(array)) {
+    console.error('photoAccessHelper invalid, array is null.');
+    return false;
+  }
+
+  // check whether array length is valid
+  let len = array.length;
+  if ((len < minSize) || (len > maxSize)) {
+    console.error('photoAccessHelper invalid, array size invalid.');
+    return false;
+  }
+
+  return true;
+}
+
+function checkIsUriValid(uri) {
+  if (!uri) {
+    console.error('photoAccessHelper invalid, uri is null.');
+    return false;
+  }
+
+  if (typeof uri !== 'string') {
+    console.error('photoAccessHelper invalid, uri type is not string.');
+    return false;
+  }
+
+  let tag = 'file://media/Photo/';
+
+  return uri.includes(tag);
+}
+
 function checkParams(uriList, asyncCallback) {
   if (arguments.length > ARGS_TWO) {
     return false;
   }
-  if (!Array.isArray(uriList)) {
+  if (!checkIsArrayAndSize(uriList, MIN_DELETE_NUMBER, MAX_DELETE_NUMBER)) {
     return false;
   }
   if (asyncCallback && typeof asyncCallback !== 'function') {
     return false;
   }
-  if (uriList.length < MIN_DELETE_NUMBER || uriList.length > MAX_DELETE_NUMBER) {
-    return false;
-  }
-  let tag = 'file://media/Photo/';
   for (let uri of uriList) {
-    if (!uri.includes(tag)) {
+    if (!checkIsUriValid(uri)) {
       console.info(`photoAccessHelper invalid uri: ${uri}`);
       return false;
     }
@@ -159,6 +194,155 @@ function createDeleteRequest(...params) {
   return createPhotoDeleteRequestParamsOk(...params);
 }
 
+function checkIsPhotoCreationConfigValid(config) {
+  if (!config) {
+    console.error('photoAccessHelper invalid, config is null.');
+    return false;
+  }
+
+  // check whether input is a object
+  if (typeof config !== 'object') {
+    console.error('photoAccessHelper invalid, config type is not object.');
+    return false;
+  }
+
+  // check whether title is string if exsit
+  if ((config.title) && (typeof config.title !== 'string')) {
+    console.error('photoAccessHelper invalid, config.title type is not string.');
+    return false;
+  }
+
+  // check whether fileNameExtension is string
+  if (!config.fileNameExtension) {
+    console.error('photoAccessHelper invalid, config.fileNameExtension is null.');
+    return false;
+  }
+  if (typeof config.fileNameExtension !== 'string') {
+    console.error('photoAccessHelper invalid, config.fileNameExtension type is not string.');
+    return false;
+  }
+
+  // check whether photoType is number
+  if (!config.photoType) {
+    console.error('photoAccessHelper invalid, config.photoType is null.');
+    return false;
+  }
+  if (typeof config.photoType !== 'number') {
+    console.error('photoAccessHelper invalid, config.photoType type is not number.');
+    return false;
+  }
+
+  // check whether subtype is number if exsit
+  if ((config.subtype) && (typeof config.subtype !== 'number')) {
+    console.error('photoAccessHelper invalid, config.subtype type is not number.');
+    return false;
+  }
+
+  return true;
+}
+
+function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
+  // check param number
+  if (arguments.length > ARGS_TWO) {
+    return false;
+  }
+
+  // check whether input array is valid
+  if (!checkIsArrayAndSize(srcFileUris, MIN_CONFIRM_NUMBER, MAX_CONFIRM_NUMBER)) {
+    return false;
+  }
+  if (!checkIsArrayAndSize(photoCreationConfigs, MIN_CONFIRM_NUMBER, MAX_CONFIRM_NUMBER)) {
+    return false;
+  }
+  if (srcFileUris.length !== photoCreationConfigs.length) {
+    return false;
+  }
+
+  // check whether srcFileUris element is valid
+  for (let srcFileUri of srcFileUris) {
+    if (!checkIsUriValid(srcFileUri)) {
+      console.error('photoAccessHelper invalid uri: ${srcFileUri}.');
+      return false;
+    }
+  }
+
+  // check whether photoCreationConfigs element is valid
+  for (let photoCreateConfig of photoCreationConfigs) {
+    if (!checkIsPhotoCreationConfigValid(photoCreateConfig)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function getBundleInfo() {
+  let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_ABILITY | // for appName
+  bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_HAP_MODULE | // for appName
+  bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO; // for appId
+  let bundleInfo = bundleManager.getBundleInfoForSelfSync(flags);
+  if (((bundleInfo === undefined) || (bundleInfo.name === undefined)) ||
+      ((bundleInfo.hapModulesInfo === undefined) || (bundleInfo.hapModulesInfo.length === 0)) ||
+      ((bundleInfo.hapModulesInfo[0].abilitiesInfo === undefined) ||
+       (bundleInfo.hapModulesInfo[0].abilitiesInfo.length === 0)) ||
+      ((bundleInfo.signatureInfo === undefined) || (bundleInfo.signatureInfo.appId === undefined))) {
+    console.error('photoAccessHelper failed to get bundle info.');
+    return undefined;
+  }
+
+  return bundleInfo;
+}
+
+function showAssetsCreationDialogResult(result, reject, resolve) {
+  if (result.result !== REQUEST_CODE_SUCCESS) {
+    reject(new BusinessError(ERROR_MSG_OHOS_INNER_FAIL, result.result));
+  }
+
+  if (result.data === undefined) {
+    result.data = [];
+  }
+
+  resolve(result.data);
+}
+
+async function showAssetsCreationDialogParamsOk(srcFileUris, photoCreationConfigs) {
+  let bundleInfo = getBundleInfo();
+  if (bundleInfo === undefined) {
+    return new Promise((resolve, reject) => {
+      reject(new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID));
+    });
+  }
+
+  // get bundleName and appId and appName
+  let bundleName = bundleInfo.name;
+  let appId = bundleInfo.signatureInfo.appId;
+  console.info('photoAccessHelper bundleName is ' + bundleName + '.');
+  console.info('photoAccessHelper appId is ' + appId + '.');
+
+  let labelId = getAbilityResource(bundleInfo.hapModulesInfo[0]);
+  let appName = await gContext.resourceManager.getStringValue(labelId);
+  console.info('photoAccessHelper appName is ' + appName + '.');
+
+  try {
+    // only promise type
+    return new Promise((resolve, reject) => {
+      photoAccessHelper.showAssetsCreationDialog(getContext(this), srcFileUris, photoCreationConfigs, bundleName,
+        appName, appId, result => {
+          showAssetsCreationDialogResult(result, reject, resolve);
+      });
+    });
+  } catch (error) {
+    return errorResult(new BusinessError(error.message, error.code), null);
+  }
+}
+
+function showAssetsCreationDialog(...params) {
+  if (!checkConfirmBoxParams(...params)) {
+    throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
+  }
+  return showAssetsCreationDialogParamsOk(...params);
+}
+
 function getPhotoAccessHelper(context) {
   if (context === undefined) {
     console.log('photoAccessHelper gContext undefined');
@@ -167,8 +351,9 @@ function getPhotoAccessHelper(context) {
   gContext = context;
   let helper = photoAccessHelper.getPhotoAccessHelper(gContext);
   if (helper !== undefined) {
-    console.log('photoAccessHelper getPhotoAccessHelper inner add createDeleteRequest');
+    console.log('photoAccessHelper getPhotoAccessHelper inner add createDeleteRequest and showAssetsCreationDialog');
     helper.createDeleteRequest = createDeleteRequest;
+    helper.showAssetsCreationDialog = showAssetsCreationDialog;
   }
   return helper;
 }
@@ -201,8 +386,10 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
     return photoAccessHelper.getPhotoAccessHelperAsync(gContext)
       .then((helper) => {
         if (helper !== undefined) {
-          console.log('photoAccessHelper getPhotoAccessHelperAsync inner add createDeleteRequest');
+          console.log('photoAccessHelper getPhotoAccessHelperAsync inner add createDeleteRequest' +
+            ' and showAssetsCreationDialog');
           helper.createDeleteRequest = createDeleteRequest;
+          helper.showAssetsCreationDialog = showAssetsCreationDialog;
         }
         return helper;
       })
@@ -217,15 +404,17 @@ function getPhotoAccessHelperAsync(context, asyncCallback) {
         asyncCallback(err);
       } else {
         if (helper !== undefined) {
-          console.log('photoAccessHelper getPhotoAccessHelperAsync callback add createDeleteRequest');
+          console.log('photoAccessHelper getPhotoAccessHelperAsync callback add createDeleteRequest' +
+            ' and showAssetsCreationDialog');
           helper.createDeleteRequest = createDeleteRequest;
+          helper.showAssetsCreationDialog = showAssetsCreationDialog;
         }
         asyncCallback(err, helper);
       }
     });
   } else {
     console.log('photoAccessHelper getPhotoAccessHelperAsync param invalid');
-    throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_PARAMERTER_INVALID);
+    throw new BusinessError(ERROR_MSG_PARAMERTER_INVALID, ERR_CODE_OHOS_PARAMERTER_INVALID);
   }
   return undefined;
 }
@@ -288,9 +477,6 @@ const PHOTO_VIEW_MIME_TYPE_MAP = new Map([
   [PhotoViewMIMETypes.IMAGE_VIDEO_TYPE, 'FILTER_MEDIA_TYPE_ALL'],
   [PhotoViewMIMETypes.MOVING_PHOTO_IMAGE_TYPE, 'FILTER_MEDIA_TYPE_IMAGE_MOVING_PHOTO'],
 ]);
-
-const ARGS_ZERO = 0;
-const ARGS_ONE = 1;
 
 function checkArguments(args) {
   let checkArgumentsResult = undefined;
@@ -487,6 +673,7 @@ export default {
   startPhotoPicker,
   getPhotoAccessHelperAsync,
   PhotoType: photoAccessHelper.PhotoType,
+  PhotoCreationConfig: photoAccessHelper.PhotoCreationConfig,
   PhotoKeys: photoAccessHelper.PhotoKeys,
   AlbumKeys: photoAccessHelper.AlbumKeys,
   AlbumType: photoAccessHelper.AlbumType,
