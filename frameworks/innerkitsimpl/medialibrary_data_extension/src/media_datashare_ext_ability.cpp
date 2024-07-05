@@ -222,7 +222,9 @@ static inline bool ContainsFlag(const string &mode, const char flag)
 static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,
     const bool permGranted, PermissionUsedType type)
 {
-    if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO)) {
+    if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) ||
+        (cmd.GetOprnObject() == OperationObject::THUMBNAIL) ||
+        (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC)) {
         if (mode.find("r") != string::npos) {
             PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type);
         }
@@ -264,7 +266,9 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     }
     vector<string> perms;
     FillV10Perms(mediaType, containsRead, containsWrite, perms);
-    if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO)) {
+    if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) ||
+        (cmd.GetOprnObject() == OperationObject::THUMBNAIL) ||
+        (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC)) {
         return PermissionUtils::CheckPhotoCallerPermission(perms)? E_SUCCESS : E_PERMISSION_DENIED;
     }
     int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
