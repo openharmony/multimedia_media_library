@@ -4718,6 +4718,7 @@ static void RestrictAlbumSubtypeOptions(unique_ptr<MediaLibraryAsyncContext> &co
             to_string(PhotoAlbumSubType::USER_GENERIC),
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::IMAGE),
         }));
     } else {
         context->predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
