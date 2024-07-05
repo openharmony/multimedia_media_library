@@ -69,8 +69,6 @@ namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
 
-const string SECURITY_COMPONENT_MODE = "rw";
-
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
 {
     return new MediaDataShareExtAbility(static_cast<Runtime&>(*runtime));
@@ -585,9 +583,10 @@ static string GetClientAppId()
     return PermissionUtils::GetAppIdByBundleName(bundleName);
 }
 
-static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd)
+static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string &mode)
 {
     auto ret = false;
+    string unifyMode = mode;
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE || cmd.GetTableName() == AudioColumn::AUDIOS_TABLE ||
         cmd.GetTableName() == MEDIALIBRARY_TABLE) {
         std::vector<std::string> columns;
@@ -606,7 +605,7 @@ static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd)
         queryResultSet->GetRowCount(count);
         if (count != 0) {
             ret = true;
-            CollectPermissionInfo(cmd, SECURITY_COMPONENT_MODE, true,
+            CollectPermissionInfo(cmd, unifyMode, true,
                 PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
         }
     }
@@ -659,9 +658,9 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
         }
         if (err != E_OK) {
             CollectPermissionInfo(command, unifyMode, false, PermissionUsedTypeValue::PICKER_TYPE);
-            if (!CheckIsOwner(uri, command)) {
+            if (!CheckIsOwner(uri, command, unifyMode)) {
                 MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
-                CollectPermissionInfo(command, SECURITY_COMPONENT_MODE, false,
+                CollectPermissionInfo(command, unifyMode, false,
                     PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
                 return err;
             }
