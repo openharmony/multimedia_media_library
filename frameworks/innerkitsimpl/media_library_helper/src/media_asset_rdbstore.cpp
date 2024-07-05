@@ -136,7 +136,7 @@ int32_t MediaAssetRdbStore::TryGetRdbStore(bool isIgnoreSELinux)
     string name = MEDIA_DATA_ABILITY_DB_NAME;
     string databaseDir = MEDIA_DB_DIR + "/rdb";
     if (access(databaseDir.c_str(), E_OK) != 0) {
-        MEDIA_ERR_LOG("rdb do not exist");
+        MEDIA_WARN_LOG("can not get rdb through sandbox");
         return NativeRdb::E_ERROR;
     }
     string dbPath = databaseDir.append("/").append(name);
