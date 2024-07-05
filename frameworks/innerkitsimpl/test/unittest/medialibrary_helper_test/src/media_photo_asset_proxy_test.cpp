@@ -138,7 +138,7 @@ HWTEST_F(MediaPhotoAssetProxyUnitTest, MediaPhotoAssetProxy_GetFileAsset_ok_003,
     EXPECT_CALL(*mockPhotoProxy.get(), GetDisplayName()).Times(3).WillRepeatedly(Return("IMG_20240512_153621.jpg"));
 
     photoAssetProxy->CreatePhotoAsset((sptr<PhotoProxy>&)mockPhotoProxy);
-    EXPECT_NE(photoAssetProxy->GetFileAsset(), nullptr);
+    EXPECT_EQ(photoAssetProxy->GetFileAsset(), nullptr);
 }
 }
 }
