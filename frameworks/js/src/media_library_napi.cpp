@@ -5644,9 +5644,6 @@ static bool ParseAndSetConfigArray(const napi_env &env, OHOS::AAFwk::Want &want,
         return false;
     }
 
-    uint32_t uriLen = want.GetStringParam(CONFIRM_BOX_SRC_FILE_URIS).size();
-    CHECK_COND_RET(uriLen == len, false, "Array size dismatch.");
-
     vector<string> titleList;
     vector<string> extensionList;
     vector<int32_t> photoTypeList;
