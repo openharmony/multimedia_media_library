@@ -141,6 +141,7 @@ enum class EXPORT OperationType : uint32_t {
     STOP_GENERATE_THUMBNAILS,
     DISCARD_CAMERA_PHOTO,
     REMOVE_MSC_TASK,
+    TOOL_QUERY_BY_DISPLAY_NAME,
 };
 
 #define OPRN_OBJ_MAP MediaOperation::GetOprnObjMap()
