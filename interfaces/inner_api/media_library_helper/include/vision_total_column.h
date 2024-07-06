@@ -23,6 +23,7 @@ namespace Media {
 const std::string STATUS = "status";
 const std::string OCR = "ocr";
 const std::string LABEL = "label";
+const std::string VIDEO_LABEL = "video_label";
 const std::string SALIENCY = "saliency";
 const std::string OBJECT = "object";
 const std::string RECOMMENDATION = "recommendation";
@@ -32,6 +33,7 @@ const std::string FACE = "face";
 const std::string FACE_TAG = "face_tag";
 const std::string HEAD = "head";
 const std::string POSE = "pose";
+const std::string DETAIL_ADDRESS = "detail_address";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_TOTAL_COLUMN_H

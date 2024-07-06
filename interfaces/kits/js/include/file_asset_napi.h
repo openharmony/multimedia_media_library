@@ -40,6 +40,7 @@ static const std::string USERFILEMGR_FILEASSET_NAPI_CLASS_NAME = "UserFileMgrFil
 static const std::string PHOTOACCESSHELPER_FILEASSET_NAPI_CLASS_NAME = "PhotoAccessHelperFileAsset";
 
 struct AnalysisSourceInfo {
+    std::string fieldStr;
     std::string uriStr;
     std::vector<std::string> fetchColumn;
 };
