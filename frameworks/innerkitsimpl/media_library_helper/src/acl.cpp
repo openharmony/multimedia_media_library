@@ -387,6 +387,14 @@ int32_t Acl::EntryInsert(AclXattrEntry& entry, const std::string& path, const ch
         }
     );
 
+    acl.InsertEntry(
+        {
+            .tag = ACL_TAG::GROUP_OBJ,
+            .perm = S_IRGRP >> 3,
+            .id = ACL_UNDEFINED_ID,
+        }
+    );
+
     /* transform to binary and write to file */
     size_t bufSize;
     char *buf = acl.Serialize(bufSize);
