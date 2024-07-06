@@ -1331,7 +1331,7 @@ int32_t MediaLibraryPhotoOperations::CommitEditInsertExecute(const shared_ptr<Fi
     errCode = UpdateEditTime(fileAsset->GetId(), MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d",
         fileAsset->GetId());
-    ScanFile(path, true, true, true);
+    ScanFile(path, false, true, true);
     NotifyFormMap(fileAsset->GetId(), fileAsset->GetFilePath(), false);
     return E_OK;
 }
@@ -1744,7 +1744,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEditCacheExecute(MediaLibraryCommand&
 
     errCode = UpdateEditTime(id, MediaFileUtils::UTCTimeSeconds());
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "Failed to update edit time, fileId:%{public}d", id);
-    ScanFile(assetPath, true, true, true);
+    ScanFile(assetPath, false, true, true);
     NotifyFormMap(id, assetPath, false);
     MediaLibraryVisionOperations::EditCommitOperation(cmd);
     return E_OK;
@@ -1785,7 +1785,7 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
             "Failed to move %{private}s to %{private}s, errCode: %{public}d",
             cachePath.c_str(), assetPath.c_str(), errCode);
     }
-    ScanFile(assetPath, true, true, true);
+    ScanFile(assetPath, false, true, true);
     return E_OK;
 }
 
