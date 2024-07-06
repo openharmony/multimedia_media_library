@@ -254,6 +254,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_STOP_GENERATE_THUMBNAILS, OperationType::STOP_GENERATE_THUMBNAILS },
         { OPRN_DISCARD_CAMERA_PHOTO, OperationType::DISCARD_CAMERA_PHOTO },
         { OPRN_REMOVE_MSC_TASK, OperationType::REMOVE_MSC_TASK },
+        { OPRN_TOOL_QUERY_BY_DISPLAY_NAME, OperationType::TOOL_QUERY_BY_DISPLAY_NAME },
     };
     return oprnTypeMap;
 }
