@@ -278,8 +278,8 @@ function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
 
 function getBundleInfo() {
   let flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_ABILITY | // for appName
-  bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_HAP_MODULE | // for appName
-  bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO; // for appId
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_HAP_MODULE | // for appName
+    bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_SIGNATURE_INFO; // for appId
   let bundleInfo = bundleManager.getBundleInfoForSelfSync(flags);
   if (((bundleInfo === undefined) || (bundleInfo.name === undefined)) ||
       ((bundleInfo.hapModulesInfo === undefined) || (bundleInfo.hapModulesInfo.length === 0)) ||
