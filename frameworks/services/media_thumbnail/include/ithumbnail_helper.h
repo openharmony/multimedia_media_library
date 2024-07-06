@@ -21,7 +21,7 @@
 #include <shared_mutex>
 
 #include "ability_connect_callback_stub.h"
-#include "ability_context.h"
+#include "fa_ability_context.h"
 #include "datashare_proxy.h"
 #include "datashare_values_bucket.h"
 #include "medialibrary_sync_operation.h"
