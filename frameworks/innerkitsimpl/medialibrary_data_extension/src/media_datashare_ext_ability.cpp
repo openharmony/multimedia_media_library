@@ -407,6 +407,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::VISION_SALIENCY,
         OperationObject::VISION_HEAD,
         OperationObject::VISION_POSE,
+        OperationObject::VISION_TOTAL,
         OperationObject::GEO_DICTIONARY,
         OperationObject::GEO_KNOWLEDGE,
         OperationObject::GEO_PHOTO,
