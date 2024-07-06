@@ -20,8 +20,10 @@
 #include "ability_context_impl.h"
 #include "js_runtime.h"
 #include "photo_album_column.h"
+#include "media_column.h"
 #include "media_file_utils.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_db_const_sqls.h"
 #include "medialibrary_rdb_transaction.h"
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_rdb_test.h"
@@ -36,7 +38,46 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+
 shared_ptr <MediaLibraryRdbStore> rdbStorePtr = nullptr;
+
+void CleanTestTables()
+{
+    vector<string> dropTableList = {
+        PhotoColumn::PHOTOS_TABLE,
+        MEDIALIBRARY_TABLE,
+    };
+    for (auto &dropTable : dropTableList) {
+        string dropSql = "DROP TABLE " + dropTable + ";";
+        int32_t ret = rdbStorePtr->ExecuteSql(dropSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Drop %{public}s table failed", dropTable.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Drop %{public}s table success", dropTable.c_str());
+    }
+}
+
+void SetTables()
+{
+    vector<string> createTableSqlList = {
+        PhotoColumn::CREATE_PHOTO_TABLE,
+        CREATE_MEDIA_TABLE,
+    };
+    for (auto &createTableSql : createTableSqlList) {
+        if (rdbStorePtr == nullptr) {
+            MEDIA_ERR_LOG("can not get rdbStorePtr");
+            return;
+        }
+        int32_t ret = rdbStorePtr->ExecuteSql(createTableSql);
+        if (ret != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Execute sql %{private}s failed", createTableSql.c_str());
+            return;
+        }
+        MEDIA_DEBUG_LOG("Execute sql %{private}s success", createTableSql.c_str());
+    }
+}
+
 void MediaLibraryRdbTest::SetUpTestCase(void)
 {
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
@@ -44,8 +85,11 @@ void MediaLibraryRdbTest::SetUpTestCase(void)
     abilityContextImpl->SetStageContext(stageContext);
     rdbStorePtr = std::make_shared<MediaLibraryRdbStore>(abilityContextImpl);
     int32_t ret = rdbStorePtr->Init();
-    MEDIA_INFO_LOG("rdbstore start ret = %{public}d", ret);
+    CleanTestTables();
+    SetTables();
+    MEDIA_INFO_LOG("MediaLibraryRdbTest rdbstore start ret = %{public}d", ret);
 }
+
 void MediaLibraryRdbTest::TearDownTestCase(void) {}
 
 // SetUp:Execute before each test case
