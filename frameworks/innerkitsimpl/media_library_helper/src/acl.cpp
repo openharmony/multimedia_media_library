@@ -355,6 +355,7 @@ Acl AclFromFile(const std::string& file)
         acl.DeSerialize(buf, BUF_SIZE);
         return acl;
     }
+    MEDIA_INFO_LOG("Failed to get ACL_XATTR_ACCESS from file: %{public}s", file.c_str());
     return AclFromMode(file);
 }
 
