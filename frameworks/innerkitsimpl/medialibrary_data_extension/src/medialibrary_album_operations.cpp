@@ -868,6 +868,8 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
 
 static void StartAnalysisServiceAsync(const bool isDeleteIndex)
 {
+    string name("album activelyStartAnalysisService");
+    pthread_setname_np(pthread_self(), name.c_str());
     int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_UPDATE_INDEX;
     if (isDeleteIndex) {
         code = MediaActivelyCallingAnalyse::ActivateServiceType::START_DELETE_INDEX;
