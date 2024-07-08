@@ -42,6 +42,8 @@ void MtpMonitor::Stop()
 
 void MtpMonitor::Run()
 {
+    string name("MtpMonitor::Run");
+    pthread_setname_np(pthread_self(), name.c_str());
     while (!interruptFlag) {
         if (operationPtr_ == nullptr) {
             operationPtr_ = make_shared<MtpOperation>();

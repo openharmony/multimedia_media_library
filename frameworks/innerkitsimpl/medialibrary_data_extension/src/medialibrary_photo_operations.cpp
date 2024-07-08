@@ -625,6 +625,8 @@ static void TrashPhotosSendNotify(vector<string> &notifyUris)
 
 static void StartAnalysisServiceAsync()
 {
+    string name("Photo StartAnalysisServiceAsync");
+    pthread_setname_np(pthread_self(), name.c_str());
     int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_UPDATE_INDEX;
     MessageParcel data;
     MessageParcel reply;

@@ -49,6 +49,8 @@ void TrashAsyncTaskWorker::Interrupt()
 
 void TrashAsyncTaskWorker::StartWorker()
 {
+    string name("TrashAsyncWorker");
+    pthread_setname_np(pthread_self(), name.c_str());
     MediaLibrarySmartAlbumMapOperations::SetInterrupt(false);
     MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
     MediaLibraryAlbumOperations::HandlePhotoAlbum(OperationType::AGING, {}, {});
