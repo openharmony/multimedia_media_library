@@ -291,8 +291,8 @@ bool MultiStagesCaptureManager::CancelProcessRequest(const string &photoId)
 void MultiStagesCaptureManager::RemoveImage(const string &photoId, bool isRestorable)
 {
     if (!MultiStagesCaptureRequestTaskManager::IsPhotoInProcess(photoId)) {
+        // In order to ensure image can be completely deleted, do not return here, only record the log.
         MEDIA_ERR_LOG("photoId is empty or not in process ");
-        return;
     }
 
     MultiStagesCaptureRequestTaskManager::RemovePhotoInProgress(photoId, isRestorable);
