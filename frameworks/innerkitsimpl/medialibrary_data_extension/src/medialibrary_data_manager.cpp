@@ -1204,6 +1204,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::FILESYSTEM_ALBUM:
         case OperationObject::MEDIA_VOLUME:
             return MediaLibraryAlbumOperations::QueryAlbumOperation(cmd, columns);
+        case OperationObject::INDEX_CONSTRUCTION_STATUS:
+            return MediaLibrarySearchOperations::QueryIndexConstructProgress();
         case OperationObject::PHOTO_ALBUM:
             return MediaLibraryAlbumOperations::QueryPhotoAlbum(cmd, columns);
         case OperationObject::ANALYSIS_PHOTO_ALBUM:
