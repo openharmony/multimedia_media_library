@@ -225,6 +225,7 @@ const std::string PAH_MULTISTAGES_CAPTURE = "phaccess_multistages_capture_operat
 const std::string PAH_HIGHLIGHT_COVER = "phaccess_highlight_cover_operation";
 const std::string PAH_HIGHLIGHT_PLAY = "phaccess_highlight_play_operation";
 const std::string PAH_BATCH_THUMBNAIL_OPERATE = "phaccess_batch_thumbnail_operation";
+const std::string SEARCH_INDEX_CONSTRUCTION_STATUS = "phaccess_search_index_construction_operation";
 
 // PhotoAccessHelper photo operation constants
 const std::string PAH_CREATE_PHOTO = MEDIALIBRARY_DATA_URI + "/" + PAH_PHOTO + "/" + OPRN_CREATE;
