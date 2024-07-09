@@ -35,6 +35,11 @@ const std::string FEATURES = "features";
 const std::string FACE_OCCLUSION = "face_occlusion";
 const std::string IMAGE_FACE_VERSION = "face_version";
 const std::string IMAGE_FEATURES_VERSION = "features_version";
+const std::string BEAUTY_BOUNDER_X = "beauty_bounder_x";
+const std::string BEAUTY_BOUNDER_Y = "beauty_bounder_y";
+const std::string BEAUTY_BOUNDER_WIDTH = "beauty_bounder_width";
+const std::string BEAUTY_BOUNDER_HEIGHT = "beauty_bounder_height";
+const std::string FACE_AESTHETICS_SCORE = "aesthetics_score";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_IMAGE_FACE_COLUMN_H
