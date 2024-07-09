@@ -391,7 +391,7 @@ int32_t Acl::EntryInsert(AclXattrEntry& entry, const std::string& path, const ch
     acl.InsertEntry(
         {
             .tag = ACL_TAG::GROUP_OBJ,
-            .perm = S_IRGRP >> 3,
+            .perm = S_IRWXP >> 3,
             .id = ACL_UNDEFINED_ID,
         }
     );
