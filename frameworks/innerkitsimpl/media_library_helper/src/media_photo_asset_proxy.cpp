@@ -250,7 +250,7 @@ void PhotoAssetProxy::SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t si
     double longitude = photoProxy->GetLongitude();
     uint32_t errorCode = 0;
     SourceOptions opts;
-    tracer.Start("SetShootingModeAndGpsInfo");
+    tracer.Start("CreateImageSource");
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
     tracer.Finish();
     if (imageSource == nullptr) {
@@ -279,10 +279,13 @@ void PhotoAssetProxy::SetShootingModeAndGpsInfo(const uint8_t *data, uint32_t si
         MEDIA_ERR_LOG("modify image property latitude fail %{public}d", ret);
     }
 
+    tracer.Start("ModifyImageProperty");
     ret = imageSource->ModifyImageProperty(index, PHOTO_DATA_IMAGE_GPS_LATITUDE_REF, latitude > 0.0 ? "N" : "S", fd);
+    tracer.Finish();
     if (ret != E_OK) {
         MEDIA_ERR_LOG("modify image property latitude ref fail %{public}d", ret);
     }
+    MEDIA_INFO_LOG("Success.");
 }
  
 std::string PhotoAssetProxy::LocationValueToString(double value)
