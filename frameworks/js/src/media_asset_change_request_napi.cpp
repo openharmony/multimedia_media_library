@@ -59,6 +59,7 @@ using namespace OHOS::Security::AccessToken;
 namespace OHOS::Media {
 static const string MEDIA_ASSET_CHANGE_REQUEST_CLASS = "MediaAssetChangeRequest";
 thread_local napi_ref MediaAssetChangeRequestNapi::constructor_ = nullptr;
+std::atomic<uint32_t> MediaAssetChangeRequestNapi::cacheFileId_ = 0;
 
 constexpr int64_t CREATE_ASSET_REQUEST_PENDING = -4;
 
@@ -388,6 +389,12 @@ bool MediaAssetChangeRequestNapi::CheckChangeOperations(napi_env env)
     }
 
     return true;
+}
+
+uint32_t MediaAssetChangeRequestNapi::FetchAddCacheFileId()
+{
+    uint32_t id = cacheFileId_.fetch_add(1);
+    return id;
 }
 
 void MediaAssetChangeRequestNapi::SetCacheFileName(string& fileName)
@@ -1233,7 +1240,9 @@ static int32_t OpenWriteCacheHandler(MediaAssetChangeRequestAsyncContext& contex
     // specify mp4 extension for cache file of moving photo video
     string extension = isMovingPhotoVideo ? MOVING_PHOTO_VIDEO_EXTENSION
                                           : MediaFileUtils::GetExtensionFromPath(fileAsset->GetDisplayName());
-    string cacheFileName = to_string(MediaFileUtils::UTCTimeNanoSeconds()) + "." + extension;
+    int64_t currentTimestamp = MediaFileUtils::UTCTimeNanoSeconds();
+    uint32_t cacheFileId = changeRequest->FetchAddCacheFileId();
+    string cacheFileName = to_string(currentTimestamp) + "_" + to_string(cacheFileId) + "." + extension;
     string uri = PhotoColumn::PHOTO_CACHE_URI_PREFIX + cacheFileName;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri openCacheUri(uri);

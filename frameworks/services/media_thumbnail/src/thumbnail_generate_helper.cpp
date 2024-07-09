@@ -23,6 +23,7 @@
 #include "dfx_timer.h"
 #include "dfx_utils.h"
 #include "ffrt.h"
+#include "ffrt_inner.h"
 #include "directory_ex.h"
 #include "ithumbnail_helper.h"
 #include "medialibrary_errno.h"
@@ -42,6 +43,8 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+const int FFRT_MAX_RESTORE_ASTC_THREADS = 8;
+
 int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync)
 {
     ThumbnailData thumbnailData;
@@ -55,7 +58,8 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
     }
 
     if (isSync) {
-        IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
+        bool isSuccess = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
+        IThumbnailHelper::UpdateThumbnailState(opts, thumbnailData, isSuccess);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
         if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
             MediaLibraryPhotoOperations::StoreThumbnailSize(opts.row, opts.path);
@@ -293,9 +297,13 @@ bool GenerateLocalThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, ThumbnailTyp
         MEDIA_ERR_LOG("Get lcd thumbnail pixelmap, doCreateLcd failed: %{public}s", data.path.c_str());
         return false;
     }
-    if (thumbType != ThumbnailType::LCD && !IThumbnailHelper::DoCreateThumbnail(opts, data)) {
-        MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s", data.path.c_str());
-        return false;
+    if (thumbType != ThumbnailType::LCD) {
+        bool isSuccess = IThumbnailHelper::DoCreateThumbnail(opts, data);
+        IThumbnailHelper::UpdateThumbnailState(opts, data, isSuccess);
+        if (!isSuccess) {
+            MEDIA_ERR_LOG("Get default thumbnail pixelmap, doCreateThumbnail failed: %{public}s", data.path.c_str());
+            return false;
+        }
     }
     return true;
 }
@@ -502,6 +510,7 @@ int32_t ThumbnailGenerateHelper::RestoreAstcDualFrame(ThumbRdbOpt &opts)
     }
 
     MEDIA_INFO_LOG("create astc for restored dual frame photos count:%{public}zu", infos.size());
+    ffrt_set_cpu_worker_max_num(ffrt::qos_default, FFRT_MAX_RESTORE_ASTC_THREADS);
     for (auto &info : infos) {
         opts.row = info.id;
         if (!info.isLocalFile) {

@@ -14,9 +14,10 @@
  */
 #define MLOG_TAG "FileExtUnitTest"
 
+#include "medialibrary_smartalbum_map_operations_test.h"
+
 #include "media_smart_album_column.h"
 #include "media_smart_map_column.h"
-#include "medialibrary_smartalbum_map_operations_test.h"
 #include "medialibrary_smartalbum_map_operations.h"
 #include "medialibrary_unistore_manager.h"
 #include "ability_context_impl.h"
@@ -32,7 +33,10 @@ void MediaLibrarySmartalbumMapOperationTest::SetUpTestCase(void) {}
 void MediaLibrarySmartalbumMapOperationTest::TearDownTestCase(void) {}
 
 //SetUp:Execute before each test case
-void MediaLibrarySmartalbumMapOperationTest::SetUp() {}
+void MediaLibrarySmartalbumMapOperationTest::SetUp()
+{
+    MediaLibraryUnitTestUtils::InitUnistore();
+}
 
 void MediaLibrarySmartalbumMapOperationTest::TearDown(void) {}
 
@@ -57,9 +61,6 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOpe
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOperation_test_002, TestSize.Level0)
 {
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
-
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
     EXPECT_EQ(ret, E_SMARTALBUM_IS_NOT_EXISTED);
@@ -76,7 +77,6 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOpe
     cmd.SetValueBucket(values);
     ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
     EXPECT_EQ(ret, E_GET_VALUEBUCKET_FAIL);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOperation_test_003, TestSize.Level0)
@@ -94,6 +94,8 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOpe
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperation_test_001, TestSize.Level0)
 {
+    MediaLibraryUnistoreManager::GetInstance().Stop();
+
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(0, 0, 0, cmd);
     EXPECT_EQ(ret, E_CHILD_CAN_NOT_ADD_SMARTALBUM);
@@ -105,8 +107,8 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperatio
     ret = MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(0, 0, 0, cmd);
     EXPECT_EQ(ret, E_CHILD_CAN_NOT_ADD_SMARTALBUM);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
+
     ret = MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(0, 0, 0, cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 
@@ -118,8 +120,6 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperatio
     cmd.SetValueBucket(values);
     ret = MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(0, 0, 0, cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperation_test_002, TestSize.Level0)
@@ -128,19 +128,17 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperatio
     cmd.SetTableName(MEDIALIBRARY_TABLE);
     NativeRdb::ValuesBucket values;
     values.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
     string name = "medialib_HandleAddAssetOperation";
     values.PutString(SMARTALBUM_DB_NAME, name);
     cmd.SetValueBucket(values);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(100, 0, 0, cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperation_test_003, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
+    MediaLibraryUnistoreManager::GetInstance().Stop();
 
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleAddAssetOperation(2, -1, -1, cmd);
     EXPECT_EQ(ret, E_GET_ASSET_FAIL);
@@ -163,8 +161,6 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperatio
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleRemoveAssetOperation_test_001, TestSize.Level0)
 {
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleRemoveAssetOperation(0, 0, cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
@@ -186,14 +182,11 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleRemoveAssetOpera
     
     ret = MediaLibrarySmartAlbumMapOperations::HandleRemoveAssetOperation(1, -1, cmd);
     EXPECT_EQ(ret, E_INVALID_FILEID);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleRemoveAssetOperation_test_002, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
     NativeRdb::ValuesBucket values;
     cmd.SetTableName(MEDIALIBRARY_TABLE);
     values.PutInt(SMARTALBUM_DB_ID, TYPE_TRASH);
@@ -202,11 +195,12 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleRemoveAssetOpera
     cmd.SetValueBucket(values);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleRemoveAssetOperation(0, 0, cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAgingOperation_test_001, TestSize.Level0)
 {
+    MediaLibraryUnistoreManager::GetInstance().Stop();
+
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::AGING);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
@@ -216,8 +210,9 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAgingOperation_t
     cmd.SetValueBucket(values);
     ret = MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+
+    MediaLibraryUnitTestUtils::InitUnistore();
+
     ret = MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
     EXPECT_EQ(ret, E_OK);
     string name = "HandleAgingOperation/test";
@@ -225,7 +220,6 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAgingOperation_t
     cmd.SetValueBucket(values);
     ret = MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
     EXPECT_EQ(ret, E_OK);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAgingOperation_test_002, TestSize.Level0)
@@ -234,14 +228,11 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAgingOperation_t
     cmd.SetTableName(MEDIALIBRARY_TABLE);
     NativeRdb::ValuesBucket values;
     values.PutInt(SMARTALBUMMAP_DB_ALBUM_ID, FAVOURITE_ALBUM_ID_VALUES);
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
     string name = "medialib_HandleAgingOperation";
     values.PutString(SMARTALBUMMAP_TABLE_NAME, name);
     cmd.SetValueBucket(values);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleAgingOperation();
     EXPECT_EQ(ret, E_OK);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 } // namespace Media
 } // namespace OHOSfu

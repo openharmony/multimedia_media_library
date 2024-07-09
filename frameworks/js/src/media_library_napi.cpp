@@ -23,6 +23,7 @@
 #include <sys/sendfile.h>
 
 #include "ability_context.h"
+#include "confirm_callback.h"
 #include "context.h"
 #include "directory_ex.h"
 #include "file_ex.h"
@@ -68,6 +69,7 @@
 #include "js_native_api_types.h"
 #include "delete_callback.h"
 #include "window.h"
+#include "permission_utils.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -84,6 +86,7 @@ const int32_t FORMID_MAX_LEN = 19;
 const int32_t SLEEP_TIME = 100;
 const int64_t MAX_INT64 = 9223372036854775807;
 const uint32_t MAX_UINT32 = 4294967295;
+constexpr uint32_t CONFIRM_BOX_ARRAY_MAX_LENGTH = 100;
 const string DATE_FUNCTION = "DATE(";
 
 mutex MediaLibraryNapi::sUserFileClientMutex_;
@@ -117,6 +120,22 @@ const std::string TITLE = "title";
 const std::map<std::string, std::string> CREATE_OPTIONS_PARAM = {
     { TITLE, MediaColumn::MEDIA_TITLE }
 };
+
+const std::string EXTENSION = "fileNameExtension";
+const std::string PHOTO_TYPE = "photoType";
+const std::string PHOTO_SUB_TYPE = "subtype";
+const std::string CONFIRM_BOX_PACKAGE_NAME = "com.ohos.photos";
+const std::string CONFIRM_BOX_EXT_ABILITY_NAME = "SaveUIExtensionAbility";
+const std::string CONFIRM_BOX_EXTENSION_TYPE = "ability.want.params.uiExtensionType";
+const std::string CONFIRM_BOX_REQUEST_TYPE = "sysDialog/common";
+const std::string CONFIRM_BOX_SRC_FILE_URIS = "srcFileUris";
+const std::string CONFIRM_BOX_TITLE_ARRAY = "titleArray";
+const std::string CONFIRM_BOX_EXTENSION_ARRAY = "extensionArray";
+const std::string CONFIRM_BOX_PHOTO_TYPE_ARRAY = "photoTypeArray";
+const std::string CONFIRM_BOX_PHOTO_SUB_TYPE_ARRAY = "photoSubTypeArray";
+const std::string CONFIRM_BOX_BUNDLE_NAME = "bundleName";
+const std::string CONFIRM_BOX_APP_NAME = "appName";
+const std::string CONFIRM_BOX_APP_ID = "appId";
 
 thread_local napi_ref MediaLibraryNapi::sConstructor_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sMediaTypeEnumRef_ = nullptr;
@@ -285,6 +304,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("getFileAssetsInfo", PhotoAccessGetFileAssetsInfo),
             DECLARE_NAPI_FUNCTION("startCreateThumbnailTask", PhotoAccessStartCreateThumbnailTask),
             DECLARE_NAPI_FUNCTION("stopCreateThumbnailTask", PhotoAccessStopCreateThumbnailTask),
+            DECLARE_NAPI_FUNCTION("createAssetsForApp", PhotoAccessHelperAgentCreateAssets),
         }
     };
     MediaLibraryNapiUtils::NapiDefineClass(env, exports, info);
@@ -294,6 +314,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_STATIC_FUNCTION("startPhotoPicker", StartPhotoPicker),
         DECLARE_NAPI_STATIC_FUNCTION("getPhotoAccessHelperAsync", GetPhotoAccessHelperAsync),
         DECLARE_NAPI_STATIC_FUNCTION("createDeleteRequest", CreateDeleteRequest),
+        DECLARE_NAPI_STATIC_FUNCTION("showAssetsCreationDialog", ShowAssetsCreationDialog),
         DECLARE_NAPI_PROPERTY("PhotoType", CreateMediaTypeUserFileEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumKeys", CreateAlbumKeyEnum(env)),
         DECLARE_NAPI_PROPERTY("AlbumType", CreateAlbumTypeEnum(env)),
@@ -1063,6 +1084,52 @@ static void PhotoAccessSetFileAssetByIdV10(int32_t id, const string &networkId, 
     context->fileAsset = move(fileAsset);
 }
 
+static void JSCreateUriArrayInCallback(napi_env env, MediaLibraryAsyncContext *context,
+    unique_ptr<JSAsyncContextOutput> &jsContext)
+{
+    napi_value jsObject = nullptr;
+    if (context->uriArray.empty()) {
+        MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, ERR_INVALID_OUTPUT,
+            "Obtain file asset uri array failed");
+        napi_get_undefined(env, &jsContext->data);
+    } else {
+        napi_status status = napi_create_array(env, &jsObject);
+        int count = 0;
+        for (const auto &uri : context->uriArray) {
+            napi_value uriObject = nullptr;
+            status = napi_create_string_utf8(env, uri.c_str(), NAPI_AUTO_LENGTH, &uriObject);
+            if (status != napi_ok || uriObject == nullptr) {
+                NAPI_ERR_LOG("Failed to get file asset uri array napi object");
+                napi_get_undefined(env, &jsContext->data);
+                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL,
+                    "System inner fail");
+                return;
+            }
+
+            status = napi_set_element(env, jsObject, count, uriObject);
+            if (status != napi_ok) {
+                NAPI_ERR_LOG("Failed to get file asset uri array napi object");
+                napi_get_undefined(env, &jsContext->data);
+                MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL,
+                    "System inner fail");
+                return;
+            }
+            ++count;
+        }
+
+        if (status != napi_ok || jsObject == nullptr) {
+            NAPI_ERR_LOG("Failed to get file asset uri array napi object");
+            napi_get_undefined(env, &jsContext->data);
+            MediaLibraryNapiUtils::CreateNapiErrorObject(env, jsContext->error, JS_INNER_FAIL,
+                "System inner fail");
+        } else {
+            jsContext->data = jsObject;
+            napi_get_undefined(env, &jsContext->error);
+            jsContext->status = true;
+        }
+    }
+}
+
 static void JSCreateUriInCallback(napi_env env, MediaLibraryAsyncContext *context,
     unique_ptr<JSAsyncContextOutput> &jsContext)
 {
@@ -1120,7 +1187,9 @@ static void JSCreateAssetCompleteCallback(napi_env env, napi_status status, void
     jsContext->status = false;
 
     if (context->error == ERR_DEFAULT) {
-        if (context->isCreateByComponent) {
+        if (context->isCreateByAgent) {
+            JSCreateUriArrayInCallback(env, context, jsContext);
+        } else if (context->isCreateByComponent) {
             JSCreateUriInCallback(env, context, jsContext);
         } else {
             JSCreateAssetInCallback(env, context, jsContext);
@@ -3036,6 +3105,109 @@ static napi_value ParseArgsCreatePhotoAsset(napi_env env, napi_callback_info inf
     }
 }
 
+static napi_status ParseCreateConfig(napi_env env, napi_value arg,
+    BundleInfo bundleInfo, MediaLibraryAsyncContext &context)
+{
+    const std::string photoType = "photoType";
+    const std::string photoSubType = "subtype";
+    const std::string extension = "fileNameExtension";
+    const std::map<std::string, std::string> PHOTO_CREATE_CONFIG_PARAM = {
+        { photoType, MEDIA_DATA_DB_MEDIA_TYPE },
+        { photoSubType, PhotoColumn::PHOTO_SUBTYPE },
+        { TITLE, MediaColumn::MEDIA_TITLE },
+        { extension, ASSET_EXTENTION }
+    };
+
+    OHOS::DataShare::DataShareValuesBucket valuesBucket;
+    for (const auto &iter : PHOTO_CREATE_CONFIG_PARAM) {
+        string param = iter.first;
+        bool present = false;
+        napi_status result = napi_has_named_property(env, arg, param.c_str(), &present);
+        CHECK_COND_RET(result == napi_ok, result, "failed to check named property");
+        if (!present) {
+            continue;
+        }
+        napi_value value;
+        result = napi_get_named_property(env, arg, param.c_str(), &value);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get named property");
+        napi_valuetype valueType = napi_undefined;
+        result = napi_typeof(env, value, &valueType);
+        CHECK_COND_RET(result == napi_ok, result, "failed to get value type");
+        if (valueType == napi_number) {
+            int32_t number = 0;
+            result = napi_get_value_int32(env, value, &number);
+            CHECK_COND_RET(result == napi_ok, result, "failed to get int32_t");
+            valuesBucket.Put(iter.second, number);
+        } else if (valueType == napi_string) {
+            char buffer[ARG_BUF_SIZE];
+            size_t res = 0;
+            result = napi_get_value_string_utf8(env, value, buffer, ARG_BUF_SIZE, &res);
+            CHECK_COND_RET(result == napi_ok, result, "failed to get string");
+            valuesBucket.Put(iter.second, string(buffer));
+        } else if (valueType == napi_undefined || valueType == napi_null) {
+            continue;
+        } else {
+            NAPI_ERR_LOG("ParseCreateConfig failed, valueType %{public}d is unaccepted",
+                static_cast<int>(valueType));
+            return napi_invalid_arg;
+        }
+    }
+    valuesBucket.Put(MEDIA_DATA_DB_OWNER_PACKAGE, bundleInfo.bundleName);
+    valuesBucket.Put(MEDIA_DATA_DB_OWNER_APPID, bundleInfo.appId);
+    valuesBucket.Put(MEDIA_DATA_DB_PACKAGE_NAME, bundleInfo.packageName);
+    context.valuesBucketArray.push_back(move(valuesBucket));
+    return napi_ok;
+}
+
+static napi_value ParseArgsCreateAgentCreateAssets(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    /* Parse the arguments */
+    BundleInfo bundleInfo;
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO],
+        bundleInfo.bundleName) == napi_ok, "Failed to get bundleName");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE],
+        bundleInfo.packageName) == napi_ok, "Failed to get appName");
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_TWO],
+        bundleInfo.appId) == napi_ok, "Failed to get appId");
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, true, &result));
+
+    vector<napi_value> napiValues;
+    CHECK_NULLPTR_RET(MediaLibraryNapiUtils::GetNapiValueArray(env, context->argv[ARGS_THREE], napiValues));
+    if (napiValues.empty()) {
+        return result;
+    }
+
+    for (const auto& napiValue : napiValues) {
+        CHECK_COND_WITH_MESSAGE(env, ParseCreateConfig(env, napiValue, bundleInfo, *context) == napi_ok,
+            "Parse asset create config failed");
+    }
+
+    CHECK_COND_WITH_MESSAGE(env, MediaLibraryNapiUtils::GetParamCallback(env, context)
+        == napi_ok, "Failed to get callback");
+    return result;
+}
+
+static napi_value ParseArgsAgentCreateAssets(napi_env env, napi_callback_info info,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    constexpr size_t minArgs = ARGS_ONE;
+    constexpr size_t maxArgs = ARGS_FOUR;
+    NAPI_ASSERT(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, context, minArgs, maxArgs) ==
+        napi_ok, "Failed to get object info");
+
+    context->isCreateByComponent = false;
+    context->isCreateByAgent = true;
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    return ParseArgsCreateAgentCreateAssets(env, info, context);
+}
+
 static napi_value ParseArgsCreateAudioAssetSystem(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -4699,6 +4871,7 @@ static void RestrictAlbumSubtypeOptions(unique_ptr<MediaLibraryAsyncContext> &co
             to_string(PhotoAlbumSubType::USER_GENERIC),
             to_string(PhotoAlbumSubType::FAVORITE),
             to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::IMAGE),
         }));
     } else {
         context->predicates.And()->NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIDDEN));
@@ -4860,6 +5033,59 @@ napi_value MediaLibraryNapi::PhotoAccessHelperCreatePhotoAsset(napi_env env, nap
 
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperCreatePhotoAsset",
         PhotoAccessCreateAssetExecute, JSCreateAssetCompleteCallback);
+}
+
+static void PhotoAccessAgentCreateAssetsExecute(napi_env env, void *data)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("JSCreateAssetExecute");
+
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    if (context == nullptr) {
+        NAPI_ERR_LOG("Async context is null");
+        return;
+    }
+
+    string uri;
+    GetCreateUri(context, uri);
+    Uri createFileUri(uri);
+    for (const auto& valuesBucket : context->valuesBucketArray) {
+        string outUri;
+        int index = UserFileClient::InsertExt(createFileUri, valuesBucket, outUri);
+        if (index < 0) {
+            if (index == E_PERMISSION_DENIED) {
+                context->error = OHOS_PERMISSION_DENIED_CODE;
+                NAPI_ERR_LOG("PERMISSION_DENIED, index: %{public}d.", index);
+                return;
+            }
+            
+            if (index == E_HAS_DB_ERROR) {
+                index = OHOS_INVALID_PARAM_CODE;
+            }
+            context->uriArray.push_back(to_string(index));
+            bool isValid = false;
+            string title = valuesBucket.Get(MediaColumn::MEDIA_TITLE, isValid);
+            NAPI_ERR_LOG("InsertExt fail, index: %{public}d title: %{public}s.", index, title.c_str());
+        } else {
+            context->uriArray.push_back(move(outUri));
+        }
+    }
+}
+
+napi_value MediaLibraryNapi::PhotoAccessHelperAgentCreateAssets(napi_env env, napi_callback_info info)
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("PhotoAccessHelperAgentCreateAssets");
+
+    NAPI_INFO_LOG("enter");
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+    asyncContext->resultNapiType = ResultNapiType::TYPE_PHOTOACCESS_HELPER;
+    asyncContext->assetType = TYPE_PHOTO;
+    NAPI_ASSERT(env, ParseArgsAgentCreateAssets(env, info, asyncContext), "Failed to parse js args");
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "PhotoAccessHelperAgentCreateAssets",
+        PhotoAccessAgentCreateAssetsExecute, JSCreateAssetCompleteCallback);
 }
 
 napi_value MediaLibraryNapi::PhotoAccessHelperOnCallback(napi_env env, napi_callback_info info)
@@ -5292,6 +5518,263 @@ napi_value MediaLibraryNapi::CreateDeleteRequest(napi_env env, napi_callback_inf
 
     int32_t sessionId = uiContent->CreateModalUIExtension(request, extensionCallback, config);
     NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
+
+    callback->SetSessionId(sessionId);
+    return result;
+#else
+    NapiError::ThrowError(env, JS_INNER_FAIL, "ace_engine is not support");
+    return nullptr;
+#endif
+}
+
+#ifdef HAS_ACE_ENGINE_PART
+static bool ParseString(const napi_env &env, const napi_value &value, std::string &result)
+{
+    size_t size = 0;
+
+    CHECK_COND_RET(napi_get_value_string_utf8(env, value, nullptr, 0, &size) == napi_ok, false,
+        "Failed to get string length.");
+
+    result.reserve(size + 1);
+    result.resize(size);
+
+    CHECK_COND_RET(napi_get_value_string_utf8(env, value, result.data(), size + 1, &size) == napi_ok, false,
+        "Failed to get string value.");
+
+    return true;
+}
+
+static bool ParseAndSetFileUriArray(const napi_env &env, OHOS::AAFwk::Want &want, const napi_value &value)
+{
+    uint32_t len = 0;
+    CHECK_COND_RET(napi_get_array_length(env, value, &len) == napi_ok, false, "Failed to get array length.");
+    if (len > CONFIRM_BOX_ARRAY_MAX_LENGTH) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Array size over 100.");
+        return false;
+    }
+
+    vector<string> srcFileUris;
+    for (uint32_t i = 0; i < len; ++i) {
+        napi_value element = nullptr;
+        CHECK_COND_RET(napi_get_element(env, value, i, &element) == napi_ok, false, "Failed to get array element.");
+        if (element == nullptr) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to get array element.");
+            return false;
+        }
+
+        string srcFileUri;
+        if (!ParseString(env, element, srcFileUri)) {
+            return false;
+        }
+
+        srcFileUris.emplace_back(srcFileUri);
+    }
+
+    want.SetParam(CONFIRM_BOX_SRC_FILE_URIS, srcFileUris);
+
+    return true;
+}
+
+static bool IsNeedParseProperty(const napi_env &env, const napi_value &value, const string &key, napi_value &property,
+    napi_valuetype &needType)
+{
+    bool hasProp = false;
+    napi_valuetype valueType = napi_undefined;
+
+    CHECK_COND_RET(napi_has_named_property(env, value, key.c_str(), &hasProp) == napi_ok, false,
+        "Failed to check named property.");
+    if (hasProp) {
+        CHECK_COND_RET(napi_get_named_property(env, value, key.c_str(), &property) == napi_ok, false,
+            "Failed to get named property.");
+        CHECK_COND_RET(napi_typeof(env, property, &valueType) == napi_ok, false, "Failed to get value type.");
+
+        return ((valueType != napi_undefined) && (valueType != napi_null) && (valueType == needType));
+    }
+
+    return hasProp;
+}
+
+static bool ParseConfigObject(const napi_env &env, const napi_value &value, PhotoCreationConfig &config)
+{
+    napi_value property = nullptr;
+    napi_valuetype type = napi_undefined;
+
+    // title: optional
+    type = napi_string;
+    if (IsNeedParseProperty(env, value, TITLE, property, type)) {
+        NAPI_INFO_LOG("With title.");
+        if (!ParseString(env, property, config.title)) {
+            return false;
+        }
+    }
+
+    // fileNameExtension: mandatory
+    CHECK_COND_RET(IsNeedParseProperty(env, value, EXTENSION, property, type), false, "Lack param fileNameExtension.");
+    if (!ParseString(env, property, config.fileNameExtension)) {
+        return false;
+    }
+
+    // photoType: mandatory
+    type = napi_number;
+    CHECK_COND_RET(IsNeedParseProperty(env, value, PHOTO_TYPE, property, type), false, "Lack param photoType.");
+    CHECK_COND_RET(napi_get_value_int32(env, property, &(config.photoType)) == napi_ok, false,
+        "Failed to get number type.");
+    CHECK_COND_RET(((config.photoType == static_cast<int32_t>(MediaType::MEDIA_TYPE_IMAGE)) || (
+        (config.photoType) == static_cast<int32_t>(MediaType::MEDIA_TYPE_VIDEO))), false,
+        "Param photoType is not valid.");
+
+    // subtype: optional
+    if (IsNeedParseProperty(env, value, PHOTO_SUB_TYPE, property, type)) {
+        NAPI_INFO_LOG("With subtype.");
+        CHECK_COND_RET(napi_get_value_int32(env, property, &(config.subtype)) == napi_ok, false,
+            "Failed to get number type.");
+        CHECK_COND_RET(((config.subtype == static_cast<int32_t>(PhotoSubType::DEFAULT)) || (
+            (config.subtype) == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO))), false,
+            "Param subtype is not valid.");
+    }
+
+    return true;
+}
+
+static bool ParseAndSetConfigArray(const napi_env &env, OHOS::AAFwk::Want &want, const napi_value &value)
+{
+    uint32_t len = 0;
+    CHECK_COND_RET(napi_get_array_length(env, value, &len) == napi_ok, false, "Failed to get array length.");
+    if (len > CONFIRM_BOX_ARRAY_MAX_LENGTH) {
+        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Array size over 100.");
+        return false;
+    }
+
+    vector<string> titleList;
+    vector<string> extensionList;
+    vector<int32_t> photoTypeList;
+    vector<int32_t> photoSubTypeList;
+
+    for (uint32_t i = 0; i < len; ++i) {
+        napi_value element = nullptr;
+        CHECK_COND_RET(napi_get_element(env, value, i, &element) == napi_ok, false, "Failed to get array element.");
+        if (element == nullptr) {
+            NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "Failed to get array element.");
+            return false;
+        }
+
+        PhotoCreationConfig config;
+        if (!ParseConfigObject(env, element, config)) {
+            return false;
+        }
+
+        titleList.emplace_back(config.title);
+        extensionList.emplace_back(config.fileNameExtension);
+        photoTypeList.emplace_back(config.photoType);
+        photoSubTypeList.emplace_back(config.subtype);
+    }
+
+    // separate Array<PhotoCreationConfig> into Array<string> + Array<string> + Array<number> + Array<number>
+    want.SetParam(CONFIRM_BOX_TITLE_ARRAY, titleList);
+    want.SetParam(CONFIRM_BOX_EXTENSION_ARRAY, extensionList);
+    want.SetParam(CONFIRM_BOX_PHOTO_TYPE_ARRAY, photoTypeList);
+    want.SetParam(CONFIRM_BOX_PHOTO_SUB_TYPE_ARRAY, photoSubTypeList);
+
+    return true;
+}
+
+static bool InitConfirmRequest(OHOS::AAFwk::Want &want, shared_ptr<ConfirmCallback> &callback,
+                               napi_env env, napi_value args[], size_t argsLen)
+{
+    if (argsLen < ARGS_SEVEN) {
+        return false;
+    }
+
+    want.SetElementName(CONFIRM_BOX_PACKAGE_NAME, CONFIRM_BOX_EXT_ABILITY_NAME);
+    want.SetParam(CONFIRM_BOX_EXTENSION_TYPE, CONFIRM_BOX_REQUEST_TYPE);
+
+    // second param: Array<string>
+    if (!ParseAndSetFileUriArray(env, want, args[PARAM1])) {
+        return false;
+    }
+
+    // third param: Array<PhotoCreationConfig>
+    if (!ParseAndSetConfigArray(env, want, args[PARAM2])) {
+        return false;
+    }
+
+    // fourth param: string
+    string bundleName;
+    if (!ParseString(env, args[PARAM3], bundleName)) {
+        return false;
+    }
+    want.SetParam(CONFIRM_BOX_BUNDLE_NAME, bundleName);
+
+    // fifth param: string
+    string appName;
+    if (!ParseString(env, args[PARAM4], appName)) {
+        return false;
+    }
+    want.SetParam(CONFIRM_BOX_APP_NAME, appName);
+
+    // sixth param: string
+    string appId;
+    if (!ParseString(env, args[PARAM5], appId)) {
+        return false;
+    }
+    want.SetParam(CONFIRM_BOX_APP_ID, appId);
+
+    // seventh param: function
+    callback->SetFunc(args[PARAM6]);
+
+    return true;
+}
+#endif
+
+napi_value MediaLibraryNapi::ShowAssetsCreationDialog(napi_env env, napi_callback_info info)
+{
+#ifdef HAS_ACE_ENGINE_PART
+    size_t argc = ARGS_SEVEN;
+    napi_value args[ARGS_SEVEN] = {nullptr};
+    napi_value thisVar = nullptr;
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    CHECK_ARGS(env, napi_get_cb_info(env, info, &argc, args, &thisVar, nullptr), OHOS_INVALID_PARAM_CODE);
+
+    // first param: context, check whether context is abilityContext from stage mode
+    auto context = OHOS::AbilityRuntime::GetStageModeContext(env, args[ARGS_ZERO]);
+    NAPI_ASSERT(env, context != nullptr, "Context is null.");
+
+    std::shared_ptr<OHOS::AbilityRuntime::AbilityContext> abilityContext =
+        OHOS::AbilityRuntime::Context::ConvertTo<OHOS::AbilityRuntime::AbilityContext>(context);
+    NAPI_ASSERT(env, abilityContext != nullptr, "AbilityContext is null.");
+
+    // get uiContent from abilityContext, this api should be called after loadContent, otherwise uiContent is nullptr
+    auto uiContent = abilityContext->GetUIContent();
+    NAPI_ASSERT(env, uiContent != nullptr, "UiContent is null.");
+
+    // set want
+    OHOS::AAFwk::Want want;
+    auto callback = std::make_shared<ConfirmCallback>(env, uiContent);
+    NAPI_ASSERT(env, InitConfirmRequest(want, callback, env, args, sizeof(args)), "Parse input fail.");
+
+    // regist callback and config
+    OHOS::Ace::ModalUIExtensionCallbacks extensionCallback = {
+        [callback](int32_t releaseCode) {
+            callback->OnRelease(releaseCode);
+        },
+        [callback](int32_t resultCode, const AAFwk::Want &result) {
+            callback->OnResult(resultCode, result);
+        },
+        [callback](const AAFwk::WantParams &receive) {
+            callback->OnReceive(receive);
+        },
+        [callback](int32_t code, const std::string &name, const std::string &message) {
+            callback->OnError(code, name, name);
+        },
+    };
+    OHOS::Ace::ModalUIExtensionConfig config;
+    config.isProhibitBack = true;
+
+    int32_t sessionId = uiContent->CreateModalUIExtension(want, extensionCallback, config);
+    NAPI_ASSERT(env, sessionId != DEFAULT_SESSION_ID, "CreateModalUIExtension fail");
+
+    NAPI_INFO_LOG("SessionId is %{public}d.", sessionId);
 
     callback->SetSessionId(sessionId);
     return result;

@@ -25,6 +25,7 @@
 #include "media_file_utils.h"
 #include "media_smart_map_column.h"
 #include "medialibrary_data_manager.h"
+#include "medialibrary_unistore_manager.h"
 #include "mimetype_utils.h"
 #include "result_set_utils.h"
 #include "scanner_utils.h"
@@ -50,6 +51,17 @@ void MediaLibraryUnitTestUtils::Init()
         sceneCode);
     CHECK_AND_RETURN_LOG(ret == E_OK, "InitMediaLibraryMgr failed, ret: %{public}d", ret);
     isValid_ = true;
+}
+
+void MediaLibraryUnitTestUtils::InitUnistore()
+{
+    auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
+    auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
+    abilityContextImpl -> SetStageContext(stageContext);
+    int32_t ret = MediaLibraryUnistoreManager::GetInstance().Init(abilityContextImpl);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("init MediaLibraryUnistoreManager failed");
+    }
 }
 
 void MediaLibraryUnitTestUtils::InitRootDirs()

@@ -94,6 +94,7 @@ ohos_hap("medialibrary_ext_hap") {
   part_name = "prebuilt_hap"
   subsystem_name = "applications"
   module_install_dir = "app/com.ohos.medialibrary.MediaLibraryData"
+  publicity_file = "../../../publicity.xml"
   if (defined(sign_hap_py_path)) {
     certificate_profile =
         "${MEDIALIB_INNERKITS_PATH}/signature/medialib_new.p7b"
@@ -315,9 +316,6 @@ ohos_shared_library("medialibrary_data_extension") {
       boundary_sanitize = true
       stack_protector_ret = true
     }
-  }
-  if (build_variant == "root") {
-    defines += [ "MEDIALIBRARY_MEDIATOOL_ENABLE=1" ]
   }
 
   cflags_cc = [

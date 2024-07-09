@@ -26,6 +26,7 @@ ohos_unittest("Notifytest") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync/include",
     "../get_self_permissions/include",
     "./include",
+    "../medialibrary_unittest_utils/include",
     "../../../../../../../ability/ability_runtime/interfaces/kits/native/appkit/app",
     "../../../../../../../ability/ability_runtime/interfaces/kits/native/ability/ability_runtime",
   ]
@@ -35,6 +36,7 @@ ohos_unittest("Notifytest") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/notify_handler.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/uri_convert_handler.cpp",
     "../get_self_permissions/src/get_self_permissions.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/notify_test.cpp",
     "./src/thumbnail_utils_mock.cpp",
   ]
@@ -51,6 +53,7 @@ ohos_unittest("Notifytest") {
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
     "ability_runtime:dataobs_manager",
     "ability_runtime:runtime",
     "access_token:libaccesstoken_sdk",

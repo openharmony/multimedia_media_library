@@ -21,7 +21,7 @@
 #include <shared_mutex>
 
 #include "ability_connect_callback_stub.h"
-#include "ability_context.h"
+#include "fa_ability_context.h"
 #include "datashare_proxy.h"
 #include "datashare_values_bucket.h"
 #include "medialibrary_sync_operation.h"
@@ -108,12 +108,14 @@ public:
     static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
     static bool IsPureCloudImage(ThumbRdbOpt &opts);
     static void DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData> &data);
+    static bool UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess);
 private:
     static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
     static bool GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
-    static bool UpdateThumbnailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
+    static bool UpdateSuccessState(const ThumbRdbOpt &opts, const ThumbnailData &data);
+    static bool UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
     static int32_t UpdateThumbDbState(const ThumbRdbOpt &opts, const ThumbnailData &data);
     static bool IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
     static bool IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);

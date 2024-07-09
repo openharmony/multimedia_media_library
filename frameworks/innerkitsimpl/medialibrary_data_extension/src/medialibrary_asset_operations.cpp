@@ -578,10 +578,36 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
         return;
     }
 
-    outValues.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, cmd.GetBundleName());
-    outValues.PutString(MediaColumn::MEDIA_OWNER_APPID, PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName()));
+    string bundleName;
+    ValueObject valueBundleName;
+    if (cmd.GetValueBucket().GetObject(MEDIA_DATA_DB_OWNER_PACKAGE, valueBundleName)) {
+        valueBundleName.GetString(bundleName);
+    }
+    if (bundleName.empty()) {
+        bundleName = cmd.GetBundleName();
+    }
+    outValues.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, bundleName);
+
+    string appId;
+    ValueObject valueAppId;
+    if (cmd.GetValueBucket().GetObject(MEDIA_DATA_DB_OWNER_APPID, valueAppId)) {
+        valueAppId.GetString(appId);
+    }
+    if (appId.empty()) {
+        appId = PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName());
+    }
+    outValues.PutString(MediaColumn::MEDIA_OWNER_APPID, appId);
+
     if (!cmd.GetBundleName().empty()) {
-        outValues.PutString(MediaColumn::MEDIA_PACKAGE_NAME, GetAssetPackageName(fileAsset, cmd.GetBundleName()));
+        string packageName;
+        ValueObject valuePackageName;
+        if (cmd.GetValueBucket().GetObject(MEDIA_DATA_DB_PACKAGE_NAME, valuePackageName)) {
+            valuePackageName.GetString(packageName);
+        }
+        if (packageName.empty()) {
+            packageName = GetAssetPackageName(fileAsset, cmd.GetBundleName());
+        }
+        outValues.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
     }
 }
 

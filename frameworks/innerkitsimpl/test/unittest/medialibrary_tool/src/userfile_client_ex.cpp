@@ -53,12 +53,14 @@ enum class MediaToolOperation {
     QUERY,
     CLOSE,
     DELETE,
-    UPDATE
+    UPDATE,
+    LIST
 };
 
 const std::map<MediaToolOperation, std::string> PHOTOOPRN_URI_MAP = {
     { MediaToolOperation::INSERT, TOOL_CREATE_PHOTO },
     { MediaToolOperation::QUERY, TOOL_QUERY_PHOTO },
+    { MediaToolOperation::LIST, TOOL_LIST_PHOTO },
     { MediaToolOperation::CLOSE, TOOL_CLOSE_PHOTO },
     { MediaToolOperation::DELETE, TOOL_DELETE_PHOTO },
     { MediaToolOperation::UPDATE, TOOL_UPDATE_PHOTO }
@@ -67,6 +69,7 @@ const std::map<MediaToolOperation, std::string> PHOTOOPRN_URI_MAP = {
 const std::map<MediaToolOperation, std::string> AUDIOOPRN_URI_MAP = {
     { MediaToolOperation::INSERT, TOOL_CREATE_AUDIO },
     { MediaToolOperation::QUERY, TOOL_QUERY_AUDIO },
+    { MediaToolOperation::LIST, TOOL_LIST_AUDIO },
     { MediaToolOperation::CLOSE, TOOL_CLOSE_AUDIO },
     { MediaToolOperation::DELETE, TOOL_DELETE_AUDIO },
     { MediaToolOperation::UPDATE, TOOL_UPDATE_AUDIO }
@@ -131,6 +134,17 @@ static inline std::string GetQueryUri(const std::string &tableName)
     std::string uri = GetOperation(tableName, MediaToolOperation::QUERY);
     if (uri.empty()) {
         MEDIA_ERR_LOG("get query uri failed. tableName:%{public}s", tableName.c_str());
+        return uri;
+    }
+    uri.append(URI_ARG_FIRST_DELIMITER + URI_API_VERSION);
+    return uri;
+}
+
+static inline std::string GetListUri(const std::string &tableName)
+{
+    std::string uri = GetOperation(tableName, MediaToolOperation::LIST);
+    if (uri.empty()) {
+        MEDIA_ERR_LOG("get list uri failed. tableName:%{public}s", tableName.c_str());
         return uri;
     }
     uri.append(URI_ARG_FIRST_DELIMITER + URI_API_VERSION);
@@ -243,7 +257,7 @@ int32_t UserFileClientEx::Query(const std::string &tableName, const std::string 
         MEDIA_ERR_LOG("query failed, uri:%{public}s", uri.c_str());
         return Media::E_ERR;
     }
-    std::string queryUriStr = GetQueryUri(tableName);
+    std::string queryUriStr = GetListUri(tableName);
     if (queryUriStr.empty()) {
         MEDIA_ERR_LOG("query failed. queryUriStr:empty, tableName:%{public}s", tableName.c_str());
         return Media::E_ERR;
