@@ -1124,7 +1124,7 @@ static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
     if (err < 0) {
         MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
     }
-        if (hiddenState) {
+    if (hiddenState) {
         updateResult[UpdateAlbumType::UPDATE_HIDDEN_ALBUM] += changedRows;
     } else {
         updateResult[UpdateAlbumType::UPDATE_SYSTEM_ALBUM] += changedRows;
@@ -1477,25 +1477,34 @@ static void UpdateUserAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
     ForEachRow(rdbStore, albumResult, true, updateResult, UpdateUserAlbumIfNeeded);
 }
 
-static void UpdateSysAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
-    std::unordered_map<int32_t, int32_t> &updateResult)
+void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
+    std::unordered_map<int32_t, int32_t> &updateResult, const vector<string> &subtypes)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSysAlbumHiddenState");
 
-    auto albumResult = GetSystemAlbum(rdbStore, {
-        to_string(PhotoAlbumSubType::IMAGE),
-        to_string(PhotoAlbumSubType::VIDEO),
-        to_string(PhotoAlbumSubType::FAVORITE),
-        to_string(PhotoAlbumSubType::SCREENSHOT),
-        to_string(PhotoAlbumSubType::CAMERA),
-    }, {
+    shared_ptr<ResultSet> albumResult = nullptr;
+
+    const vector<string> columns = {
         PhotoAlbumColumns::ALBUM_ID,
         PhotoAlbumColumns::ALBUM_SUBTYPE,
         PhotoAlbumColumns::CONTAINS_HIDDEN,
         PhotoAlbumColumns::HIDDEN_COUNT,
         PhotoAlbumColumns::HIDDEN_COVER,
-    });
+    };
+
+    if (subtypes.empty()) {
+        albumResult = GetSystemAlbum(rdbStore, {
+            to_string(PhotoAlbumSubType::IMAGE),
+            to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::FAVORITE),
+            to_string(PhotoAlbumSubType::SCREENSHOT),
+            to_string(PhotoAlbumSubType::CAMERA),
+        }, columns);
+    } else {
+        albumResult = GetSystemAlbum(rdbStore, subtypes, columns);
+    }
+
     if (albumResult == nullptr) {
         return;
     }
