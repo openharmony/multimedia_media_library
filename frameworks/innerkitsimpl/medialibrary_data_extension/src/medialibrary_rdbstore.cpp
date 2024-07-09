@@ -2676,6 +2676,16 @@ static void AddDisplayNameIndex(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void AddPortraitCoverSelectionColumn(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start add portrait cover selection column");
+
+    const vector<string> sqls = { "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_X +
+        " REAL, " + "ADD COLUMN " + BEAUTY_BOUNDER_Y + " REAL, " + "ADD COLUMN " + BEAUTY_BOUNDER_WIDTH + " REAL, " +
+        "ADD COLUMN " + BEAUTY_BOUNDER_HEIGHT + " REAL, " + "ADD COLUMN " + FACE_AESTHETICS_SCORE + " REAL" };
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
@@ -2700,6 +2710,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < PHOTOS_CREATE_DISPLAYNAME_INDEX) {
         AddDisplayNameIndex(store);
+    }
+
+    if (oldVersion < VERSION_PORTRAIT_COVER_SELECTION_ADD_COLUMNS) {
+        AddPortraitCoverSelectionColumn(store);
     }
 }
 
