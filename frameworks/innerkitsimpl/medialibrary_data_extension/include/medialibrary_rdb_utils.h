@@ -51,6 +51,8 @@ public:
         std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &uris);
 
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);
+    EXPORT static void UpdateSysAlbumHiddenState(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        std::unordered_map<int32_t, int32_t> &updateResult, const std::vector<std::string> &subtypes = {});
     EXPORT static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         std::unordered_map<int32_t, int32_t> &updateResult);
     EXPORT static void UpdateAnalysisAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,

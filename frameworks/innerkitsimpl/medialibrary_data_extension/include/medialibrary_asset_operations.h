@@ -128,7 +128,8 @@ protected:
     static int32_t CloseAsset(const std::shared_ptr<FileAsset> &fileAsset, bool isCreateThumbSync = false);
     static void InvalidateThumbnail(const std::string &fileId, int32_t mediaType);
     static int32_t SendTrashNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
-    static void SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId, const std::string &extraUri = "");
+    static void SendFavoriteNotify(MediaLibraryCommand &cmd, std::shared_ptr<FileAsset> &fileAsset,
+        const std::string &extraUri = "");
     static int32_t SendModifyUserCommentNotify(MediaLibraryCommand &cmd, int32_t rowId,
         const std::string &extraUri = "");
     static int32_t SetPendingStatus(MediaLibraryCommand &cmd);

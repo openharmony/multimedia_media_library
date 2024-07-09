@@ -809,6 +809,11 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Failed to set favorite, err: %{public}d", updatedRows);
 
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw(), { to_string(PhotoAlbumSubType::FAVORITE) });
+    unordered_map<int32_t, int32_t> updateResult;
+    MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult,
+        { to_string(PhotoAlbumSubType::FAVORITE) });
+
     auto watch = MediaLibraryNotify::GetInstance();
     int favAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::FAVORITE);
     if (favAlbumId > 0) {
@@ -871,7 +876,7 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE,
-        PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME };
+        PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, MediaColumn::MEDIA_HIDDEN };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, columns);
     if (fileAsset == nullptr) {
@@ -909,7 +914,7 @@ int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
     if (errCode == E_OK) {
         return rowId;
     }
-    SendFavoriteNotify(cmd, fileAsset->GetId(), extraUri);
+    SendFavoriteNotify(cmd, fileAsset, extraUri);
     SendModifyUserCommentNotify(cmd, fileAsset->GetId(), extraUri);
 
     if (isNeedScan) {
@@ -950,7 +955,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV9(MediaLibraryCommand &cmd)
         PhotoColumn::MEDIA_FILE_PATH,
         PhotoColumn::MEDIA_TYPE,
         PhotoColumn::MEDIA_NAME,
-        PhotoColumn::MEDIA_RELATIVE_PATH
+        PhotoColumn::MEDIA_RELATIVE_PATH,
+        MediaColumn::MEDIA_HIDDEN
     };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, columns);
@@ -987,7 +993,7 @@ int32_t MediaLibraryPhotoOperations::UpdateV9(MediaLibraryCommand &cmd)
     if (errCode == E_OK) {
         return rowId;
     }
-    SendFavoriteNotify(cmd, fileAsset->GetId());
+    SendFavoriteNotify(cmd, fileAsset);
     auto watch = MediaLibraryNotify::GetInstance();
     watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId())),
         NotifyType::NOTIFY_UPDATE);
