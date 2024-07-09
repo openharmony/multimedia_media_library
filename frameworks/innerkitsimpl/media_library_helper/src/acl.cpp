@@ -355,6 +355,7 @@ Acl AclFromFile(const std::string& file)
         acl.DeSerialize(buf, BUF_SIZE);
         return acl;
     }
+    MEDIA_INFO_LOG("Failed to get ACL_XATTR_ACCESS from file: %{public}s", file.c_str());
     return AclFromMode(file);
 }
 
@@ -383,6 +384,14 @@ int32_t Acl::EntryInsert(AclXattrEntry& entry, const std::string& path, const ch
         {
             .tag = ACL_TAG::OTHER,
             .perm = S_IXOTH,
+            .id = ACL_UNDEFINED_ID,
+        }
+    );
+
+    acl.InsertEntry(
+        {
+            .tag = ACL_TAG::GROUP_OBJ,
+            .perm = S_IRGRP >> 3,
             .id = ACL_UNDEFINED_ID,
         }
     );

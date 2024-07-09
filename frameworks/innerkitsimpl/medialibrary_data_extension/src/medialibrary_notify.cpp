@@ -90,6 +90,10 @@ static int SendAlbumSub(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
         return E_PARCEL_GET_SIZE_FAILED;
     }
     auto *uBuf = new (std::nothrow) uint8_t[parcel.GetDataSize()];
+    if (uBuf == nullptr) {
+        MEDIA_ERR_LOG("parcel.GetDataSize is null");
+        return E_PARCEL_GET_SIZE_FAILED;
+    }
     int ret = memcpy_s(uBuf, parcel.GetDataSize(), reinterpret_cast<uint8_t *>(buf), parcel.GetDataSize());
     if (ret != 0) {
         MEDIA_ERR_LOG("Parcel data copy failed, err = %{public}d", ret);

@@ -97,6 +97,7 @@ public:
     size_t GetMovingPhotoVideoSize() const;
     std::string GetCacheMovingPhotoVideoName() const;
     void RecordChangeOperation(AssetChangeOperation changeOperation);
+    uint32_t FetchAddCacheFileId();
     void SetCacheFileName(std::string& fileName);
     void SetCacheMovingPhotoVideoName(std::string& fileName);
     int32_t SubmitCache(bool isCreation, bool isSetEffectMode);
@@ -141,6 +142,7 @@ private:
     void SetNewFileAsset(int32_t id, const std::string& uri);
 
     static thread_local napi_ref constructor_;
+    static std::atomic<uint32_t> cacheFileId_;
     sptr<PhotoProxy> photoProxy_ = nullptr;
     std::shared_ptr<FileAsset> fileAsset_ = nullptr;
     std::shared_ptr<MediaAssetEditData> editData_ = nullptr;

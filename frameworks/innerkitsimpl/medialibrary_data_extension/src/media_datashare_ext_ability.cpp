@@ -69,8 +69,6 @@ namespace AbilityRuntime {
 using namespace OHOS::AppExecFwk;
 using DataObsMgrClient = OHOS::AAFwk::DataObsMgrClient;
 
-const string SECURITY_COMPONENT_MODE = "rw";
-
 MediaDataShareExtAbility* MediaDataShareExtAbility::Create(const unique_ptr<Runtime>& runtime)
 {
     return new MediaDataShareExtAbility(static_cast<Runtime&>(*runtime));
@@ -222,7 +220,9 @@ static inline bool ContainsFlag(const string &mode, const char flag)
 static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,
     const bool permGranted, PermissionUsedType type)
 {
-    if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO)) {
+    if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) ||
+        (cmd.GetOprnObject() == OperationObject::THUMBNAIL) ||
+        (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC)) {
         if (mode.find("r") != string::npos) {
             PermissionUtils::CollectPermissionInfo(PERM_READ_IMAGEVIDEO, permGranted, type);
         }
@@ -235,7 +235,7 @@ static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,
 static bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
 {
     if (!PermissionUtils::IsRootShell() &&
-        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::QUERY)) {
+        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::TOOL_QUERY_BY_DISPLAY_NAME)) {
         MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
         return false;
     }
@@ -264,7 +264,9 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     }
     vector<string> perms;
     FillV10Perms(mediaType, containsRead, containsWrite, perms);
-    if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO)) {
+    if ((cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) ||
+        (cmd.GetOprnObject() == OperationObject::THUMBNAIL) ||
+        (cmd.GetOprnObject() == OperationObject::THUMBNAIL_ASTC)) {
         return PermissionUtils::CheckPhotoCallerPermission(perms)? E_SUCCESS : E_PERMISSION_DENIED;
     }
     int32_t err = (mediaType == MEDIA_TYPE_FILE) ?
@@ -320,32 +322,6 @@ static int32_t SystemApiCheck(MediaLibraryCommand &cmd)
     }
     return E_SUCCESS;
 }
-
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
-static int32_t MediaToolNativeSACheck(MediaLibraryCommand &cmd)
-{
-    static const set<OperationObject> MEDIATOOL_OBJECT = {
-        OperationObject::TOOL_PHOTO,
-        OperationObject::TOOL_AUDIO
-    };
-    static const set<Media::OperationType> MEDIATOOL_TYPES = {
-        Media::OperationType::DELETE_TOOL
-    };
-
-    OperationObject oprnObject = cmd.GetOprnObject();
-    Media::OperationType oprnType = cmd.GetOprnType();
-    if (MEDIATOOL_OBJECT.find(oprnObject) != MEDIATOOL_OBJECT.end() ||
-        MEDIATOOL_TYPES.find(oprnType) != MEDIATOOL_TYPES.end()) {
-        if (!PermissionUtils::IsNativeSAApp()) {
-            MEDIA_ERR_LOG("Native sa check failed!");
-            return E_CHECK_NATIVE_SA_FAIL;
-        }
-    } else {
-        return E_NEED_FURTHER_CHECK;
-    }
-    return E_SUCCESS;
-}
-#endif
 
 static inline int32_t HandleMediaVolumePerm()
 {
@@ -431,6 +407,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::VISION_SALIENCY,
         OperationObject::VISION_HEAD,
         OperationObject::VISION_POSE,
+        OperationObject::VISION_TOTAL,
         OperationObject::GEO_DICTIONARY,
         OperationObject::GEO_KNOWLEDGE,
         OperationObject::GEO_PHOTO,
@@ -537,13 +514,6 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     if (err != E_SUCCESS) {
         return err;
     }
-#ifdef MEDIALIBRARY_MEDIATOOL_ENABLE
-    err = MediaToolNativeSACheck(cmd);
-    if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
-        UnifyOprnObject(cmd);
-        return err;
-    }
-#endif
     err = MediatoolPermCheck(cmd);
     if (err == E_SUCCESS || (err != E_SUCCESS && err != E_NEED_FURTHER_CHECK)) {
         UnifyOprnObject(cmd);
@@ -581,9 +551,10 @@ static string GetClientAppId()
     return PermissionUtils::GetAppIdByBundleName(bundleName);
 }
 
-static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd)
+static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string &mode)
 {
     auto ret = false;
+    string unifyMode = mode;
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE || cmd.GetTableName() == AudioColumn::AUDIOS_TABLE ||
         cmd.GetTableName() == MEDIALIBRARY_TABLE) {
         std::vector<std::string> columns;
@@ -602,7 +573,7 @@ static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd)
         queryResultSet->GetRowCount(count);
         if (count != 0) {
             ret = true;
-            CollectPermissionInfo(cmd, SECURITY_COMPONENT_MODE, true,
+            CollectPermissionInfo(cmd, unifyMode, true,
                 PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
         }
     }
@@ -655,9 +626,9 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
         }
         if (err != E_OK) {
             CollectPermissionInfo(command, unifyMode, false, PermissionUsedTypeValue::PICKER_TYPE);
-            if (!CheckIsOwner(uri, command)) {
+            if (!CheckIsOwner(uri, command, unifyMode)) {
                 MEDIA_ERR_LOG("Permission Denied! err = %{public}d", err);
-                CollectPermissionInfo(command, SECURITY_COMPONENT_MODE, false,
+                CollectPermissionInfo(command, unifyMode, false,
                     PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
                 return err;
             }

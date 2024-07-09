@@ -150,7 +150,7 @@ int UpgradeRestore::StringToInt(const std::string& str)
     int base = 0;
     int num = 0;
     int sign = 1;
-    int len = str.length();
+    ssize_t len = static_cast<ssize_t>(str.length());
     while (num < len && str[num] == ' ') {
         num++;
     }

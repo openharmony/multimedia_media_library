@@ -53,6 +53,7 @@ namespace OHOS {
 namespace Media {
 static const std::string MEDIA_ASSET_MANAGER_CLASS = "MediaAssetManager";
 static std::mutex multiStagesCaptureLock;
+static std::mutex registerTaskLock;
 
 const int32_t LOW_QUALITY_IMAGE = 1;
 const int32_t HIGH_QUALITY_IMAGE = 0;
@@ -497,14 +498,15 @@ static std::string GenerateRequestId()
 
 void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env, MediaAssetManagerAsyncContext *asyncContext)
 {
-    std::lock_guard<std::mutex> lock(multiStagesCaptureLock);
     auto dataObserver = std::make_shared<MultiStagesTaskObserver>(asyncContext->fileId);
     Uri uri(asyncContext->photoUri);
+    std::unique_lock<std::mutex> registerLock(registerTaskLock);
     if (multiStagesObserverMap.find(asyncContext->photoUri) == multiStagesObserverMap.end()) {
         UserFileClient::RegisterObserverExt(uri,
             static_cast<std::shared_ptr<DataShare::DataShareObserver>>(dataObserver), false);
         multiStagesObserverMap.insert(std::make_pair(asyncContext->photoUri, dataObserver));
     }
+    registerLock.unlock();
 
     InsertDataHandler(NotifyMode::WAIT_FOR_HIGH_QUALITY, env, asyncContext);
 

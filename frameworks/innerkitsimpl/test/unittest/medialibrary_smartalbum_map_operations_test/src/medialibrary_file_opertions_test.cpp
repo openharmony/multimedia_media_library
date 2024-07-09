@@ -48,9 +48,6 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_HandleFileOperatio
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CreateFileOperation_test_001, TestSize.Level0)
 {
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
-
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibraryFileOperations::CreateFileOperation(cmd);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
@@ -66,8 +63,6 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CreateFileOperatio
     cmd.SetValueBucket(values);
     ret = MediaLibraryFileOperations::CreateFileOperation(cmd);
     EXPECT_EQ(ret, E_INVALID_ARGUMENTS);
-
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CloseFileOperation_test_001, TestSize.Level0)
@@ -76,8 +71,6 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CloseFileOperation
     int32_t ret = MediaLibraryFileOperations::CloseFileOperation(cmd);
     EXPECT_EQ(ret, E_INVALID_FILEID);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
     ValuesBucket values;
@@ -85,7 +78,6 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CloseFileOperation
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::CLOSE, values);
     ret = MediaLibraryFileOperations::CloseFileOperation(cmd1);
     EXPECT_EQ(ret, E_INVALID_FILEID);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_ModifyFileOperation_test_001, TestSize.Level0)
@@ -94,17 +86,13 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_ModifyFileOperatio
     int32_t ret = MediaLibraryFileOperations::ModifyFileOperation(cmd);
     EXPECT_EQ(ret, E_INVALID_FILEID);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
-
     ValuesBucket values;
-    values.PutInt("file_id", 1);
+    values.PutInt("file_id", -1);
     values.PutString(MEDIA_DATA_DB_NAME, "medialibrary_ModifyFileOperation_test_001");
     MediaLibraryCommand cmd3(OperationObject::FILESYSTEM_ASSET, OperationType::GETCAPACITY, values);
     cmd3.SetValueBucket(values);
     ret = MediaLibraryFileOperations::ModifyFileOperation(cmd3);
     EXPECT_EQ(ret, E_INVALID_FILEID);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_GetAlbumCapacityOperation_test_001, TestSize.Level0)
@@ -113,13 +101,10 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_GetAlbumCapacityOp
     int32_t ret = MediaLibraryFileOperations::GetAlbumCapacityOperation(cmd);
     EXPECT_EQ(ret, E_FAIL);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
     ValuesBucket values;
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::GETCAPACITY, values);
     ret = MediaLibraryFileOperations::GetAlbumCapacityOperation(cmd1);
     EXPECT_EQ(ret, E_FAIL);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CopyFileOperation_test_001, TestSize.Level0)
@@ -128,17 +113,15 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_CopyFileOperation_
     int32_t ret = MediaLibraryFileOperations::CopyFileOperation(cmd);
     EXPECT_EQ(ret, E_INVALID_URI);
     
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
     ValuesBucket values;
     MediaLibraryCommand cmd1(OperationObject::FILESYSTEM_ASSET, OperationType::GETCAPACITY, values);
     ret = MediaLibraryFileOperations::GetAlbumCapacityOperation(cmd1);
     EXPECT_EQ(ret, E_FAIL);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryFileOperation_test_001, TestSize.Level0)
 {
+    MediaLibraryUnistoreManager::GetInstance().Stop();
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
@@ -146,8 +129,8 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryFileOperation
     auto resultset = MediaLibraryFileOperations::QueryFileOperation(cmd, columns);
     EXPECT_EQ((resultset != nullptr), false);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
+
     columns = { MEDIA_DATA_DB_THUMBNAIL, MEDIA_DATA_DB_LCD };
     MediaLibraryCommand cmd1(uri, OperationType::QUERY);
     cmd1.GetAbsRdbPredicates()->BeginWrap()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE))
@@ -157,19 +140,19 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryFileOperation
         ->OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     resultset = MediaLibraryFileOperations::QueryFileOperation(cmd1, columns);
     EXPECT_EQ((resultset != nullptr), true);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryFavFiles_test_001, TestSize.Level0)
 {
+    MediaLibraryUnistoreManager::GetInstance().Stop();
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
     auto resultset = MediaLibraryFileOperations::QueryFavFiles(cmd);
     EXPECT_EQ((resultset != nullptr), false);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
+
     MediaLibraryCommand cmd1(uri, OperationType::QUERY);
     cmd1.GetAbsRdbPredicates()->BeginWrap()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE))
         ->Or()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO))->EndWrap()
@@ -178,19 +161,19 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryFavFiles_test
         ->OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     resultset = MediaLibraryFileOperations::QueryFavFiles(cmd1);
     EXPECT_EQ((resultset != nullptr), true);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 
 HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryTrashFiles_test_001, TestSize.Level0)
 {
+    MediaLibraryUnistoreManager::GetInstance().Stop();
     string queryUri = MEDIALIBRARY_DATA_URI;
     Uri uri(queryUri);
     MediaLibraryCommand cmd(uri, OperationType::QUERY);
     auto resultset = MediaLibraryFileOperations::QueryTrashFiles(cmd);
     EXPECT_EQ((resultset != nullptr), false);
 
-    auto context = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
-    MediaLibraryUnistoreManager::GetInstance().Init(context);
+    MediaLibraryUnitTestUtils::InitUnistore();
+
     MediaLibraryCommand cmd1(uri, OperationType::QUERY);
     cmd1.GetAbsRdbPredicates()->BeginWrap()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_IMAGE))
         ->Or()->EqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO))->EndWrap()
@@ -199,7 +182,6 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialibrary_QueryTrashFiles_te
         ->OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     resultset = MediaLibraryFileOperations::QueryTrashFiles(cmd1);
     EXPECT_EQ((resultset != nullptr), true);
-    MediaLibraryUnistoreManager::GetInstance().Stop();
 }
 }
 }

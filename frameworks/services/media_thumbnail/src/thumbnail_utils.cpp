@@ -734,7 +734,11 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         MEDIA_DATA_DB_ORIENTATION,
     };
     RdbPredicates rdbPredicates(opts.table);
-    rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
+    rdbPredicates.BeginWrap()
+        ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0")
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "2")
+        ->EndWrap();
     rdbPredicates.BeginWrap()
         ->BeginWrap()
         ->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->EqualTo(PhotoColumn::PHOTO_POSITION, "3")
@@ -757,9 +761,6 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
 
@@ -2064,7 +2065,8 @@ bool ThumbnailUtils::GetLocalThumbSize(const ThumbnailData &data, const Thumbnai
             break;
     }
     uint32_t err = 0;
-    unique_ptr<ImageSource> imageSource = LoadImageSource(tmpPath, err);
+    SourceOptions opts;
+    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(tmpPath, opts, err);
     if (err != E_OK || imageSource == nullptr) {
         MEDIA_ERR_LOG("Failed to LoadImageSource for path:%{public}s", tmpPath.c_str());
         return false;
