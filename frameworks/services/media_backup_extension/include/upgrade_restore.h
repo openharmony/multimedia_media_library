@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_UPGRADE_RESTORE_H
 
 #include "base_restore.h"
+#include "burst_key_generator.h"
 #include <libxml/tree.h>
 #include <libxml/parser.h>
 
@@ -96,6 +97,7 @@ private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;
     std::shared_ptr<NativeRdb::RdbStore> externalRdb_;
     std::shared_ptr<NativeRdb::RdbStore> audioRdb_;
+    BurstKeyGenerator burstKeyGenerator_;
     std::string galleryDbPath_;
     std::string filePath_;
     std::string externalDbPath_;

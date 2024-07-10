@@ -38,6 +38,7 @@ ohos_shared_library("mediabackup") {
     "./src/medialibrary_backup_napi.cpp",
     "./src/native_module_ohos_medialibrary_backup.cpp",
     "./src/upgrade_restore.cpp",
+    "./src/burst_key_generator.cpp",
   ]
 
   ldflags = [ "-Wl" ]
@@ -68,6 +69,8 @@ ohos_shared_library("mediabackup") {
     "relational_store:rdb_data_share_adapter",
   ]
 
+  public_external_deps = [ "e2fsprogs:libext2_uuid" ]
+ 
   defines = []
 
   sanitize = {

@@ -113,6 +113,8 @@ public:
     static const std::string PHOTO_LCD_SIZE EXPORT;
     static const std::string PHOTO_THUMB_SIZE EXPORT;
     static const std::string PHOTO_IS_TEMP EXPORT;
+    static const std::string PHOTO_BURST_COVER_LEVEL EXPORT;
+    static const std::string PHOTO_BURST_KEY EXPORT;
 
     // Photo-only default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
