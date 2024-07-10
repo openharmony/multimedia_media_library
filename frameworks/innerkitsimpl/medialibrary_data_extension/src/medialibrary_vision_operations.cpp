@@ -224,8 +224,9 @@ static void ActivelyStartAnalysisService(const int fileId)
     MessageParcel data;
     MessageParcel reply;
     MessageOption option(MessageOption::TF_SYNC);
-    data.WriteInt32(static_cast<int32_t>(fileId));
     MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
+    data.WriteInterfaceToken(mediaActivelyCallingAnalyse.GetDescriptor());
+    data.WriteInt32(static_cast<int32_t>(fileId));
     if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
         MEDIA_ERR_LOG("Actively Calling Analyse Fail");
     }
