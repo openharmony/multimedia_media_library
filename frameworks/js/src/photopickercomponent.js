@@ -15,18 +15,24 @@
 
 var __decorate = this && this.__decorate || function (e, o, t, i) {
     var n, r = arguments.length, l = r < 3 ? o : null === i ? i = Object.getOwnPropertyDescriptor(o, t) : i;
-    if ("object" === typeof Reflect && "function" === typeof Reflect.decorate) l = Reflect.decorate(e, o, t, i); else for (var s = e.length - 1;s >= 0; s--) (n = e[s]) && (l = (r < 3 ? n(l) : r > 3 ? n(o, t, l) : n(o, t)) || l);
-    return r > 3 && l && Object.defineProperty(o, t, l), l
+    if ('object' === typeof Reflect && 'function' === typeof Reflect.decorate) {
+        l = Reflect.decorate(e, o, t, i);
+    } else {
+        for (var s = e.length - 1;s >= 0; s--) {
+            (n = e[s]) && (l = (r < 3 ? n(l) : r > 3 ? n(o, t, l) : n(o, t)) || l);
+        }
+    }
+    return r > 3 && l && Object.defineProperty(o, t, l), l;
 };
 const photoAccessHelper = requireNapi('file.photoAccessHelper');
-const FILTER_MEDIA_TYPE_ALL = "FILTER_MEDIA_TYPE_ALL";
-const FILTER_MEDIA_TYPE_IMAGE = "FILTER_MEDIA_TYPE_IMAGE";
-const FILTER_MEDIA_TYPE_VIDEO = "FILTER_MEDIA_TYPE_VIDEO";
+const FILTER_MEDIA_TYPE_ALL = 'FILTER_MEDIA_TYPE_ALL';
+const FILTER_MEDIA_TYPE_IMAGE = 'FILTER_MEDIA_TYPE_IMAGE';
+const FILTER_MEDIA_TYPE_VIDEO = 'FILTER_MEDIA_TYPE_VIDEO';
 
 export class PhotoPickerComponent extends ViewPU {
     constructor(e, o, t, i = -1, n = void 0) {
         super(e, t, i);
-        "function" === typeof n && (this.paramsGenerator_ = n);
+        'function' === typeof n && (this.paramsGenerator_ = n);
         this.pickerOptions = void 0;
         this.onSelect = void 0;
         this.onDeselect = void 0;
@@ -34,10 +40,10 @@ export class PhotoPickerComponent extends ViewPU {
         this.onEnterPhotoBrowser = void 0;
         this.onExitPhotoBrowser = void 0;
         this.onPickerControllerReady = void 0;
-        this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, "pickerController");
+        this.__pickerController = new SynchedPropertyNesedObjectPU(o.pickerController, this, 'pickerController');
         this.proxy = void 0;
         this.setInitiallyProvidedValue(o);
-        this.declareWatch("pickerController", this.onChanged)
+        this.declareWatch('pickerController', this.onChanged);
     }
 
     setInitiallyProvidedValue(e) {
@@ -49,65 +55,69 @@ export class PhotoPickerComponent extends ViewPU {
         void 0 !== e.onExitPhotoBrowser && (this.onExitPhotoBrowser = e.onExitPhotoBrowser);
         void 0 !== e.onPickerControllerReady && (this.onPickerControllerReady = e.onPickerControllerReady);
         this.__pickerController.set(e.pickerController);
-        void 0 !== e.proxy && (this.proxy = e.proxy)
+        void 0 !== e.proxy && (this.proxy = e.proxy);
     }
 
     updateStateVars(e) {
-        this.__pickerController.set(e.pickerController)
+        this.__pickerController.set(e.pickerController);
     }
 
     purgeVariableDependenciesOnElmtId(e) {
-        this.__pickerController.purgeDependencyOnElmtId(e)
+        this.__pickerController.purgeDependencyOnElmtId(e);
     }
 
     aboutToBeDeleted() {
         this.__pickerController.aboutToBeDeleted();
         SubscriberManager.Get().delete(this.id__());
-        this.aboutToBeDeletedInternal()
+        this.aboutToBeDeletedInternal();
     }
 
     get pickerController() {
-        return this.__pickerController.get()
+        return this.__pickerController.get();
     }
 
     onChanged() {
         var e;
-        if (!this.proxy) return;
+        if (!this.proxy) {
+            return;
+        }
         let o = null === (e = this.pickerController) || void 0 === e ? void 0 : e.data;
-        if (null == o ? void 0 : o.has("SET_SELECTED_URIS")) {
-            this.proxy.send({ selectUris: null == o ? void 0 : o.get("SET_SELECTED_URIS") });
-            console.info("PhotoPickerComponent onChanged: SET_SELECTED_URIS")
-        } else if (null == o ? void 0 : o.has("SET_ALBUM_URI")) {
-            this.proxy.send({ albumUri: null == o ? void 0 : o.get("SET_ALBUM_URI") });
-            console.info("PhotoPickerComponent onChanged: SET_ALBUM_URI")
-        } else if (null == o ? void 0 : o.has("SET_MAX_SELECT_COUNT")) {
-            let e = null == o ? void 0 : o.get("SET_MAX_SELECT_COUNT");
+        if (null == o ? void 0 : o.has('SET_SELECTED_URIS')) {
+            this.proxy.send({ selectUris: null == o ? void 0 : o.get('SET_SELECTED_URIS') });
+            console.info('PhotoPickerComponent onChanged: SET_SELECTED_URIS');
+        } else if (null == o ? void 0 : o.has('SET_ALBUM_URI')) {
+            this.proxy.send({ albumUri: null == o ? void 0 : o.get('SET_ALBUM_URI') });
+            console.info('PhotoPickerComponent onChanged: SET_ALBUM_URI');
+        } else if (null == o ? void 0 : o.has('SET_MAX_SELECT_COUNT')) {
+            let e = null == o ? void 0 : o.get('SET_MAX_SELECT_COUNT');
             let t = null == e ? void 0 : e.data;
             this.proxy.send({
                 totalCount: null == t ? void 0 : t.get(MaxCountType.TOTAL_MAX_COUNT),
                 photoCount: null == t ? void 0 : t.get(MaxCountType.PHOTO_MAX_COUNT),
                 videoCount: null == t ? void 0 : t.get(MaxCountType.VIDEO_MAX_COUNT)
             });
-            console.info("PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT")
-        } else console.info("PhotoPickerComponent onChanged: other case")
+            console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
+        } else {
+            console.info('PhotoPickerComponent onChanged: other case');
+        }
     }
 
     initialRender() {
         this.observeComponentCreation2(((e, o) => {
             Row.create();
-            Row.height("100%")
+            Row.height('100%');
         }), Row);
         this.observeComponentCreation2(((e, o) => {
             Column.create();
-            Column.width("100%")
+            Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
             var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _;
             UIExtensionComponent.create({
                 parameters: {
-                    "ability.want.params.uiExtensionTargetType": "photoPicker",
-                    uri: "multipleselect",
-                    targetPage: "photoPage",
+                    'ability.want.params.uiExtensionTargetType': 'photoPicker',
+                    uri: 'multipleselect',
+                    targetPage: 'photoPage',
                     filterMediaType: this.convertMIMETypeToFilterType(null === (t = this.pickerOptions) || void 0 === t ? void 0 : t.MIMEType),
                     maxSelectNumber: null === (i = this.pickerOptions) || void 0 === i ? void 0 : i.maxSelectNumber,
                     isPhotoTakingSupported: null === (n = this.pickerOptions) || void 0 === n ? void 0 : n.isPhotoTakingSupported,
@@ -132,51 +142,59 @@ export class PhotoPickerComponent extends ViewPU {
                     isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported
                 }
             });
-            UIExtensionComponent.height("100%");
-            UIExtensionComponent.width("100%");
+            UIExtensionComponent.height('100%');
+            UIExtensionComponent.width('100%');
             UIExtensionComponent.onRemoteReady((e => {
                 this.proxy = e;
-                console.info("PhotoPickerComponent onRemoteReady")
+                console.info('PhotoPickerComponent onRemoteReady');
             }));
             UIExtensionComponent.onReceive((e => {
                 let o = e;
-                this.handleOnReceive(o)
+                this.handleOnReceive(o);
             }));
             UIExtensionComponent.onResult((e => {
-                console.info("PhotoPickerComponent onResult")
+                console.info('PhotoPickerComponent onResult');
             }));
             UIExtensionComponent.onError((() => {
-                console.info("PhotoPickerComponent onError")
+                console.info('PhotoPickerComponent onError');
             }));
             UIExtensionComponent.onRelease((e => {
-                console.info("PhotoPickerComponent onRelease")
-            }))
+                console.info('PhotoPickerComponent onRelease');
+            }));
         }), UIExtensionComponent);
         Column.pop();
-        Row.pop()
+        Row.pop();
     }
 
     handleOnReceive(e) {
         let o = e.dataType;
-        console.info("PhotoPickerComponent onReceive: dataType = " + o);
-        if ("selectOrDeselect" === o) this.handleSelectOrDeselect(e); else if ("itemClick" === o) this.handleItemClick(e); else if ("onPhotoBrowserStateChanged" === o) this.handleEnterOrExitPhotoBrowser(e); else if ("remoteReady" === o) {
+        console.info('PhotoPickerComponent onReceive: dataType = ' + o);
+        if ('selectOrDeselect' === o) {
+            this.handleSelectOrDeselect(e);
+        } else if ('itemClick' === o) {
+            this.handleItemClick(e); 
+        } else if ('onPhotoBrowserStateChanged' === o) {
+            this.handleEnterOrExitPhotoBrowser(e);
+        } else if ('remoteReady' === o) {
             if (this.onPickerControllerReady) {
                 this.onPickerControllerReady();
-                console.info("PhotoPickerComponent onReceive: onPickerControllerReady")
+                console.info('PhotoPickerComponent onReceive: onPickerControllerReady');
             }
-        } else console.info("PhotoPickerComponent onReceive: other case");
-        console.info("PhotoPickerComponent onReceive" + JSON.stringify(e))
+        } else {
+            console.info('PhotoPickerComponent onReceive: other case');
+        }
+        console.info('PhotoPickerComponent onReceive' + JSON.stringify(e));
     }
 
     handleSelectOrDeselect(e) {
         if (e.isSelect) {
             if (this.onSelect) {
                 this.onSelect(e["select-item-list"]);
-                console.info("PhotoPickerComponent onReceive: onSelect")
+                console.info('PhotoPickerComponent onReceive: onSelect');
             }
         } else if (this.onDeselect) {
             this.onDeselect(e["select-item-list"]);
-            console.info("PhotoPickerComponent onReceive: onDeselect")
+            console.info('PhotoPickerComponent onReceive: onDeselect');
         }
     }
 
@@ -184,10 +202,10 @@ export class PhotoPickerComponent extends ViewPU {
         if (this.onItemClicked) {
             let o = ClickType.SELECTED;
             let t = e.clickType;
-            "select" === t ? o = ClickType.SELECTED : "deselect" === t ? o = ClickType.DESELECTED : console.info("PhotoPickerComponent onReceive: other clickType");
+            'select' === t ? o = ClickType.SELECTED : 'deselect' === t ? o = ClickType.DESELECTED : console.info('PhotoPickerComponent onReceive: other clickType');
             let i = new ItemInfo;
             let n = e.itemType;
-            "thumbnail" === n ? i.itemType = ItemType.THUMBNAIL : "camera" === n ? i.itemType = ItemType.CAMERA : console.info("PhotoPickerComponent onReceive: other itemType");
+            'thumbnail' === n ? i.itemType = ItemType.THUMBNAIL : 'camera' === n ? i.itemType = ItemType.CAMERA : console.info('PhotoPickerComponent onReceive: other itemType');
             i.uri = e.uri;
             i.mimeType = e.mimeType;
             i.width = e.width;
@@ -195,15 +213,15 @@ export class PhotoPickerComponent extends ViewPU {
             i.size = e.size;
             i.duration = e.duration;
             let r = this.onItemClicked(i, o);
-            console.info("PhotoPickerComponent onReceive: onItemClicked = " + o);
+            console.info('PhotoPickerComponent onReceive: onItemClicked = ' + o);
             if (this.proxy) {
-                if ("thumbnail" === n && o === ClickType.SELECTED) {
+                if ('thumbnail' === n && o === ClickType.SELECTED) {
                     this.proxy.send({ clickConfirm: i.uri, isConfirm: r });
-                    console.info("PhotoPickerComponent onReceive: click confirm: uri = " + i.uri + "isConfirm = " + r)
+                    console.info('PhotoPickerComponent onReceive: click confirm: uri = ' + i.uri + 'isConfirm = ' + r);
                 }
-                if ("camera" === n) {
+                if ('camera' === n) {
                     this.proxy.send({ enterCamera: r });
-                    console.info("PhotoPickerComponent onReceive: enter camera " + r)
+                    console.info('PhotoPickerComponent onReceive: enter camera ' + r);
                 }
             }
         }
@@ -216,18 +234,20 @@ export class PhotoPickerComponent extends ViewPU {
         t.animatorParams.duration = e.duration;
         t.animatorParams.curve = e.curve;
         o ? this.onEnterPhotoBrowser && this.onEnterPhotoBrowser(t) : this.onExitPhotoBrowser && this.onExitPhotoBrowser(t);
-        console.info("PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = " + o)
+        console.info('PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = ' + o);
     }
 
     convertMIMETypeToFilterType(e) {
         let o;
-        o = e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE ? FILTER_MEDIA_TYPE_IMAGE : e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE ? FILTER_MEDIA_TYPE_VIDEO : FILTER_MEDIA_TYPE_ALL;
-        console.info("PhotoPickerComponent convertMIMETypeToFilterType" + JSON.stringify(o));
-        return o
+        o = e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE ?
+            FILTER_MEDIA_TYPE_IMAGE : e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE ?
+            FILTER_MEDIA_TYPE_VIDEO : FILTER_MEDIA_TYPE_ALL;
+        console.info('PhotoPickerComponent convertMIMETypeToFilterType' + JSON.stringify(o));
+        return o;
     }
 
     rerender() {
-        this.updateDirtyElements()
+        this.updateDirtyElements();
     }
 }
 let PickerController = class {
@@ -251,8 +271,8 @@ let PickerController = class {
 
     setMaxSelected(e) {
         if (e) {
-            this.data = new Map([["SET_MAX_SELECT_COUNT", e]]);
-            console.info("PhotoPickerComponent SET_MAX_SELECT_COUNT" + JSON.stringify(e))
+            this.data = new Map([['SET_MAX_SELECT_COUNT', e]]);
+            console.info('PhotoPickerComponent SET_MAX_SELECT_COUNT' + JSON.stringify(e));
         }
     }
 };
@@ -274,54 +294,55 @@ export class MaxSelected {
 }
 
 export var DataType;
-!function(e){
-    e[e.SET_SELECTED_URIS=1] = "SET_SELECTED_URIS";
-    e[e.SET_ALBUM_URI=2] = "SET_ALBUM_URI"
+!function(e) {
+    e[e.SET_SELECTED_URIS=1] = 'SET_SELECTED_URIS';
+    e[e.SET_ALBUM_URI=2] = 'SET_ALBUM_URI'
 }(DataType || (DataType = {}));
 
 export var ItemType;
-!function(e){
-    e[e.THUMBNAIL=0] = "THUMBNAIL";
-    e[e.CAMERA=1] = "CAMERA"
+!function(e) {
+    e[e.THUMBNAIL=0] = 'THUMBNAIL';
+    e[e.CAMERA=1] = 'CAMERA'
 }(ItemType || (ItemType = {}));
 
 export var ClickType;
-!function(e){
-    e[e.SELECTED=0] = "SELECTED";
-    e[e.DESELECTED=1] = "DESELECTED"
+!function(e) {
+    e[e.SELECTED=0] = 'SELECTED';
+    e[e.DESELECTED=1] = 'DESELECTED'
 }(ClickType || (ClickType = {}));
 
 export var PickerOrientation;
-!function(e){
-    e[e.VERTICAL=0] = "VERTICAL";
-    e[e.HORIZONTAL=1] = "HORIZONTAL"
+!function(e) {
+    e[e.VERTICAL=0] = 'VERTICAL';
+    e[e.HORIZONTAL=1] = 'HORIZONTAL'
 }(PickerOrientation || (PickerOrientation = {}));
 
 export var SelectMode;
-!function(e){
-    e[e.SINGLE_SELECT=0] = "SINGLE_SELECT";
-    e[e.MULTI_SELECT=1] = "MULTI_SELECT"
+!function(e) {
+    e[e.SINGLE_SELECT=0] = 'SINGLE_SELECT';
+    e[e.MULTI_SELECT=1] = 'MULTI_SELECT'
 }(SelectMode || (SelectMode = {}));
 
 export var PickerColorMode;
-!function(e){
-    e[e.AUTO=0] = "AUTO";
-    e[e.LIGHT=1] = "LIGHT";
-    e[e.DARK=2] = "DARK"
+!function(e) {
+    e[e.AUTO=0] = 'AUTO';
+    e[e.LIGHT=1] = 'LIGHT';
+    e[e.DARK=2] = 'DARK'
 }(PickerColorMode || (PickerColorMode = {}));
 
 export var ReminderMode;
-!function(e){
-    e[e.NONE=0] = "NONE";
-    e[e.TOAST=1] = "TOAST";
-    e[e.MASK=2] = "MASK"
+!function(e) {
+    e[e.NONE=0] = 'NONE';
+    e[e.TOAST=1] = 'TOAST';
+    e[e.MASK=2] = 'MASK'
 }(ReminderMode || (ReminderMode = {}));
 
 export var MaxCountType;
-!function(e){
-    e[e.TOTAL_MAX_COUNT=0] = "TOTAL_MAX_COUNT";
-    e[e.PHOTO_MAX_COUNT=1] = "PHOTO_MAX_COUNT";
-    e[e.VIDEO_MAX_COUNT=2] = "VIDEO_MAX_COUNT"
+!function(e) {
+    e[e.TOTAL_MAX_COUNT=0] = 'TOTAL_MAX_COUNT';
+    e[e.PHOTO_MAX_COUNT=1] = 'PHOTO_MAX_COUNT';
+    e[e.VIDEO_MAX_COUNT=2] = 'VIDEO_MAX_COUNT'
 }(MaxCountType || (MaxCountType = {}));
 
-export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, ItemInfo, PhotoBrowserInfo, AnimatorParams, MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType }
+export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, ItemInfo, PhotoBrowserInfo, AnimatorParams,
+    MaxSelected, ItemType, ClickType, PickerOrientation, SelectMode, PickerColorMode, ReminderMode, MaxCountType };
