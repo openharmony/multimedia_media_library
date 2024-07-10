@@ -1405,7 +1405,8 @@ int32_t MediaLibraryAssetOperations::SendTrashNotify(MediaLibraryCommand &cmd, i
     return E_OK;
 }
 
-void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, int32_t rowId, const string &extraUri)
+void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, shared_ptr<FileAsset> &fileAsset,
+    const string &extraUri)
 {
     ValueObject value;
     int32_t isFavorite = 0;
@@ -1413,9 +1414,17 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, i
         return;
     }
     value.GetInt(isFavorite);
+
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
         { to_string(PhotoAlbumSubType::FAVORITE) });
+    if (fileAsset->IsHidden()) {
+        unordered_map<int32_t, int32_t> updateResult;
+        MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult,
+            { to_string(PhotoAlbumSubType::FAVORITE) });
+    }
+
     auto watch = MediaLibraryNotify::GetInstance();
     if (cmd.GetOprnObject() != OperationObject::FILESYSTEM_PHOTO) {
         return;
@@ -1426,7 +1435,8 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, i
     }
 
     NotifyType type = (isFavorite) ? NotifyType::NOTIFY_ALBUM_ADD_ASSET : NotifyType::NOTIFY_ALBUM_REMOVE_ASSET;
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(rowId), extraUri),
+    watch->Notify(
+        MediaFileUtils::GetUriByExtrConditions(PhotoColumn::PHOTO_URI_PREFIX, to_string(fileAsset->GetId()), extraUri),
         type, favAlbumId);
 }
 
