@@ -605,7 +605,7 @@ function BaseSelectOptions() {
   this.isPreviewForSingleSelectionSupported = true;
 }
 
-function photoSelectOptions() {
+function PhotoSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
   this.isSearchSupported = true;
@@ -619,11 +619,11 @@ function PhotoSelectResult(uris, isOriginalPhoto) {
   this.isOriginalPhoto = isOriginalPhoto;
 }
 
-function photoViewPicker() {
+function PhotoViewPicker() {
   this.select = photoPickerSelect;
 }
 
-function recommendationOptions() {
+function RecommendationOptions() {
 }
 
 class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest {
