@@ -643,6 +643,11 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level
     valuesBucket.Put(IMAGE_FEATURES_VERSION, "3.0");
     valuesBucket.Put(FEATURES, "xyijd");
     valuesBucket.Put(FACE_OCCLUSION, 2);
+    valuesBucket.Put(BEAUTY_BOUNDER_X, 1.2);
+    valuesBucket.Put(BEAUTY_BOUNDER_Y, 1.3);
+    valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 3.4);
+    valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 2.3);
+    valuesBucket.Put(FACE_AESTHETICS_SCORE, 5.3);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
@@ -681,6 +686,11 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateImageFace_Test_001, TestSize.Level
     valuesBucket.Put(IMAGE_FEATURES_VERSION, "3.0");
     valuesBucket.Put(FEATURES, "vvvr");
     valuesBucket.Put(FACE_OCCLUSION, 1);
+    valuesBucket.Put(BEAUTY_BOUNDER_X, 2.2);
+    valuesBucket.Put(BEAUTY_BOUNDER_Y, 3.3);
+    valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 5.4);
+    valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 6.3);
+    valuesBucket.Put(FACE_AESTHETICS_SCORE, 5.8);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;
     updateValues.Put(TOTAL_FACES, 8);
@@ -720,6 +730,11 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteImageFace_Test_001, TestSize.Level
     valuesBucket.Put(IMAGE_FEATURES_VERSION, "34.0");
     valuesBucket.Put(FEATURES, "bb4");
     valuesBucket.Put(FACE_OCCLUSION, 2);
+    valuesBucket.Put(BEAUTY_BOUNDER_X, 3.2);
+    valuesBucket.Put(BEAUTY_BOUNDER_Y, 4.3);
+    valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 4.4);
+    valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 4.3);
+    valuesBucket.Put(FACE_AESTHETICS_SCORE, 7.3);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
@@ -758,6 +773,11 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level0
     valuesBucket.Put(IMAGE_FEATURES_VERSION, "3.06");
     valuesBucket.Put(FEATURES, "bb66");
     valuesBucket.Put(FACE_OCCLUSION, 1);
+    valuesBucket.Put(BEAUTY_BOUNDER_X, 2.25);
+    valuesBucket.Put(BEAUTY_BOUNDER_Y, 3.36);
+    valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 5.46);
+    valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 6.36);
+    valuesBucket.Put(FACE_AESTHETICS_SCORE, 8.3);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
