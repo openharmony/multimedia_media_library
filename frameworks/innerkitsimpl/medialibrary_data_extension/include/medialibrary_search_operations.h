@@ -21,6 +21,7 @@
 
 #include "abs_shared_result_set.h"
 #include "medialibrary_command.h"
+#include "search_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -31,6 +32,7 @@ public:
     static int32_t DeleteOperation(MediaLibraryCommand &cmd);
     static std::shared_ptr<NativeRdb::ResultSet> QueryOperation(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
+    static std::shared_ptr<NativeRdb::ResultSet> QueryIndexConstructProgress();
 };
 } // namespace Media
 } // namespace OHOS

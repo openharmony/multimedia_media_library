@@ -105,6 +105,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
 
         // use in search
         { SEARCH_TOTAL_TABLE, OperationObject::SEARCH_TOTAL },
+        { SEARCH_INDEX_CONSTRUCTION_STATUS, OperationObject::INDEX_CONSTRUCTION_STATUS },
 
         // use in story
         { HIGHLIGHT_ALBUM_TABLE, OperationObject::STORY_ALBUM },
@@ -170,6 +171,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
 
         // search
         { OperationObject::SEARCH_TOTAL, { { OperationType::UNKNOWN_TYPE, SEARCH_TOTAL_TABLE } } },
+        { OperationObject::INDEX_CONSTRUCTION_STATUS,
+            { { OperationType::UNKNOWN_TYPE, SEARCH_INDEX_CONSTRUCTION_STATUS } } },
 
         // story
         { OperationObject::STORY_ALBUM, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_ALBUM_TABLE } } },

@@ -44,6 +44,12 @@ const std::string TBL_SEARCH_GEO_STATUS = "geo_status";
 const std::string TBL_SEARCH_VERSION = "version";
 const std::string TBL_SEARCH_SYSTEM_LANGUAGE = "system_language";
 
+// Number of completed and total progress in image and video indexing construction
+const std::string PHOTO_COMPLETE_NUM = "finishedImageCount";
+const std::string PHOTO_TOTAL_NUM = "totalImageCount";
+const std::string VIDEO_COMPLETE_NUM = "finishedVideoCount";
+const std::string VIDEO_TOTAL_NUM = "totalVideoCount";
+
 // field status enum
 enum TblSearchPhotoStatus {
     INSERT_FAIL = -3,

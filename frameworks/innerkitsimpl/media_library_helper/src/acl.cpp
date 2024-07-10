@@ -280,6 +280,14 @@ int32_t Acl::AclSetDefault()
     return E_OK;
 }
 
+void SetFileRWGroupMod(struct stat& st, std::string& path)
+{
+    int res = chmod(path.c_str(), st.st_mode | S_IWGRP | S_IRGRP);
+    if (res == -E_OK) {
+        MEDIA_ERR_LOG("Set mode failed: %{public}s", path.c_str());
+    }
+}
+
 int32_t Acl::RecursiveEnableAcl(const std::string& path, const char* aclAttrName, const uint16_t& permission,
     uint32_t groupId)
 {
@@ -309,9 +317,12 @@ int32_t Acl::RecursiveEnableAcl(const std::string& path, const char* aclAttrName
             if (st.st_mode & S_IFDIR) {
                 dirPathList.push_front(fileName);
             }
+            SetFileRWGroupMod(st, fileName);
             if (EnableAcl(fileName, aclAttrName, permission, groupId) != E_OK) {
                 MEDIA_ERR_LOG("Failed to set the acl permission for the %{private}s", fileName.c_str());
                 result = E_ERR;
+            } else {
+                MEDIA_INFO_LOG("acl set succeed %{public}s", fileName.c_str());
             }
         }
         closedir(fileDir);
@@ -384,14 +395,6 @@ int32_t Acl::EntryInsert(AclXattrEntry& entry, const std::string& path, const ch
         {
             .tag = ACL_TAG::OTHER,
             .perm = S_IXOTH,
-            .id = ACL_UNDEFINED_ID,
-        }
-    );
-
-    acl.InsertEntry(
-        {
-            .tag = ACL_TAG::GROUP_OBJ,
-            .perm = S_IRWXP >> 3,
             .id = ACL_UNDEFINED_ID,
         }
     );

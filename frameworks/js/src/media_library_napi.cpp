@@ -53,6 +53,7 @@
 #include "photo_album_napi.h"
 #include "result_set_utils.h"
 #include "safe_map.h"
+#include "search_column.h"
 #include "smart_album_napi.h"
 #include "story_album_column.h"
 #include "string_ex.h"
@@ -294,6 +295,7 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
             DECLARE_NAPI_FUNCTION("deleteAlbums", PhotoAccessDeletePhotoAlbums),
             DECLARE_NAPI_FUNCTION("getAlbums", PhotoAccessGetPhotoAlbums),
             DECLARE_NAPI_FUNCTION("getPhotoIndex", PhotoAccessGetPhotoIndex),
+            DECLARE_NAPI_FUNCTION("getIndexConstructProgress", PhotoAccessGetIndexConstructProgress),
             DECLARE_NAPI_FUNCTION("setHidden", SetHidden),
             DECLARE_NAPI_FUNCTION("getHiddenAlbums", PahGetHiddenAlbums),
             DECLARE_NAPI_FUNCTION("applyChanges", JSApplyChanges),
@@ -3487,6 +3489,121 @@ napi_value MediaLibraryNapi::PhotoAccessGetPhotoIndex(napi_env env, napi_callbac
     CHECK_NULLPTR_RET(ParseArgsIndexof(env, info, asyncContext));
     return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetPhotoIndex",
         PhotoAccessGetPhotoIndexExec, GetPhotoIndexAsyncCallbackComplete);
+}
+
+static void GetIndexConstructProgressAsyncCallbackComplete(napi_env env, napi_status status, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    CHECK_NULL_PTR_RETURN_VOID(context, "Async context is null");
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+
+    CHECK_ARGS_RET_VOID(env, napi_get_undefined(env, &jsContext->data), JS_ERR_PARAMETER_INVALID);
+    if (context->error != ERR_DEFAULT) {
+        context->HandleError(env, jsContext->error);
+    } else {
+        CHECK_ARGS_RET_VOID(
+            env, napi_create_string_utf8(env, context->indexProgress.c_str(), NAPI_AUTO_LENGTH, &jsContext->data),
+            JS_INNER_FAIL);
+        jsContext->status = true;
+    }
+
+    if (context->work != nullptr) {
+        MediaLibraryNapiUtils::InvokeJSAsyncMethod(env, context->deferred, context->callbackRef,
+            context->work, *jsContext);
+    }
+    delete context;
+}
+
+static bool GetProgressStr(const shared_ptr<DataShare::DataShareResultSet> &resultSet, string &progress)
+{
+    const vector<string> columns = {
+        PHOTO_COMPLETE_NUM,
+        PHOTO_TOTAL_NUM,
+        VIDEO_COMPLETE_NUM,
+        VIDEO_TOTAL_NUM
+    };
+    int32_t index = 0;
+    string value = "";
+    progress = "{";
+    for (const auto &item : columns) {
+        if (resultSet->GetColumnIndex(item, index) != DataShare::E_OK) {
+            NAPI_ERR_LOG("ResultSet GetColumnIndex failed, progressObject=%{public}s", item.c_str());
+            return false;
+        }
+        if (resultSet->GetString(index, value) != DataShare::E_OK) {
+            NAPI_ERR_LOG("ResultSet GetString failed, progressObject=%{public}s", item.c_str());
+            return false;
+        }
+        progress += "\"" + item + "\":" + value + ",";
+    }
+    progress = progress.substr(0, progress.length() - 1);
+    progress += "}";
+    NAPI_DEBUG_LOG("GetProgressStr progress=%{public}s", progress.c_str());
+    return true;
+}
+
+static bool GetProgressFromResultSet(const shared_ptr<DataShare::DataShareResultSet> &resultSet, string &progress)
+{
+    if (resultSet == nullptr) {
+        NAPI_ERR_LOG("ResultSet is null");
+        return false;
+    }
+    int32_t count = 0;
+    int32_t errCode = resultSet->GetRowCount(count);
+    if (errCode != DataShare::E_OK) {
+        NAPI_ERR_LOG("Can not get row count from resultSet, errCode=%{public}d", errCode);
+        return false;
+    }
+    if (count == 0) {
+        NAPI_ERR_LOG("Can not find index construction progress");
+        return false;
+    }
+    errCode = resultSet->GoToFirstRow();
+    if (errCode != DataShare::E_OK) {
+        NAPI_ERR_LOG("ResultSet GotoFirstRow failed, errCode=%{public}d", errCode);
+        return false;
+    }
+
+    return GetProgressStr(resultSet, progress);
+}
+
+static void PhotoAccessGetIndexConstructProgressExec(napi_env env, void *data)
+{
+    auto *context = static_cast<MediaLibraryAsyncContext*>(data);
+    auto jsContext = make_unique<JSAsyncContextOutput>();
+    jsContext->status = false;
+    string queryUri = MEDIALIBRARY_DATA_URI + "/" + SEARCH_INDEX_CONSTRUCTION_STATUS + "/" + OPRN_QUERY;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri uri(queryUri);
+    int errCode = 0;
+    string indexProgress;
+    auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
+    if (!GetProgressFromResultSet(resultSet, indexProgress)) {
+        if (errCode == E_PERMISSION_DENIED) {
+            context->error = OHOS_PERMISSION_DENIED_CODE;
+        } else {
+            context->SaveError(E_FAIL);
+        }
+    } else {
+        context->indexProgress = indexProgress;
+    }
+}
+
+napi_value MediaLibraryNapi::PhotoAccessGetIndexConstructProgress(napi_env env, napi_callback_info info)
+{
+    if (!MediaLibraryNapiUtils::IsSystemApp()) {
+        NapiError::ThrowError(env, E_CHECK_SYSTEMAPP_FAIL, "This interface can be called only by system apps");
+        return nullptr;
+    }
+
+    unique_ptr<MediaLibraryAsyncContext> asyncContext = make_unique<MediaLibraryAsyncContext>();
+
+    CHECK_ARGS(env, MediaLibraryNapiUtils::AsyncContextSetObjectInfo(env, info, asyncContext, 0, 0),
+        JS_ERR_PARAMETER_INVALID);
+
+    return MediaLibraryNapiUtils::NapiCreateAsyncWork(env, asyncContext, "JSGetIndexConstructProgress",
+        PhotoAccessGetIndexConstructProgressExec, GetIndexConstructProgressAsyncCallbackComplete);
 }
 
 static napi_status CheckFormId(string &formId)

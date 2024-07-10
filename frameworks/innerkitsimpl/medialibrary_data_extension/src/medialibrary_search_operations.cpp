@@ -21,12 +21,32 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_unistore_manager.h"
+#include "search_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+const std::string notTrashedAndHiddenCondition = MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
+        MediaColumn::MEDIA_HIDDEN + " = 0 AND ";
+const std::string analysisCompleteCondition = TBL_SEARCH_CV_STATUS + " = 1 AND (" + TBL_SEARCH_GEO_STATUS +
+    " = 1 OR (" + PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = 0 AND " +
+    PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_LATITUDE + " = 0)) ";
+const std::string selectAnalysisCompletedPhoto = "SELECT COUNT(case when " + notTrashedAndHiddenCondition +
+    TBL_SEARCH_PHOTO_STATUS + " > 0 AND " + MediaColumn::MEDIA_TYPE + " = 1 AND " + analysisCompleteCondition +
+    " then 1 end) as " + PHOTO_COMPLETE_NUM + ",";
+const std::string mediaPhotoTotal = "COUNT(case when " + notTrashedAndHiddenCondition + MediaColumn::MEDIA_TYPE +
+    " = 1 then 1 end) as " + PHOTO_TOTAL_NUM + ",";
+const std::string selectAnalysisCompletedVideo = "COUNT(case when " + notTrashedAndHiddenCondition +
+    TBL_SEARCH_PHOTO_STATUS + " > 0 AND " + MediaColumn::MEDIA_TYPE + " = 2 AND " + analysisCompleteCondition +
+    " then 1 end) as " + VIDEO_COMPLETE_NUM + ",";
+const std::string mediaVideoTotal = "COUNT(case when " + notTrashedAndHiddenCondition + MediaColumn::MEDIA_TYPE +
+    " = 2 then 1 end) as " + VIDEO_TOTAL_NUM;
+const std::string mediaPhotosQuery = selectAnalysisCompletedPhoto + mediaPhotoTotal + selectAnalysisCompletedVideo +
+    mediaVideoTotal + " FROM " + PhotoColumn::PHOTOS_TABLE + " Inner JOIN " + SEARCH_TOTAL_TABLE + " ON " +
+    PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_ID + "=" + SEARCH_TOTAL_TABLE + "." + TBL_SEARCH_FILE_ID;
+
 int32_t MediaLibrarySearchOperations::InsertOperation(MediaLibraryCommand &cmd)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -80,6 +100,17 @@ shared_ptr<NativeRdb::ResultSet> MediaLibrarySearchOperations::QueryOperation(Me
         return nullptr;
     }
     return rdbStore->Query(cmd, columns);
+}
+
+shared_ptr<ResultSet> MediaLibrarySearchOperations::QueryIndexConstructProgress()
+{
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
+        return nullptr;
+    }
+
+    return rdbStore->QuerySql(mediaPhotosQuery);
 }
 }
 }

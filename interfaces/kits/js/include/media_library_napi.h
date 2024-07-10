@@ -316,6 +316,7 @@ private:
     EXPORT static napi_value GetPhotoAlbums(napi_env env, napi_callback_info info);
     EXPORT static napi_value JSGetPhotoIndex(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessGetPhotoIndex(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetIndexConstructProgress(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value JSApplyChanges(napi_env env, napi_callback_info info);
 
@@ -424,6 +425,7 @@ struct MediaLibraryAsyncContext : public NapiError {
     bool isAnalysisAlbum = false;
     int32_t hiddenAlbumFetchMode = -1;
     std::string formId;
+    std::string indexProgress;
     std::shared_ptr<PickerCallBack> pickerCallBack;
 };
 
