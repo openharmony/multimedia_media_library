@@ -36,6 +36,8 @@ int32_t MediaScanExecutor::Commit(std::unique_ptr<MediaScannerObj> scanner)
 
 void MediaScanExecutor::HandleScanExecution()
 {
+    string name("HandleScanExecution");
+    pthread_setname_np(pthread_self(), name.c_str());
     unique_ptr<MediaScannerObj> scanner;
     while (true) {
         {

@@ -67,6 +67,8 @@ static string ConvertMediaPath(const std::string &path)
 
 void MediaLibraryInotify::WatchCallBack()
 {
+    string name("MediaLibraryInotify");
+    pthread_setname_np(pthread_self(), name.c_str());
     const int32_t READ_LEN = 255;
     char data[READ_LEN] = {0};
     while (isWatching_) {
