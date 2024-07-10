@@ -126,6 +126,8 @@ void ThumbnailGenerateWorker::WaitForTask()
 
 void ThumbnailGenerateWorker::StartWorker()
 {
+    std::string name("ThumbnailGenerateWorker");
+    pthread_setname_np(pthread_self(), name.c_str());
     while (isThreadRunning_) {
         WaitForTask();
         std::shared_ptr<ThumbnailGenerateTask> task;
