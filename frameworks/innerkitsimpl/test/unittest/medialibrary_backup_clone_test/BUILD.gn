@@ -75,7 +75,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
   ]
 
   public_external_deps = [ "e2fsprogs:libext2_uuid" ]
-  
+
   sanitize = {
     cfi = true
     cfi_cross_dso = true
