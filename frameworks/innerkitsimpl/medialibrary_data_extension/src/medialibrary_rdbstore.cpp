@@ -2370,6 +2370,16 @@ void AddMovingPhotoEffectMode(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddBurstCoverLevelAndBurstKey(RdbStore &store) 
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " INT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_KEY + " TEXT",
+    };
+    MEDIA_INFO_LOG("start add burst_cover_level and burst_key column");
+    ExecSqls(sqls, store);
+}
+
 static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
 {
     static const vector<string> executeSqlStrs = {
@@ -2700,6 +2710,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < PHOTOS_CREATE_DISPLAYNAME_INDEX) {
         AddDisplayNameIndex(store);
+    }
+
+    if (oldVersion < VERSION_ADD_BURST_COVER_LEVEL_AND_BURST_KEY) {
+        AddBurstCoverLevelAndBurstKey(store);
     }
 }
 

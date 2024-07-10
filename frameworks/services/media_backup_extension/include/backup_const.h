@@ -63,6 +63,7 @@ const std::string GALLERY_TITLE = "title";
 const std::string GALLERY_DISPLAY_NAME = "_display_name";
 const std::string GALLERY_DESCRIPTION = "description";
 const std::string GALLERY_IS_FAVORITE = "is_hw_favorite";
+const std::string GALLERY_IS_BURST = "is_hw_burst";
 const std::string GALLERY_RECYCLED_TIME = "recycledTime";
 const std::string GALLERY_FILE_SIZE = "_size";
 const std::string GALLERY_DURATION = "duration";
@@ -73,6 +74,8 @@ const std::string GALLERY_WIDTH = "width";
 const std::string GALLERY_ORIENTATION = "orientation";
 const std::string GALLERY_MEDIA_BUCKET_ID = "relative_bucket_id";
 const std::string GALLERY_MEDIA_SOURCE_PATH = "sourcePath";
+const std::string GALLERY_RECYCLE_FLAG = "recycleFlag";
+const std::string GALLERY_HASH = "hash";
 
 // external column
 const std::string EXTERNAL_IS_FAVORITE = "is_favorite";
@@ -226,6 +229,26 @@ struct FileInfo {
     bool isNew {true};
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
+    /**
+     * @brief the field data from gallery.db # gallery_media # relative_bucket_id.
+     */
+    std::string relativeBucketId;
+    /**
+     * @brief the field data from gallery.db # gallery_media # recycleFlag.
+     */
+    int32_t recycleFlag {0};
+    /**
+     * @brief the field data from gallery.db # gallery_media # is_hw_burst. 0=normal, 1=burst cover, 2=burst members.
+     */
+    int32_t isBurst {0};
+    /**
+     * @brief the field data from gallery.db # gallery_media # hash.
+     */
+    std::string hashCode;
+    /**
+     * @brief the field data for media_library.db # Photos # burst_key. 36 length of uuid.
+     */
+    std::string burstKey;
 };
 
 struct AlbumInfo {
@@ -300,7 +323,8 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     GALLERY_DISPLAY_NAME + "," + GALLERY_DESCRIPTION + "," + GALLERY_IS_FAVORITE + "," + GALLERY_RECYCLED_TIME +
     "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
-    EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH +
+    EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH + "," +
+    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH +
     " FROM gallery_media WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
     SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0 ORDER BY showDateToken ASC ";
 
