@@ -19,7 +19,7 @@ export class AlbumPickerComponent extends ViewPU {
         "function" === typeof i && (this.paramsGenerator_ = i);
         this.albumPickerOptions = void 0;
         this.onAlbumClick = void 0;
-        this.setInitiallyProvidedValue(o)
+        this.setInitiallyProvidedValue(o);
     }
 
     setInitiallyProvidedValue(e) {
@@ -35,54 +35,54 @@ export class AlbumPickerComponent extends ViewPU {
 
     aboutToBeDeleted() {
         SubscriberManager.Get().delete(this.id__());
-        this.aboutToBeDeletedInternal()
+        this.aboutToBeDeletedInternal();
     }
 
     initialRender() {
         this.observeComponentCreation2(((e, o) => {
             Row.create();
-            Row.height("100%")
+            Row.height('100%');
         }), Row);
         this.observeComponentCreation2(((e, o) => {
             Column.create();
-            Column.width("100%")
+            Column.width('100%');
         }), Column);
         this.observeComponentCreation2(((e, o) => {
             var n;
             UIExtensionComponent.create({
                 parameters: {
-                    "ability.want.params.uiExtensionTargetType": "photoPicker",
-                    targetPage: "albumPage",
+                    'ability.want.params.uiExtensionTargetType': 'photoPicker',
+                    targetPage: 'albumPage',
                     themeColorMode: null === (n = this.albumPickerOptions) || void 0 === n ? void 0 : n.themeColorMode
                 }
             });
-            UIExtensionComponent.height("100%");
-            UIExtensionComponent.width("100%");
+            UIExtensionComponent.height('100%');
+            UIExtensionComponent.width('100%');
             UIExtensionComponent.onRemoteReady((e => {
-                console.info("AlbumPickerComponent onRemoteReady")
+                console.info('AlbumPickerComponent onRemoteReady');
             }));
             UIExtensionComponent.onReceive((e => {
                 let o = e;
                 let n = o.dataType;
-                if ("selectAlbum" === n && this.onAlbumClick) {
+                if ('selectAlbum' === n && this.onAlbumClick) {
                     let e = new AlbumInfo;
                     e.uri = o.albumUri;
-                    this.onAlbumClick(e)
+                    this.onAlbumClick(e);
                 }
-                console.info("AlbumPickerComponent onReceive " + n)
+                console.info('AlbumPickerComponent onReceive ' + n);
             }));
             UIExtensionComponent.onResult((e => {
-                console.info("AlbumPickerComponent onResult")
+                console.info('AlbumPickerComponent onResult');
             }));
             UIExtensionComponent.onError((() => {
-                console.info("AlbumPickerComponent onError")
+                console.info('AlbumPickerComponent onError');
             }));
             UIExtensionComponent.onRelease((e => {
-                console.info("AlbumPickerComponent onRelease")
-            }))
+                console.info('AlbumPickerComponent onRelease');
+            }));
         }), UIExtensionComponent);
         Column.pop();
-        Row.pop()
+        Row.pop();
     }
 
     rerender() {
@@ -96,4 +96,4 @@ export class AlbumPickerOptions {
 export class AlbumInfo {
 }
 
-export default { AlbumPickerComponent, AlbumPickerOptions, AlbumInfo }
+export default { AlbumPickerComponent, AlbumPickerOptions, AlbumInfo };
