@@ -33,6 +33,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_errno.h"
 #include "metadata.h"
+#include "parameters.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
 #include "resource_type.h"
@@ -43,6 +44,7 @@ namespace OHOS {
 namespace Media {
 const std::string DATABASE_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const std::string singleDirName = "A";
+const std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
 
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
@@ -820,6 +822,27 @@ void BaseRestore::UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int3
     for (const auto &fileInfo : fileInfos) {
         std::string localPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
         UpdateFailedFileByFileType(fileInfo.fileType, localPath, errorCode);
+    }
+}
+
+void BaseRestore::SetParameterForClone()
+{
+    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
+    bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
+    if (!retFlag) {
+        MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+    }
+}
+
+void BaseRestore::StopParameterForClone(int32_t sceneCode)
+{
+    if (sceneCode == UPGRADE_RESTORE_ID) {
+        return;
+    }
+    bool retFlag = system::SetParameter(CLONE_FLAG, "0");
+    if (!retFlag) {
+        MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
     }
 }
 } // namespace Media
