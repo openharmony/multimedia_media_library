@@ -173,6 +173,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
 {
     dbPath_ = backupRestoreDir_ + MEDIA_DB_PATH;
     filePath_ = backupRestoreDir_ + "/storage/media/local/files";
+    SetParameterForClone();
     if (!MediaFileUtils::IsFileExists(dbPath_)) {
         MEDIA_ERR_LOG("Media db is not exist.");
         return E_FAIL;
@@ -191,6 +192,7 @@ int32_t CloneRestore::Init(const string &backupRestoreDir, const string &upgrade
         MEDIA_ERR_LOG("Init remote medialibrary rdb fail, err = %{public}d", err);
         return E_FAIL;
     }
+    GetMaxFileId(mediaLibraryRdb_);
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
 }
@@ -922,6 +924,7 @@ void CloneRestore::RestoreGallery()
     CheckTableColumnStatus(mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     RestoreAlbum();
     RestorePhoto();
+    StopParameterForClone(CLONE_RESTORE_ID);
     MEDIA_INFO_LOG("migrate database photo number: %{public}lld, file number: %{public}lld (%{public}lld + "
         "%{public}lld), album number: %{public}lld, map number: %{public}lld", (long long)migrateDatabaseNumber_,
         (long long)migrateFileNumber_, (long long)(migrateFileNumber_ - migrateVideoFileNumber_),
@@ -940,7 +943,7 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
         UpdateFailedFiles(fileInfo.fileType, localPath, RestoreError::PATH_INVALID);
         return false;
     }
-    if (IsSameFile(mediaLibraryRdb_, tableName, fileInfo)) {
+    if (HasSameFileForDualClone(mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfo)) {
         (void)MediaFileUtils::DeleteFile(fileInfo.filePath);
         MEDIA_WARN_LOG("File %{public}s already exists.",
             BackupFileUtils::GarbleFilePath(fileInfo.filePath, CLONE_RESTORE_ID, garbagePath_).c_str());

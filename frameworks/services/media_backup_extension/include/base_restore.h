@@ -91,6 +91,8 @@ protected:
     void GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void DeleteMoveFailedData(std::vector<std::string> &moveFailedData);
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t sceneCode);
+    void SetParameterForClone();
+    void StopParameterForClone(int32_t sceneCode);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
