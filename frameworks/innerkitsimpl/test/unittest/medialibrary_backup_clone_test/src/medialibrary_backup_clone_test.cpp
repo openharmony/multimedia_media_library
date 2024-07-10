@@ -100,7 +100,6 @@ const int32_t INVALID_ERROR_CODE = -1;
 
 shared_ptr<MediaLibraryRdbStore> g_rdbStore;
 unique_ptr<CloneRestore> restoreService = nullptr;
-unordered_map<int32_t, int32_t> updateResult;
 
 void ExecuteSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sqls)
 {
@@ -117,7 +116,7 @@ void ClearData()
 {
     MEDIA_INFO_LOG("Start clear data");
     ExecuteSqls(g_rdbStore->GetRaw(), CLEAR_SQLS);
-    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore->GetRaw(), updateResult);
+    MediaLibraryRdbUtils::UpdateAllAlbums(g_rdbStore->GetRaw());
     MEDIA_INFO_LOG("End clear data");
 }
 
