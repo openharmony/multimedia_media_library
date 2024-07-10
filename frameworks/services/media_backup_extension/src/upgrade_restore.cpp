@@ -678,12 +678,18 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.hidden = (localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
     info.recycledTime = GetInt64Val(GALLERY_RECYCLED_TIME, resultSet);
     info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet);
+    // fetch relative_bucket_id, recycleFlag, is_hw_burst, hash field to generate burst_key
+    info.relativeBucketId = GetStringVal(GALLERY_MEDIA_BUCKET_ID, resultSet);
+    info.recycleFlag = GetInt32Val(GALLERY_RECYCLE_FLAG, resultSet);
+    info.isBurst = GetInt32Val(GALLERY_IS_BURST, resultSet);
+    info.hashCode = GetStringVal(GALLERY_HASH, resultSet);
 
     bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     if (!isSuccess) {
         MEDIA_ERR_LOG("ParseResultSetFromGallery fail");
         return isSuccess;
     }
+    info.burstKey = burstKeyGenerator_.FindBurstKey(info);
     ParseResultSetForMap(resultSet, info);
     return isSuccess;
 }
@@ -736,6 +742,14 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     std::string package_name = fileInfo.packageName;
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
+    }
+    if (fileInfo.isBurst == 1) {
+        // only when gallery.db # gallery_media # isBurst = 1, then media_library.db # Photos # burst_cover_level = 1.
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
+    }
+    if (fileInfo.burstKey.size() > 0) {
+        values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);
+        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
     }
     return values;
 }

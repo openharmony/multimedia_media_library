@@ -37,7 +37,7 @@ public:
     virtual int32_t QueryTotalNumber(void) = 0;
     virtual std::vector<FileInfo> QueryFileInfos(int32_t offset) = 0;
     virtual NativeRdb::ValuesBucket GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
-        int32_t sourceType) const;
+        int32_t sourceType) const = 0;
     virtual NativeRdb::ValuesBucket GetAudioInsertValue(const FileInfo &fileInfo, const std::string &newPath) const;
     virtual std::string GetBackupInfo();
     void StartRestoreEx(const std::string &backupRetorePath, const std::string &upgradePath,
