@@ -281,11 +281,6 @@ static int32_t RequestContentToArrayBuffer(napi_env env, MovingPhotoAsyncContext
         return E_HAS_FS_ERROR;
     }
 
-    if (fileLen > static_cast<off_t>(SIZE_MAX)) {
-        NAPI_ERR_LOG("File length is too large to fit in a size_t, length: %{public}" PRId64, fileLen);
-        return E_HAS_FS_ERROR;
-    }
-
     size_t fileSize = static_cast<size_t>(fileLen);
 
     context->arrayBufferData = malloc(fileSize);
