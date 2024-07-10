@@ -125,16 +125,16 @@ async function getAppName() {
   try {
     const flags = bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_ABILITY | bundleManager.BundleFlag.GET_BUNDLE_INFO_WITH_HAP_MODULE;
     const bundleInfo = await bundleManager.getBundleInfoForSelf(flags);
-    console.info(`photoAccessHelper bundleInfo: ${JSON.stringify(bundleInfo)}`)
+    console.info(`photoAccessHelper bundleInfo: ${JSON.stringify(bundleInfo)}`);
     if (bundleInfo === undefined || bundleInfo.hapModulesInfo === undefined || bundleInfo.hapModulesInfo.length === 0) {
       return appName;
     }
     const labelId = getAbilityResource(bundleInfo.hapModulesInfo[0]);
     const resourceMgr = gContext.resourceManager;
     appName = await resourceMgr.getStringValue(labelId);
-    console.info(`photoAccessHelper appName: ${appName}`)
+    console.info(`photoAccessHelper appName: ${appName}`);
   } catch (error) {
-    console.info(`photoAccessHelper error: ${JSON.stringify(error)}`)
+    console.info(`photoAccessHelper error: ${JSON.stringify(error)}`);
   }
 
   return appName;
@@ -449,7 +449,7 @@ const RecommendationType = {
 
   // Indicates that featured single portrait photos can be recommended
   FEATURED_SINGLE_PORTRAIT: 10
-}
+};
 
 const PhotoViewMIMETypes = {
   IMAGE_TYPE: 'image/*',
@@ -457,13 +457,13 @@ const PhotoViewMIMETypes = {
   IMAGE_VIDEO_TYPE: '*/*',
   MOVING_PHOTO_IMAGE_TYPE: 'image/movingPhoto',
   INVALID_TYPE: ''
-}
+};
 
 const ErrCode = {
   INVALID_ARGS: 13900020,
   RESULT_ERROR: 13900042,
   CONTEXT_NO_EXIST: 16000011,
-}
+};
 
 const ERRCODE_MAP = new Map([
   [ErrCode.INVALID_ARGS, 'Invalid argument'],
@@ -590,7 +590,7 @@ async function photoPickerSelect(...args) {
       } else {
         reject(selectResult.error);
       }
-    })
+    });
   } catch (error) {
     console.error('[picker] error: ' + JSON.stringify(error));
   }
@@ -605,7 +605,7 @@ function BaseSelectOptions() {
   this.isPreviewForSingleSelectionSupported = true;
 }
 
-function PhotoSelectOptions() {
+function photoSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
   this.isSearchSupported = true;
@@ -619,11 +619,11 @@ function PhotoSelectResult(uris, isOriginalPhoto) {
   this.isOriginalPhoto = isOriginalPhoto;
 }
 
-function PhotoViewPicker() {
+function photoViewPicker() {
   this.select = photoPickerSelect;
 }
 
-function RecommendationOptions() {
+function recommendationOptions() {
 }
 
 class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest {

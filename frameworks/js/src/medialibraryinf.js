@@ -42,7 +42,7 @@ function getParameter() {
   return parameter;
 }
 
-async function startMediaSelect (option, asyncCallback) {
+async function startMediaSelect(option, asyncCallback) {
   console.log('MediaLibrary startMediaSelectInner param num ' + arguments.length);
   console.log('MediaLibrary startMediaSelectInner param ' + JSON.stringify(option));
 
@@ -85,7 +85,7 @@ async function startMediaSelect (option, asyncCallback) {
   });
 }
 
-function getMediaLibrary (context) {
+function getMediaLibrary(context) {
   const media = medialibrary.getMediaLibrary(context);
   console.log('MediaLibrary getMediaLibrary inner ');
   if (media !== undefined) {
@@ -132,7 +132,7 @@ function getMediaLibraryAsync(context, asyncCallback) {
   return undefined;
 }
 
-function getScannerInstance (context) {
+function getScannerInstance(context) {
   console.log('MediaLibrary getScannerInstance js caller ');
   const instance = medialibrary.getScannerInstance(context);
   return instance;
