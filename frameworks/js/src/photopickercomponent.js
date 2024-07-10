@@ -252,25 +252,21 @@ export class PhotoPickerComponent extends ViewPU {
 }
 let PickerController = class {
     setData(e, o) {
-        if (o) {
-            if (e === DataType.SET_SELECTED_URIS) {
-                if (o instanceof Array) {
-                    let e = o;
-                    if (e) {
-                        this.data = new Map([['SET_SELECTED_URIS', [...e]]]);
-                        console.info('PhotoPickerComponent SET_SELECTED_URIS' + JSON.stringify(e));
-                    }
-                }
-            } else if (e === DataType.SET_ALBUM_URI) {
+        if (o) if (e === DataType.SET_SELECTED_URIS) {
+            if (o instanceof Array) {
                 let e = o;
                 if (e) {
-                    this.data = new Map([['SET_ALBUM_URI', e]]);
-                    console.info('PhotoPickerComponent SET_ALBUM_URI' + JSON.stringify(e));
+                    this.data = new Map([["SET_SELECTED_URIS", [...e]]]);
+                    console.info("PhotoPickerComponent SET_SELECTED_URIS" + JSON.stringify(e))
                 }
             }
-        } else {
-            console.info('PhotoPickerComponent setData: other case');
-        }
+        } else if (e === DataType.SET_ALBUM_URI) {
+            let e = o;
+            if (e) {
+                this.data = new Map([["SET_ALBUM_URI", e]]);
+                console.info("PhotoPickerComponent SET_ALBUM_URI" + JSON.stringify(e))
+            }
+        } else console.info("PhotoPickerComponent setData: other case")
     }
 
     setMaxSelected(e) {
