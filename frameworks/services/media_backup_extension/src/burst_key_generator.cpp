@@ -29,11 +29,12 @@ namespace Media {
  */
 std::string BurstKeyGenerator::FindTitlePrefix(const FileInfo &fileInfo)
 {
-    auto suffixIndex = fileInfo.title.find("_BURST");
+    const std::string keyWord = "_BURST";
+    auto suffixIndex = fileInfo.title.find(keyWord);
     if (suffixIndex == std::string::npos) {
         return "";
     }
-    return fileInfo.title.substr(0, suffixIndex + 6);
+    return fileInfo.title.substr(0, suffixIndex + keyWord.size());
 }
  
 /**
@@ -112,7 +113,7 @@ std::string BurstKeyGenerator::FindBurstKey(const FileInfo &fileInfo)
         groupHashMap_[groupHash] = GenerateUuid();
     }
     MEDIA_INFO_LOG("burst photo, objectHash: %{public}s, groupHash: %{public}s, burstKey: %{public}s",
-                    FindObjectHash(fileInfo).c_str(), groupHash.c_str(), groupHashMap_[groupHash].c_str());
+        FindObjectHash(fileInfo).c_str(), groupHash.c_str(), groupHashMap_[groupHash].c_str());
     return groupHashMap_[groupHash];
 }
 }  // namespace Media
