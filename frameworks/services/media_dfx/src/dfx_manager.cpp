@@ -129,14 +129,6 @@ static void LogDelete(DfxData *data)
     int32_t size = taskData->size_;
     std::shared_ptr<DfxReporter> dfxReporter = taskData->dfxReporter_;
     MEDIA_INFO_LOG("id: %{public}s, type: %{public}d, size: %{public}d", id.c_str(), type, size);
-    std::unordered_map<int32_t, int32_t> updateResult = taskData->updateResult_;
-    if (!updateResult.empty()) {
-        string log;
-        for (auto& result: updateResult) {
-            log += "{" + to_string(result.first) + ": " + to_string(result.second) + "}";
-        }
-        MEDIA_INFO_LOG("album update: %{public}s", log.c_str());
-    }
     std::vector<std::string> uris = taskData->uris_;
     if (!uris.empty()) {
         for (auto& uri: uris) {
@@ -159,8 +151,7 @@ void DfxManager::HandleNoPermmison(int32_t type, int32_t object, int32_t error)
     MEDIA_INFO_LOG("permission deny: {%{public}d, %{public}d, %{public}d}", type, object, error);
 }
 
-void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::unordered_map<int32_t, int32_t> &updateResult,
-    std::vector<std::string> &uris, string bundleName)
+void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::vector<std::string> &uris, string bundleName)
 {
     if (bundleName == "") {
         bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
@@ -171,7 +162,7 @@ void DfxManager::HandleDeleteBehavior(int32_t type, int32_t size, std::unordered
         return;
     }
     string id = bundleName == "" ? to_string(IPCSkeleton::GetCallingUid()) : bundleName;
-    auto *taskData = new (nothrow) DeleteBehaviorTask(id, type, size, updateResult, uris, dfxReporter_);
+    auto *taskData = new (nothrow) DeleteBehaviorTask(id, type, size, uris, dfxReporter_);
     if (taskData == nullptr) {
         MEDIA_ERR_LOG("Failed to new taskData");
         return;

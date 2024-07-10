@@ -665,15 +665,13 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         return E_HAS_DB_ERROR;
     }
     ActivelyStartAnalysisService();
-    std::unordered_map<int32_t, int32_t>  updateResult;
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw(), updateResult, notifyUris);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw(), notifyUris);
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
             notifyUris.size(), updatedRows);
     }
     TrashPhotosSendNotify(notifyUris);
-    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::TRASH_PHOTO, updatedRows, updateResult,
-        notifyUris);
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::TRASH_PHOTO, updatedRows, notifyUris);
     return updatedRows;
 }
 
@@ -765,16 +763,15 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
             std::to_string(PhotoAlbumSubType::SCREENSHOT),
             std::to_string(PhotoAlbumSubType::IMAGE),
         });
-    std::unordered_map<int32_t, int32_t> updateResult;
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, notifyUris);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
     MediaLibraryRdbUtils::UpdateSourceAlbumByUri(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, notifyUris);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
 
     MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
     MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, notifyUris);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
 }
@@ -811,9 +808,8 @@ static int32_t BatchSetFavorite(MediaLibraryCommand& cmd)
     CHECK_AND_RETURN_RET_LOG(updatedRows >= 0, E_HAS_DB_ERROR, "Failed to set favorite, err: %{public}d", updatedRows);
 
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore->GetRaw(), { to_string(PhotoAlbumSubType::FAVORITE) });
-    unordered_map<int32_t, int32_t> updateResult;
     MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult,
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
         { to_string(PhotoAlbumSubType::FAVORITE) });
 
     auto watch = MediaLibraryNotify::GetInstance();
