@@ -545,27 +545,6 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
     return errCode;
 }
 
-NativeRdb::ValuesBucket BaseRestore::GetInsertValue(const FileInfo &fileInfo, const std::string &newPath,
-    int32_t sourceType) const
-{
-    NativeRdb::ValuesBucket values;
-    values.PutString(MediaColumn::MEDIA_FILE_PATH, newPath);
-    values.PutString(MediaColumn::MEDIA_TITLE, fileInfo.title);
-    values.PutString(MediaColumn::MEDIA_NAME, fileInfo.displayName);
-    values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
-    values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
-    values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
-    values.PutLong(MediaColumn::MEDIA_DURATION, fileInfo.duration);
-    values.PutInt(MediaColumn::MEDIA_IS_FAV, fileInfo.isFavorite);
-    values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
-    values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
-    values.PutInt(PhotoColumn::PHOTO_HEIGHT, fileInfo.height);
-    values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
-    values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);
-
-    return values;
-}
-
 int32_t BaseRestore::MoveDirectory(const std::string &srcDir, const std::string &dstDir) const
 {
     if (!MediaFileUtils::CreateDirectory(dstDir)) {

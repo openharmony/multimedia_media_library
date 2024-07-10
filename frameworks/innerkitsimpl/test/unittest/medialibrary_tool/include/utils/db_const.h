@@ -70,6 +70,8 @@ const std::unordered_map<std::string, ResultSetDataType> RESULT_TYPE_MAP = {
     { PhotoColumn::CAMERA_SHOT_KEY, ResultSetDataType::TYPE_STRING },
     { PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, TYPE_INT32},
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32},
+    { PhotoColumn::PHOTO_BURST_COVER_LEVEL, ResultSetDataType::TYPE_INT32 },
+    { PhotoColumn::PHOTO_BURST_KEY, ResultSetDataType::TYPE_STRING },
 };
 } // namespace MediaTool
 } // namespace Media

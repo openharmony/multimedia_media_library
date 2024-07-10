@@ -33,6 +33,8 @@
 #include "clone_restore.h"
 #undef private
 #undef protected
+#include "burst_key_generator.h"
+#include "backup_const.h"
 
 using namespace std;
 using namespace OHOS;
@@ -608,6 +610,101 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_get_failed_files_
     string failedFilesStr = BackupFileUtils::GetFailedFilesStr(failedFiles);
     MEDIA_INFO_LOG("Get failedFilesStr: %{public}s", failedFilesStr.c_str());
     EXPECT_GT(failedFilesStr.size(), 0);
+}
+
+/**
+ * @brief BurstKeyGenerator should give the same uuid for diffirent FileInfo in one Bucket
+ */
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generator_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_001 start");
+    BurstKeyGenerator burstKeyGenerator;
+    std::vector<FileInfo> fileInfos;
+    std::vector<std::string> hashs = {
+        "374c3cacde794191acd933529e860997",
+        "fe02dx0ea6115ce236151a1a11d144c8",
+        "3e3a7bf47a15aec4ac10f4fa08dc8b99",
+        "d18a6a01bd430b2bb91d8f3d0a9b4bee",
+        "1cdde93b419c574ef39e5893179743c5"
+    };
+    for (int i = 0; i < 5; i++) {
+        FileInfo item;
+        item.title = "IMG_20240619_022412_BURST00" + std::to_string(i);
+        item.relativeBucketId = "2064266562";
+        item.recycleFlag = 0;
+        item.isBurst = 2;
+        item.hashCode = hashs[i];
+        fileInfos.push_back(item);
+    }
+    fileInfos[0].isBurst = 1;
+    string burstKey;
+    for (int i = 0; i < fileInfos.size(); i++) {
+        if (burstKey.empty()) {
+            burstKey = burstKeyGenerator.FindBurstKey(fileInfos[i]);
+        }
+        else {
+            EXPECT_EQ(burstKey, burstKeyGenerator.FindBurstKey(fileInfos[i]));
+        }
+    }
+    MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_001 end");
+}
+ 
+/**
+ * @brief BurstKeyGenerator should give the different uuid for same FileInfo in Recycle Bin
+ */
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generator_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_002 start");
+    BurstKeyGenerator burstKeyGenerator;
+    std::vector<FileInfo> fileInfos;
+    for (int i = 0; i < 5; i++) {
+        FileInfo item;
+        item.title = "IMG_20240619_022412_BURST001";
+        item.relativeBucketId = "2064266562";
+        item.recycleFlag = 2;
+        item.isBurst = 2;
+        item.hashCode = "374c3cacde794191acd933529e860997";
+        fileInfos.push_back(item);
+    }
+    string burstKey;
+    for (int i = 0; i < fileInfos.size(); i++) {
+        if (burstKey.empty()) {
+            burstKey = burstKeyGenerator.FindBurstKey(fileInfos[i]);
+        }
+        else {
+            EXPECT_NE(burstKey, burstKeyGenerator.FindBurstKey(fileInfos[i]));
+        }
+    }
+    MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_002 end");
+}
+ 
+/**
+ * @brief BurstKeyGenerator should give the different uuid for same FileInfo in different Bucket
+ */
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generator_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_003 start");
+    BurstKeyGenerator burstKeyGenerator;
+    std::vector<FileInfo> fileInfos;
+    for (int i = 0; i < 5; i++) {
+        FileInfo item;
+        item.title = "IMG_20240619_022412_BURST001";
+        item.relativeBucketId = "2064266562" + std::to_string(i);
+        item.recycleFlag = 0;
+        item.isBurst = 2;
+        item.hashCode = "374c3cacde794191acd933529e860997";
+        fileInfos.push_back(item);
+    }
+    string burstKey;
+    for (int i = 0; i < fileInfos.size(); i++) {
+        if (burstKey.empty()) {
+            burstKey = burstKeyGenerator.FindBurstKey(fileInfos[i]);
+        }
+        else {
+            EXPECT_NE(burstKey, burstKeyGenerator.FindBurstKey(fileInfos[i]));
+        }
+    }
+    MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_003 end");
 }
 } // namespace Media
 } // namespace OHOS
