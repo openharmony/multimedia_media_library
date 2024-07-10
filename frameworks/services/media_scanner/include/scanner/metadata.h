@@ -142,6 +142,9 @@ public:
     void SetDynamicRangeType(const VariantData &type);
     EXPORT int32_t GetDynamicRangeType() const;
 
+    void SetCoverPosition(const VariantData &coverPosition);
+    int64_t GetCoverPosition() const;
+
     void SetForAdd(bool forAdd);
     bool GetForAdd() const;
     void SetTableName(const std::string &tableName);
@@ -219,6 +222,9 @@ private:
 
     // front camera
     std::string frontcamera_;
+
+    // cover position
+    int64_t coverPosition_ = 0;
 };
 } // namespace Media
 } // namespace OHOS
