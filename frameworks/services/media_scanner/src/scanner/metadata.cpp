@@ -499,5 +499,15 @@ std::string Metadata::GetFrontCamera() const
 {
     return frontcamera_;
 }
+
+void Metadata::SetCoverPosition(const VariantData &coverPosition)
+{
+    coverPosition_ = std::get<int64_t>(coverPosition);
+}
+
+int64_t Metadata::GetCoverPosition() const
+{
+    return coverPosition_;
+}
 } // namespace Media
 } // namespace OHOS
