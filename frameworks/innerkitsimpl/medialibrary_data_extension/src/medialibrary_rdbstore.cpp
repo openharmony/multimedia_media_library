@@ -109,7 +109,10 @@ int32_t MediaLibraryRdbStore::Init()
 
     int32_t errCode = 0;
     MediaLibraryDataCallBack rdbDataCallBack;
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::Init GetRdbStore");
     rdbStore_ = RdbHelper::GetRdbStore(config_, MEDIA_RDB_VERSION, rdbDataCallBack, errCode);
+    tracer.Finish();
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("GetRdbStore is failed ");
         return errCode;
@@ -2836,6 +2839,9 @@ static void AlwaysCheck(RdbStore &store)
 
 int32_t MediaLibraryDataCallBack::OnUpgrade(RdbStore &store, int32_t oldVersion, int32_t newVersion)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryDataCallBack::OnUpgrade");
+
     MEDIA_INFO_LOG("OnUpgrade old:%{public}d, new:%{public}d", oldVersion, newVersion);
     g_upgradeErr = false;
     if (oldVersion < VERSION_ADD_CLOUD) {
