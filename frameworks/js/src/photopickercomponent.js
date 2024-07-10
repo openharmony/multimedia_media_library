@@ -217,7 +217,7 @@ export class PhotoPickerComponent extends ViewPU {
             if (this.proxy) {
                 if ('thumbnail' === n && o === ClickType.SELECTED) {
                     this.proxy.send({ clickConfirm: i.uri, isConfirm: r });
-                    console.info("PhotoPickerComponent onReceive: click confirm: uri = " + i.uri + "isConfirm = " + r);
+                    console.info('PhotoPickerComponent onReceive: click confirm: uri = ' + i.uri + 'isConfirm = '' + r);
                 }
                 if ('camera' === n) {
                     this.proxy.send({ enterCamera: r });
@@ -239,7 +239,9 @@ export class PhotoPickerComponent extends ViewPU {
 
     convertMIMETypeToFilterType(e) {
         let o;
-        o = e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE ? FILTER_MEDIA_TYPE_IMAGE : e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE ? FILTER_MEDIA_TYPE_VIDEO : FILTER_MEDIA_TYPE_ALL;
+        o = e === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE ?
+            FILTER_MEDIA_TYPE_IMAGE : e === photoAccessHelper.PhotoViewMIMETypes.VIDEO_TYPE ?
+            FILTER_MEDIA_TYPE_VIDEO : FILTER_MEDIA_TYPE_ALL;
         console.info('PhotoPickerComponent convertMIMETypeToFilterType' + JSON.stringify(o));
         return o;
     }
@@ -250,19 +252,21 @@ export class PhotoPickerComponent extends ViewPU {
 }
 let PickerController = class {
     setData(e, o) {
-        if (o) if (e === DataType.SET_SELECTED_URIS) {
-            if (o instanceof Array) {
+        if (o) {
+            if (e === DataType.SET_SELECTED_URIS) {
+                if (o instanceof Array) {
+                    let e = o;
+                    if (e) {
+                        this.data = new Map([['SET_SELECTED_URIS', [...e]]]);
+                        console.info('PhotoPickerComponent SET_SELECTED_URIS' + JSON.stringify(e));
+                    }
+                }
+            } else if (e === DataType.SET_ALBUM_URI) {
                 let e = o;
                 if (e) {
-                    this.data = new Map([['SET_SELECTED_URIS', [...e]]]);
-                    console.info('PhotoPickerComponent SET_SELECTED_URIS' + JSON.stringify(e));
+                    this.data = new Map([['SET_ALBUM_URI', e]]);
+                    console.info('PhotoPickerComponent SET_ALBUM_URI' + JSON.stringify(e));
                 }
-            }
-        } else if (e === DataType.SET_ALBUM_URI) {
-            let e = o;
-            if (e) {
-                this.data = new Map([['SET_ALBUM_URI', e]]);
-                console.info('PhotoPickerComponent SET_ALBUM_URI' + JSON.stringify(e));
             }
         } else {
             console.info('PhotoPickerComponent setData: other case');
