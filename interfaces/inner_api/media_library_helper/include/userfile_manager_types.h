@@ -128,6 +128,7 @@ enum class PhotoSubType : int32_t {
     SCREENSHOT,
     CAMERA,
     MOVING_PHOTO,
+    BURST,
     SUBTYPE_END
 };
 
