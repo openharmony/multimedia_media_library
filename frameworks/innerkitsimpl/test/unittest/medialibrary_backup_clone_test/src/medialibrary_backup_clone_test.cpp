@@ -622,7 +622,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generat
     std::vector<FileInfo> fileInfos;
     std::vector<std::string> hashs = {
         "374c3cacde794191acd933529e860997",
-        "fe02d80ea6115ce236151a1a11d144c8",
+        "fe02dx0ea6115ce236151a1a11d144c8",
         "3e3a7bf47a15aec4ac10f4fa08dc8b99",
         "d18a6a01bd430b2bb91d8f3d0a9b4bee",
         "1cdde93b419c574ef39e5893179743c5"
