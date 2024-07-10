@@ -632,6 +632,7 @@ static void StartAnalysisServiceAsync()
     MessageParcel reply;
     MessageOption option(MessageOption::TF_ASYNC);
     MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
+    data.WriteInterfaceToken(mediaActivelyCallingAnalyse.GetDescriptor());
     if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
         MEDIA_ERR_LOG("Actively Calling Analyse For update index Fail");
     }

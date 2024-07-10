@@ -174,6 +174,7 @@ void MedialibrarySubscriber::StartAnalysisService()
     MessageParcel reply;
     MessageOption option(MessageOption::TF_ASYNC);
     MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
+    data.WriteInterfaceToken(mediaActivelyCallingAnalyse.GetDescriptor());
     if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
         MEDIA_ERR_LOG("StartAnalysisService Fail");
     }
