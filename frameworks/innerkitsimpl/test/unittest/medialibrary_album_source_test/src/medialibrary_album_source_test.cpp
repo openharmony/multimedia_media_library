@@ -326,6 +326,8 @@ void MediaLibraryAlbumSourceTest::TearDownTestCase()
 void MediaLibraryAlbumSourceTest::SetUp()
 {
     MEDIA_INFO_LOG("MediaLibraryAlbumSourceTest SetUp");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    rdbStore->ExecuteSql(PhotoColumn::INDEX_SCTHP_ADDTIME);
 }
 
 void MediaLibraryAlbumSourceTest::TearDown()
