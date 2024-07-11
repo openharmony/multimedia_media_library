@@ -68,8 +68,8 @@ public:
         const std::vector<std::string> &columns, const std::string &id);
     static int32_t GetInt(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &column);
     static std::string GetString(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, const std::string &column);
-    static void ResetAnalysisTables();
-    static void ResetSearchTables();
+    EXPORT static bool ResetAnalysisTables();
+    EXPORT static bool ResetSearchTables();
     EXPORT static int32_t UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows);
     EXPORT static bool HasColumnInTable(RdbStore &store, const std::string &columnName, const std::string &tableName);
     static void AddColumnIfNotExists(

@@ -503,5 +503,37 @@ HWTEST_F(MediaLibraryRdbTest, medialib_UpdateLastVisitTime_test_003, TestSize.Le
     int32_t ret = rdbStorePtr->UpdateLastVisitTime(cmd, updatedRows);
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
+
+HWTEST_F(MediaLibraryRdbTest, medialib_ResetAnalysisTables_test, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    // normal rdbStore_ ResetAnalysisTables will success
+    rdbStorePtr->Init();
+    auto ret =MediaLibraryRdbStore::ResetAnalysisTables();
+    EXPECT_EQ(ret, true);
+
+    // abnormal rdbStore_ ResetAnalysisTables will fail
+    rdbStorePtr->Stop();
+    ret =MediaLibraryRdbStore::ResetAnalysisTables();
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryRdbTest, medialib_ResetSearchTables_test, TestSize.Level0)
+{
+    if (rdbStorePtr == nullptr) {
+        exit(1);
+    }
+    // normal rdbStore_ ResetSearchTables will success
+    rdbStorePtr->Init();
+    auto ret =MediaLibraryRdbStore::ResetSearchTables();
+    EXPECT_EQ(ret, true);
+
+    // abnormal rdbStore_ ResetSearchTables will fail
+    rdbStorePtr->Stop();
+    ret =MediaLibraryRdbStore::ResetSearchTables();
+    EXPECT_EQ(ret, false);
+}
 } // namespace Media
 } // namespace OHOS
