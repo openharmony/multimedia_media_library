@@ -281,9 +281,8 @@ static shared_ptr<ResultSet> QueryGoToFirst(const shared_ptr<NativeRdb::RdbStore
 }
 
 static int32_t ForEachRow(const shared_ptr<RdbStore> &rdbStore, const shared_ptr<ResultSet> &resultSet,
-    const bool hiddenState, unordered_map<int32_t, int32_t> &updateResult, const function<int32_t(
-        const shared_ptr<RdbStore> &rdbStore, const shared_ptr<ResultSet> &albumResult, const bool hiddenState,
-            unordered_map<int32_t, int32_t> &updateResult)> &func)
+    const bool hiddenState, const function<int32_t(const shared_ptr<RdbStore> &rdbStore,
+    const shared_ptr<ResultSet> &albumResult, const bool hiddenState)> &func)
 {
     TransactionOperations transactionOprn(rdbStore);
     int32_t err = transactionOprn.Start();
@@ -293,7 +292,7 @@ static int32_t ForEachRow(const shared_ptr<RdbStore> &rdbStore, const shared_ptr
     }
     while (resultSet->GoToNextRow() == E_OK) {
         // Ignore failure here, try to iterate rows as much as possible.
-        func(rdbStore, resultSet, hiddenState, updateResult);
+        func(rdbStore, resultSet, hiddenState);
     }
     transactionOprn.Finish();
     return E_SUCCESS;
@@ -417,8 +416,9 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
     } else {
         newCount = GetFileCount(fileResult);
     }
+    int32_t id = GetAlbumId(albumResult);
     if (oldCount != newCount) {
-        MEDIA_INFO_LOG("Update album %{public}s, oldCount: %{public}d, newCount: %{public}d",
+        MEDIA_INFO_LOG("Album %{public}d Update %{public}s, oldCount: %{public}d, newCount: %{public}d", id,
             targetColumn.c_str(), oldCount, newCount);
         values.PutInt(targetColumn, newCount);
         if (hiddenState) {
@@ -975,7 +975,7 @@ static void QueryAlbumId(const shared_ptr<RdbStore> &rdbStore, const RdbPredicat
 }
 
 static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, const shared_ptr<ResultSet> &albumResult,
-    const bool hiddenState, unordered_map<int32_t, int32_t> &updateResult)
+    const bool hiddenState)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateUserAlbumIfNeeded");
@@ -996,17 +996,11 @@ static int32_t UpdateUserAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, con
     if (err < 0) {
         MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
     }
-    if (hiddenState) {
-        updateResult[UpdateAlbumType::UPDATE_HIDDEN_ALBUM] += changedRows;
-    } else {
-        updateResult[UpdateAlbumType::UPDATE_USER_ALBUM] += changedRows;
-    }
     return E_SUCCESS;
 }
 
 static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
-    const shared_ptr<ResultSet> &albumResult, const vector<string> &fileIds,
-    unordered_map<int32_t, int32_t> &updateResult)
+    const shared_ptr<ResultSet> &albumResult, const vector<string> &fileIds)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdatePortraitAlbumIfNeeded");
@@ -1034,12 +1028,11 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
         MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
         return err;
     }
-    updateResult[UpdateAlbumType::UPDATE_ANALYSIS_ALBUM] += changedRows;
     return E_SUCCESS;
 }
 
 static int32_t UpdateAnalysisAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
-    const shared_ptr<ResultSet> &albumResult, const bool hiddenState, unordered_map<int32_t, int32_t> &updateResult)
+    const shared_ptr<ResultSet> &albumResult, const bool hiddenState)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateAnalysisAlbumIfNeeded");
@@ -1061,16 +1054,11 @@ static int32_t UpdateAnalysisAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
         MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
         return err;
     }
-    if (hiddenState) {
-        updateResult[UpdateAlbumType::UPDATE_HIDDEN_ALBUM] += changedRows;
-    } else {
-        updateResult[UpdateAlbumType::UPDATE_ANALYSIS_ALBUM] += changedRows;
-    }
     return E_SUCCESS;
 }
 
 static int32_t UpdateSourceAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, const shared_ptr<ResultSet> &albumResult,
-    const bool hiddenState, std::unordered_map<int32_t, int32_t> &updateResult)
+    const bool hiddenState)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumIfNeeded");
@@ -1093,16 +1081,11 @@ static int32_t UpdateSourceAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, c
         MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
         return err;
     }
-    if (hiddenState) {
-        updateResult[UpdateAlbumType::UPDATE_HIDDEN_ALBUM] += changedRows;
-    } else {
-        updateResult[UpdateAlbumType::UPDATE_SOURCE_ALBUM] += changedRows;
-    }
     return E_SUCCESS;
 }
 
-static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
-    const shared_ptr<ResultSet> &albumResult, const bool hiddenState, unordered_map<int32_t, int32_t> &updateResult)
+static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, const shared_ptr<ResultSet> &albumResult,
+    const bool hiddenState)
 {
     ValuesBucket values;
     auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
@@ -1124,16 +1107,10 @@ static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
     if (err < 0) {
         MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
     }
-    if (hiddenState) {
-        updateResult[UpdateAlbumType::UPDATE_HIDDEN_ALBUM] += changedRows;
-    } else {
-        updateResult[UpdateAlbumType::UPDATE_SYSTEM_ALBUM] += changedRows;
-    }
     return E_SUCCESS;
 }
 
-void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<RdbStore> &rdbStore,
-    std::unordered_map<int32_t, int32_t>  &updateResult, const vector<string> &uris)
+void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<RdbStore> &rdbStore, const vector<string> &uris)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateUserAlbumByUri");
@@ -1185,18 +1162,16 @@ void MediaLibraryRdbUtils::UpdateUserAlbumInternal(const shared_ptr<RdbStore> &r
     if (albumResult == nullptr) {
         return;
     }
-    std::unordered_map<int32_t, int32_t>  updateResult;
-    ForEachRow(rdbStore, albumResult, false, updateResult, UpdateUserAlbumIfNeeded);
+    ForEachRow(rdbStore, albumResult, false, UpdateUserAlbumIfNeeded);
 }
 
-void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &rdbStore,
-    std::unordered_map<int32_t, int32_t> &updateResult, const vector<string> &uris)
+void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &rdbStore, const vector<string> &uris)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateAnalysisAlbumByUri");
 
     if (uris.size() == 0) {
-        UpdateAnalysisAlbumInternal(rdbStore, updateResult);
+        UpdateAnalysisAlbumInternal(rdbStore);
     }
     vector<string> albumIds;
     vector<string> idArgs;
@@ -1215,7 +1190,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(const shared_ptr<RdbStore> &
         }
     }
     if (albumIds.size() > 0) {
-        UpdateAnalysisAlbumInternal(rdbStore, updateResult, albumIds, fileIds);
+        UpdateAnalysisAlbumInternal(rdbStore, albumIds, fileIds);
     }
 }
 
@@ -1277,8 +1252,7 @@ int32_t MediaLibraryRdbUtils::GetAlbumSubtypeArgument(const RdbPredicates &predi
 }
 
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore> &rdbStore,
-    std::unordered_map<int32_t, int32_t> &updateResult, const vector<string> &anaAlbumAlbumIds,
-    const vector<string> &fileIds)
+    const vector<string> &anaAlbumAlbumIds, const vector<string> &fileIds)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateAnalysisAlbumInternal");
@@ -1308,9 +1282,9 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore
     while (albumResult->GoToNextRow() == E_OK) {
         auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
         if (subtype == PhotoAlbumSubType::PORTRAIT) {
-            UpdatePortraitAlbumIfNeeded(rdbStore, albumResult, fileIds, updateResult);
+            UpdatePortraitAlbumIfNeeded(rdbStore, albumResult, fileIds);
         } else {
-            UpdateAnalysisAlbumIfNeeded(rdbStore, albumResult, false, updateResult);
+            UpdateAnalysisAlbumIfNeeded(rdbStore, albumResult, false);
         }
     }
     transactionOprn.Finish();
@@ -1362,18 +1336,16 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<RdbStore> 
         MEDIA_ERR_LOG("Failed Delete AnalysisPhotoMap");
         return;
     }
-    unordered_map<int32_t, int32_t> updateResult;
-    UpdateAnalysisAlbumInternal(rdbStore, updateResult, albumIds, fileIds);
+    UpdateAnalysisAlbumInternal(rdbStore, albumIds, fileIds);
 }
 
-void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<RdbStore> &rdbStore,
-    unordered_map<int32_t, int32_t> &updateResult, const vector<string> &uris)
+void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<RdbStore> &rdbStore, const vector<string> &uris)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumByUri");
 
     if (uris.size() == 0) {
-        UpdateSourceAlbumInternal(rdbStore, updateResult);
+        UpdateSourceAlbumInternal(rdbStore);
     }
     vector<string> albumIds;
     string idArgs;
@@ -1398,12 +1370,12 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<RdbStore> &rd
         idArgs.clear();
     }
     if (albumIds.size() > 0) {
-        UpdateSourceAlbumInternal(rdbStore, updateResult, albumIds);
+        UpdateSourceAlbumInternal(rdbStore, albumIds);
     }
 }
 
 void MediaLibraryRdbUtils::UpdateSourceAlbumInternal(const shared_ptr<RdbStore> &rdbStore,
-    std::unordered_map<int32_t, int32_t> &updateResult, const vector<string> &sourceAlbumIds)
+    const vector<string> &sourceAlbumIds)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumInternal");
@@ -1421,7 +1393,7 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumInternal(const shared_ptr<RdbStore> 
         return;
     }
 
-    ForEachRow(rdbStore, albumResult, false, updateResult, UpdateSourceAlbumIfNeeded);
+    ForEachRow(rdbStore, albumResult, false, UpdateSourceAlbumIfNeeded);
 }
 
 static inline shared_ptr<ResultSet> GetSystemAlbum(const shared_ptr<RdbStore> &rdbStore,
@@ -1454,12 +1426,10 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumInternal(const shared_ptr<RdbStore> 
     if (albumResult == nullptr) {
         return;
     }
-    std::unordered_map<int32_t, int32_t> updateResult;
-    ForEachRow(rdbStore, albumResult, false, updateResult, UpdateSysAlbumIfNeeded);
+    ForEachRow(rdbStore, albumResult, false, UpdateSysAlbumIfNeeded);
 }
 
-static void UpdateUserAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
-    std::unordered_map<int32_t, int32_t>  &updateResult)
+static void UpdateUserAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateUserAlbumHiddenState");
@@ -1474,11 +1444,11 @@ static void UpdateUserAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
     if (albumResult == nullptr) {
         return;
     }
-    ForEachRow(rdbStore, albumResult, true, updateResult, UpdateUserAlbumIfNeeded);
+    ForEachRow(rdbStore, albumResult, true, UpdateUserAlbumIfNeeded);
 }
 
 void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
-    std::unordered_map<int32_t, int32_t> &updateResult, const vector<string> &subtypes)
+    const vector<string> &subtypes)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSysAlbumHiddenState");
@@ -1508,11 +1478,10 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<RdbStore> 
     if (albumResult == nullptr) {
         return;
     }
-    ForEachRow(rdbStore, albumResult, true, updateResult, UpdateSysAlbumIfNeeded);
+    ForEachRow(rdbStore, albumResult, true, UpdateSysAlbumIfNeeded);
 }
 
-static void UpdateSourceAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
-    std::unordered_map<int32_t, int32_t> &updateResult)
+static void UpdateSourceAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumHiddenState");
@@ -1528,22 +1497,20 @@ static void UpdateSourceAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
     if (albumResult == nullptr) {
         return;
     }
-    ForEachRow(rdbStore, albumResult, true, updateResult, UpdateSourceAlbumIfNeeded);
+    ForEachRow(rdbStore, albumResult, true, UpdateSourceAlbumIfNeeded);
 }
 
-void MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(const shared_ptr<RdbStore> &rdbStore,
-    std::unordered_map<int32_t, int32_t> &updateResult)
+void MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(const shared_ptr<RdbStore> &rdbStore)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateHiddenAlbumInternal");
 
-    UpdateUserAlbumHiddenState(rdbStore, updateResult);
-    UpdateSysAlbumHiddenState(rdbStore, updateResult);
-    UpdateSourceAlbumHiddenState(rdbStore, updateResult);
+    UpdateUserAlbumHiddenState(rdbStore);
+    UpdateSysAlbumHiddenState(rdbStore);
+    UpdateSourceAlbumHiddenState(rdbStore);
 }
 
-void MediaLibraryRdbUtils::UpdateAllAlbums(const shared_ptr<RdbStore> &rdbStore,
-    std::unordered_map<int32_t, int32_t>  &updateResult, const vector<string> &uris)
+void MediaLibraryRdbUtils::UpdateAllAlbums(const shared_ptr<RdbStore> &rdbStore, const vector<string> &uris)
 {
     MediaLibraryTracer tracer;
     tracer.Start("UpdateAllAlbums");
@@ -1558,10 +1525,10 @@ void MediaLibraryRdbUtils::UpdateAllAlbums(const shared_ptr<RdbStore> &rdbStore,
         to_string(PhotoAlbumSubType::IMAGE),
     };
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource);
-    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore, updateResult);
-    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, updateResult, uris);
-    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, updateResult, uris);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, updateResult, uris);
+    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, uris);
+    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, uris);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, uris);
 }
 
 static int32_t UpdateAlbumReplacedSignal(const shared_ptr<RdbStore> &rdbStore,
@@ -1749,8 +1716,7 @@ static int32_t RefreshAnalysisAlbums(const shared_ptr<NativeRdb::RdbStore> &rdbS
     const vector<string> &subtypes)
 {
     while (albumResult->GoToNextRow() == NativeRdb::E_OK) {
-        std::unordered_map<int32_t, int32_t>  updateResult;
-        int ret = UpdateAnalysisAlbumIfNeeded(rdbStore, albumResult, false, updateResult);
+        int ret = UpdateAnalysisAlbumIfNeeded(rdbStore, albumResult, false);
         if (ret != E_SUCCESS) {
             MEDIA_ERR_LOG("UpdateAnalysisAlbumIfNeeded fail");
             return E_HAS_DB_ERROR;
@@ -1902,8 +1868,7 @@ void MediaLibraryRdbUtils::UpdateAllAlbumsForCloud(const std::shared_ptr<NativeR
     // 注意，端云同步代码仓也有相同函数，添加新相册时，请通知端云同步进行相应修改
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore);
     MediaLibraryRdbUtils::UpdateUserAlbumInternal(rdbStore);
-    unordered_map<int32_t, int32_t> updateResult;
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, updateResult);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
 }
 
 void MediaLibraryRdbUtils::UpdateAllAlbumsCountForCloud(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore)

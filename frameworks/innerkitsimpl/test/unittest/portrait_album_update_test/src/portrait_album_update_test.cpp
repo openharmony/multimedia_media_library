@@ -356,7 +356,6 @@ void CheckAlbum(int64_t albumId, int count, int64_t coverId, bool isCoverSatisfi
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_001 Start");
-    std::unordered_map<int32_t, int32_t> updateResult;
     vector<PortraitData> portraits = PreparePortraitData();
     int64_t albumId = CreatePortraitAlbum();
     EXPECT_GT(albumId, 0);
@@ -367,17 +366,17 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level
     }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, 1);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, true);
 
     TrashPortrait(portraits[0].fileId);
     TrashPortrait(portraits[1].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds,
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds,
         {fileIds[0], fileIds[1]});
     CheckAlbum(albumId, 2, portraits[3].fileId, false);
 
     TrashPortrait(portraits[3].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds, {fileIds[3]});
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[3]});
     CheckAlbum(albumId, 1, portraits[2].fileId, false);
 
     MEDIA_INFO_LOG("portrait_album_update_test_001 End");
@@ -386,7 +385,6 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_002 Start");
-    std::unordered_map<int32_t, int32_t> updateResult;
     vector<PortraitData> portraits = PreparePortraitData();
     int64_t albumId = CreatePortraitAlbum();
     EXPECT_GT(albumId, 0);
@@ -397,19 +395,19 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level
     }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, 1);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, true);
 
     HidePortrait(portraits[1].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds, {fileIds[1]});
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[1]});
     CheckAlbum(albumId, 3, portraits[0].fileId, true);
 
     HidePortrait(portraits[0].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds, {fileIds[0]});
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[0]});
     CheckAlbum(albumId, 2, portraits[3].fileId, false);
 
     HidePortrait(portraits[2].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds, {fileIds[2]});
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[2]});
     CheckAlbum(albumId, 1, portraits[3].fileId, false);
 
     MEDIA_INFO_LOG("portrait_album_update_test_002 End");
@@ -418,7 +416,6 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level
 HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level0)
 {
     MEDIA_INFO_LOG("portrait_album_update_test_003 Start");
-    std::unordered_map<int32_t, int32_t> updateResult;
     vector<PortraitData> portraits = PreparePortraitData();
     int64_t albumId = CreatePortraitAlbum();
     EXPECT_GT(albumId, 0);
@@ -429,19 +426,19 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level
     }
 
     InsertPortraitsToAlbum(portraits, albumId, 1, 1);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds);
     CheckAlbum(albumId, 4, portraits[1].fileId, true);
 
     DismissPortrait(albumId, portraits[1].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds, {fileIds[1]});
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[1]});
     CheckAlbum(albumId, 3, portraits[0].fileId, true);
 
     DismissPortrait(albumId, portraits[0].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds, {fileIds[0]});
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[0]});
     CheckAlbum(albumId, 2, portraits[3].fileId, false);
 
     DismissPortrait(albumId, portraits[3].fileId);
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), updateResult, albumIds, {fileIds[3]});
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[3]});
     CheckAlbum(albumId, 1, portraits[2].fileId, false);
 
     MEDIA_INFO_LOG("portrait_album_update_test_003 End");

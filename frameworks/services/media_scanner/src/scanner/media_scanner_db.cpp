@@ -1032,9 +1032,8 @@ void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
         to_string(PhotoAlbumSubType::SCREENSHOT),
         to_string(PhotoAlbumSubType::FAVORITE),
     });
-    std::unordered_map<int32_t, int32_t> updateResult;
     MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, sourceAlbumIds);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), sourceAlbumIds);
 }
 
 void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
@@ -1053,10 +1052,8 @@ void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
     if (!metadata.GetOwnerPackage().empty()) {
         if (metadata.GetFileId() != FILE_ID_DEFAULT) {
             std::string uri = PhotoColumn::PHOTO_URI_PREFIX + to_string(metadata.GetFileId());
-            std::unordered_map<int32_t, int32_t> updateResult;
             MediaLibraryRdbUtils::UpdateSourceAlbumByUri(
-                MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
-                updateResult, {uri});
+                MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {uri});
         }
     }
 }

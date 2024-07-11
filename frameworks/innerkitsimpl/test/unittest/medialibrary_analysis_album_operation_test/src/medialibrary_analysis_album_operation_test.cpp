@@ -585,7 +585,6 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum, TestSize.
 {
     MEDIA_INFO_LOG("QueryGroupPhotoAlbum Start");
     ClearTables();
-    std::unordered_map<int32_t, int32_t> updateResult;
     vector<PortraitData> portraits = PreparePortraitData();
     vector<PortraitAlbumData> portraitsAlbum = CreatePortraitAlbum();
     vector<string> fileIds;
@@ -614,7 +613,6 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, MergeAlbum_UpdateMergeGroupAlbu
 {
     MEDIA_INFO_LOG("MergeAlbum_UpdateMergeGroupAlbumsInfo Start");
     ClearTables();
-    std::unordered_map<int32_t, int32_t> updateResult;
     vector<PortraitData> portraits = PreparePortraitData();
     vector<PortraitAlbumData> portraitsAlbum = CreatePortraitAlbum();
     vector<string> fileIds;
