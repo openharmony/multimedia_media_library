@@ -2156,7 +2156,8 @@ bool MediaLibraryRdbUtils::HasDataToAnalysis(const std::shared_ptr<NativeRdb::Rd
     return (loc || cv || search || highlight);
 }
 
-int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::string filePath, std::string cloudId)
+int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+   std::string filePath, std::string cloudId)
 {
     uint32_t err = 0;
     SourceOptions opts;
@@ -2189,7 +2190,8 @@ int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<Na
     return err;
 }
 
-string MediaLibraryRdbUtils::GetPhotoPathByCloudId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, std::string cloudId)
+string MediaLibraryRdbUtils::GetPhotoPathByCloudId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+   std::string cloudId)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
@@ -2202,7 +2204,8 @@ string MediaLibraryRdbUtils::GetPhotoPathByCloudId(const std::shared_ptr<NativeR
         return "";
     }
 
-    string filePath = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet, ResultSetDataType::TYPE_STRING));
+    string filePath = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
+        ResultSetDataType::TYPE_STRING));
     if (filePath.empty()) {
         MEDIA_ERR_LOG("Failed to get cloud file uri, cloudId: %{public}s", cloudId.c_str());
         return "";

@@ -155,16 +155,19 @@ void CloudSyncNotifyHandler::HandleCloudHeightErrorNotify(const list<Uri> &uris)
         auto cloudId = uri.ToString().substr(PhotoColumn::PHOTO_HEIGHT_ERROR_URI_PREFIX.length());
         string filePath = MediaLibraryRdbUtils::GetPhotoPathByCloudId(rdbStore, cloudId);
         if (filePath.empty()) {
-            MEDIA_ERR_LOG("File not exist, filePath: %{public}s. cloudId: %{public}s", filePath.c_str(), cloudId.c_str());
+            MEDIA_ERR_LOG("File not exist, filePath: %{public}s. cloudId: %{public}s", filePath.c_str(),
+               cloudId.c_str());
             continue;
         }
 
         int32_t ret = CloudSyncHelper::GetInstance()->StartDownloadFile(filePath);
         if (ret != 0) {
-            MEDIA_ERR_LOG("Start download failed! ret = %{public}d, cloudId = %{public}s, filePath = %{public}s", ret, cloudId.c_str(), filePath.c_str());
+            MEDIA_ERR_LOG("Start download failed! ret = %{public}d, cloudId = %{public}s, filePath = %{public}s",
+               ret, cloudId.c_str(), filePath.c_str());
             continue;
         }
-        MEDIA_DEBUG_LOG("Start download success. cloudId = %{public}s, filePath = %{public}s", cloudId.c_str(), filePath.c_str());
+        MEDIA_DEBUG_LOG("Start download success. cloudId = %{public}s, filePath = %{public}s", cloudId.c_str(),
+           filePath.c_str());
     }
     MEDIA_DEBUG_LOG("Handle cloud height error notify over, uris.size() is %{public}zu", uris.size());
 }
@@ -181,15 +184,18 @@ void CloudSyncNotifyHandler::HandleCloudDownloadSuccessedNotify(const list<Uri> 
         auto cloudId = uri.ToString().substr(PhotoColumn::PHOTO_DOWNLOAD_SUCCESSED_URI_PREFIX.length());
         string filePath = MediaLibraryRdbUtils::GetPhotoPathByCloudId(rdbStore, cloudId);
         if (filePath.empty() || !MediaFileUtils::IsFileExists(filePath)) {
-            MEDIA_ERR_LOG("File not exist, filePath: %{public}s. cloudId: %{public}s", filePath.c_str(), cloudId.c_str());
+            MEDIA_ERR_LOG("File not exist, filePath: %{public}s. cloudId: %{public}s", filePath.c_str(),
+                cloudId.c_str());
             continue;
         }
 
         if (MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(rdbStore, filePath, cloudId) < 0) {
-            MEDIA_ERR_LOG("Failed to update photo height and width, filePath: %{public}s. cloudId: %{public}s", filePath.c_str(), cloudId.c_str());
+            MEDIA_ERR_LOG("Failed to update photo height and width, filePath: %{public}s. cloudId: %{public}s",
+                filePath.c_str(), cloudId.c_str());
             continue;
         }
-        MEDIA_DEBUG_LOG("Download cloud photo success. cloudId = %{public}s, filePath = %{public}s", cloudId.c_str(), filePath.c_str());
+        MEDIA_DEBUG_LOG("Download cloud photo success. cloudId = %{public}s, filePath = %{public}s", cloudId.c_str(),
+            filePath.c_str());
     }
     MEDIA_DEBUG_LOG("Handle download cloud photo over, uris.size() is %{public}zu", uris.size());
 }
