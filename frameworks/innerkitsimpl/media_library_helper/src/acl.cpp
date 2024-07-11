@@ -273,7 +273,7 @@ void InitSandboxGroupEntry(AclXattrEntry& entry, uint32_t id, uint16_t access)
 int32_t Acl::AclSetDefault()
 {
     if (EnableAcl(THUMB_DIR, ACL_XATTR_DEFAULT, ACL_PERM::Value::READ | ACL_PERM::Value::EXECUTE,
-        MEDIA_DB_ACL_GROUP) != E_OK) {
+        THUMB_ACL_GROUP) != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the Photo dir");
         return E_ERR;
     }
@@ -395,6 +395,14 @@ int32_t Acl::EntryInsert(AclXattrEntry& entry, const std::string& path, const ch
         {
             .tag = ACL_TAG::OTHER,
             .perm = S_IXOTH,
+            .id = ACL_UNDEFINED_ID,
+        }
+    );
+
+    acl.InsertEntry(
+        {
+            .tag = ACL_TAG::GROUP_OBJ,
+            .perm = S_IRWXG >> 3,
             .id = ACL_UNDEFINED_ID,
         }
     );
