@@ -87,6 +87,11 @@ public:
     EXPORT static void AddVirtualColumnsOfDateType(std::vector<std::string>& columns);
     EXPORT static void AddQueryIndex(NativeRdb::AbsPredicates& predicates, const std::vector<std::string>& columns);
     EXPORT static bool HasDataToAnalysis(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
+    EXPORT static int32_t UpdatePhotoHeightAndWidth(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        std::string filePath, std::string cloudId);
+    EXPORT static std::string GetPhotoPathByCloudId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+        std::string cloudId);
+
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;
