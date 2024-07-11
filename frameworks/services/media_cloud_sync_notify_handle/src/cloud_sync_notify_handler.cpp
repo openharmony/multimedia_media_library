@@ -113,7 +113,7 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
     }
 
     if (uriString.find(PhotoColumn::PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX) != string::npos) {
-        HandleCloudDownloadSuccessedNotify(notifyInfo_.uris);
+        HandleCloudDownloadSucceedNotify(notifyInfo_.uris);
         return;
     }
 
