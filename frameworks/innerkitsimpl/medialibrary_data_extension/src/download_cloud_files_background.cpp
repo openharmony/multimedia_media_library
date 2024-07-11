@@ -20,7 +20,8 @@
 #include <sys/statvfs.h>
 
 #include "abs_rdb_predicates.h"
-#include "cloud_sync_helper.h"
+#include "cloud_sync_manager.h"
+#include "common_timer_errors.h"
 #include "media_column.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
@@ -33,12 +34,20 @@
 
 namespace OHOS {
 namespace Media {
-static constexpr int32_t DOWNLOAD_BATCH_SIZE = 5;
-static constexpr int32_t LOCAL_FILES_COUNT_THRESHOLD = 10000;
-static constexpr int32_t VIDEO_DOWNLOAD_MAX_SIZE = 250 * 1000 * 1000; // 250MB
+using namespace FileManagement::CloudSync;
 
-// The task can be performed only when the the ratio of available storage capacity reaches this value
-static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.3;
+static constexpr int32_t DOWNLOAD_BATCH_SIZE = 5;
+static constexpr int32_t DOWNLOAD_INTERVAL = 60 * 1000; // 1 minute
+static constexpr int32_t DOWNLOAD_DURATION = 20 * 1000; // 20 seconds
+
+// The task can be performed only when the ratio of available storage capacity reaches this value
+static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.4;
+
+recursive_mutex DownloadCloudFilesBackground::mutex_;
+Utils::Timer DownloadCloudFilesBackground::timer_("download_cloud_files_background");
+uint32_t DownloadCloudFilesBackground::startTimerId_ = 0;
+uint32_t DownloadCloudFilesBackground::stopTimerId_ = 0;
+std::vector<std::string> DownloadCloudFilesBackground::curDownloadPaths_;
 
 void DownloadCloudFilesBackground::DownloadCloudFiles()
 {
@@ -47,24 +56,23 @@ void DownloadCloudFilesBackground::DownloadCloudFiles()
         MEDIA_WARN_LOG("Insufficient storage space, stop downloading cloud files");
         return;
     }
-    if (IsLocalFilesExceedsThreshold()) {
-        MEDIA_WARN_LOG("The number of local files exceeds the threshold, stop downloading cloud files");
-        return;
-    }
+
     auto resultSet = QueryCloudFiles();
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query cloud files!");
         return;
     }
-    std::vector<std::string> photoPaths;
-    FillPhotoPaths(resultSet, photoPaths);
-    if (photoPaths.empty()) {
-        MEDIA_DEBUG_LOG("No cloud photos exist, no need to download");
+
+    DownloadFiles downloadFiles;
+    ParseDownloadFiles(resultSet, downloadFiles);
+    if (downloadFiles.paths.empty()) {
+        MEDIA_DEBUG_LOG("No cloud files need to be downloaded");
         return;
     }
-    int32_t err = AddDownloadTask(photoPaths);
-    if (err) {
-        MEDIA_WARN_LOG("Failed to add download task! err: %{public}d", err);
+
+    int32_t ret = AddDownloadTask(downloadFiles);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to add download task! err: %{public}d", ret);
     }
 }
 
@@ -73,7 +81,7 @@ bool DownloadCloudFilesBackground::IsStorageInsufficient()
     struct statvfs diskInfo;
     int ret = statvfs("/data", &diskInfo);
     if (ret != 0) {
-        MEDIA_ERR_LOG("Get file system status information failed, ret=%{public}d", ret);
+        MEDIA_ERR_LOG("Get file system status information failed, err: %{public}d", ret);
         return true;
     }
 
@@ -89,30 +97,6 @@ bool DownloadCloudFilesBackground::IsStorageInsufficient()
     return freeRatio < PROPER_DEVICE_STORAGE_CAPACITY_RATIO;
 }
 
-bool DownloadCloudFilesBackground::IsLocalFilesExceedsThreshold()
-{
-    const std::vector<std::string> localPositions = {
-        std::to_string(POSITION_LOCAL),
-        std::to_string((POSITION_LOCAL | POSITION_CLOUD)),
-    };
-    const std::vector<std::string> photosType = { std::to_string(MEDIA_TYPE_IMAGE), std::to_string(MEDIA_TYPE_VIDEO) };
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.In(PhotoColumn::PHOTO_POSITION, localPositions);
-    predicates.In(PhotoColumn::MEDIA_TYPE, photosType);
-    auto resultSet = MediaLibraryRdbStore::Query(predicates, { PhotoColumn::MEDIA_ID });
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to query local files!");
-        return true;
-    }
-    int32_t count = 0;
-    int32_t err = resultSet->GetRowCount(count);
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to get count, err: %{public}d", err);
-        return true;
-    }
-    return count > LOCAL_FILES_COUNT_THRESHOLD;
-}
-
 std::shared_ptr<NativeRdb::ResultSet> DownloadCloudFilesBackground::QueryCloudFiles()
 {
     const std::vector<std::string> columns = { PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE };
@@ -124,19 +108,15 @@ std::shared_ptr<NativeRdb::ResultSet> DownloadCloudFilesBackground::QueryCloudFi
         ->And()
         ->NotEqualTo(MediaColumn::MEDIA_FILE_PATH, DEFAULT_STR)
         ->And()
+        ->GreaterThan(MediaColumn::MEDIA_SIZE, 0)
+        ->And()
         ->BeginWrap()
         ->BeginWrap()
         ->EqualTo(PhotoColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_IMAGE))
-        ->And()
-        ->GreaterThan(MediaColumn::MEDIA_SIZE, 0)
         ->EndWrap()
         ->Or()
         ->BeginWrap()
         ->EqualTo(PhotoColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_VIDEO))
-        ->And()
-        ->GreaterThan(MediaColumn::MEDIA_SIZE, 0)
-        ->And()
-        ->LessThan(MediaColumn::MEDIA_SIZE, VIDEO_DOWNLOAD_MAX_SIZE)
         ->EndWrap()
         ->EndWrap()
         ->Limit(DOWNLOAD_BATCH_SIZE);
@@ -144,8 +124,8 @@ std::shared_ptr<NativeRdb::ResultSet> DownloadCloudFilesBackground::QueryCloudFi
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
 
-void DownloadCloudFilesBackground::FillPhotoPaths(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
-    std::vector<std::string> &photoPaths)
+void DownloadCloudFilesBackground::ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    DownloadFiles &downloadFiles)
 {
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         std::string path =
@@ -157,27 +137,30 @@ void DownloadCloudFilesBackground::FillPhotoPaths(std::shared_ptr<NativeRdb::Res
         int32_t mediaType =
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_TYPE, resultSet, TYPE_INT32));
         if (mediaType == static_cast<int32_t>(MEDIA_TYPE_VIDEO)) {
-            photoPaths.clear();
-            photoPaths.push_back(path);
+            downloadFiles.paths.clear();
+            downloadFiles.paths.push_back(path);
+            downloadFiles.mediaType = MEDIA_TYPE_VIDEO;
             return;
         }
-        photoPaths.push_back(path);
+        downloadFiles.paths.push_back(path);
     }
+    downloadFiles.mediaType = MEDIA_TYPE_IMAGE;
 }
 
-int32_t DownloadCloudFilesBackground::AddDownloadTask(const std::vector<std::string> &photoPaths)
+int32_t DownloadCloudFilesBackground::AddDownloadTask(const DownloadFiles &downloadFiles)
 {
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
         MEDIA_ERR_LOG("Failed to get async worker instance!");
         return E_FAIL;
     }
-    auto *taskData = new (std::nothrow) DownloadCloudFilesData();
+
+    auto *taskData = new (std::nothrow) DownloadCloudFilesData(downloadFiles);
     if (taskData == nullptr) {
         MEDIA_ERR_LOG("Failed to alloc async data for downloading cloud files!");
         return E_NO_MEMORY;
     }
-    taskData->paths = photoPaths;
+
     auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(DownloadCloudFilesExecutor, taskData);
     asyncWorker->AddTask(asyncTask, false);
     return E_OK;
@@ -186,11 +169,59 @@ int32_t DownloadCloudFilesBackground::AddDownloadTask(const std::vector<std::str
 void DownloadCloudFilesBackground::DownloadCloudFilesExecutor(AsyncTaskData *data)
 {
     auto *taskData = static_cast<DownloadCloudFilesData *>(data);
+    auto downloadFiles = taskData->downloadFiles_;
 
-    MEDIA_DEBUG_LOG("Try to download %{public}zu cloud files.", taskData->paths.size());
-    for (const auto &path : taskData->paths) {
-        CloudSyncHelper::GetInstance()->StartDownloadFile(path);
+    MEDIA_INFO_LOG("Try to download %{public}zu cloud files.", downloadFiles.paths.size());
+    for (const auto &path : downloadFiles.paths) {
+        int32_t ret = CloudSyncManager::GetInstance().StartDownloadFile(path);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("Failed to download cloud file, err: %{public}d, path: %{public}s", ret, path.c_str());
+        }
     }
+
+    lock_guard<recursive_mutex> lock(mutex_);
+    curDownloadPaths_ = downloadFiles.paths;
+    if (downloadFiles.mediaType == MEDIA_TYPE_VIDEO) {
+        if (stopTimerId_ > 0) {
+            timer_.Unregister(stopTimerId_);
+        }
+        stopTimerId_ = timer_.Register([=]() { StopDownloadFiles(downloadFiles.paths); }, DOWNLOAD_DURATION, true);
+    }
+}
+
+void DownloadCloudFilesBackground::StopDownloadFiles(const std::vector<std::string> &filePaths)
+{
+    for (const auto &path : filePaths) {
+        MEDIA_INFO_LOG("Try to Stop downloading cloud file, the path is %{public}s", path.c_str());
+        int32_t ret = CloudSyncManager::GetInstance().StopDownloadFile(path);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("Stop downloading cloud file failed, err: %{public}d, path: %{public}s", ret, path.c_str());
+        }
+    }
+}
+
+void DownloadCloudFilesBackground::StartTimer()
+{
+    lock_guard<recursive_mutex> lock(mutex_);
+    if (startTimerId_ > 0) {
+        timer_.Unregister(startTimerId_);
+    }
+    uint32_t ret = timer_.Setup();
+    if (ret != Utils::TIMER_ERR_OK) {
+        MEDIA_ERR_LOG("Failed to start background download cloud files timer, err: %{public}d", ret);
+    }
+    startTimerId_ = timer_.Register(DownloadCloudFiles, DOWNLOAD_INTERVAL);
+}
+
+void DownloadCloudFilesBackground::StopTimer()
+{
+    lock_guard<recursive_mutex> lock(mutex_);
+    timer_.Unregister(startTimerId_);
+    timer_.Unregister(stopTimerId_);
+    timer_.Shutdown();
+    startTimerId_ = 0;
+    stopTimerId_ = 0;
+    StopDownloadFiles(curDownloadPaths_);
 }
 } // namespace Media
 } // namespace OHOS
