@@ -92,7 +92,6 @@ public:
     EXPORT static std::string GetPhotoPathByCloudId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         std::string cloudId);
 
-
 private:
     static std::atomic<bool> isNeedRefreshAlbum;
     static std::atomic<bool> isInRefreshTask;
