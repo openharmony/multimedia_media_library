@@ -544,9 +544,9 @@ function getPhotoPickerSelectResult(args) {
   if (args.resultCode === 0) {
     let uris = args.uris;
     let isOrigin = args.isOrigin;
-    selectResult.data = new PhotoSelectResult(uris, isOrigin);
+    selectResult.data = new photoSelectResult(uris, isOrigin);
   } else if (args.resultCode === -1) {
-    selectResult.data = new PhotoSelectResult([], undefined);
+    selectResult.data = new photoSelectResult([], undefined);
   } else {
     selectResult.error = getErr(ErrCode.RESULT_ERROR);
   }
@@ -597,7 +597,7 @@ async function photoPickerSelect(...args) {
   return undefined;
 }
 
-function BaseSelectOptions() {
+function baseSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
   this.isSearchSupported = true;
@@ -605,7 +605,7 @@ function BaseSelectOptions() {
   this.isPreviewForSingleSelectionSupported = true;
 }
 
-function PhotoSelectOptions() {
+function photoSelectOptions() {
   this.MIMEType = PhotoViewMIMETypes.INVALID_TYPE;
   this.maxSelectNumber = -1;
   this.isSearchSupported = true;
@@ -614,16 +614,16 @@ function PhotoSelectOptions() {
   this.isOriginalSupported = false;
 }
 
-function PhotoSelectResult(uris, isOriginalPhoto) {
+function photoSelectResult(uris, isOriginalPhoto) {
   this.photoUris = uris;
   this.isOriginalPhoto = isOriginalPhoto;
 }
 
-function PhotoViewPicker() {
+function photoViewPicker() {
   this.select = photoPickerSelect;
 }
 
-function RecommendationOptions() {
+function recommendationOptions() {
 }
 
 class MediaAssetChangeRequest extends photoAccessHelper.MediaAssetChangeRequest {
@@ -691,12 +691,12 @@ export default {
   PhotoViewMIMETypes: PhotoViewMIMETypes,
   DeliveryMode: photoAccessHelper.DeliveryMode,
   SourceMode: photoAccessHelper.SourceMode,
-  BaseSelectOptions: BaseSelectOptions,
-  PhotoSelectOptions: PhotoSelectOptions,
-  PhotoSelectResult: PhotoSelectResult,
-  PhotoViewPicker: PhotoViewPicker,
+  BaseSelectOptions: baseSelectOptions,
+  PhotoSelectOptions: photoSelectOptions,
+  PhotoSelectResult: photoSelectResult,
+  PhotoViewPicker: photoViewPicker,
   RecommendationType: RecommendationType,
-  RecommendationOptions: RecommendationOptions,
+  RecommendationOptions: recommendationOptions,
   ResourceType: photoAccessHelper.ResourceType,
   MediaAssetEditData: photoAccessHelper.MediaAssetEditData,
   MediaAssetChangeRequest: MediaAssetChangeRequest,
