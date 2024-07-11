@@ -1584,11 +1584,11 @@ static void UpdateInsertPhotoUpdateAlbumTrigger(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
-void MediaLibraryRdbStore::ResetSearchTables()
+bool MediaLibraryRdbStore::ResetSearchTables()
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return;
+        return false;
     }
     static const vector<string> executeSqlStrs = {
         "DROP TABLE IF EXISTS " + SEARCH_TOTAL_TABLE,
@@ -1604,13 +1604,14 @@ void MediaLibraryRdbStore::ResetSearchTables()
     MEDIA_INFO_LOG("start update search db");
     ExecSqls(executeSqlStrs, *rdbStore_);
     AddSearchTable(*rdbStore_);
+    return true;
 }
 
-void MediaLibraryRdbStore::ResetAnalysisTables()
+bool MediaLibraryRdbStore::ResetAnalysisTables()
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
-        return;
+        return false;
     }
     static const vector<string> executeSqlStrs = {
         "DROP TRIGGER IF EXISTS delete_vision_trigger",
@@ -1641,6 +1642,7 @@ void MediaLibraryRdbStore::ResetAnalysisTables()
     AddSegmentationColumns(*rdbStore_);
     AddFaceOcclusionAndPoseTypeColumn(*rdbStore_);
     AddVideoLabelTable(*rdbStore_);
+    return true;
 }
 
 static void AddPackageNameColumnOnTables(RdbStore &store)
