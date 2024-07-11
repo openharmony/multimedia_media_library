@@ -51,6 +51,7 @@ private:
     bool isWifiConn_{ false };
     bool currentStatus_{false};
     bool timerStatus_{false};
+    std::mutex mutex_;
     int32_t agingCount_ {0};
     int64_t lockTime_ {0};
     EXPORT void DoBackgroundOperation();
