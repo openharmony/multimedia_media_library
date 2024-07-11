@@ -1126,7 +1126,7 @@ static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
     if (err < 0) {
         MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
     }
-        if (hiddenState) {
+    if (hiddenState) {
         updateResult[UpdateAlbumType::UPDATE_HIDDEN_ALBUM] += changedRows;
     } else {
         updateResult[UpdateAlbumType::UPDATE_SYSTEM_ALBUM] += changedRows;
@@ -1497,11 +1497,11 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<RdbStore> 
 
     if (subtypes.empty()) {
         albumResult = GetSystemAlbum(rdbStore, {
-        to_string(PhotoAlbumSubType::IMAGE),
-        to_string(PhotoAlbumSubType::VIDEO),
-        to_string(PhotoAlbumSubType::FAVORITE),
-        to_string(PhotoAlbumSubType::SCREENSHOT),
-        to_string(PhotoAlbumSubType::CAMERA),
+            to_string(PhotoAlbumSubType::IMAGE),
+            to_string(PhotoAlbumSubType::VIDEO),
+            to_string(PhotoAlbumSubType::FAVORITE),
+            to_string(PhotoAlbumSubType::SCREENSHOT),
+            to_string(PhotoAlbumSubType::CAMERA),
         }, columns);
     } else {
         albumResult = GetSystemAlbum(rdbStore, subtypes, columns);
