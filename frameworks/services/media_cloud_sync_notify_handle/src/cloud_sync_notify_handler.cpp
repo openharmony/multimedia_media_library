@@ -113,7 +113,7 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
     }
 
     if (uriString.find(PhotoColumn::PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX) != string::npos) {
-        HandleCloudDownloadSucceedNotify(notifyInfo_.uris);
+        HandleCloudDownloadSucceedNotify(notifyInfo_.uris); 
         return;
     }
 
@@ -156,18 +156,18 @@ void CloudSyncNotifyHandler::HandleCloudHeightErrorNotify(const list<Uri> &uris)
         string filePath = MediaLibraryRdbUtils::GetPhotoPathByCloudId(rdbStore, cloudId);
         if (filePath.empty()) {
             MEDIA_ERR_LOG("File not exist, filePath: %{public}s. cloudId: %{public}s", filePath.c_str(),
-               cloudId.c_str());
+                cloudId.c_str());
             continue;
         }
 
         int32_t ret = CloudSyncHelper::GetInstance()->StartDownloadFile(filePath);
         if (ret != 0) {
             MEDIA_ERR_LOG("Start download failed! ret = %{public}d, cloudId = %{public}s, filePath = %{public}s",
-               ret, cloudId.c_str(), filePath.c_str());
+                ret, cloudId.c_str(), filePath.c_str());
             continue;
         }
         MEDIA_DEBUG_LOG("Start download success. cloudId = %{public}s, filePath = %{public}s", cloudId.c_str(),
-           filePath.c_str());
+            filePath.c_str());
     }
     MEDIA_DEBUG_LOG("Handle cloud height error notify over, uris.size() is %{public}zu", uris.size());
 }

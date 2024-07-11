@@ -2157,7 +2157,7 @@ bool MediaLibraryRdbUtils::HasDataToAnalysis(const std::shared_ptr<NativeRdb::Rd
 }
 
 int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-   std::string filePath, std::string cloudId)
+    std::string filePath, std::string cloudId)
 {
     uint32_t err = 0;
     SourceOptions opts;
@@ -2191,7 +2191,7 @@ int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<Na
 }
 
 string MediaLibraryRdbUtils::GetPhotoPathByCloudId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-   std::string cloudId)
+    std::string cloudId)
 {
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
