@@ -1418,6 +1418,7 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, s
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
         { to_string(PhotoAlbumSubType::FAVORITE) });
+    CHECK_AND_RETURN_LOG(fileAsset != nullptr, "fileAsset is nullptr");
     if (fileAsset->IsHidden()) {
         unordered_map<int32_t, int32_t> updateResult;
         MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
