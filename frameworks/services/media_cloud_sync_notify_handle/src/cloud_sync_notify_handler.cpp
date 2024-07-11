@@ -112,7 +112,7 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
         return;
     }
 
-    if (uriString.find(PhotoColumn::PHOTO_DOWNLOAD_SUCCESSED_URI_PREFIX) != string::npos) {
+    if (uriString.find(PhotoColumn::PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX) != string::npos) {
         HandleCloudDownloadSuccessedNotify(notifyInfo_.uris);
         return;
     }
@@ -172,7 +172,7 @@ void CloudSyncNotifyHandler::HandleCloudHeightErrorNotify(const list<Uri> &uris)
     MEDIA_DEBUG_LOG("Handle cloud height error notify over, uris.size() is %{public}zu", uris.size());
 }
 
-void CloudSyncNotifyHandler::HandleCloudDownloadSuccessedNotify(const list<Uri> &uris)
+void CloudSyncNotifyHandler::HandleCloudDownloadSucceedNotify(const list<Uri> &uris)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     if (rdbStore == nullptr) {
@@ -181,7 +181,7 @@ void CloudSyncNotifyHandler::HandleCloudDownloadSuccessedNotify(const list<Uri> 
     }
 
     for (auto &uri : uris) {
-        auto cloudId = uri.ToString().substr(PhotoColumn::PHOTO_DOWNLOAD_SUCCESSED_URI_PREFIX.length());
+        auto cloudId = uri.ToString().substr(PhotoColumn::PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX.length());
         string filePath = MediaLibraryRdbUtils::GetPhotoPathByCloudId(rdbStore, cloudId);
         if (filePath.empty() || !MediaFileUtils::IsFileExists(filePath)) {
             MEDIA_ERR_LOG("File not exist, filePath: %{public}s. cloudId: %{public}s", filePath.c_str(),
