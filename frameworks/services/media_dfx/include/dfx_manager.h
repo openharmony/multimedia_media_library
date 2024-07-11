@@ -31,14 +31,13 @@ namespace Media {
 
 class DeleteBehaviorTask : public DfxData {
 public:
-    DeleteBehaviorTask(std::string id, int32_t type, int32_t size, std::unordered_map<int32_t, int32_t> &updateResult,
-        std::vector<std::string> &uris, std::shared_ptr<DfxReporter> dfxReporter) : id_(id), type_(type),  size_(size),
-        updateResult_(updateResult), uris_(uris), dfxReporter_(dfxReporter) {}
+    DeleteBehaviorTask(std::string id, int32_t type, int32_t size, std::vector<std::string> &uris,
+        std::shared_ptr<DfxReporter> dfxReporter) : id_(id), type_(type),  size_(size), uris_(uris),
+        dfxReporter_(dfxReporter) {}
     virtual ~DeleteBehaviorTask() override = default;
     std::string id_;
     int32_t type_;
     int32_t size_;
-    std::unordered_map<int32_t, int32_t> updateResult_;
     std::vector<std::string> uris_;
     std::shared_ptr<DfxReporter> dfxReporter_;
 };
@@ -63,8 +62,7 @@ public:
     int64_t HandleMiddleReport();
     int64_t HandleOneDayReport();
     void HandleCommonBehavior(std::string bundleName, int32_t type);
-    void HandleDeleteBehavior(int32_t type, int32_t size, std::unordered_map<int32_t, int32_t> &updateResult,
-        std::vector<std::string> &uris, std::string bundleName = "");
+    void HandleDeleteBehavior(int32_t type, int32_t size, std::vector<std::string> &uris, std::string bundleName = "");
     void HandleDeleteBehaviors();
     void HandleNoPermmison(int32_t type, int32_t object, int32_t error);
     void HandleHalfDayMissions();

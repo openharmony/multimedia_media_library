@@ -1768,8 +1768,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_AnalysisAlbumMap_Test_003, TestSize.Leve
     InsertAnalysisMap(albumId, id1);
     InsertAnalysisMap(albumId, id2);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    std::unordered_map<int32_t, int32_t> updateResult;
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, updateResult, {
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, {
         "file://media/Photo/" + to_string(id1), "file://media/Photo/" + to_string(id2)
     });
     Uri queryAlbumUri(PAH_QUERY_ANA_PHOTO_ALBUM);

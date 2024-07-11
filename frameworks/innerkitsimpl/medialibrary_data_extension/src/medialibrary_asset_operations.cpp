@@ -1333,8 +1333,7 @@ static void UpdateAlbumsAndSendNotifyInTrash(AsyncTaskData *data)
         MEDIA_ERR_LOG("Can not get rdbstore");
         return;
     }
-    std::unordered_map<int32_t, int32_t>  updateResult;
-    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, updateResult, {notifyData->notifyUri});
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, {notifyData->notifyUri});
 
     auto watch = MediaLibraryNotify::GetInstance();
     if (watch == nullptr) {
@@ -1419,9 +1418,8 @@ void MediaLibraryAssetOperations::SendFavoriteNotify(MediaLibraryCommand &cmd, s
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
         { to_string(PhotoAlbumSubType::FAVORITE) });
     if (fileAsset->IsHidden()) {
-        unordered_map<int32_t, int32_t> updateResult;
         MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(
-            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult,
+            MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(),
             { to_string(PhotoAlbumSubType::FAVORITE) });
     }
 
@@ -1938,9 +1936,8 @@ static void DeleteFiles(AsyncTaskData *data)
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), { to_string(PhotoAlbumSubType::TRASH) });
 
-    std::unordered_map<int32_t, int32_t> updateResult;
     DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_DELETE_ASSETS, taskData->deleteRows_,
-        updateResult, taskData->notifyUris_, taskData->bundleName_);
+        taskData->notifyUris_, taskData->bundleName_);
     auto watch = MediaLibraryNotify::GetInstance();
     int trashAlbumId = watch->GetAlbumIdBySubType(PhotoAlbumSubType::TRASH);
     if (trashAlbumId <= 0) {

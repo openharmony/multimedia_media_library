@@ -927,8 +927,7 @@ void CloneRestore::RestoreGallery()
         (long long)migrateFileNumber_, (long long)(migrateFileNumber_ - migrateVideoFileNumber_),
         (long long)migrateVideoFileNumber_, (long long)migrateDatabaseAlbumNumber_,
         (long long)migrateDatabaseMapNumber_);
-    unordered_map<int32_t, int32_t> updateResult;
-    MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_, updateResult);
+    MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
     NotifyAlbum();
 }
 

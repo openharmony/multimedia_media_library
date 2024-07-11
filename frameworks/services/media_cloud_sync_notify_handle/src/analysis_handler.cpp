@@ -66,8 +66,7 @@ static list<Uri> UpdateAnalysisAlbumsForCloudSync(const shared_ptr<NativeRdb::Rd
         albumIds.push_back(get<string>(ResultSetUtils::GetValFromColumn(
             ANALYSIS_PHOTO_MAP_TABLE + "." + PhotoMap::ALBUM_ID, resultSet, TYPE_STRING)));
     }
-    unordered_map<int32_t, int32_t> updateResult;
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, updateResult, albumIds, fileIds);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, albumIds, fileIds);
  
     list<Uri> sendUris;
     for (auto albumId : albumIds) {
@@ -103,8 +102,7 @@ void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
     vector<string> fileIds;
     if (handleData.orgInfo.type == ChangeType::OTHER) {
         MEDIA_INFO_LOG("Update the AnalysisAlbum for ChangeType being OTHER");
-        unordered_map<int32_t, int32_t> updateResult;
-        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore, updateResult);
+        MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore);
     } else {
         fileIds = GetFileIds(handleData);
     }

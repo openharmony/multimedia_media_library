@@ -57,9 +57,8 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
             (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_,
             (long long) migrateAudioDatabaseNumber_, (long long) migrateAudioFileNumber_,
             (long long) migrateDatabaseMapNumber_);
-        std::unordered_map<int32_t, int32_t>  updateResult;
-        MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_, updateResult);
-        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(mediaLibraryRdb_, updateResult);
+        MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
+        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(mediaLibraryRdb_);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);

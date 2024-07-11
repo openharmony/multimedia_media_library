@@ -235,8 +235,7 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
         }
         albumIdList.push_back(to_string(albumId));
     }
-    std::unordered_map<int32_t, int32_t> updateResult;
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), updateResult, albumIdList);
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(rdbStore->GetRaw(), albumIdList);
     return changedRows;
 }
 
@@ -270,9 +269,8 @@ int32_t DoDismissAssets(int32_t subtype, const string &strAlbumId, vector<string
     if (deleteRow <= 0) {
         return deleteRow;
     }
-    std::unordered_map<int32_t, int32_t> updateResult;
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateResult, updateAlbumIds, assets);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateAlbumIds, assets);
     return deleteRow;
 }
 
@@ -346,8 +344,7 @@ int32_t PhotoMapOperations::RemovePhotoAssets(RdbPredicates &predicates)
     for (size_t i = 1; i < whereArgs.size(); i++) {
         watch->Notify(MediaFileUtils::Encode(whereArgs[i]), NotifyType::NOTIFY_ALBUM_REMOVE_ASSET, albumId);
     }
-    std::unordered_map<int32_t, int32_t> updateResult;
-    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_REMOVE_PHOTOS, deleteRow, updateResult, whereArgs);
+    DfxManager::GetInstance()->HandleDeleteBehavior(DfxType::ALBUM_REMOVE_PHOTOS, deleteRow, whereArgs);
     return deleteRow;
 }
 
