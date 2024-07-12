@@ -23,7 +23,7 @@ export struct AlbumPickerComponent {
   build() {
     Row() {
       Column() {
-        UIExtensionComponent({
+        SecurityUIExtensionComponent({
           parameters: {
             "ability.want.params.uiExtensionTargetType":"photoPicker",
             targetPage: "albumPage",
@@ -42,12 +42,8 @@ export struct AlbumPickerComponent {
             }
           }
           console.info('AlbumPickerComponent onReceive ' + dataType);
-        }).onResult((data) => {
-          console.info('AlbumPickerComponent onResult');
         }).onError(() => {
           console.info('AlbumPickerComponent onError');
-        }).onRelease((data) => {
-          console.info('AlbumPickerComponent onRelease');
         });
       }
       .width('100%')
