@@ -2212,7 +2212,7 @@ std::vector<std::string> MediaLibraryRdbUtils::GetPhotoPathsByCloudIds(const std
     }
 
     std::vector<std::string> filePaths;
-    while(resultSet->GoToNextRow() == E_OK) {
+    while (resultSet->GoToNextRow() == E_OK) {
         filePaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
             ResultSetDataType::TYPE_STRING)));
     }
