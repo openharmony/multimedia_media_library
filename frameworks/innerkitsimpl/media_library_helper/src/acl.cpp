@@ -273,7 +273,7 @@ void InitSandboxGroupEntry(AclXattrEntry& entry, uint32_t id, uint16_t access)
 int32_t Acl::AclSetDefault()
 {
     if (EnableAcl(THUMB_DIR, ACL_XATTR_DEFAULT, ACL_PERM::Value::READ | ACL_PERM::Value::EXECUTE,
-        THUMB_ACL_GROUP) != E_OK) {
+        MEDIA_DB_ACL_GROUP) != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the Photo dir");
         return E_ERR;
     }
@@ -283,8 +283,8 @@ int32_t Acl::AclSetDefault()
 void SetFileRWGroupMod(struct stat& st, std::string& path)
 {
     int res = chmod(path.c_str(), st.st_mode | S_IWGRP | S_IRGRP);
-    if (res == -E_OK) {
-        MEDIA_ERR_LOG("Set mode failed: %{public}s", path.c_str());
+    if (res != E_OK) {
+        MEDIA_ERR_LOG("Set mode failed: %{public}s, error:%{public}s", path.c_str(), strerror(errno));
     }
 }
 

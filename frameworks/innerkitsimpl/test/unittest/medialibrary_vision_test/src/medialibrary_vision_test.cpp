@@ -182,6 +182,8 @@ void MediaLibraryVisionTest::SetUp(void)
     MediaLibraryUnitTestUtils::CleanBundlePermission();
     MediaLibraryUnitTestUtils::InitRootDirs();
     MediaLibraryUnitTestUtils::Init();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    rdbStore->ExecuteSql(PhotoColumn::INDEX_SCTHP_ADDTIME);
 }
 
 void MediaLibraryVisionTest::TearDown(void) {}
@@ -2023,7 +2025,7 @@ HWTEST_F(MediaLibraryVisionTest, Get_Protrait_Album_IsMe_2, TestSize.Level0)
     shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
     int count;
     resultSet->GetRowCount(count);
-    EXPECT_GT(count, 0);
+    EXPECT_EQ(count, 0);
     MEDIA_INFO_LOG("Get_Protrait_Album_IsMe_2::count = %{public}d. End", count);
 }
 

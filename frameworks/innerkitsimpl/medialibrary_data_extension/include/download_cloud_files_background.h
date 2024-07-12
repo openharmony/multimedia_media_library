@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,28 +18,43 @@
 
 #include "abs_shared_result_set.h"
 #include "medialibrary_async_worker.h"
+#include "timer.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS {
 namespace Media {
-class DownloadCloudFilesData : public AsyncTaskData {
-public:
-    DownloadCloudFilesData() = default;
-    ~DownloadCloudFilesData() override = default;
-
-    std::vector<std::string> paths;
-};
-
 class DownloadCloudFilesBackground {
 public:
-    static void DownloadCloudFiles();
+    static void StartTimer();
+    static void StopTimer();
 
 private:
+    typedef struct {
+        std::vector<std::string> paths;
+        MediaType mediaType;
+    } DownloadFiles;
+
+    class DownloadCloudFilesData : public AsyncTaskData {
+    public:
+        DownloadCloudFilesData(DownloadFiles downloadFiles) : downloadFiles_(downloadFiles){};
+        ~DownloadCloudFilesData() override = default;
+
+        DownloadFiles downloadFiles_;
+    };
+
+    static void DownloadCloudFiles();
     static bool IsStorageInsufficient();
-    static bool IsLocalFilesExceedsThreshold();
     static std::shared_ptr<NativeRdb::ResultSet> QueryCloudFiles();
-    static void FillPhotoPaths(std::shared_ptr<NativeRdb::ResultSet> &resultSet, std::vector<std::string> &photoPaths);
-    static int32_t AddDownloadTask(const std::vector<std::string> &photoPaths);
+    static void ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet, DownloadFiles &downloadFiles);
+    static int32_t AddDownloadTask(const DownloadFiles &downloadFiles);
     static void DownloadCloudFilesExecutor(AsyncTaskData *data);
+    static void StopDownloadFiles(const std::vector<std::string> &filePaths);
+
+    static std::recursive_mutex mutex_;
+    static Utils::Timer timer_;
+    static uint32_t startTimerId_;
+    static uint32_t stopTimerId_;
+    static std::vector<std::string> curDownloadPaths_;
 };
 } // namespace Media
 } // namespace OHOS

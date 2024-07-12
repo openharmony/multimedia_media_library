@@ -975,6 +975,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_upgrade, TestSize.L
     std::unique_ptr<UpgradeRestore> upgrade =
         std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
     upgrade->mediaLibraryRdb_ = photosStorePtr;
+    upgrade->migrateAudioDatabaseNumber_ = 0;
     std::vector<FileInfo> fileInfos;
     FileInfo fileInfo1;
     fileInfo1.filePath = "test";
