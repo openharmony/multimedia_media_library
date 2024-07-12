@@ -25,6 +25,7 @@
 #include "bundle_info.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
+#include "download_cloud_files_background.h"
 #include "want.h"
 #include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
@@ -147,12 +148,15 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 
 void MedialibrarySubscriber::UpdateCurrentStatus()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_;
-    MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
     if (currentStatus_ == newStatus) {
         return;
     }
+
+    MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+        currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
+
     currentStatus_ = newStatus;
     if (currentStatus_) {
         DoBackgroundOperation();
@@ -363,21 +367,22 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
 
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_ && isWifiConn_;
-
-    MEDIA_INFO_LOG("update timer status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, "
-                   "%{public}d, %{public}d",
-        timerStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_,
-        isWifiConn_);
-
     if (timerStatus_ == newStatus) {
         return;
     }
+
+    MEDIA_INFO_LOG("update timer status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, "
+        "%{public}d, %{public}d",
+        timerStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_,
+        isWifiConn_);
+
     timerStatus_ = newStatus;
     if (timerStatus_) {
-        MediaLibraryDataManager::GetInstance()->RegisterTimer();
+        DownloadCloudFilesBackground::StartTimer();
     } else {
-        MediaLibraryDataManager::GetInstance()->UnregisterTimer();
+        DownloadCloudFilesBackground::StopTimer();
     }
 }
 }  // namespace Media
