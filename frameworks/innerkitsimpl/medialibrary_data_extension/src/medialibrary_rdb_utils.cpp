@@ -2164,13 +2164,13 @@ int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<Na
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
     if (err != E_OK || imageSource == nullptr) {
         MEDIA_ERR_LOG("Failed to LoadImageSource for path:%{public}s", filePath.c_str());
-        return -1;
+        return E_ERR;
     }
     ImageInfo imageInfo;
     err = imageSource->GetImageInfo(0, imageInfo);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to get imageInfo, path:%{public}s", filePath.c_str());
-        return -1;
+        return E_ERR;
     }
     int32_t height = imageInfo.size.height;
     int32_t width = imageInfo.size.width;
@@ -2185,7 +2185,7 @@ int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<Na
     err = rdbStore->Update(changedRows, values, predicates);
     if (err < 0) {
         MEDIA_ERR_LOG("Failed to update photo height and width, err: %{public}d", err);
-        return -1;
+        return E_ERR;
     }
     return err;
 }
