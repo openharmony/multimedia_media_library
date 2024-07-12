@@ -632,7 +632,7 @@ bool IThumbnailHelper::UpdateSuccessState(const ThumbRdbOpt &opts, const Thumbna
 
 bool IThumbnailHelper::UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailData &data)
 {
-    if opts.store == nullptr) {
+    if (opts.store == nullptr) {
         MEDIA_ERR_LOG("opts.store is nullptr");
         return false;
     }
