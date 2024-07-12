@@ -954,7 +954,7 @@ bool CloneRestore::PrepareCloudPath(const string &tableName, FileInfo &fileInfo)
         return false;
     }
     if (BackupFileUtils::PreparePath(BackupFileUtils::GetReplacedPathByPrefixType(
-            PrefixType::CLOUD, PrefixType::LOCAL, fileInfo.cloudPath)) != E_OK) {
+        PrefixType::CLOUD, PrefixType::LOCAL, fileInfo.cloudPath)) != E_OK) {
         MEDIA_ERR_LOG("Prepare cloudPath failed");
         fileInfo.cloudPath.clear();
         UpdateFailedFiles(fileInfo.fileType, localPath, RestoreError::GET_PATH_FAILED);
