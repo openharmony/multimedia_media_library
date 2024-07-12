@@ -58,6 +58,7 @@ ohos_shared_library("mediabackup") {
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "data_share:datashare_consumer",
+    "dfs_service:cloudsync_kit_inner",
     "ffrt:libffrt",
     "hilog:libhilog",
     "init:libbegetutil",

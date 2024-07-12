@@ -93,6 +93,7 @@ protected:
     void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t sceneCode);
     void SetParameterForClone();
     void StopParameterForClone(int32_t sceneCode);
+    std::string GetSameFileQuerySql(const FileInfo &fileInfo);
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
