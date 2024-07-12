@@ -283,8 +283,8 @@ int32_t Acl::AclSetDefault()
 void SetFileRWGroupMod(struct stat& st, std::string& path)
 {
     int res = chmod(path.c_str(), st.st_mode | S_IWGRP | S_IRGRP);
-    if (res == -E_OK) {
-        MEDIA_ERR_LOG("Set mode failed: %{public}s", path.c_str());
+    if (res != E_OK) {
+        MEDIA_ERR_LOG("Set mode failed: %{public}s, error:%{public}s", path.c_str(), strerror(errno));
     }
 }
 
