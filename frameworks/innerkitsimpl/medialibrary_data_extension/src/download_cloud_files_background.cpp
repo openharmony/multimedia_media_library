@@ -203,6 +203,8 @@ void DownloadCloudFilesBackground::StopDownloadFiles(const std::vector<std::stri
 void DownloadCloudFilesBackground::StartTimer()
 {
     lock_guard<recursive_mutex> lock(mutex_);
+    MEDIA_INFO_LOG("Turn on the background download cloud file timer");
+
     if (startTimerId_ > 0) {
         timer_.Unregister(startTimerId_);
     }
@@ -216,6 +218,8 @@ void DownloadCloudFilesBackground::StartTimer()
 void DownloadCloudFilesBackground::StopTimer()
 {
     lock_guard<recursive_mutex> lock(mutex_);
+    MEDIA_INFO_LOG("Turn off the background download cloud file timer");
+
     timer_.Unregister(startTimerId_);
     timer_.Unregister(stopTimerId_);
     timer_.Shutdown();
