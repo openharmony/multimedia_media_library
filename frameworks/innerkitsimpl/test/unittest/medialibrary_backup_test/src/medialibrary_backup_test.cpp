@@ -29,6 +29,7 @@
 #include "media_log.h"
 #include "upgrade_restore.h"
 #include "media_file_utils.h"
+#include "medialibrary_errno.h"
 #undef private
 #undef protected
 
@@ -479,6 +480,84 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_mediaType_v
     MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_mediaType_video end");
 }
 
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fileId, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileId start");
+    int32_t fileId = -1;
+    int32_t fileType = 2;
+    std::string extension = "mp4";
+    std::string cloudPath;
+    // fileId < 0 CreateAssetPathById will return E_INVALID_FILEID -208
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(fileId, fileType, extension, cloudPath);
+    EXPECT_EQ(errCode, E_INVALID_FILEID);
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileId end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_fileId, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId start");
+    // file id > ASSET_DIR_START_NUM * ASSET_IN_BUCKET_NUM_MAX (16 * 1000) and Remainder != 0
+    int32_t fileId = 16 * 1000 + 1;
+    int32_t fileType = 2;
+    std::string extension = "mp4";
+    std::string cloudPath;
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(fileId, fileType, extension, cloudPath);
+    EXPECT_EQ(errCode, E_OK);
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Normal_fileId_NoRemainder, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId_NoRemainder start");
+    // file id > ASSET_DIR_START_NUM * ASSET_IN_BUCKET_NUM_MAX (16 * 1000) and fileIdRemainder == 0
+    int32_t fileId = 16 * 1000 + 16;
+    int32_t fileType = 2;
+    std::string extension = "mp4";
+    std::string cloudPath;
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(fileId, fileType, extension, cloudPath);
+    EXPECT_EQ(errCode, E_OK);
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Normal_fileId_NoRemainder end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_illegal_fileType_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_illegal_fileType_001 start");
+    int32_t fileId = 2;
+    int32_t fileType = -1;
+    std::string extension = "mp4";
+    std::string cloudPath;
+    // normal fileId and illegal fileType CreateAssetPathById will return E_INVALID_VALUES
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(fileId, fileType, extension, cloudPath);
+    EXPECT_EQ(errCode, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_illegal_fileType_001 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fileType_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_002 start");
+    // fileId = ASSET_MAX_COMPLEMENT_ID + invalid file type
+    int32_t fileId = 999;
+    int32_t fileType = -1;
+    std::string extension = "mp4";
+    std::string cloudPath;
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(fileId, fileType, extension, cloudPath);
+    EXPECT_EQ(errCode, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_002 end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_CreateAssetPathById_Illegal_fileType_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_003 start");
+    // fileId > ASSET_MAX_COMPLEMENT_ID + invalid file type
+    int32_t fileId = 1000;
+    int32_t fileType = -1;
+    std::string extension = "mp4";
+    std::string cloudPath;
+    int32_t errCode = BackupFileUtils::CreateAssetPathById(fileId, fileType, extension, cloudPath);
+    EXPECT_EQ(errCode, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("BackupFileUtils_CreateAssetPathById_Illegal_fileType_003 end");
+}
+
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileNameFromPath_path_empty, TestSize.Level0)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetFileNameFromPath_path_empty start");
@@ -522,6 +601,128 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_ok, TestSize.Level
     string res = BackupFileUtils::GetFileTitle(displayName);
     EXPECT_NE(res, "");
     MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_ok end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFileTitle_no_dot, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_no_dot start");
+    string displayName = "testmp3";
+    string res = BackupFileUtils::GetFileTitle(displayName);
+    EXPECT_EQ(res, "testmp3");
+    MEDIA_INFO_LOG("BackupFileUtils_GetFileTitle_no_dot end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_normal_type, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_normal_type start");
+    // test case 1 normal PrefixType
+    string path = "/test.cpp";
+    PrefixType type = PrefixType::CLOUD;
+    string res = BackupFileUtils::GetFullPathByPrefixType(type, path);
+    EXPECT_EQ(res, "/storage/cloud/files/test.cpp");
+    MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_normal_type end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetFullPathByPrefixType_illegal_type, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_illegal_type start");
+    // test case 2 illegal PrefixType
+    string path = "/test.cpp";
+    PrefixType type = static_cast<PrefixType>(-1);
+    string res = BackupFileUtils::GetFullPathByPrefixType(type, path);
+    EXPECT_EQ(res.length(), 0);
+    MEDIA_INFO_LOG("BackupFileUtils_GetFullPathByPrefixType_illegal_type end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_normal_name, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_normal_name start");
+    // name start with Screenshot_
+    string name = "Screenshot_test";
+    auto ret = BackupFileUtils::GarbleFileName(name);
+    EXPECT_EQ(ret, "Screenshot_test");
+
+    // name start with SVID_
+    name = "SVID_test";
+    ret = BackupFileUtils::GarbleFileName(name);
+    EXPECT_EQ(ret, "SVID_test");
+
+    // name start with IMG_
+    name = "IMG_test";
+    ret = BackupFileUtils::GarbleFileName(name);
+    EXPECT_EQ(ret, "IMG_test");
+
+    // name start with VID_
+    name = "VID_test";
+    ret = BackupFileUtils::GarbleFileName(name);
+    EXPECT_EQ(ret, "VID_test");
+
+    // name lenght > 20
+    name = "BackupFileUtils_GarbleFileName_normal_name";
+    ret = BackupFileUtils::GarbleFileName(name);
+    EXPECT_EQ(ret, "***leFileName_normal_name");
+
+    // name lenght = 20
+    name = "BackupFileUtils_Garb";
+    ret = BackupFileUtils::GarbleFileName(name);
+    EXPECT_EQ(ret, "***Utils_Garb");
+
+    // name lenght = 10
+    name = "BackupFile";
+    ret = BackupFileUtils::GarbleFileName(name);
+    EXPECT_EQ(ret, "***kupFile");
+
+    // name lenght < 3
+    name = "Bk";
+    ret = BackupFileUtils::GarbleFileName(name);
+    EXPECT_EQ(ret, "***k");
+    MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_normal_name end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_empty_name, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_empty_name start");
+    // empty file name
+    string name;
+    auto ret = BackupFileUtils::GarbleFileName(name);
+    EXPECT_EQ(ret.length(), 0);
+    MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_empty_name end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_illegal_srcprefix, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_srcprefix start");
+    // illegal srcPrefix + normal dstPrefix
+    PrefixType srcPrefix = static_cast<PrefixType>(-1);
+    PrefixType dstPrefix = PrefixType::CLOUD_EDIT_DATA;
+    string path = "test_path";
+    auto ret = BackupFileUtils::GetReplacedPathByPrefixType(srcPrefix, dstPrefix, path);
+    EXPECT_EQ(ret.length(), 0);
+    MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_srcprefix end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_illegal_dstprefix, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_dstprefix start");
+    // illegal dstPrefix + normal srcPrefix
+    PrefixType srcPrefix = PrefixType::CLOUD_EDIT_DATA;
+    PrefixType dstPrefix = static_cast<PrefixType>(-1);
+    string path = "test_path";
+    auto ret = BackupFileUtils::GetReplacedPathByPrefixType(srcPrefix, dstPrefix, path);
+    EXPECT_EQ(ret.length(), 0);
+    MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_illegal_dstprefix end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix start");
+    // normal prefix
+    PrefixType srcPrefix = PrefixType::LOCAL_EDIT_DATA;
+    PrefixType dstPrefix = PrefixType::LOCAL_EDIT_DATA;
+    string path = "test_path";
+    auto ret = BackupFileUtils::GetReplacedPathByPrefixType(srcPrefix, dstPrefix, path);
+    EXPECT_EQ(path, "/storage/cloud/files");
+    MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix end");
 }
 
 HWTEST_F(MediaLibraryBackupTest, RestoreAudio_sceneCode_UPGRADE_RESTORE_ID, TestSize.Level0)
