@@ -89,38 +89,38 @@ class IThumbnailHelper {
 public:
     IThumbnailHelper() = default;
     virtual ~IThumbnailHelper() = default;
-    static void CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
-    static bool DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
-    static void CreateLcd(std::shared_ptr<ThumbnailTaskData> &data);
-    static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
-    static void CreateAstc(std::shared_ptr<ThumbnailTaskData> &data);
-    static void CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data);
-    static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts, ThumbnailData &thumbData,
-        const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
-    static void AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
+    EXPORT static void CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static bool DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static void CreateLcd(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static void CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static void CreateAstc(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static void CreateAstcEx(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static void AddThumbnailGenerateTask(ThumbnailGenerateExecute executor, ThumbRdbOpt &opts,
+        ThumbnailData &thumbData, const ThumbnailTaskType &taskType, const ThumbnailTaskPriority &priority);
+    EXPORT static void AddThumbnailGenBatchTask(ThumbnailGenerateExecute executor,
         ThumbRdbOpt &opts, ThumbnailData &thumbData, int32_t requestId = 0);
-    static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
-    static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
-    static bool IsPureCloudImage(ThumbRdbOpt &opts);
-    static void DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData> &data);
-    static bool UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess);
+    EXPORT static std::unique_ptr<PixelMap> GetPixelMap(const std::vector<uint8_t> &image, Size &size);
+    EXPORT static bool DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DoCreateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool DoRotateThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data, int32_t fd, ThumbnailType thumbType);
+    EXPORT static bool IsPureCloudImage(ThumbRdbOpt &opts);
+    EXPORT static void DeleteMonthAndYearAstc(std::shared_ptr<ThumbnailTaskData> &data);
+    EXPORT static bool UpdateThumbnailState(const ThumbRdbOpt &opts, ThumbnailData &data, const bool isSuccess);
 private:
-    static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
-    static bool GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
-    static bool UpdateSuccessState(const ThumbRdbOpt &opts, const ThumbnailData &data);
-    static bool UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
-    static int32_t UpdateThumbDbState(const ThumbRdbOpt &opts, const ThumbnailData &data);
-    static bool IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
-    static bool IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool GenThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, const ThumbnailType type);
+    EXPORT static bool GenThumbnailEx(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool TryLoadSource(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool GenMonthAndYearAstcData(ThumbnailData &data, const ThumbnailType type);
+    EXPORT static bool UpdateSuccessState(const ThumbRdbOpt &opts, const ThumbnailData &data);
+    EXPORT static bool UpdateFailState(const ThumbRdbOpt &opts, const ThumbnailData &data);
+    EXPORT static int32_t UpdateThumbDbState(const ThumbRdbOpt &opts, const ThumbnailData &data);
+    EXPORT static bool IsCreateThumbnailSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool IsCreateThumbnailExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static bool IsCreateLcdExSuccess(ThumbRdbOpt &opts, ThumbnailData &data);
 };
 } // namespace Media
 } // namespace OHOS

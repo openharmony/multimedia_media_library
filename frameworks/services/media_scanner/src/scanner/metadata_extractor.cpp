@@ -321,7 +321,8 @@ void PopulateExtractedAVMetadataTwo(const std::unordered_map<int32_t, std::strin
     strTemp = resultMap.at(AV_KEY_GENRE);
     if (!strTemp.empty()) {
         std::string videoShootingMode = ExtractVideoShootingMode(strTemp);
-        data->SetShootingMode(videoShootingMode);
+        data->SetShootingModeTag(videoShootingMode);
+        data->SetShootingMode(GetCastShootingMode(videoShootingMode));
     }
     strTemp = resultMap.at(AV_KEY_VIDEO_IS_HDR_VIVID);
     const string isHdr = "yes";

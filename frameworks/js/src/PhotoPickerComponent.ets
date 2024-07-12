@@ -55,7 +55,7 @@ export struct PhotoPickerComponent {
   build() {
     Row() {
       Column() {
-        UIExtensionComponent({
+        SecurityUIExtensionComponent({
           parameters: {
             "ability.want.params.uiExtensionTargetType":"photoPicker",
             uri: "multipleselect",
@@ -89,12 +89,8 @@ export struct PhotoPickerComponent {
         }).onReceive((data) => {
           let wantParam: Record<string, Object> = data as Record<string, Object>;
           this.handleOnReceive(wantParam);
-        }).onResult((data) => {
-          console.info('PhotoPickerComponent onResult');
         }).onError(() => {
           console.info('PhotoPickerComponent onError');
-        }).onRelease((data) => {
-          console.info('PhotoPickerComponent onRelease');
         });
       }
       .width('100%')
