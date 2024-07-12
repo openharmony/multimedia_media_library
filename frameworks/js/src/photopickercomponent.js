@@ -113,7 +113,7 @@ export class PhotoPickerComponent extends ViewPU {
         }), Column);
         this.observeComponentCreation2(((e, o) => {
             var t, i, n, r, l, s, c, p, a, d, h, E, C, T, m, P, _;
-            UIExtensionComponent.create({
+            SecurityUIExtensionComponent.create({
                 parameters: {
                     'ability.want.params.uiExtensionTargetType': 'photoPicker',
                     uri: 'multipleselect',
@@ -142,26 +142,20 @@ export class PhotoPickerComponent extends ViewPU {
                     isPreviewForSingleSelectionSupported: null === (_ = this.pickerOptions) || void 0 === _ ? void 0 : _.isPreviewForSingleSelectionSupported
                 }
             });
-            UIExtensionComponent.height('100%');
-            UIExtensionComponent.width('100%');
-            UIExtensionComponent.onRemoteReady((e => {
+            SecurityUIExtensionComponent.height('100%');
+            SecurityUIExtensionComponent.width('100%');
+            SecurityUIExtensionComponent.onRemoteReady((e => {
                 this.proxy = e;
                 console.info('PhotoPickerComponent onRemoteReady');
             }));
-            UIExtensionComponent.onReceive((e => {
+            SecurityUIExtensionComponent.onReceive((e => {
                 let o = e;
                 this.handleOnReceive(o);
             }));
-            UIExtensionComponent.onResult((e => {
-                console.info('PhotoPickerComponent onResult');
-            }));
-            UIExtensionComponent.onError((() => {
+            SecurityUIExtensionComponent.onError((() => {
                 console.info('PhotoPickerComponent onError');
             }));
-            UIExtensionComponent.onRelease((e => {
-                console.info('PhotoPickerComponent onRelease');
-            }));
-        }), UIExtensionComponent);
+        }), SecurityUIExtensionComponent);
         Column.pop();
         Row.pop();
     }
