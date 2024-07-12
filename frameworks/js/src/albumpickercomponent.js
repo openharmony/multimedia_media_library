@@ -49,19 +49,19 @@ export class AlbumPickerComponent extends ViewPU {
         }), Column);
         this.observeComponentCreation2(((e, o) => {
             var n;
-            UIExtensionComponent.create({
+            SecurityUIExtensionComponent.create({
                 parameters: {
                     'ability.want.params.uiExtensionTargetType': 'photoPicker',
                     targetPage: 'albumPage',
                     themeColorMode: null === (n = this.albumPickerOptions) || void 0 === n ? void 0 : n.themeColorMode
                 }
             });
-            UIExtensionComponent.height('100%');
-            UIExtensionComponent.width('100%');
-            UIExtensionComponent.onRemoteReady((e => {
+            SecurityUIExtensionComponent.height('100%');
+            SecurityUIExtensionComponent.width('100%');
+            SecurityUIExtensionComponent.onRemoteReady((e => {
                 console.info('AlbumPickerComponent onRemoteReady');
             }));
-            UIExtensionComponent.onReceive((e => {
+            SecurityUIExtensionComponent.onReceive((e => {
                 let o = e;
                 let n = o.dataType;
                 if ('selectAlbum' === n && this.onAlbumClick) {
@@ -71,16 +71,10 @@ export class AlbumPickerComponent extends ViewPU {
                 }
                 console.info('AlbumPickerComponent onReceive ' + n);
             }));
-            UIExtensionComponent.onResult((e => {
-                console.info('AlbumPickerComponent onResult');
-            }));
-            UIExtensionComponent.onError((() => {
+            SecurityUIExtensionComponent.onError((() => {
                 console.info('AlbumPickerComponent onError');
             }));
-            UIExtensionComponent.onRelease((e => {
-                console.info('AlbumPickerComponent onRelease');
-            }));
-        }), UIExtensionComponent);
+        }), SecurityUIExtensionComponent);
         Column.pop();
         Row.pop();
     }
