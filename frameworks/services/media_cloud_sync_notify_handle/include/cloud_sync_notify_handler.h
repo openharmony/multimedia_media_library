@@ -29,6 +29,8 @@ public:
     ~CloudSyncNotifyHandler() = default;
     
     EXPORT void MakeResponsibilityChain();
+    void HandleCloudHeightErrorNotify(const std::list<Uri> &uris);
+    void HandleCloudDownloadSucceedNotify(const std::list<Uri> &uris);
     void ThumbnailObserverOnChange(const std::list<Uri> &uris, const DataShare::DataShareObserver::ChangeType &type);
 
     CloudSyncNotifyInfo notifyInfo_;
