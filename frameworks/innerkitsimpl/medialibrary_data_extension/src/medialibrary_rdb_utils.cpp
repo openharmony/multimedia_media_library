@@ -2157,7 +2157,7 @@ bool MediaLibraryRdbUtils::HasDataToAnalysis(const std::shared_ptr<NativeRdb::Rd
 }
 
 int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    std::string filePath, std::string cloudId)
+    std::string filePath)
 {
     uint32_t err = 0;
     SourceOptions opts;
@@ -2180,7 +2180,7 @@ int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<Na
     values.PutInt(PhotoColumn::PHOTO_WIDTH, width);
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
+    predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, filePath);
     int32_t changedRows = 0;
     err = rdbStore->Update(changedRows, values, predicates);
     if (err < 0) {
@@ -2190,27 +2190,33 @@ int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<Na
     return err;
 }
 
-string MediaLibraryRdbUtils::GetPhotoPathByCloudId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    std::string cloudId)
+std::vector<std::string> MediaLibraryRdbUtils::GetPhotoPathsByCloudIds(const std::shared_ptr<NativeRdb::RdbStore>
+    &rdbStore, const std::list<Uri> &uris, const std::string prefix)
 {
+    string cloudIds;
+    for (auto &uri : uris) {
+        auto cloudId = uri.ToString().substr(prefix.length());
+        cloudIds.append(cloudId).append(",");
+    }
+    cloudIds = cloudIds.substr(0, cloudIds.length() - 1);
+
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::PHOTO_CLOUD_ID, cloudId);
+    predicates.SetWhereClause(PhotoColumn::PHOTO_CLOUD_ID + "in(" + cloudIds + ")");
     vector<string> columns = {
         PhotoColumn::MEDIA_FILE_PATH
     };
     auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to get photo, cloudId: %{public}s", cloudId.c_str());
-        return "";
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to get photo, cloudId: %{public}s", cloudIds.c_str());
+        return std::vector<std::string>();
     }
 
-    string filePath = get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
-        ResultSetDataType::TYPE_STRING));
-    if (filePath.empty()) {
-        MEDIA_ERR_LOG("Failed to get cloud file uri, cloudId: %{public}s", cloudId.c_str());
-        return "";
+    std::vector<std::string> filePaths;
+    while(resultSet->GoToNextRow() == E_OK) {
+        filePaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
+            ResultSetDataType::TYPE_STRING)));
     }
-    return filePath;
+    return filePaths;
 }
 
 } // namespace OHOS::Media
