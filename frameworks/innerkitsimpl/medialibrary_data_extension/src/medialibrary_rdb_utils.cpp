@@ -1112,6 +1112,23 @@ static int32_t UpdateSysAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, cons
     return E_SUCCESS;
 }
 
+static void UpdateUserAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
+    const vector<string> &userAlbumIds = {})
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateUserAlbumHiddenState");
+    auto albumResult = GetUserAlbum(rdbStore, userAlbumIds, {
+        PhotoAlbumColumns::ALBUM_ID,
+        PhotoAlbumColumns::CONTAINS_HIDDEN,
+        PhotoAlbumColumns::HIDDEN_COUNT,
+        PhotoAlbumColumns::HIDDEN_COVER,
+    });
+    if (albumResult == nullptr) {
+        return;
+    }
+    ForEachRow(rdbStore, albumResult, true, UpdateUserAlbumIfNeeded);
+}
+
 void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<RdbStore> &rdbStore, const vector<string> &uris)
 {
     MediaLibraryTracer tracer;
@@ -1119,6 +1136,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<RdbStore> &rdbS
 
     if (uris.size() == 0) {
         UpdateUserAlbumInternal(rdbStore);
+        UpdateUserAlbumHiddenState(rdbStore);
     }
     vector<string> albumIds;
     string idArgs;
@@ -1144,6 +1162,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<RdbStore> &rdbS
     }
     if (albumIds.size() > 0) {
         UpdateUserAlbumInternal(rdbStore, albumIds);
+        UpdateUserAlbumHiddenState(rdbStore, albumIds);
     }
 }
 
@@ -1341,6 +1360,25 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<RdbStore> 
     UpdateAnalysisAlbumInternal(rdbStore, albumIds, fileIds);
 }
 
+static void UpdateSourceAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
+    const vector<string> &sourceAlbumIds = {})
+{
+    MediaLibraryTracer tracer;
+    tracer.Start("UpdateSourceAlbumHiddenState");
+
+    auto albumResult = GetSourceAlbum(rdbStore, sourceAlbumIds, {
+        PhotoAlbumColumns::ALBUM_ID,
+        PhotoAlbumColumns::ALBUM_SUBTYPE,
+        PhotoAlbumColumns::CONTAINS_HIDDEN,
+        PhotoAlbumColumns::HIDDEN_COUNT,
+        PhotoAlbumColumns::HIDDEN_COVER,
+    });
+    if (albumResult == nullptr) {
+        return;
+    }
+    ForEachRow(rdbStore, albumResult, true, UpdateSourceAlbumIfNeeded);
+}
+
 void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<RdbStore> &rdbStore, const vector<string> &uris)
 {
     MediaLibraryTracer tracer;
@@ -1348,6 +1386,7 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<RdbStore> &rd
 
     if (uris.size() == 0) {
         UpdateSourceAlbumInternal(rdbStore);
+        UpdateSourceAlbumHiddenState(rdbStore);
     }
     vector<string> albumIds;
     string idArgs;
@@ -1373,6 +1412,7 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<RdbStore> &rd
     }
     if (albumIds.size() > 0) {
         UpdateSourceAlbumInternal(rdbStore, albumIds);
+        UpdateSourceAlbumHiddenState(rdbStore, albumIds);
     }
 }
 
@@ -1431,24 +1471,6 @@ void MediaLibraryRdbUtils::UpdateSystemAlbumInternal(const shared_ptr<RdbStore> 
     ForEachRow(rdbStore, albumResult, false, UpdateSysAlbumIfNeeded);
 }
 
-static void UpdateUserAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("UpdateUserAlbumHiddenState");
-    vector<string> userAlbumIds;
-
-    auto albumResult = GetUserAlbum(rdbStore, userAlbumIds, {
-        PhotoAlbumColumns::ALBUM_ID,
-        PhotoAlbumColumns::CONTAINS_HIDDEN,
-        PhotoAlbumColumns::HIDDEN_COUNT,
-        PhotoAlbumColumns::HIDDEN_COVER,
-    });
-    if (albumResult == nullptr) {
-        return;
-    }
-    ForEachRow(rdbStore, albumResult, true, UpdateUserAlbumIfNeeded);
-}
-
 void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore,
     const vector<string> &subtypes)
 {
@@ -1483,35 +1505,6 @@ void MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(const shared_ptr<RdbStore> 
     ForEachRow(rdbStore, albumResult, true, UpdateSysAlbumIfNeeded);
 }
 
-static void UpdateSourceAlbumHiddenState(const shared_ptr<RdbStore> &rdbStore)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("UpdateSourceAlbumHiddenState");
-    vector<string> sourceAlbumIds;
-
-    auto albumResult = GetSourceAlbum(rdbStore, sourceAlbumIds, {
-        PhotoAlbumColumns::ALBUM_ID,
-        PhotoAlbumColumns::ALBUM_SUBTYPE,
-        PhotoAlbumColumns::CONTAINS_HIDDEN,
-        PhotoAlbumColumns::HIDDEN_COUNT,
-        PhotoAlbumColumns::HIDDEN_COVER,
-    });
-    if (albumResult == nullptr) {
-        return;
-    }
-    ForEachRow(rdbStore, albumResult, true, UpdateSourceAlbumIfNeeded);
-}
-
-void MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(const shared_ptr<RdbStore> &rdbStore)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("UpdateHiddenAlbumInternal");
-
-    UpdateUserAlbumHiddenState(rdbStore);
-    UpdateSysAlbumHiddenState(rdbStore);
-    UpdateSourceAlbumHiddenState(rdbStore);
-}
-
 void MediaLibraryRdbUtils::UpdateAllAlbums(const shared_ptr<RdbStore> &rdbStore, const vector<string> &uris)
 {
     MediaLibraryTracer tracer;
@@ -1522,12 +1515,10 @@ void MediaLibraryRdbUtils::UpdateAllAlbums(const shared_ptr<RdbStore> &rdbStore,
         to_string(PhotoAlbumSubType::VIDEO),
         to_string(PhotoAlbumSubType::HIDDEN),
         to_string(PhotoAlbumSubType::TRASH),
-        to_string(PhotoAlbumSubType::SCREENSHOT),
-        to_string(PhotoAlbumSubType::CAMERA),
         to_string(PhotoAlbumSubType::IMAGE),
     };
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(rdbStore, systemAlbumsExcludeSource);
-    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(rdbStore);
+    MediaLibraryRdbUtils::UpdateSysAlbumHiddenState(rdbStore);
     MediaLibraryRdbUtils::UpdateUserAlbumByUri(rdbStore, uris);
     MediaLibraryRdbUtils::UpdateSourceAlbumByUri(rdbStore, uris);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(rdbStore, uris);

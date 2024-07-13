@@ -756,22 +756,7 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
         return changedRows;
     }
     ActivelyStartAnalysisService();
-    MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
-            std::to_string(PhotoAlbumSubType::FAVORITE),
-            std::to_string(PhotoAlbumSubType::VIDEO),
-            std::to_string(PhotoAlbumSubType::HIDDEN),
-            std::to_string(PhotoAlbumSubType::SCREENSHOT),
-            std::to_string(PhotoAlbumSubType::IMAGE),
-        });
-    MediaLibraryRdbUtils::UpdateUserAlbumByUri(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
-    MediaLibraryRdbUtils::UpdateSourceAlbumByUri(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
-
-    MediaLibraryRdbUtils::UpdateHiddenAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw());
-    MediaLibraryRdbUtils::UpdateAnalysisAlbumByUri(
+    MediaLibraryRdbUtils::UpdateAllAlbums(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
     SendHideNotify(notifyUris, hiddenState);
     return changedRows;
