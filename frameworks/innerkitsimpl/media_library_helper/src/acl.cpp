@@ -273,8 +273,13 @@ void InitSandboxGroupEntry(AclXattrEntry& entry, uint32_t id, uint16_t access)
 int32_t Acl::AclSetDefault()
 {
     if (EnableAcl(THUMB_DIR, ACL_XATTR_DEFAULT, ACL_PERM::Value::READ | ACL_PERM::Value::EXECUTE,
-        MEDIA_DB_ACL_GROUP) != E_OK) {
+        THUMB_DB_ACL_GROUP) != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the Photo dir");
+        return E_ERR;
+    }
+    if (EnableAcl(LOCAL_THUMB_DIR, ACL_XATTR_DEFAULT, ACL_PERM::Value::READ | ACL_PERM::Value::EXECUTE,
+        THUMB_DB_ACL_GROUP) != E_OK) {
+        MEDIA_ERR_LOG("Failed to set the acl permission for the local Photo dir");
         return E_ERR;
     }
     return E_OK;
