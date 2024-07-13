@@ -1356,13 +1356,11 @@ int32_t MediaLibraryDataManager::InitialiseThumbnailService(
 
 void MediaLibraryDataManager::InitACLPermission()
 {
-    if (access(THUMB_DIR.c_str(), F_OK) == 0) {
-        return;
-    }
-
-    if (!MediaFileUtils::CreateDirectory(THUMB_DIR)) {
-        MEDIA_ERR_LOG("Failed create thumbs Photo dir");
-        return;
+    if (access(THUMB_DIR.c_str(), F_OK) != 0) {
+        if (!MediaFileUtils::CreateDirectory(THUMB_DIR)) {
+            MEDIA_ERR_LOG("Failed create thumbs Photo dir");
+            return;
+        }
     }
 
     if (Acl::AclSetDefault() != E_OK) {
