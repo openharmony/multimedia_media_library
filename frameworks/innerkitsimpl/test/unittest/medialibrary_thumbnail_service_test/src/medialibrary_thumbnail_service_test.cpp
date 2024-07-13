@@ -591,5 +591,47 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_035, T
     auto res = IThumbnailHelper::IsPureCloudImage(opts);
     EXPECT_EQ(res, false);
 }
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_001, TestSize.Level0)
+{
+    ThumbnailType type = ThumbnailType::MTH;
+    auto res = ThumbnailUtils::GetThumbnailSuffix(type);
+    EXPECT_EQ(res, "");
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_002, TestSize.Level0)
+{
+    ThumbnailType type = ThumbnailType::LCD;
+    ThumbnailData data;
+    auto res = ThumbnailUtils::DeleteThumbFile(data, type);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_003, TestSize.Level0)
+{
+    ThumbnailType type = ThumbnailType::LCD;
+    ThumbnailData data;
+    data.path = "/storage/cloud/files/";
+    auto res = ThumbnailUtils::DeleteThumbFile(data, type);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_004, TestSize.Level0)
+{
+    ThumbnailData data;
+    auto res = ThumbnailUtils::DeleteThumbExDir(data);
+    EXPECT_EQ(res, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_005, TestSize.Level0)
+{
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    ThumbnailData data;
+    Size desiredSize;
+    uint32_t errCode = 0;
+    auto res = ThumbnailUtils::LoadAudioFileInfo(avMetadataHelper, data, desiredSize, errCode);
+    EXPECT_EQ(res, false);
+}
+
 } // namespace Media
 } // namespace OHOS

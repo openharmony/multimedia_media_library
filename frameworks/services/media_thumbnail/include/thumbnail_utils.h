@@ -65,31 +65,32 @@ public:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
         ThumbnailData &data, int &err);
 #ifdef DISTRIBUTED
-    static bool QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static bool QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     // KV Store
-    static bool RemoveDataFromKv(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore, const std::string &key);
-    static bool IsImageExist(const std::string &key, const std::string &networkId,
+    EXPORT static bool RemoveDataFromKv(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
+        const std::string &key);
+    EXPORT static bool IsImageExist(const std::string &key, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
-    static bool DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
+    EXPORT static bool DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
 #endif
-    static bool DeleteThumbFile(ThumbnailData &data, ThumbnailType type);
-    static bool DeleteThumbExDir(ThumbnailData &data);
+    EXPORT static bool DeleteThumbFile(ThumbnailData &data, ThumbnailType type);
+    EXPORT static bool DeleteThumbExDir(ThumbnailData &data);
 #ifdef DISTRIBUTED
-    static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
+    EXPORT static bool DeleteDistributeThumbnailInfo(ThumbRdbOpt &opts);
 #endif
 
     EXPORT static bool DeleteOriginImage(ThumbRdbOpt &opts);
     EXPORT static bool DoDeleteMonthAndYearAstc(ThumbRdbOpt &opts);
     // Steps
     EXPORT static bool LoadSourceImage(ThumbnailData &data);
-    static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
+    EXPORT static bool GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize);
 
-    static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
+    EXPORT static int TrySaveFile(ThumbnailData &Data, ThumbnailType type);
     EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status);
 #ifdef DISTRIBUTED
-    static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
 #endif
 
     // RDB Store generate and aging
@@ -98,53 +99,54 @@ public:
     EXPORT static bool QueryAgingLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
         std::vector<ThumbnailData> &infos, int &err);
 #ifdef DISTRIBUTED
-    static bool QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
+    EXPORT static bool QueryAgingDistributeLcdInfos(ThumbRdbOpt &opts, int LcdLimit,
         std::vector<ThumbnailData> &infos, int &err);
 #endif
     EXPORT static bool QueryNoLcdInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
     EXPORT static bool QueryNoAstcInfosRestored(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
-    static bool QueryNoAstcInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
-    static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
-    static bool QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
+    EXPORT static bool QueryNoAstcInfos(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+    EXPORT static bool QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count, int &err);
+    EXPORT static bool QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
         std::vector<ThumbnailData> &infos, NativeRdb::RdbPredicates &rdbPredicate, int &err);
 
 #ifdef DISTRIBUTED
-    static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
+    EXPORT static bool QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, std::vector<ThumbnailData> &infos, int &err);
 #endif
-    static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
+    EXPORT static bool QueryLcdCountByTime(const int64_t &time, const bool &before, ThumbRdbOpt &opts, int &outLcdCount,
         int &err);
     EXPORT static bool ResizeThumb(int& width, int& height);
     EXPORT static bool ResizeLcd(int& width, int& height);
-    static bool IsSupportGenAstc();
+    EXPORT static bool IsSupportGenAstc();
     EXPORT static void QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::string &id,
         ThumbnailData &data, int &err);
-    static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
-    static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
-    static bool ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx);
+    EXPORT static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
+    EXPORT static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
+    EXPORT static bool ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx);
     EXPORT static bool ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize);
     EXPORT static std::string GetThumbnailSuffix(ThumbnailType type);
 
-    static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
+    EXPORT static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
         LoadSourceType sourceType);
-    static void RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats);
+    EXPORT static void RecordCostTimeAndReport(ThumbnailData::GenerateStats &stats);
 
-    static bool QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
+    EXPORT static bool QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
         const std::string &table, std::vector<ThumbnailData> &infos);
-    static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
-    static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
-    static bool GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
-    static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
+    EXPORT static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded,
+        std::string &key);
+    EXPORT static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
+    EXPORT static bool GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
+    EXPORT static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
     EXPORT static bool LoadVideoFile(ThumbnailData &data, Size &desiredSize);
 
 private:
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailSet(ThumbRdbOpt &opts);
-    static int SaveThumbDataToLocalDir(ThumbnailData &data, const std::string &suffix,
+    EXPORT static int SaveThumbDataToLocalDir(ThumbnailData &data, const std::string &suffix,
         uint8_t *output, const int writeSize);
-    static int ToSaveFile(ThumbnailData &data, const std::string &fileName,
+    EXPORT static int ToSaveFile(ThumbnailData &data, const std::string &fileName,
         uint8_t *output, const int &writeSize);
-    static int SaveFileCreateDir(const std::string &path, const std::string &suffix, std::string &fileName);
+    EXPORT static int SaveFileCreateDir(const std::string &path, const std::string &suffix, std::string &fileName);
     EXPORT static int32_t SetSource(std::shared_ptr<AVMetadataHelper> avMetadataHelper, const std::string &path);
     EXPORT static int64_t UTCTimeMilliSeconds();
     EXPORT static void ParseQueryResult(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
@@ -155,24 +157,24 @@ private:
     EXPORT static bool CheckResultSetCount(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, int &err);
     // utils
     EXPORT static bool LoadImageFile(ThumbnailData &data, Size &desiredSize);
-    static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
+    EXPORT static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
         Size &desiredSize, uint32_t &errCode);
     EXPORT static bool LoadAudioFile(ThumbnailData &data, Size &desiredSize);
 
 #ifdef DISTRIBUTED
     // RDB Store
-    static bool GetUdidByNetworkId(ThumbRdbOpt &opts, const std::string &networkId,
+    EXPORT static bool GetUdidByNetworkId(ThumbRdbOpt &opts, const std::string &networkId,
         std::string &outUdid, int &err);
-    static bool UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    static bool InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
-    static bool CleanDistributeLcdInfo(ThumbRdbOpt &opts);
+    EXPORT static bool UpdateRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static bool InsertRemoteThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
+    EXPORT static bool CleanDistributeLcdInfo(ThumbRdbOpt &opts);
 #endif
 
     // scale
-    static bool ScaleFastThumb(ThumbnailData &data, const Size &size);
+    EXPORT static bool ScaleFastThumb(ThumbnailData &data, const Size &size);
 
-    static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
-    static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
+    EXPORT static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
+    EXPORT static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
 };
 } // namespace Media
 } // namespace OHOS
