@@ -142,12 +142,13 @@ int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, 
 
     string dirPath = (mediaType == MediaType::MEDIA_TYPE_AUDIO ? RESTORE_AUDIO_CLOUD_DIR : RESTORE_CLOUD_DIR) + "/" +
         to_string(bucketNum);
-    if (!MediaFileUtils::IsFileExists(dirPath)) {
-        bool ret = MediaFileUtils::CreateDirectory(dirPath);
+    string localDirPath = GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL, dirPath);
+    if (!MediaFileUtils::IsFileExists(localDirPath)) {
+        bool ret = MediaFileUtils::CreateDirectory(localDirPath);
         errCode = ret? E_OK: E_CHECK_DIR_FAIL;
     }
     if (errCode != E_OK) {
-        MEDIA_ERR_LOG("Create Dir Failed! dirPath=%{private}s", dirPath.c_str());
+        MEDIA_ERR_LOG("Create Dir Failed! localDirPath=%{private}s", localDirPath.c_str());
         return errCode;
     }
 
