@@ -20,7 +20,6 @@
 #include "backup_const_map.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
-#include "cloud_sync_manager.h"
 #include "ffrt.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -29,6 +28,10 @@
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
+
+#ifdef CLOND_SYNC_MANAGER
+#include "cloud_sync_manager.h"
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -63,7 +66,9 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
         photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
         SetParameterForClone();
+#ifdef CLOND_SYNC_MANAGER
         FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
+#endif
     } else {
         filePath_ = upgradeFilePath;
         galleryDbPath_ = backupRetoreDir + "/" + galleryAppName_ + "/ce/databases/gallery.db";

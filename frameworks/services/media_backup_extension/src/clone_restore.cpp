@@ -20,7 +20,6 @@
 #include "application_context.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
-#include "cloud_sync_manager.h"
 #include "ffrt.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -32,6 +31,10 @@
 #include "medialibrary_type_const.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
+
+#ifdef CLOND_SYNC_MANAGER
+#include "cloud_sync_manager.h"
+#endif
 
 using namespace std;
 namespace OHOS {
@@ -165,7 +168,9 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
 {
     MEDIA_INFO_LOG("Start clone restore");
     SetParameterForClone();
+#ifdef CLOND_SYNC_MANAGER
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
+#endif
     backupRestoreDir_ = backupRestoreDir;
     garbagePath_ = backupRestoreDir_ + "/storage/media/local/files";
     int32_t errorCode = Init(backupRestoreDir, upgradePath, true);
