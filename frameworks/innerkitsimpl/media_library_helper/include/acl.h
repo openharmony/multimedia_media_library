@@ -104,7 +104,6 @@ constexpr uint32_t THUMB_ACL_GROUP = 2008;
 constexpr uint32_t MEDIA_DB_ACL_GROUP = 3008;
 
 EXPORT const std::string THUMB_DIR = "/storage/cloud/files/.thumbs/Photo";
-EXPORT const std::string LOCAL_THUMB_DIR = "/storage/media/local/files/.thumbs/Photo";
 EXPORT const std::string RDB_DIR = MEDIA_DB_DIR + "/rdb";
 EXPORT const std::string KVDB_DIR = MEDIA_DB_DIR + "/kvdb";
 /*
