@@ -81,9 +81,7 @@ ohos_unittest("medialibrary_backup_clone_test") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.filemanagement_dfs_service)) {
     defines += [ "CLOUD_SYNC_MANAGER" ]
-    external_deps += [
-      "dfs_service:cloudsync_kit_inner",
-    ]
+    external_deps += [ "dfs_service:cloudsync_kit_inner" ]
   }
 
   sanitize = {
