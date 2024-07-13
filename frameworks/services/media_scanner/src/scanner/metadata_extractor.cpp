@@ -345,6 +345,26 @@ void PopulateExtractedAVLocationMeta(std::shared_ptr<Meta> &meta, std::unique_pt
     }
 }
 
+static void ParseMovingPhotoCoverPosition(std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
+{
+    shared_ptr<Meta> customMeta = make_shared<Meta>();
+    bool isValid = meta->GetData(PHOTO_DATA_VIDEO_CUSTOM_INFO, customMeta);
+    if (!isValid) {
+        MEDIA_INFO_LOG("Video of moving photo does not contain customInfo");
+        return;
+    }
+
+    float coverPosition = 0.0f;
+    isValid = customMeta->GetData(PHOTO_DATA_VIDEO_COVER_TIME, coverPosition);
+    if (!isValid) {
+        MEDIA_INFO_LOG("Video of moving photo does not contain cover position");
+        return;
+    }
+    // convert cover position from ms(float) to us(int64_t)
+    constexpr int32_t MS_TO_US = 1000;
+    data->SetCoverPosition(static_cast<int64_t>(coverPosition * MS_TO_US));
+}
+
 void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, std::string> &resultMap,
     std::shared_ptr<Meta> &meta, std::unique_ptr<Metadata> &data)
 {
@@ -356,22 +376,7 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     data->SetLastVisitTime(timeNow);
 
     if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        shared_ptr<Meta> customMeta = make_shared<Meta>();
-        bool isValid = meta->GetData(PHOTO_DATA_VIDEO_CUSTOM_INFO, customMeta);
-        if (!isValid) {
-            MEDIA_INFO_LOG("Video of moving photo does not contain customInfo");
-            return;
-        }
-
-        float coverPosition = 0.0f;
-        isValid = customMeta->GetData(PHOTO_DATA_VIDEO_COVER_TIME, coverPosition);
-        if (!isValid) {
-            MEDIA_INFO_LOG("Video of moving photo does not contain cover position");
-            return;
-        }
-        // convert cover position from ms(float) to us(int64_t)
-        constexpr int32_t MS_TO_US = 1000;
-        data->SetCoverPosition(static_cast<int64_t>(coverPosition * MS_TO_US));
+        ParseMovingPhotoCoverPosition(meta, data);
     }
 }
 
