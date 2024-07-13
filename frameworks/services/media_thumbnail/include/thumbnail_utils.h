@@ -67,7 +67,8 @@ public:
 #ifdef DISTRIBUTED
     EXPORT static bool QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     // KV Store
-    EXPORT static bool RemoveDataFromKv(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore, const std::string &key);
+    EXPORT static bool RemoveDataFromKv(const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore,
+        const std::string &key);
     EXPORT static bool IsImageExist(const std::string &key, const std::string &networkId,
         const std::shared_ptr<DistributedKv::SingleKvStore> &kvStore);
     EXPORT static bool DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData);
@@ -132,7 +133,8 @@ public:
 
     EXPORT static bool QueryOldAstcInfos(const std::shared_ptr<NativeRdb::RdbStore> &rdbStorePtr,
         const std::string &table, std::vector<ThumbnailData> &infos);
-    EXPORT static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
+    EXPORT static bool GenerateOldKvStoreKey(const std::string &fieldId, const std::string &dateAdded,
+        std::string &key);
     EXPORT static bool GenerateKvStoreKey(const std::string &fieldId, const std::string &dateAdded, std::string &key);
     EXPORT static bool GetLocalThumbSize(const ThumbnailData &data, const ThumbnailType& type, Size& size);
     EXPORT static void SetThumbnailSizeValue(NativeRdb::ValuesBucket& values, Size& size, const std::string& column);
