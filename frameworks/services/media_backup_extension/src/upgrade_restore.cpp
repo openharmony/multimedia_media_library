@@ -28,14 +28,16 @@
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
-#include "parameters.h"
+
+#ifdef CLOND_SYNC_MANAGER
+#include "cloud_sync_manager.h"
+#endif
 
 namespace OHOS {
 namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
 constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
-const string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -54,16 +56,6 @@ UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::str
     dualDirName_ = dualDirName;
 }
 
-void UpgradeRestore::SetParameterForClone()
-{
-    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
-    MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
-    bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
-    if (!retFlag) {
-        MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
-    }
-}
-
 int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::string &upgradeFilePath, bool isUpgrade)
 {
     appDataPath_ = backupRetoreDir;
@@ -74,6 +66,9 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
         photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
         SetParameterForClone();
+#ifdef CLOND_SYNC_MANAGER
+        FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
+#endif
     } else {
         filePath_ = upgradeFilePath;
         galleryDbPath_ = backupRetoreDir + "/" + galleryAppName_ + "/ce/databases/gallery.db";
@@ -129,17 +124,6 @@ int32_t UpgradeRestore::InitDbAndXml(std::string xmlPath, bool isUpgrade)
     }
     MEDIA_INFO_LOG("Init db succ.");
     return E_OK;
-}
-
-void UpgradeRestore::StopParameterForClone()
-{
-    if (sceneCode_ == UPGRADE_RESTORE_ID) {
-        return;
-    }
-    bool retFlag = system::SetParameter(CLONE_FLAG, "0");
-    if (!retFlag) {
-        MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
-    }
 }
 
 int UpgradeRestore::StringToInt(const std::string& str)
@@ -329,7 +313,7 @@ void UpgradeRestore::RestorePhoto(void)
     HandleClone();
     RestoreFromGalleryAlbum(); // 跨端相册融合
     RestoreFromGallery();
-    StopParameterForClone();
+    StopParameterForClone(sceneCode_);
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
         (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
     if (sceneCode_ == UPGRADE_RESTORE_ID) {

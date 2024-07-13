@@ -294,7 +294,7 @@ vector<NativeRdb::ValuesBucket> GetInsertValues(vector<FileInfo> &fileInfos, int
     vector<NativeRdb::ValuesBucket> values;
     for (auto &fileInfo : fileInfos) {
         fileInfo.cloudPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::CLOUD, fileInfo.relativePath);
-        if (restoreService->HasSameFile(restoreService->mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfo)) {
+        if (restoreService->IsSameFileForClone(PhotoColumn::PHOTOS_TABLE, fileInfo)) {
             MEDIA_INFO_LOG("Has same file, skip");
             continue;
         }
@@ -397,6 +397,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_te
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
+    restoreService->GetMaxFileId(restoreService->mediaLibraryRdb_);
     restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     restoreService->RestoreAlbum();
     RestorePhoto();

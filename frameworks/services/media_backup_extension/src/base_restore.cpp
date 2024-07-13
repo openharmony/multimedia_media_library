@@ -17,10 +17,10 @@
 
 #include "base_restore.h"
 
+#include "application_context.h"
 #include "background_task_mgr_helper.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
-#include "application_context.h"
 #include "extension_context.h"
 #include "media_column.h"
 #include "media_file_utils.h"
@@ -33,6 +33,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_errno.h"
 #include "metadata.h"
+#include "parameters.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
 #include "resource_type.h"
@@ -43,6 +44,7 @@ namespace OHOS {
 namespace Media {
 const std::string DATABASE_PATH = "/data/storage/el2/database/rdb/media_library.db";
 const std::string singleDirName = "A";
+const std::string CLONE_FLAG = "multimedia.medialibrary.cloneFlag";
 
 void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::string &upgradePath)
 {
@@ -596,16 +598,13 @@ bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     FileInfo &fileInfo)
 {
     string querySql;
-    if (tableName == AudioColumn::AUDIOS_TABLE) {
+    if (tableName != PhotoColumn::PHOTOS_TABLE) {
         querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
             tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
             MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
             MediaColumn::MEDIA_DATE_MODIFIED + " = " + to_string(fileInfo.dateModified);
     } else {
-        querySql = "SELECT " + MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
-            tableName + " WHERE " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
-            MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND " +
-            MediaColumn::MEDIA_DATE_ADDED + " = " + to_string(fileInfo.dateAdded);
+        querySql = GetSameFileQuerySql(fileInfo);
     }
     querySql += " LIMIT 1";
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
@@ -821,6 +820,57 @@ void BaseRestore::UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int3
         std::string localPath = BackupFileUtils::GetFullPathByPrefixType(PrefixType::LOCAL, fileInfo.relativePath);
         UpdateFailedFileByFileType(fileInfo.fileType, localPath, errorCode);
     }
+}
+
+void BaseRestore::SetParameterForClone()
+{
+    auto currentTime = to_string(MediaFileUtils::UTCTimeSeconds());
+    MEDIA_INFO_LOG("SetParameterForClone currentTime:%{public}s", currentTime.c_str());
+    bool retFlag = system::SetParameter(CLONE_FLAG, currentTime);
+    if (!retFlag) {
+        MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+    }
+}
+
+void BaseRestore::StopParameterForClone(int32_t sceneCode)
+{
+    if (sceneCode == UPGRADE_RESTORE_ID) {
+        return;
+    }
+    bool retFlag = system::SetParameter(CLONE_FLAG, "0");
+    if (!retFlag) {
+        MEDIA_ERR_LOG("Failed to set parameter cloneFlag, retFlag:%{public}d", retFlag);
+    }
+}
+
+std::string BaseRestore::GetSameFileQuerySql(const FileInfo &fileInfo)
+{
+    std::string querySql = "SELECT P." + MediaColumn::MEDIA_ID + ", P." + MediaColumn::MEDIA_FILE_PATH;
+    if (!fileInfo.packageName.empty() || !fileInfo.bundleName.empty()) {
+        querySql += " FROM (SELECT file_id, size, orientation, data, date_added FROM Photos WHERE file_id <= " +
+            to_string(maxFileId_) + " AND display_name = '" + fileInfo.displayName + "' LIMIT " +
+            to_string(maxCount_) + ") AS P INNER JOIN PhotoMap AS PM ON P.file_id = PM.map_asset " +
+            "INNER JOIN PhotoAlbum AS PA ON PA.album_id = PM.map_album AND PA.album_type = " +
+            to_string(PhotoAlbumType::SOURCE) + " AND PA.album_subtype = " +
+            to_string(PhotoAlbumSubType::SOURCE_GENERIC) + " WHERE P.size = " + to_string(fileInfo.fileSize) +
+            " AND (((PA.bundle_name = '' OR PA.bundle_name is null ) AND PA.album_name = '" + fileInfo.packageName +
+            "') OR (((PA.bundle_name != '' AND PA.bundle_name is not null) AND PA.bundle_name = '" +
+            fileInfo.bundleName + "') OR PA.album_name = '" + fileInfo.packageName + "'))";
+    } else {
+        querySql += " FROM " + PhotoColumn::PHOTOS_TABLE + " AS P WHERE " + MediaColumn::MEDIA_ID + " <= " +
+            to_string(maxFileId_) + " AND " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
+            MediaColumn::MEDIA_SIZE + " = " + to_string(fileInfo.fileSize) + " AND NOT EXISTS (SELECT 1 FROM " +
+            PhotoMap::TABLE + " AS PM INNER JOIN " + PhotoAlbumColumns::TABLE + " AS PA ON PM." + PhotoMap::ALBUM_ID +
+            " = PA." + PhotoAlbumColumns::ALBUM_ID + " WHERE PA." + PhotoAlbumColumns::ALBUM_TYPE + " = " +
+            to_string(PhotoAlbumType::SOURCE) + " AND PA." + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " +
+            to_string(PhotoAlbumSubType::SOURCE_GENERIC) + " AND PM." + PhotoMap::ASSET_ID + " = P." +
+            MediaColumn::MEDIA_ID + ")";
+    }
+    if (fileInfo.fileType != MEDIA_TYPE_VIDEO) {
+        querySql += " AND P.orientation = " + to_string(fileInfo.orientation);
+    }
+    querySql += " ORDER BY ABS(P." + MediaColumn::MEDIA_DATE_ADDED + " - " + to_string(fileInfo.dateAdded) + ")";
+    return querySql;
 }
 } // namespace Media
 } // namespace OHOS
