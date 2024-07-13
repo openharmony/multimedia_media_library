@@ -347,7 +347,6 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_te
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
-    restoreService->GetMaxFileId(restoreService->mediaLibraryRdb_);
     restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     restoreService->RestoreAlbum();
     RestorePhoto();
@@ -398,6 +397,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_clone_restore_photo_te
         ANALYSIS_ALBUM_TABLE, ANALYSIS_PHOTO_MAP_TABLE };
     Init(cloneSource, TEST_BACKUP_DB_PATH, tableList);
     restoreService->mediaRdb_ = cloneSource.cloneStorePtr_; // source database
+    restoreService->GetMaxFileId(restoreService->mediaLibraryRdb_);
     restoreService->CheckTableColumnStatus(restoreService->mediaRdb_, CLONE_TABLE_LISTS_PHOTO);
     restoreService->RestoreAlbum();
     RestorePhoto();
