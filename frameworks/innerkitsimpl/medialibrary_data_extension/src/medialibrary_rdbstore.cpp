@@ -2704,6 +2704,16 @@ static void AddPortraitCoverSelectionColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+void AddCoverPosition(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_COVER_POSITION +
+            " BIGINT DEFAULT 0",
+    };
+    MEDIA_INFO_LOG("start add cover_position column");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
@@ -2736,6 +2746,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_BURST_COVER_LEVEL_AND_BURST_KEY) {
         AddBurstCoverLevelAndBurstKey(store);
+    }
+
+    if (oldVersion < VERSION_ADD_COVER_POSITION) {
+        AddCoverPosition(store);
     }
 }
 

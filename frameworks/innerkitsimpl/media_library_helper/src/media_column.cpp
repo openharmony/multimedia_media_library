@@ -97,6 +97,7 @@ const std::string PhotoColumn::PHOTO_THUMBNAIL_READY = "thumbnail_ready";
 const std::string PhotoColumn::PHOTO_FRONT_CAMERA = "front_camera";
 const std::string PhotoColumn::PHOTO_BURST_COVER_LEVEL = "burst_cover_level";
 const std::string PhotoColumn::PHOTO_BURST_KEY = "burst_key";
+const std::string PhotoColumn::PHOTO_COVER_POSITION = "cover_position";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
 const std::string PhotoColumn::PHOTO_DATE_YEAR_INDEX = "date_year_index";
@@ -188,6 +189,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_DEFERRED_PROC_TYPE + " INT DEFAULT 0, " +
     PHOTO_DYNAMIC_RANGE_TYPE + " INT DEFAULT 0, " +
     MOVING_PHOTO_EFFECT_MODE + " INT DEFAULT 0, " +
+    PHOTO_COVER_POSITION + " BIGINT DEFAULT 0, " +
     PHOTO_THUMBNAIL_READY + " INT DEFAULT 0, " +
     PHOTO_LCD_SIZE + " TEXT, " +
     PHOTO_THUMB_SIZE + " TEXT," +
@@ -309,7 +311,7 @@ const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_SHOOTING_MODE, PhotoColumn::PHOTO_SHOOTING_MODE_TAG, PhotoColumn::PHOTO_THUMB_STATUS,
     PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, PhotoColumn::PHOTO_LCD_SIZE,
     PhotoColumn::PHOTO_THUMB_SIZE, PhotoColumn::MOVING_PHOTO_EFFECT_MODE, PhotoColumn::PHOTO_FRONT_CAMERA,
-    PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY
+    PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY, PhotoColumn::PHOTO_COVER_POSITION,
 };
 
 bool PhotoColumn::IsPhotoColumn(const std::string &columnName)

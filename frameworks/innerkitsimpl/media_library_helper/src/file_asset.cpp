@@ -512,6 +512,16 @@ void FileAsset::SetMovingPhotoEffectMode(int32_t effectMode)
     member_[PhotoColumn::MOVING_PHOTO_EFFECT_MODE] = effectMode;
 }
 
+int64_t FileAsset::GetCoverPosition() const
+{
+    return GetInt64Member(PhotoColumn::PHOTO_COVER_POSITION);
+}
+
+void FileAsset::SetCoverPosition(int64_t coverPosition)
+{
+    member_[PhotoColumn::PHOTO_COVER_POSITION] = coverPosition;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);

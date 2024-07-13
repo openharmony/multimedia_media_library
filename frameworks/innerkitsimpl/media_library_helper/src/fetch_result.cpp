@@ -58,7 +58,7 @@ static const ResultTypeMap &GetResultTypeMap()
         { PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE, TYPE_INT32}, { PhotoColumn::PHOTO_LCD_SIZE, TYPE_STRING},
         { PhotoColumn::PHOTO_THUMB_SIZE, TYPE_STRING}, { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, TYPE_INT32},
         { PhotoColumn::PHOTO_FRONT_CAMERA, TYPE_STRING}, { PhotoColumn::PHOTO_BURST_COVER_LEVEL, TYPE_INT32 },
-        { PhotoColumn::PHOTO_BURST_KEY, TYPE_STRING },
+        { PhotoColumn::PHOTO_BURST_KEY, TYPE_STRING }, { PhotoColumn::PHOTO_COVER_POSITION, TYPE_INT64 },
     };
     return RESULT_TYPE_MAP;
 }

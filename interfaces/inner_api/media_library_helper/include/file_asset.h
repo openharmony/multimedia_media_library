@@ -188,6 +188,9 @@ public:
     EXPORT int32_t GetMovingPhotoEffectMode() const;
     EXPORT void SetMovingPhotoEffectMode(int32_t effectMode);
 
+    EXPORT int64_t GetCoverPosition() const;
+    EXPORT void SetCoverPosition(int64_t coverPosition);
+
 private:
     const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;
