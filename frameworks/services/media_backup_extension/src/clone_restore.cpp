@@ -504,8 +504,11 @@ bool CloneRestore::PrepareCommonColumnInfoMap(const string &tableName,
         return false;
     }
     for (auto it = dstColumnInfoMap.begin(); it != dstColumnInfoMap.end(); ++it) {
-        if (!HasSameColumn(srcColumnInfoMap, it->first, it->second) || excludedColumns.count(it->first) > 0 ||
-            (neededColumns.count(it->first) > 0 && neededColumnsException.count(it->first) == 0)) {
+        if (!HasSameColumn(srcColumnInfoMap, it->first, it->second) || excludedColumns.count(it->first) > 0) {
+            continue;
+        }
+        if (neededColumns.count(it->first) > 0 && (neededColumnsException.empty() ||
+            neededColumnsException.count(it->first) == 0)) {
             continue;
         }
         commonColumnInfoMap[it->first] = it->second;
