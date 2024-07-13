@@ -53,7 +53,6 @@ public:
     static void AddQueryFilter(NativeRdb::AbsRdbPredicates &predicates);
     EXPORT static void UpdateSysAlbumHiddenState(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &subtypes = {});
-    EXPORT static void UpdateHiddenAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     EXPORT static void UpdateAnalysisAlbumInternal(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
         const std::vector<std::string> &userAlbumIds = {}, const std::vector<std::string> &fileIds = {});
     EXPORT static void UpdateAnalysisAlbumByFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
