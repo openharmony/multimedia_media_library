@@ -74,6 +74,14 @@ ohos_unittest("medialibrary_backup_test") {
     "relational_store:rdb_data_share_adapter",
   ]
 
+  defines = []
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.filemanagement_dfs_service)) {
+    defines += [ "CLOUD_SYNC_MANAGER" ]
+    external_deps += [ "dfs_service:cloudsync_kit_inner" ]
+  }
+
   sanitize = {
     cfi = true
     cfi_cross_dso = true

@@ -73,6 +73,12 @@ ohos_shared_library("mediabackup") {
 
   defines = []
 
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.filemanagement_dfs_service)) {
+    defines += [ "CLOUD_SYNC_MANAGER" ]
+    external_deps += [ "dfs_service:cloudsync_kit_inner" ]
+  }
+
   sanitize = {
     cfi = true
     cfi_cross_dso = true

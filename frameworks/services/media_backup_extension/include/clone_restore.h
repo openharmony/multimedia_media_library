@@ -111,6 +111,11 @@ private:
     int64_t InsertMapByTable(const std::string &tableName, const std::vector<MapInfo> &mapInfos,
         std::unordered_set<int32_t> &albumSet);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::vector<MapInfo> &mapInfos);
+    std::string GetQueryWhereClauseByTable(const std::string &tableName);
+    void QuerySource(std::vector<FileInfo> &fileInfos);
+    void SetSpecialAttributes(const std::string &tableName, const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        FileInfo &fileInfo);
+    bool IsSameFileForClone(const std::string &tableName, FileInfo &fileInfo);
 
 private:
     std::atomic<uint64_t> migrateDatabaseAlbumNumber_{0};
@@ -120,6 +125,7 @@ private:
     std::string dbPath_;
     std::unordered_map<std::string, bool> tableColumnStatusMap_;
     std::unordered_map<std::string, std::string> tableQueryWhereClauseMap_;
+    std::unordered_map<std::string, std::string> tableExtraQueryWhereClauseMap_;
     std::unordered_map<std::string, std::unordered_map<int32_t, int32_t>> tableAlbumIdMap_;
     std::unordered_map<std::string, std::unordered_map<std::string, std::string>> tableCommonColumnInfoMap_;
     std::unordered_set<std::string> albumToNotifySet_;
