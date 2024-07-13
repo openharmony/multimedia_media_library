@@ -273,24 +273,11 @@ void InitSandboxGroupEntry(AclXattrEntry& entry, uint32_t id, uint16_t access)
 int32_t Acl::AclSetDefault()
 {
     if (EnableAcl(THUMB_DIR, ACL_XATTR_DEFAULT, ACL_PERM::Value::READ | ACL_PERM::Value::EXECUTE,
-        THUMB_DB_ACL_GROUP) != E_OK) {
+        MEDIA_DB_ACL_GROUP) != E_OK) {
         MEDIA_ERR_LOG("Failed to set the acl permission for the Photo dir");
         return E_ERR;
     }
-    if (EnableAcl(LOCAL_THUMB_DIR, ACL_XATTR_DEFAULT, ACL_PERM::Value::READ | ACL_PERM::Value::EXECUTE,
-        THUMB_DB_ACL_GROUP) != E_OK) {
-        MEDIA_ERR_LOG("Failed to set the acl permission for the local Photo dir");
-        return E_ERR;
-    }
     return E_OK;
-}
-
-void SetFileRWGroupMod(struct stat& st, std::string& path)
-{
-    int res = chmod(path.c_str(), st.st_mode | S_IWGRP | S_IRGRP);
-    if (res != E_OK) {
-        MEDIA_ERR_LOG("Set mode failed: %{public}s, error:%{public}s", path.c_str(), strerror(errno));
-    }
 }
 
 int32_t Acl::RecursiveEnableAcl(const std::string& path, const char* aclAttrName, const uint16_t& permission,
@@ -322,7 +309,6 @@ int32_t Acl::RecursiveEnableAcl(const std::string& path, const char* aclAttrName
             if (st.st_mode & S_IFDIR) {
                 dirPathList.push_front(fileName);
             }
-            SetFileRWGroupMod(st, fileName);
             if (EnableAcl(fileName, aclAttrName, permission, groupId) != E_OK) {
                 MEDIA_ERR_LOG("Failed to set the acl permission for the %{private}s", fileName.c_str());
                 result = E_ERR;
