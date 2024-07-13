@@ -1183,7 +1183,7 @@ int32_t CloneRestore::QueryTotalNumberByMediaType(shared_ptr<NativeRdb::RdbStore
     string querySql = "SELECT " + MEDIA_COLUMN_COUNT_1 + " FROM " + tableName + " WHERE " + MediaColumn::MEDIA_TYPE +
         " = " + to_string(static_cast<int32_t>(mediaType));
     string whereClause = GetQueryWhereClauseByTable(tableName);
-    querySql += whereClause.empty() ? "" : " WHERE " + whereClause;
+    querySql += whereClause.empty() ? "" : " AND " + whereClause;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         return 0;
@@ -1225,7 +1225,7 @@ void CloneRestore::RestoreAudioBatch(int32_t offset)
     MEDIA_INFO_LOG("start restore audio, offset: %{public}d", offset);
     vector<FileInfo> fileInfos = QueryFileInfos(AudioColumn::AUDIOS_TABLE, offset);
     InsertAudio(fileInfos);
-    MEDIA_INFO_LOG("start restore audio, offset: %{public}d", offset);
+    MEDIA_INFO_LOG("end restore audio, offset: %{public}d", offset);
 }
 
 void CloneRestore::InsertPhotoRelated(vector<FileInfo> &fileInfos)
@@ -1317,7 +1317,7 @@ string CloneRestore::GetQueryWhereClauseByTable(const string &tableName)
 {
     string whereClause;
     if (tableQueryWhereClauseMap_.count(tableName)) {
-        whereClause +=tableQueryWhereClauseMap_.at(tableName);
+        whereClause += tableQueryWhereClauseMap_.at(tableName);
     }
     if (tableExtraQueryWhereClauseMap_.count(tableName)) {
         whereClause += whereClause.empty() ? "" : " AND " + tableExtraQueryWhereClauseMap_.at(tableName);
@@ -1340,7 +1340,7 @@ void CloneRestore::QuerySource(vector<FileInfo> &fileInfos)
     }
     string querySql = "SELECT PM." + PhotoMap::ASSET_ID + ", PA." + PhotoAlbumColumns::ALBUM_NAME + ", PA." +
         PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " FROM " + PhotoMap::TABLE + " AS PM INNER JOIN " +
-        PhotoAlbumColumns::TABLE + " AS PA ON PM." + PhotoMap::ALBUM_ID + " = PA." +  PhotoAlbumColumns::ALBUM_ID +
+        PhotoAlbumColumns::TABLE + " AS PA ON PM." + PhotoMap::ALBUM_ID + " = PA." + PhotoAlbumColumns::ALBUM_ID +
         " WHERE PA." + PhotoAlbumColumns::ALBUM_TYPE + " = " + to_string(PhotoAlbumType::SOURCE) +
         " AND PA." + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + to_string(PhotoAlbumSubType::SOURCE_GENERIC) +
         " AND PM." + PhotoMap::ASSET_ID + " IN (" + selection + ")";
@@ -1350,7 +1350,7 @@ void CloneRestore::QuerySource(vector<FileInfo> &fileInfos)
         return;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+        int32_t fileId = GetInt32Val(PhotoMap::ASSET_ID, resultSet);
         string albumName = GetStringVal(PhotoAlbumColumns::ALBUM_NAME, resultSet);
         string bundleName = GetStringVal(PhotoAlbumColumns::ALBUM_BUNDLE_NAME, resultSet);
         if (fileId <= 0 || fileIndexMap.count(fileId) == 0) {

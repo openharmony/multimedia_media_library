@@ -855,7 +855,7 @@ std::string BaseRestore::GetSameFileQuerySql(const FileInfo &fileInfo)
             to_string(PhotoAlbumSubType::SOURCE_GENERIC) + " WHERE P.size = " + to_string(fileInfo.fileSize) +
             " AND (((PA.bundle_name = '' OR PA.bundle_name is null ) AND PA.album_name = '" + fileInfo.packageName +
             "') OR (((PA.bundle_name != '' AND PA.bundle_name is not null) AND PA.bundle_name = '" +
-            fileInfo.bundleName + "') OR PhotoAlbum.album_name = '" + fileInfo.packageName + "'))";
+            fileInfo.bundleName + "') OR PA.album_name = '" + fileInfo.packageName + "'))";
     } else {
         querySql += " FROM " + PhotoColumn::PHOTOS_TABLE + " AS P WHERE " + MediaColumn::MEDIA_ID + " <= " +
             to_string(maxFileId_) + " AND " + MediaColumn::MEDIA_NAME + " = '" + fileInfo.displayName + "' AND " +
@@ -867,7 +867,7 @@ std::string BaseRestore::GetSameFileQuerySql(const FileInfo &fileInfo)
             MediaColumn::MEDIA_ID + ")";
     }
     if (fileInfo.fileType != MEDIA_TYPE_VIDEO) {
-        querySql += " AND p.orientation = " + to_string(fileInfo.orientation);
+        querySql += " AND P.orientation = " + to_string(fileInfo.orientation);
     }
     querySql += " ORDER BY ABS(P." + MediaColumn::MEDIA_DATE_ADDED + " - " + to_string(fileInfo.dateAdded) + ")";
     return querySql;
