@@ -347,7 +347,7 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
         SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(), photoProxy->GetFileSize());
     }
     photoProxy->Release();
-    CloseFd(dataShareHelper, uri, fd);
+    close(fd);
     MEDIA_INFO_LOG("end");
 }
 
