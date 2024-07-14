@@ -1013,11 +1013,10 @@ void ConvertColumnsForPortrait(PhotoAlbumNapiAsyncContext *context)
         return;
     }
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    if (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT) {
-        return;
-    }
-    for (size_t i = 0; i < context->fetchColumn.size(); i++) {
-        context->fetchColumn[i] = PhotoColumn::PHOTOS_TABLE + "." + context->fetchColumn[i];
+    if (photoAlbum != nullptr && photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
+        for (size_t i = 0; i < context->fetchColumn.size(); i++) {
+            context->fetchColumn[i] = PhotoColumn::PHOTOS_TABLE + "." + context->fetchColumn[i];
+        }
     }
 }
 
