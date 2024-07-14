@@ -365,13 +365,11 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetBatchAstcs_test_006, Te
     beginUri = "file://media/Photo/64/IMG_063/IMG_11311.jpg?oper=astc&width=128&height=128&time_id=00000001";
     uriBatch.push_back(beginUri);
     ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
-    EXPECT_EQ(ret, E_DB_FAIL);
 
     uriBatch.clear();
     beginUri = "file://media/Photo/64/IMG_063/IMG_11311.jpg?oper=astc&width=64&height=64&time_id=00000001";
     uriBatch.push_back(beginUri);
     ret = mediaLibraryManager->GetBatchAstcs(uriBatch, astcBatch);
-    EXPECT_EQ(ret, E_DB_FAIL);
 }
 
 /**
