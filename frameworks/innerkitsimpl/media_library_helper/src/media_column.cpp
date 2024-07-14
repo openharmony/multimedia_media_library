@@ -110,6 +110,7 @@ const std::string PhotoColumn::PHOTO_HIDDEN_TIME_INDEX = "hidden_time_index";
 const std::string PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX = "idx_schpt_hidden_time";
 const std::string PhotoColumn::PHOTO_FAVORITE_INDEX = "idx_photo_is_favorite";
 const std::string PhotoColumn::PHOTO_DISPLAYNAME_INDEX = "idx_display_name";
+const std::string PhotoColumn::PHOTO_SCHPT_READY_INDEX = "idx_schpt_thumbnail_ready";
 
 const std::string PhotoColumn::PHOTO_DATE_YEAR_FORMAT = "%Y";
 const std::string PhotoColumn::PHOTO_DATE_MONTH_FORMAT = "%Y%m";
@@ -256,6 +257,12 @@ const std::string PhotoColumn::INDEX_SCTHP_ADDTIME =
 const std::string PhotoColumn::INDEX_CAMERA_SHOT_KEY =
     BaseColumn::CreateIndex() + "idx_camera_shot_key" + " ON " + PHOTOS_TABLE +
     " (" + CAMERA_SHOT_KEY + ");";
+
+const std::string PhotoColumn::INDEX_SCHPT_READY =
+    BaseColumn::CreateIndex() + PHOTO_SCHPT_READY_INDEX + " ON " + PHOTOS_TABLE +
+    " (" + PHOTO_SYNC_STATUS + "," + PHOTO_CLEAN_FLAG + "," + MEDIA_HIDDEN + "," + MEDIA_TIME_PENDING +
+    "," + MEDIA_DATE_TRASHED + ", " + PHOTO_IS_TEMP + "," + PHOTO_THUMBNAIL_READY +
+    "," + MEDIA_DATE_ADDED + " DESC);";
 
 const std::string PhotoColumn::CREATE_PHOTOS_DELETE_TRIGGER =
                         "CREATE TRIGGER IF NOT EXISTS photos_delete_trigger AFTER UPDATE ON " +
