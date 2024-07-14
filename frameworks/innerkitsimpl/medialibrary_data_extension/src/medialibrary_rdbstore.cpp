@@ -898,6 +898,7 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_CLOUD_ID_INDEX,
     PhotoColumn::INDEX_SCTHP_ADDTIME,
     PhotoColumn::INDEX_CAMERA_SHOT_KEY,
+    PhotoColumn::INDEX_SCHPT_READY,
     PhotoColumn::CREATE_YEAR_INDEX,
     PhotoColumn::CREATE_MONTH_INDEX,
     PhotoColumn::CREATE_DAY_INDEX,
@@ -2714,6 +2715,15 @@ void AddCoverPosition(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddSchptReadyIndex(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        PhotoColumn::INDEX_SCHPT_READY,
+    };
+    MEDIA_INFO_LOG("Add schpt ready index");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
@@ -2750,6 +2760,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_COVER_POSITION) {
         AddCoverPosition(store);
+    }
+
+    if (oldVersion < VERSION_ADD_SCHPT_READY_INEDX) {
+        AddSchptReadyIndex(store);
     }
 }
 
