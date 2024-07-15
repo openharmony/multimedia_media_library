@@ -2152,7 +2152,7 @@ std::vector<std::string> MediaLibraryRdbUtils::GetPhotoPathsByCloudIds(const std
     string cloudIds;
     for (auto &uri : uris) {
         auto cloudId = uri.ToString().substr(prefix.length());
-        cloudIds.append(cloudId).append(",");
+        cloudIds.append("'").append(cloudId).append("'").append(",");
     }
     cloudIds = cloudIds.substr(0, cloudIds.length() - 1);
 
