@@ -2157,7 +2157,7 @@ std::vector<std::string> MediaLibraryRdbUtils::GetPhotoPathsByCloudIds(const std
     cloudIds = cloudIds.substr(0, cloudIds.length() - 1);
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.SetWhereClause(PhotoColumn::PHOTO_CLOUD_ID + "in(" + cloudIds + ")");
+    predicates.SetWhereClause(PhotoColumn::PHOTO_CLOUD_ID + " in(" + cloudIds + ")");
     vector<string> columns = {
         PhotoColumn::MEDIA_FILE_PATH
     };
