@@ -1143,7 +1143,7 @@ void MediaLibraryRdbUtils::UpdateUserAlbumByUri(const shared_ptr<RdbStore> &rdbS
     for (size_t i = 0; i < uris.size(); i++) {
         string fileId = GetPhotoId(uris[i]);
         if (fileId.size() > 0) {
-            idArgs.append(fileId).append(",");
+            idArgs.append("'").append(fileId).append("'").append(",");
         }
         if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
             continue;
@@ -1328,7 +1328,7 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<RdbStore> 
     if (!albumTypes.empty()) {
         std::string files;
         for (std::string fileId : fileIds) {
-            files.append(fileId).append(",");
+            files.append("'").append(fileId).append("'").append(",");
         }
         files = files.substr(0, files.length() - 1);
         std::string subTypes;
@@ -1393,7 +1393,7 @@ void MediaLibraryRdbUtils::UpdateSourceAlbumByUri(const shared_ptr<RdbStore> &rd
     for (size_t i = 0; i < uris.size(); i++) {
         string fileId = GetPhotoId(uris[i]);
         if (fileId.size() > 0) {
-            idArgs.append(fileId).append(",");
+            idArgs.append("'").append(fileId).append("'").append(",");
         }
         if ((i == 0 || i % ALBUM_UPDATE_THRESHOLD != 0) && i < uris.size() - 1) {
             continue;
@@ -2152,12 +2152,12 @@ std::vector<std::string> MediaLibraryRdbUtils::GetPhotoPathsByCloudIds(const std
     string cloudIds;
     for (auto &uri : uris) {
         auto cloudId = uri.ToString().substr(prefix.length());
-        cloudIds.append(cloudId).append(",");
+        cloudIds.append("'").append(cloudId).append("'").append(",");
     }
     cloudIds = cloudIds.substr(0, cloudIds.length() - 1);
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.SetWhereClause(PhotoColumn::PHOTO_CLOUD_ID + "in(" + cloudIds + ")");
+    predicates.SetWhereClause(PhotoColumn::PHOTO_CLOUD_ID + " in(" + cloudIds + ")");
     vector<string> columns = {
         PhotoColumn::MEDIA_FILE_PATH
     };
