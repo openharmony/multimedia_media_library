@@ -260,6 +260,9 @@ void AddPermissionRecord()
             MEDIA_WARN_LOG("Failed to add permission used record: %{public}s, permGranted: %{public}d, err: %{public}d",
                 info.permissionName.c_str(), info.successCount, ret);
         }
+        MEDIA_DEBUG_LOG("Info: token = %{private}d, perm = %{private}s, permGranted = %{private}d, \
+            !permGranted = %{private}d, type = %{public}d", info.tokenId, info.permissionName.c_str(),
+            info.successCount, info.failCount, info.type);
     }
     infos.clear();
 }
@@ -269,7 +272,7 @@ void DelayAddPermissionRecord()
     string name("DelayAddPermissionRecord");
     pthread_setname_np(pthread_self(), name.c_str());
     MEDIA_INFO_LOG("DelayTask start");
-    std::this_thread::sleep_for(std::chrono::minutes(1));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     AddPermissionRecord();
     g_isDelayTask = false;
     MEDIA_INFO_LOG("DelayTask end");
@@ -296,7 +299,16 @@ void CollectPermissionRecord(const AccessTokenID &token, const string &perm,
     }
 
     AddPermParamInfo info = {token, perm, permGranted, !permGranted, type};
-    infos_.push_back(info);
+    auto iter = find_if(infos_.begin(), infos_.end(), [&token, &perm, type](auto &info) {
+        return info.tokenId == token && info.permissionName == perm && info.type == type;
+    });
+    if (iter == infos_.end()) {
+        infos_.push_back(info);
+    } else if (permGranted) {
+        iter->successCount += 1;
+    } else if (!permGranted) {
+        iter->failCount += 1;
+    }
 }
 
 void PermissionUtils::CollectPermissionInfo(const string &permission,
