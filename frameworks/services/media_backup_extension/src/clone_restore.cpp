@@ -32,7 +32,7 @@
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
 
-#ifdef CLOND_SYNC_MANAGER
+#ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
 #endif
 
@@ -168,7 +168,7 @@ void CloneRestore::StartRestore(const string &backupRestoreDir, const string &up
 {
     MEDIA_INFO_LOG("Start clone restore");
     SetParameterForClone();
-#ifdef CLOND_SYNC_MANAGER
+#ifdef CLOUD_SYNC_MANAGER
     FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
 #endif
     backupRestoreDir_ = backupRestoreDir;
