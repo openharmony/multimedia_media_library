@@ -131,6 +131,7 @@ public:
     static const std::string PHOTO_HIDDEN_TIME_INDEX EXPORT;
     static const std::string PHOTO_SCHPT_HIDDEN_TIME_INDEX EXPORT;
     static const std::string PHOTO_FAVORITE_INDEX EXPORT;
+    static const std::string PHOTO_SCHPT_READY_INDEX EXPORT;
     // for clone query
     static const std::string PHOTO_DISPLAYNAME_INDEX EXPORT;
     // format in PhotoTable year month day
@@ -159,6 +160,7 @@ public:
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;
     static const std::string INDEX_CAMERA_SHOT_KEY EXPORT;
+    static const std::string INDEX_SCHPT_READY EXPORT;
 
     // create Photo cloud sync trigger
     static const std::string CREATE_PHOTOS_DELETE_TRIGGER EXPORT;
