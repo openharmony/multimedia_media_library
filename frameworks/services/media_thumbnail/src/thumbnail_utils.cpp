@@ -270,7 +270,8 @@ bool ThumbnailUtils::ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, 
 
     PostProc postProc;
     if (!postProc.ScalePixelMapEx(targetSize, *dataSource, Media::AntiAliasingOption::HIGH)) {
-        MEDIA_ERR_LOG("Fail to scale to target thumbnail, ScalePixelMapEx failed.");
+        MEDIA_ERR_LOG("Fail to scale to target thumbnail, ScalePixelMapEx failed, targetSize: %{public}d * %{public}d",
+            targetSize.width, targetSize.height);
         return false;
     }
     return true;
