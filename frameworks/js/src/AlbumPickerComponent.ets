@@ -25,8 +25,8 @@ export struct AlbumPickerComponent {
       Column() {
         SecurityUIExtensionComponent({
           parameters: {
-            "ability.want.params.uiExtensionTargetType":"photoPicker",
-            targetPage: "albumPage",
+            'ability.want.params.uiExtensionTargetType':'photoPicker',
+            targetPage: 'albumPage',
             themeColorMode: this.albumPickerOptions?.themeColorMode,
           }
         }).height('100%').width('100%').onRemoteReady((proxy) => {
