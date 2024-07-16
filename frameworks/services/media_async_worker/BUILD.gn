@@ -28,7 +28,7 @@ ohos_static_library("medialibrary_async_worker") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
   ]
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true

@@ -185,7 +185,7 @@ ohos_shared_library("medialibrary_nutils") {
   if (defined(medialibrary_mtp_enable)) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -253,7 +253,7 @@ ohos_shared_library("medialibrary") {
   if (defined(medialibrary_mtp_enable)) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -314,7 +314,7 @@ ohos_shared_library("userfilemanager") {
   if (defined(medialibrary_mtp_enable)) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -422,7 +422,7 @@ ohos_shared_library("photoaccesshelper") {
   if (defined(medialibrary_mtp_enable)) {
     defines += [ "MEDIALIBRARY_MTP_ENABLE=1" ]
   }
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -485,7 +485,7 @@ ohos_shared_library("photopickercomponent") {
     "napi:ace_napi",
   ]
 
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -535,7 +535,7 @@ ohos_shared_library("albumpickercomponent") {
     "napi:ace_napi",
   ]
 
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true

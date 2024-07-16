@@ -17,7 +17,7 @@
         "SystemCapability.FileManagement.UserFileManager.DistributedCore",
         "SystemCapability.FileManagement.PhotoAccessHelper.Core"
       ],
-      "features": [],
+      "features": ["media_library_link_opt"],
       "adapted_system_type": [ "small", "standard" ],
       "rom": "10444KB",
       "ram": "35093KB",
