@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include "fetch_result_test_cb.h"
 #include "medialibrary_helper_test.h"
 
 #include "datashare_result_set.h"
@@ -25,6 +24,8 @@
 #include "base_column.h"
 #include "fetch_result.h"
 #include "media_column.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 #include "result_set_utils.h"
 #undef private
 using namespace std;
@@ -41,14 +42,9 @@ static const string TEST_URI = MEDIALIBRARY_DATA_URI;
 
 void MediaLibraryHelperUnitTest::SetUpTestCase(void)
 {
-    static const string DATABASE_PATH = "/data/test/test.db";
-    NativeRdb::RdbHelper::DeleteRdbStore(DATABASE_PATH);
-
-    NativeRdb::RdbStoreConfig config(DATABASE_PATH);
-    FetchResultTestCB callback;
-    int errCode = -1;
-    rdbStore = NativeRdb::RdbHelper::GetRdbStore(config, 1, callback, errCode);
-    EXPECT_EQ(errCode, NativeRdb::E_OK);
+    int32_t ret = MediaLibraryUnitTestUtils::InitUnistore();
+    rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    EXPECT_EQ(ret, NativeRdb::E_OK);
     EXPECT_NE(rdbStore, nullptr);
 
     NativeRdb::ValuesBucket valuesBucket;

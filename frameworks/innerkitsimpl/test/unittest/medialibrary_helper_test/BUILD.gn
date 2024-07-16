@@ -25,6 +25,7 @@ ohos_unittest("media_library_helper_test") {
 
   include_dirs = [
     "./include",
+    "../medialibrary_unittest_utils/include",
     "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
@@ -32,6 +33,7 @@ ohos_unittest("media_library_helper_test") {
   ]
 
   sources = [
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
     "./src/album_asset_test.cpp",
     "./src/dir_asset_test.cpp",
     "./src/fetch_result_test.cpp",
@@ -55,11 +57,17 @@ ohos_unittest("media_library_helper_test") {
 
   external_deps = [
     "ability_base:zuri",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:ability_manager",
+    "ability_runtime:app_context",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "data_share:datashare_common",
     "data_share:datashare_consumer",
     "hilog:libhilog",
     "image_framework:image_native",
+    "ipc:ipc_single",
+    "napi:ace_napi",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
     "samgr:samgr_proxy",
