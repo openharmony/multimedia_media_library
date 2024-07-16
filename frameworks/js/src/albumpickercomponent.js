@@ -16,7 +16,7 @@
 export class AlbumPickerComponent extends ViewPU {
     constructor(e, o, n, t = -1, i = void 0) {
         super(e, n, t);
-        "function" === typeof i && (this.paramsGenerator_ = i);
+        'function' === typeof i && (this.paramsGenerator_ = i);
         this.albumPickerOptions = void 0;
         this.onAlbumClick = void 0;
         this.setInitiallyProvidedValue(o);
@@ -24,7 +24,7 @@ export class AlbumPickerComponent extends ViewPU {
 
     setInitiallyProvidedValue(e) {
         void 0 !== e.albumPickerOptions && (this.albumPickerOptions = e.albumPickerOptions);
-        void 0 !== e.onAlbumClick && (this.onAlbumClick = e.onAlbumClick)
+        void 0 !== e.onAlbumClick && (this.onAlbumClick = e.onAlbumClick);
     }
 
     updateStateVars(e) {
@@ -80,7 +80,7 @@ export class AlbumPickerComponent extends ViewPU {
     }
 
     rerender() {
-        this.updateDirtyElements()
+        this.updateDirtyElements();
     }
 }
 
