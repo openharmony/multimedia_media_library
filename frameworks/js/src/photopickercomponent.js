@@ -18,7 +18,7 @@ var __decorate = this && this.__decorate || function (e, o, t, i) {
     if ('object' === typeof Reflect && 'function' === typeof Reflect.decorate) {
         l = Reflect.decorate(e, o, t, i);
     } else {
-        for (var s = e.length - 1;s >= 0; s--) {
+        for (var s = e.length - 1; s >= 0; s--) {
             (n = e[s]) && (l = (r < 3 ? n(l) : r > 3 ? n(o, t, l) : n(o, t)) || l);
         }
     }
@@ -183,11 +183,11 @@ export class PhotoPickerComponent extends ViewPU {
     handleSelectOrDeselect(e) {
         if (e.isSelect) {
             if (this.onSelect) {
-                this.onSelect(e["select-item-list"]);
+                this.onSelect(e['select-item-list']);
                 console.info('PhotoPickerComponent onReceive: onSelect');
             }
         } else if (this.onDeselect) {
-            this.onDeselect(e["select-item-list"]);
+            this.onDeselect(e['select-item-list']);
             console.info('PhotoPickerComponent onReceive: onDeselect');
         }
     }
@@ -289,53 +289,53 @@ export class MaxSelected {
 
 export var DataType;
 !function(e) {
-    e[e.SET_SELECTED_URIS=1] = 'SET_SELECTED_URIS';
-    e[e.SET_ALBUM_URI=2] = 'SET_ALBUM_URI'
+    e[e.SET_SELECTED_URIS = 1] = 'SET_SELECTED_URIS';
+    e[e.SET_ALBUM_URI = 2] = 'SET_ALBUM_URI';
 }(DataType || (DataType = {}));
 
 export var ItemType;
 !function(e) {
-    e[e.THUMBNAIL=0] = 'THUMBNAIL';
-    e[e.CAMERA=1] = 'CAMERA'
+    e[e.THUMBNAIL = 0] = 'THUMBNAIL';
+    e[e.CAMERA = 1] = 'CAMERA';
 }(ItemType || (ItemType = {}));
 
 export var ClickType;
 !function(e) {
-    e[e.SELECTED=0] = 'SELECTED';
-    e[e.DESELECTED=1] = 'DESELECTED'
+    e[e.SELECTED = 0] = 'SELECTED';
+    e[e.DESELECTED = 1] = 'DESELECTED';
 }(ClickType || (ClickType = {}));
 
 export var PickerOrientation;
 !function(e) {
-    e[e.VERTICAL=0] = 'VERTICAL';
-    e[e.HORIZONTAL=1] = 'HORIZONTAL'
+    e[e.VERTICAL = 0] = 'VERTICAL';
+    e[e.HORIZONTAL = 1] = 'HORIZONTAL';
 }(PickerOrientation || (PickerOrientation = {}));
 
 export var SelectMode;
 !function(e) {
-    e[e.SINGLE_SELECT=0] = 'SINGLE_SELECT';
-    e[e.MULTI_SELECT=1] = 'MULTI_SELECT'
+    e[e.SINGLE_SELECT = 0] = 'SINGLE_SELECT';
+    e[e.MULTI_SELECT = 1] = 'MULTI_SELECT';
 }(SelectMode || (SelectMode = {}));
 
 export var PickerColorMode;
 !function(e) {
-    e[e.AUTO=0] = 'AUTO';
-    e[e.LIGHT=1] = 'LIGHT';
-    e[e.DARK=2] = 'DARK'
+    e[e.AUTO = 0] = 'AUTO';
+    e[e.LIGHT = 1] = 'LIGHT';
+    e[e.DARK = 2] = 'DARK';
 }(PickerColorMode || (PickerColorMode = {}));
 
 export var ReminderMode;
 !function(e) {
-    e[e.NONE=0] = 'NONE';
-    e[e.TOAST=1] = 'TOAST';
-    e[e.MASK=2] = 'MASK'
+    e[e.NONE = 0] = 'NONE';
+    e[e.TOAST = 1] = 'TOAST';
+    e[e.MASK = 2] = 'MASK';
 }(ReminderMode || (ReminderMode = {}));
 
 export var MaxCountType;
 !function(e) {
-    e[e.TOTAL_MAX_COUNT=0] = 'TOTAL_MAX_COUNT';
-    e[e.PHOTO_MAX_COUNT=1] = 'PHOTO_MAX_COUNT';
-    e[e.VIDEO_MAX_COUNT=2] = 'VIDEO_MAX_COUNT'
+    e[e.TOTAL_MAX_COUNT = 0] = 'TOTAL_MAX_COUNT';
+    e[e.PHOTO_MAX_COUNT = 1] = 'PHOTO_MAX_COUNT';
+    e[e.VIDEO_MAX_COUNT = 2] = 'VIDEO_MAX_COUNT';
 }(MaxCountType || (MaxCountType = {}));
 
 export default { PhotoPickerComponent, PickerController, PickerOptions, DataType, ItemInfo, PhotoBrowserInfo, AnimatorParams,
