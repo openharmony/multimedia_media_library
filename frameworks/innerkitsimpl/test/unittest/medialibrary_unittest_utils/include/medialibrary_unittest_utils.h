@@ -48,7 +48,7 @@ public:
     virtual ~MediaLibraryUnitTestUtils() {}
     static bool IsValid();
     static void Init();
-    static void InitUnistore();
+    static int32_t InitUnistore();
     static void InitRootDirs();
     static void CleanTestFiles();
     static void CleanBundlePermission();
