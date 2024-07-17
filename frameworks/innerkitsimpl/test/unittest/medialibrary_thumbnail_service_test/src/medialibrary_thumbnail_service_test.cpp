@@ -633,5 +633,199 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_005, Te
     EXPECT_EQ(res, false);
 }
 
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_006, TestSize.Level0)
+{
+    ThumbnailData data;
+    Size desiredSize;
+    auto res = ThumbnailUtils::LoadAudioFile(data, desiredSize);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_007, TestSize.Level0)
+{
+    const string path;
+    const string suffix;
+    string fileName;
+    auto res = ThumbnailUtils::SaveFileCreateDir(path, suffix, fileName);
+    EXPECT_EQ(res, 0);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_008, TestSize.Level0)
+{
+    ThumbnailData data;
+    const string fileName;
+    uint8_t *output = data.thumbnail.data();
+    const int writeSize = 0;
+    auto res = ThumbnailUtils::ToSaveFile(data, fileName, output, writeSize);
+    EXPECT_EQ(res<0, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_009, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbnailType type = ThumbnailType::MTH;
+    auto res = ThumbnailUtils::TrySaveFile(data, type);
+    EXPECT_EQ(res, -223);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_010, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbnailType type = ThumbnailType::MTH_ASTC;
+    data.monthAstc.push_back(1);
+    data.monthAstc.resize(1);
+    auto res = ThumbnailUtils::TrySaveFile(data, type);
+    EXPECT_EQ(res, -1);
+    ThumbnailType type2 = ThumbnailType::YEAR_ASTC;
+    data.yearAstc.push_back(1);
+    data.yearAstc.resize(1);
+    auto res2 = ThumbnailUtils::TrySaveFile(data, type2);
+    EXPECT_EQ(res2, -1);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_011, TestSize.Level0)
+{
+    ThumbnailData data;
+    ThumbnailType type = ThumbnailType::THUMB;
+    auto res = ThumbnailUtils::TrySaveFile(data, type);
+    EXPECT_EQ(res, -2302);
+    ThumbnailType type2 = ThumbnailType::THUMB_ASTC;
+    auto res2 = ThumbnailUtils::TrySaveFile(data, type2);
+    EXPECT_EQ(res2, -2302);
+    ThumbnailType type3 = ThumbnailType::LCD;
+    auto res3 = ThumbnailUtils::TrySaveFile(data, type3);
+    EXPECT_EQ(res3, -2302);
+    ThumbnailType type4 = ThumbnailType::LCD_EX;
+    auto res4 = ThumbnailUtils::TrySaveFile(data, type4);
+    EXPECT_EQ(res4, -2302);
+    ThumbnailType type5 = ThumbnailType::THUMB_EX;
+    auto res5 = ThumbnailUtils::TrySaveFile(data, type5);
+    EXPECT_EQ(res5, -2302);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_012, TestSize.Level0)
+{
+    ThumbnailData data;
+    const std::string suffix;
+    uint8_t *output = data.thumbnail.data();;
+    const int writeSize = 0;
+    auto res = ThumbnailUtils::SaveThumbDataToLocalDir(data, suffix, output, writeSize);
+    EXPECT_EQ(res<0, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_013, TestSize.Level0)
+{
+    ThumbnailData data;
+    const ThumbnailType type = ThumbnailType::THUMB;
+    auto res = ThumbnailUtils::SaveAstcDataToKvStore(data, type);
+    EXPECT_EQ(res, -1);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, TestSize.Level0)
+{
+    ThumbnailData data;
+    data.id = "a";
+    data.dateAdded = "b";
+    const ThumbnailType type = ThumbnailType::MTH_ASTC;
+    auto res = ThumbnailUtils::SaveAstcDataToKvStore(data, type);
+    EXPECT_EQ(res, -1);
+    const ThumbnailType type2 = ThumbnailType::YEAR_ASTC;
+    auto res2 = ThumbnailUtils::SaveAstcDataToKvStore(data, type2);
+    EXPECT_EQ(res2, -1);
+    const ThumbnailType type3 = ThumbnailType::LCD;
+    auto res3 = ThumbnailUtils::SaveAstcDataToKvStore(data, type3);
+    EXPECT_EQ(res3, -1);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_015, TestSize.Level0)
+{
+    const std::string fieldId = "a";
+    const std::string dateAdded;
+    std::string key;
+    auto res = ThumbnailUtils::GenerateKvStoreKey(fieldId, dateAdded, key);
+    EXPECT_EQ(res, false);
+    const std::string fieldId2 = "aaaaaaaaaa";
+    const std::string dateAdded2 = "b";
+    auto res2 = ThumbnailUtils::GenerateKvStoreKey(fieldId2, dateAdded2, key);
+    EXPECT_EQ(res2, false);
+    const std::string fieldId3 = "a";
+    const std::string dateAdded3 = "bbbbbbbbbbbbbb";
+    auto res3 = ThumbnailUtils::GenerateKvStoreKey(fieldId3, dateAdded3, key);
+    EXPECT_EQ(res3, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_016, TestSize.Level0)
+{
+    const std::string fieldId = "a";
+    const std::string dateAdded;
+    std::string key;
+    auto res = ThumbnailUtils::GenerateOldKvStoreKey(fieldId, dateAdded, key);
+    EXPECT_EQ(res, false);
+    const std::string fieldId2;
+    const std::string dateAdded2 = "b";
+    auto res2 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId2, dateAdded2, key);
+    EXPECT_EQ(res2, false);
+    const std::string fieldId3;
+    const std::string dateAdded3;
+    auto res3 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId3, dateAdded3, key);
+    EXPECT_EQ(res3, false);
+    const std::string fieldId4 = "aaaaaaaaaa";
+    const std::string dateAdded4 = "b";
+    auto res4 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId4, dateAdded4, key);
+    EXPECT_EQ(res4, false);
+    const std::string fieldId5 = "a";
+    const std::string dateAdded5 = "bbbbbbbbbbbbbb";
+    auto res5 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId5, dateAdded5, key);
+    EXPECT_EQ(res5, false);
+    const std::string fieldId6 = "a";
+    const std::string dateAdded6 = "b";
+    auto res6 = ThumbnailUtils::GenerateOldKvStoreKey(fieldId6, dateAdded6, key);
+    EXPECT_EQ(res6, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_017, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailData data;
+    data.dateAdded = "a";
+    auto res = ThumbnailUtils::CheckDateAdded(opts, data);
+    EXPECT_EQ(res, true);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_018, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    const ThumbnailType type = ThumbnailType::LCD;
+    auto res = ThumbnailUtils::DeleteAstcDataFromKvStore(opts, type);
+    EXPECT_EQ(res, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_019, TestSize.Level0)
+{
+    ThumbnailData data;
+    data.source = make_shared<PixelMap>();
+    bool isSourceEx = false;
+    auto res = ThumbnailUtils::ScaleThumbnailFromSource(data, isSourceEx);
+    EXPECT_EQ(res, false);
+    bool isSourceEx2 = true;
+    auto res2 = ThumbnailUtils::ScaleThumbnailFromSource(data, isSourceEx2);
+    EXPECT_EQ(res2, false);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_020, TestSize.Level0)
+{
+    NativeRdb::ValuesBucket values;
+    Size size;
+    size.height = 1;
+    size.width = 0;
+    const std::string column;
+    ThumbnailUtils::SetThumbnailSizeValue(values, size, column);
+    NativeRdb::ValuesBucket values2;
+    Size size2;
+    size2.height = 0;
+    size2.width = 1;
+    ThumbnailUtils::SetThumbnailSizeValue(values2, size2, column);
+    EXPECT_NE(size.height, size2.height);
+}
 } // namespace Media
 } // namespace OHOS

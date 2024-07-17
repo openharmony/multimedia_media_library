@@ -794,5 +794,84 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetFileSize_Test_001, TestSi
     EXPECT_EQ(success, false);
     EXPECT_EQ(size, 0);
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_001, TestSize.Level0)
+{
+    const std::string filePath;
+    std::string fileContent;
+    auto res = MediaFileUtils::ReadStrFromFile(filePath, fileContent);
+    EXPECT_EQ(res, false);
+    const std::string filePath2 = "a";
+    auto res2 = MediaFileUtils::ReadStrFromFile(filePath2, fileContent);
+    EXPECT_EQ(res2, false);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_002, TestSize.Level0)
+{
+    const string uri = "datashare:///media";
+    auto res = MediaFileUtils::GetHighlightPath(uri);
+    EXPECT_EQ(res, "/storage/cloud/files/.thumbs");
+    const string uri2 = "file://media";
+    auto res2 = MediaFileUtils::GetHighlightPath(uri2);
+    EXPECT_EQ(res2, "/storage/cloud/files/.thumbs");
+    const string uri3 = "";
+    auto res3 = MediaFileUtils::GetHighlightPath(uri3);
+    EXPECT_EQ(res3, "");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_003, TestSize.Level0)
+{
+    const string filePath;
+    const string mode;
+    auto res = MediaFileUtils::OpenAsset(filePath, mode);
+    EXPECT_EQ(res, -209);
+    const string filePath2 = "a";
+    auto res2 = MediaFileUtils::OpenAsset(filePath2, mode);
+    EXPECT_EQ(res2, -217);
+    const string filePath3 = "a";
+    const string mode3 = "r";
+    auto res3 = MediaFileUtils::OpenAsset(filePath3, mode3);
+    EXPECT_EQ(res3, -209);
+    const string filePath4 = "b";
+    const string mode4 = "w";
+    auto res4 = MediaFileUtils::OpenAsset(filePath4, mode4);
+    EXPECT_EQ(res4, -209);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_004, TestSize.Level0)
+{
+    MediaType mediaType = MEDIA_TYPE_VIDEO;
+    auto res = MediaFileUtils::GetMediaTypeUri(mediaType);
+    EXPECT_EQ(res, "datashare:///media/video");
+    MediaType mediaType2 = MEDIA_TYPE_SMARTALBUM;
+    auto res2 = MediaFileUtils::GetMediaTypeUri(mediaType2);
+    EXPECT_EQ(res2, "datashare:///media/smartalbum");
+    auto res2_2 = MediaFileUtils::GetMediaTypeUriV10(mediaType2);
+    EXPECT_EQ(res2_2, "datashare:///media/smartalbum");
+    MediaType mediaType3 = MEDIA_TYPE_DEVICE;
+    auto res3 = MediaFileUtils::GetMediaTypeUri(mediaType3);
+    EXPECT_EQ(res3, "datashare:///media/device");
+    auto res3_2 = MediaFileUtils::GetMediaTypeUriV10(mediaType3);
+    EXPECT_EQ(res3_2, "datashare:///media/device");
+    MediaType mediaType4 = MEDIA_TYPE_FILE;
+    auto res4_2 = MediaFileUtils::GetMediaTypeUriV10(mediaType4);
+    EXPECT_EQ(res4_2, "datashare:///media/file");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_Test_005, TestSize.Level0)
+{
+    const std::string displayName = "a.mp3";
+    auto res = MediaFileUtils::GetTableNameByDisplayName(displayName);
+    EXPECT_EQ(res, "Audios");
+    const std::string displayName2 = "b.mp4";
+    auto res2 = MediaFileUtils::GetTableNameByDisplayName(displayName2);
+    EXPECT_EQ(res2, "Photos");
+    const std::string displayName3 = "c.jpg";
+    auto res3 = MediaFileUtils::GetTableNameByDisplayName(displayName3);
+    EXPECT_EQ(res3, "Photos");
+    const std::string displayName4 = "d.txt";
+    auto res4 = MediaFileUtils::GetTableNameByDisplayName(displayName4);
+    EXPECT_EQ(res4, "");
+}
 } // namespace Media
 } // namespace OHOS
