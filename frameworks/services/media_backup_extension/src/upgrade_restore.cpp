@@ -148,9 +148,9 @@ int UpgradeRestore::StringToInt(const std::string& str)
         return 0;
     }
     int base = 0;
-    int num = 0;
+    size_t num = 0;
     int sign = 1;
-    ssize_t len = static_cast<ssize_t>(str.length());
+    size_t len = static_cast<ssize_t>(str.length());
     while (num < len && str[num] == ' ') {
         num++;
     }
