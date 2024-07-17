@@ -46,6 +46,10 @@ void ModalUICallback::OnError(int32_t code, const std::string& name, const std::
 {
     NAPI_ERR_LOG("OnError enter. errorCode=%{public}d, name=%{public}s, message=%{public}s",
         code, name.c_str(), message.c_str());
+    if (!pickerCallBack_->ready) {
+        this->uiContent->CloseModalUIExtension(this->sessionId_);
+        pickerCallBack_->ready = true;
+    }
 }
 
 void ModalUICallback::OnResultForModal(int32_t resultCode, const OHOS::AAFwk::Want &result)
