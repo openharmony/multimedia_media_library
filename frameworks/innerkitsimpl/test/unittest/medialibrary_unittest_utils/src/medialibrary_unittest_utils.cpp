@@ -53,7 +53,7 @@ void MediaLibraryUnitTestUtils::Init()
     isValid_ = true;
 }
 
-void MediaLibraryUnitTestUtils::InitUnistore()
+int32_t MediaLibraryUnitTestUtils::InitUnistore()
 {
     auto stageContext = std::make_shared<AbilityRuntime::ContextImpl>();
     auto abilityContextImpl = std::make_shared<OHOS::AbilityRuntime::AbilityContextImpl>();
@@ -62,6 +62,7 @@ void MediaLibraryUnitTestUtils::InitUnistore()
     if (ret != E_OK) {
         MEDIA_ERR_LOG("init MediaLibraryUnistoreManager failed");
     }
+    return ret;
 }
 
 void MediaLibraryUnitTestUtils::InitRootDirs()
