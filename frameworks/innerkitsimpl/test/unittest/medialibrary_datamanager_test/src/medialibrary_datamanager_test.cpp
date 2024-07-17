@@ -1183,10 +1183,10 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnailBackgroun
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     int32_t ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, NativeRdb::E_EMPTY_VALUES_BUCKET);
+    EXPECT_EQ(ret, E_THUMBNAIL_LCD_ALL_EXIST);
     mediaLibraryDataManager->ClearMediaLibraryMgr();
     ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, NativeRdb::E_EMPTY_VALUES_BUCKET);
+    EXPECT_EQ(ret, E_THUMBNAIL_LCD_ALL_EXIST);
 }
 
 #ifdef DISTRIBUTED
