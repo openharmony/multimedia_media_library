@@ -611,6 +611,31 @@ static void HandleCallingPackage(MediaLibraryCommand &cmd, const FileAsset &file
     }
 }
 
+static void HandleBurstPhoto(MediaLibraryCommand &cmd, ValuesBucket &outValues)
+{
+    if (!PermissionUtils::IsNativeSAApp()) {
+        MEDIA_DEBUG_LOG("do not have permission to set burst_key or burst_cover_level");
+        return;
+    }
+ 
+    string burstKey;
+    ValueObject value;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_BURST_KEY, value)) {
+        value.GetString(burstKey);
+    }
+    if (!burstKey.empty()) {
+        outValues.PutString(PhotoColumn::PHOTO_BURST_KEY, burstKey);
+    }
+ 
+    int32_t burstCoverLevel = 0;
+    if (cmd.GetValueBucket().GetObject(PhotoColumn::PHOTO_BURST_COVER_LEVEL, value)) {
+        value.GetInt(burstCoverLevel);
+    }
+    if (burstCoverLevel != 0) {
+        outValues.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, burstCoverLevel);
+    }
+}
+
 static void HandleIsTemp(MediaLibraryCommand &cmd, ValuesBucket &outValues)
 {
     if (!PermissionUtils::IsNativeSAApp()) {
@@ -659,6 +684,7 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     }
 
     HandleCallingPackage(cmd, fileAsset, assetInfo);
+    HandleBurstPhoto(cmd, assetInfo);
 
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
     HandleDateAdded(nowTime,
