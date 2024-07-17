@@ -716,12 +716,12 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_ill
 HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix, TestSize.Level0)
 {
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix start");
-    // normal prefix
-    PrefixType srcPrefix = PrefixType::LOCAL_EDIT_DATA;
-    PrefixType dstPrefix = PrefixType::LOCAL_EDIT_DATA;
+    // normal srcPrefix + normal dstPrefix
+    PrefixType srcPrefix = PrefixType::LOCAL;
+    PrefixType dstPrefix = PrefixType::LOCAL;
     string path = "test_path";
     auto ret = BackupFileUtils::GetReplacedPathByPrefixType(srcPrefix, dstPrefix, path);
-    EXPECT_EQ(path, "/storage/cloud/files");
+    EXPECT_EQ(ret, "/storage/media/local/files");
     MEDIA_INFO_LOG("BackupFileUtils_GetReplacedPathByPrefixType_normal_prefix end");
 }
 
@@ -1210,6 +1210,19 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_clone, TestSize.Lev
     MEDIA_INFO_LOG("medialib_backup_InsertAudio_clone end");
 }
 
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAudio_empty_file, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_InsertAudio_empty_file start");
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    upgrade->mediaLibraryRdb_ = photosStorePtr;
+    upgrade->migrateAudioDatabaseNumber_ = 0;
+    std::vector<FileInfo> fileInfos;
+    upgrade->InsertAudio(DUAL_FRAME_CLONE_RESTORE_ID, fileInfos);
+    EXPECT_EQ(upgrade->migrateAudioDatabaseNumber_, 0);
+    MEDIA_INFO_LOG("medialib_backup_InsertAudio_empty_file end");
+}
+
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_MoveDirectory, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_MoveDirectory start");
@@ -1636,6 +1649,252 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_StringToInt_003, TestSize.
     auto res = upgrade->StringToInt(xmlPath);
     EXPECT_EQ(res, 0);
     GTEST_LOG_(INFO) << "medialib_backup_test_StringToInt_003 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetValueFromMetaData, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetValueFromMetaData start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    // hasOrientation = true and fileinfo.fileType != MEDIA_TYPE_VIDEO
+    FileInfo fileInfo;
+    fileInfo.fileType = MEDIA_TYPE_FILE;
+    NativeRdb::ValuesBucket valueBucket;
+    valueBucket.PutString(PhotoColumn::PHOTO_ORIENTATION, "test");
+    upgrade->SetValueFromMetaData(fileInfo, valueBucket);
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetValueFromMetaData end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetAudioInsertValue, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetAudioInsertValue start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    string mediaName;
+    FileInfo fileInfo;
+    string path = "/test/";
+    ValueObject valueObject;
+    fileInfo.displayName = "test.cpp";
+
+    auto ret = upgrade->GetAudioInsertValue(fileInfo, path);
+    ret.GetObject(MediaColumn::MEDIA_NAME, valueObject);
+    valueObject.GetString(mediaName);
+    EXPECT_EQ(mediaName, "test.cpp");
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetAudioInsertValue end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetBackupInfo, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetBackupInfo start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    string str = upgrade->GetBackupInfo();
+    EXPECT_EQ(str, "");
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetBackupInfo end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_empty, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_empty start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    // empty mediaLibraryRdb_
+    int sceneCode = 0;
+    int32_t sourceType = 0;
+    vector<FileInfo> fileInfos;
+    upgrade->mediaLibraryRdb_ = nullptr;
+    upgrade->InsertPhoto(sceneCode, fileInfos, sourceType);
+
+    //normal mediaLibraryRdb_ and empty file
+    upgrade->mediaLibraryRdb_ = photosStorePtr;
+    upgrade->InsertPhoto(sceneCode, fileInfos, sourceType);
+    GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_empty end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_InsertPhoto_normal, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_normal start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    int sceneCode = 0;
+    FileInfo fileInfo1;
+    FileInfo fileInfo2;
+    int32_t sourceType = SourceType::GALLERY;
+    upgrade->mediaLibraryRdb_ = photosStorePtr;
+
+    vector<FileInfo> fileInfos;
+    fileInfo1.filePath = "test";
+    fileInfos.push_back(fileInfo1);
+    fileInfo2.filePath = "/storage/cloud/100/files/Documents/CreateImageThumbnailTest_001.jpg";
+    fileInfo2.cloudPath = "storage/cloud/files/Audio/10/AUD_3322/jpg";
+    fileInfos.push_back(fileInfo2);
+    upgrade->InsertPhoto(sceneCode, fileInfos, sourceType);
+
+    // insertPhoto sourceType != SourceType::GALLERY
+    sourceType = SourceType::EXTERNAL_CAMERA;
+    upgrade->InsertPhoto(sceneCode, fileInfos, sourceType);
+    GTEST_LOG_(INFO) << "medialib_backup_test_InsertPhoto_normal end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_image, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_image start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    // type = image
+    int32_t errCode = 0;
+    string path = "image/";
+    string type = STAT_TYPE_PHOTO;
+    int32_t fileType = MediaType::MEDIA_TYPE_IMAGE;
+
+    upgrade->UpdateFailedFileByFileType(fileType, path, errCode);
+    auto ret = upgrade->GetFailedFiles(type);
+    // ret[path] = errCode
+    EXPECT_EQ(ret[path], 0);
+    GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_image end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_video, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_video start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    // type = video
+    int32_t errCode = 1;
+    string path = "video/";
+    string type = STAT_TYPE_VIDEO;
+    int32_t fileType = MediaType::MEDIA_TYPE_VIDEO;
+
+    upgrade->UpdateFailedFileByFileType(fileType, path, errCode);
+    auto ret = upgrade->GetFailedFiles(type);
+    // ret[path] = errCode
+    EXPECT_EQ(ret[path], 1);
+    GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_video end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_audio, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_audio start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    // type = audio
+    int32_t errCode = -1;
+    string path = "audio/";
+    string type = STAT_TYPE_AUDIO;
+    int32_t fileType = MediaType::MEDIA_TYPE_AUDIO;
+
+    upgrade->UpdateFailedFileByFileType(fileType, path, errCode);
+    auto ret = upgrade->GetFailedFiles(type);
+    // ret[path] = errCode
+    EXPECT_EQ(ret[path], -1);
+    GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_audio end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    // illegal file type
+    int32_t fileType = -1;
+    string path = "test_path";
+    int32_t errCode = 3;
+
+    upgrade->UpdateFailedFileByFileType(fileType, path, errCode);
+    auto ret = upgrade->GetErrorInfoJson();
+    string str = ret[STAT_KEY_ERROR_INFO].dump();
+    str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
+    EXPECT_EQ(str, "File path is invalid");
+    GTEST_LOG_(INFO) << "medialib_backup_test_UpdateFailedFileByFileType_illegal_filetype end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_SetErrorCode, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetErrorCode start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    // errCode = INIT_FAILED
+    int32_t errCode = INIT_FAILED;
+    upgrade->SetErrorCode(errCode);
+    auto ret = upgrade->GetErrorInfoJson();
+    string str = ret[STAT_KEY_ERROR_INFO].dump();
+    str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
+    EXPECT_EQ(str, "Init failed");
+
+    // illegal errCode
+    errCode = 999;
+    upgrade->SetErrorCode(errCode);
+    ret = upgrade->GetErrorInfoJson();
+    str = ret[STAT_KEY_ERROR_INFO].dump();
+    str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
+    EXPECT_EQ(str.length(), 0);
+    GTEST_LOG_(INFO) << "medialib_backup_test_SetErrorCode end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetSubCountInfo_illegal_type, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetSubCountInfo_illegal_type start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    // case 1 illegal type GetSubCountInfo will return empty failedFiles
+    string type = "test_types";
+    SubCountInfo ret = upgrade->GetSubCountInfo(type);
+    EXPECT_EQ(ret.failedFiles.empty(), 1);
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetSubCountInfo_illegal_type end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_empty_types, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_empty_types start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    vector<string> types;
+    auto ret = upgrade->GetCountInfoJson(types);
+    //json node not available will return null
+    string str = ret[STAT_KEY_INFOS].dump();
+    str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
+    EXPECT_EQ(str, "null");
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_empty_types end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_normal_types, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_normal_types start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    vector<string> types = STAT_TYPES;
+    auto ret = upgrade->GetCountInfoJson(types);
+    // stat_types[1] = video ret[1][STAT_KEY_BACKUP_INFO] = video
+    auto str = ret[STAT_KEY_INFOS][1][STAT_KEY_BACKUP_INFO].dump();
+    str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
+    EXPECT_EQ(str, "video");
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_normal_types end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_illegal_types, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+
+    vector<string> types = { "test" };
+    auto ret = upgrade->GetCountInfoJson(types);
+    string str = ret[STAT_KEY_INFOS][1][STAT_KEY_BACKUP_INFO].dump();
+    str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
+    EXPECT_EQ(str, "test");
+    GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types end";
 }
 } // namespace Media
 } // namespace OHOS
