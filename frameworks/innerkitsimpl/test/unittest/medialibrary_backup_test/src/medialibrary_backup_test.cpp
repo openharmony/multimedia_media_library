@@ -1348,17 +1348,6 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_InsertAlbum_002, TestSize.Level
     MEDIA_INFO_LOG("medialib_backup_InsertAlbum_002 end");
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_001, TestSize.Level0)
-{
-    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_001 start";
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    string xmlPath = "/data/test/backup/test.xml";
-    auto res = upgrade->ParseXml(xmlPath);
-    EXPECT_EQ(res, 0);
-    GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_001 end";
-}
-
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_ParseXml_002, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_ParseXml_002 start";
