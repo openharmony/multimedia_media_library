@@ -124,7 +124,10 @@ public:
     EXPORT static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     EXPORT static bool ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx);
-    EXPORT static bool ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize);
+    EXPORT static bool ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize,
+        const AntiAliasingOption &option);
+    EXPORT static bool CenterScaleEx(std::shared_ptr<PixelMap> &dataSource, const Size &desiredSize,
+        const std::string path);
     EXPORT static std::string GetThumbnailSuffix(ThumbnailType type);
 
     EXPORT static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
