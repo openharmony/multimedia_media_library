@@ -425,7 +425,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     ASSERT_NE(photoAssetProxy, nullptr);
     sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
     ASSERT_NE(photoProxyTest, nullptr);
-    string displayNameExpect = photoProxyTest->GetDisplayName();
+    string titleExpect = photoProxyTest->GetTitle();
     photoProxyTest->SetFormat(PhotoFormat::JPG);
     photoProxyTest->SetPhotoQuality(PhotoQuality::LOW);
 
@@ -433,7 +433,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
 
     auto fileAsset = photoAssetProxy->GetFileAsset();
     ASSERT_NE(fileAsset, nullptr);
-    EXPECT_EQ(fileAsset->GetDisplayName(), displayNameExpect);
+    EXPECT_EQ(fileAsset->GetTitle(), titleExpect);
     EXPECT_EQ(fileAsset->GetResultNapiType(), ResultNapiType::TYPE_PHOTOACCESS_HELPER);
 
     vector<string> columns { PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY,
@@ -458,7 +458,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
 
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_002, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 enter");
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_002 enter");
     auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
     sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
     ASSERT_NE(photoProxyTest, nullptr);
@@ -466,7 +466,99 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
     int32_t fd = photoAssetProxy->GetVideoFd();
     EXPECT_GE(fd, 0);
-    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_001 exit");
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_002 exit");
+}
+
+/**
+ * @brief verify PhotoAssetProxy::UpdatePhotoBurst
+ * 
+ * GIVEN ProtoProxy::GetBurstKey()
+ * WHEN ProtoProxy::GetBurstKey() is xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
+ * THEN media_library.db#Photos#burstKey is xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_003 enter");
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::BURST, 0, 0);
+    ASSERT_NE(photoAssetProxy, nullptr);
+    // mock data for PhotoProxy
+    sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
+    photoProxyTest->SetIsCoverPhoto(false);
+    std::string burstKey = "xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx";
+    photoProxyTest->SetBurstKey(burstKey);
+    ASSERT_NE(photoProxyTest, nullptr);
+    string titleExpect = photoProxyTest->GetTitle();
+    photoProxyTest->SetFormat(PhotoFormat::JPG);
+    photoProxyTest->SetPhotoQuality(PhotoQuality::HIGH);
+    // call PhotoAssetProxy::AddPhotoProxy to access PhotoAssetProxy::UpdatePhotoBurst
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+    // query from db
+    vector<string> columns{ PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY,
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY };
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
+ 
+    string uriStr = URI_QUERY_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri queryFileUri(uriStr);
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
+ 
+    // assert
+    EXPECT_EQ(0, GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet));
+    EXPECT_EQ(burstKey, GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
+ 
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_003 exit");
+}
+ 
+/**
+ * @brief verify PhotoAssetProxy::UpdatePhotoBurst
+ * 
+ * GIVEN ProtoProxy::IsCoverPhoto()
+ * WHEN ProtoProxy::IsCoverPhoto() is true
+ * THEN media_library.db#Photos#burst_cover_level is 1
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 enter");
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::BURST, 0, 0);
+    ASSERT_NE(photoAssetProxy, nullptr);
+    // mock data for PhotoProxy
+    sptr<PhotoProxyTest> photoProxyTest = new(std::nothrow) PhotoProxyTest();
+    photoProxyTest->SetIsCoverPhoto(true);
+    std::string burstKey = "xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx";
+    photoProxyTest->SetBurstKey(burstKey);
+    ASSERT_NE(photoProxyTest, nullptr);
+    string titleExpect = photoProxyTest->GetTitle();
+    photoProxyTest->SetFormat(PhotoFormat::JPG);
+    photoProxyTest->SetPhotoQuality(PhotoQuality::HIGH);
+    // call PhotoAssetProxy::AddPhotoProxy to access PhotoAssetProxy::UpdatePhotoBurst
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+    // query from db
+    vector<string> columns{ PhotoColumn::PHOTO_ID, PhotoColumn::PHOTO_QUALITY, PhotoColumn::PHOTO_DIRTY,
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL, PhotoColumn::PHOTO_BURST_KEY };
+    DataSharePredicates predicates;
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileAsset->GetId());
+ 
+    string uriStr = URI_QUERY_PHOTO;
+    MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri queryFileUri(uriStr);
+    shared_ptr<DataShareResultSet> resultSet = nullptr;
+    resultSet = sDataShareHelper_->Query(queryFileUri, predicates, columns);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
+ 
+    // assert
+    EXPECT_EQ(1, GetInt32Val(PhotoColumn::PHOTO_BURST_COVER_LEVEL, resultSet));
+    EXPECT_EQ(burstKey, GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
+ 
+    MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 exit");
 }
 } // namespace Media
 } // namespace OHOS

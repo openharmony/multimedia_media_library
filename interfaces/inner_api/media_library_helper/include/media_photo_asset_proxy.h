@@ -32,6 +32,7 @@ enum class CameraShotType : int32_t {
     IMAGE  = 0, // 图片
     VIDEO, // 视频
     MOVING_PHOTO, // 动态照片
+    BURST, // 连拍照片
 };
 
 class VideoAttrs : public RefBase {
