@@ -30,7 +30,8 @@ MediaLibraryCommNapi::MediaLibraryCommNapi() {}
 MediaLibraryCommNapi::~MediaLibraryCommNapi() {}
 
 // The current function is only provided to the camera framework.
-napi_value MediaLibraryCommNapi::CreatePhotoAssetNapi(napi_env env, const string &uri, int32_t cameraShotType)
+napi_value MediaLibraryCommNapi::CreatePhotoAssetNapi(
+    napi_env env, const string &uri, int32_t cameraShotType, const string &burstKey)
 {
     if (uri.empty()) {
         NAPI_ERR_LOG("uri is empty");
@@ -50,6 +51,10 @@ napi_value MediaLibraryCommNapi::CreatePhotoAssetNapi(napi_env env, const string
     } else if (cameraShotType == static_cast<int32_t>(CameraShotType::MOVING_PHOTO)) {
         fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
         fileAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
+    } else if (cameraShotType == static_cast<int32_t>(CameraShotType::BURST)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::BURST));
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
+        fileAsset->SetBurstKey(burstKey);
     } else {
         NAPI_ERR_LOG("invalid cameraShotKey: %{public}d", cameraShotType);
     }

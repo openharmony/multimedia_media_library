@@ -47,7 +47,7 @@ public:
         streamObj << std::setw(PADDING_WIDTH) << std::setfill(FILL_CHAR) << to_string(localTime->tm_mon + MONTH_GAP) <<
             to_string(localTime->tm_mday) << "_" << to_string(localTime->tm_hour) << to_string(localTime->tm_min) <<
             to_string(localTime->tm_sec);
-        displayName_ = "IMG_" + to_string(localTime->tm_year + BASE_YEAR) + streamObj.str() + ".jpg";
+        title_ = "IMG_" + to_string(localTime->tm_year + BASE_YEAR) + streamObj.str();
 
         std::ostringstream streamObj2;
         // 设置宽度并使用 '0' 填充未使用的位置
@@ -57,9 +57,9 @@ public:
         photoId_ = to_string(localTime->tm_year + BASE_YEAR) + streamObj2.str();
     }
 
-    std::string GetDisplayName() override
+    std::string GetTitle() override
     {
-        return displayName_;
+        return title_;
     }
 
     // 图片后缀，例如：jpg/png
@@ -155,14 +155,46 @@ public:
     {
         return 0;
     }
+
+    /**
+     * @brief Get the Burst Key object
+     * @return std::string 32 characters like xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx without '-'
+     */
+    std::string GetBurstKey() override
+    {
+        return this->burstKey_;
+    }
+ 
+    /**
+     * @brief judge the photo is the cover photo or not
+     *
+     * @return true the photo is the cover photo
+     * @return false the photo is not the cover photo
+     */
+    bool IsCoverPhoto() override
+    {
+        return this->isCoverPhoto_;
+    }
+ 
+    void SetIsCoverPhoto(bool isCoverPhoto)
+    {
+        this->isCoverPhoto_ = isCoverPhoto;
+    }
+ 
+    void SetBurstKey(std::string burstKey)
+    {
+        this->burstKey_ = burstKey;
+    }
 private:
     void *fileDataAddr_ = nullptr;
     int32_t fileSize_ = 0;
-    std::string displayName_;
+    std::string title_;
     std::string photoId_;
     PhotoFormat photoFormat_;
     PhotoQuality photoQuality_;
     DeferredProcType deferredProcType_ = DeferredProcType::OFFLINE;
+    std::string burstKey_;
+    bool isCoverPhoto_;
 };
 } // Media
 } // OHOS
