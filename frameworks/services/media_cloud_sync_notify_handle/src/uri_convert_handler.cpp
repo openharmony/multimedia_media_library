@@ -48,8 +48,10 @@ void UriConvertHandler::Handle(const CloudSyncHandleData &handleData)
     CloudSyncHandleData newHandleData = handleData;
 
     if (handleData.orgInfo.type == ChangeType::OTHER) {
-        AddNewNotify(newHandleData, { Uri(PhotoColumn::PHOTO_URI_PREFIX) }, ChangeType::DELETE);
-        AddNewNotify(newHandleData, { Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX) }, ChangeType::DELETE);
+        AddNewNotify(newHandleData, { Uri(PhotoColumn::PHOTO_URI_PREFIX) },
+            static_cast<ChangeType>(NotifyType::NOTIFY_REMOVE));
+        AddNewNotify(newHandleData, { Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX) },
+            static_cast<ChangeType>(NotifyType::NOTIFY_REMOVE));
     } else {
         newNotifyInfo.type = handleData.orgInfo.type;
         for (auto &uri : handleData.orgInfo.uris) {
