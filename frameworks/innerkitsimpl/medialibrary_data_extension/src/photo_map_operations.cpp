@@ -240,37 +240,37 @@ int32_t PhotoMapOperations::AddAnaLysisPhotoAssets(const vector<DataShareValuesB
 }
 
 static void GetDismissAssetsPredicates(NativeRdb::RdbPredicates &rdbPredicate, vector<string> &updateAlbumIds,
-    PhotoAlbumSubType subtype, const string &strAlbumId, const vector<string> &assetsArray)
+    PhotoAlbumSubType subtype, const string &albumId, const vector<string> &assetsArray)
 {
     if (subtype == PhotoAlbumSubType::PORTRAIT) {
-        GetPortraitAlbumIds(strAlbumId, updateAlbumIds);
+        GetPortraitAlbumIds(albumId, updateAlbumIds);
         rdbPredicate.In(MAP_ALBUM, updateAlbumIds);
         rdbPredicate.And()->In(MAP_ASSET, assetsArray);
     } else {
-        rdbPredicate.EqualTo(MAP_ALBUM, strAlbumId);
+        rdbPredicate.EqualTo(MAP_ALBUM, albumId);
         rdbPredicate.And()->In(MAP_ASSET, assetsArray);
-        updateAlbumIds.push_back(strAlbumId);
+        updateAlbumIds.push_back(albumId);
     }
 }
 
-int32_t DoDismissAssets(int32_t subtype, const string &strAlbumId, vector<string> assets)
+int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<string> &assetIds)
 {
     if (subtype == PhotoAlbumSubType::GROUP_PHOTO) {
         NativeRdb::RdbPredicates rdbPredicate { VISION_IMAGE_FACE_TABLE };
-        rdbPredicate.In(MediaColumn::MEDIA_ID, assets);
+        rdbPredicate.In(MediaColumn::MEDIA_ID, assetIds);
         return MediaLibraryRdbStore::Delete(rdbPredicate);
     }
 
     vector<string> updateAlbumIds;
     NativeRdb::RdbPredicates rdbPredicate { ANALYSIS_PHOTO_MAP_TABLE };
     GetDismissAssetsPredicates(rdbPredicate, updateAlbumIds,
-        static_cast<PhotoAlbumSubType>(subtype), strAlbumId, assets);
+        static_cast<PhotoAlbumSubType>(subtype), albumId, assetIds);
     int32_t deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
     if (deleteRow <= 0) {
         return deleteRow;
     }
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateAlbumIds, assets);
+        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), updateAlbumIds, assetIds);
     return deleteRow;
 }
 
