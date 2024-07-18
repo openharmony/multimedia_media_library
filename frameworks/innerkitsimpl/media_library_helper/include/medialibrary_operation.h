@@ -50,6 +50,7 @@ enum class EXPORT OperationObject : uint32_t {
     PAH_MAP,
     TOOL_PHOTO,
     TOOL_AUDIO,
+    TOOL_ALBUM,
     VISION_START,
     VISION_OCR = VISION_START,
     VISION_LABEL,
