@@ -25,6 +25,7 @@
 #include "datashare_values_bucket.h"
 #include "medialibrary_album_operations.h"
 #include "medialibrary_command.h"
+#include "medialibrary_async_worker.h"
 #include "native_album_asset.h"
 #include "rdb_predicates.h"
 #include "rdb_result_set_bridge.h"
@@ -41,6 +42,9 @@ struct GroupPhotoAlbumInfo {
     int32_t fileId;
     std::string candidateUri;
     int32_t isMe;
+    std::string albumName;
+    int32_t isRemoved;
+    int32_t renameOperation;
 };
 class MediaLibraryAnalysisAlbumOperations {
 public:
@@ -49,6 +53,15 @@ public:
         const DataShare::DataSharePredicates &predicates);
     static std::shared_ptr<NativeRdb::ResultSet> QueryGroupPhotoAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
+};
+
+class UpdateGroupPhotoAlbumTask : public AsyncTaskData {
+public:
+    UpdateGroupPhotoAlbumTask(const std::shared_ptr<NativeRdb::ResultSet> lastResultSet)
+        : lastResultSet_(lastResultSet) {}
+    virtual ~UpdateGroupPhotoAlbumTask() override = default;
+
+    std::shared_ptr<NativeRdb::ResultSet> lastResultSet_;
 };
 } // namespace Media
 } // namespace OHOS
