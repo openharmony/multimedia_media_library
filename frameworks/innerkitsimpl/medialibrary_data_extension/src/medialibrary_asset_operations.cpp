@@ -681,10 +681,10 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
             assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo now
         }
         HandleIsTemp(cmd, assetInfo);
+        HandleBurstPhoto(cmd, assetInfo);
     }
 
     HandleCallingPackage(cmd, fileAsset, assetInfo);
-    HandleBurstPhoto(cmd, assetInfo);
 
     assetInfo.PutString(MediaColumn::MEDIA_DEVICE_NAME, cmd.GetDeviceName());
     HandleDateAdded(nowTime,

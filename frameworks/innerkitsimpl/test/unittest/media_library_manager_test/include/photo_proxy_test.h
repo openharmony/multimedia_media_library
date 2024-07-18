@@ -158,7 +158,7 @@ public:
 
     /**
      * @brief Get the Burst Key object
-     * @return std::string 32 characters like xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx without '-'
+     * @return std::string 36 characters like xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
      */
     std::string GetBurstKey() override
     {
