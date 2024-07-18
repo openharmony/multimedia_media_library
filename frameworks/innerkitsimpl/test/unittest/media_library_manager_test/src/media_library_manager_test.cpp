@@ -471,7 +471,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
 
 /**
  * @brief verify PhotoAssetProxy::UpdatePhotoBurst
- * 
+ *
  * GIVEN ProtoProxy::GetBurstKey()
  * WHEN ProtoProxy::GetBurstKey() is xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
  * THEN media_library.db#Photos#burstKey is xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
@@ -517,7 +517,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
  
 /**
  * @brief verify PhotoAssetProxy::UpdatePhotoBurst
- * 
+ *
  * GIVEN ProtoProxy::IsCoverPhoto()
  * WHEN ProtoProxy::IsCoverPhoto() is true
  * THEN media_library.db#Photos#burst_cover_level is 1
