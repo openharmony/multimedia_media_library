@@ -166,7 +166,6 @@ static inline shared_ptr<ResultSet> GetAnalysisAlbum(const shared_ptr<NativeRdb:
     if (!analysisAlbumIds.empty()) {
         predicates.In(PhotoAlbumColumns::ALBUM_ID, analysisAlbumIds);
     }
-    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIGHLIGHT));
     if (rdbStore == nullptr) {
         return nullptr;
     }
@@ -944,7 +943,9 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(fileResult, albumResult, values, hiddenState, subtype);
-    SetCover(fileResult, albumResult, values, hiddenState, subtype);
+    if (subtype != PhotoAlbumSubType::HIGHLIGHT) {
+        SetCover(fileResult, albumResult, values, hiddenState, subtype);
+    }
     if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
         subtype > PhotoAlbumSubType::ANALYSIS_END)) {
         predicates.Clear();
@@ -1023,7 +1024,6 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
 
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(GetAlbumId(albumResult)));
-    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIGHLIGHT));
     int32_t changedRows = 0;
     err = rdbStore->Update(changedRows, values, predicates);
     if (err < 0) {
