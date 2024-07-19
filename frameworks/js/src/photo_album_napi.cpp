@@ -1007,34 +1007,29 @@ static void JSGetPhotoAssetsExecute(napi_env env, void *data)
     context->fetchResult->SetResultNapiType(ResultNapiType::TYPE_USERFILE_MGR);
 }
 
-void ConvertColumnsForPortrait(PhotoAlbumNapiAsyncContext *context)
+static bool IsFeaturedSinglePortraitAlbum(const shared_ptr<PhotoAlbum>& photoAlbum)
 {
-    if (context == nullptr) {
-        return;
-    }
-    auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    if (photoAlbum != nullptr && photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::PORTRAIT) {
-        for (size_t i = 0; i < context->fetchColumn.size(); i++) {
-            context->fetchColumn[i] = PhotoColumn::PHOTOS_TABLE + "." + context->fetchColumn[i];
-        }
-    }
+    constexpr int portraitAlbumId = 0;
+    return photoAlbum->GetPhotoAlbumSubType() == PhotoAlbumSubType::CLASSIFY &&
+        photoAlbum->GetAlbumName().compare(to_string(portraitAlbumId)) == 0;
 }
 
-void ConvertColumnsForFeaturedSinglePortrait(PhotoAlbumNapiAsyncContext *context)
+static void ConvertColumnsForPortrait(PhotoAlbumNapiAsyncContext *context)
 {
     if (context == nullptr) {
         return;
     }
 
     auto photoAlbum = context->objectInfo->GetPhotoAlbumInstance();
-    int portraitAlbumId = 0;
-    if (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::CLASSIFY ||
-        photoAlbum->GetAlbumName().compare(to_string(portraitAlbumId)) != 0) {
+    if (photoAlbum == nullptr || (photoAlbum->GetPhotoAlbumSubType() != PhotoAlbumSubType::PORTRAIT &&
+        !IsFeaturedSinglePortraitAlbum(photoAlbum))) {
         return;
     }
 
     for (size_t i = 0; i < context->fetchColumn.size(); i++) {
-        context->fetchColumn[i] = PhotoColumn::PHOTOS_TABLE + "." + context->fetchColumn[i];
+        if (context->fetchColumn[i] != "count(*)") {
+            context->fetchColumn[i] = PhotoColumn::PHOTOS_TABLE + "." + context->fetchColumn[i];
+        }
     }
 }
 
@@ -1046,7 +1041,6 @@ static void JSPhotoAccessGetPhotoAssetsExecute(napi_env env, void *data)
     auto *context = static_cast<PhotoAlbumNapiAsyncContext *>(data);
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
-    ConvertColumnsForFeaturedSinglePortrait(context);
     int32_t errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     if (resultSet == nullptr) {
@@ -1062,7 +1056,6 @@ static napi_value JSPhotoAccessGetPhotoAssetsExecuteSync(napi_env env, PhotoAlbu
     auto context = &asyncContext;
     Uri uri(PAH_QUERY_PHOTO_MAP);
     ConvertColumnsForPortrait(context);
-    ConvertColumnsForFeaturedSinglePortrait(context);
     int32_t errCode = 0;
     auto resultSet = UserFileClient::Query(uri, context->predicates, context->fetchColumn, errCode);
     CHECK_NULLPTR_RET(resultSet);
