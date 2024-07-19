@@ -1558,7 +1558,11 @@ int64_t MediaFileUtils::Timespec2Millisecond(const struct timespec &time)
 string MediaFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
 {
     size_t splitIndex = imagePath.find_last_of('.');
-    return (splitIndex == string::npos) ? "" : (imagePath.substr(0, splitIndex) + ".mp4");
+    size_t lastSlashIndex = imagePath.find_last_of('/');
+    if (splitIndex == string::npos || (lastSlashIndex != string::npos && lastSlashIndex > splitIndex)) {
+        return "";
+    }
+    return imagePath.substr(0, splitIndex) + ".mp4";
 }
 
 bool MediaFileUtils::CheckMovingPhotoExtension(const string &extension)

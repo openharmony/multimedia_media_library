@@ -46,6 +46,9 @@ public:
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
     static bool ShouldIncludeSD(const std::string &prefix);
     static void DeleteSDDatabase(const std::string &prefix);
+    static bool IsLivePhoto(const FileInfo &fileInfo);
+    static bool ConvertToMovingPhoto(const std::string &livePhotoPath, std::string &movingPhotoVideoPath,
+        std::string &extraDataPath);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);

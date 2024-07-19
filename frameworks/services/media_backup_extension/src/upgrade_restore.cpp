@@ -672,6 +672,15 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
+    info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
+        MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
+    info.specialFileType = GetInt32Val(GALLERY_SPECIAL_FILE_TYPE, resultSet);
+    if (BackupFileUtils::IsLivePhoto(info) && !BackupFileUtils::ConvertToMovingPhoto(
+        info.filePath, info.movingPhotoVideoPath, info.extraDataPath)) {
+        MEDIA_ERR_LOG("Failed to convert live photo to moving photo, filePath = %{public}s",
+            BackupFileUtils::GarbleFilePath(info.filePath, UPGRADE_RESTORE_ID).c_str());
+        return false;
+    }
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);
@@ -786,6 +795,10 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
         values.PutInt(PhotoColumn::PHOTO_BURST_SEQUENCE, fileInfo.burstSequence);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading burst photo
+    }
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo now
     }
     return values;
 }
