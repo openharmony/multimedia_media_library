@@ -540,7 +540,7 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_007, TestSize.Level
     string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
     TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
 
-    fileIds.push_back(portraits[TEST_INDEX_TWO].fileId);
+    fileIds.push_back(to_string(portraits[TEST_INDEX_TWO].fileId));
     vector<string> albumIds = {to_string(albumId)};
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds); // no need update
     CheckAlbum(albumId, static_cast<int32_t>(portraits.size()), portraits[TEST_INDEX_ONE].fileId, true);
