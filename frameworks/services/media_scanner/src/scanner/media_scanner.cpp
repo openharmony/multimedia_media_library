@@ -261,7 +261,7 @@ int32_t MediaScannerObj::Commit()
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
         uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_);
         mediaScannerDb_->UpdateAlbumInfoByMetaData(*data_);
-        if (watch != nullptr) {
+        if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT) {
             if (data_->GetForAdd()) {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
             } else {
@@ -272,7 +272,7 @@ int32_t MediaScannerObj::Commit()
         MEDIA_INFO_LOG("insert new file: %{public}s", data_->GetFilePath().c_str());
         uri_ = mediaScannerDb_->InsertMetadata(*data_, tableName, api_);
         mediaScannerDb_->UpdateAlbumInfoByMetaData(*data_);
-        if (watch != nullptr) {
+        if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT) {
             watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
         }
     }
