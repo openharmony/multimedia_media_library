@@ -460,6 +460,9 @@ int32_t InitQueryParentResultSet(int32_t dirId, int32_t &parentIdVal, string &di
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(dirId));
     shared_ptr<NativeRdb::ResultSet> queryParentResultSet = uniStore->Query(cmd, {});
+    if (queryParentResultSet == nullptr) {
+        return E_SUCCESS;
+    }
     if (queryParentResultSet->GoToNextRow() != NativeRdb::E_OK) {
         return E_SUCCESS;
     }
@@ -1469,12 +1472,14 @@ int32_t MediaLibraryObjectUtils::GetFileResult(shared_ptr<NativeRdb::ResultSet> 
     int errCode = E_SUCCESS;
     for (int32_t row = 0; row < count; row++) {
         unique_ptr<FileAsset> fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, row);
-        if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
-            errCode = CopyDir(move(fileAsset), relativePath + displayName + "/");
-            CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy dir");
-        } else {
-            errCode = CopyAsset(move(fileAsset), relativePath + displayName + "/");
-            CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy asset");
+        if (fileAsset != nullptr) {
+            if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
+                errCode = CopyDir(move(fileAsset), relativePath + displayName + "/");
+                CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy dir");
+            } else {
+                errCode = CopyAsset(move(fileAsset), relativePath + displayName + "/");
+                CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy asset");
+            }
         }
     }
     return errCode;

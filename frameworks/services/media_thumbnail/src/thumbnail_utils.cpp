@@ -1467,6 +1467,10 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize.width = size.width;
     decodeOpts.desiredSize.height = size.height;
+    if (imageSource == nullptr) {
+        MEDIA_ERR_LOG("imageSource is nullptr");
+        return false;
+    }
     pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     if (err != E_SUCCESS) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
