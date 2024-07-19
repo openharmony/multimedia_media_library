@@ -423,6 +423,8 @@ const std::vector<std::pair<std::string, std::string>> IMAGEVIDEOKEY_ENUM_PROPER
     std::make_pair("THUMB_SIZE",                PhotoColumn::PHOTO_THUMB_SIZE),
     std::make_pair("MOVING_PHOTO_EFFECT_MODE",  PhotoColumn::MOVING_PHOTO_EFFECT_MODE),
     std::make_pair("COVER_POSITION",            PhotoColumn::PHOTO_COVER_POSITION),
+    std::make_pair("BURST_COVER_LEVEL",         PhotoColumn::PHOTO_BURST_COVER_LEVEL),
+    std::make_pair("BURST_KEY",                 PhotoColumn::PHOTO_BURST_KEY),
 };
 
 const std::vector<std::pair<std::string, std::string>> ALBUMKEY_ENUM_PROPERTIES = {
