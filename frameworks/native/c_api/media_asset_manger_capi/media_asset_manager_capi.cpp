@@ -72,6 +72,7 @@ MediaLibrary_RequestId OH_MediaAssetManager_RequestVideoForPath(OH_MediaAssetMan
 {
     CHECK_AND_PRINT_LOG(manager != nullptr, "input manager is nullptr!");
     struct MediaAssetMangerObject *managerObj = reinterpret_cast<MediaAssetMangerObject *>(manager);
+    CHECK_AND_PRINT_LOG(managerObj != nullptr, "imanagerObj is nullptr!");
     CHECK_AND_PRINT_LOG(managerObj->manager_ != nullptr, "manager_ is null");
     CHECK_AND_PRINT_LOG(uri != nullptr, "uri is null");
     CHECK_AND_PRINT_LOG(destPath != nullptr, "destPath is null");
@@ -90,6 +91,7 @@ bool OH_MediaAssetManager_CancelRequest(OH_MediaAssetManager* manager, const Med
 {
     CHECK_AND_PRINT_LOG(manager != nullptr, "input manager is nullptr!");
     struct MediaAssetMangerObject *managerObj = reinterpret_cast<MediaAssetMangerObject *>(manager);
+    CHECK_AND_PRINT_LOG(managerObj != nullptr, "managerObj is nullptr!");
     CHECK_AND_PRINT_LOG(managerObj->manager_ != nullptr, "manager_ is null");
     CHECK_AND_PRINT_LOG(strlen(requestId.requestId) > 0, "requestId is empty");
     return managerObj->manager_->NativeCancelRequest(requestId.requestId);

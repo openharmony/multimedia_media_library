@@ -2210,8 +2210,11 @@ static void ApplyAssetChangeRequestExecute(napi_env env, void* data)
     tracer.Start("ApplyAssetChangeRequestExecute");
 
     auto* context = static_cast<MediaAssetChangeRequestAsyncContext*>(data);
-    if (context == nullptr || context->objectInfo == nullptr ||
-        context->objectInfo->GetFileAssetInstance() == nullptr) {
+    if (context == nullptr) {
+        NAPI_ERR_LOG("context is null");
+        return;
+    }
+    if (context->objectInfo == nullptr || context->objectInfo->GetFileAssetInstance() == nullptr) {
         context->SaveError(E_FAIL);
         NAPI_ERR_LOG("Failed to check async context of MediaAssetChangeRequest object");
         return;
