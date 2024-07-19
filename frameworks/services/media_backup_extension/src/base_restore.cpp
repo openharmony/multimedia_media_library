@@ -34,6 +34,7 @@
 #include "medialibrary_type_const.h"
 #include "medialibrary_errno.h"
 #include "metadata.h"
+#include "moving_photo_file_utils.h"
 #include "parameters.h"
 #include "photo_album_column.h"
 #include "result_set_utils.h"
@@ -169,12 +170,44 @@ int32_t BaseRestore::MoveFile(const std::string &srcFile, const std::string &dst
     return E_OK;
 }
 
+static bool IsFileValid(const FileInfo &fileInfo, const int32_t sceneCode)
+{
+    if (!MediaFileUtils::IsFileValid(fileInfo.filePath)) {
+        MEDIA_ERR_LOG("File is not valid: %{public}s, errno=%{public}d.",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(), errno);
+        return false;
+    }
+
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        if (!MediaFileUtils::IsFileValid(fileInfo.movingPhotoVideoPath)) {
+            MEDIA_ERR_LOG("Moving photo video is not valid: %{public}s, errno=%{public}d.",
+                BackupFileUtils::GarbleFilePath(fileInfo.movingPhotoVideoPath, sceneCode).c_str(), errno);
+            return false;
+        }
+
+        if (!MediaFileUtils::IsFileValid(fileInfo.extraDataPath)) {
+            MEDIA_WARN_LOG("Media extra data is not valid: %{public}s, errno=%{public}d.",
+                BackupFileUtils::GarbleFilePath(fileInfo.extraDataPath, sceneCode).c_str(), errno);
+        }
+    }
+    return true;
+}
+
+static void RemoveDuplicateDualCloneFiles(const FileInfo &fileInfo)
+{
+    (void)MediaFileUtils::DeleteFile(fileInfo.filePath);
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        (void)MediaFileUtils::DeleteFile(fileInfo.movingPhotoVideoPath);
+        (void)MediaFileUtils::DeleteFile(fileInfo.extraDataPath);
+    }
+}
+
 vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t sceneCode, std::vector<FileInfo> &fileInfos,
     int32_t sourceType)
 {
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        if (!MediaFileUtils::IsFileValid(fileInfos[i].filePath)) {
+        if (!IsFileValid(fileInfos[i], sceneCode)) {
             MEDIA_WARN_LOG("File is not exist, filePath = %{public}s.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
@@ -202,7 +235,7 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
         SetValueFromMetaData(fileInfos[i], value);
         if (sceneCode == DUAL_FRAME_CLONE_RESTORE_ID && maxFileId_ > 0 &&
             HasSameFileForDualClone(mediaLibraryRdb_, PhotoColumn::PHOTOS_TABLE, fileInfos[i])) {
-            (void)MediaFileUtils::DeleteFile(fileInfos[i].filePath);
+            RemoveDuplicateDualCloneFiles(fileInfos[i]);
             MEDIA_WARN_LOG("File %{public}s already exists.",
                 BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             UpdateDuplicateNumber(fileInfos[i].fileType);
@@ -225,6 +258,40 @@ void BaseRestore::GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbSt
     maxFileId_ = GetInt32Val(maxFileId, resultSet);
     maxCount_ = GetInt32Val(MEDIA_COLUMN_COUNT_1, resultSet);
     MEDIA_INFO_LOG("maxFIleId:%{public}d, maxCount:%{public}d", maxFileId_, maxCount_);
+}
+
+bool BaseRestore::IsLivePhotoDuplicate(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const std::string &tableName, FileInfo &fileInfo)
+{
+    if (fileInfo.specialFileType != LIVE_PHOTO_TYPE) {
+        return false;
+    }
+
+    string querySql =
+        "SELECT p." + MediaColumn::MEDIA_ID + " , p." + MediaColumn::MEDIA_FILE_PATH +
+        " FROM (SELECT file_id, size, orientation, data FROM Photos " + " WHERE file_id <= " + to_string(maxFileId_) +
+        " AND subtype = " + to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND display_name = '" +
+        fileInfo.displayName + "' LIMIT " + to_string(maxCount_) +
+        ") as p INNER JOIN PhotoMap ON p.file_id = PhotoMap.map_asset " +
+        "INNER JOIN PhotoAlbum ON PhotoAlbum.album_id = PhotoMap.map_album WHERE " +
+        "(((PhotoAlbum.bundle_name = '' OR PhotoAlbum.bundle_name is null ) AND PhotoAlbum.album_name = '" +
+        fileInfo.packageName + "') OR (((PhotoAlbum.bundle_name != '' AND PhotoAlbum.bundle_name is not null) " +
+        "AND PhotoAlbum.bundle_name = '" + fileInfo.bundleName + "') OR PhotoAlbum.album_name = '" +
+        fileInfo.packageName + "')) AND p.orientation = " + to_string(fileInfo.orientation) + " LIMIT 1";
+
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
+    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
+        return false;
+    }
+    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
+    string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
+    if (fileId <= 0 || cloudPath.empty()) {
+        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
+        return false;
+    }
+    fileInfo.fileIdNew = fileId;
+    fileInfo.cloudPath = cloudPath;
+    return true;
 }
 
 bool BaseRestore::HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -257,7 +324,7 @@ bool BaseRestore::HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbSt
     }
     fileInfo.fileIdNew = fileId;
     fileInfo.cloudPath = cloudPath;
-    return true;
+    return IsLivePhotoDuplicate(rdbStore, tableName, fileInfo);
 }
 
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
@@ -301,6 +368,23 @@ static void InsertOrientation(std::unique_ptr<Metadata> &metadata, NativeRdb::Va
     value.PutInt(PhotoColumn::PHOTO_ORIENTATION, metadata->GetOrientation()); // video use orientation in metadata
 }
 
+static void SetValueForMovingPhoto(const FileInfo &fileInfo,
+    const unique_ptr<Metadata> &imageMetaData, NativeRdb::ValuesBucket &value)
+{
+    uint32_t version = 0;
+    uint32_t frameIndex = 0;
+    bool hasCinemagraphInfo = false;
+    UniqueFd extraDataFd(open(fileInfo.extraDataPath.c_str(), O_RDONLY));
+    (void)MovingPhotoFileUtils::GetVersionAndFrameNum(extraDataFd.Get(), version, frameIndex, hasCinemagraphInfo);
+
+    int64_t coverPosition = 0;
+    int64_t size = 0;
+    (void)MovingPhotoFileUtils::ParseVideoMetadata(fileInfo.movingPhotoVideoPath,
+        frameIndex, size, coverPosition, Scene::AV_META_SCENE_CLONE);
+    value.Put(MediaColumn::MEDIA_SIZE, size + imageMetaData->GetFileSize());
+    value.PutLong(PhotoColumn::PHOTO_COVER_POSITION, coverPosition);
+}
+
 void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
 {
     std::unique_ptr<Metadata> data = make_unique<Metadata>();
@@ -342,6 +426,9 @@ void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBuck
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_MONTH_FORMAT, dateAdded));
     value.PutString(PhotoColumn::PHOTO_DATE_DAY,
         MediaFileUtils::StrCreateTimeByMilliseconds(PhotoColumn::PHOTO_DATE_DAY_FORMAT, dateAdded));
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        SetValueForMovingPhoto(fileInfo, data, value);
+    }
 }
 
 void BaseRestore::SetAudioValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
@@ -462,24 +549,75 @@ NativeRdb::ValuesBucket BaseRestore::GetAudioInsertValue(const FileInfo &fileInf
     return value;
 }
 
+static void MoveExtraData(const FileInfo &fileInfo, int32_t sceneCode)
+{
+    string localExtraDataDir = BackupFileUtils::GetReplacedPathByPrefixType(
+        PrefixType::CLOUD, PrefixType::LOCAL, MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(fileInfo.cloudPath));
+    if (localExtraDataDir.empty()) {
+        MEDIA_WARN_LOG("Failed to get local extra data dir");
+        return;
+    }
+    if (!MediaFileUtils::IsFileExists(localExtraDataDir) && !MediaFileUtils::CreateDirectory(localExtraDataDir)) {
+        MEDIA_WARN_LOG("Failed to create local extra data dir, errno:%{public}d", errno);
+        return;
+    }
+
+    string localExtraDataPath = BackupFileUtils::GetReplacedPathByPrefixType(
+        PrefixType::CLOUD, PrefixType::LOCAL, MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(fileInfo.cloudPath));
+    if (localExtraDataPath.empty()) {
+        MEDIA_WARN_LOG("Failed to get local extra data path");
+        return;
+    }
+    if (!BackupFileUtils::MoveFile(fileInfo.extraDataPath, localExtraDataPath, sceneCode)) {
+        MEDIA_WARN_LOG("MoveFile failed, src:%{public}s, dest:%{public}s, errno:%{public}d",
+            BackupFileUtils::GarbleFilePath(fileInfo.extraDataPath, sceneCode).c_str(),
+            BackupFileUtils::GarbleFilePath(localExtraDataPath, sceneCode).c_str(), errno);
+    }
+}
+
+static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
+{
+    string tmpPath = fileInfo.cloudPath;
+    string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
+    if (!BackupFileUtils::MoveFile(fileInfo.filePath, localPath, sceneCode)) {
+        MEDIA_ERR_LOG("MoveFile failed, src:%{public}s, dest:%{public}s, errno:%{public}d",
+            BackupFileUtils::GarbleFilePath(fileInfo.filePath, sceneCode).c_str(),
+            BackupFileUtils::GarbleFilePath(localPath, sceneCode).c_str(), errno);
+        return false;
+    }
+    BackupFileUtils::ModifyFile(localPath, fileInfo.dateModified);
+
+    if (BackupFileUtils::IsLivePhoto(fileInfo)) {
+        string tmpVideoPath = MovingPhotoFileUtils::GetMovingPhotoVideoPath(fileInfo.cloudPath);
+        string localVideoPath = tmpVideoPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
+        if (!BackupFileUtils::MoveFile(fileInfo.movingPhotoVideoPath, localVideoPath, sceneCode)) {
+            MEDIA_ERR_LOG("MoveFile failed for moving photo, src:%{public}s, dest:%{public}s, errno:%{public}d",
+                BackupFileUtils::GarbleFilePath(fileInfo.movingPhotoVideoPath, sceneCode).c_str(),
+                BackupFileUtils::GarbleFilePath(localVideoPath, sceneCode).c_str(), errno);
+            (void)MediaFileUtils::DeleteFile(localPath);
+            return false;
+        }
+        BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified);
+        MoveExtraData(fileInfo, sceneCode);
+    }
+    return true;
+}
+
 void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
     int32_t sceneCode)
 {
     vector<std::string> moveFailedData;
     for (size_t i = 0; i < fileInfos.size(); i++) {
-        if (!MediaFileUtils::IsFileExists(fileInfos[i].filePath)) {
+        if (!IsFileValid(fileInfos[i], sceneCode)) {
             continue;
         }
         std::string tmpPath = fileInfos[i].cloudPath;
         std::string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
-        if (!BackupFileUtils::MoveFile(fileInfos[i].filePath, localPath, sceneCode)) {
-            MEDIA_ERR_LOG("MoveFile failed, filePath = %{public}s, errno:%{public}s",
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str(), strerror(errno));
+        if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
             moveFailedData.push_back(fileInfos[i].cloudPath);
             continue;
         }
-        BackupFileUtils::ModifyFile(localPath, fileInfos[i].dateModified);
         fileMoveCount++;
         videoFileMoveCount += fileInfos[i].fileType == MediaType::MEDIA_TYPE_VIDEO;
     }

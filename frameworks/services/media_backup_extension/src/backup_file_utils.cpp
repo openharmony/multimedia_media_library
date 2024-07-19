@@ -26,6 +26,7 @@
 #include "media_log.h"
 #include "media_file_utils.h"
 #include "medialibrary_asset_operations.h"
+#include "moving_photo_file_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -384,6 +385,37 @@ void BackupFileUtils::DeleteSDDatabase(const std::string &prefix)
             MEDIA_ERR_LOG("Delete SD database %{public}s failed, errno: %{public}d", sdDB.c_str(), errno);
         }
     }
+bool BackupFileUtils::IsLivePhoto(const FileInfo &fileInfo)
+{
+    return fileInfo.specialFileType == LIVE_PHOTO_TYPE;
+}
+
+static void addPathSuffix(const string &oldPath, const string &suffix, string &newPath)
+{
+    if (oldPath.empty() || suffix.empty()) {
+        MEDIA_WARN_LOG("oldPath or suffix is empty");
+        return;
+    }
+
+    newPath = oldPath + suffix;
+    while (MediaFileUtils::IsFileExists(newPath)) {
+        newPath += ".dup" + suffix;
+    }
+}
+
+bool BackupFileUtils::ConvertToMovingPhoto(const string &livePhotoPath,
+    string &movingPhotoVideoPath, string &extraDataPath)
+{
+    if (!MediaFileUtils::IsFileExists(livePhotoPath)) {
+        MEDIA_ERR_LOG("Live photo does not exist, path:%{private}s, errno:%{public}d", livePhotoPath.c_str(), errno);
+        return false;
+    }
+
+    addPathSuffix(livePhotoPath, ".mp4", movingPhotoVideoPath);
+    addPathSuffix(livePhotoPath, ".extra", extraDataPath);
+    int32_t ret = MovingPhotoFileUtils::ConvertToMovingPhoto(livePhotoPath,
+        livePhotoPath, movingPhotoVideoPath, extraDataPath);
+    return ret == E_OK;
 }
 } // namespace Media
 } // namespace OHOS
