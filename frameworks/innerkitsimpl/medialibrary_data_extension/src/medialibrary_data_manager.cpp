@@ -187,7 +187,7 @@ void MediaLibraryDataManager::ReCreateMediaDir()
         MEDIA_ERR_LOG("Can not get asyncWorker");
         return;
     }
-    AsyncTaskData* taskData = new (nothrow) <AsyncTaskData>();
+    AsyncTaskData* taskData = new (std::nothrow) AsyncTaskData();
     if (taskData == nullptr) {
         MEDIA_ERR_LOG("Failed to new taskData");
         return;
