@@ -1760,15 +1760,15 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     int32_t id = fileAsset->GetId();
     bool isEdit = (pending == 0);
 
-    if (IsCameraEditData(cmd)) {
-        AddFiltersExecute(cmd, fileAsset, cachePath);
-    } else if (isEdit) {
+    if (isEdit) {
         if (!PhotoEditingRecord::GetInstance()->StartCommitEdit(id)) {
             return E_IS_IN_REVERT;
         }
         int32_t errCode = SubmitEditCacheExecute(cmd, fileAsset, cachePath);
         PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
         return errCode;
+    } else if (IsCameraEditData(cmd)) {
+        AddFiltersExecute(cmd, fileAsset, cachePath);
     } else {
         int32_t errCode = MoveCacheFile(cmd, subtype, cachePath, assetPath);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
