@@ -285,17 +285,17 @@ static int32_t ForEachRow(const shared_ptr<RdbStore> &rdbStore, const shared_ptr
     const bool hiddenState, const function<int32_t(const shared_ptr<RdbStore> &rdbStore,
     const shared_ptr<ResultSet> &albumResult, const bool hiddenState)> &func)
 {
-    TransactionOperations transactionOprn(rdbStore);
-    int32_t err = transactionOprn.Start();
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
     while (resultSet->GoToNextRow() == E_OK) {
+        TransactionOperations transactionOprn(rdbStore);
+        int32_t err = transactionOprn.Start();
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
+            return E_HAS_DB_ERROR;
+        }
         // Ignore failure here, try to iterate rows as much as possible.
         func(rdbStore, resultSet, hiddenState);
+        transactionOprn.Finish();
     }
-    transactionOprn.Finish();
     return E_SUCCESS;
 }
 
@@ -1294,21 +1294,21 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore
     }
 
     // For each row
-    TransactionOperations transactionOprn(rdbStore);
-    int32_t err = transactionOprn.Start();
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
-        return;
-    }
     while (albumResult->GoToNextRow() == E_OK) {
+        TransactionOperations transactionOprn(rdbStore);
+        int32_t err = transactionOprn.Start();
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
+            return;
+        }
         auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
         if (subtype == PhotoAlbumSubType::PORTRAIT) {
             UpdatePortraitAlbumIfNeeded(rdbStore, albumResult, fileIds);
         } else {
             UpdateAnalysisAlbumIfNeeded(rdbStore, albumResult, false);
         }
+        transactionOprn.Finish();
     }
-    transactionOprn.Finish();
 }
 
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<RdbStore> &rdbStore,
