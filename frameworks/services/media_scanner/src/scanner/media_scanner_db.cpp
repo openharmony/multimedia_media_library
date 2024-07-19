@@ -1033,8 +1033,6 @@ void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
         to_string(PhotoAlbumSubType::SCREENSHOT),
         to_string(PhotoAlbumSubType::FAVORITE),
     });
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), sourceAlbumIds);
 }
 
 void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)
