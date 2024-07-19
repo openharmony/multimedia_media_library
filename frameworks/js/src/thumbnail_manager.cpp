@@ -595,7 +595,10 @@ static void UvJsExecute(uv_work_t *work)
         }
         HandlePixelCallback(uvMsg->request_);
     } while (0);
-    if (uvMsg == nullptr || uvMsg->manager_ == nullptr) {
+    if (uvMsg == nullptr) {
+        return;
+    }
+    if (uvMsg->manager_ == nullptr) {
         return;
     }
     if (uvMsg->request_->GetStatus() == ThumbnailStatus::THUMB_FAST &&
