@@ -99,21 +99,33 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         MEDIA_ERR_LOG("Failed to create Asset, datashareHelper is nullptr");
         return;
     }
-    if (photoProxy->GetDisplayName().empty()) {
+    if (photoProxy->GetTitle().empty()) {
         MEDIA_ERR_LOG("Failed to create Asset, displayName is empty");
         return;
     }
+    if (cameraShotType_ == CameraShotType::BURST && photoProxy->GetBurstKey().empty()) {
+        MEDIA_ERR_LOG("Failed to create Asset, burstKey is empty when CameraShotType::BURST");
+        return;
+    }
 
-    MediaType mediaType = MediaFileUtils::GetMediaType(photoProxy->GetDisplayName());
+    string displayName = photoProxy->GetTitle() + "." + photoProxy->GetExtension();
+    MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
     if (mediaType != MEDIA_TYPE_IMAGE) {
         MEDIA_ERR_LOG("Failed to create Asset, invalid file type %{public}d", static_cast<int32_t>(mediaType));
         return;
     }
     DataShare::DataShareValuesBucket values;
-    values.Put(MediaColumn::MEDIA_NAME, photoProxy->GetDisplayName());
+    values.Put(MediaColumn::MEDIA_NAME, displayName);
     values.Put(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(mediaType));
     if (cameraShotType_ == CameraShotType::MOVING_PHOTO) {
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
+    }
+    if (cameraShotType_ == CameraShotType::BURST) {
+        values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
+        values.Put(PhotoColumn::PHOTO_BURST_KEY, photoProxy->GetBurstKey());
+        if (photoProxy->IsCoverPhoto()) {
+            values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
+        }
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
@@ -126,7 +138,12 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         MEDIA_ERR_LOG("Failed to create Asset, insert database error!");
         return;
     }
-    MEDIA_INFO_LOG("CreatePhotoAsset Success, fileId: %{public}d, uri: %{public}s", fileId_, uri_.c_str());
+    MEDIA_INFO_LOG(
+        "CreatePhotoAsset Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s",
+        photoProxy->GetPhotoId().c_str(),
+        fileId_,
+        uri_.c_str(),
+        photoProxy->GetBurstKey().c_str());
 }
 
 static bool isHighQualityPhotoExist(string uri)

@@ -28,7 +28,8 @@ public:
     MediaLibraryCommNapi();
     ~MediaLibraryCommNapi();
 
-    EXPORT static napi_value CreatePhotoAssetNapi(napi_env env, const std::string &uri, int32_t cameraShotType);
+    EXPORT static napi_value CreatePhotoAssetNapi(
+        napi_env env, const std::string &uri, int32_t cameraShotType, const std::string &burstKey = "");
 };
 } // namespace Media
 } // namespace OHOS
