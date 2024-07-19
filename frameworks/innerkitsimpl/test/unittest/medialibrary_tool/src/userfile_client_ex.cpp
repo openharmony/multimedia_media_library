@@ -408,9 +408,11 @@ int32_t UserFileClientEx::Delete(const std::string &uri, bool isRestart)
 
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileUri.GetFileId());
+    DataShare::DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(PhotoColumn::MEDIA_DATE_TRASHED, 0);
     Uri deleteUri(deleteUriStr);
     MEDIA_INFO_LOG("delete. deleteUri:%{public}s, uri:%{public}s", deleteUri.ToString().c_str(), uri.c_str());
-    auto ret = UserFileClient::Delete(deleteUri, predicates);
+    auto ret = UserFileClient::Update(deleteUri, predicates, valuesBucket);
     if (ret < 0) {
         MEDIA_ERR_LOG("delete the file failed. ret:%{public}d, deleteUri:%{public}s, uri:%{public}s",
             ret, deleteUri.ToString().c_str(), uri.c_str());
