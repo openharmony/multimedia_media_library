@@ -1259,7 +1259,8 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_BatchQueryPhoto, TestSize.Level
     fileInfos.push_back(fileInfo4);
     std::unique_ptr<UpgradeRestore> upgrade =
         std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    upgrade->BatchQueryPhoto(fileInfos);
+    NeedQueryMap needQueryMap;
+    upgrade->BatchQueryPhoto(fileInfos, true, needQueryMap);
     EXPECT_EQ(fileInfos[0].fileIdNew, TEST_FALSE_MEDIAID);
     MEDIA_INFO_LOG("medialib_backup_BatchQueryPhoto end");
 }

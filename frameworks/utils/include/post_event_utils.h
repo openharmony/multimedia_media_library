@@ -52,6 +52,10 @@ const std::string KEY_TOTAL_TIME_COST = "TOTAL_TIME_COST";
 
 const std::string KEY_RESULT = "RESULT";
 
+const std::string KEY_ALBUM_COUNT = "ALBUM_COUNT";
+const std::string KEY_PHOTO_COUNT = "PHOTO_COUNT";
+const std::string KEY_FACE_COUNT = "FACE_COUNT";
+
 enum OptType {
     CREATE = 0,
     THUMB,
@@ -77,8 +81,9 @@ enum StatType {
     MSC_TRIGGER_RATIO_STAT,
     MSC_TOTAL_TIME_COST_STAT,
     MSC_RESULT_STAT,
+    BACKUP_PORTRAIT_STAT,
 };
-using VariantMap = std::map<std::string, std::variant<int32_t, int64_t, std::string>>;
+using VariantMap = std::map<std::string, std::variant<int32_t, int64_t, std::string, uint32_t, uint64_t>>;
 
 class PostEventUtils : public Singleton<PostEventUtils> {
 public:
@@ -99,10 +104,13 @@ private:
     COMPILE_HIDDEN void PostMscTriggerRatioStat(const VariantMap &stat);
     COMPILE_HIDDEN void PostMscTotalTimeCostStat(const VariantMap &stat);
     COMPILE_HIDDEN void PostMscResultStat(const VariantMap &stat);
+    COMPILE_HIDDEN void PostBackupPortraitStat(const VariantMap &stat);
     
     COMPILE_HIDDEN int GetIntValue(const std::string &key, const VariantMap &map);
     COMPILE_HIDDEN int64_t GetInt64Value(const std::string &key, const VariantMap &map);
     COMPILE_HIDDEN std::string GetStringValue(const std::string &key, const VariantMap &map);
+    COMPILE_HIDDEN uint32_t GetUintValue(const std::string &key, const VariantMap &map);
+    COMPILE_HIDDEN uint64_t GetUint64Value(const std::string &key, const VariantMap &map);
 
     COMPILE_HIDDEN uint32_t thumbnailTimes_ = 0;
     COMPILE_HIDDEN uint32_t dbUpgradeTimes_ = 0;
