@@ -19,6 +19,7 @@
 #define private public
 #include "thumbnail_service.h"
 #include "ithumbnail_helper.h"
+#include "thumbnail_generate_helper.h"
 #undef private
 
 using namespace std;
@@ -826,6 +827,40 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_020, Te
     size2.width = 1;
     ThumbnailUtils::SetThumbnailSizeValue(values2, size2, column);
     EXPECT_NE(size.height, size2.height);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_001, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    ThumbnailType thumbType = ThumbnailType::LCD;
+    auto res = ThumbnailGenerateHelper::GetThumbnailPixelMap(opts, thumbType);
+    EXPECT_EQ(res, -2302);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_002, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
+    EXPECT_EQ(res, -1);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_003, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    const string dbPath = "/data/test/medialibrary_thumbnail_service_test.db";
+    NativeRdb::RdbStoreConfig config(dbPath);
+    ConfigTestOpenCall helper;
+    int errCode = 0;
+    opts.store = NativeRdb::RdbHelper::GetRdbStore(config, 1, helper, errCode);
+    auto res = ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
+    EXPECT_EQ(res, 0);
+}
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_004, TestSize.Level0)
+{
+    ThumbRdbOpt opts;
+    auto res = ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
+    EXPECT_EQ(res, -1);
 }
 } // namespace Media
 } // namespace OHOS
