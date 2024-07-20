@@ -41,6 +41,7 @@
 #include "cloud_sync_notify_handler.h"
 #include "notify_handler.h"
 #include "uri_convert_handler.h"
+#include "userfile_manager_types.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -197,7 +198,8 @@ static void CheckInfo(shared_ptr<TestObserver> obs, const std::string &uriPrefix
     if (obs->condition_.wait_for(lock, 1s) == cv_status::no_timeout ||
         obs->bChange_.load()) {
         if (changeType == DataShareObserver::ChangeType::OTHER) {
-            EXPECT_EQ(obs->changeInfo_.changeType_, DataShareObserver::ChangeType::DELETE);
+            EXPECT_EQ(obs->changeInfo_.changeType_,
+                static_cast<DataShareObserver::ChangeType>(NotifyType::NOTIFY_REMOVE));
         } else {
             EXPECT_EQ(obs->changeInfo_.changeType_, changeType);
         }
