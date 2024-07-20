@@ -50,6 +50,7 @@
 #include "uri.h"
 #include "userfile_manager_types.h"
 #include "values_bucket.h"
+#include "photo_album_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -3027,6 +3028,106 @@ HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_drop_thumbnail_size_test_00
     EXPECT_EQ(isSuccess, false);
 
     MEDIA_INFO_LOG("end tdd photo_oprn_drop_thumbnail_size_test_001");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_empty_columns, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_scan_movingphoto_empty_columns");
+    MediaLibraryCommand cmd(OperationObject::PAH_MOVING_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
+    vector<string> columns;
+    auto ret = MediaLibraryPhotoOperations::ScanMovingPhoto(cmd, columns);
+    EXPECT_EQ(ret, nullptr);
+    MEDIA_INFO_LOG("end tdd photo_oprn_scan_movingphoto_empty_columns");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_scan_movingphoto_normal_columns, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_scan_movingphoto_normal_columns");
+    MediaLibraryCommand cmd(OperationObject::PAH_MOVING_PHOTO, OperationType::CREATE, MediaLibraryApi::API_10);
+    vector<string> columns = { PhotoAlbumColumns::ALBUM_COUNT, PhotoAlbumColumns::ALBUM_COVER_URI,
+            PhotoAlbumColumns::ALBUM_BUNDLE_NAME};
+    auto ret = MediaLibraryPhotoOperations::ScanMovingPhoto(cmd, columns);
+    EXPECT_EQ(ret, nullptr);
+    MEDIA_INFO_LOG("end tdd photo_oprn_scan_movingphoto_normal_columns");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_bucket, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_empty_bucket");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    cmd.SetValueBucket(values);
+    // test case 1 empty bucket SubmitCache will return E_INVALID_VALUES
+    auto ret = MediaLibraryPhotoOperations::SubmitCache(cmd);
+    EXPECT_EQ(ret, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_empty_bucket");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_empty_file, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_empty_file");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutString(CACHE_FILE_NAME, "moving_cahe.jpg");
+    cmd.SetValueBucket(values);
+    // test case 2 normal bucket but not file created SubmitCache will return E_NO_SUCH_FILE
+    auto ret = MediaLibraryPhotoOperations::SubmitCache(cmd);
+    EXPECT_EQ(ret, E_NO_SUCH_FILE);
+    MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_empty_file");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_normal_file, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_normal_file");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    ValuesBucket values;
+    values.PutString(CACHE_FILE_NAME, "moving_cahe.jpg");
+    values.PutString(ASSET_EXTENTION, "jpg");
+    values.PutString(PhotoColumn::MEDIA_TITLE, "moving_photo");
+    values.PutInt(MediaColumn::MEDIA_TYPE, MediaType::MEDIA_TYPE_IMAGE);
+    values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int>(PhotoSubType::MOVING_PHOTO));
+    cmd.SetBundleName("values");
+    cmd.SetValueBucket(values);
+
+    MediaLibraryPhotoOperations::Create(cmd);
+    int32_t fileId = QueryPhotoIdByDisplayName("moving_photo.jpg");
+    EXPECT_GT(fileId, 0);
+    // test case 3 display name != CACHE_FILE_NAME  will return failed
+    auto ret = MediaLibraryPhotoOperations::SubmitCache(cmd);
+    EXPECT_EQ(ret, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_normal_file");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_effect_mode, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_effect_mode");
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    // test case 1 bucket contain MOVING_PHOTO_EFFECT_MODE but not media id SubmitCache will return E_INVALID_VALUES
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, 0);
+    cmd.SetValueBucket(values);
+
+    auto ret = MediaLibraryPhotoOperations::SubmitCache(cmd);
+    EXPECT_EQ(ret, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_effect_mode");
+}
+
+HWTEST_F(MediaLibraryPhotoOperationsTest, photo_oprn_SubmitCache_illegal_mode, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd photo_oprn_SubmitCache_illegal_mode");
+    int32_t fileId = CreatePhotoApi10(MediaType::MEDIA_TYPE_IMAGE, "photo1.jpg");
+    EXPECT_GT(fileId, 0);
+
+    MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::SUBMIT_CACHE, MediaLibraryApi::API_10);
+    // test case 2 bucket contain illegal PhotoColumn::MOVING_PHOTO_EFFECT_MODE
+    ValuesBucket values;
+    values.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, -1);
+    values.Put(MediaColumn::MEDIA_ID, fileId);
+    cmd.SetValueBucket(values);
+
+    auto ret = MediaLibraryPhotoOperations::SubmitCache(cmd);
+    EXPECT_EQ(ret, E_INVALID_VALUES);
+    MEDIA_INFO_LOG("end tdd photo_oprn_SubmitCache_illegal_mode");
 }
 } // namespace Media
 } // namespace OHOS
