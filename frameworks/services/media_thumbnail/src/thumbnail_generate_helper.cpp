@@ -376,6 +376,7 @@ void UpdateStreamReadThumbDbStatus(ThumbRdbOpt& opts, ThumbnailData& data, Thumb
     switch (thumbType) {
         case ThumbnailType::LCD:
             ThumbnailUtils::SetThumbnailSizeValue(values, tmpSize, PhotoColumn::PHOTO_LCD_SIZE);
+            values.PutLong(PhotoColumn::PHOTO_LCD_VISIT_TIME, static_cast<int64_t>(LcdReady::GENERATE_LCD_COMPLETED));
             break;
         case ThumbnailType::THUMB:
         case ThumbnailType::THUMB_ASTC:
