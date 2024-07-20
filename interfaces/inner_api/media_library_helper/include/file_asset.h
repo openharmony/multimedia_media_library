@@ -191,6 +191,9 @@ public:
     EXPORT int64_t GetCoverPosition() const;
     EXPORT void SetCoverPosition(int64_t coverPosition);
 
+    EXPORT const std::string &GetBurstKey() const;
+    EXPORT void SetBurstKey(const std::string &burstKey);
+
 private:
     const std::string &GetStrMember(const std::string &name) const;
     int32_t GetInt32Member(const std::string &name) const;

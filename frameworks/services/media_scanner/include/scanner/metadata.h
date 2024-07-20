@@ -145,6 +145,9 @@ public:
     void SetCoverPosition(const VariantData &coverPosition);
     int64_t GetCoverPosition() const;
 
+    EXPORT void SetIsTemp(const VariantData &isTemp);
+    EXPORT int32_t GetIsTemp();
+
     void SetForAdd(bool forAdd);
     bool GetForAdd() const;
     void SetTableName(const std::string &tableName);
@@ -225,6 +228,8 @@ private:
 
     // cover position
     int64_t coverPosition_ = 0;
+
+    int32_t isTemp_;
 };
 } // namespace Media
 } // namespace OHOS

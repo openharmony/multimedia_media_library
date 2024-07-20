@@ -82,9 +82,9 @@ std::string BurstKeyGenerator::FindObjectHash(const FileInfo &fileInfo)
 }
  
 /**
- * @brief generate a uuid without '-'
+ * @brief generate a uuid, like xxxxxxxx-xxxx-xxxx-xxxxxxxx-xxxx
  *
- * @return std::string uuid with 32 characters
+ * @return std::string uuid with 36 characters
  */
 std::string BurstKeyGenerator::GenerateUuid()
 {

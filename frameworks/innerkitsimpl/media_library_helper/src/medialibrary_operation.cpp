@@ -61,6 +61,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_ANA_MAP, OperationObject::ANALYSIS_PHOTO_MAP },
         { TOOL_PHOTO, OperationObject::TOOL_PHOTO },
         { TOOL_AUDIO, OperationObject::TOOL_AUDIO },
+        { TOOL_ALBUM, OperationObject::TOOL_ALBUM },
         { PAH_FORM_MAP, OperationObject::PAH_FORM_MAP },
 
         // use in Query...
@@ -148,6 +149,7 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::PAH_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
         { OperationObject::TOOL_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::TOOL_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
+        { OperationObject::TOOL_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
         { OperationObject::VISION_OCR, { { OperationType::UNKNOWN_TYPE, VISION_OCR_TABLE } } },
         { OperationObject::VISION_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_LABEL_TABLE } } },
         { OperationObject::VISION_VIDEO_LABEL, { { OperationType::UNKNOWN_TYPE, VISION_VIDEO_LABEL_TABLE } } },
@@ -256,6 +258,7 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_START_GENERATE_THUMBNAILS, OperationType::START_GENERATE_THUMBNAILS },
         { OPRN_STOP_GENERATE_THUMBNAILS, OperationType::STOP_GENERATE_THUMBNAILS },
         { OPRN_DISCARD_CAMERA_PHOTO, OperationType::DISCARD_CAMERA_PHOTO },
+        { OPRN_SAVE_CAMERA_PHOTO, OperationType::SAVE_CAMERA_PHOTO },
         { OPRN_REMOVE_MSC_TASK, OperationType::REMOVE_MSC_TASK },
         { OPRN_TOOL_QUERY_BY_DISPLAY_NAME, OperationType::TOOL_QUERY_BY_DISPLAY_NAME },
     };

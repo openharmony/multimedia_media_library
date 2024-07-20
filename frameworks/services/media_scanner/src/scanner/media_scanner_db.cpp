@@ -498,7 +498,7 @@ static void GetQueryParamsByPath(const string &path, MediaLibraryApi api, vector
                 MediaColumn::MEDIA_ID, MediaColumn::MEDIA_SIZE, MediaColumn::MEDIA_DATE_MODIFIED,
                 MediaColumn::MEDIA_NAME, PhotoColumn::PHOTO_ORIENTATION, MediaColumn::MEDIA_TIME_PENDING,
                 MediaColumn::MEDIA_DATE_ADDED, PhotoColumn::PHOTO_DATE_DAY, MediaColumn::MEDIA_OWNER_PACKAGE,
-                PhotoColumn::PHOTO_SUBTYPE
+                PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_IS_TEMP
             };
         } else if (oprnObject == OperationObject::FILESYSTEM_AUDIO) {
             columns = {
@@ -1033,8 +1033,6 @@ void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
         to_string(PhotoAlbumSubType::SCREENSHOT),
         to_string(PhotoAlbumSubType::FAVORITE),
     });
-    MediaLibraryRdbUtils::UpdateSourceAlbumInternal(
-        MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), sourceAlbumIds);
 }
 
 void MediaScannerDb::UpdateAlbumInfoByMetaData(const Metadata &metadata)

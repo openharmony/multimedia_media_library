@@ -1140,8 +1140,8 @@ string MediaLibraryNapiUtils::GetStringValueByColumn(shared_ptr<DataShare::DataS
     }
     switch (dataType) {
         case DataShare::DataType::TYPE_INTEGER: {
-            int intValue = -1;
-            if (resultSet->GetInt(index, intValue) == NativeRdb::E_OK) {
+            int64_t intValue = -1;
+            if (resultSet->GetLong(index, intValue) == NativeRdb::E_OK) {
                 return to_string(intValue);
             }
             break;

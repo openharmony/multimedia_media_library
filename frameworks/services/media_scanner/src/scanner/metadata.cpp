@@ -53,7 +53,8 @@ Metadata::Metadata()
     albumName_(FILE_ALBUM_NAME_DEFAULT),
     recyclePath_(FILE_RECYCLE_PATH_DEFAULT),
     timePending_(FILE_TIME_PENDING_DEFAULT),
-    frontcamera_(FILE_FRONT_CAMERA_DEFAULT)
+    frontcamera_(FILE_FRONT_CAMERA_DEFAULT),
+    isTemp_(FILE_IS_TEMP_DEFAULT)
 {
     Init();
 }
@@ -98,6 +99,7 @@ void Metadata::Init()
         &Metadata::SetDynamicRangeType);
     memberFuncMap_[PhotoColumn::PHOTO_FRONT_CAMERA] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetFrontCamera);
+    memberFuncMap_[PhotoColumn::PHOTO_IS_TEMP] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetIsTemp);
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -508,6 +510,16 @@ void Metadata::SetCoverPosition(const VariantData &coverPosition)
 int64_t Metadata::GetCoverPosition() const
 {
     return coverPosition_;
+}
+
+void Metadata::SetIsTemp(const VariantData &isTemp)
+{
+    isTemp_ = std::get<int32_t>(isTemp);
+}
+
+int32_t Metadata::GetIsTemp()
+{
+    return isTemp_;
 }
 } // namespace Media
 } // namespace OHOS

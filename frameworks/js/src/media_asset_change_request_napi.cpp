@@ -2115,32 +2115,36 @@ static bool SaveCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& context)
         NAPI_INFO_LOG("discard high quality photo because add resource by third app");
         DiscardHighQualityPhoto(context);
     }
-    DataShare::DataSharePredicates predicates;
+
+    // The watermark will trigger the scan. If the watermark is turned on, there is no need to trigger the scan again.
+    bool needScan = std::find(changeOpreations.begin(), changeOpreations.end(),
+        AssetChangeOperation::ADD_FILTERS) == changeOpreations.end();
+
+    if (context.objectInfo == nullptr) {
+        NAPI_ERR_LOG("objectInfo is nullptr");
+        return false;
+    }
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
-    predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    if (fileAsset == nullptr) {
+        NAPI_ERR_LOG("fileAsset is nullptr");
+        return false;
+    }
+    std::string uriStr = PAH_SAVE_CAMERA_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, MEDIA_OPERN_KEYWORD, to_string(needScan));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_FILE_PATH, fileAsset->GetUri());
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, PhotoColumn::PHOTO_SUBTYPE,
+        to_string(fileAsset->GetPhotoSubType()));
+    Uri uri(uriStr);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, false);
-    bool ret = UpdateAssetProperty(context, PAH_UPDATE_PHOTO_COMPONENT, predicates, valuesBucket);
-    if (!ret) {
-        NAPI_ERR_LOG("update temp flag fail");
-        return ret;
+    DataShare::DataSharePredicates predicates;
+    auto ret = UserFileClient::Update(uri, predicates, valuesBucket);
+    if (ret < 0) {
+        NAPI_ERR_LOG("save camera photo fail");
     }
-
-    // udpate dirty=1 if photo_quality=0
-    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-        predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
-        predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
-        DataShare::DataShareValuesBucket valuesBucketDirty;
-        valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
-        string uri = PAH_UPDATE_PHOTO_COMPONENT;
-        MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
-        Uri updateAssetUri(uri);
-        int32_t changedRows = UserFileClient::Update(updateAssetUri, predicates, valuesBucketDirty);
-        if (changedRows < 0) {
-            NAPI_WARN_LOG("update dirty fail");
-        }
-    }
-    return ret;
+    return true;
 }
 
 static bool AddFiltersExecute(MediaAssetChangeRequestAsyncContext& context)

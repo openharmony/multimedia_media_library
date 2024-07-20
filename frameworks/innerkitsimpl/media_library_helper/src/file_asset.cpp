@@ -522,6 +522,16 @@ void FileAsset::SetCoverPosition(int64_t coverPosition)
     member_[PhotoColumn::PHOTO_COVER_POSITION] = coverPosition;
 }
 
+const std::string &FileAsset::GetBurstKey() const
+{
+    return GetStrMember(PhotoColumn::PHOTO_BURST_KEY);
+}
+
+void FileAsset::SetBurstKey(const std::string &burstKey)
+{
+    member_[PhotoColumn::PHOTO_BURST_KEY] = burstKey;
+}
+
 void FileAsset::SetOpenStatus(int32_t fd, int32_t openStatus)
 {
     lock_guard<mutex> lock(openStatusMapMutex_);
