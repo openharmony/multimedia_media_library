@@ -94,6 +94,7 @@ private:
         const std::string &editdata, int32_t fileId);
     static int32_t RevertToOriginalEffectMode(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNeedScan);
+    static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);
 };
 
 class PhotoEditingRecord {

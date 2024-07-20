@@ -249,7 +249,7 @@ static bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
 static bool IsMediatoolOperation(MediaLibraryCommand &cmd)
 {
     return cmd.GetOprnObject() == OperationObject::TOOL_PHOTO || cmd.GetOprnObject() == OperationObject::TOOL_AUDIO ||
-        cmd.GetOprnType() == Media::OperationType::DELETE_TOOL;
+        cmd.GetOprnObject() == OperationObject::TOOL_ALBUM || cmd.GetOprnType() == Media::OperationType::DELETE_TOOL;
 }
 
 static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
@@ -486,6 +486,7 @@ static void UnifyOprnObject(MediaLibraryCommand &cmd)
         { OperationObject::PAH_MAP, OperationObject::PHOTO_MAP },
         { OperationObject::TOOL_PHOTO, OperationObject::FILESYSTEM_PHOTO },
         { OperationObject::TOOL_AUDIO, OperationObject::FILESYSTEM_AUDIO },
+        { OperationObject::TOOL_ALBUM, OperationObject::PHOTO_ALBUM },
     };
 
     OperationObject obj = cmd.GetOprnObject();

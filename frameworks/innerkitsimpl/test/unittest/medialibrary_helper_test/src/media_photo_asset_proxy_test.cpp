@@ -23,7 +23,6 @@
 #include "media_photo_asset_proxy.h"
 #undef private
 
-#include "mock_photo_proxy_test.h"
 #include "system_ability_definition.h"
 #include "userfilemgr_uri.h"
 

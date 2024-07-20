@@ -166,7 +166,6 @@ static inline shared_ptr<ResultSet> GetAnalysisAlbum(const shared_ptr<NativeRdb:
     if (!analysisAlbumIds.empty()) {
         predicates.In(PhotoAlbumColumns::ALBUM_ID, analysisAlbumIds);
     }
-    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIGHLIGHT));
     if (rdbStore == nullptr) {
         return nullptr;
     }
@@ -286,17 +285,17 @@ static int32_t ForEachRow(const shared_ptr<RdbStore> &rdbStore, const shared_ptr
     const bool hiddenState, const function<int32_t(const shared_ptr<RdbStore> &rdbStore,
     const shared_ptr<ResultSet> &albumResult, const bool hiddenState)> &func)
 {
-    TransactionOperations transactionOprn(rdbStore);
-    int32_t err = transactionOprn.Start();
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
-        return E_HAS_DB_ERROR;
-    }
     while (resultSet->GoToNextRow() == E_OK) {
+        TransactionOperations transactionOprn(rdbStore);
+        int32_t err = transactionOprn.Start();
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
+            return E_HAS_DB_ERROR;
+        }
         // Ignore failure here, try to iterate rows as much as possible.
         func(rdbStore, resultSet, hiddenState);
+        transactionOprn.Finish();
     }
-    transactionOprn.Finish();
     return E_SUCCESS;
 }
 
@@ -944,7 +943,9 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(fileResult, albumResult, values, hiddenState, subtype);
-    SetCover(fileResult, albumResult, values, hiddenState, subtype);
+    if (subtype != PhotoAlbumSubType::HIGHLIGHT) {
+        SetCover(fileResult, albumResult, values, hiddenState, subtype);
+    }
     if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
         subtype > PhotoAlbumSubType::ANALYSIS_END)) {
         predicates.Clear();
@@ -1023,7 +1024,6 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
 
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
     predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(GetAlbumId(albumResult)));
-    predicates.NotEqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::HIGHLIGHT));
     int32_t changedRows = 0;
     err = rdbStore->Update(changedRows, values, predicates);
     if (err < 0) {
@@ -1294,21 +1294,21 @@ void MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(const shared_ptr<RdbStore
     }
 
     // For each row
-    TransactionOperations transactionOprn(rdbStore);
-    int32_t err = transactionOprn.Start();
-    if (err != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
-        return;
-    }
     while (albumResult->GoToNextRow() == E_OK) {
+        TransactionOperations transactionOprn(rdbStore);
+        int32_t err = transactionOprn.Start();
+        if (err != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("Failed to begin transaction, err: %{public}d", err);
+            return;
+        }
         auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
         if (subtype == PhotoAlbumSubType::PORTRAIT) {
             UpdatePortraitAlbumIfNeeded(rdbStore, albumResult, fileIds);
         } else {
             UpdateAnalysisAlbumIfNeeded(rdbStore, albumResult, false);
         }
+        transactionOprn.Finish();
     }
-    transactionOprn.Finish();
 }
 
 void MediaLibraryRdbUtils::UpdateAnalysisAlbumByFile(const shared_ptr<RdbStore> &rdbStore,

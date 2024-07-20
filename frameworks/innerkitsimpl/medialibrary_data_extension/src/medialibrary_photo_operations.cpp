@@ -685,6 +685,62 @@ static int32_t DiscardCameraPhoto(MediaLibraryCommand &cmd)
     return MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicate, false, true);
 }
 
+static string GetUriWithoutSeg(const string &oldUri)
+{
+    size_t questionMaskPoint = oldUri.rfind('?');
+    if (questionMaskPoint != string::npos) {
+        return oldUri.substr(0, questionMaskPoint);
+    }
+    return oldUri;
+}
+
+int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
+{
+    string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
+    if (fileId.empty()) {
+        MEDIA_ERR_LOG("get fileId fail");
+        return 0;
+    }
+
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(PhotoColumn::MEDIA_ID, fileId);
+    ValuesBucket values;
+    values.Put(PhotoColumn::PHOTO_IS_TEMP, false);
+    int32_t updatedRows = MediaLibraryRdbStore::Update(values, predicates);
+    if (updatedRows < 0) {
+        MEDIA_ERR_LOG("update temp flag fail.");
+        return 0;
+    }
+
+    string subTypeStr = cmd.GetQuerySetParam(PhotoColumn::PHOTO_SUBTYPE);
+    if (subTypeStr.empty()) {
+        MEDIA_ERR_LOG("get subType fail");
+        return updatedRows;
+    }
+    int32_t subType = stoi(subTypeStr);
+    if (subType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        predicates.EqualTo(PhotoColumn::PHOTO_QUALITY, to_string(static_cast<int32_t>(MultiStagesPhotoQuality::FULL)));
+        predicates.NotEqualTo(PhotoColumn::PHOTO_SUBTYPE, to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)));
+        ValuesBucket valuesBucketDirty;
+        valuesBucketDirty.Put(PhotoColumn::PHOTO_DIRTY, static_cast<int32_t>(DirtyType::TYPE_NEW));
+        int32_t updatedDirtyRows = MediaLibraryRdbStore::Update(values, predicates);
+        if (updatedDirtyRows < 0) {
+            MEDIA_INFO_LOG("update temp flag fail.");
+        }
+    }
+    string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
+    if (needScanStr.compare("1") == 0) {
+        string uri = cmd.GetQuerySetParam(PhotoColumn::MEDIA_FILE_PATH);
+        string path = MediaFileUri::GetPathFromUri(uri, true);
+        if (!path.empty()) {
+            auto watch = MediaLibraryNotify::GetInstance();
+            watch->Notify(GetUriWithoutSeg(uri), NOTIFY_ADD);
+            ScanFile(path, true, true, true);
+        }
+    }
+    return updatedRows;
+}
+
 static int32_t GetHiddenState(const ValuesBucket &values)
 {
     ValueObject obj;
@@ -926,6 +982,8 @@ int32_t MediaLibraryPhotoOperations::UpdateV10(MediaLibraryCommand &cmd)
             return BatchSetUserComment(cmd);
         case OperationType::DISCARD_CAMERA_PHOTO:
             return DiscardCameraPhoto(cmd);
+        case OperationType::SAVE_CAMERA_PHOTO:
+            return SaveCameraPhoto(cmd);
         default:
             return UpdateFileAsset(cmd);
     }
@@ -1760,15 +1818,15 @@ int32_t MediaLibraryPhotoOperations::SubmitCacheExecute(MediaLibraryCommand& cmd
     int32_t id = fileAsset->GetId();
     bool isEdit = (pending == 0);
 
-    if (IsCameraEditData(cmd)) {
-        AddFiltersExecute(cmd, fileAsset, cachePath);
-    } else if (isEdit) {
+    if (isEdit) {
         if (!PhotoEditingRecord::GetInstance()->StartCommitEdit(id)) {
             return E_IS_IN_REVERT;
         }
         int32_t errCode = SubmitEditCacheExecute(cmd, fileAsset, cachePath);
         PhotoEditingRecord::GetInstance()->EndCommitEdit(id);
         return errCode;
+    } else if (IsCameraEditData(cmd)) {
+        AddFiltersExecute(cmd, fileAsset, cachePath);
     } else {
         int32_t errCode = MoveCacheFile(cmd, subtype, cachePath, assetPath);
         CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_FILE_OPER_FAIL,
