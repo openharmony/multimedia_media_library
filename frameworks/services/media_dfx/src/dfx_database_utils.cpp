@@ -129,5 +129,47 @@ int32_t DfxDatabaseUtils::QueryDouble(const NativeRdb::AbsRdbPredicates &predica
     value = GetDoubleVal(queryColumn, resultSet);
     return E_OK;
 }
+
+int32_t DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(int32_t& downloadedThumb, int32_t& generatedThumb)
+{
+    NativeRdb::RdbPredicates downloadPredicates(PhotoColumn::PHOTOS_TABLE);
+
+    // cloud image that are downloaded 
+    downloadPredicates.GreaterThan(PhotoColumn::PHOTO_POSITION, 1)->And()
+        ->EqualTo(PhotoColumn::PHOTO_THUMB_STATUS, 0);
+    std::vector<std::string> columns = { "count(1) AS count" };
+    std::string queryColumn = "count";
+    int32_t errCode = QueryInt(downloadPredicates, columns, queryColumn, downloadedThumb);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("query downloaded image fail: %{public}d", errCode);
+        return errCode;
+    }
+    NativeRdb::RdbPredicates generatePredicates(PhotoColumn::PHOTOS_TABLE);
+
+    // cloud image that are all generated
+    generatePredicates.GreaterThan(PhotoColumn::PHOTO_POSITION, 1)->And()
+        ->GreaterThan(PhotoColumn::PHOTO_THUMBNAIL_READY, 1);
+    errCode = QueryInt(generatePredicates, columns, queryColumn, generatedThumb);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("query generated image fail: %{public}d", errCode);
+        return errCode;
+    }
+    return E_OK;
+}
+
+int32_t DfxDatabaseUtils::QueryCloudThumbTotalDownload(int32_t& totalDownload)
+{
+    NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.GreaterThan(PhotoColumn::PHOTO_POSITION, 1);
+    std::vector<std::string> columns = { "count(1) AS count" };
+    std::string queryColumn = "count";
+    int32_t errCode = QueryInt(predicates, columns, queryColumn, totalDownload);
+    if (errCode != E_OK) {
+        MEDIA_ERR_LOG("query total download image fail: %{public}d", errCode);
+        return errCode;
+    }
+    return E_OK;
+}
+
 } // namespace Media
 } // namespace OHOS

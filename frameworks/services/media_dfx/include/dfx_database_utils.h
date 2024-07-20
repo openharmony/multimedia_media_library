@@ -33,6 +33,8 @@ public:
     static AlbumInfo QueryAlbumInfoBySubtype(int32_t albumSubtype);
     static std::vector<PhotoInfo> QueryDirtyCloudPhoto();
     static int32_t QueryAnalysisVersion(const std::string &table, const std::string &column);
+    static int32_t QueryDownloadedAndGeneratedThumb(int32_t& downloadedThumb, int32_t& generatedThumb);
+    static int32_t QueryCloudThumbTotalDownload(int32_t& totalDownload);
     static int32_t QueryDbVersion();
 
 private:
