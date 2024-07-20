@@ -878,6 +878,41 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     predicates.Distinct();
 }
 
+static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string fileId)
+{
+    if (fileId.empty()) {
+        MEDIA_WARN_LOG("Invalid cover: empty file_id");
+        return false;
+    }
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    predicates.Limit(1);
+    vector<string> columns;
+    auto resultSet = rdbStore->Query(predicates, columns);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Can not query Photos");
+        return false;
+    }
+    int32_t count = 0;
+    int32_t ret = resultSet->GetRowCount(count);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
+        return false;
+    }
+    if (count == 0) {
+        MEDIA_WARN_LOG("Invalid cover: %{public}s not exist", fileId.c_str());
+        return false;
+    }
+    return true;
+}
+
+static bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string fileId,
+    int32_t isCoverSatisfied, const vector<string> &fileIds)
+{
+    return isCoverSatisfied != ALBUM_COVER_SATISFIED || fileIds.empty() ||
+        find(fileIds.begin(), fileIds.end(), fileId) != fileIds.end() || !IsCoverValid(rdbStore, fileId);
+}
+
 static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const shared_ptr<ResultSet> &albumResult, const vector<string> &fileIds, ValuesBucket &values)
 {
@@ -904,8 +939,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(countResult, albumResult, values, false, PhotoAlbumSubType::PORTRAIT);
-    if (isCoverSatisfied == ALBUM_COVER_SATISFIED &&
-        std::find(fileIds.begin(), fileIds.end(), coverId) == fileIds.end()) {
+    if (!ShouldUpdatePortraitAlbumCover(rdbStore, coverId, isCoverSatisfied, fileIds)) {
         return E_SUCCESS;
     }
     GetPortraitAlbumCoverPredicates(coverId, predicates);

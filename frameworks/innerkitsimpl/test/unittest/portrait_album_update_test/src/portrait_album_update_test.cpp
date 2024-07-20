@@ -69,6 +69,9 @@ struct PortraitData {
     string path;
 };
 
+int32_t TEST_INDEX_ONE = 1;
+int32_t TEST_INDEX_TWO = 2;
+
 int GetNumber()
 {
     return ++number;
@@ -444,5 +447,103 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level
     MEDIA_INFO_LOG("portrait_album_update_test_003 End");
 }
 
+void InsertPortraitMap(const vector<PortraitData> &portraitData, int64_t albumId)
+{
+    ASSERT_NE(g_rdbStore, nullptr);
+    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
+    transactionOprn.Start();
+    int64_t rowId = -1;
+    for (PortraitData data : portraitData) {
+        ValuesBucket valuesBucket;
+        valuesBucket.PutInt(MAP_ALBUM, albumId);
+        valuesBucket.PutInt(MAP_ASSET, data.fileId);
+        EXPECT_NE((g_rdbStore == nullptr), true);
+        int32_t ret = g_rdbStore->GetRaw()->Insert(rowId, ANALYSIS_PHOTO_MAP_TABLE, valuesBucket);
+        EXPECT_EQ(ret, E_OK);
+    }
+    transactionOprn.Finish();
+}
+
+void SetPortraitCover(int64_t albumId, const string &coverUri, int32_t isCoverSatisfied)
+{
+    ASSERT_NE(g_rdbStore, nullptr);
+    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
+    transactionOprn.Start();
+    int32_t changedRows = -1;
+    MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::UPDATE);
+    ValuesBucket updateValues;
+    updateValues.PutString(COVER_URI, coverUri);
+    updateValues.PutInt(IS_COVER_SATISFIED, isCoverSatisfied);
+    cmd.SetValueBucket(updateValues);
+    cmd.GetAbsRdbPredicates()->EqualTo(ALBUM_ID, to_string(albumId));
+    int32_t ret = g_rdbStore->Update(cmd, changedRows);
+    MEDIA_INFO_LOG("Changed rows: %{public}d", changedRows);
+    EXPECT_EQ(ret, E_OK);
+    transactionOprn.Finish();
+}
+
+void TestCoverUpdateByFileIds(int64_t albumId, const vector<PortraitData> &portraits, const vector<string> &fileIds,
+    const string &coverUri, int32_t expectedCoverId)
+{
+    int32_t isCoverSatisfied = 1;
+    InsertPortraitMap(portraits, albumId);
+    SetPortraitCover(albumId, coverUri, isCoverSatisfied);
+
+    vector<string> albumIds = {to_string(albumId)};
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds);
+    CheckAlbum(albumId, static_cast<int32_t>(portraits.size()), portraits[expectedCoverId].fileId, true);
+}
+
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("portrait_album_update_test_004 Start");
+    int64_t albumId = CreatePortraitAlbum();
+    EXPECT_GT(albumId, 0);
+    vector<PortraitData> portraits = PreparePortraitData();
+    vector<string> fileIds; // empty fileId list, full update
+    string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
+    TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
+}
+
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("portrait_album_update_test_005 Start");
+    int64_t albumId = CreatePortraitAlbum();
+    EXPECT_GT(albumId, 0);
+    vector<PortraitData> portraits = PreparePortraitData();
+    vector<string> fileIds;
+    for (auto data : portraits) {
+        fileIds.push_back(to_string(data.fileId)); // full fileId list, update by uri
+    }
+    string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
+    TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
+}
+
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("portrait_album_update_test_006 Start");
+    int64_t albumId = CreatePortraitAlbum();
+    EXPECT_GT(albumId, 0);
+    vector<PortraitData> portraits = PreparePortraitData();
+    vector<string> fileIds;
+    string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "/0/fake/fake.jpg"; // invalid uri, get empty fileId
+    TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
+}
+
+HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("portrait_album_update_test_007 Start");
+    int64_t albumId = CreatePortraitAlbum();
+    EXPECT_GT(albumId, 0);
+    vector<PortraitData> portraits = PreparePortraitData();
+    vector<string> fileIds; // empty fileId list, full update
+    string coverUri = PhotoColumn::PHOTO_URI_PREFIX + "0/fake/fake.jpg";
+    TestCoverUpdateByFileIds(albumId, portraits, fileIds, coverUri, TEST_INDEX_ONE);
+
+    fileIds.push_back(to_string(portraits[TEST_INDEX_TWO].fileId));
+    vector<string> albumIds = {to_string(albumId)};
+    MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, fileIds); // no need update
+    CheckAlbum(albumId, static_cast<int32_t>(portraits.size()), portraits[TEST_INDEX_ONE].fileId, true);
+}
 } // namespace Media
 } // namespace OHOS
