@@ -18,6 +18,7 @@
 
 #include "ability_manager_client.h"
 #include "background_task_mgr_helper.h"
+#include "dfx_cloud_manager.h"
 #include "dfx_utils.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -840,6 +841,7 @@ bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
         PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
+    CloudSyncDfxManager::GetInstance().RunDfx();
     return true;
 }
 
@@ -920,6 +922,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
     }
 
     thumbnailWait.UpdateCloudLoadThumbnailMap(CloudLoadType::CLOUD_DOWNLOAD, true);
+    CloudSyncDfxManager::GetInstance().RunDfx();
     return true;
 }
 

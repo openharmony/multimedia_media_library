@@ -342,5 +342,50 @@ void DfxReporter::ReportStartResult(int32_t scene, int32_t error, int32_t start)
         MEDIA_ERR_LOG("Report startResult error:%{public}d", ret);
     }
 }
+
+std::string SecondsToTime(const int64_t& seconds)
+{
+    int32_t remain_seconds = seconds;
+    int32_t hour = seconds / ONE_HOUR;
+    remain_seconds = seconds - ONE_HOUR * hour;
+    int32_t minute = remain_seconds / ONE_MINUTE;
+    remain_seconds = remain_seconds - minute * ONE_MINUTE;
+    return std::to_string(hour) + "_h_" + std::to_string(minute) + "_m_" + std::to_string(remain_seconds) + "_s";
+}
+
+void DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,
+    const int32_t& totalDownload)
+{
+    int32_t errCode;
+    shared_ptr<NativePreferences::Preferences> prefs = 
+        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
+    if (!prefs) {
+        MEDIA_ERR_LOG("get dfx common preferences error: %{public}d", errCode);
+        return;
+    }
+    if (totalDownload == 0) {
+        return;
+    }
+    int64_t start = prefs->GetLong(CLOUD_SYNC_START_TIME, 0);
+    int64_t now = MediaFileUtils::UTCTimeSeconds();
+    int64_t cost = now - start;
+    time_t startTime = start;
+    std::string astcStartTime = asctime(gmtime(&startTime));
+    float total = static_cast<float>(totalDownload);
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "CLOUD_THUMB_GENERATE_STATISTIC",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "CLOUD_DOWN_START", astcStartTime,
+        "DOWNLOADED_THUMB_NUM", downloadedThumb,
+        "DOWNLOADED_THUMB_RATIO", downloadedThumb / total,
+        "GENERATED_THUMB_NUM", generatedThumb,
+        "GENERATED_THUMB_RATIO", generatedThumb / total,
+        "CLOUD_DOWN_TOTAL_DURATION", SecondsToTime(cost));
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Report CloudSyncThumbGenerationStatus error:%{public}d", ret);
+    }
+}
+
 } // namespace Media
 } // namespace OHOS
