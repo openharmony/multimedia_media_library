@@ -600,6 +600,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, QueryGroupPhotoAlbum, TestSize.
 
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
     MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, {});
+    sleep(1);
     CheckAlbum(4, 1, portraits[0].fileId, false);
     CheckAlbum(5, 1, portraits[3].fileId, false);
     CheckAlbum(6, 1, portraits[1].fileId, false);
@@ -628,6 +629,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, MergeAlbum_UpdateMergeGroupAlbu
 
     MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::QUERY);
     MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, {});
+    sleep(1);
     CheckAlbum(4, 1, portraits[0].fileId, false);
     CheckAlbum(5, 1, portraits[3].fileId, false);
     CheckAlbum(6, 1, portraits[1].fileId, false);
@@ -640,6 +642,7 @@ HWTEST_F(MediaLibraryAnalysisAlbumOperationTest, MergeAlbum_UpdateMergeGroupAlbu
     OperationType operationType = OperationType::PORTRAIT_MERGE_ALBUM;
     EXPECT_EQ(MediaLibraryAlbumOperations::HandleAnalysisPhotoAlbum(operationType, values, dataPredicates), E_OK);
     MediaLibraryAnalysisAlbumOperations::QueryGroupPhotoAlbum(cmd, {});
+    sleep(1);
     CheckAlbum(5, 3, portraits[3].fileId, false);
 
     ClearTables();
