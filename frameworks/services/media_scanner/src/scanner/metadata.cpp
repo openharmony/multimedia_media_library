@@ -20,6 +20,7 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+const MediaType FILE_MEDIA_TYPE_DEFAULT = MEDIA_TYPE_FILE;
 
 Metadata::Metadata()
     : id_(FILE_ID_DEFAULT),
