@@ -67,7 +67,7 @@ config("napi_config") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_SERVICES_PATH}/media_scanner/include/callback",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
-    "${MEDIALIB_SERVICES_PATH}/media_active_task/include",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_UTILS_PATH}/include",

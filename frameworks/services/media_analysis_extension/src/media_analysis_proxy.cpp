@@ -13,25 +13,26 @@
  * limitations under the License.
  */
 
-#include "media_actively_calling_analyse.h"
+#include "media_analysis_proxy.h"
+
 #include "if_system_ability_manager.h"
 #include "system_ability_definition.h"
 #include "iservice_registry.h"
 
 namespace OHOS {
 namespace Media {
-MediaActivelyCallingAnalyse::MediaActivelyCallingAnalyse(const sptr<IRemoteObject> &object)
-    : IRemoteProxy<IMediaAnalyseService>(object)
+MediaAnalysisProxy::MediaAnalysisProxy(const sptr<IRemoteObject> &object)
+    : IRemoteProxy<IMediaAnalysisService>(object)
 {
-    MEDIA_INFO_LOG("creat MediaActivelyCallingAnalyse instance");
+    MEDIA_INFO_LOG("creat MediaAnalysisProxy instance");
 }
 
-MediaActivelyCallingAnalyse::~MediaActivelyCallingAnalyse()
+MediaAnalysisProxy::~MediaAnalysisProxy()
 {
-    MEDIA_INFO_LOG("destroy MediaActivelyCallingAnalyse instance");
+    MEDIA_INFO_LOG("destroy MediaAnalysisProxy instance");
 }
 
-bool MediaActivelyCallingAnalyse::SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply,
+bool MediaAnalysisProxy::SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply,
     MessageOption &option)
 {
     int32_t minTimeout = 4;
