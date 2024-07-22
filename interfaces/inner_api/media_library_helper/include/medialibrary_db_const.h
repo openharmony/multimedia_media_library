@@ -318,17 +318,6 @@ const std::string SMARTALBUMASSETS_VIEW_NAME = "SmartAsset";
 const std::string SMARTALBUMASSETS_ALBUMCAPACITY = "size";
 const std::string SMARTABLUMASSETS_PARENTID = "parentid";
 
-const std::string QUERY_MEDIA_VOLUME = "SELECT sum(" + MEDIA_DATA_DB_SIZE + ") AS " +
-    MEDIA_DATA_DB_SIZE + "," +
-    MEDIA_DATA_DB_MEDIA_TYPE + " FROM " +
-    MEDIALIBRARY_TABLE + " WHERE " +
-    MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_FILE) + " OR " +
-    MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " +
-    MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " OR " +
-    MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_ALBUM) + " OR " +
-    MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_AUDIO) + " GROUP BY " +
-    MEDIA_DATA_DB_MEDIA_TYPE;
-
 const std::string ASSETMAP_VIEW_NAME = "AssetMap";
 
 const std::string IMAGE_ASSET_TYPE = "image";
