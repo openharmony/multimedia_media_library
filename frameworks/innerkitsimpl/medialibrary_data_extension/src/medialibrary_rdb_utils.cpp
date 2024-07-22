@@ -2172,12 +2172,12 @@ int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<Na
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, filePath);
     int32_t changedRows = 0;
-    err = rdbStore->Update(changedRows, values, predicates);
-    if (err < 0) {
+    int32_t ret = rdbStore->Update(changedRows, values, predicates);
+    if (ret < 0) {
         MEDIA_ERR_LOG("Failed to update photo height and width, err: %{public}d", err);
         return E_ERR;
     }
-    return err;
+    return ret;
 }
 
 std::vector<std::string> MediaLibraryRdbUtils::GetPhotoPathsByCloudIds(const std::shared_ptr<NativeRdb::RdbStore>
