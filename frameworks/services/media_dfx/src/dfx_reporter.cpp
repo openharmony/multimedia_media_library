@@ -353,11 +353,11 @@ std::string SecondsToTime(const int64_t& seconds)
     return std::to_string(hour) + "_h_" + std::to_string(minute) + "_m_" + std::to_string(remain_seconds) + "_s";
 }
 
-void DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,
+void DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,    
     const int32_t& totalDownload)
 {
     int32_t errCode;
-    shared_ptr<NativePreferences::Preferences> prefs = 
+    shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get dfx common preferences error: %{public}d", errCode);
@@ -369,7 +369,7 @@ void DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloaded
     int64_t start = prefs->GetLong(CLOUD_SYNC_START_TIME, 0);
     int64_t now = MediaFileUtils::UTCTimeSeconds();
     int64_t cost = now - start;
-    time_t startTime = start;
+    time_t startTime = start + ONE_HOUR * 8;
     std::string astcStartTime = asctime(gmtime(&startTime));
     float total = static_cast<float>(totalDownload);
     int ret = HiSysEventWrite(

@@ -368,7 +368,9 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
 
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
-    CloudSyncDfxManager::GetInstance().RunDfx();
+    if (isCharging_) {
+        CloudSyncDfxManager::GetInstance().RunDfx();
+    }
     std::lock_guard<std::mutex> lock(mutex_);
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_ && isWifiConn_;
     if (timerStatus_ == newStatus) {
