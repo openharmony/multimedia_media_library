@@ -66,7 +66,7 @@ function checkArrayAndSize(array, minSize, maxSize) {
   return true;
 }
 
-function checkIsUriValid(uri) {
+function checkIsUriValid(uri, isAppUri) {
   if (!uri) {
     console.error('photoAccessHelper invalid, uri is null.');
     return false;
@@ -77,9 +77,13 @@ function checkIsUriValid(uri) {
     return false;
   }
 
-  let tag = 'file://media/Photo/';
+  // media library uri starts with 'file://media/Photo/', createDeleteReques delete media library resource should check
+  if (!isAppUri) {
+    return uri.includes('file://media/Photo/');
+  }
 
-  return uri.includes(tag);
+  // showAssetsCreationDialog store third part application resource to media library, no need to check it
+  return true;
 }
 
 function checkParams(uriList, asyncCallback) {
@@ -93,7 +97,7 @@ function checkParams(uriList, asyncCallback) {
     return false;
   }
   for (let uri of uriList) {
-    if (!checkIsUriValid(uri)) {
+    if (!checkIsUriValid(uri, false)) {
       console.info(`photoAccessHelper invalid uri: ${uri}`);
       return false;
     }
@@ -260,7 +264,7 @@ function checkConfirmBoxParams(srcFileUris, photoCreationConfigs) {
 
   // check whether srcFileUris element is valid
   for (let srcFileUri of srcFileUris) {
-    if (!checkIsUriValid(srcFileUri)) {
+    if (!checkIsUriValid(srcFileUri, true)) {
       console.error('photoAccessHelper invalid uri: ${srcFileUri}.');
       return false;
     }
