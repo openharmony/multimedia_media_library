@@ -290,11 +290,9 @@ void BackupDatabaseUtils::UpdateSelection(std::string &selection, const std::str
 void BackupDatabaseUtils::UpdateSDWhereClause(std::string &querySql, int32_t sceneCode)
 {
     if (sceneCode != UPGRADE_RESTORE_ID) {
-        MEDIA_INFO_LOG("@test, querySql: %{public}s", querySql.c_str());
         return;
     }
     querySql += " AND " + EXCLUDE_SD;
-    MEDIA_INFO_LOG("@test, querySql: %{public}s", querySql.c_str());
 }
 } // namespace Media
 } // namespace OHOS
