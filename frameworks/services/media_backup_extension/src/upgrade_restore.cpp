@@ -375,14 +375,15 @@ void UpgradeRestore::InitGarbageAlbum()
 
 void UpgradeRestore::HandleClone()
 {
-    int32_t cloneCount = BackupDatabaseUtils::QueryGalleryCloneCount(galleryRdb_);
+    int32_t cloneCount = BackupDatabaseUtils::QueryGalleryCloneCount(galleryRdb_, sceneCode_);
     MEDIA_INFO_LOG("clone number: %{public}d", cloneCount);
     if (cloneCount == 0) {
         return;
     }
     int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_MAX_ID, CUSTOM_MAX_ID);
-    std::string queryMayClonePhotoNumber = "SELECT count(1) AS count FROM files WHERE (is_pending = 0) AND\
-        (storage_id IN (0, 65537)) AND " + COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
+    std::string queryMayClonePhotoNumber = "SELECT count(1) AS count FROM files WHERE (is_pending = 0) AND " +
+        COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
+    BackupDatabaseUtils::UpdateSDWhereClause(queryMayClonePhotoNumber, sceneCode_);
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(externalRdb_, queryMayClonePhotoNumber, CUSTOM_COUNT);
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
     for (int32_t offset = 0; offset < totalNumber; offset += PRE_CLONE_PHOTO_BATCH_COUNT) {
@@ -400,9 +401,11 @@ void UpgradeRestore::HandleCloneBatch(int32_t offset, int32_t maxId)
         MEDIA_ERR_LOG("rdb is nullptr, Maybe init failed.");
         return;
     }
-    std::string queryExternalMayClonePhoto = "SELECT _id, _data FROM files WHERE (is_pending = 0) AND\
-        (storage_id IN (0, 65537)) AND " + COMPARE_ID + std::to_string(maxId) + " AND " +
-        QUERY_NOT_SYNC + "limit " + std::to_string(offset) + ", " + std::to_string(PRE_CLONE_PHOTO_BATCH_COUNT);
+    std::string queryExternalMayClonePhoto = "SELECT _id, _data FROM files WHERE (is_pending = 0) AND " +
+        COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
+    BackupDatabaseUtils::UpdateSDWhereClause(queryExternalMayClonePhoto, sceneCode_);
+    queryExternalMayClonePhoto += " limit " + std::to_string(offset) + ", " +
+        std::to_string(PRE_CLONE_PHOTO_BATCH_COUNT);
     auto resultSet = externalRdb_->QuerySql(queryExternalMayClonePhoto);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
@@ -507,7 +510,9 @@ void UpgradeRestore::HandleRestData(void)
 
 int32_t UpgradeRestore::QueryTotalNumber(void)
 {
-    return BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_GALLERY_COUNT, CUSTOM_COUNT);
+    std::string querySql = QUERY_GALLERY_COUNT;
+    BackupDatabaseUtils::UpdateSDWhereClause(querySql, sceneCode_);
+    return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
 
 std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
@@ -518,8 +523,11 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
         MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
         return result;
     }
-    std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS + "limit " + std::to_string(offset) + ", " +
-        std::to_string(QUERY_COUNT);
+    std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS;
+    BackupDatabaseUtils::UpdateSDWhereClause(queryAllPhotosByCount, sceneCode_);
+    queryAllPhotosByCount += ALL_PHOTOS_ORDER_BY;
+    queryAllPhotosByCount += "limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
+    MEDIA_INFO_LOG("@test, querySql: %{public}s", queryAllPhotosByCount.c_str());
     auto resultSet = galleryRdb_->QuerySql(queryAllPhotosByCount);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");

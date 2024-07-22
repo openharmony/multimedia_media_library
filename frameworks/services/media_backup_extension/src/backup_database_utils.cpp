@@ -163,13 +163,13 @@ int32_t BackupDatabaseUtils::QueryGalleryTrashedCount(std::shared_ptr<NativeRdb:
     return QueryInt(galleryRdb, QUERY_GALLERY_TRASHED_COUNT, CUSTOM_COUNT);
 }
 
-int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb,
+    int32_t sceneCode)
 {
-    static string QUERY_GALLERY_CLONE_COUNT =
-        string("SELECT count(1) AS count FROM gallery_media WHERE local_media_id = -3 AND _size > 0 ") +
-        "AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( " +
-        "SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)";
-    return QueryInt(galleryRdb, QUERY_GALLERY_CLONE_COUNT, CUSTOM_COUNT);
+    std::string querySql = "SELECT count(1) AS count FROM gallery_media WHERE local_media_id = -3 AND _size > 0 \
+        AND relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)";
+    UpdateSDWhereClause(querySql, sceneCode);
+    return QueryInt(galleryRdb, querySql, CUSTOM_COUNT);
 }
 
 int32_t BackupDatabaseUtils::QueryGallerySDCardCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
@@ -285,6 +285,16 @@ void BackupDatabaseUtils::UpdateSelection(std::string &selection, const std::str
     }
     std::string wrappedSelectionToAdd = needWrap ? "'" + selectionToAdd + "'" : selectionToAdd;
     selection += selection.empty() ? wrappedSelectionToAdd : ", " + wrappedSelectionToAdd;
+}
+
+void BackupDatabaseUtils::UpdateSDWhereClause(std::string &querySql, int32_t sceneCode)
+{
+    if (sceneCode != UPGRADE_RESTORE_ID) {
+        MEDIA_INFO_LOG("@test, querySql: %{public}s", querySql.c_str());
+        return;
+    }
+    querySql += " AND " + EXCLUDE_SD;
+    MEDIA_INFO_LOG("@test, querySql: %{public}s", querySql.c_str());
 }
 } // namespace Media
 } // namespace OHOS
