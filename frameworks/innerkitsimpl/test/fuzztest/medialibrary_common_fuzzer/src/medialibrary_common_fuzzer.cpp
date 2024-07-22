@@ -22,15 +22,25 @@
 
 namespace OHOS {
 using namespace std;
+
+static inline string FuzzString(const uint8_t *data, size_t size)
+{
+    return {reinterpret_cast<const char*>(data), size};
+}
+
+static inline void ScanTest(const uint8_t *data, size_t size)
+{
+    auto scannerManager = Media::MediaScannerManager::GetInstance();
+    if (scannerManager != nullptr) {
+        scannerManager->ScanDir(FuzzString(data, size), nullptr);
+    }
+}
 } // namespace OHOS
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    auto scannerManager = OHOS::Media::MediaScannerManager::GetInstance();
-    if (scannerManager != nullptr) {
-        scannerManager->Start();
-    }
+    OHOS::ScanTest(data, size);
     return 0;
 }
