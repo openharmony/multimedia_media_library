@@ -36,6 +36,7 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_tracer.h"
+#include "media_container_types.h"
 #include "media_scanner.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_notify.h"
@@ -50,6 +51,7 @@
 #include "vision_column.h"
 #include "form_map.h"
 #include "search_column.h"
+#include "shooting_mode_column.h"
 #include "story_db_sqls.h"
 #include "dfx_const.h"
 #include "dfx_timer.h"
@@ -57,6 +59,45 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 namespace OHOS::Media {
+const std::string DIR_ALL_AUDIO_CONTAINER_TYPE = "." + AUDIO_CONTAINER_TYPE_AAC + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_MP3 + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_FLAC + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_WAV + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_OGG + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_M4A + "?";
+
+const std::string DIR_ALL_VIDEO_CONTAINER_TYPE = "." + VIDEO_CONTAINER_TYPE_MP4 + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_3GP + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MPG + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MOV + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_WEBM + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MKV + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_H264 + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MPEG + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_TS + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_M4V + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_3G2 + "?";
+
+const std::string DIR_ALL_IMAGE_CONTAINER_TYPE = "." + IMAGE_CONTAINER_TYPE_BMP + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_BM + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_GIF + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPEG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPE + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_PNG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_WEBP + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_RAW + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_SVG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_HEIF + "?";
+
+const std::string CAMERA_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE + DIR_ALL_VIDEO_CONTAINER_TYPE;
+
+const std::string VIDEO_EXTENSION_VALUES = DIR_ALL_VIDEO_CONTAINER_TYPE;
+
+const std::string PIC_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE;
+
+const std::string AUDIO_EXTENSION_VALUES = DIR_ALL_AUDIO_CONTAINER_TYPE;
+
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;

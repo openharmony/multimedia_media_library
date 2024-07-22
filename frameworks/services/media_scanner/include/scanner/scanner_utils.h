@@ -22,11 +22,6 @@
 #include <vector>
 #include <sys/stat.h>
 
-#include "medialibrary_type_const.h"
-#include "media_container_types.h"
-#include "media_scanner_const.h"
-#include "shooting_mode_column.h"
-
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
@@ -52,7 +47,6 @@ const int64_t FILE_SIZE_DEFAULT = 0;
 const std::string URI_DEFAULT = "";
 const int64_t FILE_DATE_ADDED_DEFAULT = 0;
 const int64_t FILE_DATE_MODIFIED_DEFAULT = 0;
-const MediaType FILE_MEDIA_TYPE_DEFAULT = MEDIA_TYPE_FILE;
 const int32_t FILE_ID_DEFAULT = 0;
 const std::string FILE_EXTENSION_DEFAULT = "";
 
@@ -87,117 +81,6 @@ static std::vector<std::string> EXTRACTOR_SUPPORTED_MIME = {
     DEFAULT_AUDIO_MIME_TYPE,
     DEFAULT_VIDEO_MIME_TYPE,
     DEFAULT_IMAGE_MIME_TYPE
-};
-
-static const std::unordered_map<std::string, std::string> SHOOTING_MODE_CAST_MAP = {
-    {PORTRAIT_ALBUM_TAG, PORTRAIT_ALBUM},
-    {WIDE_APERTURE_ALBUM_TAG, WIDE_APERTURE_ALBUM},
-    {NIGHT_SHOT_ALBUM_TAG, NIGHT_SHOT_ALBUM},
-    {REAR_CAMERA_NIGHT_SHOT_TAG, NIGHT_SHOT_ALBUM},
-    {MOVING_PICTURE_ALBUM_TAG, MOVING_PICTURE_ALBUM},
-    {PRO_PHOTO_ALBUM_TAG, PRO_PHOTO_ALBUM},
-    {TAIL_LIGHT_ALBUM_TAG, LIGHT_PAINTING_ALBUM},
-    {LIGHT_GRAFFITI_TAG, LIGHT_PAINTING_ALBUM},
-    {SILKY_WATER_TAG, LIGHT_PAINTING_ALBUM},
-    {STAR_TRACK_TAG, LIGHT_PAINTING_ALBUM},
-    {HIGH_PIXEL_ALBUM_TAG, HIGH_PIXEL_ALBUM},
-    {SUPER_MACRO_ALBUM_TAG, SUPER_MACRO_ALBUM},
-    {SLOW_MOTION_ALBUM_TAG, SLOW_MOTION_ALBUM},
-    {SUPER_SLOW_MOTION_ALBUM_TAG, SLOW_MOTION_ALBUM},
-};
-
-static const std::unordered_map<std::string, std::string> SUPPORTED_EXTN_MAP = {
-    /** Supported image types */
-    {IMAGE_CONTAINER_TYPE_BMP, DEFAULT_IMAGE_MIME_TYPE},
-    {IMAGE_CONTAINER_TYPE_BM, DEFAULT_IMAGE_MIME_TYPE},
-    {IMAGE_CONTAINER_TYPE_GIF, DEFAULT_IMAGE_MIME_TYPE},
-    {IMAGE_CONTAINER_TYPE_JPG, DEFAULT_IMAGE_MIME_TYPE},
-    {IMAGE_CONTAINER_TYPE_JPEG, DEFAULT_IMAGE_MIME_TYPE},
-    {IMAGE_CONTAINER_TYPE_JPE, DEFAULT_IMAGE_MIME_TYPE},
-    {IMAGE_CONTAINER_TYPE_PNG, DEFAULT_IMAGE_MIME_TYPE},
-    {IMAGE_CONTAINER_TYPE_WEBP, DEFAULT_IMAGE_MIME_TYPE},
-    {IMAGE_CONTAINER_TYPE_RAW, DEFAULT_IMAGE_MIME_TYPE},
-    {IMAGE_CONTAINER_TYPE_SVG, DEFAULT_IMAGE_MIME_TYPE},
-    {IMAGE_CONTAINER_TYPE_HEIF, DEFAULT_IMAGE_MIME_TYPE},
-    /** Supported video container types */
-    {VIDEO_CONTAINER_TYPE_MP4, DEFAULT_VIDEO_MIME_TYPE},
-    {VIDEO_CONTAINER_TYPE_3GP, DEFAULT_VIDEO_MIME_TYPE},
-    {VIDEO_CONTAINER_TYPE_MPG, DEFAULT_VIDEO_MIME_TYPE},
-    {VIDEO_CONTAINER_TYPE_MOV, DEFAULT_VIDEO_MIME_TYPE},
-    {VIDEO_CONTAINER_TYPE_WEBM, DEFAULT_VIDEO_MIME_TYPE},
-    {VIDEO_CONTAINER_TYPE_MKV, DEFAULT_VIDEO_MIME_TYPE},
-    {AUDIO_CONTAINER_TYPE_AAC, DEFAULT_AUDIO_MIME_TYPE},
-    {AUDIO_CONTAINER_TYPE_MP3, DEFAULT_AUDIO_MIME_TYPE},
-    {AUDIO_CONTAINER_TYPE_FLAC, DEFAULT_AUDIO_MIME_TYPE},
-    {AUDIO_CONTAINER_TYPE_WAV, DEFAULT_AUDIO_MIME_TYPE},
-    {AUDIO_CONTAINER_TYPE_OGG, DEFAULT_AUDIO_MIME_TYPE},
-    {"7z", "application/x-7z-compressed"},
-    {"bz", "application/x-bzip"},
-    {"bz2", "application/x-bzip2"},
-    {"cer", "application/pkix-cert"},
-    {"clp", "application/x-msclip"},
-    {"crl", "application/pkix-crl"},
-    {"css", "text/css"},
-    {"csv", "text/csv"},
-    {"der", "application/x-x509-ca-cert"},
-    {"doc", "application/msword"},
-    {"docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
-    {"exe", "application/x-msdownload"},
-    {"gtar", "application/x-gtar"},
-    {"gz", "application/gzip"},
-    {"html", "text/html"},
-    {"ics", "text/calendar"},
-    {"ipfix", "application/ipfix"},
-    {"jar", "application/java-archive"},
-    {"json", "application/json"},
-    {"mdb", "application/x-msaccess"},
-    {"nsf", "application/vnd.lotus-notes"},
-    {"odb", "application/vnd.oasis.opendocument.database"},
-    {"odc", "application/vnd.oasis.opendocument.chart"},
-    {"odp", "application/vnd.oasis.opendocument.presentation"},
-    {"ods", "application/vnd.oasis.opendocument.spreadsheet"},
-    {"odt", "application/vnd.oasis.opendocument.text"},
-    {"p10", "application/pkcs10"},
-    {"p12", "application/x-pkcs12"},
-    {"p7b", "application/x-pkcs7-certificates"},
-    {"p7m", "application/pkcs7-mime"},
-    {"p7r", "application/x-pkcs7-certreqresp"},
-    {"p7s", "application/pkcs7-signature"},
-    {"p8", "application/pkcs8"},
-    {"pdf", "application/pdf"},
-    {"pki", "application/pkixcmp"},
-    {"pkipath", "application/pkix-pkipath"},
-    {"ppt", "application/vnd.ms-powerpoint"},
-    {"pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
-    {"rar", "application/x-rar-compressed"},
-    {"rss", "application/rss+xml"},
-    {"rtf", "application/rtf"},
-    {"rtx", "text/richtext"},
-    {"sxc", "application/vnd.sun.xml.calc"},
-    {"sxg", "application/vnd.sun.xml.writer.global"},
-    {"sxi", "application/vnd.sun.xml.impress"},
-    {"sxw", "application/vnd.sun.xml.writer"},
-    {"tar", "application/x-tar"},
-    {"texinfo", "application/x-texinfo"},
-    {"torrent", "application/x-bittorrent"},
-    {"txt", "text/plain"},
-    {"vcf", "text/x-vcard"},
-    {"vcs", "text/x-vcalendar"},
-    {"vsd", "application/vnd.visio"},
-    {"vsdx", "application/vnd.visio2013"},
-    {"vxml", "application/voicexml+xml"},
-    {"wml", "text/vnd.wap.wml"},
-    {"wmls", "text/vnd.wap.wmlscript"},
-    {"wps", "application/vnd.ms-works"},
-    {"wri", "application/x-mswrite"},
-    {"xdf", "application/xcap-diff+xml"},
-    {"xhtml", "application/xhtml+xml"},
-    {"xls", "application/vnd.ms-excel"},
-    {"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
-    {"xml", "application/xml"},
-    {"xps", "application/vnd.ms-xpsdocument"},
-    {"yaml", "text/yaml"},
-    {"zip", "application/zip"},
 };
 
 class ScannerUtils {
