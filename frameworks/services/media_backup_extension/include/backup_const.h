@@ -321,7 +321,7 @@ const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND \
 
 const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY showDateToken ASC ";
 
-const std::string EXCLUDE_SD = "(storage_id IN (0, 65537))";
+const std::string EXCLUDE_SD = " (storage_id IN (0, 65537)) ";
 
 const std::string QUERY_GALLERY_COUNT = "SELECT count(1) AS count FROM gallery_media ";
 
@@ -331,7 +331,6 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
     EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH + "," +
     GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + " FROM gallery_media ";
-// TODO only include from, concatnate in func
 
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \

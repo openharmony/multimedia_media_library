@@ -511,6 +511,7 @@ void UpgradeRestore::HandleRestData(void)
 int32_t UpgradeRestore::QueryTotalNumber(void)
 {
     std::string querySql = QUERY_GALLERY_COUNT;
+    querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
     BackupDatabaseUtils::UpdateSDWhereClause(querySql, sceneCode_);
     return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
@@ -524,10 +525,10 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
         return result;
     }
     std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS;
+    queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
     BackupDatabaseUtils::UpdateSDWhereClause(queryAllPhotosByCount, sceneCode_);
     queryAllPhotosByCount += ALL_PHOTOS_ORDER_BY;
     queryAllPhotosByCount += "limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
-    MEDIA_INFO_LOG("@test, querySql: %{public}s", queryAllPhotosByCount.c_str());
     auto resultSet = galleryRdb_->QuerySql(queryAllPhotosByCount);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
