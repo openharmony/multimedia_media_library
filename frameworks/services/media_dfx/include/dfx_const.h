@@ -107,6 +107,7 @@ const std::string MOVING_PHOTO_KEY_ADAPTED_NUM = "adapted_app_num";
 const std::string MOVING_PHOTO_KEY_ADAPTED_PACKAGE = "adapted_app_package";
 const std::string CLOUD_SYNC_START_TIME = "cloud_sync_start_time";
 const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
+const std::string IS_REPORTED = "is_reported";
 
 const std::string CLOUD_PHOTO_PATH = "/storage/cloud/files/Photo/";
 const std::string CLOUD_FILE_PATH = "/storage/cloud/files/";

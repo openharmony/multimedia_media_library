@@ -80,7 +80,6 @@ private:
     Utils::Timer timer_{ "CloudSyncTimer" };
     uint32_t timerId_{ 0 };
     SyncState syncState_{ SyncState::INIT_STATE };
-    bool isReported_{ false };
     std::vector<StateProcessFunc> stateProcessFuncs_ {
         {
             InitState::StateSwitch,
