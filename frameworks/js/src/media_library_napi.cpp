@@ -1770,6 +1770,7 @@ void ChangeListenerNapi::OnChange(MediaChangeListener &listener, const napi_ref 
     int ret = UvQueueWork(loop, work);
     if (ret != 0) {
         NAPI_ERR_LOG("Failed to execute libuv work queue, ret: %{public}d", ret);
+        free(msg->data);
         delete msg;
         delete work;
     }
