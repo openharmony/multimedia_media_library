@@ -42,6 +42,7 @@
 #include "multistages_capture_manager.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "os_account_manager.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "runtime.h"
@@ -92,6 +93,25 @@ void MediaDataShareExtAbility::Init(const shared_ptr<AbilityLocalRecord> &record
     DataShareExtAbility::Init(record, application, handler, token);
 }
 
+static bool IsStartBeforeUserUnlock()
+{
+    int32_t activeUserId = 0;
+    ErrCode ret = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(activeUserId);
+    if (ret != ERR_OK) {
+        MEDIA_INFO_LOG("GetForegroundOsAccountLocalId fail, ret code %{public}d, result is not credible", ret);
+        return false;
+    }
+    MEDIA_INFO_LOG("Current active account is %{public}d ", activeUserId);
+    bool isAccountVerified = true; // Assume verified to avoid unknown killing
+    ErrCode err = AccountSA::OsAccountManager::IsOsAccountVerified(activeUserId, isAccountVerified);
+    if (err != ERR_OK) {
+        MEDIA_ERR_LOG("Check activeUserId fail caused by %{public}d, check result is not credible", err);
+        return false;
+    }
+    MEDIA_INFO_LOG("Current user verification result: %{public}d", isAccountVerified);
+    return !isAccountVerified;
+}
+
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -109,6 +129,12 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
     if (dataManager == nullptr) {
         DfxReporter::ReportStartResult(DfxType::START_DATAMANAGER_FAIL, 0, startTime);
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return;
+    }
+    if (IsStartBeforeUserUnlock()) {
+        DfxReporter::ReportStartResult(DfxType::CHECK_USER_UNLOCK_FAIL, 0, startTime);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        MEDIA_INFO_LOG("%{public}s Killing self caused by booting before unlocking", __func__);
         return;
     }
     auto extensionContext = GetContext();

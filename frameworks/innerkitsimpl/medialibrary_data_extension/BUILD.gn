@@ -278,6 +278,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "os_account:os_account_innerkits",
     "player_framework:media_client",
     "preferences:native_preferences",
     "relational_store:native_rdb",
