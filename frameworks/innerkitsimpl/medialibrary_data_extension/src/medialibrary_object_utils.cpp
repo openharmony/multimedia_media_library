@@ -1472,14 +1472,16 @@ int32_t MediaLibraryObjectUtils::GetFileResult(shared_ptr<NativeRdb::ResultSet> 
     int errCode = E_SUCCESS;
     for (int32_t row = 0; row < count; row++) {
         unique_ptr<FileAsset> fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, row);
-        if (fileAsset != nullptr) {
-            if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
-                errCode = CopyDir(move(fileAsset), relativePath + displayName + "/");
-                CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy dir");
-            } else {
-                errCode = CopyAsset(move(fileAsset), relativePath + displayName + "/");
-                CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy asset");
-            }
+        if (fileAsset == nullptr) {
+            MEDIA_ERR_LOG("get fileAsset failed");
+            return E_SUCCESS;
+        }
+        if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
+            errCode = CopyDir(move(fileAsset), relativePath + displayName + "/");
+            CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy dir");
+        } else {
+            errCode = CopyAsset(move(fileAsset), relativePath + displayName + "/");
+            CHECK_AND_RETURN_RET_LOG(errCode > 0, errCode, "failed to copy asset");
         }
     }
     return errCode;
