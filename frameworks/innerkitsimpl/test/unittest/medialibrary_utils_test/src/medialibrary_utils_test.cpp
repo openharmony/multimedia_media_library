@@ -656,7 +656,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Lev
     targetSize.height = 20;
     ThumbnailData data;
     data.source = make_shared<PixelMap>();
-    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data.source, targetSize);
+    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data.source, targetSize, Media::AntiAliasingOption::MEDIUM);
     EXPECT_EQ(ret, false);
 }
 

@@ -263,15 +263,57 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
     return true;
 }
 
-bool ThumbnailUtils::ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize)
+bool ThumbnailUtils::ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize,
+    const AntiAliasingOption &option)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ImageSource::ScaleTargetPixelMap");
 
     PostProc postProc;
-    if (!postProc.ScalePixelMapEx(targetSize, *dataSource, Media::AntiAliasingOption::HIGH)) {
+    if (!postProc.ScalePixelMapEx(targetSize, *dataSource, option)) {
         MEDIA_ERR_LOG("Fail to scale to target thumbnail, ScalePixelMapEx failed, targetSize: %{public}d * %{public}d",
             targetSize.width, targetSize.height);
+        return false;
+    }
+    return true;
+}
+
+bool ThumbnailUtils::CenterScaleEx(std::shared_ptr<PixelMap> &dataSource, const Size &desiredSize,
+    const std::string path)
+{
+    if (dataSource->GetHeight() * dataSource->GetWidth() == 0) {
+        MEDIA_ERR_LOG("Invalid source size, ScalePixelMapEx failed, path: %{public}s",
+            DfxUtils::GetSafePath(path).c_str());
+        return false;
+    }
+    float sourceScale = static_cast<float>(dataSource->GetHeight()) / static_cast<float>(dataSource->GetWidth());
+    float scale = 1.0f;
+    if (sourceScale <= 1.0f) {
+        scale = static_cast<float>(desiredSize.height) / static_cast<float>(dataSource->GetHeight());
+    } else {
+        scale = static_cast<float>(desiredSize.width) / static_cast<float>(dataSource->GetWidth());
+    }
+
+    MediaLibraryTracer tracer;
+    tracer.Start("CenterScaleEx");
+    if (std::abs(scale - 1.0f) > FLOAT_EPSILON) {
+        Size targetSize = {
+            static_cast<int32_t>(scale * dataSource->GetWidth()),
+            static_cast<int32_t>(scale * dataSource->GetHeight())
+        };
+        if (!ScaleTargetPixelMap(dataSource, targetSize, Media::AntiAliasingOption::MEDIUM)) {
+            MEDIA_ERR_LOG("Fail in CenterScaleEx, ScalePixelMapEx failed, path: %{public}s",
+                DfxUtils::GetSafePath(path).c_str());
+            return false;
+        }
+    }
+
+    MediaLibraryTracer innerTracer;
+    innerTracer.Start("CenterScale");
+    PostProc postProc;
+    if (!postProc.CenterScale(desiredSize, *dataSource)) {
+        MEDIA_ERR_LOG("Fail in CenterScaleEx, CenterScale failed, path: %{public}s",
+            DfxUtils::GetSafePath(path).c_str());
         return false;
     }
     return true;
@@ -1197,13 +1239,9 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
     }
     tracer.Finish();
 
-    if (data.loaderOpts.decodeInThumbSize) {
-        tracer.Start("CenterScale");
-        PostProc postProc;
-        if (!postProc.CenterScale(desiredSize, *data.source)) {
-            MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
-            return false;
-        }
+    if (data.loaderOpts.decodeInThumbSize && !CenterScaleEx(data.source, desiredSize, data.path)) {
+        MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
+        return false;
     }
     data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (data.orientation != 0) {
@@ -1225,12 +1263,8 @@ bool ThumbnailUtils::ScaleFastThumb(ThumbnailData &data, const Size &size)
     MediaLibraryTracer tracer;
     tracer.Start("ScaleFastThumb");
 
-    PostProc postProc;
-    if (!postProc.CenterScale(size, *data.source)) {
-        MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+    if (!CenterScaleEx(data.source, size, data.path)) {
+        MEDIA_ERR_LOG("Fast thumb center crop failed [%{private}s]", data.id.c_str());
         return false;
     }
     return true;
@@ -2019,15 +2053,13 @@ bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSource
     }
     Size desiredSize;
     Size targetSize = ConvertDecodeSize(data, {dataSource->GetWidth(), dataSource->GetHeight()}, desiredSize);
-    if (!ScaleTargetPixelMap(dataSource, targetSize)) {
+    if (!ScaleTargetPixelMap(dataSource, targetSize, Media::AntiAliasingOption::MEDIUM)) {
         MEDIA_ERR_LOG("Fail to scale to targetSize");
         return false;
     }
-    MediaLibraryTracer tracer;
-    tracer.Start("CenterScale");
-    PostProc postProc;
-    if (!postProc.CenterScale(desiredSize, *dataSource)) {
-        MEDIA_ERR_LOG("thumbnail center crop failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    if (!CenterScaleEx(dataSource, desiredSize, data.path)) {
+        MEDIA_ERR_LOG("ScaleThumbnailFromSource center crop failed, path: %{public}s, isSourceEx: %{public}d.",
+            DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
         return false;
     }
     return true;
