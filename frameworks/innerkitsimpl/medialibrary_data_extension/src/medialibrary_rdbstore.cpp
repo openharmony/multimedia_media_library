@@ -2705,7 +2705,7 @@ static void AddPortraitCoverSelectionColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void AddCoverPosition(RdbStore &store)
+static void AddCoverPosition(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_COVER_POSITION +
