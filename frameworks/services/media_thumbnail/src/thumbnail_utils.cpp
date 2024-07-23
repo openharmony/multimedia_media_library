@@ -781,6 +781,8 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0")
         ->Or()
         ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "2")
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "7")
         ->EndWrap();
     rdbPredicates.BeginWrap()
         ->BeginWrap()
