@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIA_ACTIVELY_CALLING_ANALYSE_H
-#define OHOS_MEDIA_ACTIVELY_CALLING_ANALYSE_H
+#ifndef OHOS_MEDIA_ANALYSIS_PROXY_H
+#define OHOS_MEDIA_ANALYSIS_PROXY_H
 
 #include <mutex>
 #include <vector>
@@ -23,23 +23,23 @@
 #include "media_log.h"
 #include "napi_remote_object.h"
 #include "uv.h"
-#include "imedia_analyse_service.h"
+#include "imedia_analysis_service.h"
 #include "iremote_proxy.h"
 #include "parameter.h"
 
 namespace OHOS {
 namespace Media {
-class MediaActivelyCallingAnalyse : public IRemoteProxy<IMediaAnalyseService> {
+class MediaAnalysisProxy : public IRemoteProxy<IMediaAnalysisService> {
 public:
-    explicit MediaActivelyCallingAnalyse(const sptr<IRemoteObject> &impl);
-    ~MediaActivelyCallingAnalyse();
-    bool SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option);
+    explicit MediaAnalysisProxy(const sptr<IRemoteObject> &impl);
+    ~MediaAnalysisProxy();
+    bool static SendTransactCmd(int32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option);
 
 private:
-    const int32_t SAID = 10120;
-    static inline BrokerDelegator<MediaActivelyCallingAnalyse> delegator_;
+    const static int32_t SAID = 10120;
+    static inline BrokerDelegator<MediaAnalysisProxy> delegator_;
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif  // OHOS_MEDIA_ACTIVELY_CALLING_ANALYSE_H
+#endif  // OHOS_MEDIA_ANALYSIS_PROXY_H
