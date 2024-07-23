@@ -44,11 +44,11 @@ class TransactionOperations {
 public:
     EXPORT TransactionOperations(const std::shared_ptr<OHOS::NativeRdb::RdbStore> &rdbStore);
     EXPORT ~TransactionOperations();
-    EXPORT int32_t Start();
+    EXPORT int32_t Start(bool isUpgrade = false);
     EXPORT void Finish();
 
 private:
-    int32_t BeginTransaction();
+    int32_t BeginTransaction(bool isUpgrade = false);
     int32_t TransactionCommit();
     int32_t TransactionRollback();
 
