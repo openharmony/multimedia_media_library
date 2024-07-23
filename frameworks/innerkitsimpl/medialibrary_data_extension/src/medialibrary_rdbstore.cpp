@@ -2365,7 +2365,7 @@ void UpdatePhotoAlbumTigger(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
-void AddMovingPhotoEffectMode(RdbStore &store)
+static void AddMovingPhotoEffectMode(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
