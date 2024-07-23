@@ -560,5 +560,69 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
  
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 exit");
 }
+
+// Scenario1: Test when uriBatch is empty then GetBatchAstcs returns E_INVALID_URI.
+HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldReturnE, TestSize.Level0)
+{
+    std::vector<std::string> uriBatch;
+    std::vector<std::vector<uint8_t>> astcBatch;
+    EXPECT_EQ(manager.GetBatchAstcs(uriBatch, astcBatch), E_INVALID_URI);
+}
+
+// Scenario2: Test when uriBatch contains ML_URI_OFFSET then GetBatchAstcs calls GetAstcsByOffset.
+HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsByOffset_001, TestSize.Level0)
+{
+    std::vector<std::string> uriBatch = {"/media/ml/uri/offset/1"};
+    std::vector<std::vector<uint8_t>> astcBatch;
+    EXPECT_EQ(manager.GetBatchAstcs(uriBatch, astcBatch), E_INVALID_URI);
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsByOffset_002, TestSize.Level0)
+{
+    std::vector<std::string> uriBatch = {"/media/ml/uri/offset/1/image?size=100x200"};
+    std::vector<std::vector<uint8_t>> astcBatch;
+    EXPECT_EQ(manager.GetBatchAstcs(uriBatch, astcBatch), E_INVALID_URI);
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsByOffset_003, TestSize.Level0)
+{
+    std::vector<std::string> uriBatch = {"/media/ml/uri/offset/1/image?size=32x32"};
+    std::vector<std::vector<uint8_t>> astcBatch;
+    EXPECT_EQ(manager.GetBatchAstcs(uriBatch, astcBatch), E_INVALID_URI);
+}
+
+// Scenario3: Test when uriBatch does not contain ML_URI_OFFSET then GetBatchAstcs calls GetAstcsBatch.
+HWTEST_F(MediaLibraryManagerTest, GetBatchAstcs_ShouldCallGetAstcsBatch_004, TestSize.Level0)
+{
+    std::vector<std::string> uriBatch = {"/media/ml/uri/1"};
+    std::vector<std::vector<uint8_t>> astcBatch;
+    EXPECT_EQ(manager.GetBatchAstcs(uriBatch, astcBatch), E_INVALID_URI);
+}
+
+HWTEST_F(MediaLibraryManagerTest, ReadMovingPhotoVideo_001, TestSize.Level0)
+{
+    string uri = "";
+    EXPECT_EQ(manager.ReadMovingPhotoVideo(uri), -1);
+}
+
+HWTEST_F(MediaLibraryManagerTest, ReadMovingPhotoVideo_002, TestSize.Level0)
+{
+    string uri = "..;";
+    EXPECT_EQ(manager.ReadMovingPhotoVideo(uri), -1);
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_001, TestSize.Level0)
+{
+    std::string uri = "";
+    std::string result = manager.GetMovingPhotoImageUri(uri);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_002, TestSize.Level0)
+{
+    std::string uri = "mediaLibraryUri";
+    std::string result = manager.GetMovingPhotoImageUri(uri);
+    EXPECT_EQ(result, uri);
+}
 } // namespace Media
 } // namespace OHOS
