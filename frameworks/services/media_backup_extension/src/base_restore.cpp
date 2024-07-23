@@ -532,7 +532,7 @@ int32_t BaseRestore::BatchInsertWithRetry(const std::string &tableName, std::vec
     }
     int32_t errCode = E_ERR;
     TransactionOperations transactionOprn(mediaLibraryRdb_);
-    errCode = transactionOprn.Start();
+    errCode = transactionOprn.Start(true);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("can not get rdb before batch insert");
         return errCode;
