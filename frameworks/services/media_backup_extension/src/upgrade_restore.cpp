@@ -38,6 +38,9 @@ namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
 constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
+constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
+const std::string INTERNAL_PREFIX = "/storage/emulated/0";
+const std::string SD_FILE_PATH_PREFIX = "/SDCardClone";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -375,15 +378,14 @@ void UpgradeRestore::InitGarbageAlbum()
 
 void UpgradeRestore::HandleClone()
 {
-    int32_t cloneCount = BackupDatabaseUtils::QueryGalleryCloneCount(galleryRdb_, sceneCode_);
+    int32_t cloneCount = BackupDatabaseUtils::QueryGalleryCloneCount(galleryRdb_);
     MEDIA_INFO_LOG("clone number: %{public}d", cloneCount);
     if (cloneCount == 0) {
         return;
     }
     int32_t maxId = BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_MAX_ID, CUSTOM_MAX_ID);
-    std::string queryMayClonePhotoNumber = "SELECT count(1) AS count FROM files WHERE (is_pending = 0) AND " +
-        COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
-    BackupDatabaseUtils::UpdateSDWhereClause(queryMayClonePhotoNumber, sceneCode_);
+    std::string queryMayClonePhotoNumber = "SELECT count(1) AS count FROM files WHERE (is_pending = 0) AND\
+        (storage_id IN (0, 65537)) AND " + COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
     int32_t totalNumber = BackupDatabaseUtils::QueryInt(externalRdb_, queryMayClonePhotoNumber, CUSTOM_COUNT);
     MEDIA_INFO_LOG("totalNumber = %{public}d, maxId = %{public}d", totalNumber, maxId);
     for (int32_t offset = 0; offset < totalNumber; offset += PRE_CLONE_PHOTO_BATCH_COUNT) {
@@ -401,11 +403,9 @@ void UpgradeRestore::HandleCloneBatch(int32_t offset, int32_t maxId)
         MEDIA_ERR_LOG("rdb is nullptr, Maybe init failed.");
         return;
     }
-    std::string queryExternalMayClonePhoto = "SELECT _id, _data FROM files WHERE (is_pending = 0) AND " +
-        COMPARE_ID + std::to_string(maxId) + " AND " + QUERY_NOT_SYNC;
-    BackupDatabaseUtils::UpdateSDWhereClause(queryExternalMayClonePhoto, sceneCode_);
-    queryExternalMayClonePhoto += " limit " + std::to_string(offset) + ", " +
-        std::to_string(PRE_CLONE_PHOTO_BATCH_COUNT);
+    std::string queryExternalMayClonePhoto = "SELECT _id, _data FROM files WHERE (is_pending = 0) AND\
+        (storage_id IN (0, 65537)) AND " + COMPARE_ID + std::to_string(maxId) + " AND " +
+        QUERY_NOT_SYNC + "limit " + std::to_string(offset) + ", " + std::to_string(PRE_CLONE_PHOTO_BATCH_COUNT);
     auto resultSet = externalRdb_->QuerySql(queryExternalMayClonePhoto);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
@@ -620,21 +620,21 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
         return false;
     }
     std::string oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
-    if (sceneCode_ == UPGRADE_RESTORE_ID ?
-        !BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath) :
-        !ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
-        return false;
-    }
-    info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
-    info.title = GetStringVal(GALLERY_TITLE, resultSet);
-    info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
     if (info.fileSize < fileMinSize_ && dbName == EXTERNAL_DB_NAME) {
         MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
             BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str(), fileMinSize_);
         return false;
     }
+    if (sceneCode_ == UPGRADE_RESTORE_ID ?
+        !BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath) :
+        !ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath, info)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+        return false;
+    }
+    info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
+    info.title = GetStringVal(GALLERY_TITLE, resultSet);
+    info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
     info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
@@ -664,8 +664,8 @@ void UpgradeRestore::ParseResultSetForMap(const std::shared_ptr<NativeRdb::Resul
 
 bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
-    int32_t localMediaId = GetInt32Val(GALLERY_LOCAL_MEDIA_ID, resultSet);
-    info.hidden = (localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
+    info.localMediaId = GetInt32Val(GALLERY_LOCAL_MEDIA_ID, resultSet);
+    info.hidden = (info.localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
     info.recycledTime = GetInt64Val(GALLERY_RECYCLED_TIME, resultSet);
     info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet);
     // fetch relative_bucket_id, recycleFlag, is_hw_burst, hash field to generate burst_key
@@ -1160,6 +1160,38 @@ void UpgradeRestore::UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, Fi
         info.packageName = it->albumName;
         info.bundleName = it->albumBundleName;
     }
+}
+
+bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
+    std::string &newPath, std::string &relativePath, FileInfo &fileInfo)
+{
+    if (MediaFileUtils::StartsWith(srcPath, INTERNAL_PREFIX)) {
+        return ConvertPathToRealPath(srcPath, prefix, newPath, relativePath);
+    }
+    size_t pos = 0;
+    int32_t count = 0;
+    constexpr int32_t prefixLevel = 3;
+    for (size_t i = 0; i < srcPath.length(); i++) {
+        if (srcPath[i] == '/') {
+            count++;
+            if (count == prefixLevel) {
+                pos = i;
+                break;
+            }
+        }
+    }
+    if (count < prefixLevel) {
+        return false;
+    }
+    relativePath = srcPath.substr(pos);
+    if (fileInfo.fileSize < TAR_FILE_LIMIT) {
+        newPath = prefix + srcPath; // packed as tar, use path in DB
+    } else if (fileInfo.localMediaId == GALLERY_HIDDEN_ID || fileInfo.localMediaId == GALLERY_TRASHED_ID) {
+        newPath = prefix + INTERNAL_PREFIX + SD_FILE_PATH_PREFIX + srcPath; // hidden or trashed, add extra prefix
+    } else {
+        newPath = prefix + INTERNAL_PREFIX + relativePath; // remove sd prefix
+    }
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

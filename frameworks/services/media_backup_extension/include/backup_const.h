@@ -32,6 +32,7 @@ constexpr int32_t PRE_CLONE_PHOTO_BATCH_COUNT = 100;
 constexpr int32_t CONNECT_SIZE = 10;
 constexpr int32_t MILLISECONDS = 1000;
 constexpr int32_t GALLERY_HIDDEN_ID = -4;
+constexpr int32_t GALLERY_TRASHED_ID = 0;
 constexpr int32_t UPGRADE_RESTORE_ID = 0;
 constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
 constexpr int32_t CLONE_RESTORE_ID = 2;
@@ -226,6 +227,7 @@ struct FileInfo {
     int32_t orientation {0};
     int64_t dateModified {0};
     int32_t mediaAlbumId {-1};  // 单相册id
+    int32_t localMediaId {-1};
     bool isNew {true};
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
@@ -334,7 +336,7 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
 
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
-    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 ";
+    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
 
 const std::string QUERY_GALLERY_ALBUM_INFO = "SELECT " + GALLERY_ALBUM +
                                      ".*, COALESCE(garbage_album.nick_name, '') AS " +
