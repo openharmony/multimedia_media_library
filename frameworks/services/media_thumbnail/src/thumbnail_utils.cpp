@@ -60,6 +60,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
 {
@@ -232,10 +233,8 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
         MEDIA_ERR_LOG("Parse height from resultmap error");
         return false;
     }
-    MEDIA_INFO_LOG("originalWidth = %{public}d, originalHeight = %{public}d", originalWidth, originalHeight);
     data.loaderOpts.needUpload = true;
     ConvertDecodeSize(data, {originalWidth, originalHeight}, desiredSize);
-    MEDIA_INFO_LOG("desiredWidth = %{public}d, desiredHeight = %{public}d", desiredSize.width, desiredSize.height);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
     data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
