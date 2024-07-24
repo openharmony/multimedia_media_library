@@ -696,6 +696,9 @@ static string GetUriWithoutSeg(const string &oldUri)
 
 int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
+    MEDIA_INFO_LOG("start");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
     if (fileId.empty()) {
         MEDIA_ERR_LOG("get fileId fail");
@@ -738,6 +741,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
             ScanFile(path, true, true, true);
         }
     }
+    MEDIA_INFO_LOG("Success, updatedRows: %{public}d, needScanStr: %{public}s", updatedRows, needScanStr.c_str());
     return updatedRows;
 }
 
