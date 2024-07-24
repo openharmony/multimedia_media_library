@@ -34,7 +34,7 @@ namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 #define INT32_MAX_VALUE_LENGTH 10
 #define VERTICAL_ANGLE 90
-#define STRAIGHT_ANGLE 18
+#define STRAIGHT_ANGLE 180
 struct ThumbRdbOpt {
     EXPORT std::shared_ptr<NativeRdb::RdbStore> store;
 #ifdef DISTRIBUTED
