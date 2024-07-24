@@ -32,9 +32,6 @@
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-#define INT32_MAX_VALUE_LENGTH 10
-#define VERTICAL_ANGLE 90
-#define STRAIGHT_ANGLE 180
 struct ThumbRdbOpt {
     EXPORT std::shared_ptr<NativeRdb::RdbStore> store;
 #ifdef DISTRIBUTED
@@ -67,7 +64,6 @@ public:
     // RDB Store Query
     EXPORT static std::shared_ptr<NativeRdb::ResultSet> QueryThumbnailInfo(ThumbRdbOpt &opts,
         ThumbnailData &data, int &err);
-    static bool ConvertStrToInt32(const std::string &str, int32_t &ret);
 #ifdef DISTRIBUTED
     EXPORT static bool QueryRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     // KV Store
@@ -167,6 +163,7 @@ private:
     EXPORT static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
         Size &desiredSize, uint32_t &errCode);
     EXPORT static bool LoadAudioFile(ThumbnailData &data, Size &desiredSize);
+    static bool ConvertStrToInt32(const std::string &str, int32_t &ret);
 
 #ifdef DISTRIBUTED
     // RDB Store
