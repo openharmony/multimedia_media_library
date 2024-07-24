@@ -165,6 +165,7 @@ public:
     EXPORT static bool IsMediaLibraryUri(const std::string& uri);
     EXPORT static bool SetEPolicy();
     EXPORT static void PrintStatInformation(const std::string& path);
+    EXPORT static void MediaFileDeletionRecord();
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
