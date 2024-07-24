@@ -60,7 +60,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-const uint32_t _TINT32_MAX_VALUE_LENGTH = 10;
+const uint32_t INT32_MAX_VALUE_LENGTH = 10;
 const int VERTICAL_ANGLE = 90;
 const int STRAIGHT_ANGLE = 180;
 #ifdef DISTRIBUTED
