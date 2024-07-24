@@ -98,7 +98,7 @@ static bool IsStartBeforeUserUnlock()
     int32_t activeUserId = 0;
     ErrCode ret = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(activeUserId);
     if (ret != ERR_OK) {
-        MEDIA_INFO_LOG("GetForegroundOsAccountLocalId fail, ret code %{public}d, result is not credible", ret);
+        MEDIA_ERR_LOG("GetForegroundOsAccountLocalId fail, ret code %{public}d, result is not credible", ret);
         return false;
     }
     MEDIA_INFO_LOG("Current active account is %{public}d ", activeUserId);
