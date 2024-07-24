@@ -56,6 +56,17 @@ const int32_t OPEN_FDS = 64;
 const std::string PATH_PARA = "path=";
 constexpr size_t EMPTY_DIR_ENTRY_COUNT = 2;  // Empty dir has 2 entry: . and ..
 constexpr size_t DEFAULT_TIME_SIZE = 32;
+const int32_t HMFS_MONITOR_FL = 2;
+const std::string LISTENING_BASE_PATH = "/storage/media/local/files/";
+const std::string PHOTO_DIR = "Photo";
+const std::string AUDIO_DIR = "Audio";
+const std::string THUMBS_DIR = ".thumbs";
+const std::string EDIT_DATA_DIR = ".editData";
+const std::vector<std::string> SET_LISTEN_DIR = {
+    PHOTO_DIR, AUDIO_DIR, THUMBS_DIR, EDIT_DATA_DIR
+};
+#define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
+#define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
 
 static const std::unordered_map<std::string, std::vector<std::string>> MEDIA_MIME_TYPE_MAP = {
     { "application/epub+zip", { "epub" } },
@@ -423,6 +434,44 @@ bool MediaFileUtils::SetEPolicy()
         return false;
     }
     return true;
+}
+
+void MediaFileUtils::MediaFileDeletionRecord()
+{
+    int fd = -1;
+    unsigned int flags = 0;
+    string path;
+    int ret = -1;
+    for (auto &dir : SET_LISTEN_DIR) {
+        path = LISTENING_BASE_PATH + dir;
+        fd = open(path.c_str(), O_RDONLY);
+        if (fd < 0) {
+            MEDIA_ERR_LOG("Failed to open the Dir, errno is %{public}d, %{public}s", errno, dir.c_str());
+            continue;
+        }
+
+        ret = ioctl(fd, HMFS_IOCTL_HW_GET_FLAGS, &flags);
+        if (ret < 0) {
+            MEDIA_ERR_LOG("Failed to get flags, errno is %{public}d, %{public}s", errno, dir.c_str());
+            close(fd);
+            continue;
+        }
+
+        if (flags & HMFS_MONITOR_FL) {
+            close(fd);
+            continue;
+        }
+
+        flags |= HMFS_MONITOR_FL;
+        ret = ioctl(fd, HMFS_IOCTL_HW_SET_FLAGS, &flags);
+        if (ret < 0) {
+            MEDIA_ERR_LOG("Failed to set flags, errno is %{public}d, %{public}s", errno, dir.c_str());
+            close(fd);
+            continue;
+        }
+        close(fd);
+        MEDIA_INFO_LOG("Set Delete control flags is success %{public}s", dir.c_str());
+    }
 }
 
 bool MediaFileUtils::WriteStrToFile(const string &filePath, const string &str)

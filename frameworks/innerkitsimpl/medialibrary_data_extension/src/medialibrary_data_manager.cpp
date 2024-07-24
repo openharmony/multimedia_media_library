@@ -169,6 +169,7 @@ static void MakeRootDirs(AsyncTaskData *data)
     if (data->dataDisplay.compare(E_POLICY) == 0 && !MediaFileUtils::SetEPolicy()) {
         MEDIA_ERR_LOG("Failed to SetEPolicy fail");
     }
+    MediaFileUtils::MediaFileDeletionRecord();
 }
 
 void MediaLibraryDataManager::ReCreateMediaDir()
