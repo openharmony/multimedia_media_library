@@ -217,17 +217,18 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     PixelMapParams param;
     param.colorFormat = PixelFormat::RGBA_8888;
     auto resultMap = avMetadataHelper->ResolveMetadata();
-    int originalWidth = 0;
-    int originalHeight = 0;
-    int rotation = 0;
+    int32_t originalWidth = 0;
+    int32_t originalHeight = 0;
+    int32_t rotation = 0;
     ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION), rotation);
+    bool isNeedRevolve = ((rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
     if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
-        (rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0 ? originalWidth : originalHeight)) {
+        isNeedRevolve ? originalWidth : originalHeight)) {
         MEDIA_ERR_LOG("Parse width from resultmap error");
         return false;
     }
     if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
-        (rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0 ? originalHeight : originalWidth)) {
+        isNeedRevolve ? originalHeight : originalWidth)) {
         MEDIA_ERR_LOG("Parse height from resultmap error");
         return false;
     }
