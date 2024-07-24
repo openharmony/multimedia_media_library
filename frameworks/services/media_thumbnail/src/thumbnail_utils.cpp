@@ -60,9 +60,9 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-const INT32_MAX_VALUE_LENGTH = 10;
-const VERTICAL_ANGLE = 90;
-const STRAIGHT_ANGLE = 180;
+const uint32_t _TINT32_MAX_VALUE_LENGTH = 10;
+const int VERTICAL_ANGLE = 90;
+const int STRAIGHT_ANGLE = 180;
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
 {
