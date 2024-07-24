@@ -217,30 +217,32 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     }
     PixelMapParams param;
     param.colorFormat = PixelFormat::RGBA_8888;
+    auto resultMap = avMetadataHelper->ResolveMetadata();
+    int originalWidth = 0;
+    int originalHeight = 0;
+    int rotation = 0;
+    ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION), rotation);
+    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
+         (rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0 ? originalWidth : originalHeight) ||
+        !ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT), 
+         (rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0 ? originalHeight : originalWidth)) {
+        MEDIA_ERR_LOG("ResolveMetadata parse error");
+        return false;
+    }
+    data.loaderOpts.needUpload = true;
+    ConvertDecodeSize(data, {originalWidth, originalHeight}, desiredSize);
+    param.dstWidth = desiredSize.width;
+    param.dstHeight = desiredSize.height;
     data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
         param);
     if (data.source == nullptr) {
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
     }
-    int width = data.source->GetWidth();
-    int height = data.source->GetHeight();
-    data.loaderOpts.needUpload = true;
-    ConvertDecodeSize(data, {width, height}, desiredSize);
-    if ((desiredSize.width != data.source->GetWidth() || desiredSize.height != data.source->GetHeight())) {
-        param.dstWidth = desiredSize.width;
-        param.dstHeight = desiredSize.height;
-        data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
-            param);
-        if (data.source == nullptr) {
-            DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
-            return false;
-        }
-    }
     data.orientation = 0;
     data.stats.sourceWidth = data.source->GetWidth();
     data.stats.sourceHeight = data.source->GetHeight();
-    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, width, height);
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, originalWidth, originalHeight);
     return true;
 }
 
@@ -2157,6 +2159,25 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
             infos.push_back(data);
         }
     } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
+bool ThumbnailUtils::ConvertStrToInt32(const std::string &str, int32_t &ret)
+{
+    if (str.empty() || str.length() > INT32_MAX_VALUE_LENGTH) {
+        MEDIA_ERR_LOG("str = %{public}s", str.c_str());
+        return false;
+    }
+    if (!IsNumericStr(str)) {
+        MEDIA_ERR_LOG("input is not number, str = %{public}s", str.c_str());
+        return false;
+    }
+    int64_t numberValue = std::stoll(str);
+    if (numberValue < INT32_MIN || numberValue > INT32_MAX) {
+        MEDIA_ERR_LOG("Input is out of range, str = %{public}s", str.c_str());
+        return false;
+    }
+    ret = static_cast<int32_t>(numberValue);
     return true;
 }
 } // namespace Media
