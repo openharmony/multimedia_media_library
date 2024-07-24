@@ -488,12 +488,9 @@ string PermissionUtils::GetAppIdByBundleName(const string &bundleName, int32_t u
         MEDIA_ERR_LOG("Get INVALID_UID UID %{public}d", uid);
         return "";
     }
-
     string appId = "";
     GetAppIdFromCache(uid, appId);
-    if (appId.empty()) {
-        MEDIA_INFO_LOG("[FOR_TEST] uid: %{public}d, bundleName: %{public}s, appId: %{public}s", uid,
-            bundleName.c_str(), appId.c_str());
+    if (!appId.empty()) {
         return appId;
     }
 
@@ -501,7 +498,6 @@ string PermissionUtils::GetAppIdByBundleName(const string &bundleName, int32_t u
     int32_t userId = uid / BASE_USER_RANGE;
     MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
 
-    AAFwk::Want want;
     auto bundleMgr_ = GetSysBundleManager();
     if (bundleMgr_ == nullptr) {
         MEDIA_ERR_LOG("Get BundleManager failed");
