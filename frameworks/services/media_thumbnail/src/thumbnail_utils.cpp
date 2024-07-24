@@ -60,9 +60,6 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
-const uint32_t INT32_MAX_VALUE_LENGTH = 10;
-const int VERTICAL_ANGLE = 90;
-const int STRAIGHT_ANGLE = 180;
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::DeleteDistributeLcdData(ThumbRdbOpt &opts, ThumbnailData &thumbnailData)
 {
@@ -225,14 +222,19 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     int rotation = 0;
     ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION), rotation);
     if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
-        (rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0 ? originalWidth : originalHeight) ||
-        !ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
-        (rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0 ? originalHeight : originalWidth)) {
-        MEDIA_ERR_LOG("ResolveMetadata parse error");
+        (rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0 ? originalWidth : originalHeight)) {
+        MEDIA_ERR_LOG("Parse width from resultmap error");
         return false;
     }
+    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
+        (rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0 ? originalHeight : originalWidth)) {
+        MEDIA_ERR_LOG("Parse height from resultmap error");
+        return false;
+    }
+    MEDIA_INFO_LOG("originalWidth = %{public}d, originalHeight = %{public}d", originalWidth, originalHeight);
     data.loaderOpts.needUpload = true;
     ConvertDecodeSize(data, {originalWidth, originalHeight}, desiredSize);
+    MEDIA_INFO_LOG("desiredWidth = %{public}d, desiredHeight = %{public}d", desiredSize.width, desiredSize.height);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
     data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
@@ -2167,16 +2169,16 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
 bool ThumbnailUtils::ConvertStrToInt32(const std::string &str, int32_t &ret)
 {
     if (str.empty() || str.length() > INT32_MAX_VALUE_LENGTH) {
-        MEDIA_ERR_LOG("str = %{public}s", str.c_str());
+        MEDIA_ERR_LOG("convert failed, str = %{public}s", str.c_str());
         return false;
     }
     if (!IsNumericStr(str)) {
-        MEDIA_ERR_LOG("input is not number, str = %{public}s", str.c_str());
+        MEDIA_ERR_LOG("convert failed, input is not number, str = %{public}s", str.c_str());
         return false;
     }
     int64_t numberValue = std::stoll(str);
     if (numberValue < INT32_MIN || numberValue > INT32_MAX) {
-        MEDIA_ERR_LOG("Input is out of range, str = %{public}s", str.c_str());
+        MEDIA_ERR_LOG("convert failed, Input is out of range, str = %{public}s", str.c_str());
         return false;
     }
     ret = static_cast<int32_t>(numberValue);
