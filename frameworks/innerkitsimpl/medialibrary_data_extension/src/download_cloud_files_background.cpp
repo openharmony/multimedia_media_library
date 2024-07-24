@@ -42,7 +42,7 @@ static constexpr int32_t DOWNLOAD_INTERVAL = 60 * 1000; // 1 minute
 static constexpr int32_t DOWNLOAD_DURATION = 20 * 1000; // 20 seconds
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
-static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.4;
+static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
 
 recursive_mutex DownloadCloudFilesBackground::mutex_;
 Utils::Timer DownloadCloudFilesBackground::timer_("download_cloud_files_background");
