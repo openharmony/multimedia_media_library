@@ -61,6 +61,7 @@
           "memmgr_override",
           "image_framework",
           "napi",
+          "os_account",
           "player_framework",
           "power_manager",
           "relational_store",
