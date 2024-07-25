@@ -1099,7 +1099,6 @@ static int32_t UpdateSourceAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, c
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumIfNeeded");
     ValuesBucket values;
-    values.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, 1); // local album is 1.
     auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
     int err = SetUpdateValues(rdbStore, albumResult, values, subtype, hiddenState);
     if (err < 0) {
