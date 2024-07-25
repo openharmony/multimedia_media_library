@@ -85,6 +85,7 @@ enum DfxType {
     START_DIR_SET_FAIL,
     START_THUMBNAIL_SERVICE_FAIL,
     START_SCANNER_FAIL,
+    CHECK_USER_UNLOCK_FAIL
 };
 
 const std::string NULL_STRING = "";

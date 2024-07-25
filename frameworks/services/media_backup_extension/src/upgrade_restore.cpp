@@ -348,11 +348,14 @@ void UpgradeRestore::AnalyzeGallerySource()
     int32_t galleryTrashedCount = BackupDatabaseUtils::QueryGalleryTrashedCount(galleryRdb_);
     int32_t gallerySDCardCount = BackupDatabaseUtils::QueryGallerySDCardCount(galleryRdb_);
     int32_t galleryScreenVideoCount = BackupDatabaseUtils::QueryGalleryScreenVideoCount(galleryRdb_);
+    int32_t galleryFavoriteCount =  BackupDatabaseUtils::QueryGalleryFavoriteCount(galleryRdb_);
+    int32_t galleryImportsCount = BackupDatabaseUtils::QueryGalleryImportsCount(galleryRdb_);
     MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, \
         galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, \
-        gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d",
+        gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, \
+        galleryImportsCount: %{public}d",
         galleryAllCount, galleryImageCount, galleryVideoCount, galleryHiddenCount, galleryTrashedCount,
-        gallerySDCardCount, galleryScreenVideoCount);
+        gallerySDCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount);
 }
 
 void UpgradeRestore::AnalyzeExternalSource()

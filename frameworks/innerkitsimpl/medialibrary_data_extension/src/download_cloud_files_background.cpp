@@ -28,6 +28,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
@@ -41,7 +42,7 @@ static constexpr int32_t DOWNLOAD_INTERVAL = 60 * 1000; // 1 minute
 static constexpr int32_t DOWNLOAD_DURATION = 20 * 1000; // 20 seconds
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
-static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.4;
+static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
 
 recursive_mutex DownloadCloudFilesBackground::mutex_;
 Utils::Timer DownloadCloudFilesBackground::timer_("download_cloud_files_background");
@@ -99,29 +100,23 @@ bool DownloadCloudFilesBackground::IsStorageInsufficient()
 
 std::shared_ptr<NativeRdb::ResultSet> DownloadCloudFilesBackground::QueryCloudFiles()
 {
-    const std::vector<std::string> columns = { PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE };
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr!");
+        return nullptr;
+    }
 
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::PHOTO_POSITION, static_cast<int32_t>(POSITION_CLOUD))
-        ->And()
-        ->IsNotNull(MediaColumn::MEDIA_FILE_PATH)
-        ->And()
-        ->NotEqualTo(MediaColumn::MEDIA_FILE_PATH, DEFAULT_STR)
-        ->And()
-        ->GreaterThan(MediaColumn::MEDIA_SIZE, 0)
-        ->And()
-        ->BeginWrap()
-        ->BeginWrap()
-        ->EqualTo(PhotoColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_IMAGE))
-        ->EndWrap()
-        ->Or()
-        ->BeginWrap()
-        ->EqualTo(PhotoColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_VIDEO))
-        ->EndWrap()
-        ->EndWrap()
-        ->Limit(DOWNLOAD_BATCH_SIZE);
+    const string sql = "SELECT " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::MEDIA_TYPE +
+        " FROM(SELECT COUNT(*) AS count, " + PhotoColumn::MEDIA_FILE_PATH + ", " + PhotoColumn::MEDIA_TYPE + ", " +
+        MediaColumn::MEDIA_DATE_MODIFIED + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
+        PhotoColumn::PHOTO_POSITION + " = " + std::to_string(POSITION_CLOUD) + " AND " + PhotoColumn::MEDIA_FILE_PATH +
+        " IS NOT NULL AND " + PhotoColumn::MEDIA_FILE_PATH + " != '' AND " + MediaColumn::MEDIA_SIZE + " > 0 AND(" +
+        PhotoColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " + PhotoColumn::MEDIA_TYPE + " = " +
+        std::to_string(MEDIA_TYPE_VIDEO) + ") GROUP BY " + PhotoColumn::MEDIA_FILE_PATH +
+        " HAVING count = 1) ORDER BY " + PhotoColumn::MEDIA_TYPE + " DESC, " + MediaColumn::MEDIA_DATE_MODIFIED +
+        " DESC LIMIT " + std::to_string(DOWNLOAD_BATCH_SIZE);
 
-    return MediaLibraryRdbStore::Query(predicates, columns);
+    return uniStore->QuerySql(sql);
 }
 
 void DownloadCloudFilesBackground::ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet,

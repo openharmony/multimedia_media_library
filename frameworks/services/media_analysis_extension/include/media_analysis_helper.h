@@ -13,24 +13,26 @@
  * limitations under the License.
  */
 
-#ifndef IVISION_SERVICE_CV
-#define IVISION_SERVICE_CV
+#ifndef OHOS_MEDIA_ANALYSIS_HELPER_H
+#define OHOS_MEDIA_ANALYSIS_HELPER_H
 
-#include "iremote_broker.h"
+#include <vector>
+
+#include "iservice_registry.h"
+#include "media_analysis_proxy.h"
 
 namespace OHOS {
 namespace Media {
-class IMediaAnalyseService : public IRemoteBroker {
+class MediaAnalysisHelper {
 public:
-    enum ActivateServiceType {
-        START_SERVICE_OCR = 1,
-        START_DELETE_INDEX = 31,
-        START_UPDATE_INDEX = 32,
-        START_BACKGROUND_TASK = 33,
-    };
-public:
-    DECLARE_INTERFACE_DESCRIPTOR(u"Multimedia.MediaAnalyseService.API");
+    static void StartMediaAnalysisServiceAsync(int32_t code, const std::vector<std::string> &uris = {});
+    static void StartMediaAnalysisServiceSync(int32_t code, const std::vector<std::string> &fileIds = {});
+
+private:
+    static void StartMediaAnalysisServiceInternal(int32_t code, MessageOption option,
+        std::vector<std::string> fileIds = {});
 };
-} //namespace MEDIA
-}
-#endif
+} // namespace Media
+} // namespace OHOS
+
+#endif  // OHOS_MEDIA_ANALYSIS_HELPER_H

@@ -677,8 +677,9 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     if (cmd.GetOprnObject() == OperationObject::FILESYSTEM_PHOTO) {
         assetInfo.PutInt(PhotoColumn::PHOTO_SUBTYPE, fileAsset.GetPhotoSubType());
         assetInfo.PutString(PhotoColumn::CAMERA_SHOT_KEY, fileAsset.GetCameraShotKey());
-        if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
-            assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo now
+        if (fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+            fileAsset.GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::BURST)) {
+            assetInfo.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading moving photo and burst photo
         }
         HandleIsTemp(cmd, assetInfo);
         HandleBurstPhoto(cmd, assetInfo);
