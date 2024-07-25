@@ -218,7 +218,6 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     int32_t videoWidth = 0;
     int32_t videoHeight = 0;
     if (!ParseVideoSize(avMetadataHelper, videoWidth, videoHeight)) {
-        MEDIA_ERR_LOG("Parse video size error");
         return false;
     }
     PixelMapParams param;
