@@ -245,11 +245,11 @@ bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadat
     auto resultMap = avMetadataHelper->ResolveMetadata();
     int32_t rotation = 0;
     const std::string strOfRotation = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION);
+    
     // The field of rotation may be empty, and if it is empty, it means rotation is zero
     if (strOfRotation.empty()) {
         MEDIA_INFO_LOG("rotation is zero");
-    }
-    else if (!ConvertStrToInt32(strOfRotation, rotation)) {
+    } else if (!ConvertStrToInt32(strOfRotation, rotation)) {
         MEDIA_ERR_LOG("Parse rotation from resultmap error");
         return false;
     }
