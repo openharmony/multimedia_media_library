@@ -504,7 +504,7 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
     int32_t fileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, sceneCode);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert assets related"
+    MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related"
         " cost %{public}ld, and move %{public}ld file cost %{public}ld.", (long)(startInsert - startGenerate),
         (long)rowNum, (long)(startInsertRelated - startInsert), (long)(startMove - startInsertRelated),
         (long)fileMoveCount, (long)(end - startMove));
@@ -882,10 +882,10 @@ void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t s
     migratePortraitFaceNumber_ += faceRowNum;
     migratePortraitPhotoNumber_ += portraitPhotoNum;
     migratePortraitTotalTimeCost_ += end - startInsertPortrait;
-    MEDIA_INFO_LOG("query cost %{public}ld, insert %{public}ld maps cost %{public}ld, insert %{public}ld + %{public}ld "
-        "data cost %{public}ld", (long)(startInsertMap - startQuery), (long)mapRowNum,
-        (long)(startInsertPortrait - startInsertMap), (long)faceRowNum, (long)portraitMapRowNum,
-        (long)(end - startInsertPortrait));
+    MEDIA_INFO_LOG("query cost %{public}ld, insert %{public}ld maps cost %{public}ld, insert face analysis data of "
+        "%{public}ld photos (%{public}ld faces + %{public}ld maps) cost %{public}ld",
+        (long)(startInsertMap - startQuery), (long)mapRowNum, (long)(startInsertPortrait - startInsertMap),
+        (long)portraitPhotoNum, (long)faceRowNum, (long)portraitMapRowNum, (long)(end - startInsertPortrait));
 }
 
 bool BaseRestore::NeedBatchQueryPhoto(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)

@@ -358,15 +358,13 @@ const std::string QUERY_MAX_ID_OTHERS = "SELECT max(local_media_id) AS max_id FR
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
     (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 ";
 
-const std::string QUERY_GALLERY_COUNT = "SELECT count(1) AS count FROM gallery_media \
-    WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
-    SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0";
-
 const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (storage_id IN (0, 65537)) AND \
     relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0 AND \
     _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
 
 const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY _id ASC ";
+
+const std::string QUERY_GALLERY_COUNT = "SELECT count(1) AS count FROM gallery_media WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
 
 const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + GALLERY_FILE_DATA + "," +
     GALLERY_DISPLAY_NAME + "," + GALLERY_DESCRIPTION + "," + GALLERY_IS_FAVORITE + "," + GALLERY_RECYCLED_TIME +

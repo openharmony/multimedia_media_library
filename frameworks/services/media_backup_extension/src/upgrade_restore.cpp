@@ -1200,7 +1200,7 @@ vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset
     vector<PortraitAlbumInfo> result;
     result.reserve(QUERY_COUNT);
     std::string querySql = "SELECT " + GALLERY_MERGE_TAG_TAG_ID + ", " + GALLERY_GROUP_TAG + ", " +
-        GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION + ", " +
+        GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION +
         " FROM " + GALLERY_PORTRAIT_ALBUM_TABLE;
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
@@ -1409,7 +1409,8 @@ void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInf
     SetHashReference(fileInfos, needQueryMap, hashSelection, fileInfoMap);
 
     int32_t totalNumber = QueryFaceTotalNumber(hashSelection);
-    MEDIA_INFO_LOG("Current %{public}zu have %{public}d faces", fileInfos.size(), totalNumber);
+    MEDIA_INFO_LOG("Current %{public}zu / %{public}zu have %{public}d faces", fileInfoMap.size(), fileInfos.size(),
+        totalNumber);
     std::unordered_set<std::string> excludedFiles;
     std::unordered_set<std::string> filesWithFace;
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
@@ -1573,8 +1574,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FaceInfo &faceInfo,
         values.PutString(FACE_ID, faceInfo.faceId);
         values.PutString(TAG_ID, faceInfo.tagIdNew);
         values.PutString(LANDMARKS, faceInfo.landmarks);
-        values.PutString(IMAGE_FACE_VERSION, E_VERSION); // updated by analysis service
-        values.PutString(IMAGE_FEATURES_VERSION, faceInfo.featuresVersion);
+        values.PutString(IMAGE_FACE_VERSION, faceInfo.faceVersion);
+        values.PutString(IMAGE_FEATURES_VERSION, E_VERSION); // updated by analysis service
         values.PutString(ANALYSIS_VERSION, faceInfo.analysisVersion);
     }
     return values;
