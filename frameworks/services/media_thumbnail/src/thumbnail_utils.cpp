@@ -244,8 +244,9 @@ bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadat
 {
     auto resultMap = avMetadataHelper->ResolveMetadata();
     int32_t rotation = 0;
+    // The field of rotation may be empty, and if it return false, it will be treated as zero
     if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION), rotation)) {
-        MEDIA_INFO_LOG("rotation is zero");
+        MEDIA_INFO_LOG("rotation may be zero");
     }
     bool needRevolve = ((rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
     if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
@@ -2180,7 +2181,7 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
 bool ThumbnailUtils::ConvertStrToInt32(const std::string &str, int32_t &ret)
 {
     if (str.empty() || str.length() > INT32_MAX_VALUE_LENGTH) {
-        MEDIA_INFO_LOG("convert failed, str = %{public}s", str.c_str());
+        MEDIA_ERR_LOG("convert failed, str = %{public}s", str.c_str());
         return false;
     }
     if (!IsNumericStr(str)) {
