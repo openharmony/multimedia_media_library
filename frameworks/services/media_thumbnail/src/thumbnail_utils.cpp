@@ -245,7 +245,7 @@ bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadat
     auto resultMap = avMetadataHelper->ResolveMetadata();
     int32_t rotation = 0;
     const std::string strOfRotation = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION);
-    
+
     // The field of rotation may be empty, and if it is empty, it means rotation is zero
     if (strOfRotation.empty()) {
         MEDIA_INFO_LOG("rotation is zero");
@@ -1471,18 +1471,11 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
             errno, absFilePath.c_str(), MediaFileUtils::IsFileExists(absFilePath));
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, absFilePath}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_ERR;
     }
-
     struct stat64 st;
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed, err %{public}d", errno);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, absFilePath}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         (void)close(fd);
         return E_ERR;
     }
