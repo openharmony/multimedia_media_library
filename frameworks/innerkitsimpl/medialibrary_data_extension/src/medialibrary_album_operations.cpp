@@ -21,8 +21,7 @@
 #include <cstring>
 
 #include "directory_ex.h"
-#include "iservice_registry.h"
-#include "media_actively_calling_analyse.h"
+#include "media_analysis_helper.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_analysis_album_operations.h"
@@ -866,29 +865,6 @@ int32_t UpdatePhotoAlbum(const ValuesBucket &values, const DataSharePredicates &
     return changedRows;
 }
 
-static void StartAnalysisServiceAsync(const bool isDeleteIndex)
-{
-    string name("album activelyStartAnalysisService");
-    pthread_setname_np(pthread_self(), name.c_str());
-    int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_UPDATE_INDEX;
-    if (isDeleteIndex) {
-        code = MediaActivelyCallingAnalyse::ActivateServiceType::START_DELETE_INDEX;
-    }
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option(MessageOption::TF_ASYNC);
-    MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
-    data.WriteInterfaceToken(mediaActivelyCallingAnalyse.GetDescriptor());
-    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
-        MEDIA_ERR_LOG("Actively Calling Analyse For update or delete index Fail");
-    }
-}
-
-static void ActivelyStartAnalysisService(const bool isDeleteIndex)
-{
-    std::thread(&StartAnalysisServiceAsync, isDeleteIndex).detach();
-}
-
 int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
 {
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
@@ -906,7 +882,8 @@ int32_t RecoverPhotoAssets(const DataSharePredicates &predicates)
     if (changedRows < 0) {
         return changedRows;
     }
-    ActivelyStartAnalysisService(false);
+    MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
+        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), whereArgs);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore, whereArgs);
 
@@ -932,7 +909,8 @@ static inline int32_t DeletePhotoAssets(const DataSharePredicates &predicates,
     RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, PhotoColumn::PHOTOS_TABLE);
     int32_t deletedRows = MediaLibraryAssetOperations::DeleteFromDisk(rdbPredicates, isAging, compatible);
     if (!isAging) {
-        ActivelyStartAnalysisService(true);
+        MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
+            static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_DELETE_INDEX));
     }
     return deletedRows;
 }
