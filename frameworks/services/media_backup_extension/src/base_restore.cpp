@@ -622,13 +622,13 @@ bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     return true;
 }
 
-void BaseRestore::InsertPhotoMap(std::vector<FileInfo> &fileInfos)
+void BaseRestore::InsertPhotoMap(std::vector<FileInfo> &fileInfos, int64_t &mapRowNum)
 {
     BatchInsertMap(fileInfos, mapRowNum);
     migrateDatabaseMapNumber_ += mapRowNum;
 }
 
-void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
+void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos, bool isFull, const NeedQueryMap &needQueryMap)
 {
     string querySql = "SELECT " + MediaColumn::MEDIA_ID + " , " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE ";
@@ -876,8 +876,12 @@ void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t s
     int64_t startInsertPortrait = MediaFileUtils::UTCTimeMilliSeconds();
     int64_t faceRowNum = 0;
     int64_t portraitMapRowNum = 0;
-    InsertFaceAnalysisData(fileInfos, needQueryMap, faceRowNum, portraitMapRowNum);
+    int64_t portraitPhotoNum = 0;
+    InsertFaceAnalysisData(fileInfos, needQueryMap, faceRowNum, portraitMapRowNum, portraitPhotoNum);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    migratePortraitFaceNumber_ += faceRowNum;
+    migratePortraitPhotoNumber_ += portraitPhotoNum;
+    migratePortraitTotalTimeCost_ += end - startInsertPortrait;
     MEDIA_INFO_LOG("query cost %{public}ld, insert %{public}ld maps cost %{public}ld, insert %{public}ld + %{public}ld "
         "data cost %{public}ld", (long)(startInsertMap - startQuery), (long)mapRowNum,
         (long)(startInsertPortrait - startInsertMap), (long)faceRowNum, (long)portraitMapRowNum,
@@ -945,14 +949,15 @@ bool BaseRestore::NeedQueryByPhotoRelatedType(const FileInfo &fileInfo, PhotoRel
 }
 
 void BaseRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
-    int64_t &faceRowNum, int64_t &mapRowNum)
+    int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum)
 {
     return;
 }
 
 void BaseRestore::ReportPortraitStat()
 {
-    VariantMap map = {{KEY_ALBUM_COUNT, 0}, {KEY_PHOTO_COUNT, 0}, {KEY_FACE_COUNT, 0}, {KEY_TOTAL_TIME_COST, 0}};
+    VariantMap map = {{KEY_ALBUM_COUNT, portraitAlbumIdMap_.size()}, {KEY_PHOTO_COUNT, migratePortraitPhotoNumber_},
+        {KEY_FACE_COUNT, migratePortraitFaceNumber_}, {KEY_TOTAL_TIME_COST, migratePortraitTotalTimeCost_}};
     PostEventUtils::GetInstance().PostStatProcess(StatType::BACKUP_PORTRAIT_STAT, map);
 }
 

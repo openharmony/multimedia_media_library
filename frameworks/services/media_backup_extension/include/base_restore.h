@@ -60,7 +60,7 @@ protected:
         std::string &relativePath);
     virtual bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
     virtual void InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
-        int64_t &faceRowNum, int64_t &mapRowNum);
+        int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     std::vector<NativeRdb::ValuesBucket> GetAudioInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
@@ -112,6 +112,9 @@ protected:
     std::atomic<uint64_t> migrateVideoFileNumber_;
     std::atomic<uint64_t> migrateAudioDatabaseNumber_;
     std::atomic<uint64_t> migrateAudioFileNumber_;
+    std::atomic<uint64_t> migratePortraitPhotoNumber_;
+    std::atomic<uint64_t> migratePortraitFaceNumber_;
+    std::atomic<uint64_t> migratePortraitTotalTimeCost_;
     std::atomic<uint32_t> imageNumber_;
     std::atomic<uint32_t> videoNumber_;
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};

@@ -50,7 +50,7 @@ private:
     bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
     bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap) override;
     void InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
-        int64_t &faceRowNum, int64_t &mapRowNum) override;
+        int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum) override;
     bool ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         int mediaType = DUAL_MEDIA_TYPE::IMAGE_TYPE);
     bool ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
@@ -119,6 +119,7 @@ private:
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::vector<FaceInfo> &faceInfos, bool isMap,
         const std::unordered_set<std::string> &excludedFiles);
     NativeRdb::ValuesBucket GetInsertValue(const FaceInfo &faceInfo, bool isMap);
+    void UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace, const std::vector<FaceInfo> &faceInfos);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

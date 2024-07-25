@@ -62,14 +62,13 @@ public:
     static void UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap = false);
     static int32_t GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
         std::vector<uint8_t> &blobVal);
-    static std::string GetFeaturesStr(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet);
-    static std::string GetFeaturesStr(const std::vector<uint8_t> &bytes);
     static std::string GetLandmarksStr(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet);
     static std::string GetLandmarksStr(const std::vector<uint8_t> &bytes);
     static uint32_t GetUint32ValFromBytes(const std::vector<uint8_t> &bytes, size_t start);
     static void UpdateAnalysisTotalStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static void UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
-    static bool GetFaceAnalysisVersion(std::unordered_map<int32_t, std::string> &faceAnalysisVersionMap);
+    static bool GetFaceAnalysisVersion(std::unordered_map<int32_t, std::string> &faceAnalysisVersionMap,
+        const std::vector<int32_t> &faceAnalysisTypeList);
     static bool SetTagIdNew(PortraitAlbumInfo &portraitAlbumInfo,
         std::unordered_map<std::string, std::string> &tagIdMap);
     static bool SetVersion(std::string &version, const std::unordered_map<int32_t, std::string> &versionMap,
@@ -80,7 +79,7 @@ public:
     static bool SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
     static bool SetTagIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, std::string> &tagIdMap);
     static bool SetAlbumIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, int32_t> &albumIdMap);
-    static bool SetVersion(FaceInfo &faceInfo, const std::unordered_map<int32_t, std::string> &versionMap);
+    static void PrintErrorLog(const std::string &errorLog, int64_t start);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
