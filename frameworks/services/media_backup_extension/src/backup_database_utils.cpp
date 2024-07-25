@@ -31,22 +31,15 @@
 
 namespace OHOS {
 namespace Media {
-union FloatUint32 {
-    float floatVal;
-    uint32_t uint32Val;
-};
 const size_t MIN_GARBLE_SIZE = 2;
 const size_t GARBLE_START = 1;
 const size_t XY_DIMENSION = 2;
 const size_t BYTE_LEN = 4;
 const size_t BYTE_BASE_OFFSET = 8;
 const size_t LANDMARKS_SIZE = 5;
-const size_t FEATURES_SIZE = 256;
 const std::string LANDMARK_X = "x";
 const std::string LANDMARK_Y = "y";
 const std::vector<uint32_t> HEX_MAX = { 0xff, 0xffff, 0xffffff, 0xffffffff };
-const std::vector<int32_t> FACE_ANALYSIS_TYPE_LIST = { FaceAnalysisType::RECOGNITION, FaceAnalysisType::FEATURE,
-    FaceAnalysisType::CLUSTER };
 
 int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
     const std::string &dbPath, const std::string &bundleName, bool isMediaLibrary, int32_t area)
@@ -342,32 +335,6 @@ int32_t BackupDatabaseUtils::GetBlob(const std::string &columnName, std::shared_
     return E_OK;
 }
 
-std::string BackupDatabaseUtils::GetFeaturesStr(const std::string &columnName,
-    std::shared_ptr<NativeRdb::ResultSet> resultSet)
-{
-    std::vector<uint8_t> blobVal;
-    if (GetBlob(columnName, resultSet, blobVal) != E_OK) {
-        MEDIA_ERR_LOG("Get blob failed");
-        return "";
-    }
-    return GetFeaturesStr(blobVal);
-}
-
-std::string BackupDatabaseUtils::GetFeaturesStr(const std::vector<uint8_t> &bytes)
-{
-    if (bytes.size() != FEATURES_SIZE * BYTE_LEN) {
-        MEDIA_ERR_LOG("Get features bytes size: %{public}zu, not %{public}zu", bytes.size(), FEATURES_SIZE * BYTE_LEN);
-        return "";
-    }
-    nlohmann::json featuresJson = nlohmann::json::array();
-    for (size_t index = 0; index < bytes.size(); index += BYTE_LEN) {
-        FloatUint32 floatUint32;
-        floatUint32.uint32Val = GetUint32ValFromBytes(bytes, index);
-        featuresJson.push_back(floatUint32.floatVal);
-    }
-    return featuresJson.dump();
-}
-
 std::string BackupDatabaseUtils::GetLandmarksStr(const std::string &columnName,
     std::shared_ptr<NativeRdb::ResultSet> resultSet)
 {
@@ -428,9 +395,10 @@ void BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb:
     }
 }
 
-bool BackupDatabaseUtils::GetFaceAnalysisVersion(std::unordered_map<int32_t, std::string> &faceAnalysisVersionMap)
+bool BackupDatabaseUtils::GetFaceAnalysisVersion(std::unordered_map<int32_t, std::string> &faceAnalysisVersionMap,
+    const std::vector<int32_t> &faceAnalysisTypeList)
 {
-    for (auto type : FACE_ANALYSIS_TYPE_LIST) {
+    for (auto type : faceAnalysisTypeList) {
         std::string version = GetVersionByFaceAnalysisType(type);
         if (version == E_VERSION) {
             MEDIA_ERR_LOG("Get face analysis version for %{public}d failed", type);
@@ -575,10 +543,10 @@ bool BackupDatabaseUtils::SetAlbumIdNew(FaceInfo &faceInfo, const std::unordered
     return true;
 }
 
-bool BackupDatabaseUtils::SetVersion(FaceInfo &faceInfo, const std::unordered_map<int32_t, std::string> &versionMap)
+void BackupDatabaseUtils::PrintErrorLog(const std::string &errorLog, int64_t start)
 {
-    return SetVersion(faceInfo.faceVersion, versionMap, FaceAnalysisType::RECOGNITION) &&
-        SetVersion(faceInfo.featuresVersion, versionMap, FaceAnalysisType::FEATURE);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("%{public}s, cost %{public}ld", errorLog.c_str(), (long)(end - start));
 }
 } // namespace Media
 } // namespace OHOS
