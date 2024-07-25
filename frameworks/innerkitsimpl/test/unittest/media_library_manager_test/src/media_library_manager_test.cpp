@@ -469,6 +469,16 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_002 exit");
 }
 
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GetVideoFd_empty_share, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GetVideoFd_empty_share enter");
+    // empty datashare GetVideoFd will return error
+    auto photoAssetProxyPtr = make_shared<PhotoAssetProxy>();
+    auto ret = photoAssetProxyPtr->GetVideoFd();
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryManager_GetVideoFd_empty_share exit");
+}
+
 /**
  * @brief verify PhotoAssetProxy::UpdatePhotoBurst
  *
@@ -559,6 +569,15 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CreatePhotoAssetProxy_test
     EXPECT_EQ(burstKey, GetStringVal(PhotoColumn::PHOTO_BURST_KEY, resultSet));
  
     MEDIA_INFO_LOG("MediaLibraryManager_CreatePhotoAssetProxy_test_004 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_NotifyVideoSaveFinished_test, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_NotifyVideoSaveFinished_test enter");
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    ASSERT_NE(photoAssetProxy, nullptr);
+    photoAssetProxy->NotifyVideoSaveFinished();
+    MEDIA_INFO_LOG("MediaLibraryManager_NotifyVideoSaveFinished_test exit");
 }
 
 // Scenario1: Test when uriBatch is empty then GetBatchAstcs returns E_INVALID_URI.
