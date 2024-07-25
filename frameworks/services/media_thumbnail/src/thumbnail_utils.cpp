@@ -246,21 +246,22 @@ bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadat
     auto resultMap = avMetadataHelper->ResolveMetadata();
     int32_t rotation = 0;
     if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION), rotation)) {
-        MEDIA_ERR_LOG("Parse rotation from resultmap error");
-        return false;
+        MEDIA_INFO_LOG("rotation is zero");
     }
-    bool NeedRevolve = ((rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
+    bool needRevolve = ((rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
     if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
-        NeedRevolve ? videoWidth : videoHeight)) {
+        needRevolve ? videoWidth : videoHeight)) {
         MEDIA_ERR_LOG("Parse width from resultmap error");
         return false;
     }
     if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
-        NeedRevolve ? videoHeight : videoWidth)) {
+        needRevolve ? videoHeight : videoWidth)) {
         MEDIA_ERR_LOG("Parse height from resultmap error");
         return false;
     }
+    return true;
 }
+
 // gen pixelmap from data.souce, should ensure source is not null
 bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize)
 {
@@ -2180,7 +2181,7 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
 bool ThumbnailUtils::ConvertStrToInt32(const std::string &str, int32_t &ret)
 {
     if (str.empty() || str.length() > INT32_MAX_VALUE_LENGTH) {
-        MEDIA_ERR_LOG("convert failed, str = %{public}s", str.c_str());
+        MEDIA_INFO_LOG("convert failed, str = %{public}s", str.c_str());
         return false;
     }
     if (!IsNumericStr(str)) {
