@@ -119,7 +119,6 @@ MediaLibraryDataManager::MediaLibraryDataManager(void)
 
 MediaLibraryDataManager::~MediaLibraryDataManager(void)
 {
-    MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 #ifdef DISTRIBUTED
     if (kvStorePtr_ != nullptr) {
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
