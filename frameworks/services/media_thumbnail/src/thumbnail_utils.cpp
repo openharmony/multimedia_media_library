@@ -215,26 +215,16 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     if (err != 0) {
         return false;
     }
+    int32_t videoWidth = 0;
+    int32_t videoHeight = 0;
+    if (!ParseVideoSize(avMetadataHelper, videoWidth, videoHeight)) {
+        MEDIA_ERR_LOG("Parse video size error");
+        return false;
+    }
     PixelMapParams param;
-    param.colorFormat = PixelFormat::RGBA_8888;
-    auto resultMap = avMetadataHelper->ResolveMetadata();
-    int32_t originalWidth = 0;
-    int32_t originalHeight = 0;
-    int32_t rotation = 0;
-    ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION), rotation);
-    bool isNeedRevolve = ((rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
-    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
-        isNeedRevolve ? originalWidth : originalHeight)) {
-        MEDIA_ERR_LOG("Parse width from resultmap error");
-        return false;
-    }
-    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
-        isNeedRevolve ? originalHeight : originalWidth)) {
-        MEDIA_ERR_LOG("Parse height from resultmap error");
-        return false;
-    }
+    param.colorFormat = PixelFormat::RGBA_8888;  
     data.loaderOpts.needUpload = true;
-    ConvertDecodeSize(data, {originalWidth, originalHeight}, desiredSize);
+    ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
     param.dstWidth = desiredSize.width;
     param.dstHeight = desiredSize.height;
     data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
@@ -246,10 +236,31 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     data.orientation = 0;
     data.stats.sourceWidth = data.source->GetWidth();
     data.stats.sourceHeight = data.source->GetHeight();
-    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, originalWidth, originalHeight);
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, videoWidth, videoHeight);
     return true;
 }
 
+bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
+    int32_t &videoWidth, int32_t &videoHeight)
+{
+    auto resultMap = avMetadataHelper->ResolveMetadata();
+    int32_t rotation = 0;
+    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION), rotation)) {
+        MEDIA_ERR_LOG("Parse rotation from resultmap error");
+        return false;
+    }
+    bool NeedRevolve = ((rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
+    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
+        NeedRevolve ? videoWidth : videoHeight)) {
+        MEDIA_ERR_LOG("Parse width from resultmap error");
+        return false;
+    }
+    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
+        NeedRevolve ? videoHeight : videoWidth)) {
+        MEDIA_ERR_LOG("Parse height from resultmap error");
+        return false;
+    }
+}
 // gen pixelmap from data.souce, should ensure source is not null
 bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredSize)
 {
