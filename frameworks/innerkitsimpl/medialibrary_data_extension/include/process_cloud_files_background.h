@@ -37,13 +37,13 @@ private:
     } DownloadFiles;
 
     typedef struct {
-        std::int32_t fileId;
+        int32_t fileId;
         std::string path;
-        std::int64_t size;
-        std::int32_t width;
-        std::int32_t height;
+        int64_t size;
+        int32_t width;
+        int32_t height;
         std::string mimeType;
-        std::int32_t duration;
+        int32_t duration;
     } AbnormalData;
 
     typedef struct {
