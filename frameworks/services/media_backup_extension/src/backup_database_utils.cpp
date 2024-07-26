@@ -466,13 +466,13 @@ bool BackupDatabaseUtils::SetGroupTagNew(PortraitAlbumInfo &portraitAlbumInfo,
     return true;
 }
 
-bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap)
+bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<int32_t, FileInfo> &fileInfoMap)
 {
-    if (faceInfo.hash.empty() || fileInfoMap.count(faceInfo.hash) == 0) {
-        MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, no such file hash", faceInfo.faceId.c_str());
+    if (fileInfoMap.count(faceInfo.fileIdOld) == 0) {
+        MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, no such id", faceInfo.faceId.c_str());
         return false;
     }
-    FileInfo fileInfo = fileInfoMap.at(faceInfo.hash);
+    FileInfo fileInfo = fileInfoMap.at(faceInfo.fileIdOld);
     if (fileInfo.width == 0 || fileInfo.height == 0) {
         MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, invalid width %{public}d or height %{public}d",
             faceInfo.faceId.c_str(), fileInfo.width, fileInfo.height);
@@ -491,13 +491,13 @@ bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_
     return true;
 }
 
-bool BackupDatabaseUtils::SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap)
+bool BackupDatabaseUtils::SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<int32_t, FileInfo> &fileInfoMap)
 {
-    if (faceInfo.hash.empty() || fileInfoMap.count(faceInfo.hash) == 0) {
-        MEDIA_ERR_LOG("Set new file_id for face %{public}s failed, no such file hash", faceInfo.faceId.c_str());
+    if (fileInfoMap.count(faceInfo.fileIdOld) == 0) {
+        MEDIA_ERR_LOG("Set new file_id for face %{public}s failed, no such id", faceInfo.faceId.c_str());
         return false;
     }
-    faceInfo.fileIdNew = fileInfoMap.at(faceInfo.hash).fileIdNew;
+    faceInfo.fileIdNew = fileInfoMap.at(faceInfo.fileIdOld).fileIdNew;
     if (faceInfo.fileIdNew <= 0) {
         MEDIA_ERR_LOG("Set new file_id for face %{public}s failed, file_id %{public}d <= 0", faceInfo.faceId.c_str(),
             faceInfo.fileIdNew);

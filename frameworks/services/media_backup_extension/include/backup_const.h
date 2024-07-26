@@ -311,6 +311,7 @@ struct FaceInfo {
     float roll {0.0};
     float prob {0.0};
     int32_t albumIdNew {-1};
+    int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
     int32_t totalFaces {0};
     std::string hash;
@@ -366,7 +367,7 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
     EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH + "," +
-    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH +
+    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + ", " + GALLERY_ID +
     " FROM gallery_media WHERE " + ALL_PHOTOS_WHERE_CLAUSE + ALL_PHOTOS_ORDER_BY;
 
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
