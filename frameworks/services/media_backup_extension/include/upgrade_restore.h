@@ -107,19 +107,19 @@ private:
     NativeRdb::ValuesBucket GetInsertValue(const PortraitAlbumInfo &portraitAlbumInfo, bool isAlbum);
     void BatchQueryAlbum(std::vector<PortraitAlbumInfo> &portraitAlbumInfos);
     void SetHashReference(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
-        std::string &hashSelection, std::unordered_map<std::string, FileInfo> &fileInfoMap);
+        std::string &hashSelection, std::unordered_map<int32_t, FileInfo> &fileInfoMap);
     int32_t QueryFaceTotalNumber(const std::string &hashSelection);
     std::vector<FaceInfo> QueryFaceInfos(const std::string &hashSelection,
-        const std::unordered_map<std::string, FileInfo> &fileInfoMap, int32_t offset,
-        std::unordered_set<std::string> &excludedFiles);
+        const std::unordered_map<int32_t, FileInfo> &fileInfoMap, int32_t offset,
+        std::unordered_set<int32_t> &excludedFiles);
     bool ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FaceInfo &faceInfo);
-    bool SetAttributes(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
+    bool SetAttributes(FaceInfo &faceInfo, const std::unordered_map<int32_t, FileInfo> &fileInfoMap);
     int32_t InsertFaceAnalysisDataByTable(const std::vector<FaceInfo> &faceInfos, bool isMap,
-        const std::unordered_set<std::string> &excludedFiles);
+        const std::unordered_set<int32_t> &excludedFiles);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::vector<FaceInfo> &faceInfos, bool isMap,
-        const std::unordered_set<std::string> &excludedFiles);
+        const std::unordered_set<int32_t> &excludedFiles);
     NativeRdb::ValuesBucket GetInsertValue(const FaceInfo &faceInfo, bool isMap);
-    void UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace, const std::vector<FaceInfo> &faceInfos);
+    void UpdateFilesWithFace(std::unordered_set<int32_t> &filesWithFace, const std::vector<FaceInfo> &faceInfos);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

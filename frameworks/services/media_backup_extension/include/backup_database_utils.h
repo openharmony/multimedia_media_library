@@ -75,8 +75,8 @@ public:
         int32_t type);
     static bool SetGroupTagNew(PortraitAlbumInfo &portraitAlbumInfo,
         const std::unordered_map<std::string, std::string> &groupTagMap);
-    static bool SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
-    static bool SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
+    static bool SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<int32_t, FileInfo> &fileInfoMap);
+    static bool SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<int32_t, FileInfo> &fileInfoMap);
     static bool SetTagIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, std::string> &tagIdMap);
     static bool SetAlbumIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, int32_t> &albumIdMap);
     static void PrintErrorLog(const std::string &errorLog, int64_t start);
