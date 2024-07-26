@@ -25,7 +25,7 @@
 #include "bundle_info.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
-#include "download_cloud_files_background.h"
+#include "process_cloud_files_background.h"
 #include "want.h"
 #include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
@@ -360,9 +360,9 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
 
     timerStatus_ = newStatus;
     if (timerStatus_) {
-        DownloadCloudFilesBackground::StartTimer();
+        ProcessCloudFilesBackground::StartTimer();
     } else {
-        DownloadCloudFilesBackground::StopTimer();
+        ProcessCloudFilesBackground::StopTimer();
     }
 }
 }  // namespace Media
