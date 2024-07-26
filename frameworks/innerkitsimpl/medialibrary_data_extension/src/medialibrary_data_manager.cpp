@@ -23,6 +23,7 @@
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
 #include "acl.h"
+#include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
@@ -75,7 +76,6 @@
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "photo_map_operations.h"
-#include "process_cloud_files_background.h"
 #include "resource_type.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"

@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#define MLOG_TAG "ProcessCloudFilesBackground"
+#define MLOG_TAG "BackgroundCloudFileProcessor"
 
-#include "process_cloud_files_background.h"
+#include "background_cloud_file_processor.h"
 
 #include <sys/statvfs.h>
 
@@ -49,16 +49,16 @@ static constexpr int32_t UPDATE_BATCH_SIZE = 3;
 // The task can be performed only when the ratio of available storage capacity reaches this value
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
 
-recursive_mutex ProcessCloudFilesBackground::mutex_;
-Utils::Timer ProcessCloudFilesBackground::timer_("process_cloud_files_background");
-uint32_t ProcessCloudFilesBackground::startTimerId_ = 0;
-uint32_t ProcessCloudFilesBackground::stopTimerId_ = 0;
-std::vector<std::string> ProcessCloudFilesBackground::curDownloadPaths_;
-bool ProcessCloudFilesBackground::isUpdating_ = true;
+recursive_mutex BackgroundCloudFileProcessor::mutex_;
+Utils::Timer BackgroundCloudFileProcessor::timer_("background_cloud_file_processor");
+uint32_t BackgroundCloudFileProcessor::startTimerId_ = 0;
+uint32_t BackgroundCloudFileProcessor::stopTimerId_ = 0;
+std::vector<std::string> BackgroundCloudFileProcessor::curDownloadPaths_;
+bool BackgroundCloudFileProcessor::isUpdating_ = true;
 
-void ProcessCloudFilesBackground::DownloadCloudFiles()
+void BackgroundCloudFileProcessor::DownloadCloudFiles()
 {
-    MEDIA_INFO_LOG("Start downloading cloud files task");
+    MEDIA_DEBUG_LOG("Start downloading cloud files task");
     if (IsStorageInsufficient()) {
         MEDIA_WARN_LOG("Insufficient storage space, stop downloading cloud files");
         return;
@@ -83,9 +83,9 @@ void ProcessCloudFilesBackground::DownloadCloudFiles()
     }
 }
 
-void ProcessCloudFilesBackground::UpdateCloudData()
+void BackgroundCloudFileProcessor::UpdateCloudData()
 {
-    MEDIA_INFO_LOG("Start update cloud data task");
+    MEDIA_DEBUG_LOG("Start update cloud data task");
     auto resultSet = QueryUpdateData();
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query update data!");
@@ -105,13 +105,13 @@ void ProcessCloudFilesBackground::UpdateCloudData()
     }
 }
 
-void ProcessCloudFilesBackground::ProcessCloudData()
+void BackgroundCloudFileProcessor::ProcessCloudData()
 {
     UpdateCloudData();
     DownloadCloudFiles();
 }
 
-bool ProcessCloudFilesBackground::IsStorageInsufficient()
+bool BackgroundCloudFileProcessor::IsStorageInsufficient()
 {
     struct statvfs diskInfo;
     int ret = statvfs("/data", &diskInfo);
@@ -132,7 +132,7 @@ bool ProcessCloudFilesBackground::IsStorageInsufficient()
     return freeRatio < PROPER_DEVICE_STORAGE_CAPACITY_RATIO;
 }
 
-std::shared_ptr<NativeRdb::ResultSet> ProcessCloudFilesBackground::QueryCloudFiles()
+std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryCloudFiles()
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (uniStore == nullptr) {
@@ -153,7 +153,7 @@ std::shared_ptr<NativeRdb::ResultSet> ProcessCloudFilesBackground::QueryCloudFil
     return uniStore->QuerySql(sql);
 }
 
-void ProcessCloudFilesBackground::ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+void BackgroundCloudFileProcessor::ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
     DownloadFiles &downloadFiles)
 {
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
@@ -176,7 +176,7 @@ void ProcessCloudFilesBackground::ParseDownloadFiles(std::shared_ptr<NativeRdb::
     downloadFiles.mediaType = MEDIA_TYPE_IMAGE;
 }
 
-int32_t ProcessCloudFilesBackground::AddDownloadTask(const DownloadFiles &downloadFiles)
+int32_t BackgroundCloudFileProcessor::AddDownloadTask(const DownloadFiles &downloadFiles)
 {
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
@@ -195,7 +195,7 @@ int32_t ProcessCloudFilesBackground::AddDownloadTask(const DownloadFiles &downlo
     return E_OK;
 }
 
-void ProcessCloudFilesBackground::DownloadCloudFilesExecutor(AsyncTaskData *data)
+void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *data)
 {
     auto *taskData = static_cast<DownloadCloudFilesData *>(data);
     auto downloadFiles = taskData->downloadFiles_;
@@ -218,7 +218,7 @@ void ProcessCloudFilesBackground::DownloadCloudFilesExecutor(AsyncTaskData *data
     }
 }
 
-void ProcessCloudFilesBackground::StopDownloadFiles(const std::vector<std::string> &filePaths)
+void BackgroundCloudFileProcessor::StopDownloadFiles(const std::vector<std::string> &filePaths)
 {
     for (const auto &path : filePaths) {
         MEDIA_INFO_LOG("Try to Stop downloading cloud file, the path is %{public}s", path.c_str());
@@ -229,7 +229,7 @@ void ProcessCloudFilesBackground::StopDownloadFiles(const std::vector<std::strin
     }
 }
 
-std::shared_ptr<NativeRdb::ResultSet> ProcessCloudFilesBackground::QueryUpdateData()
+std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateData()
 {
     const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
         MediaColumn::MEDIA_TYPE, MediaColumn::MEDIA_SIZE,
@@ -254,27 +254,27 @@ std::shared_ptr<NativeRdb::ResultSet> ProcessCloudFilesBackground::QueryUpdateDa
         ->IsNull(MediaColumn::MEDIA_MIME_TYPE)
         ->Or()
         ->BeginWrap()
+        ->EqualTo(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_VIDEO))
+        ->And()
         ->BeginWrap()
         ->EqualTo(MediaColumn::MEDIA_DURATION, 0)
         ->Or()
         ->IsNull(MediaColumn::MEDIA_DURATION)
         ->EndWrap()
-        ->And()
-        ->EqualTo(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_VIDEO))
         ->EndWrap()
         ->Limit(UPDATE_BATCH_SIZE);
 
     return MediaLibraryRdbStore::Query(predicates, columns);
 }
 
-void ProcessCloudFilesBackground::ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+void BackgroundCloudFileProcessor::ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
     UpdateData &updateData)
 {
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         int32_t fileId =
             get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
         int64_t size =
-            get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_SIZE, resultSet, TYPE_INT64));
+            get<int64_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_SIZE, resultSet, TYPE_INT64));
         int32_t width =
             get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_WIDTH, resultSet, TYPE_INT32));
         int32_t height =
@@ -312,7 +312,7 @@ void ProcessCloudFilesBackground::ParseUpdateData(std::shared_ptr<NativeRdb::Res
     updateData.mediaType = MEDIA_TYPE_IMAGE;
 }
 
-int32_t ProcessCloudFilesBackground::AddUpdateDataTask(const UpdateData &updateData)
+int32_t BackgroundCloudFileProcessor::AddUpdateDataTask(const UpdateData &updateData)
 {
     auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
     if (asyncWorker == nullptr) {
@@ -331,7 +331,7 @@ int32_t ProcessCloudFilesBackground::AddUpdateDataTask(const UpdateData &updateD
     return E_OK;
 }
 
-void ProcessCloudFilesBackground::UpdateCloudDataExecutor(AsyncTaskData *data)
+void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
 {
     auto *taskData = static_cast<UpdateAbnormalData *>(data);
     auto updateData = taskData->updateData_;
@@ -391,7 +391,7 @@ static void SetAbnormalValuesFromMetaData(std::unique_ptr<Metadata> &metadata, V
     values.PutString(MediaColumn::MEDIA_MIME_TYPE, metadata->GetFileMimeType());
 }
 
-void ProcessCloudFilesBackground::UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName)
+void BackgroundCloudFileProcessor::UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName)
 {
     int32_t updateCount(0);
     ValuesBucket values;
@@ -419,7 +419,7 @@ void ProcessCloudFilesBackground::UpdateAbnormaldata(std::unique_ptr<Metadata> &
     }
 }
 
-int32_t ProcessCloudFilesBackground::GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata)
+int32_t BackgroundCloudFileProcessor::GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata)
 {
     std::string path = metadata->GetFilePath();
     struct stat statInfo {};
@@ -434,7 +434,7 @@ int32_t ProcessCloudFilesBackground::GetSizeAndMimeType(std::unique_ptr<Metadata
     return E_OK;
 }
 
-int32_t ProcessCloudFilesBackground::GetExtractMetadata(std::unique_ptr<Metadata> &metadata)
+int32_t BackgroundCloudFileProcessor::GetExtractMetadata(std::unique_ptr<Metadata> &metadata)
 {
     int32_t err = 0;
     if (metadata->GetFileMediaType() == MEDIA_TYPE_IMAGE) {
@@ -449,12 +449,12 @@ int32_t ProcessCloudFilesBackground::GetExtractMetadata(std::unique_ptr<Metadata
     return E_OK;
 }
 
-void ProcessCloudFilesBackground::StopUpdateData()
+void BackgroundCloudFileProcessor::StopUpdateData()
 {
     isUpdating_ = false;
 }
 
-void ProcessCloudFilesBackground::StartTimer()
+void BackgroundCloudFileProcessor::StartTimer()
 {
     lock_guard<recursive_mutex> lock(mutex_);
     MEDIA_INFO_LOG("Turn on the background download cloud file timer");
@@ -470,7 +470,7 @@ void ProcessCloudFilesBackground::StartTimer()
     startTimerId_ = timer_.Register(ProcessCloudData, PROCESS_INTERVAL);
 }
 
-void ProcessCloudFilesBackground::StopTimer()
+void BackgroundCloudFileProcessor::StopTimer()
 {
     lock_guard<recursive_mutex> lock(mutex_);
     MEDIA_INFO_LOG("Turn off the background download cloud file timer");
