@@ -99,6 +99,9 @@ int32_t BaseRestore::Init(void)
     migrateVideoFileNumber_ = 0;
     migrateAudioDatabaseNumber_ = 0;
     migrateAudioFileNumber_ = 0;
+    migratePortraitPhotoNumber_ = 0;
+    migratePortraitFaceNumber_ = 0;
+    migratePortraitTotalTimeCost_ = 0;
     imageNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, IMAGE_ASSET_TYPE);
     videoNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, VIDEO_ASSET_TYPE);
     audioNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, AUDIO_ASSET_TYPE);

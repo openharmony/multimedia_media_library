@@ -1455,7 +1455,7 @@ void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, co
 
 int32_t UpgradeRestore::QueryFaceTotalNumber(const std::string &hashSelection)
 {
-    std::string querySql = "SELECT count(1) as count FROM " + GALLERY_FACE_TABLE_FULL + " WHERE " +
+    std::string querySql = "SELECT count(1) as count FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
         GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ")";
     return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
@@ -1468,9 +1468,8 @@ std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSele
     result.reserve(QUERY_COUNT);
     std::string querySql = "SELECT " + GALLERY_SCALE_X + ", " + GALLERY_SCALE_Y + ", " + GALLERY_SCALE_WIDTH + ", " +
         GALLERY_SCALE_HEIGHT + ", " + GALLERY_PITCH + ", " + GALLERY_YAW + ", " + GALLERY_ROLL + ", " +
-        GALLERY_PROB + ", " + GALLERY_IS_COVER + ", " + GALLERY_IS_COVER + ", " + GALLERY_TOTAL_FACE + ", " +
-        GALLERY_MERGE_FACE_HASH + ", " + GALLERY_FACE_ID + ", " + GALLERY_MERGE_FACE_TAG_ID + ", " +
-        GALLERY_LANDMARKS + " FROM " + GALLERY_FACE_TABLE_FULL + " WHERE " +
+        GALLERY_PROB + ", " + GALLERY_TOTAL_FACE + ", " + GALLERY_MERGE_FACE_HASH + ", " + GALLERY_FACE_ID + ", " +
+        GALLERY_MERGE_FACE_TAG_ID + ", " + GALLERY_LANDMARKS + " FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
         GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ") ORDER BY " + GALLERY_MERGE_FACE_HASH + ", " +
         GALLERY_FACE_ID;
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
@@ -1506,7 +1505,6 @@ bool UpgradeRestore::ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultS
     faceInfo.yaw = GetDoubleVal(GALLERY_YAW, resultSet);
     faceInfo.roll = GetDoubleVal(GALLERY_ROLL, resultSet);
     faceInfo.prob = GetDoubleVal(GALLERY_PROB, resultSet);
-    faceInfo.isCover = GetInt32Val(GALLERY_IS_COVER, resultSet);
     faceInfo.totalFaces = GetInt32Val(GALLERY_TOTAL_FACE, resultSet);
     faceInfo.hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
     faceInfo.faceId = GetStringVal(GALLERY_FACE_ID, resultSet);
