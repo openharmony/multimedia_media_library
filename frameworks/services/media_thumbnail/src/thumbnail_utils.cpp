@@ -301,7 +301,7 @@ bool ThumbnailUtils::CenterScaleEx(std::shared_ptr<PixelMap> &dataSource, const 
             static_cast<int32_t>(scale * dataSource->GetWidth()),
             static_cast<int32_t>(scale * dataSource->GetHeight())
         };
-        if (!ScaleTargetPixelMap(dataSource, targetSize, Media::AntiAliasingOption::MEDIUM)) {
+        if (!ScaleTargetPixelMap(dataSource, targetSize, Media::AntiAliasingOption::GAUSS)) {
             MEDIA_ERR_LOG("Fail in CenterScaleEx, ScalePixelMapEx failed, path: %{public}s",
                 DfxUtils::GetSafePath(path).c_str());
             return false;
