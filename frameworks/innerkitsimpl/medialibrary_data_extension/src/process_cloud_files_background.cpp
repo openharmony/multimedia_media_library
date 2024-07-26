@@ -23,19 +23,19 @@
 #include "cloud_sync_manager.h"
 #include "common_timer_errors.h"
 #include "media_column.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_rdb_utils.h"
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_unistore_manager.h"
+#include "metadata_extractor.h"
+#include "mimetype_utils.h"
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
 #include "values_bucket.h"
-#include "metadata_extractor.h"
-#include "media_file_utils.h"
-#include "mimetype_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -103,7 +103,6 @@ void ProcessCloudFilesBackground::UpdateCloudData()
     if (ret != E_OK) {
         MEDIA_ERR_LOG("Failed to add update task! err: %{public}d", ret);
     }
-
 }
 
 void ProcessCloudFilesBackground::ProcessCloudData()
@@ -111,7 +110,6 @@ void ProcessCloudFilesBackground::ProcessCloudData()
     UpdateCloudData();
     DownloadCloudFiles();
 }
-
 
 bool ProcessCloudFilesBackground::IsStorageInsufficient()
 {
@@ -366,7 +364,7 @@ void ProcessCloudFilesBackground::UpdateCloudDataExecutor(AsyncTaskData *data)
             metadata->SetFileMimeType(mimeType.empty() ? DEFAULT_IMAGE_MIME_TYPE : mimeType);
         }
         if (abnormalData.width == 0 || abnormalData.height == 0
-        || (abnormalData.duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO)) {
+            || (abnormalData.duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO)) {
             int32_t ret = GetExtractMetadata(metadata);
             if (ret != E_OK) {
                 MEDIA_ERR_LOG("failed to get extract metadata! err: %{public}d.", ret);
@@ -380,7 +378,7 @@ void ProcessCloudFilesBackground::UpdateCloudDataExecutor(AsyncTaskData *data)
             metadata->SetFileHeight(height == 0 ? -1: height);
             metadata->SetFileDuration((duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO) ? -1: duration);
         }
-        UpdateAbnormaldata(metadata,PhotoColumn::PHOTOS_TABLE);
+        UpdateAbnormaldata(metadata, PhotoColumn::PHOTOS_TABLE);
     }
 }
 
@@ -399,7 +397,7 @@ void ProcessCloudFilesBackground::UpdateAbnormaldata(std::unique_ptr<Metadata> &
     ValuesBucket values;
     string whereClause = MediaColumn::MEDIA_ID + " = ?";
     vector<string> whereArgs = { to_string(metadata.GetFileId()) };
-    SetAbnormalValuesFromMetaData(metadata,values);
+    SetAbnormalValuesFromMetaData(metadata, values);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("Update operation failed. rdbStore is null");
