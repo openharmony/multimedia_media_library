@@ -53,6 +53,7 @@ public:
         const DataShare::DataSharePredicates &predicates);
     static std::shared_ptr<NativeRdb::ResultSet> QueryGroupPhotoAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
+    static void UpdateGroupPhotoAlbumById(int32_t albumId);
 };
 
 class UpdateGroupPhotoAlbumTask : public AsyncTaskData {
