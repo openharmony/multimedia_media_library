@@ -23,8 +23,6 @@ namespace Media {
 // portrait related
 enum FaceAnalysisType {
     RECOGNITION = 0,
-    FEATURE,
-    CLUSTER,
 };
 const int32_t IS_LOCAL_TRUE = 1;
 const int32_t RENAME_OPERATION_RENAMED = 1;

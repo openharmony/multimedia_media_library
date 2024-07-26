@@ -25,8 +25,6 @@
 
 #ifdef AI_ALGORITHM_VERSION
 #include "face_recognition.h"
-#include "face_feature_analyzer.h"
-#include "face_cluster_analyzer.h"
 #endif
 
 namespace OHOS {
@@ -417,16 +415,6 @@ std::string BackupDatabaseUtils::GetVersionByFaceAnalysisType(int32_t type)
         case FaceAnalysisType::RECOGNITION: {
             AI::FaceRecognition faceRecognitionAnalyzer;
             version = faceRecognitionAnalyzer.GetAlgorithmVersion();
-            break;
-        }
-        case FaceAnalysisType::FEATURE: {
-            AI::FaceFeatureAnalyzer faceFeatureAnalyzer;
-            version = faceFeatureAnalyzer.GetAlgorithmVersion();
-            break;
-        }
-        case FaceAnalysisType::CLUSTER: {
-            AI::FaceClusterAnalyzer faceClusterAnalyzer;
-            version = faceClusterAnalyzer.GetAlgorithmVersion();
             break;
         }
         default:
