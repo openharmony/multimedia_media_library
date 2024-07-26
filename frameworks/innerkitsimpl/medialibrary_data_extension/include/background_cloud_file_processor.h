@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIALIBRARY_PROCESS_CLOUD_FILES_BACKGROUND_H
-#define OHOS_MEDIALIBRARY_PROCESS_CLOUD_FILES_BACKGROUND_H
+#ifndef OHOS_MEDIALIBRARY_BACKGROUND_CLOUD_FILE_PROCESSOR_H
+#define OHOS_MEDIALIBRARY_BACKGROUND_CLOUD_FILE_PROCESSOR_H
 
 #include "abs_shared_result_set.h"
 #include "medialibrary_async_worker.h"
@@ -25,7 +25,7 @@
 
 namespace OHOS {
 namespace Media {
-class ProcessCloudFilesBackground {
+class BackgroundCloudFileProcessor {
 public:
     static void StartTimer();
     static void StopTimer();
@@ -94,4 +94,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MEDIALIBRARY_PROCESS_CLOUD_FILES_BACKGROUND_H
+#endif // OHOS_MEDIALIBRARY_BACKGROUND_CLOUD_FILE_PROCESSOR_H
