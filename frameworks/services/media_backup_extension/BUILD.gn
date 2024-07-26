@@ -79,14 +79,9 @@ ohos_shared_library("mediabackup") {
     external_deps += [ "dfs_service:cloudsync_kit_inner" ]
   }
 
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.ai_ai_engine)) {
+  if (defined(global_parts_info) && defined(global_parts_info.ai_ai_engine)) {
     defines += [ "AI_ALGORITHM_VERSION" ]
-    external_deps += [
-      "ai_engine:ai_face_recognition_innerapi",
-      "ai_engine:ai_face_feature_innerapi",
-      "ai_engine:ai_face_cluster_innerapi",
-    ]
+    external_deps += [ "ai_engine:ai_face_recognition_innerapi" ]
   }
 
   sanitize = {

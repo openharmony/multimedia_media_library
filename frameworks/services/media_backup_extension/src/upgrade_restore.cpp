@@ -1268,7 +1268,7 @@ void UpgradeRestore::InsertPortraitAlbum(std::vector<PortraitAlbumInfo> &portrai
     if (albumRowNum <= 0) {
         BackupDatabaseUtils::PrintErrorLog("Insert portrait album failed", startInsertAlbum);
         return;
-    } 
+    }
     
     int64_t startInsertTag = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t tagRowNum = InsertPortraitAlbumByTable(portraitAlbumInfos, false);
