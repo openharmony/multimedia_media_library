@@ -879,9 +879,6 @@ void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t s
     int64_t portraitPhotoNum = 0;
     InsertFaceAnalysisData(fileInfos, needQueryMap, faceRowNum, portraitMapRowNum, portraitPhotoNum);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    migratePortraitFaceNumber_ += faceRowNum;
-    migratePortraitPhotoNumber_ += portraitPhotoNum;
-    migratePortraitTotalTimeCost_ += end - startInsertPortrait;
     MEDIA_INFO_LOG("query cost %{public}ld, insert %{public}ld maps cost %{public}ld, insert face analysis data of "
         "%{public}ld photos (%{public}ld faces + %{public}ld maps) cost %{public}ld",
         (long)(startInsertMap - startQuery), (long)mapRowNum, (long)(startInsertPortrait - startInsertMap),
@@ -956,8 +953,12 @@ void BaseRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos,
 
 void BaseRestore::ReportPortraitStat()
 {
-    VariantMap map = {{KEY_ALBUM_COUNT, portraitAlbumIdMap_.size()}, {KEY_PHOTO_COUNT, migratePortraitPhotoNumber_},
-        {KEY_FACE_COUNT, migratePortraitFaceNumber_}, {KEY_TOTAL_TIME_COST, migratePortraitTotalTimeCost_}};
+    VariantMap map = {{KEY_ALBUM_COUNT, static_cast<uint32_t>(portraitAlbumIdMap_.size())},
+        {KEY_PHOTO_COUNT, migratePortraitPhotoNumber_}, {KEY_FACE_COUNT, migratePortraitFaceNumber_},
+        {KEY_TOTAL_TIME_COST, migratePortraitTotalTimeCost_}};
+    MEDIA_INFO_LOG("PortraitStat: album %{public}zu, photo %{public}lld, %{public}lld, cost %{publc}lld",
+        portraitAlbumIdMap_.size(), (long long)migratePortraitPhotoNumber_, (long long)migratePortraitFaceNumber_,
+        (long long)migratePortraitTotalTimeCost_);
     PostEventUtils::GetInstance().PostStatProcess(StatType::BACKUP_PORTRAIT_STAT, map);
 }
 
