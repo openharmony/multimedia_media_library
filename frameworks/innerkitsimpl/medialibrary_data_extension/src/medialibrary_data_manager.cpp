@@ -30,7 +30,7 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
-#include "download_cloud_files_background.h"
+#include "process_cloud_files_background.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -299,7 +299,7 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         return;
     }
 
-    DownloadCloudFilesBackground::StopTimer();
+    ProcessCloudFilesBackground::StopTimer();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
