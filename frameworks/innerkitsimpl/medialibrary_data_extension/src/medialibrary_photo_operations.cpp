@@ -1987,9 +1987,9 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
         MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPhoto: TakeEffect error. ret = %d", ret);
         return E_ERR;
     }
-    
+
     string editDataPath = GetEditDataPath(outputPath);
-    if(MediaFileUtils::IsFileExists(editDataPath)) {
+    if (MediaFileUtils::IsFileExists(editDataPath)) {
         MEDIA_INFO_LOG("Editdata path: %{public}s exists, cannot add filters to photo", editDataPath.c_str());
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "Failed to delete temp filters file, errno: %{public}d", errno);
