@@ -32,14 +32,19 @@
 #include "rdb_store.h"
 #include "rdb_utils.h"
 #include "result_set_utils.h"
+#include "values_bucket.h"
+#include "metadata_extractor.h"
+#include "media_file_utils.h"
+#include "mimetype_utils.h"
 
 namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
 
 static constexpr int32_t DOWNLOAD_BATCH_SIZE = 5;
-static constexpr int32_t DOWNLOAD_INTERVAL = 60 * 1000; // 1 minute
+static constexpr int32_t PROCESS_INTERVAL = 60 * 1000; // 1 minute
 static constexpr int32_t DOWNLOAD_DURATION = 20 * 1000; // 20 seconds
+static constexpr int32_t UPDATE_BATCH_SIZE = 3;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
@@ -49,6 +54,7 @@ Utils::Timer DownloadCloudFilesBackground::timer_("download_cloud_files_backgrou
 uint32_t DownloadCloudFilesBackground::startTimerId_ = 0;
 uint32_t DownloadCloudFilesBackground::stopTimerId_ = 0;
 std::vector<std::string> DownloadCloudFilesBackground::curDownloadPaths_;
+bool DownloadCloudFilesBackground::isUpdating_ = true;
 
 void DownloadCloudFilesBackground::DownloadCloudFiles()
 {
@@ -76,6 +82,36 @@ void DownloadCloudFilesBackground::DownloadCloudFiles()
         MEDIA_ERR_LOG("Failed to add download task! err: %{public}d", ret);
     }
 }
+
+void DownloadCloudFilesBackground::UpdateCloudData()
+{
+    MEDIA_INFO_LOG("Start update cloud data task");
+    auto resultSet = QueryUpdateData();
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Failed to query update data!");
+        return;
+    }
+
+    UpdateData updateData;
+    ParseUpdateData(resultSet, updateData);
+    if (updateData.abnormalData.empty()) {
+        MEDIA_DEBUG_LOG("No cloud data need to be update");
+        return;
+    }
+
+    int32_t ret = AddUpdateDataTask(updateData);
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("Failed to add update task! err: %{public}d", ret);
+    }
+
+}
+
+void DownloadCloudFilesBackground::ProcessCloudData()
+{
+    UpdateCloudData();
+    DownloadCloudFiles();
+}
+
 
 bool DownloadCloudFilesBackground::IsStorageInsufficient()
 {
@@ -195,6 +231,231 @@ void DownloadCloudFilesBackground::StopDownloadFiles(const std::vector<std::stri
     }
 }
 
+std::shared_ptr<NativeRdb::ResultSet> DownloadCloudFilesBackground::QueryUpdateData()
+{
+    const std::vector<std::string> columns = { MediaColumn::MEDIA_ID, MediaColumn::MEDIA_FILE_PATH,
+        MediaColumn::MEDIA_TYPE, MediaColumn::MEDIA_SIZE,
+        PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_HEIGHT,
+        MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_DURATION };
+    
+    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
+    predicates.EqualTo(MediaColumn::MEDIA_SIZE, 0)
+        ->Or()
+        ->IsNull(MediaColumn::MEDIA_SIZE)
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_WIDTH, 0)
+        ->Or()
+        ->IsNull(PhotoColumn::PHOTO_WIDTH)
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_HEIGHT, 0)
+        ->Or()
+        ->IsNull(PhotoColumn::PHOTO_HEIGHT)
+        ->Or()
+        ->EqualTo(MediaColumn::MEDIA_MIME_TYPE, "")
+        ->Or()
+        ->IsNull(MediaColumn::MEDIA_MIME_TYPE)
+        ->Or()
+        ->BeginWrap()
+        ->BeginWrap()
+        ->EqualTo(MediaColumn::MEDIA_DURATION, 0)
+        ->Or()
+        ->IsNull(MediaColumn::MEDIA_DURATION)
+        ->EndWrap()
+        ->And()
+        ->EqualTo(MediaColumn::MEDIA_TYPE, static_cast<int32_t>(MEDIA_TYPE_VIDEO))
+        ->EndWrap()
+        ->Limit(UPDATE_BATCH_SIZE);
+
+    return MediaLibraryRdbStore::Query(predicates, columns);
+}
+
+void DownloadCloudFilesBackground::ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    UpdateData &updateData)
+{
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t fileId =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_ID, resultSet, TYPE_INT32));
+        int64_t size =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_SIZE, resultSet, TYPE_INT64));
+        int32_t width =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_WIDTH, resultSet, TYPE_INT32));
+        int32_t height =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(PhotoColumn::PHOTO_HEIGHT, resultSet, TYPE_INT32));
+        int32_t duration =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_DURATION, resultSet, TYPE_INT32));
+        std::string path =
+            get<std::string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_FILE_PATH, resultSet, TYPE_STRING));
+        if (path.empty()) {
+            MEDIA_WARN_LOG("Failed to get data path");
+            continue;
+        }
+        std::string mimeType =
+            get<std::string>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_MIME_TYPE, resultSet, TYPE_STRING));
+        int32_t mediaType =
+            get<int32_t>(ResultSetUtils::GetValFromColumn(MediaColumn::MEDIA_TYPE, resultSet, TYPE_INT32));
+
+        AbnormalData abnormalData;
+        abnormalData.fileId = fileId;
+        abnormalData.path = path;
+        abnormalData.size = size;
+        abnormalData.width = width;
+        abnormalData.height = height;
+        abnormalData.duration = duration;
+        abnormalData.mimeType = mimeType;
+
+        if (mediaType == static_cast<int32_t>(MEDIA_TYPE_VIDEO)) {
+            updateData.abnormalData.clear();
+            updateData.abnormalData.push_back(abnormalData);
+            updateData.mediaType = MEDIA_TYPE_VIDEO;
+            return;
+        }
+        updateData.abnormalData.push_back(abnormalData);
+    }
+    updateData.mediaType = MEDIA_TYPE_IMAGE;
+}
+
+int32_t DownloadCloudFilesBackground::AddUpdateDataTask(const UpdateData &updateData)
+{
+    auto asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Failed to get async worker instance!");
+        return E_FAIL;
+    }
+
+    auto *taskData = new (std::nothrow) UpdateAbnormalData(updateData);
+    if (taskData == nullptr) {
+        MEDIA_ERR_LOG("Failed to alloc async data for update cloud data!");
+        return E_NO_MEMORY;
+    }
+
+    auto asyncTask = std::make_shared<MediaLibraryAsyncTask>(UpdateCloudDataExecutor, taskData);
+    asyncWorker->AddTask(asyncTask, false);
+    return E_OK;
+}
+
+void DownloadCloudFilesBackground::UpdateCloudDataExecutor(AsyncTaskData *data)
+{
+    auto *taskData = static_cast<UpdateAbnormalData *>(data);
+    auto updateData = taskData->updateData_;
+
+    MEDIA_INFO_LOG("start update %{public}zu cloud files.", updateData.abnormalData.size());
+    for (const auto &abnormalData : updateData.abnormalData) {
+        if (!isUpdating_) {
+            MEDIA_INFO_LOG("stop update data,isUpdating_ is %{public}d.", isUpdating_);
+            return;
+        }
+        std::unique_ptr<Metadata> metadata = make_unique<Metadata>();
+            metadata->SetFilePath(abnormalData.path);
+            metadata->SetFileMediaType(updateData.mediaType);
+            metadata->SetFileId(abnormalData.fileId);
+            metadata->SetFileDuration(abnormalData.duration);
+            metadata->SetFileHeight(abnormalData.height);
+            metadata->SetFileWidth(abnormalData.width);
+            metadata->SetFileSize(abnormalData.size);
+            metadata->SetFileMimeType(abnormalData.mimeType);
+        if (abnormalData.size == 0 || abnormalData.mimeType.empty()) {
+            int32_t ret = GetSizeAndMimeType(metadata);
+            if (ret != E_OK) {
+                MEDIA_ERR_LOG("failed to get size and mimeType! err: %{public}d.", ret);
+                continue;
+            }
+            int64_t fileSize = metadata->GetFileSize();
+            string mimeType =  metadata->GetFileMimeType();
+
+            metadata->SetFileSize(fileSize == 0 ? -1: fileSize);
+            metadata->SetFileMimeType(mimeType.empty() ? DEFAULT_IMAGE_MIME_TYPE : mimeType);
+        }
+        if (abnormalData.width == 0 || abnormalData.height == 0
+        || (abnormalData.duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO)) {
+            int32_t ret = GetExtractMetadata(metadata);
+            if (ret != E_OK) {
+                MEDIA_ERR_LOG("failed to get extract metadata! err: %{public}d.", ret);
+                continue;
+            }
+            int32_t width = metadata->GetFileWidth();
+            int32_t height = metadata->GetFileHeight();
+            int32_t duration = metadata->GetFileDuration();
+
+            metadata->SetFileWidth(width == 0 ? -1: width);
+            metadata->SetFileHeight(height == 0 ? -1: height);
+            metadata->SetFileDuration((duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO) ? -1: duration);
+        }
+        UpdateAbnormaldata(metadata,PhotoColumn::PHOTOS_TABLE);
+    }
+}
+
+static void SetAbnormalValuesFromMetaData(std::unique_ptr<Metadata> &metadata, ValuesBucket &values)
+{
+    values.PutLong(MediaColumn::MEDIA_SIZE, metadata->GetFileSize());
+    values.PutInt(MediaColumn::MEDIA_DURATION, metadata->GetFileDuration());
+    values.PutInt(PhotoColumn::PHOTO_HEIGHT, metadata->GetFileHeight());
+    values.PutInt(PhotoColumn::PHOTO_WIDTH, metadata->GetFileWidth());
+    values.PutString(MediaColumn::MEDIA_MIME_TYPE, metadata->GetFileMimeType());
+}
+
+void DownloadCloudFilesBackground::UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName)
+{
+    int32_t updateCount(0);
+    ValuesBucket values;
+    string whereClause = MediaColumn::MEDIA_ID + " = ?";
+    vector<string> whereArgs = { to_string(metadata.GetFileId()) };
+    SetAbnormalValuesFromMetaData(metadata,values);
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Update operation failed. rdbStore is null");
+        return ;
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("Update operation failed. rdbStorePtr is null");
+        return ;
+    }
+    if (!isUpdating_) {
+            MEDIA_INFO_LOG("stop update data,isUpdating_ is %{public}d.", isUpdating_);
+            return;
+    }
+    int32_t result = rdbStorePtr->Update(updateCount, tableName, values, whereClause, whereArgs);
+    if (result != NativeRdb::E_OK || updateCount <= 0) {
+        MEDIA_ERR_LOG("Update operation failed. Result %{public}d. Updated %{public}d", result, updateCount);
+        return ;
+    }
+}
+
+int32_t DownloadCloudFilesBackground::GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata)
+{
+    std::string path = metadata->GetFilePath();
+    struct stat statInfo {};
+    if (stat(path.c_str(), &statInfo) != 0) {
+        MEDIA_ERR_LOG("stat syscall err");
+        return E_FAIL;
+    }
+    metadata->SetFileSize(statInfo.st_size);
+    string extension = ScannerUtils::GetFileExtension(path);
+    string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
+    data->SetFileMimeType(mimeType);
+    return E_OK;
+}
+
+int32_t DownloadCloudFilesBackground::GetExtractMetadata(std::unique_ptr<Metadata> &metadata)
+{
+    int32_t err = 0;
+    if (metadata->GetFileMediaType() == MEDIA_TYPE_IMAGE) {
+        err = MetadataExtractor::ExtractImageMetadata(metadata);
+    } else {
+        err = MetadataExtractor::ExtractAVMetadata(metadata);
+    }
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("failed to extract data");
+        return err;
+    }
+    return E_OK;
+}
+
+void DownloadCloudFilesBackground::StopUpdateData()
+{
+    isUpdating_ = false;
+}
+
 void DownloadCloudFilesBackground::StartTimer()
 {
     lock_guard<recursive_mutex> lock(mutex_);
@@ -207,7 +468,8 @@ void DownloadCloudFilesBackground::StartTimer()
     if (ret != Utils::TIMER_ERR_OK) {
         MEDIA_ERR_LOG("Failed to start background download cloud files timer, err: %{public}d", ret);
     }
-    startTimerId_ = timer_.Register(DownloadCloudFiles, DOWNLOAD_INTERVAL);
+    isUpdating_ = true;
+    startTimerId_ = timer_.Register(ProcessCloudData, PROCESS_INTERVAL);
 }
 
 void DownloadCloudFilesBackground::StopTimer()
@@ -220,6 +482,7 @@ void DownloadCloudFilesBackground::StopTimer()
     timer_.Shutdown();
     startTimerId_ = 0;
     stopTimerId_ = 0;
+    StopUpdateData();
     StopDownloadFiles(curDownloadPaths_);
 }
 } // namespace Media
