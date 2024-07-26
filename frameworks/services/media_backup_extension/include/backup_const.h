@@ -299,8 +299,6 @@ struct PortraitAlbumInfo {
     std::string groupTagOld;
     std::string groupTagNew;
     std::string tagName;
-    std::string centerFeatures;
-    std::string tagVersion;
 };
 
 struct FaceInfo {
@@ -312,7 +310,6 @@ struct FaceInfo {
     float yaw {0.0};
     float roll {0.0};
     float prob {0.0};
-    int32_t isCover {0};
     int32_t albumIdNew {-1};
     int32_t fileIdNew {-1};
     int32_t totalFaces {0};
@@ -321,9 +318,7 @@ struct FaceInfo {
     std::string tagIdOld;
     std::string tagIdNew;
     std::string landmarks;
-    std::string features;
     std::string faceVersion;
-    std::string featuresVersion;
     std::string analysisVersion;
 };
 
