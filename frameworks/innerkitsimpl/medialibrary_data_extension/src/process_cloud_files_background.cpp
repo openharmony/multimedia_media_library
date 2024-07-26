@@ -95,7 +95,7 @@ void ProcessCloudFilesBackground::UpdateCloudData()
     UpdateData updateData;
     ParseUpdateData(resultSet, updateData);
     if (updateData.abnormalData.empty()) {
-        MEDIA_DEBUG_LOG("No cloud data need to be update");
+        MEDIA_DEBUG_LOG("No cloud data need to update");
         return;
     }
 
@@ -339,18 +339,18 @@ void ProcessCloudFilesBackground::UpdateCloudDataExecutor(AsyncTaskData *data)
     MEDIA_INFO_LOG("start update %{public}zu cloud files.", updateData.abnormalData.size());
     for (const auto &abnormalData : updateData.abnormalData) {
         if (!isUpdating_) {
-            MEDIA_INFO_LOG("stop update data,isUpdating_ is %{public}d.", isUpdating_);
+            MEDIA_INFO_LOG("stop update data, isUpdating_ is %{public}d.", isUpdating_);
             return;
         }
         std::unique_ptr<Metadata> metadata = make_unique<Metadata>();
-            metadata->SetFilePath(abnormalData.path);
-            metadata->SetFileMediaType(updateData.mediaType);
-            metadata->SetFileId(abnormalData.fileId);
-            metadata->SetFileDuration(abnormalData.duration);
-            metadata->SetFileHeight(abnormalData.height);
-            metadata->SetFileWidth(abnormalData.width);
-            metadata->SetFileSize(abnormalData.size);
-            metadata->SetFileMimeType(abnormalData.mimeType);
+        metadata->SetFilePath(abnormalData.path);
+        metadata->SetFileMediaType(updateData.mediaType);
+        metadata->SetFileId(abnormalData.fileId);
+        metadata->SetFileDuration(abnormalData.duration);
+        metadata->SetFileHeight(abnormalData.height);
+        metadata->SetFileWidth(abnormalData.width);
+        metadata->SetFileSize(abnormalData.size);
+        metadata->SetFileMimeType(abnormalData.mimeType);
         if (abnormalData.size == 0 || abnormalData.mimeType.empty()) {
             int32_t ret = GetSizeAndMimeType(metadata);
             if (ret != E_OK) {
@@ -409,8 +409,8 @@ void ProcessCloudFilesBackground::UpdateAbnormaldata(std::unique_ptr<Metadata> &
         return ;
     }
     if (!isUpdating_) {
-            MEDIA_INFO_LOG("stop update data,isUpdating_ is %{public}d.", isUpdating_);
-            return;
+        MEDIA_INFO_LOG("stop update data,isUpdating_ is %{public}d.", isUpdating_);
+        return;
     }
     int32_t result = rdbStorePtr->Update(updateCount, tableName, values, whereClause, whereArgs);
     if (result != NativeRdb::E_OK || updateCount <= 0) {
