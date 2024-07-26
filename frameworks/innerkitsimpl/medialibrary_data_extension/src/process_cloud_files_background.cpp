@@ -396,7 +396,7 @@ void ProcessCloudFilesBackground::UpdateAbnormaldata(std::unique_ptr<Metadata> &
     int32_t updateCount(0);
     ValuesBucket values;
     string whereClause = MediaColumn::MEDIA_ID + " = ?";
-    vector<string> whereArgs = { to_string(metadata.GetFileId()) };
+    vector<string> whereArgs = { to_string(metadata->GetFileId()) };
     SetAbnormalValuesFromMetaData(metadata, values);
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
@@ -430,7 +430,7 @@ int32_t ProcessCloudFilesBackground::GetSizeAndMimeType(std::unique_ptr<Metadata
     metadata->SetFileSize(statInfo.st_size);
     string extension = ScannerUtils::GetFileExtension(path);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
-    data->SetFileMimeType(mimeType);
+    metadata->SetFileMimeType(mimeType);
     return E_OK;
 }
 
