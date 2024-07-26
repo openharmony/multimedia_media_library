@@ -92,8 +92,6 @@ bool Acl::IsValid()
 {
     if (!entries.count(ACL_TAG::USER_OBJ) || !entries.count(ACL_TAG::GROUP_OBJ) ||
             !entries.count(ACL_TAG::OTHER)) {
-        MEDIA_ERR_LOG("IsValid : %{public}zu, %{public}zu, %{public}zu", entries.count(ACL_TAG::USER_OBJ),
-            entries.count(ACL_TAG::GROUP_OBJ), entries.count(ACL_TAG::OTHER));
         return false;
     }
     if (maskDemand && !entries.count(ACL_TAG::MASK)) {
@@ -325,7 +323,7 @@ int32_t Acl::EnableAcl(const std::string& path, const char* aclAttrName, const u
     InitSandboxGroupEntry(entry, groupId, permission);
     int32_t err = EntryInsert(entry, path, aclAttrName);
     if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to set the acl permission for path %{public}s", path.c_str());
+        MEDIA_ERR_LOG("Failed to set the acl permission for path %{private}s", path.c_str());
         return E_ERR;
     }
     return E_OK;
