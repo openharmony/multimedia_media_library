@@ -442,10 +442,6 @@ void FetchResult<T>::SetFileAsset(FileAsset *fileAsset, shared_ptr<NativeRdb::Re
         }
         fileAsset->SetCount(count);
     }
-    if (fileAsset->GetSize() == 0) {
-        MEDIA_INFO_LOG("the size of %{private}s %{public}d is 0", (fileAsset->GetDisplayName()).c_str(),
-            fileAsset->GetId());
-    }
     SetAssetUri(fileAsset);
 }
 
