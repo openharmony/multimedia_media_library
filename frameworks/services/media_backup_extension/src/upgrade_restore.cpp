@@ -1170,11 +1170,11 @@ void UpgradeRestore::UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, Fi
 
 void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
 {
+    if (sceneCode_ != UPGRADE_RESTORE_ID) {
+        MEDIA_ERR_LOG("Portrait restoration for %{public}d not supported", sceneCode_);
+        return;
+    }
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    // if (sceneCode_ != UPGRADE_RESTORE_ID) {
-    //     MEDIA_ERR_LOG("Portrait restoration for %{public}d not supported", sceneCode_);
-    //     return;
-    // }
     std::vector<int32_t> faceAnalysisTypeList = { FaceAnalysisType::RECOGNITION };
     if (!BackupDatabaseUtils::GetFaceAnalysisVersion(faceAnalysisVersionMap_, faceAnalysisTypeList)) {
         MEDIA_ERR_LOG("Get face analysis version failed, quit");
@@ -1319,7 +1319,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const PortraitAlbumInfo &
     if (isAlbum) {
         values.PutString(ALBUM_NAME, portraitAlbumInfo.tagName);
         values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagNew);
-        values.PutInt(USER_OPERATION, portraitAlbumInfo.userOperation); // TODO CHECK IF VALUE IS CONSISTENT
+        values.PutInt(USER_OPERATION, portraitAlbumInfo.userOperation);
         values.PutInt(RENAME_OPERATION, RENAME_OPERATION_RENAMED);
         values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
         values.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
@@ -1355,9 +1355,9 @@ void UpgradeRestore::BatchQueryAlbum(std::vector<PortraitAlbumInfo> &portraitAlb
 
 bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)
 {
-    // if (sceneCode_ != UPGRADE_RESTORE_ID) {
-    //     return false;
-    // }
+    if (sceneCode_ != UPGRADE_RESTORE_ID) {
+        return false;
+    }
     if (portraitAlbumIdMap_.empty()) {
         return false;
     }
@@ -1390,9 +1390,10 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
 void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
     int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum)
 {
-    // if (sceneCode_ != UPGRADE_RESTORE_ID) {
-    //     return;
-    // }
+    if (sceneCode_ != UPGRADE_RESTORE_ID) {
+        return;
+    }
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
     if (needQueryMap.count(PhotoRelatedType::PORTRAIT) == 0) {
         return;
     }
@@ -1428,11 +1429,15 @@ void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInf
             continue;
         }
         UpdateFilesWithFace(filesWithFace, faceInfos);
-        int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+        int64_t endInsert = MediaFileUtils::UTCTimeMilliSeconds();
         MEDIA_INFO_LOG("insert %{public}ld faces cost %{public}ld, %{public}ld maps cost %{public}ld", (long)faceRowNum,
-            (long)(startInsertMap - startInsertFace), (long)mapRowNum, (long)(end - startInsertMap));
+            (long)(startInsertMap - startInsertFace), (long)mapRowNum, (long)(endInsert - startInsertMap));
     }
-    photoNum = static_cast<int64_t>(filesWithFace.size());
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    photoNum = static_cast<uint64_t>(filesWithFace.size());
+    migratePortraitFaceNumber_ += faceRowNum;
+    migratePortraitPhotoNumber_ += photoNum;
+    migratePortraitTotalTimeCost_ += end - start;
 }
 
 void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,

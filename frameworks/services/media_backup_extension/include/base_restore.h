@@ -136,7 +136,6 @@ protected:
     std::unordered_map<std::string, std::string> tagIdMap_;
     std::unordered_map<std::string, std::string> groupTagMap_;
     std::unordered_map<std::string, int32_t> portraitAlbumIdMap_;
-    std::unordered_map<std::string, std::string> portraitAlbumCoverUriMap_; // TODO may use later when isCover = 2
 };
 } // namespace Media
 } // namespace OHOS
