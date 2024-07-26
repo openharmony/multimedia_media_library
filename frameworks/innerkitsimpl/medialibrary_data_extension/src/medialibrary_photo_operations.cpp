@@ -1990,7 +1990,7 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
 
     string editDataPath = GetEditDataPath(outputPath);
     if (MediaFileUtils::IsFileExists(editDataPath)) {
-        MEDIA_INFO_LOG("Editdata path: %{public}s exists, cannot add filters to photo", editDataPath.c_str());
+        MEDIA_INFO_LOG("Editdata path: %{private}s exists, cannot add filters to photo", editDataPath.c_str());
         CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
             "Failed to delete temp filters file, errno: %{public}d", errno);
         return E_OK;
