@@ -360,9 +360,9 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
 
     timerStatus_ = newStatus;
     if (timerStatus_) {
-        ProcessCloudFilesBackground::StartTimer();
+        BackgroundCloudFileProcessor::StartTimer();
     } else {
-        ProcessCloudFilesBackground::StopTimer();
+        BackgroundCloudFileProcessor::StopTimer();
     }
 }
 }  // namespace Media
