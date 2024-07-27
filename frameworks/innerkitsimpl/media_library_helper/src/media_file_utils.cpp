@@ -862,7 +862,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     tracer.Start("MediaFileUtils::UpdatePath");
 
     string retStr = path;
-    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath path = %{private}s, uri = %{private}s", path.c_str(), uri.c_str());
+    MEDIA_DEBUG_LOG("MediaFileUtils::UpdatePath path = %{private}s, uri = %{private}s", path.c_str(), uri.c_str());
     if (path.empty() || uri.empty()) {
         return retStr;
     }
@@ -889,7 +889,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
     }
 
     retStr = beginStr + networkId + endStr;
-    MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
+    MEDIA_DEBUG_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
     return retStr;
 }
 
