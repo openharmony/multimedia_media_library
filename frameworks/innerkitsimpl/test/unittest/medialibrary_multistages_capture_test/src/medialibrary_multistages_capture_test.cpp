@@ -780,5 +780,37 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, UpdateLowQualityDbInfoTest_nodata_0
     EXPECT_NE(ret, 0);
     MEDIA_INFO_LOG("UpdateLowQualityDbInfoTest_nodata_004 End");
 }
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, WriteGpsExifInfo_test_001, TestSize.Level1)
+{
+    string path = "/valid/path";
+    double longitude = 0.0;
+    double latitude = 0.0;
+    auto ret = ExifUtils::WriteGpsExifInfo(path, longitude, latitude);
+    EXPECT_EQ(ret, -1);
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, IsPhotoDeleted_test_001, TestSize.Level1)
+{
+    MultiStagesCaptureManager& manager = MultiStagesCaptureManager::GetInstance();
+    std::string photoId;
+    auto ret = manager.IsPhotoDeleted(photoId);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, IsPhotoDeleted_test_002, TestSize.Level1)
+{
+    MultiStagesCaptureManager& manager = MultiStagesCaptureManager::GetInstance();
+    std::string photoId = "abc";
+    auto ret = manager.IsPhotoDeleted(photoId);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryMultiStagesCaptureTest, BeginSynchronize_test_001, TestSize.Level1)
+{
+    DeferredProcessingAdapter adapter;
+    EXPECT_NE(adapter.deferredProcSession_ , nullptr);
+    adapter.BeginSynchronize();
+}
 }
 }

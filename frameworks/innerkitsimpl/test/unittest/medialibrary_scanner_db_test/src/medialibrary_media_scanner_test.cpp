@@ -188,5 +188,32 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_InvokeCallback_test_001, TestSize.L
     int32_t ret = mediaScannerObj.InvokeCallback(0);
     EXPECT_EQ(ret, E_OK);
 }
+
+HWTEST_F(MediaLibraryScannerTest, medialib_ScanDirInternal_test_001, TestSize.Level0)
+{
+    string dir = "medialib_ScanFileInternal_test_001/.test";
+    shared_ptr<IMediaScannerCallback> callback = nullptr;
+    MediaScannerObj mediaScannerObj(dir, callback, MediaScannerObj::FILE);
+    int32_t ret = mediaScannerObj.ScanDirInternal();
+    EXPECT_EQ(ret, -223);
+}
+
+HWTEST_F(MediaLibraryScannerTest, medialib_Start_test_001, TestSize.Level0)
+{
+    string dir = "medialib_ScanFileInternal_test_001/.test";
+    shared_ptr<IMediaScannerCallback> callback = nullptr;
+    MediaScannerObj mediaScannerObj(dir, callback, MediaScannerObj::FILE);
+    int32_t ret = mediaScannerObj.Start();
+    EXPECT_EQ(ret, 0);
+}
+
+HWTEST_F(MediaLibraryScannerTest, medialib_SetError_test_001, TestSize.Level0)
+{
+    string dir = "medialib_ScanFileInternal_test_001/.test";
+    shared_ptr<IMediaScannerCallback> callback = nullptr;
+    MediaScannerObj mediaScannerObj(dir, callback, MediaScannerObj::FILE);
+    int32_t ret = mediaScannerObj.SetError();
+    EXPECT_EQ(ret, 0);
+}
 } // namespace Media
 } // namespace OHOS
