@@ -432,7 +432,7 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
     return newCount;
 }
 
-static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
+static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
     ValuesBucket &values, int newCount)
 {
     string newCover;
@@ -441,12 +441,15 @@ static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shar
     }
     const string &targetColumn = PhotoAlbumColumns::ALBUM_COVER_URI;
     string oldCover = GetAlbumCover(albumResult, targetColumn);
+    int32_t ret = E_SUCCESS;
     if (oldCover != newCover) {
+        ret = E_NEED_UPDATE_ALBUM_COVER_URI;
         values.PutInt(IS_COVER_SATISFIED, 0);
         values.PutString(targetColumn, newCover);
         MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s", targetColumn.c_str(),
             oldCover.c_str(), newCover.c_str());
     }
+    return ret;
 }
 
 static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
@@ -947,8 +950,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
     if (coverResult == nullptr) {
         return E_HAS_DB_ERROR;
     }
-    SetPortraitCover(coverResult, albumResult, values, newCount);
-    return E_NEED_UPDATE_ALBUM_COVER_URI;
+    return SetPortraitCover(coverResult, albumResult, values, newCount);
 }
 
 static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -1054,9 +1056,6 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
     }
     string albumId = to_string(GetAlbumId(albumResult));
     if (values.IsEmpty()) {
-        if (setRet == E_NEED_UPDATE_ALBUM_COVER_URI) {
-            MediaAnalysisHelper::StartPortraitCoverSelectionAsync(albumId);
-        }
         return E_SUCCESS;
     }
 
