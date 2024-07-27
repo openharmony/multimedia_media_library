@@ -1260,7 +1260,8 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_BatchQueryPhoto, TestSize.Level
     std::unique_ptr<UpgradeRestore> upgrade =
         std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
     NeedQueryMap needQueryMap;
-    upgrade->BatchQueryPhoto(fileInfos, true, needQueryMap);
+    upgrade->NeedBatchQueryPhotoForPhotoMap(fileInfos, needQueryMap);
+    upgrade->BatchQueryPhoto(fileInfos, false, needQueryMap);
     EXPECT_EQ(fileInfos[0].fileIdNew, TEST_FALSE_MEDIAID);
     MEDIA_INFO_LOG("medialib_backup_BatchQueryPhoto end");
 }
@@ -1885,6 +1886,19 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_illegal_t
     str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
     EXPECT_EQ(str, "test");
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_need_batch_query_photo, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_need_batch_query_photo start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
+    std::vector<FileInfo> fileInfos;
+    NeedQueryMap needQueryMap;
+    auto ret = upgrade->NeedBatchQueryPhoto(fileInfos, needQueryMap);
+    EXPECT_EQ(ret, false);
+    EXPECT_EQ(needQueryMap.empty(), true);
+    GTEST_LOG_(INFO) << "medialib_backup_test_need_batch_query_photo end";
 }
 } // namespace Media
 } // namespace OHOS
