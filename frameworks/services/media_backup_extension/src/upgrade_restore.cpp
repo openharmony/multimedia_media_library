@@ -332,7 +332,7 @@ void UpgradeRestore::RestorePhoto(void)
             (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
     }
     UpdateFaceAnalysisStatus();
-    ReportPortraitStat();
+    ReportPortraitStat(sceneCode_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
 }
 
