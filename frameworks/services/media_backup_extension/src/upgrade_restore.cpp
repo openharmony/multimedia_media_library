@@ -1445,7 +1445,7 @@ void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, co
 {
     auto needQuerySet = needQueryMap.at(PhotoRelatedType::PORTRAIT);
     for (const auto &fileInfo : fileInfos) {
-        if (fileInfo.hashCode.empty() || needQuerySet.count(fileInfo.hashCode) == 0 || fileInfo.fileIdNew <= 0) {
+        if (needQuerySet.count(fileInfo.hashCode) == 0 || fileInfo.fileIdNew <= 0) {
             continue;
         }
         BackupDatabaseUtils::UpdateSelection(hashSelection, fileInfo.hashCode, true);
