@@ -758,8 +758,11 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteImageFace_Test_001, TestSize.Level
     MEDIA_INFO_LOG("Vision_DeleteImageFace_Test_001::retVal = %{public}d. End", retVal);
 }
 
-DataShare::DataShareValuesBucket BuildImageFaceValuesBucket()
+HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level0)
 {
+    MEDIA_INFO_LOG("Vision_QueryImageFace_Test_001::Start");
+    Uri imageFaceUri(URI_IMAGE_FACE);
+    MediaLibraryCommand cmd(imageFaceUri);
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(FILE_ID, 5);
     valuesBucket.Put(FACE_ID, 3);
@@ -785,16 +788,6 @@ DataShare::DataShareValuesBucket BuildImageFaceValuesBucket()
     valuesBucket.Put(FACE_AESTHETICS_SCORE, 8.3);
     valuesBucket.Put(BEAUTY_BOUNDER_VERSION, "1.11");
     valuesBucket.Put(IS_EXCLUDED, 1);
-
-    return valuesBucket;
-}
-
-HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level0)
-{
-    MEDIA_INFO_LOG("Vision_QueryImageFace_Test_001::Start");
-    Uri imageFaceUri(URI_IMAGE_FACE);
-    MediaLibraryCommand cmd(imageFaceUri);
-    DataShare::DataShareValuesBucket valuesBucket = BuildImageFaceValuesBucket();
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
@@ -805,8 +798,7 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level0
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket1);
     DataShare::DataSharePredicates predicates;
     predicates.EqualTo(FILE_ID, 5);
-    vector<string> columns;
-    columns.push_back(FACE_ID);
+    vector<string> columns = { FACE_ID };
     int errCode = 0;
     auto queryResultSet = MediaLibraryDataManager::GetInstance()->Query(cmd, columns, predicates, errCode);
     shared_ptr<DataShare::DataShareResultSet> resultSet = make_shared<DataShare::DataShareResultSet>(queryResultSet);
