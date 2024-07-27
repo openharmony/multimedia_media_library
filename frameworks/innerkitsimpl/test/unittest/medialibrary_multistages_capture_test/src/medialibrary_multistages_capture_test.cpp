@@ -812,5 +812,6 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, BeginSynchronize_test_001, TestSize
     EXPECT_NE(adapter.deferredProcSession_, nullptr);
     adapter.BeginSynchronize();
 }
+
 }
 }
