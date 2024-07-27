@@ -23,6 +23,7 @@
 #include "medialibrary_utils_test.h"
 #include "thumbnail_service.h"
 #include "thumbnail_utils.h"
+#include "post_event_utils.h"
 
 using namespace std;
 using namespace OHOS;
