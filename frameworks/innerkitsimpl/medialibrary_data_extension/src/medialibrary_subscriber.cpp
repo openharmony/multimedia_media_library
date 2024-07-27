@@ -18,6 +18,7 @@
 
 #include <memory>
 #include "appexecfwk_errors.h"
+#include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
@@ -25,7 +26,6 @@
 #include "bundle_info.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
-#include "download_cloud_files_background.h"
 #include "want.h"
 #include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
@@ -360,9 +360,9 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
 
     timerStatus_ = newStatus;
     if (timerStatus_) {
-        DownloadCloudFilesBackground::StartTimer();
+        BackgroundCloudFileProcessor::StartTimer();
     } else {
-        DownloadCloudFilesBackground::StopTimer();
+        BackgroundCloudFileProcessor::StopTimer();
     }
 }
 }  // namespace Media

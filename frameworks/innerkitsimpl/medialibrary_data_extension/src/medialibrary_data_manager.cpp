@@ -23,6 +23,7 @@
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
 #include "acl.h"
+#include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
@@ -30,7 +31,6 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
-#include "download_cloud_files_background.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -299,7 +299,7 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         return;
     }
 
-    DownloadCloudFilesBackground::StopTimer();
+    BackgroundCloudFileProcessor::StopTimer();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
