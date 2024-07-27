@@ -351,21 +351,20 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
         metadata->SetFileWidth(abnormalData.width);
         metadata->SetFileSize(abnormalData.size);
         metadata->SetFileMimeType(abnormalData.mimeType);
+        int32_t ret = GetSizeAndMimeType(metadata);
+        if (ret != E_OK) {
+            MEDIA_ERR_LOG("failed to get size and mimeType! err: %{public}d.", ret);
+            continue;
+        }
         if (abnormalData.size == 0 || abnormalData.mimeType.empty()) {
-            int32_t ret = GetSizeAndMimeType(metadata);
-            if (ret != E_OK) {
-                MEDIA_ERR_LOG("failed to get size and mimeType! err: %{public}d.", ret);
-                continue;
-            }
             int64_t fileSize = metadata->GetFileSize();
             string mimeType =  metadata->GetFileMimeType();
-
             metadata->SetFileSize(fileSize == 0 ? -1: fileSize);
             metadata->SetFileMimeType(mimeType.empty() ? DEFAULT_IMAGE_MIME_TYPE : mimeType);
         }
         if (abnormalData.width == 0 || abnormalData.height == 0
             || (abnormalData.duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO)) {
-            int32_t ret = GetExtractMetadata(metadata);
+            ret = GetExtractMetadata(metadata);
             if (ret != E_OK) {
                 MEDIA_ERR_LOG("failed to get extract metadata! err: %{public}d.", ret);
                 continue;
@@ -373,7 +372,6 @@ void BackgroundCloudFileProcessor::UpdateCloudDataExecutor(AsyncTaskData *data)
             int32_t width = metadata->GetFileWidth();
             int32_t height = metadata->GetFileHeight();
             int32_t duration = metadata->GetFileDuration();
-
             metadata->SetFileWidth(width == 0 ? -1: width);
             metadata->SetFileHeight(height == 0 ? -1: height);
             metadata->SetFileDuration((duration == 0 && updateData.mediaType == MEDIA_TYPE_VIDEO) ? -1: duration);
@@ -430,6 +428,7 @@ int32_t BackgroundCloudFileProcessor::GetSizeAndMimeType(std::unique_ptr<Metadat
     metadata->SetFileSize(statInfo.st_size);
     string extension = ScannerUtils::GetFileExtension(path);
     string mimeType = MimeTypeUtils::GetMimeTypeFromExtension(extension);
+    metadata->SetFileExtension(extension);
     metadata->SetFileMimeType(mimeType);
     return E_OK;
 }
