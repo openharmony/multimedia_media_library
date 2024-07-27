@@ -89,6 +89,7 @@ public:
     EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status);
+    EXPORT static bool DoUpdateAstcDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
 #ifdef DISTRIBUTED
     EXPORT static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
 #endif
@@ -178,6 +179,7 @@ private:
 
     EXPORT static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
     EXPORT static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
+    EXPORT static bool UpdateAstcDateAddedFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data);
 };
 } // namespace Media
 } // namespace OHOS
