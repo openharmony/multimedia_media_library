@@ -171,6 +171,11 @@ enum RestoreError {
     MOVE_FAILED,
 };
 
+enum class PhotoRelatedType {
+    PHOTO_MAP = 0,
+    PORTRAIT,
+};
+
 const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::INIT_FAILED, "Init failed" },
     { RestoreError::FILE_INVALID, "File is invalid" },
@@ -286,6 +291,39 @@ struct SubCountInfo {
         : successCount(successCount), failedFiles(failedFiles) {}
 };
 
+struct PortraitAlbumInfo {
+    int32_t userOperation {0};
+    int32_t renameOperation {0};
+    std::string tagIdOld;
+    std::string tagIdNew;
+    std::string groupTagOld;
+    std::string groupTagNew;
+    std::string tagName;
+};
+
+struct FaceInfo {
+    float scaleX {0.0};
+    float scaleY {0.0};
+    float scaleWidth {0.0};
+    float scaleHeight {0.0};
+    float pitch {0.0};
+    float yaw {0.0};
+    float roll {0.0};
+    float prob {0.0};
+    int32_t albumIdNew {-1};
+    int32_t fileIdNew {-1};
+    int32_t totalFaces {0};
+    std::string hash;
+    std::string faceId;
+    std::string tagIdOld;
+    std::string tagIdNew;
+    std::string landmarks;
+    std::string faceVersion;
+    std::string analysisVersion;
+};
+
+using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std::string>>;
+
 // sql for external
 const std::string QUERY_FILE_COLUMN = "SELECT _id, " + GALLERY_FILE_DATA + ", " + GALLERY_DISPLAY_NAME + ", " +
     EXTERNAL_IS_FAVORITE + ", " + GALLERY_FILE_SIZE + ", " + GALLERY_DURATION + ", " + GALLERY_MEDIA_TYPE + ", " +
@@ -315,9 +353,13 @@ const std::string QUERY_MAX_ID_OTHERS = "SELECT max(local_media_id) AS max_id FR
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
     (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 ";
 
-const std::string QUERY_GALLERY_COUNT = "SELECT count(1) AS count FROM gallery_media \
-    WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
-    SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0";
+const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (storage_id IN (0, 65537)) AND \
+    relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0 AND \
+    _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
+
+const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY _id ASC ";
+
+const std::string QUERY_GALLERY_COUNT = "SELECT count(1) AS count FROM gallery_media WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
 
 const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + GALLERY_FILE_DATA + "," +
     GALLERY_DISPLAY_NAME + "," + GALLERY_DESCRIPTION + "," + GALLERY_IS_FAVORITE + "," + GALLERY_RECYCLED_TIME +
@@ -325,8 +367,7 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
     EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH + "," +
     GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH +
-    " FROM gallery_media WHERE (local_media_id != -1) AND (storage_id IN (0, 65537)) AND relative_bucket_id NOT IN ( \
-    SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0 ORDER BY _id ASC ";
+    " FROM gallery_media WHERE " + ALL_PHOTOS_WHERE_CLAUSE + ALL_PHOTOS_ORDER_BY;
 
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \

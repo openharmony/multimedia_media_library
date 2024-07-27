@@ -20,6 +20,7 @@
 #include "application_context.h"
 #include "background_task_mgr_helper.h"
 #include "backup_database_utils.h"
+#include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
 #include "extension_context.h"
 #include "media_column.h"
@@ -60,7 +61,6 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
             (long long) migrateAudioDatabaseNumber_, (long long) migrateAudioFileNumber_,
             (long long) migrateDatabaseMapNumber_);
         MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
-        MediaLibraryRdbUtils::UpdateSourceAlbumInternal(mediaLibraryRdb_);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, imageNumber_, IMAGE_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, videoNumber_, VIDEO_ASSET_TYPE);
         BackupDatabaseUtils::UpdateUniqueNumber(mediaLibraryRdb_, audioNumber_, AUDIO_ASSET_TYPE);
@@ -495,19 +495,18 @@ void BaseRestore::InsertPhoto(int32_t sceneCode, std::vector<FileInfo> &fileInfo
         return;
     }
 
-    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
-    if (sourceType == SourceType::GALLERY) {
-        InsertPhotoMap(fileInfos);
-    }
+    int64_t startInsertRelated = MediaFileUtils::UTCTimeMilliSeconds();
+    InsertPhotoRelated(fileInfos, sourceType);
 
     int64_t startMove = MediaFileUtils::UTCTimeMilliSeconds();
     migrateDatabaseNumber_ += rowNum;
     int32_t fileMoveCount = 0;
     MoveMigrateFile(fileInfos, fileMoveCount, sceneCode);
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld and move " \
-        "%{public}ld file cost %{public}ld.", (long)(startInsert - startGenerate), (long)rowNum,
-        (long)(startQuery - startInsert), (long)fileMoveCount, (long)(end - startMove));
+    MEDIA_INFO_LOG("generate values cost %{public}ld, insert %{public}ld assets cost %{public}ld, insert photo related"
+        " cost %{public}ld, and move %{public}ld file cost %{public}ld.", (long)(startInsert - startGenerate),
+        (long)rowNum, (long)(startInsertRelated - startInsert), (long)(startMove - startInsertRelated),
+        (long)fileMoveCount, (long)(end - startMove));
 }
 
 void BaseRestore::DeleteMoveFailedData(std::vector<std::string> &moveFailedData)
@@ -622,31 +621,20 @@ bool BaseRestore::HasSameFile(const std::shared_ptr<NativeRdb::RdbStore> &rdbSto
     return true;
 }
 
-void BaseRestore::InsertPhotoMap(std::vector<FileInfo> &fileInfos)
+void BaseRestore::InsertPhotoMap(std::vector<FileInfo> &fileInfos, int64_t &mapRowNum)
 {
-    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
-    BatchQueryPhoto(fileInfos);
-    int64_t startInsertMap = MediaFileUtils::UTCTimeMilliSeconds();
-    int64_t mapRowNum = 0;
     BatchInsertMap(fileInfos, mapRowNum);
     migrateDatabaseMapNumber_ += mapRowNum;
-    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
-    MEDIA_INFO_LOG("query cost %{public}ld, insert %{public}ld maps cost %{public}ld.",
-        (long)(startInsertMap - startQuery), (long)mapRowNum, (long)(end - startInsertMap));
 }
 
-void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
+void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos, bool isFull, const NeedQueryMap &needQueryMap)
 {
     string querySql = "SELECT " + MediaColumn::MEDIA_ID + " , " + MediaColumn::MEDIA_FILE_PATH + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE ";
     bool firstSql = false;
     std::vector<std::string> cloudPathArgs;
     for (auto &fileInfo : fileInfos) {
-        if (!fileInfo.packageName.empty()) {
-            continue;
-        }
-        if (fileInfo.cloudPath.empty() || fileInfo.mediaAlbumId <= 0) {
-            MEDIA_ERR_LOG("Album error file name = %{public}s.", fileInfo.displayName.c_str());
+        if (!isFull && !NeedQuery(fileInfo, needQueryMap)) {
             continue;
         }
         if (firstSql) {
@@ -656,10 +644,6 @@ void BaseRestore::BatchQueryPhoto(vector<FileInfo> &fileInfos)
         }
         querySql += MediaColumn::MEDIA_FILE_PATH + " = ? ";
         cloudPathArgs.push_back(fileInfo.cloudPath);
-    }
-    if (firstSql == false) {
-        MEDIA_ERR_LOG("There is no need to continue the query.");
-        return;
     }
     auto result = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql, cloudPathArgs);
     if (result == nullptr) {
@@ -871,6 +855,121 @@ std::string BaseRestore::GetSameFileQuerySql(const FileInfo &fileInfo)
     }
     querySql += " ORDER BY ABS(P." + MediaColumn::MEDIA_DATE_ADDED + " - " + to_string(fileInfo.dateAdded) + ")";
     return querySql;
+}
+
+void BaseRestore::InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType)
+{
+    if (sourceType != SourceType::GALLERY) {
+        return;
+    }
+    NeedQueryMap needQueryMap;
+    if (!NeedBatchQueryPhoto(fileInfos, needQueryMap)) {
+        MEDIA_INFO_LOG("There is no need to batch query photo");
+        return;
+    }
+    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
+    BatchQueryPhoto(fileInfos, false, needQueryMap);
+    int64_t startInsertMap = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t mapRowNum = 0;
+    InsertPhotoMap(fileInfos, mapRowNum);
+    int64_t startInsertPortrait = MediaFileUtils::UTCTimeMilliSeconds();
+    int64_t faceRowNum = 0;
+    int64_t portraitMapRowNum = 0;
+    int64_t portraitPhotoNum = 0;
+    InsertFaceAnalysisData(fileInfos, needQueryMap, faceRowNum, portraitMapRowNum, portraitPhotoNum);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("query cost %{public}ld, insert %{public}ld maps cost %{public}ld, insert face analysis data of "
+        "%{public}ld photos (%{public}ld faces + %{public}ld maps) cost %{public}ld",
+        (long)(startInsertMap - startQuery), (long)mapRowNum, (long)(startInsertPortrait - startInsertMap),
+        (long)portraitPhotoNum, (long)faceRowNum, (long)portraitMapRowNum, (long)(end - startInsertPortrait));
+}
+
+bool BaseRestore::NeedBatchQueryPhoto(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)
+{
+    return NeedBatchQueryPhotoForPhotoMap(fileInfos, needQueryMap) ||
+        NeedBatchQueryPhotoForPortrait(fileInfos, needQueryMap);
+}
+
+bool BaseRestore::NeedBatchQueryPhotoForPhotoMap(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)
+{
+    std::unordered_set<std::string> needQuerySet;
+    for (const auto &fileInfo : fileInfos) {
+        if (!fileInfo.packageName.empty()) {
+            continue;
+        }
+        if (fileInfo.cloudPath.empty() || fileInfo.mediaAlbumId <= 0) {
+            MEDIA_ERR_LOG("Album error file name = %{public}s.", fileInfo.displayName.c_str());
+            continue;
+        }
+        needQuerySet.insert(fileInfo.cloudPath);
+    }
+    if (needQuerySet.empty()) {
+        return false;
+    }
+    needQueryMap[PhotoRelatedType::PHOTO_MAP] = needQuerySet;
+    return true;
+}
+
+bool BaseRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)
+{
+    return false;
+}
+
+bool BaseRestore::NeedQuery(const FileInfo &fileInfo, const NeedQueryMap &needQueryMap)
+{
+    for (auto iter = needQueryMap.begin(); iter != needQueryMap.end(); ++iter) {
+        if (NeedQueryByPhotoRelatedType(fileInfo, iter->first, iter->second)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool BaseRestore::NeedQueryByPhotoRelatedType(const FileInfo &fileInfo, PhotoRelatedType photoRelatedType,
+    const std::unordered_set<std::string> &needQuerySet)
+{
+    std::string searchPath;
+    switch (photoRelatedType) {
+        case PhotoRelatedType::PHOTO_MAP: {
+            searchPath = fileInfo.cloudPath;
+            break;
+        }
+        case PhotoRelatedType::PORTRAIT: {
+            searchPath = fileInfo.hashCode;
+            break;
+        }
+        default:
+            MEDIA_ERR_LOG("Unsupported photo related type: %{public}d", static_cast<int32_t>(photoRelatedType));
+    }
+    return !searchPath.empty() && needQuerySet.count(searchPath) > 0;
+}
+
+void BaseRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
+    int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum)
+{
+    return;
+}
+
+void BaseRestore::ReportPortraitStat(int32_t sceneCode)
+{
+    if (sceneCode != UPGRADE_RESTORE_ID) {
+        return;
+    }
+    MEDIA_INFO_LOG("PortraitStat: album %{public}zu, photo %{public}lld, face %{public}lld, cost %{public}lld",
+        portraitAlbumIdMap_.size(), (long long)migratePortraitPhotoNumber_, (long long)migratePortraitFaceNumber_,
+        (long long)migratePortraitTotalTimeCost_);
+    BackupDfxUtils::PostPortraitStat(static_cast<uint32_t>(portraitAlbumIdMap_.size()), migratePortraitPhotoNumber_,
+        migratePortraitFaceNumber_, migratePortraitTotalTimeCost_);
+}
+
+void BaseRestore::UpdateFaceAnalysisStatus()
+{
+    if (portraitAlbumIdMap_.empty()) {
+        MEDIA_INFO_LOG("There is no need to update face analysis status");
+        return;
+    }
+    BackupDatabaseUtils::UpdateAnalysisTotalStatus(mediaLibraryRdb_);
+    BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(mediaLibraryRdb_);
 }
 } // namespace Media
 } // namespace OHOS

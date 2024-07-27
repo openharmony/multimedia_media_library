@@ -30,6 +30,7 @@
           "ability_runtime",
           "access_token",
           "ace_engine",
+          "ai_engine",
           "app_file_service",
           "battery_manager",
           "bundle_framework",

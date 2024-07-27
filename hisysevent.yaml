@@ -122,3 +122,10 @@ MEDIALIB_THUMBNAIL_GENERATION:
   SOURCE_HEIGHT: { type: INT32, desc: The height of the source image that generates thumbnails }
   TOTAL_COST: { type: INT32, desc: The total cost time that generated thumbnails }
   ERROR_CODE: { type: INT32, desc: The error code }
+
+MEDIALIB_BACKUP_PORTRAIT_STAT:
+  __BASE: { type: STATISTIC, level: MINOR, desc: result of portrait restoration }
+  ALBUM_COUNT: { type: UINT32, desc: number of restored portrait albums }
+  PHOTO_COUNT: { type: UINT64, desc: number of restored photos with portrait }
+  FACE_COUNT: { type: UINT64, desc: number of restored face analysis data }
+  TOTAL_TIME_COST: { type: UINT64, desc: total time cost of portrait restoration }
