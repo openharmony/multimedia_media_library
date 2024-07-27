@@ -956,10 +956,10 @@ void BaseRestore::ReportPortraitStat(int32_t sceneCode)
     if (sceneCode != UPGRADE_RESTORE_ID) {
         return;
     }
-    MEDIA_INFO_LOG("PortraitStat: album %{public}zu, photo %{public}lld, %{public}lld, cost %{publc}lld",
+    MEDIA_INFO_LOG("PortraitStat: album %{public}zu, photo %{public}lld, %{public}lld, cost %{public}lld",
         portraitAlbumIdMap_.size(), (long long)migratePortraitPhotoNumber_, (long long)migratePortraitFaceNumber_,
         (long long)migratePortraitTotalTimeCost_);
-    BackupDfxUtils::PostPortraitStat(portraitAlbumIdMap_.size(), migratePortraitPhotoNumber_,
+    BackupDfxUtils::PostPortraitStat(static_cast<uint32_t>(portraitAlbumIdMap_.size()), migratePortraitPhotoNumber_,
         migratePortraitFaceNumber_, migratePortraitTotalTimeCost_);
 }
 

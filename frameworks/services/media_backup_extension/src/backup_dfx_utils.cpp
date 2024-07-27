@@ -15,12 +15,12 @@
 
 #include "backup_dfx_utils.h"
 
-#include <string>
-
 #include "hisysevent.h"
+#inlcude "media_log.h"
 
 namespace OHOS {
 namespace Media {
+static constexpr char MEDIA_LIBRARY[] = "MEDIALIBRARY";
 const std::string KEY_ALBUM_COUNT = "ALBUM_COUNT";
 const std::string KEY_PHOTO_COUNT = "PHOTO_COUNT";
 const std::string KEY_FACE_COUNT = "FACE_COUNT";
