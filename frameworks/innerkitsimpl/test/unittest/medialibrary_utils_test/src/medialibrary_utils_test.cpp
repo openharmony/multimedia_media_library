@@ -23,6 +23,7 @@
 #include "medialibrary_utils_test.h"
 #include "thumbnail_service.h"
 #include "thumbnail_utils.h"
+#include "post_event_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -796,6 +797,24 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeLcd_test_001, TestSize.Level0)
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 512);
     EXPECT_EQ(height, 3840);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, PostErrorProcess_test_001, TestSize.Level0)
+{
+    PostEventUtils postEventUtils;
+    uint32_t errType = ErrType::DEFAULT_ERR;
+    VariantMap error;
+    postEventUtils.PostErrorProcess(errType, error);
+    EXPECT_EQ(errType, ErrType::DEFAULT_ERR);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, PostStatProcess_test_002, TestSize.Level0)
+{
+    PostEventUtils postEventUtils;
+    uint32_t statType = StatType::DEFAULT_STAT;
+    VariantMap stat;
+    postEventUtils.PostStatProcess(statType, stat);
+    EXPECT_EQ(statType, StatType::DEFAULT_STAT);
 }
 } // namespace Media
 } // namespace OHOS
