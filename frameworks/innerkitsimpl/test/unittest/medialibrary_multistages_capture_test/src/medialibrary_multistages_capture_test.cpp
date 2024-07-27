@@ -809,7 +809,7 @@ HWTEST_F(MediaLibraryMultiStagesCaptureTest, IsPhotoDeleted_test_002, TestSize.L
 HWTEST_F(MediaLibraryMultiStagesCaptureTest, BeginSynchronize_test_001, TestSize.Level1)
 {
     DeferredProcessingAdapter adapter;
-    EXPECT_NE(adapter.deferredProcSession_ , nullptr);
+    EXPECT_NE(adapter.deferredProcSession_, nullptr);
     adapter.BeginSynchronize();
 }
 }
