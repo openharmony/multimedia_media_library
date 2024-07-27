@@ -36,7 +36,6 @@
 #include "metadata.h"
 #include "parameters.h"
 #include "photo_album_column.h"
-#include "post_event_utils.h"
 #include "result_set_utils.h"
 #include "resource_type.h"
 #include "userfilemgr_uri.h"
