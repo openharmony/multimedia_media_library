@@ -161,7 +161,7 @@ static std::string CalNetworkId(MediaFileUri* uri, std::unordered_map<std::strin
     } else if (scheme == ML_DATA_SHARE_SCHEME) {
         return uri->GetAuthority();
     }
-    MEDIA_ERR_LOG("CalNetworkId scheme is invalid, scheme is %{private}s", scheme.c_str());
+    MEDIA_DEBUG_LOG("CalNetworkId scheme is invalid, scheme is %{private}s", scheme.c_str());
     return "";
 }
 

@@ -150,7 +150,7 @@ std::string MediaDataShareStubImpl::GetType(const Uri &uri)
 
 int MediaDataShareStubImpl::BatchInsert(const Uri &uri, const std::vector<DataShareValuesBucket> &values)
 {
-    MEDIA_INFO_LOG("begin.");
+    MEDIA_DEBUG_LOG("begin.");
     int ret = 0;
     auto client = sptr<MediaDataShareStubImpl>(this);
     auto extension = client->GetOwner();
@@ -159,7 +159,7 @@ int MediaDataShareStubImpl::BatchInsert(const Uri &uri, const std::vector<DataSh
         return ret;
     }
     ret = extension->BatchInsert(uri, values);
-    MEDIA_INFO_LOG("end successfully.");
+    MEDIA_DEBUG_LOG("end successfully.");
     return ret;
 }
 
