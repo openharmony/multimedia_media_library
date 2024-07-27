@@ -2178,6 +2178,7 @@ static bool DiscardCameraPhotoExecute(MediaAssetChangeRequestAsyncContext& conte
     valuesBucket.Put(PhotoColumn::PHOTO_IS_TEMP, true);
     auto fileAsset = context.objectInfo->GetFileAssetInstance();
     predicates.EqualTo(PhotoColumn::MEDIA_ID, to_string(fileAsset->GetId()));
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, "1"); // only temp camera photo can be discarded
 
     string uri = PAH_DISCARD_CAMERA_PHOTO;
     MediaLibraryNapiUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
