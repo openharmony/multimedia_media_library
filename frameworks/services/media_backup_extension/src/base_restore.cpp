@@ -20,6 +20,7 @@
 #include "application_context.h"
 #include "background_task_mgr_helper.h"
 #include "backup_database_utils.h"
+#include "backup_dfx_utils.h"
 #include "backup_file_utils.h"
 #include "extension_context.h"
 #include "media_column.h"
@@ -98,9 +99,6 @@ int32_t BaseRestore::Init(void)
     migrateVideoFileNumber_ = 0;
     migrateAudioDatabaseNumber_ = 0;
     migrateAudioFileNumber_ = 0;
-    migratePortraitPhotoNumber_ = 0;
-    migratePortraitFaceNumber_ = 0;
-    migratePortraitTotalTimeCost_ = 0;
     imageNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, IMAGE_ASSET_TYPE);
     videoNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, VIDEO_ASSET_TYPE);
     audioNumber_ = BackupDatabaseUtils::QueryUniqueNumber(mediaLibraryRdb_, AUDIO_ASSET_TYPE);
@@ -953,15 +951,16 @@ void BaseRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos,
     return;
 }
 
-void BaseRestore::ReportPortraitStat()
+void BaseRestore::ReportPortraitStat(int32_t sceneCode)
 {
-    VariantMap map = {{KEY_ALBUM_COUNT, static_cast<uint32_t>(portraitAlbumIdMap_.size())},
-        {KEY_PHOTO_COUNT, migratePortraitPhotoNumber_}, {KEY_FACE_COUNT, migratePortraitFaceNumber_},
-        {KEY_TOTAL_TIME_COST, migratePortraitTotalTimeCost_}};
+    if (sceneCode != UPGRADE_RESTORE_ID) {
+        return;
+    }
     MEDIA_INFO_LOG("PortraitStat: album %{public}zu, photo %{public}lld, %{public}lld, cost %{publc}lld",
         portraitAlbumIdMap_.size(), (long long)migratePortraitPhotoNumber_, (long long)migratePortraitFaceNumber_,
         (long long)migratePortraitTotalTimeCost_);
-    PostEventUtils::GetInstance().PostStatProcess(StatType::BACKUP_PORTRAIT_STAT, map);
+    BackupDfxUtils::PostPortraitStat(portraitAlbumIdMap_.size(), migratePortraitPhotoNumber_,
+        migratePortraitFaceNumber_, migratePortraitTotalTimeCost_);
 }
 
 void BaseRestore::UpdateFaceAnalysisStatus()

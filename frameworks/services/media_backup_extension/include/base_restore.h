@@ -43,7 +43,7 @@ public:
     void StartRestoreEx(const std::string &backupRetorePath, const std::string &upgradePath,
         std::string &restoreExInfo);
     std::string GetRestoreExInfo();
-    void ReportPortraitStat();
+    void ReportPortraitStat(int32_t sceneCode);
 
 protected:
     int32_t Init(void);
@@ -112,9 +112,9 @@ protected:
     std::atomic<uint64_t> migrateVideoFileNumber_;
     std::atomic<uint64_t> migrateAudioDatabaseNumber_;
     std::atomic<uint64_t> migrateAudioFileNumber_;
-    std::atomic<uint64_t> migratePortraitPhotoNumber_;
-    std::atomic<uint64_t> migratePortraitFaceNumber_;
-    std::atomic<uint64_t> migratePortraitTotalTimeCost_;
+    std::atomic<uint64_t> migratePortraitPhotoNumber_{0};
+    std::atomic<uint64_t> migratePortraitFaceNumber_{0};
+    std::atomic<uint64_t> migratePortraitTotalTimeCost_{0};
     std::atomic<uint32_t> imageNumber_;
     std::atomic<uint32_t> videoNumber_;
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};

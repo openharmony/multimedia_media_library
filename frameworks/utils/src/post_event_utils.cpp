@@ -87,30 +87,6 @@ string PostEventUtils::GetStringValue(const string &key, const VariantMap &map)
     return value;
 }
 
-uint32_t PostEventUtils::GetUintValue(const string &key, const VariantMap &map)
-{
-    uint32_t value = 0;
-    auto iter = map.find(key);
-    if (iter != map.end()) {
-        if (holds_alternative<uint32_t>(iter->second)) {
-            return get<uint32_t>(iter->second);
-        }
-    }
-    return value;
-}
-
-uint64_t PostEventUtils::GetUint64Value(const string &key, const VariantMap &map)
-{
-    uint64_t value = 0;
-    auto iter = map.find(key);
-    if (iter != map.end()) {
-        if (holds_alternative<uint64_t>(iter->second)) {
-            return get<uint64_t>(iter->second);
-        }
-    }
-    return value;
-}
-
 void PostEventUtils::PostFileOptError(const VariantMap &error)
 {
     uint32_t uid = getuid();
@@ -302,25 +278,6 @@ void PostEventUtils::PostMscResultStat(const VariantMap &stat)
     }
 }
 
-void PostEventUtils::PostBackupPortraitStat(const VariantMap &stat)
-{
-    uint32_t albumCount = GetUintValue(KEY_ALBUM_COUNT, stat);
-    uint64_t photoCount = GetUint64Value(KEY_PHOTO_COUNT, stat);
-    uint64_t faceCount = GetUint64Value(KEY_FACE_COUNT, stat);
-    uint64_t totalTimeCost = GetUint64Value(KEY_TOTAL_TIME_COST, stat);
-    int ret = HiSysEventWrite(
-        MEDIA_LIBRARY,
-        "MEDIALIB_BACKUP_PORTRAIT_STAT",
-        HiviewDFX::HiSysEvent::EventType::STATISTIC,
-        KEY_ALBUM_COUNT, albumCount,
-        KEY_PHOTO_COUNT, photoCount,
-        KEY_FACE_COUNT, faceCount,
-        KEY_TOTAL_TIME_COST, totalTimeCost);
-    if (ret != 0) {
-        MEDIA_ERR_LOG("PostBackupPortraitStat error:%{public}d", ret);
-    }
-}
-
 void PostEventUtils::PostErrorProcess(const uint32_t &errType, const VariantMap &error)
 {
     switch (errType) {
@@ -358,9 +315,6 @@ void PostEventUtils::PostStatProcess(const uint32_t &statType, const VariantMap 
             break;
         case StatType::MSC_RESULT_STAT:
             PostMscResultStat(stat);
-            break;
-        case StatType::BACKUP_PORTRAIT_STAT:
-            PostBackupPortraitStat(stat);
             break;
         default:
             PostThumbnailStat(stat);
