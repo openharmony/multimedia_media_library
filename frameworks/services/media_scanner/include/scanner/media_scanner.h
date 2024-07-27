@@ -114,11 +114,11 @@ private:
         const std::string &albumName);
 
     /* error */
-    EXPORT int32_t Start();
+    int32_t Start();
     int32_t ScanError(bool isBoot = false);
 
     /* set error */
-    EXPORT int32_t SetError();
+    int32_t SetError();
 
     /* db ops */
     EXPORT int32_t Commit();
