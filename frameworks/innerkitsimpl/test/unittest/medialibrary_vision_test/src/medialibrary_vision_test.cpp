@@ -650,6 +650,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_InsertImageFace_Test_001, TestSize.Level
     valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 3.4);
     valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 2.3);
     valuesBucket.Put(FACE_AESTHETICS_SCORE, 5.3);
+    valuesBucket.Put(BEAUTY_BOUNDER_VERSION, "1.01");
+    valuesBucket.Put(IS_EXCLUDED, 1);
     auto retVal = MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     EXPECT_GT(retVal, 0);
     MEDIA_INFO_LOG("Vision_InsertImageFace_Test_001::retVal = %{public}d. End", retVal);
@@ -693,6 +695,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_UpdateImageFace_Test_001, TestSize.Level
     valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 5.4);
     valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 6.3);
     valuesBucket.Put(FACE_AESTHETICS_SCORE, 5.8);
+    valuesBucket.Put(BEAUTY_BOUNDER_VERSION, "1.31");
+    valuesBucket.Put(IS_EXCLUDED, 0);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
     DataShare::DataShareValuesBucket updateValues;
     updateValues.Put(TOTAL_FACES, 8);
@@ -737,6 +741,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_DeleteImageFace_Test_001, TestSize.Level
     valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 4.4);
     valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 4.3);
     valuesBucket.Put(FACE_AESTHETICS_SCORE, 7.3);
+    valuesBucket.Put(BEAUTY_BOUNDER_VERSION, "1.03");
+    valuesBucket.Put(IS_EXCLUDED, 0);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
@@ -780,6 +786,8 @@ HWTEST_F(MediaLibraryVisionTest, Vision_QueryImageFace_Test_001, TestSize.Level0
     valuesBucket.Put(BEAUTY_BOUNDER_WIDTH, 5.46);
     valuesBucket.Put(BEAUTY_BOUNDER_HEIGHT, 6.36);
     valuesBucket.Put(FACE_AESTHETICS_SCORE, 8.3);
+    valuesBucket.Put(BEAUTY_BOUNDER_VERSION, "1.11");
+    valuesBucket.Put(IS_EXCLUDED, 1);
     MediaLibraryDataManager::GetInstance()->Insert(cmd, valuesBucket);
 
     DataShare::DataShareValuesBucket valuesBucket1;
