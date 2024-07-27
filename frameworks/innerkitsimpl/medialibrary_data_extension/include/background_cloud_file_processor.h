@@ -13,17 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef OHOS_MEDIALIBRARY_DOWNLOAD_CLOUD_FILES_BACKGROUND_H
-#define OHOS_MEDIALIBRARY_DOWNLOAD_CLOUD_FILES_BACKGROUND_H
+#ifndef OHOS_MEDIALIBRARY_BACKGROUND_CLOUD_FILE_PROCESSOR_H
+#define OHOS_MEDIALIBRARY_BACKGROUND_CLOUD_FILE_PROCESSOR_H
 
 #include "abs_shared_result_set.h"
 #include "medialibrary_async_worker.h"
+#include "metadata.h"
 #include "timer.h"
 #include "userfile_manager_types.h"
+#include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
-class DownloadCloudFilesBackground {
+class BackgroundCloudFileProcessor {
 public:
     static void StartTimer();
     static void StopTimer();
@@ -34,12 +36,35 @@ private:
         MediaType mediaType;
     } DownloadFiles;
 
+    typedef struct {
+        int32_t fileId;
+        std::string path;
+        int64_t size;
+        int32_t width;
+        int32_t height;
+        std::string mimeType;
+        int32_t duration;
+    } AbnormalData;
+
+    typedef struct {
+        std::vector<AbnormalData> abnormalData;
+        MediaType mediaType;
+    } UpdateData;
+
     class DownloadCloudFilesData : public AsyncTaskData {
     public:
         DownloadCloudFilesData(DownloadFiles downloadFiles) : downloadFiles_(downloadFiles){};
         ~DownloadCloudFilesData() override = default;
 
         DownloadFiles downloadFiles_;
+    };
+
+    class UpdateAbnormalData : public AsyncTaskData {
+    public:
+        UpdateAbnormalData(UpdateData updateData) : updateData_(updateData){};
+        ~UpdateAbnormalData() override = default;
+
+        UpdateData updateData_;
     };
 
     static void DownloadCloudFiles();
@@ -49,13 +74,24 @@ private:
     static int32_t AddDownloadTask(const DownloadFiles &downloadFiles);
     static void DownloadCloudFilesExecutor(AsyncTaskData *data);
     static void StopDownloadFiles(const std::vector<std::string> &filePaths);
+    static void ProcessCloudData();
+    static void UpdateCloudData();
+    static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData();
+    static void ParseUpdateData(std::shared_ptr<NativeRdb::ResultSet> &resultSet, UpdateData &updateData);
+    static int32_t AddUpdateDataTask(const UpdateData &updateData);
+    static void UpdateCloudDataExecutor(AsyncTaskData *data);
+    static void UpdateAbnormaldata(std::unique_ptr<Metadata> &metadata, const std::string &tableName);
+    static int32_t GetSizeAndMimeType(std::unique_ptr<Metadata> &metadata);
+    static int32_t GetExtractMetadata(std::unique_ptr<Metadata> &metadata);
+    static void StopUpdateData();
 
     static std::recursive_mutex mutex_;
     static Utils::Timer timer_;
     static uint32_t startTimerId_;
     static uint32_t stopTimerId_;
     static std::vector<std::string> curDownloadPaths_;
+    static bool isUpdating_;
 };
 } // namespace Media
 } // namespace OHOS
-#endif // OHOS_MEDIALIBRARY_DOWNLOAD_CLOUD_FILES_BACKGROUND_H
+#endif // OHOS_MEDIALIBRARY_BACKGROUND_CLOUD_FILE_PROCESSOR_H
