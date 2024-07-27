@@ -87,6 +87,36 @@ void CloudSyncNotifyHandler::HandleDeleteEvent(const std::list<Uri> &uris)
     }
 }
 
+void CloudSyncNotifyHandler::HandleTimeUpdateEvent(const std::list<Uri> &uris)
+{
+    for (auto &uri : uris) {
+        string uriString = uri.ToString();
+        auto newDateAddedPos = uriString.rfind('/');
+        if (newDateAddedPos == string::npos) {
+            continue;
+        }
+        auto formerDateAddedPos = uriString.rfind('/', newDateAddedPos - 1);
+        if (formerDateAddedPos == string::npos) {
+            continue;
+        }
+        auto fileIdPos = uriString.rfind('/', formerDateAddedPos - 1);
+        if (fileIdPos == string::npos) {
+            continue;
+        }
+
+        string newDateAdded = uriString.substr(newDateAddedPos + 1);
+        string formerDateAdded = uriString.substr(formerDateAddedPos + 1, newDateAddedPos - formerDateAddedPos - 1);
+        string fileId = uriString.substr(fileIdPos + 1, formerDateAddedPos - fileIdPos - 1);
+        if (!IsCloudNotifyInfoValid(newDateAdded) || !IsCloudNotifyInfoValid(formerDateAdded) ||
+            !IsCloudNotifyInfoValid(fileId)) {
+            MEDIA_WARN_LOG("cloud observer get no valid uri : %{public}s", uriString.c_str());
+            continue;
+        }
+
+        ThumbnailService::GetInstance()->UpdateAstcWithNewDateAdded(fileId, newDateAdded, formerDateAdded);
+    }
+}
+
 void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, const ChangeType &type)
 {
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
@@ -97,6 +127,9 @@ void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, co
             break;
         case ChangeType::DELETE:
             HandleDeleteEvent(uris);
+            break;
+        case ChangeType::PHOTO_TIME_UPDATE:
+            HandleTimeUpdateEvent(uris);
             break;
         default:
             MEDIA_DEBUG_LOG("change type is %{public}d, no need ThumbnailObserverOnChange", type);

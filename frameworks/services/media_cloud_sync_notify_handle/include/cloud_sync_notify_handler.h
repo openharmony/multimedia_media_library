@@ -38,6 +38,7 @@ public:
 private:
     void HandleInsertEvent(const std::list<Uri> &uris);
     void HandleDeleteEvent(const std::list<Uri> &uris);
+    void HandleTimeUpdateEvent(const std::list<Uri> &uris);
 };
 } //namespace Media
 } //namespace OHOS

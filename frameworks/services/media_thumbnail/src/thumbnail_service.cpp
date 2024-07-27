@@ -625,5 +625,21 @@ void ThumbnailService::DeleteAstcWithFileIdAndDateAdded(const std::string &fileI
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::DeleteMonthAndYearAstc,
         opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
 }
+
+void ThumbnailService::UpdateAstcWithNewDateAdded(const std::string &fileId, const std::string &newDateAdded,
+    const std::string &formerDateAdded)
+{
+    ThumbnailData data;
+    data.dateAdded = newDateAdded;
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .row = fileId,
+        .dateAdded = formerDateAdded
+    };
+
+    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::UpdateAstcDateAdded,
+        opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+}
 } // namespace Media
 } // namespace OHOS
