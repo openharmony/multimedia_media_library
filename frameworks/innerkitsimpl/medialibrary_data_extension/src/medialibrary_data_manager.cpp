@@ -299,7 +299,7 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         return;
     }
 
-    ProcessCloudFilesBackground::StopTimer();
+    BackgroundCloudFileProcessor::StopTimer();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
