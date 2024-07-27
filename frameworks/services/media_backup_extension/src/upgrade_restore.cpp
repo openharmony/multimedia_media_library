@@ -679,7 +679,6 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.recycleFlag = GetInt32Val(GALLERY_RECYCLE_FLAG, resultSet);
     info.isBurst = GetInt32Val(GALLERY_IS_BURST, resultSet);
     info.hashCode = GetStringVal(GALLERY_HASH, resultSet);
-    info.fileIdOld = GetInt32Val(GALLERY_ID, resultSet);
 
     bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     if (!isSuccess) {
@@ -1407,14 +1406,14 @@ void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInf
         return;
     }
     std::string hashSelection;
-    std::unordered_map<int32_t, FileInfo> fileInfoMap;
+    std::unordered_map<std::string, FileInfo> fileInfoMap;
     SetHashReference(fileInfos, needQueryMap, hashSelection, fileInfoMap);
 
     int32_t totalNumber = QueryFaceTotalNumber(hashSelection);
     MEDIA_INFO_LOG("Current %{public}zu / %{public}zu have %{public}d faces", fileInfoMap.size(), fileInfos.size(),
         totalNumber);
-    std::unordered_set<int32_t> excludedFiles;
-    std::unordered_set<int32_t> filesWithFace;
+    std::unordered_set<std::string> excludedFiles;
+    std::unordered_set<std::string> filesWithFace;
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
         std::vector<FaceInfo> faceInfos = QueryFaceInfos(hashSelection, fileInfoMap, offset, excludedFiles);
         int64_t startInsertFace = MediaFileUtils::UTCTimeMilliSeconds();
@@ -1442,39 +1441,37 @@ void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInf
 }
 
 void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
-    std::string &hashSelection, std::unordered_map<int32_t, FileInfo> &fileInfoMap)
+    std::string &hashSelection, std::unordered_map<std::string, FileInfo> &fileInfoMap)
 {
     auto needQuerySet = needQueryMap.at(PhotoRelatedType::PORTRAIT);
-    for (const auto &hash : needQuerySet) {
-        BackupDatabaseUtils::UpdateSelection(hashSelection, hash, true);
-    }
     for (const auto &fileInfo : fileInfos) {
-        if (needQuerySet.count(fileInfo.hashCode) == 0 || fileInfo.fileIdOld <= 0 || fileInfo.fileIdNew <= 0) {
+        if (fileInfo.hashCode.empty() || needQuerySet.count(fileInfo.hashCode) == 0 || fileInfo.fileIdNew <= 0) {
             continue;
         }
-        fileInfoMap[fileInfo.fileIdOld] = fileInfo;
+        BackupDatabaseUtils::UpdateSelection(hashSelection, fileInfo.hashCode, true);
+        fileInfoMap[fileInfo.hashCode] = fileInfo;
     }
 }
 
 int32_t UpgradeRestore::QueryFaceTotalNumber(const std::string &hashSelection)
 {
-    std::string querySql = "SELECT count(1) as count FROM " + GALLERY_FACE_TABLE_FULL + " WHERE " +
+    std::string querySql = "SELECT count(1) as count FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
         GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ")";
     return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
 
 std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSelection,
-    const std::unordered_map<int32_t, FileInfo> &fileInfoMap, int32_t offset,
-    std::unordered_set<int32_t> &excludedFiles)
+    const std::unordered_map<std::string, FileInfo> &fileInfoMap, int32_t offset,
+    std::unordered_set<std::string> &excludedFiles)
 {
     vector<FaceInfo> result;
     result.reserve(QUERY_COUNT);
     std::string querySql = "SELECT " + GALLERY_SCALE_X + ", " + GALLERY_SCALE_Y + ", " + GALLERY_SCALE_WIDTH + ", " +
         GALLERY_SCALE_HEIGHT + ", " + GALLERY_PITCH + ", " + GALLERY_YAW + ", " + GALLERY_ROLL + ", " +
         GALLERY_PROB + ", " + GALLERY_TOTAL_FACE + ", " + GALLERY_MERGE_FACE_HASH + ", " + GALLERY_FACE_ID + ", " +
-        GALLERY_MERGE_FACE_TAG_ID + ", " + GALLERY_LANDMARKS + ", " + GALLERY_MEDIA_ID + " FROM " +
-        GALLERY_FACE_TABLE_FULL + " WHERE " + GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ") ORDER BY " +
-        GALLERY_MEDIA_ID + ", " + GALLERY_FACE_ID;
+        GALLERY_MERGE_FACE_TAG_ID + ", " + GALLERY_LANDMARKS + " FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
+        GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ") ORDER BY " + GALLERY_MERGE_FACE_HASH + ", " +
+        GALLERY_FACE_ID;
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
     if (resultSet == nullptr) {
@@ -1484,13 +1481,13 @@ std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSele
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         FaceInfo faceInfo;
         if (!ParseFaceResultSet(resultSet, faceInfo)) {
-            MEDIA_ERR_LOG("Parse face result set failed, exclude %{public}d", faceInfo.fileIdOld);
-            excludedFiles.insert(faceInfo.fileIdOld);
+            MEDIA_ERR_LOG("Parse face result set failed, exclude %{public}s", faceInfo.hash.c_str());
+            excludedFiles.insert(faceInfo.hash);
             continue;
         }
         if (!SetAttributes(faceInfo, fileInfoMap)) {
-            MEDIA_ERR_LOG("Set attributes failed, exclude %{public}d", faceInfo.fileIdOld);
-            excludedFiles.insert(faceInfo.fileIdOld);
+            MEDIA_ERR_LOG("Set attributes failed, exclude %{public}s", faceInfo.hash.c_str());
+            excludedFiles.insert(faceInfo.hash);
             continue;
         }
         result.emplace_back(faceInfo);
@@ -1500,11 +1497,6 @@ std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSele
 
 bool UpgradeRestore::ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FaceInfo &faceInfo)
 {
-    faceInfo.fileIdOld = GetInt32Val(GALLERY_MEDIA_ID, resultSet);
-    if (faceInfo.fileIdOld <= 0) {
-        MEDIA_ERR_LOG("Get invalid id");
-        return false;
-    }
     faceInfo.scaleX = GetDoubleVal(GALLERY_SCALE_X, resultSet);
     faceInfo.scaleY = GetDoubleVal(GALLERY_SCALE_Y, resultSet);
     faceInfo.scaleWidth = GetDoubleVal(GALLERY_SCALE_WIDTH, resultSet);
@@ -1526,7 +1518,7 @@ bool UpgradeRestore::ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultS
     return true;
 }
 
-bool UpgradeRestore::SetAttributes(FaceInfo &faceInfo, const std::unordered_map<int32_t, FileInfo> &fileInfoMap)
+bool UpgradeRestore::SetAttributes(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap)
 {
     return BackupDatabaseUtils::SetLandmarks(faceInfo, fileInfoMap) &&
         BackupDatabaseUtils::SetFileIdNew(faceInfo, fileInfoMap) &&
@@ -1536,7 +1528,7 @@ bool UpgradeRestore::SetAttributes(FaceInfo &faceInfo, const std::unordered_map<
 }
 
 int32_t UpgradeRestore::InsertFaceAnalysisDataByTable(const std::vector<FaceInfo> &faceInfos, bool isMap,
-    const std::unordered_set<int32_t> &excludedFiles)
+    const std::unordered_set<std::string> &excludedFiles)
 {
     std::vector<NativeRdb::ValuesBucket> values = GetInsertValues(faceInfos, isMap, excludedFiles);
     int64_t rowNum = 0;
@@ -1549,11 +1541,11 @@ int32_t UpgradeRestore::InsertFaceAnalysisDataByTable(const std::vector<FaceInfo
 }
 
 std::vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(const std::vector<FaceInfo> &faceInfos, bool isMap,
-    const std::unordered_set<int32_t> &excludedFiles)
+    const std::unordered_set<std::string> &excludedFiles)
 {
     std::vector<NativeRdb::ValuesBucket> values;
     for (auto &faceInfo : faceInfos) {
-        if (excludedFiles.count(faceInfo.fileIdOld) > 0) {
+        if (excludedFiles.count(faceInfo.hash) > 0) {
             continue;
         }
         if (isMap && faceInfo.tagIdNew == TAG_ID_UNPROCESSED) {
@@ -1592,11 +1584,14 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FaceInfo &faceInfo,
     return values;
 }
 
-void UpgradeRestore::UpdateFilesWithFace(std::unordered_set<int32_t> &filesWithFace,
+void UpgradeRestore::UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace,
     const std::vector<FaceInfo> &faceInfos)
 {
     for (const auto &faceInfo : faceInfos) {
-        filesWithFace.insert(faceInfo.fileIdOld);
+        if (faceInfo.hash.empty()) {
+            continue;
+        }
+        filesWithFace.insert(faceInfo.hash);
     }
 }
 } // namespace Media
