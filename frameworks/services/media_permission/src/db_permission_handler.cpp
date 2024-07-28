@@ -49,7 +49,7 @@ int32_t DbPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, Pe
         return E_INVALID_FILEID;
     }
     DataShare::DataSharePredicates predicates;
-    predicates.SetWhereClause("file_id = ? and appid = ? and media_type = ?");
+    predicates.SetWhereClause("file_id = ? and appid = ? and uri_type = ?");
     predicates.SetWhereArgs({fileId, appId, to_string(mediaType)});
     vector<string> columns;
     auto queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, TABLE_PERMISSION), columns);
