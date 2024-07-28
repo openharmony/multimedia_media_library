@@ -248,6 +248,19 @@ string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
     return id;
 }
 
+int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
+{
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
+        std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
+        return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+    }
+    if (uri.find(AudioColumn::AUDIO_URI_PREFIX) == string::npos) {
+        std::string tmp = uri.substr(AudioColumn::AUDIO_URI_PREFIX.size());
+        return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+    }
+    return -1;
+}
+
 MediaType MediaLibraryNapiUtils::GetMediaTypeFromUri(const string &uri)
 {
     if (uri.find(MEDIALIBRARY_IMAGE_URI) != string::npos) {

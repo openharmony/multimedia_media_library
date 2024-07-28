@@ -20,8 +20,10 @@
 #include "dir_asset.h"
 #include "form_map.h"
 #include "location_column.h"
+#include "media_app_uri_permission_column.h"
 #include "media_column.h"
 #include "medialibrary_db_const.h"
+#include "media_app_uri_permission_column.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
 #include "search_column.h"
@@ -43,6 +45,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { MEDIA_FILEOPRN, OperationObject::FILESYSTEM_ASSET },
         { MEDIA_PHOTOOPRN, OperationObject::FILESYSTEM_PHOTO },
         { MEDIA_AUDIOOPRN, OperationObject::FILESYSTEM_AUDIO },
+        { MEDIA_APP_URI_PERMISSIONOPRN, OperationObject::MEDIA_APP_URI_PERMISSION },
         { MEDIA_DIROPRN, OperationObject::FILESYSTEM_DIR },
         { MEDIA_ALBUMOPRN, OperationObject::FILESYSTEM_ALBUM },
         { MEDIA_SMARTALBUMOPRN, OperationObject::SMART_ALBUM },
@@ -63,6 +66,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { TOOL_AUDIO, OperationObject::TOOL_AUDIO },
         { TOOL_ALBUM, OperationObject::TOOL_ALBUM },
         { PAH_FORM_MAP, OperationObject::PAH_FORM_MAP },
+        { GRANT_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
 
         // use in Query...
         { MEDIATYPE_DIRECTORY_TABLE, OperationObject::FILESYSTEM_DIR },
@@ -78,6 +82,7 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { PAH_MULTISTAGES_CAPTURE, OperationObject::PAH_MULTISTAGES_CAPTURE },
         { MEDIA_MOVING_PHOTO_OPRN_KEYWORD, OperationObject::PAH_MOVING_PHOTO },
         { PAH_BATCH_THUMBNAIL_OPERATE, OperationObject::PAH_BATCH_THUMBNAIL_OPERATE },
+        { CHECK_URI_PERMISSION, OperationObject::APP_URI_PERMISSION_INNER },
 
         // use in Vision
         { PAH_ANA_OCR, OperationObject::VISION_OCR },
@@ -138,6 +143,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::BUNDLE_PERMISSION, { { OperationType::UNKNOWN_TYPE, BUNDLE_PERMISSION_TABLE } } },
         { OperationObject::FILESYSTEM_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
         { OperationObject::FILESYSTEM_AUDIO, { { OperationType::UNKNOWN_TYPE, AudioColumn::AUDIOS_TABLE } } },
+        { OperationObject::MEDIA_APP_URI_PERMISSION,
+        { { OperationType::UNKNOWN_TYPE, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE } } },
         { OperationObject::PHOTO_ALBUM, { { OperationType::UNKNOWN_TYPE, PhotoAlbumColumns::TABLE } } },
         { OperationObject::PHOTO_MAP, { { OperationType::UNKNOWN_TYPE, PhotoMap::TABLE } } },
         { OperationObject::UFM_PHOTO, { { OperationType::UNKNOWN_TYPE, PhotoColumn::PHOTOS_TABLE } } },
@@ -181,6 +188,8 @@ const std::map<OperationObject, std::map<OperationType, std::string>>& GetTableN
         { OperationObject::STORY_COVER, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_COVER_INFO_TABLE } } },
         { OperationObject::STORY_PLAY, { { OperationType::UNKNOWN_TYPE, HIGHLIGHT_PLAY_INFO_TABLE } } },
         { OperationObject::USER_PHOTOGRAPHY, { { OperationType::UNKNOWN_TYPE, USER_PHOTOGRAPHY_INFO_TABLE } } },
+        { OperationObject::APP_URI_PERMISSION_INNER,
+            { { OperationType::UNKNOWN_TYPE, AppUriPermissionColumn::APP_URI_PERMISSION_TABLE } } },
     };
     return tableNameMap;
 }

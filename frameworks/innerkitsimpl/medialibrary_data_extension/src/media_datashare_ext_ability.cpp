@@ -29,6 +29,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
+#include "medialibrary_appstate_observer.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_bundle_manager.h"
 #include "dfx_manager.h"
@@ -193,6 +194,7 @@ void MediaDataShareExtAbility::OnStop()
         scannerManager->Stop();
     }
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
     MEDIA_INFO_LOG("%{public}s end.", __func__);
 }
 
@@ -465,6 +467,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::USER_PHOTOGRAPHY,
         OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
         OperationObject::INDEX_CONSTRUCTION_STATUS,
+        OperationObject::MEDIA_APP_URI_PERMISSION,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
@@ -494,6 +497,8 @@ static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWr
         return HandleMediaVolumePerm();
     } else if (obj == OperationObject::BUNDLE_PERMISSION) {
         return HandleBundlePermCheck();
+    } else if (obj == OperationObject::APP_URI_PERMISSION_INNER) {
+        return E_SUCCESS;
     }
 
     return E_NEED_FURTHER_CHECK;
