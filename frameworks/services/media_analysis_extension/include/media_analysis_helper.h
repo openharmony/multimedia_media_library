@@ -27,10 +27,12 @@ class MediaAnalysisHelper {
 public:
     static void StartMediaAnalysisServiceAsync(int32_t code, const std::vector<std::string> &uris = {});
     static void StartMediaAnalysisServiceSync(int32_t code, const std::vector<std::string> &fileIds = {});
+    static void StartPortraitCoverSelectionAsync(const std::string albumId);
 
 private:
     static void StartMediaAnalysisServiceInternal(int32_t code, MessageOption option,
         std::vector<std::string> fileIds = {});
+    static void PortraitCoverSelectionAsync(const std::string albumId);
 };
 } // namespace Media
 } // namespace OHOS

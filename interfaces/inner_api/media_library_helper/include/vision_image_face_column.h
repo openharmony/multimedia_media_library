@@ -40,6 +40,8 @@ const std::string BEAUTY_BOUNDER_Y = "beauty_bounder_y";
 const std::string BEAUTY_BOUNDER_WIDTH = "beauty_bounder_width";
 const std::string BEAUTY_BOUNDER_HEIGHT = "beauty_bounder_height";
 const std::string FACE_AESTHETICS_SCORE = "aesthetics_score";
+const std::string BEAUTY_BOUNDER_VERSION = "beauty_bounder_version";
+const std::string IS_EXCLUDED = "is_excluded";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_IMAGE_FACE_COLUMN_H

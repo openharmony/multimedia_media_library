@@ -618,6 +618,10 @@ public:
         const std::string &propertyName);
     static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::vector<std::string> &cloumns);
+
+    static std::string ParseAnalysisFace2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
+        const std::vector<std::string> &cloumns);
+
     static std::string GetStringValueByColumn(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::string columnName);
 

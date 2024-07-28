@@ -17,6 +17,7 @@
 
 #include <thread>
 
+#include "media_analysis_callback_stub.h"
 #include "media_file_uri.h"
 
 namespace OHOS {
@@ -51,6 +52,40 @@ void MediaAnalysisHelper::StartMediaAnalysisServiceInternal(int32_t code, Messag
     }
     if (!mediaAnalysisProxy.SendTransactCmd(code, data, reply, option)) {
         MEDIA_ERR_LOG("Start Analysis Service faile: %{public}d", code);
+    }
+}
+
+void MediaAnalysisHelper::StartPortraitCoverSelectionAsync(const std::string albumId)
+{
+    if (albumId.empty()) {
+        MEDIA_ERR_LOG("StartPortraitCoverSelectionAsync albumId is empty");
+        return;
+    }
+
+    std::thread(&PortraitCoverSelectionAsync, albumId).detach();
+}
+
+void MediaAnalysisHelper::PortraitCoverSelectionAsync(const std::string albumId)
+{
+    int32_t code = IMediaAnalysisService::ActivateServiceType::PORTRAIT_COVER_SELECTION;
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_ASYNC);
+    MediaAnalysisProxy mediaAnalysisProxy(nullptr);
+    data.WriteInterfaceToken(mediaAnalysisProxy.GetDescriptor());
+
+    if (!data.WriteString(albumId)) {
+        MEDIA_ERR_LOG("Portrait Cover Selection Write albumId failed");
+        return;
+    }
+
+    if (!data.WriteRemoteObject(new MediaAnalysisCallbackStub())) {
+        MEDIA_ERR_LOG("Portrait Cover Selection Write MediaAnalysisCallbackStub failed");
+        return;
+    }
+
+    if (!mediaAnalysisProxy.SendTransactCmd(code, data, reply, option)) {
+        MEDIA_ERR_LOG("Actively Calling Analysis For Portrait Cover Selection failed");
     }
 }
 } // namespace Media
