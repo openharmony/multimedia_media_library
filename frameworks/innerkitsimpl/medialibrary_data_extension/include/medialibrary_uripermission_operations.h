@@ -16,11 +16,15 @@
 #ifndef OHOS_MEDIALIBRARY_BUNDLEPERMM_OPERATIONS_H
 #define OHOS_MEDIALIBRARY_BUNDLEPERMM_OPERATIONS_H
 
+#include <vector>
+
+#include "datashare_values_bucket.h"
 #include "medialibrary_command.h"
 
 namespace OHOS {
 namespace Media {
 #define EXPORT __attribute__ ((visibility ("default")))
+using namespace OHOS::DataShare;
 class UriPermissionOperations {
 public:
     EXPORT static int32_t GetUriPermissionMode(const std::string &fileId, const std::string &bundleName,
@@ -32,6 +36,11 @@ public:
         const std::string &mode, const std::string &tableName);
     EXPORT static int32_t DeleteBundlePermission(const std::string &fileId, const std::string &bundleName,
         const std::string &tableName);
+    EXPORT static int32_t UpdateOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t InsertOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t DeleteOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t BatchInsertOperation(MediaLibraryCommand &cmd,
+        const std::vector<DataShareValuesBucket> &values);
 };
 } // Media
 } // OHOS
