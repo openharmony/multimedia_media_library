@@ -17,6 +17,7 @@
 
 #include "media_log.h"
 #include "media_file_utils.h"
+#include "medialibrary_errno.h"
 #include "medialibrary_notify.h"
 #include "photo_album_column.h"
 
@@ -57,8 +58,13 @@ int32_t MediaAnalysisCallbackStub::PortraitCoverSelectionCompleted(const std::st
         return ERR_NULL_OBJECT;
     }
 
-    watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId),
-        NotifyType::NOTIFY_UPDATE);
+    int32_t ret =
+        watch->Notify(MediaFileUtils::GetUriByExtrConditions(PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX, albumId),
+        NotifyType::NOTIFY_UPDATE, std::stoi(albumId));
+    if (ret != E_OK) {
+        MEDIA_ERR_LOG("PortraitCoverSelectionCompleted Notify error: %{public}d", ret);
+        return ret;
+    }
 
     MEDIA_INFO_LOG("PortraitCoverSelectionCompleted callback end, albumId: %{public}s", albumId.c_str());
     return ERR_NONE;
