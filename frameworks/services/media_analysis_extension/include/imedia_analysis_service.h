@@ -27,6 +27,7 @@ public:
         START_DELETE_INDEX = 31,
         START_UPDATE_INDEX = 32,
         START_BACKGROUND_TASK = 33,
+        PORTRAIT_COVER_SELECTION = 34,
     };
 public:
     DECLARE_INTERFACE_DESCRIPTOR(u"Multimedia.MediaAnalyseService.API");

@@ -2746,6 +2746,17 @@ static void AddPortraitCoverSelectionColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdatePortraitCoverSelectionColumns(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start update portrait cover selection columns");
+ 
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_VERSION + " TEXT default '' ",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + IS_EXCLUDED + " INT default 0 ",
+    };
+    ExecSqls(sqls, store);
+}
+
 static void AddCoverPosition(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2805,6 +2816,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_SCHPT_READY_INEDX) {
         AddSchptReadyIndex(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PORTRAIT_COVER_SELECTION_COLUMNS) {
+        UpdatePortraitCoverSelectionColumns(store);
     }
 }
 
