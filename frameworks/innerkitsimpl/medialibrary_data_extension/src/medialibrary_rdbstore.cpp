@@ -22,6 +22,7 @@
 #include "ipc_skeleton.h"
 #include "location_column.h"
 #include "media_column.h"
+#include "media_app_uri_permission_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -1042,6 +1043,8 @@ static const vector<string> onCreateSqlStrs = {
     MedialibraryBusinessRecordColumn::CREATE_BUSINESS_KEY_INDEX,
     PhotoExtColumn::CREATE_PHOTO_EXT_TABLE,
     PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
+    AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
+    AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2757,6 +2760,43 @@ static void UpdatePortraitCoverSelectionColumns(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void AddAppUriPermissionInfo(RdbStore &store)
+{
+    const std::string SYNC_DATA_FROM_PHOTOS_SQL =
+        "insert into "+ AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "(" +
+        AppUriPermissionColumn::APP_ID + ", " + AppUriPermissionColumn::FILE_ID + ", " +
+        AppUriPermissionColumn::URI_TYPE + ", " + AppUriPermissionColumn::PERMISSION_TYPE + ", " +
+        AppUriPermissionColumn::DATE_MODIFIED + ") " +
+        "select " +
+        MediaColumn::MEDIA_OWNER_APPID + ", " + MediaColumn::MEDIA_ID + ", " +
+        std::to_string(AppUriPermissionColumn::URI_PHOTO) + ", " +
+        std::to_string(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE) + ", " +
+        MediaColumn::MEDIA_DATE_ADDED +
+        " from " + PhotoColumn::PHOTOS_TABLE +
+        " where " + MediaColumn::MEDIA_OWNER_APPID + " is not null";
+
+    const std::string SYNC_DATA_FROM_AUDIOS_SQL =
+        "insert into "+ AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "(" +
+        AppUriPermissionColumn::APP_ID + ", " + AppUriPermissionColumn::FILE_ID + ", " +
+        AppUriPermissionColumn::URI_TYPE + ", " + AppUriPermissionColumn::PERMISSION_TYPE + ", " +
+        AppUriPermissionColumn::DATE_MODIFIED + ") " +
+        "select " +
+        MediaColumn::MEDIA_OWNER_APPID + ", " + MediaColumn::MEDIA_ID + ", " +
+        std::to_string(AppUriPermissionColumn::URI_AUDIO) + ", " +
+        std::to_string(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE) + ", " +
+        MediaColumn::MEDIA_DATE_ADDED +
+        " from " + AudioColumn::AUDIOS_TABLE +
+        " where " + MediaColumn::MEDIA_OWNER_APPID + " is not null";
+    const vector<string> sqls = {
+        AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
+        AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
+        SYNC_DATA_FROM_PHOTOS_SQL,
+        SYNC_DATA_FROM_AUDIOS_SQL,
+    };
+    MEDIA_INFO_LOG("add uriPermission table info when upgrade phone");
+    ExecSqls(sqls, store);
+}
+
 static void AddCoverPosition(RdbStore &store)
 {
     const vector<string> sqls = {
@@ -2820,6 +2860,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_PORTRAIT_COVER_SELECTION_COLUMNS) {
         UpdatePortraitCoverSelectionColumns(store);
+    }
+    
+    if (oldVersion < VERSION_ADD_APP_URI_PERMISSION_INFO) {
+        AddAppUriPermissionInfo(store);
     }
 }
 

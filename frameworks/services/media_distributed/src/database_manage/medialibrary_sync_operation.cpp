@@ -18,6 +18,7 @@
 #include "datashare_helper.h"
 #include "device_manager.h"
 #include "media_column.h"
+#include "media_app_uri_permission_column.h"
 #include "media_device_column.h"
 #include "media_log.h"
 #include "medialibrary_async_worker.h"
@@ -37,7 +38,8 @@ static constexpr int32_t WAIT_FOR_MS = 1000;
 static constexpr int32_t ALBUM_THUMBNAIL_MAX_COUNT = 50;
 static vector<string> table_arr = {
     MEDIALIBRARY_TABLE, PhotoColumn::PHOTOS_TABLE, AudioColumn::AUDIOS_TABLE,
-    SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE };
+    SMARTALBUM_TABLE, SMARTALBUM_MAP_TABLE, CATEGORY_SMARTALBUM_MAP_TABLE,
+    AppUriPermissionColumn::APP_URI_PERMISSION_TABLE, };
 
 class DistributedAsyncTaskData : public AsyncTaskData {
 public:

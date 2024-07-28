@@ -25,7 +25,7 @@ namespace OHOS::Media {
  */
 static bool IsGrantOperation(MediaLibraryCommand &cmd)
 {
-    return cmd.GetOprnObject() == OperationObject::UNKNOWN_OBJECT;
+    return cmd.GetOprnObject() == OperationObject::APP_URI_PERMISSION_INNER;
 }
 
 int32_t GrantPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, PermParam &permParam)
