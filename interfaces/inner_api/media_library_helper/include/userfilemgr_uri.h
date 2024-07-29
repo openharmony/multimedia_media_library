@@ -80,6 +80,7 @@ const std::string OPRN_REMOVE_MSC_TASK = "remove_msc_task"; // remove multistage
 const std::string MEDIA_FILEOPRN = "file_operation";
 const std::string MEDIA_PHOTOOPRN = "photo_operation";
 const std::string MEDIA_AUDIOOPRN = "audio_operation";
+const std::string MEDIA_APP_URI_PERMISSIONOPRN = "app_uri_permission_operation";
 const std::string MEDIA_DOCUMENTOPRN = "document_operation";
 const std::string MEDIA_FILEOPRN_CREATEASSET = "create_asset";
 const std::string MEDIA_FILEOPRN_MODIFYASSET = "modify_asset";
@@ -134,6 +135,10 @@ const std::string MEDIA_SMARTALBUMOPRN_DELETEALBUM = "delete_smartalbum";
 const std::string MEDIA_SMARTALBUMMAPOPRN_ADDSMARTALBUM = "add_smartalbum_map";
 const std::string MEDIA_SMARTALBUMMAPOPRN_REMOVESMARTALBUM = "remove_smartalbum_map";
 const std::string MEDIA_SMARTALBUMMAPOPRN_AGEINGSMARTALBUM = "ageing_smartalbum_map";
+
+//UriPermission operations constants
+const std::string CHECK_URI_PERMISSION = "phaccess_checkuripermission";
+const std::string GRANT_URI_PERMISSION = "phaccess_granturipermission";
 
 // Direcotry operations constants
 const std::string MEDIA_DIROPRN = "dir_operation";

@@ -1309,5 +1309,28 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, Get_Protrait_Album_NAME_NOT_NULL_test_
     CheckResult(QueryAlbumWithName(), 0, {});
     MEDIA_INFO_LOG("Get_Protrait_Album_NAME_NOT_NULL_test_002 End");
 }
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    auto ret = mediaLibraryDataManager->GenerateThumbnailBackground();
+    EXPECT_EQ(ret<=0, true);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_new_002, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    auto ret = mediaLibraryDataManager->UpgradeThumbnailBackground();
+    EXPECT_EQ(ret<=0, true);
+}
+
+HWTEST_F(MediaLibraryDataManagerUnitTest, RestoreThumbnailDualFrame_new_003, TestSize.Level0)
+{
+    auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
+    auto ret = mediaLibraryDataManager->RestoreThumbnailDualFrame();
+    mediaLibraryDataManager->SetStartupParameter();
+    EXPECT_EQ(ret<=0, true);
+}
+
 } // namespace Media
 } // namespace OHOS

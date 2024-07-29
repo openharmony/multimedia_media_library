@@ -38,6 +38,16 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+const std::string QUERY_MEDIA_VOLUME = "SELECT sum(" + MEDIA_DATA_DB_SIZE + ") AS " +
+    MEDIA_DATA_DB_SIZE + "," +
+    MEDIA_DATA_DB_MEDIA_TYPE + " FROM " +
+    MEDIALIBRARY_TABLE + " WHERE " +
+    MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_FILE) + " OR " +
+    MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_IMAGE) + " OR " +
+    MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " OR " +
+    MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_ALBUM) + " OR " +
+    MEDIA_DATA_DB_MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_AUDIO) + " GROUP BY " +
+    MEDIA_DATA_DB_MEDIA_TYPE;
 
 shared_ptr <MediaLibraryRdbStore> rdbStorePtr = nullptr;
 

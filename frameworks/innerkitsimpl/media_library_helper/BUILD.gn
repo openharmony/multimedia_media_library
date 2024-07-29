@@ -42,6 +42,7 @@ ohos_shared_library("media_library") {
     "src/fetch_result.cpp",
     "src/file_asset.cpp",
     "src/form_map.cpp",
+    "src/media_app_uri_permission_column.cpp",
     "src/media_asset_edit_data.cpp",
     "src/media_asset_rdbstore.cpp",
     "src/media_change_effect.cpp",

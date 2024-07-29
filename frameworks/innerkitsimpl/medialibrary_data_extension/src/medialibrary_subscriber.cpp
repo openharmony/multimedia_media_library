@@ -18,6 +18,7 @@
 
 #include <memory>
 #include "appexecfwk_errors.h"
+#include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
@@ -25,7 +26,6 @@
 #include "bundle_info.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
-#include "download_cloud_files_background.h"
 #include "want.h"
 #include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
@@ -35,7 +35,6 @@
 #include "thermal_mgr_client.h"
 #endif
 
-#include "media_actively_calling_analyse.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -162,25 +161,6 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         DoBackgroundOperation();
     } else {
         StopBackgroundOperation();
-    }
-}
-
-void MedialibrarySubscriber::StartAnalysisService()
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    bool hasData = MediaLibraryRdbUtils::HasDataToAnalysis(rdbStore);\
-    if (!hasData) {
-        MEDIA_INFO_LOG("No data to analysis");
-        return;
-    }
-    int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_BACKGROUND_TASK;
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option(MessageOption::TF_ASYNC);
-    MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
-    data.WriteInterfaceToken(mediaActivelyCallingAnalyse.GetDescriptor());
-    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
-        MEDIA_ERR_LOG("StartAnalysisService Fail");
     }
 }
 
@@ -380,9 +360,9 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
 
     timerStatus_ = newStatus;
     if (timerStatus_) {
-        DownloadCloudFilesBackground::StartTimer();
+        BackgroundCloudFileProcessor::StartTimer();
     } else {
-        DownloadCloudFilesBackground::StopTimer();
+        BackgroundCloudFileProcessor::StopTimer();
     }
 }
 }  // namespace Media

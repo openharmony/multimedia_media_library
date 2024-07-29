@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,7 +12,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef FRAMEWORKS_SERVICES_MEDIA_LIBRARY_DATA_SHARED_DATA_SHARED_H_
-#define FRAMEWORKS_SERVICES_MEDIA_LIBRARY_DATA_SHARED_DATA_SHARED_H_
 
+#ifndef IVISION_SERVICE_CV
+#define IVISION_SERVICE_CV
+
+#include "iremote_broker.h"
+
+namespace OHOS {
+namespace Media {
+class IMediaAnalysisService : public IRemoteBroker {
+public:
+    enum ActivateServiceType {
+        START_SERVICE_OCR = 1,
+        START_DELETE_INDEX = 31,
+        START_UPDATE_INDEX = 32,
+        START_BACKGROUND_TASK = 33,
+        PORTRAIT_COVER_SELECTION = 34,
+    };
+public:
+    DECLARE_INTERFACE_DESCRIPTOR(u"Multimedia.MediaAnalyseService.API");
+};
+} //namespace MEDIA
+}
 #endif

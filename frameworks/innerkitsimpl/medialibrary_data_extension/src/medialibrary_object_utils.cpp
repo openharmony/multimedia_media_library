@@ -31,6 +31,7 @@
 #include "ipc_skeleton.h"
 #include "media_file_utils.h"
 #include "media_column.h"
+#include "media_container_types.h"
 #include "media_directory_type_column.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"

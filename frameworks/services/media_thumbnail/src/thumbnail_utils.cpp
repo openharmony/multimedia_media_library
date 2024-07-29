@@ -138,9 +138,6 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
     auto audioPicMemory = avMetadataHelper->FetchArtPicture();
     if (audioPicMemory == nullptr) {
         MEDIA_ERR_LOG("FetchArtPicture failed!");
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
 
@@ -149,9 +146,6 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
         audioPicMemory->GetSize(), opts, errCode);
     if (audioImageSource == nullptr) {
         MEDIA_ERR_LOG("Failed to create image source! path %{private}s errCode %{public}d", data.path.c_str(), errCode);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-            {KEY_ERR_CODE, static_cast<int32_t>(errCode)}, {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
 
@@ -159,9 +153,6 @@ bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHe
     errCode = audioImageSource->GetImageInfo(0, imageInfo);
     if (errCode != E_OK) {
         MEDIA_ERR_LOG("Failed to get image info, path: %{private}s err: %{public}d", data.path.c_str(), errCode);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__},
-            {KEY_ERR_CODE, static_cast<int32_t>(errCode)}, {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     data.stats.sourceWidth = imageInfo.size.width;
@@ -190,10 +181,6 @@ bool ThumbnailUtils::LoadAudioFile(ThumbnailData &data, Size &desiredSize)
     string path = data.path;
     int32_t err = SetSource(avMetadataHelper, path);
     if (err != E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_FILE, path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
-
         MEDIA_ERR_LOG("Av meta data helper set source failed %{public}d", err);
         return false;
     }
@@ -263,15 +250,57 @@ bool ThumbnailUtils::GenTargetPixelmap(ThumbnailData &data, const Size &desiredS
     return true;
 }
 
-bool ThumbnailUtils::ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize)
+bool ThumbnailUtils::ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize,
+    const AntiAliasingOption &option)
 {
     MediaLibraryTracer tracer;
     tracer.Start("ImageSource::ScaleTargetPixelMap");
 
     PostProc postProc;
-    if (!postProc.ScalePixelMapEx(targetSize, *dataSource, Media::AntiAliasingOption::HIGH)) {
+    if (!postProc.ScalePixelMapEx(targetSize, *dataSource, option)) {
         MEDIA_ERR_LOG("Fail to scale to target thumbnail, ScalePixelMapEx failed, targetSize: %{public}d * %{public}d",
             targetSize.width, targetSize.height);
+        return false;
+    }
+    return true;
+}
+
+bool ThumbnailUtils::CenterScaleEx(std::shared_ptr<PixelMap> &dataSource, const Size &desiredSize,
+    const std::string path)
+{
+    if (dataSource->GetHeight() * dataSource->GetWidth() == 0) {
+        MEDIA_ERR_LOG("Invalid source size, ScalePixelMapEx failed, path: %{public}s",
+            DfxUtils::GetSafePath(path).c_str());
+        return false;
+    }
+    float sourceScale = static_cast<float>(dataSource->GetHeight()) / static_cast<float>(dataSource->GetWidth());
+    float scale = 1.0f;
+    if (sourceScale <= 1.0f) {
+        scale = static_cast<float>(desiredSize.height) / static_cast<float>(dataSource->GetHeight());
+    } else {
+        scale = static_cast<float>(desiredSize.width) / static_cast<float>(dataSource->GetWidth());
+    }
+
+    MediaLibraryTracer tracer;
+    tracer.Start("CenterScaleEx");
+    if (std::abs(scale - 1.0f) > FLOAT_EPSILON) {
+        Size targetSize = {
+            static_cast<int32_t>(scale * dataSource->GetWidth()),
+            static_cast<int32_t>(scale * dataSource->GetHeight())
+        };
+        if (!ScaleTargetPixelMap(dataSource, targetSize, Media::AntiAliasingOption::GAUSS)) {
+            MEDIA_ERR_LOG("Fail in CenterScaleEx, ScalePixelMapEx failed, path: %{public}s",
+                DfxUtils::GetSafePath(path).c_str());
+            return false;
+        }
+    }
+
+    MediaLibraryTracer innerTracer;
+    innerTracer.Start("CenterScale");
+    PostProc postProc;
+    if (!postProc.CenterScale(desiredSize, *dataSource)) {
+        MEDIA_ERR_LOG("Fail in CenterScaleEx, CenterScale failed, path: %{public}s",
+            DfxUtils::GetSafePath(path).c_str());
         return false;
     }
     return true;
@@ -379,9 +408,7 @@ bool ThumbnailUtils::QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        MEDIA_ERR_LOG("ResultSet is nullptr");
         return false;
     }
     int rowCount = 0;
@@ -389,9 +416,6 @@ bool ThumbnailUtils::QueryLcdCount(ThumbRdbOpt &opts, int &outLcdCount, int &err
     resultSet.reset();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to get row count %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
     MEDIA_DEBUG_LOG("rowCount is %{public}d", rowCount);
@@ -422,9 +446,7 @@ bool ThumbnailUtils::QueryLcdCountByTime(const int64_t &time, const bool &before
     rdbPredicates.NotEqualTo(MEDIA_DATA_DB_MEDIA_TYPE, to_string(MEDIA_TYPE_ALBUM));
     auto resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        MEDIA_ERR_LOG("ResultSet is nullptr");
         return false;
     }
     int rowCount = 0;
@@ -432,9 +454,6 @@ bool ThumbnailUtils::QueryLcdCountByTime(const int64_t &time, const bool &before
     resultSet.reset();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to get row count %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
     MEDIA_DEBUG_LOG("rowCount is %{public}d", rowCount);
@@ -625,9 +644,6 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
 
@@ -666,9 +682,6 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
 
@@ -707,9 +720,6 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
 
@@ -831,9 +841,7 @@ bool ThumbnailUtils::QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &ti
 
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (resultSet == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        MEDIA_ERR_LOG("ResultSet is nullptr");
         return false;
     }
     int rowCount = 0;
@@ -841,9 +849,6 @@ bool ThumbnailUtils::QueryNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &ti
     resultSet.reset();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to get row count %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
     MEDIA_DEBUG_LOG("rowCount is %{public}d", rowCount);
@@ -874,9 +879,6 @@ bool ThumbnailUtils::UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
     return true;
@@ -937,9 +939,6 @@ bool ThumbnailUtils::QueryDeviceThumbnailRecords(ThumbRdbOpt &opts, vector<Thumb
     err = resultSet->GoToFirstRow();
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed GoToFirstRow %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
 
@@ -1125,9 +1124,6 @@ bool ThumbnailUtils::CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool 
         vector<string> { opts.row });
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
     return true;
@@ -1197,13 +1193,9 @@ bool ThumbnailUtils::LoadSourceImage(ThumbnailData &data)
     }
     tracer.Finish();
 
-    if (data.loaderOpts.decodeInThumbSize) {
-        tracer.Start("CenterScale");
-        PostProc postProc;
-        if (!postProc.CenterScale(desiredSize, *data.source)) {
-            MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
-            return false;
-        }
+    if (data.loaderOpts.decodeInThumbSize && !CenterScaleEx(data.source, desiredSize, data.path)) {
+        MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
+        return false;
     }
     data.source->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (data.orientation != 0) {
@@ -1225,12 +1217,8 @@ bool ThumbnailUtils::ScaleFastThumb(ThumbnailData &data, const Size &size)
     MediaLibraryTracer tracer;
     tracer.Start("ScaleFastThumb");
 
-    PostProc postProc;
-    if (!postProc.CenterScale(size, *data.source)) {
-        MEDIA_ERR_LOG("thumbnail center crop failed [%{private}s]", data.id.c_str());
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_THUMBNAIL_UNKNOWN},
-            {KEY_OPT_FILE, data.path}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
+    if (!CenterScaleEx(data.source, size, data.path)) {
+        MEDIA_ERR_LOG("Fast thumb center crop failed [%{private}s]", data.id.c_str());
         return false;
     }
     return true;
@@ -1414,18 +1402,12 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
     if (fd < 0) {
         MEDIA_ERR_LOG("Open file failed, err %{public}d, file: %{public}s exists: %{public}d",
             errno, absFilePath.c_str(), MediaFileUtils::IsFileExists(absFilePath));
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, absFilePath}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return E_ERR;
     }
 
     struct stat64 st;
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed, err %{public}d", errno);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, -errno},
-            {KEY_OPT_FILE, absFilePath}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         (void)close(fd);
         return E_ERR;
     }
@@ -1456,9 +1438,6 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
         data.size(), opts, err);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to create image source %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, ""}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         return false;
     }
     tracer.Finish();
@@ -1469,9 +1448,6 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     decodeOpts.desiredSize.height = size.height;
     pixelMap = imageSource->CreatePixelMap(decodeOpts, err);
     if (err != E_SUCCESS) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, static_cast<int32_t>(err)},
-            {KEY_OPT_FILE, ""}, {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::FILE_OPT_ERR, map);
         MEDIA_ERR_LOG("Failed to create pixelmap %{public}d", err);
         return false;
     }
@@ -1548,6 +1524,12 @@ bool ThumbnailUtils::DoDeleteMonthAndYearAstc(ThumbRdbOpt &opts)
         DeleteAstcDataFromKvStore(opts, ThumbnailType::YEAR_ASTC);
 }
 
+bool ThumbnailUtils::DoUpdateAstcDateAdded(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    MEDIA_INFO_LOG("Start DoUpdateAstcDateAdded, id: %{public}s", opts.row.c_str());
+    return UpdateAstcDateAddedFromKvStore(opts, data);
+}
+
 #ifdef DISTRIBUTED
 bool ThumbnailUtils::IsImageExist(const string &key, const string &networkId, const shared_ptr<SingleKvStore> &kvStore)
 {
@@ -1600,27 +1582,19 @@ int64_t ThumbnailUtils::UTCTimeMilliSeconds()
 bool ThumbnailUtils::CheckResultSetCount(const shared_ptr<ResultSet> &resultSet, int &err)
 {
     if (resultSet == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        MEDIA_ERR_LOG("resultSet is nullptr!");
         return false;
     }
     int rowCount = 0;
     err = resultSet->GetRowCount(rowCount);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to get row count %{public}d", err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
 
     if (rowCount <= 0) {
         MEDIA_ERR_LOG("CheckCount No match!");
         err = E_EMPTY_VALUES_BUCKET;
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         return false;
     }
 
@@ -1926,16 +1900,12 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
     };
     auto resultSet = opts.store->QueryByStep(predicates, columns);
     if (resultSet == nullptr) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        MEDIA_ERR_LOG("ResultSet is nullptr");
         return;
     }
     err = resultSet->GoToFirstRow();
     if (err != NativeRdb::E_OK) {
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
+        MEDIA_ERR_LOG("Fail to GoToFirstRow");
         resultSet->Close();
         return;
     }
@@ -1943,9 +1913,6 @@ void ThumbnailUtils::QueryThumbnailDataFromFileId(ThumbRdbOpt &opts, const std::
     ParseQueryResult(resultSet, data, err);
     if (err != NativeRdb::E_OK || data.path.empty()) {
         MEDIA_ERR_LOG("Fail to query thumbnail data using id: %{public}s, err: %{public}d", id.c_str(), err);
-        VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},
-            {KEY_OPT_TYPE, OptType::THUMB}};
-        PostEventUtils::GetInstance().PostErrorProcess(ErrType::DB_OPT_ERR, map);
         resultSet->Close();
         return;
     }
@@ -1979,6 +1946,46 @@ bool ThumbnailUtils::DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const Thumbnai
 
     int status = kvStore->Delete(key);
     return status == E_OK;
+}
+
+bool ThumbnailUtils::UpdateAstcDateAddedFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data)
+{
+    std::string formerKey;
+    std::string newKey;
+    if (!GenerateKvStoreKey(opts.row, opts.dateAdded, formerKey) ||
+        !GenerateKvStoreKey(opts.row, data.dateAdded, newKey)) {
+        MEDIA_ERR_LOG("UpdateAstcDateAddedFromKvStore GenerateKvStoreKey failed");
+        return false;
+    }
+
+    std::shared_ptr<MediaLibraryKvStore> monthKvStore;
+    std::shared_ptr<MediaLibraryKvStore> yearKvStore;
+    monthKvStore = MediaLibraryKvStoreManager::GetInstance()
+        .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
+    yearKvStore = MediaLibraryKvStoreManager::GetInstance()
+        .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::YEAR_ASTC);
+    if (monthKvStore == nullptr || yearKvStore == nullptr) {
+        MEDIA_ERR_LOG("kvStore is nullptr");
+        return false;
+    }
+
+    std::vector<uint8_t> monthValue;
+    if (monthKvStore->Query(formerKey, monthValue) != E_OK || monthKvStore->Insert(newKey, monthValue) != E_OK) {
+        MEDIA_ERR_LOG("MonthValue update failed, fileId %{pubilc}s", opts.row.c_str());
+        return false;
+    }
+    std::vector<uint8_t> yearValue;
+    if (yearKvStore->Query(formerKey, yearValue) != E_OK || yearKvStore->Insert(newKey, yearValue) != E_OK) {
+        MEDIA_ERR_LOG("YearValue update failed, fileId %{pubilc}s", opts.row.c_str());
+        return false;
+    }
+
+    int status = monthKvStore->Delete(formerKey) && yearKvStore->Delete(formerKey);
+    if (status != E_OK) {
+        MEDIA_ERR_LOG("Former kv delete failed, fileId %{pubilc}s", opts.row.c_str());
+        return false;
+    }
+    return true;
 }
 
 void ThumbnailUtils::GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData)
@@ -2019,15 +2026,13 @@ bool ThumbnailUtils::ScaleThumbnailFromSource(ThumbnailData &data, bool isSource
     }
     Size desiredSize;
     Size targetSize = ConvertDecodeSize(data, {dataSource->GetWidth(), dataSource->GetHeight()}, desiredSize);
-    if (!ScaleTargetPixelMap(dataSource, targetSize)) {
+    if (!ScaleTargetPixelMap(dataSource, targetSize, Media::AntiAliasingOption::MEDIUM)) {
         MEDIA_ERR_LOG("Fail to scale to targetSize");
         return false;
     }
-    MediaLibraryTracer tracer;
-    tracer.Start("CenterScale");
-    PostProc postProc;
-    if (!postProc.CenterScale(desiredSize, *dataSource)) {
-        MEDIA_ERR_LOG("thumbnail center crop failed, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
+    if (!CenterScaleEx(dataSource, desiredSize, data.path)) {
+        MEDIA_ERR_LOG("ScaleThumbnailFromSource center crop failed, path: %{public}s, isSourceEx: %{public}d.",
+            DfxUtils::GetSafePath(data.path).c_str(), isSourceEx);
         return false;
     }
     return true;
