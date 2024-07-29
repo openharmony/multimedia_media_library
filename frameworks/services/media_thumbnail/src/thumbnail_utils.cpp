@@ -243,7 +243,7 @@ bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadat
     int32_t &videoWidth, int32_t &videoHeight)
 {
     auto resultMap = avMetadataHelper->ResolveMetadata();
-    if (resultmap.empty()) {
+    if (resultMap.empty()) {
         MEDIA_ERR_LOG("map of video size is empty");
         return false;
     }
