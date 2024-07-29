@@ -886,6 +886,12 @@ static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string
     }
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
     predicates.Limit(1);
     vector<string> columns;
     auto resultSet = rdbStore->Query(predicates, columns);
