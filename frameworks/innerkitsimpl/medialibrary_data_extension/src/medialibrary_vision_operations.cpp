@@ -240,7 +240,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryVisionOperations::DealWithActiveOcr
                 continue;
             }
             if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_ID) {
-                if (!MediaLibraryDataManagerUtils::IsNumber(item.GetSingle(VALUE_IDX))) {
+                if (!MediaLibraryDataManagerUtils::IsNumber(static_cast<string>(item.GetSingle(VALUE_IDX))) {
                     MEDIA_ERR_LOG("Active OCR file_id invalid");
                     continue;
                 }
