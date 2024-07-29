@@ -109,16 +109,6 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
     string uriString = notifyInfo_.uris.front().ToString();
     MEDIA_DEBUG_LOG("observer get first uri is : %{public}s", uriString.c_str());
 
-    if (uriString.find(PhotoColumn::PHOTO_HEIGHT_ERROR_URI_PREFIX) != string::npos) {
-        HandleCloudHeightErrorNotify(notifyInfo_.uris);
-        return;
-    }
-
-    if (uriString.find(PhotoColumn::PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX) != string::npos) {
-        HandleCloudDownloadSucceedNotify(notifyInfo_.uris);
-        return;
-    }
-
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {
         ThumbnailObserverOnChange(notifyInfo_.uris, notifyInfo_.type);
     }
@@ -143,56 +133,6 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
         return;
     }
     chain->Handle(handleData);
-}
-
-void CloudSyncNotifyHandler::HandleCloudHeightErrorNotify(const list<Uri> &uris)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("HandleCloudHeightErrorNotify");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Can not get rdbstore.");
-        return;
-    }
-
-    auto filePaths = MediaLibraryRdbUtils::GetPhotoPathsByCloudIds(rdbStore, uris,
-        PhotoColumn::PHOTO_HEIGHT_ERROR_URI_PREFIX);
-    for (auto &filePath : filePaths) {
-        int32_t ret = CloudSyncManager::GetInstance().StartDownloadFile(filePath);
-        if (ret != E_OK) {
-            MEDIA_ERR_LOG("Start download failed! ret = %{public}d, filePath = %{public}s", ret, filePath.c_str());
-            continue;
-        }
-        MEDIA_DEBUG_LOG("Start download success. filePath = %{public}s", filePath.c_str());
-    }
-    MEDIA_INFO_LOG("Handle cloud height error notify over, uris.size() is %{public}zu", uris.size());
-}
-
-void CloudSyncNotifyHandler::HandleCloudDownloadSucceedNotify(const list<Uri> &uris)
-{
-    MediaLibraryTracer tracer;
-    tracer.Start("HandleCloudDownloadSucceedNotify");
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    if (rdbStore == nullptr) {
-        MEDIA_ERR_LOG("Can not get rdbstore.");
-        return;
-    }
-
-    auto filePaths = MediaLibraryRdbUtils::GetPhotoPathsByCloudIds(rdbStore, uris,
-        PhotoColumn::PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX);
-    for (auto &filePath : filePaths) {
-        if (!MediaFileUtils::IsFileExists(filePath)) {
-            MEDIA_ERR_LOG("File not exist, filePath: %{public}s.", filePath.c_str());
-            continue;
-        }
-
-        if (MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(rdbStore, filePath) < 0) {
-            MEDIA_ERR_LOG("Failed to update photo height and width, filePath: %{public}s.", filePath.c_str());
-            continue;
-        }
-        MEDIA_DEBUG_LOG("Download cloud photo success. filePath = %{public}s", filePath.c_str());
-    }
-    MEDIA_INFO_LOG("Handle download cloud photo over, uris.size() is %{public}zu", uris.size());
 }
 } //namespace Media
 } //namespace OHOS
