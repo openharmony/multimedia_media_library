@@ -862,5 +862,12 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, thumbnail_generate_helper_test_004, T
     auto res = ThumbnailGenerateHelper::RestoreAstcDualFrame(opts);
     EXPECT_EQ(res, -1);
 }
+
+HWTEST_F(MediaLibraryThumbnailServiceTest, UpgradeThumbnailBackground_test_001, TestSize.Level0)
+{
+    shared_ptr<ThumbnailService> serverTest = ThumbnailService::GetInstance();
+    auto res = serverTest->UpgradeThumbnailBackground();
+    EXPECT_NE(res, E_OK);
+}
 } // namespace Media
 } // namespace OHOS
