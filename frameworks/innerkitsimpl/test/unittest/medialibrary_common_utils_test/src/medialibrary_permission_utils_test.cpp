@@ -214,5 +214,13 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_tha
     PermissionUtils::GetPackageNameFromCache(1, packageNameActual);
     EXPECT_EQ(packageNameActual, name);
 }
+
+HWTEST_F(MediaLibraryCommonUtilsTest, permission_utils_test_001, TestSize.Level0)
+{
+    PermissionUtils::ClearBundleInfoInCache();
+    vector<string> perms = {"perm1", "perm2"};
+    auto ret = PermissionUtils::CheckCallerPermission(perms);
+    EXPECT_EQ(ret, false);
+}
 } // namespace Media
 } // namespace OHOS
