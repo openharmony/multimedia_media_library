@@ -12,8 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define private public
-#define protected public
+
 #include "avmetadatahelper.h"
 #include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
@@ -21,6 +20,7 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#define private public
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_utils_test.h"
 #include "thumbnail_service.h"
