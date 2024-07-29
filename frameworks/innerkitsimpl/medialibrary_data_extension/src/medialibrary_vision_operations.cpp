@@ -222,6 +222,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryVisionOperations::DealWithActiveOcr
 {
     constexpr int32_t FIELD_IDX = 0;
     constexpr int32_t VALUE_IDX = 1;
+    constexpr int32_t OPERATION_SIZE = 2;
     int32_t count = 0;
     int32_t ret = queryResult->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
@@ -235,6 +236,13 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryVisionOperations::DealWithActiveOcr
         int fileId = -1;
         auto operationItems = predicates.GetOperationList();
         for (DataShare::OperationItem item : operationItems) {
+            if (item.singleParams.size() < OPERATION_SIZE) {
+                continue;
+            }
+            if (!MediaLibraryDataManagerUtils::IsNumber(static_cast<string>(item.GetSingle(VALUE_IDX)))) {
+                MEDIA_ERR_LOG("Active OCR file_id invalid");
+                continue;
+            }
             if (static_cast<string>(item.GetSingle(FIELD_IDX)) == MediaColumn::MEDIA_ID) {
                 fileId = std::stoi(static_cast<string>(item.GetSingle(VALUE_IDX)));
                 MEDIA_INFO_LOG("Active OCR Library file id: %{public}d", fileId);
