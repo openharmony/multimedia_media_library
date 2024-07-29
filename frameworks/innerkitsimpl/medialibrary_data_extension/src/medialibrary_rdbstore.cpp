@@ -2830,13 +2830,6 @@ static void UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
-static void UpgradeExtensionMoreAgain(RdbStore &store, int32_t oldVersion)
-{
-    if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_AND_ALBUM_BUNDLENAME_TRIGGERS) {
-        UpdateSourceAlbumAndAlbumBundlenameTriggers(store);
-    }
-}
-
 static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
@@ -2887,8 +2880,9 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
         AddAppUriPermissionInfo(store);
     }
 
-    UpgradeExtensionMoreAgain(store, oldVersion);
-    // !! Do not add upgrade code here !!
+    if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_AND_ALBUM_BUNDLENAME_TRIGGERS) {
+        UpdateSourceAlbumAndAlbumBundlenameTriggers(store);
+    }
 }
 
 static void CreatePhotosExtTable(RdbStore &store)
