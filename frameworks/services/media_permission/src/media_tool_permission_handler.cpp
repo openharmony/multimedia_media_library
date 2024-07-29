@@ -27,10 +27,30 @@ static bool IsMediaToolOperation(MediaLibraryCommand &cmd, PermParam &permParam)
     return IsMediatoolOperation(cmd);
 }
 
+static void UnifyOprnObject(MediaLibraryCommand &cmd)
+{
+    static const std::unordered_map<OperationObject, OperationObject> UNIFY_OP_OBJECT_MAP = {
+        { OperationObject::TOOL_PHOTO, OperationObject::FILESYSTEM_PHOTO },
+        { OperationObject::TOOL_AUDIO, OperationObject::FILESYSTEM_AUDIO },
+        { OperationObject::TOOL_ALBUM, OperationObject::PHOTO_ALBUM },
+    };
+
+    OperationObject obj = cmd.GetOprnObject();
+    if (UNIFY_OP_OBJECT_MAP.find(obj) != UNIFY_OP_OBJECT_MAP.end()) {
+        cmd.SetOprnObject(UNIFY_OP_OBJECT_MAP.at(obj));
+    }
+}
+
 int32_t MediaToolPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, PermParam &permParam)
 {
     MEDIA_DEBUG_LOG("MediaToolPermissionHandler enter");
-    return ConvertPermResult(IsMediaToolOperation(cmd, permParam) && IsDeveloperMediaTool(cmd));
+    if (IsMediaToolOperation(cmd, permParam)) {
+        // 转换tooloperation
+        UnifyOprnObject(cmd);
+        return ConvertPermResult(IsDeveloperMediaTool(cmd));
+    } else {
+        return E_PERMISSION_DENIED;
+    }
 }
 
 } // namespace name
