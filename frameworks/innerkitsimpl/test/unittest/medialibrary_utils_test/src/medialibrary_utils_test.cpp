@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define private public
+#define protected public
 #include "avmetadatahelper.h"
 #include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
@@ -675,6 +677,29 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     ret = ThumbnailUtils::LoadVideoFile(data, desiredSize);
     EXPECT_EQ(ret, false);
     ret = ThumbnailUtils::LoadAudioFile(data, desiredSize);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_ParseVideoSize_test_001, TestSize.Level0)
+{
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    int32_t videoWidth = 0;
+    int32_t videoHeight = 0;
+    bool ret = ThumbnailUtils::ParseVideoSize(avMetadataHelper, videoWidth, videoHeight);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_ConvertStrToInt32_test_001, TestSize.Level0)
+{
+    std::string testStr = "";
+    int32_t result = 0;
+    bool ret = ThumbnailUtils::ConvertStrToInt32(testStr, result);
+    EXPECT_EQ(ret, false);
+    testStr = "not number string";
+    ret = ThumbnailUtils::ConvertStrToInt32(testStr, result);
+    EXPECT_EQ(ret, false);
+    testStr = "10000000000";
+    ret = ThumbnailUtils::ConvertStrToInt32(testStr, result);
     EXPECT_EQ(ret, false);
 }
 

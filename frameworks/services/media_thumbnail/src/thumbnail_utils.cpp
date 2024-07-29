@@ -243,6 +243,10 @@ bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadat
     int32_t &videoWidth, int32_t &videoHeight)
 {
     auto resultMap = avMetadataHelper->ResolveMetadata();
+    if (resultmap.empty()) {
+        MEDIA_ERR_LOG("map of video size is empty");
+        return false;
+    }
     int32_t rotation = 0;
     const std::string strOfRotation = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION);
     if (strOfRotation.empty()) {
