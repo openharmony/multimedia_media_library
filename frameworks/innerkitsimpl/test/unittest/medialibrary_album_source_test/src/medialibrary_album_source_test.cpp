@@ -113,6 +113,7 @@ void ClearData()
         DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM,
         DROP_SOURCE_ALBUM_INDEX,
+        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
     };
     MEDIA_INFO_LOG("start clear data");
     ExecSqls(executeSqlStrs);
@@ -173,6 +174,41 @@ InsertResult InsertPhoto(string &packageName)
         valuesBucket.PutString(MediaColumn::MEDIA_PACKAGE_NAME, packageName);
         valuesBucket.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, RECORD_BUNDLE_NAME);
     }
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_ADDED, timestamp);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, timestamp);
+    valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, ZERO);
+    valuesBucket.PutLong(MediaColumn::MEDIA_DATE_TRASHED, ZERO);
+    valuesBucket.PutInt(MediaColumn::MEDIA_HIDDEN, ZERO);
+    EXPECT_NE((g_rdbStore == nullptr), true);
+    int32_t ret = g_rdbStore->GetRaw()->Insert(fileId, PhotoColumn::PHOTOS_TABLE, valuesBucket);
+    EXPECT_EQ(ret, E_OK);
+    transactionOprn.Finish();
+    MEDIA_INFO_LOG("InsertPhoto fileId is %{public}s", to_string(fileId).c_str());
+    InsertResult result;
+    result.fileId = fileId;
+    result.title = title;
+    result.displayName = displayName;
+    return result;
+}
+
+InsertResult InsertPhotoWithEmptyPackageName()
+{
+    MEDIA_INFO_LOG("InsertPhoto packageName is empty");
+    TransactionOperations transactionOprn(g_rdbStore->GetRaw());
+    transactionOprn.Start();
+    int64_t fileId = -1;
+    int64_t timestamp = GetTimestamp();
+    string title = GetTitle(timestamp);
+    string displayName = GetDisplayName(title);
+    MEDIA_INFO_LOG("title is: %{public}s, displayName is: %{public}s",
+        title.c_str(), displayName.c_str());
+    string data = "/storage/cloud/files/photo/1/" + GetDisplayName(title);
+    ValuesBucket valuesBucket;
+    valuesBucket.PutString(MediaColumn::MEDIA_FILE_PATH, data);
+    valuesBucket.PutString(MediaColumn::MEDIA_TITLE, title);
+    valuesBucket.PutString(MediaColumn::MEDIA_NAME, displayName);
+    valuesBucket.PutString(MediaColumn::MEDIA_PACKAGE_NAME, "");
+    valuesBucket.PutString(MediaColumn::MEDIA_OWNER_PACKAGE, RECORD_BUNDLE_NAME);
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_ADDED, timestamp);
     valuesBucket.PutLong(MediaColumn::MEDIA_DATE_MODIFIED, timestamp);
     valuesBucket.PutLong(MediaColumn::MEDIA_TIME_PENDING, ZERO);
@@ -277,7 +313,11 @@ void ValidNullPackageNameSourceAlbum()
     vector<string> columns = {};
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ALBUM, OperationType::QUERY,
         MediaLibraryApi::API_10);
+    cmd.GetAbsRdbPredicates()->BeginWrap();
     cmd.GetAbsRdbPredicates()->IsNull(PhotoAlbumColumns::ALBUM_NAME);
+    cmd.GetAbsRdbPredicates()->Or();
+    cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_NAME, "");
+    cmd.GetAbsRdbPredicates()->EndWrap();
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_TYPE, to_string(PhotoAlbumType::SOURCE));
     cmd.GetAbsRdbPredicates()->EqualTo(PhotoAlbumColumns::ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::SOURCE_GENERIC));
     ASSERT_NE(g_rdbStore, nullptr);
@@ -360,6 +400,20 @@ HWTEST_F(MediaLibraryAlbumSourceTest, insert_photo_insert_source_album_test_002,
     InsertPhoto(packageName);
     ValidNullPackageNameSourceAlbum();
     MEDIA_INFO_LOG("end tdd insert_photo_insert_source_album_test_002");
+}
+
+/**
+ * @tc.number: insert_photo_insert_source_album_test_003
+ * @tc.name: insert_photo_insert_source_album_test_003
+ * @tc.desc: insert a photo package name is empty
+ */
+HWTEST_F(MediaLibraryAlbumSourceTest, insert_photo_insert_source_album_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("start tdd insert_photo_insert_source_album_test_003");
+    string packageName;
+    InsertPhotoWithEmptyPackageName();
+    ValidNullPackageNameSourceAlbum();
+    MEDIA_INFO_LOG("end tdd insert_photo_insert_source_album_test_003");
 }
 
 /**
