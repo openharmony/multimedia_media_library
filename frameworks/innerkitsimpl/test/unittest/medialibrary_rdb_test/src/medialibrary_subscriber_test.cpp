@@ -24,6 +24,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+constexpr int32_t SLEEP_TIME = 1;
 HWTEST_F(MediaLibraryRdbTest, medialib_Subscribe_test_001, TestSize.Level0)
 {
     bool ret = MedialibrarySubscriber::Subscribe();
@@ -40,6 +41,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_001, TestSize.Level0)
     eventData.SetWant(want);
     medialibrarySubscriber.OnReceiveEvent(eventData);
     EXPECT_EQ(want.GetAction(), EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_OFF);
+    medialibrarySubscriber.AbortCommonEvent();
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_002, TestSize.Level0)
@@ -52,6 +54,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_002, TestSize.Level0)
     eventData.SetWant(want);
     medialibrarySubscriber.OnReceiveEvent(eventData);
     EXPECT_EQ(want.GetAction(), EventFwk::CommonEventSupport::COMMON_EVENT_POWER_CONNECTED);
+    medialibrarySubscriber.AbortCommonEvent();
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_003, TestSize.Level0)
@@ -64,6 +67,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_003, TestSize.Level0)
     eventData.SetWant(want);
     medialibrarySubscriber.OnReceiveEvent(eventData);
     EXPECT_EQ(want.GetAction(), EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON);
+    medialibrarySubscriber.AbortCommonEvent();
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_004, TestSize.Level0)
@@ -76,6 +80,7 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_004, TestSize.Level0)
     eventData.SetWant(want);
     medialibrarySubscriber.OnReceiveEvent(eventData);
     EXPECT_EQ(want.GetAction(), EventFwk::CommonEventSupport::COMMON_EVENT_TIME_CHANGED);
+    medialibrarySubscriber.AbortCommonEvent();
 }
 
 HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level0)
@@ -90,6 +95,8 @@ HWTEST_F(MediaLibraryRdbTest, medialib_OnReceiveEvent_test_005, TestSize.Level0)
     EXPECT_EQ(want.GetAction(), EventFwk::CommonEventSupport::COMMON_EVENT_POWER_DISCONNECTED);
     medialibrarySubscriber.DoBackgroundOperation();
     medialibrarySubscriber.StopBackgroundOperation();
+    medialibrarySubscriber.AbortCommonEvent();
+    sleep(SLEEP_TIME);
 }
 } // namespace Media
 } // namespace OHOS
