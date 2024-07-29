@@ -2816,6 +2816,67 @@ static void AddSchptReadyIndex(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void DeleteEmptyNameSourceAlbumAsyncTask(AsyncTaskData *data)
+{
+    MEDIA_INFO_LOG("start DeleteEmptyNameSourceAlbumAsyncTask");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
+        return;
+    }
+    auto rdbStorePtr = rdbStore->GetRaw();
+    if (rdbStorePtr == nullptr) {
+        MEDIA_ERR_LOG("rdbStorePtr is nullptr!");
+        return;
+    }
+    const std::string DELETE_EMPTY_NAME_SOURCE_ALBUM = "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " +
+        PhotoAlbumColumns::ALBUM_TYPE + " = " + std::to_string(PhotoAlbumType::SOURCE) + " AND " +
+        PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(PhotoAlbumSubType::SOURCE_GENERIC) + " AND " +
+        PhotoAlbumColumns::ALBUM_NAME + " = ''";
+    int32_t err = rdbStorePtr->ExecuteSql(DELETE_EMPTY_NAME_SOURCE_ALBUM);
+    if (err != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Start DeleteEmptyNameSourceAlbumAsyncTask failed");
+    }
+}
+
+static void DeleteEmptyNameSourceAlbum()
+{
+    shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
+    if (asyncWorker == nullptr) {
+        MEDIA_ERR_LOG("Can not get asyncWorker");
+        return;
+    }
+    shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(
+        DeleteEmptyNameSourceAlbumAsyncTask, nullptr);
+    if (notifyAsyncTask != nullptr) {
+        asyncWorker->AddTask(notifyAsyncTask, true);
+    } else {
+        MEDIA_ERR_LOG("Start DeleteEmptyNameSourceAlbum failed");
+    }
+}
+
+static void UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+    };
+    MEDIA_INFO_LOG("start update source album and album bundlename triggers");
+    ExecSqls(executeSqlStrs, store);
+    DeleteEmptyNameSourceAlbum();
+}
+
+static void UpgradeExtensionMoreAgain(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_AND_ALBUM_BUNDLENAME_TRIGGERS) {
+        UpdateSourceAlbumAndAlbumBundlenameTriggers(store);
+    }
+}
+
 static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
@@ -2865,6 +2926,9 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
     if (oldVersion < VERSION_ADD_APP_URI_PERMISSION_INFO) {
         AddAppUriPermissionInfo(store);
     }
+
+    UpgradeExtensionMoreAgain(store, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 static void CreatePhotosExtTable(RdbStore &store)
