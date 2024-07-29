@@ -41,8 +41,6 @@
 #include "location_column.h"
 #include "search_column.h"
 #include "story_cover_info_column.h"
-#include "image_source.h"
-#include "result_set_utils.h"
 
 namespace OHOS::Media {
 using namespace std;
