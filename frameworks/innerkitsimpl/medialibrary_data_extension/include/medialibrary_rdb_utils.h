@@ -21,9 +21,7 @@
 #include <memory>
 #include <string>
 #include <map>
-#include <list>
 
-#include "uri.h"
 #include "rdb_predicates.h"
 #include "rdb_store.h"
 #include "userfile_manager_types.h"

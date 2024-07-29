@@ -20,17 +20,12 @@
 #include "medialibrary_rdb_utils.h"
 #include "photo_album_column.h"
 #include "media_log.h"
-#include "cloud_sync_manager.h"
-#include "medialibrary_unistore_manager.h"
-#include "media_file_utils.h"
-#include "medialibrary_tracer.h"
 
 using namespace std;
 
 namespace OHOS {
 namespace Media {
 using ChangeType = DataShare::DataShareObserver::ChangeType;
-using namespace FileManagement::CloudSync;
 
 static inline bool IsCloudNotifyInfoValid(const string& cloudNotifyInfo)
 {
