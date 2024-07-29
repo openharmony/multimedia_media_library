@@ -317,11 +317,11 @@ const std::string QUERY_MAX_ID_OTHERS = "SELECT max(local_media_id) AS max_id FR
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
     (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
 
-const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND \
-    relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0 AND \
-    _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
+const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (relative_bucket_id IS NULL OR \
+    relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) AND _size > 0 \
+    AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
 
-const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY showDateToken ASC ";
+const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY _id ASC ";
 
 const std::string EXCLUDE_SD = " (storage_id IN (0, 65537)) ";
 

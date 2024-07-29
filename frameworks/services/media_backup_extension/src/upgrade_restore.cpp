@@ -38,9 +38,10 @@ namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
 constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
+constexpr int32_t INTERNAL_PREFIX_LEVEL = 3;
+constexpr int32_t SD_PREFIX_LEVEL = 4;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 const std::string INTERNAL_PREFIX = "/storage/emulated/0";
-const std::string SD_FILE_PATH_PREFIX = "/SDCardClone";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -748,18 +749,7 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
     std::string &newPath, std::string &relativePath)
 {
     size_t pos = 0;
-    int32_t count = 0;
-    constexpr int32_t prefixLevel = 4;
-    for (size_t i = 0; i < srcPath.length(); i++) {
-        if (srcPath[i] == '/') {
-            count++;
-            if (count == prefixLevel) {
-                pos = i;
-                break;
-            }
-        }
-    }
-    if (count < prefixLevel) {
+    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, INTERNAL_PREFIX_LEVEL, pos)) {
         return false;
     }
     newPath = prefix + srcPath;
@@ -1169,27 +1159,15 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
         return ConvertPathToRealPath(srcPath, prefix, newPath, relativePath);
     }
     size_t pos = 0;
-    int32_t count = 0;
-    constexpr int32_t prefixLevel = 3;
-    for (size_t i = 0; i < srcPath.length(); i++) {
-        if (srcPath[i] == '/') {
-            count++;
-            if (count == prefixLevel) {
-                pos = i;
-                break;
-            }
-        }
-    }
-    if (count < prefixLevel) {
+    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, SD_PREFIX_LEVEL, pos)) {
         return false;
     }
     relativePath = srcPath.substr(pos);
-    if (fileInfo.fileSize < TAR_FILE_LIMIT) {
-        newPath = prefix + srcPath; // packed as tar, use path in DB
-    } else if (fileInfo.localMediaId == GALLERY_HIDDEN_ID || fileInfo.localMediaId == GALLERY_TRASHED_ID) {
-        newPath = prefix + INTERNAL_PREFIX + SD_FILE_PATH_PREFIX + srcPath; // hidden or trashed, add extra prefix
+    if (fileInfo.fileSize < TAR_FILE_LIMIT || fileInfo.localMediaId == GALLERY_HIDDEN_ID ||
+        fileInfo.localMediaId == GALLERY_TRASHED_ID) {
+        newPath = prefix + srcPath; // packed as tar, hidden or trashed, use path in DB
     } else {
-        newPath = prefix + INTERNAL_PREFIX + relativePath; // remove sd prefix
+        newPath = prefix + relativePath; // others, remove sd prefix, use relative path
     }
     return true;
 }
