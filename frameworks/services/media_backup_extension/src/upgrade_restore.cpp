@@ -1186,6 +1186,7 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
     }
     return true;
 }
+
 void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
 {
     if (sceneCode_ != UPGRADE_RESTORE_ID) {
