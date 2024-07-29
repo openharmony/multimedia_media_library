@@ -41,8 +41,6 @@
 #include "location_column.h"
 #include "search_column.h"
 #include "story_cover_info_column.h"
-#include "image_source.h"
-#include "result_set_utils.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -2153,68 +2151,4 @@ bool MediaLibraryRdbUtils::HasDataToAnalysis(const std::shared_ptr<NativeRdb::Rd
     bool highlight = HasHighLightData(rdbStore);
     return (loc || cv || search || highlight);
 }
-
-int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    std::string filePath)
-{
-    uint32_t err = 0;
-    SourceOptions opts;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
-    if (err != E_OK || imageSource == nullptr) {
-        MEDIA_ERR_LOG("Failed to LoadImageSource for path:%{public}s", filePath.c_str());
-        return E_ERR;
-    }
-    ImageInfo imageInfo;
-    err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get imageInfo, path:%{public}s", filePath.c_str());
-        return E_ERR;
-    }
-    int32_t height = imageInfo.size.height;
-    int32_t width = imageInfo.size.width;
-
-    NativeRdb::ValuesBucket values;
-    values.PutInt(PhotoColumn::PHOTO_HEIGHT, height);
-    values.PutInt(PhotoColumn::PHOTO_WIDTH, width);
-
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, filePath);
-    int32_t changedRows = 0;
-    int32_t ret = rdbStore->Update(changedRows, values, predicates);
-    if (ret < 0) {
-        MEDIA_ERR_LOG("Failed to update photo height and width, err: %{public}d", err);
-        return E_ERR;
-    }
-    return ret;
-}
-
-std::vector<std::string> MediaLibraryRdbUtils::GetPhotoPathsByCloudIds(const std::shared_ptr<NativeRdb::RdbStore>
-    &rdbStore, const std::list<Uri> &uris, const std::string prefix)
-{
-    string cloudIds;
-    for (auto &uri : uris) {
-        auto cloudId = uri.ToString().substr(prefix.length());
-        cloudIds.append("'").append(cloudId).append("'").append(",");
-    }
-    cloudIds = cloudIds.substr(0, cloudIds.length() - 1);
-
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.SetWhereClause(PhotoColumn::PHOTO_CLOUD_ID + " in(" + cloudIds + ")");
-    vector<string> columns = {
-        PhotoColumn::MEDIA_FILE_PATH
-    };
-    auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to get photo, cloudId: %{public}s", cloudIds.c_str());
-        return std::vector<std::string>();
-    }
-
-    std::vector<std::string> filePaths;
-    while (resultSet->GoToNextRow() == E_OK) {
-        filePaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
-            ResultSetDataType::TYPE_STRING)));
-    }
-    return filePaths;
-}
-
 } // namespace OHOS::Media
