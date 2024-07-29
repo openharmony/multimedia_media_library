@@ -22,6 +22,7 @@
 #include "ipc_skeleton.h"
 #include "location_column.h"
 #include "media_column.h"
+#include "media_app_uri_permission_column.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "media_log.h"
@@ -36,6 +37,7 @@
 #include "medialibrary_object_utils.h"
 #include "medialibrary_photo_operations.h"
 #include "medialibrary_tracer.h"
+#include "media_container_types.h"
 #include "media_scanner.h"
 #include "media_scanner_manager.h"
 #include "medialibrary_notify.h"
@@ -50,6 +52,7 @@
 #include "vision_column.h"
 #include "form_map.h"
 #include "search_column.h"
+#include "shooting_mode_column.h"
 #include "story_db_sqls.h"
 #include "dfx_const.h"
 #include "dfx_timer.h"
@@ -57,6 +60,45 @@
 using namespace std;
 using namespace OHOS::NativeRdb;
 namespace OHOS::Media {
+const std::string DIR_ALL_AUDIO_CONTAINER_TYPE = "." + AUDIO_CONTAINER_TYPE_AAC + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_MP3 + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_FLAC + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_WAV + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_OGG + "?" +
+                                                 "." + AUDIO_CONTAINER_TYPE_M4A + "?";
+
+const std::string DIR_ALL_VIDEO_CONTAINER_TYPE = "." + VIDEO_CONTAINER_TYPE_MP4 + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_3GP + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MPG + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MOV + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_WEBM + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MKV + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_H264 + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_MPEG + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_TS + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_M4V + "?" +
+                                                 "." + VIDEO_CONTAINER_TYPE_3G2 + "?";
+
+const std::string DIR_ALL_IMAGE_CONTAINER_TYPE = "." + IMAGE_CONTAINER_TYPE_BMP + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_BM + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_GIF + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPEG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPE + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_PNG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_WEBP + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_RAW + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_SVG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_HEIF + "?";
+
+const std::string CAMERA_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE + DIR_ALL_VIDEO_CONTAINER_TYPE;
+
+const std::string VIDEO_EXTENSION_VALUES = DIR_ALL_VIDEO_CONTAINER_TYPE;
+
+const std::string PIC_EXTENSION_VALUES = DIR_ALL_IMAGE_CONTAINER_TYPE;
+
+const std::string AUDIO_EXTENSION_VALUES = DIR_ALL_AUDIO_CONTAINER_TYPE;
+
 shared_ptr<NativeRdb::RdbStore> MediaLibraryRdbStore::rdbStore_;
 struct UniqueMemberValuesBucket {
     std::string assetMediaType;
@@ -1001,6 +1043,8 @@ static const vector<string> onCreateSqlStrs = {
     MedialibraryBusinessRecordColumn::CREATE_BUSINESS_KEY_INDEX,
     PhotoExtColumn::CREATE_PHOTO_EXT_TABLE,
     PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
+    AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
+    AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2365,7 +2409,7 @@ void UpdatePhotoAlbumTigger(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
-void AddMovingPhotoEffectMode(RdbStore &store)
+static void AddMovingPhotoEffectMode(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " +
@@ -2705,7 +2749,55 @@ static void AddPortraitCoverSelectionColumn(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
-void AddCoverPosition(RdbStore &store)
+static void UpdatePortraitCoverSelectionColumns(RdbStore &store)
+{
+    MEDIA_INFO_LOG("Start update portrait cover selection columns");
+ 
+    const vector<string> sqls = {
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + BEAUTY_BOUNDER_VERSION + " TEXT default '' ",
+        "ALTER TABLE " + VISION_IMAGE_FACE_TABLE + " ADD COLUMN " + IS_EXCLUDED + " INT default 0 ",
+    };
+    ExecSqls(sqls, store);
+}
+
+static void AddAppUriPermissionInfo(RdbStore &store)
+{
+    const std::string SYNC_DATA_FROM_PHOTOS_SQL =
+        "insert into "+ AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "(" +
+        AppUriPermissionColumn::APP_ID + ", " + AppUriPermissionColumn::FILE_ID + ", " +
+        AppUriPermissionColumn::URI_TYPE + ", " + AppUriPermissionColumn::PERMISSION_TYPE + ", " +
+        AppUriPermissionColumn::DATE_MODIFIED + ") " +
+        "select " +
+        MediaColumn::MEDIA_OWNER_APPID + ", " + MediaColumn::MEDIA_ID + ", " +
+        std::to_string(AppUriPermissionColumn::URI_PHOTO) + ", " +
+        std::to_string(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE) + ", " +
+        MediaColumn::MEDIA_DATE_ADDED +
+        " from " + PhotoColumn::PHOTOS_TABLE +
+        " where " + MediaColumn::MEDIA_OWNER_APPID + " is not null";
+
+    const std::string SYNC_DATA_FROM_AUDIOS_SQL =
+        "insert into "+ AppUriPermissionColumn::APP_URI_PERMISSION_TABLE + "(" +
+        AppUriPermissionColumn::APP_ID + ", " + AppUriPermissionColumn::FILE_ID + ", " +
+        AppUriPermissionColumn::URI_TYPE + ", " + AppUriPermissionColumn::PERMISSION_TYPE + ", " +
+        AppUriPermissionColumn::DATE_MODIFIED + ") " +
+        "select " +
+        MediaColumn::MEDIA_OWNER_APPID + ", " + MediaColumn::MEDIA_ID + ", " +
+        std::to_string(AppUriPermissionColumn::URI_AUDIO) + ", " +
+        std::to_string(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE) + ", " +
+        MediaColumn::MEDIA_DATE_ADDED +
+        " from " + AudioColumn::AUDIOS_TABLE +
+        " where " + MediaColumn::MEDIA_OWNER_APPID + " is not null";
+    const vector<string> sqls = {
+        AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
+        AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
+        SYNC_DATA_FROM_PHOTOS_SQL,
+        SYNC_DATA_FROM_AUDIOS_SQL,
+    };
+    MEDIA_INFO_LOG("add uriPermission table info when upgrade phone");
+    ExecSqls(sqls, store);
+}
+
+static void AddCoverPosition(RdbStore &store)
 {
     const vector<string> sqls = {
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_COVER_POSITION +
@@ -2764,6 +2856,14 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_SCHPT_READY_INEDX) {
         AddSchptReadyIndex(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PORTRAIT_COVER_SELECTION_COLUMNS) {
+        UpdatePortraitCoverSelectionColumns(store);
+    }
+    
+    if (oldVersion < VERSION_ADD_APP_URI_PERMISSION_INFO) {
+        AddAppUriPermissionInfo(store);
     }
 }
 

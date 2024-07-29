@@ -172,6 +172,11 @@ enum RestoreError {
     MOVE_FAILED,
 };
 
+enum class PhotoRelatedType {
+    PHOTO_MAP = 0,
+    PORTRAIT,
+};
+
 const std::unordered_map<int32_t, std::string> RESTORE_ERROR_MAP = {
     { RestoreError::INIT_FAILED, "Init failed" },
     { RestoreError::FILE_INVALID, "File is invalid" },
@@ -287,6 +292,39 @@ struct SubCountInfo {
     SubCountInfo(int64_t successCount, const std::unordered_map<std::string, int32_t> &failedFiles)
         : successCount(successCount), failedFiles(failedFiles) {}
 };
+
+struct PortraitAlbumInfo {
+    int32_t userOperation {0};
+    int32_t renameOperation {0};
+    std::string tagIdOld;
+    std::string tagIdNew;
+    std::string groupTagOld;
+    std::string groupTagNew;
+    std::string tagName;
+};
+
+struct FaceInfo {
+    float scaleX {0.0};
+    float scaleY {0.0};
+    float scaleWidth {0.0};
+    float scaleHeight {0.0};
+    float pitch {0.0};
+    float yaw {0.0};
+    float roll {0.0};
+    float prob {0.0};
+    int32_t albumIdNew {-1};
+    int32_t fileIdNew {-1};
+    int32_t totalFaces {0};
+    std::string hash;
+    std::string faceId;
+    std::string tagIdOld;
+    std::string tagIdNew;
+    std::string landmarks;
+    std::string faceVersion;
+    std::string analysisVersion;
+};
+
+using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std::string>>;
 
 // sql for external
 const std::string QUERY_FILE_COLUMN = "SELECT _id, " + GALLERY_FILE_DATA + ", " + GALLERY_DISPLAY_NAME + ", " +

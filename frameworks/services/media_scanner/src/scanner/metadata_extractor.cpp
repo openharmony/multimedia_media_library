@@ -28,6 +28,7 @@
 #include "meta_key.h"
 #include "nlohmann/json.hpp"
 #include "sandbox_helper.h"
+#include "shooting_mode_column.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,6 +37,23 @@ using namespace std;
 const double DEGREES2MINUTES = 60.0;
 const double DEGREES2SECONDS = 3600.0;
 constexpr int32_t OFFSET_NUM = 2;
+
+static const std::unordered_map<std::string, std::string> SHOOTING_MODE_CAST_MAP = {
+    {PORTRAIT_ALBUM_TAG, PORTRAIT_ALBUM},
+    {WIDE_APERTURE_ALBUM_TAG, WIDE_APERTURE_ALBUM},
+    {NIGHT_SHOT_ALBUM_TAG, NIGHT_SHOT_ALBUM},
+    {REAR_CAMERA_NIGHT_SHOT_TAG, NIGHT_SHOT_ALBUM},
+    {MOVING_PICTURE_ALBUM_TAG, MOVING_PICTURE_ALBUM},
+    {PRO_PHOTO_ALBUM_TAG, PRO_PHOTO_ALBUM},
+    {TAIL_LIGHT_ALBUM_TAG, LIGHT_PAINTING_ALBUM},
+    {LIGHT_GRAFFITI_TAG, LIGHT_PAINTING_ALBUM},
+    {SILKY_WATER_TAG, LIGHT_PAINTING_ALBUM},
+    {STAR_TRACK_TAG, LIGHT_PAINTING_ALBUM},
+    {HIGH_PIXEL_ALBUM_TAG, HIGH_PIXEL_ALBUM},
+    {SUPER_MACRO_ALBUM_TAG, SUPER_MACRO_ALBUM},
+    {SLOW_MOTION_ALBUM_TAG, SLOW_MOTION_ALBUM},
+    {SUPER_SLOW_MOTION_ALBUM_TAG, SLOW_MOTION_ALBUM},
+};
 
 template <class Type>
 static Type stringToNum(const string &str)
@@ -188,7 +206,7 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
         ImageSource::CreateImageSource(data->GetFilePath(), opts, err);
     if (err != 0 || imageSource == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain image source, err = %{public}d", err);
-        return E_OK;
+        return E_IMAGE;
     }
 
     ImageInfo imageInfo;

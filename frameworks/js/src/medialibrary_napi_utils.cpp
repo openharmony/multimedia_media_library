@@ -248,6 +248,19 @@ string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
     return id;
 }
 
+int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
+{
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
+        std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
+        return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+    }
+    if (uri.find(AudioColumn::AUDIO_URI_PREFIX) == string::npos) {
+        std::string tmp = uri.substr(AudioColumn::AUDIO_URI_PREFIX.size());
+        return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+    }
+    return -1;
+}
+
 MediaType MediaLibraryNapiUtils::GetMediaTypeFromUri(const string &uri)
 {
     if (uri.find(MEDIALIBRARY_IMAGE_URI) != string::npos) {
@@ -1127,6 +1140,44 @@ string MediaLibraryNapiUtils::ParseResultSet2JsonStr(shared_ptr<DataShare::DataS
         }
         jsonArray.push_back(jsonObject);
     }
+    return jsonArray.dump();
+}
+
+string MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(shared_ptr<DataShare::DataShareResultSet> resultSet,
+    const vector<string> &columns)
+{
+    json jsonArray = json::array();
+    if (resultSet == nullptr) {
+        return jsonArray.dump();
+    }
+ 
+    Uri uri(PAH_QUERY_ANA_PHOTO_ALBUM);
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo(ALBUM_SUBTYPE, to_string(PhotoAlbumSubType::PORTRAIT))->And()->IsNotNull(TAG_ID);
+    vector<string> albumColumns = { ALBUM_ID, TAG_ID };
+    int errCode = 0;
+    shared_ptr<DataShare::DataShareResultSet> albumSet = UserFileClient::Query(uri, predicates, albumColumns, errCode);
+ 
+    unordered_map<string, string> tagIdToAlbumIdMap;
+    if (albumSet != nullptr) {
+        while (albumSet->GoToNextRow() == NativeRdb::E_OK) {
+            tagIdToAlbumIdMap[GetStringValueByColumn(albumSet, TAG_ID)] = GetStringValueByColumn(albumSet, ALBUM_ID);
+        }
+    }
+ 
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        json jsonObject;
+        for (uint32_t i = 0; i < columns.size(); i++) {
+            string columnName = columns[i];
+            string columnValue = GetStringValueByColumn(resultSet, columnName);
+            jsonObject[columnName] = columnValue;
+            if (columnName == TAG_ID) {
+                jsonObject[ALBUM_URI] = PhotoAlbumColumns::ANALYSIS_ALBUM_URI_PREFIX + tagIdToAlbumIdMap[columnValue];
+            }
+        }
+        jsonArray.push_back(jsonObject);
+    }
+ 
     return jsonArray.dump();
 }
 

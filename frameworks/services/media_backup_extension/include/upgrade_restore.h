@@ -48,6 +48,9 @@ private:
     bool ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         std::string dbName = "") override;
     bool ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info) override;
+    bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap) override;
+    void InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
+        int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum) override;
     bool ParseResultSetFromExternal(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info,
         int mediaType = DUAL_MEDIA_TYPE::IMAGE_TYPE);
     bool ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info);
@@ -92,6 +95,33 @@ private:
     int32_t HandleXmlNode(xmlNodePtr cur);
     bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath, FileInfo &fileInfo);
+    void RestoreFromGalleryPortraitAlbum();
+    int32_t QueryPortraitAlbumTotalNumber();
+    std::vector<PortraitAlbumInfo> QueryPortraitAlbumInfos(int32_t offset);
+    bool ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+        PortraitAlbumInfo &portraitAlbumInfo);
+    bool SetAttributes(PortraitAlbumInfo &portraitAlbumInfo);
+    void UpdateGroupTagMap(const PortraitAlbumInfo &portraitAlbumInfo);
+    void InsertPortraitAlbum(std::vector<PortraitAlbumInfo> &portraitAlbumInfos);
+    int32_t InsertPortraitAlbumByTable(std::vector<PortraitAlbumInfo> &portraitAlbumInfos, bool isAlbum);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(std::vector<PortraitAlbumInfo> &portraitAlbumInfos,
+        bool isAlbum);
+    NativeRdb::ValuesBucket GetInsertValue(const PortraitAlbumInfo &portraitAlbumInfo, bool isAlbum);
+    void BatchQueryAlbum(std::vector<PortraitAlbumInfo> &portraitAlbumInfos);
+    void SetHashReference(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
+        std::string &hashSelection, std::unordered_map<std::string, FileInfo> &fileInfoMap);
+    int32_t QueryFaceTotalNumber(const std::string &hashSelection);
+    std::vector<FaceInfo> QueryFaceInfos(const std::string &hashSelection,
+        const std::unordered_map<std::string, FileInfo> &fileInfoMap, int32_t offset,
+        std::unordered_set<std::string> &excludedFiles);
+    bool ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FaceInfo &faceInfo);
+    bool SetAttributes(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
+    int32_t InsertFaceAnalysisDataByTable(const std::vector<FaceInfo> &faceInfos, bool isMap,
+        const std::unordered_set<std::string> &excludedFiles);
+    std::vector<NativeRdb::ValuesBucket> GetInsertValues(const std::vector<FaceInfo> &faceInfos, bool isMap,
+        const std::unordered_set<std::string> &excludedFiles);
+    NativeRdb::ValuesBucket GetInsertValue(const FaceInfo &faceInfo, bool isMap);
+    void UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace, const std::vector<FaceInfo> &faceInfos);
 
 private:
     std::shared_ptr<NativeRdb::RdbStore> galleryRdb_;

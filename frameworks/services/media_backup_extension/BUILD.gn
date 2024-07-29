@@ -31,6 +31,7 @@ ohos_shared_library("mediabackup") {
 
   sources = [
     "./src/backup_database_utils.cpp",
+    "./src/backup_dfx_utils.cpp",
     "./src/backup_file_utils.cpp",
     "./src/backup_restore_service.cpp",
     "./src/base_restore.cpp",
@@ -60,6 +61,7 @@ ohos_shared_library("mediabackup") {
     "data_share:datashare_consumer",
     "ffrt:libffrt",
     "hilog:libhilog",
+    "hisysevent:libhisysevent",
     "init:libbegetutil",
     "kv_store:distributeddata_inner",
     "libxml2:libxml2",
@@ -77,6 +79,11 @@ ohos_shared_library("mediabackup") {
       defined(global_parts_info.filemanagement_dfs_service)) {
     defines += [ "CLOUD_SYNC_MANAGER" ]
     external_deps += [ "dfs_service:cloudsync_kit_inner" ]
+  }
+
+  if (defined(global_parts_info) && defined(global_parts_info.ai_ai_engine)) {
+    defines += [ "AI_ALGORITHM_VERSION" ]
+    external_deps += [ "ai_engine:ai_face_recognition_innerapi" ]
   }
 
   sanitize = {

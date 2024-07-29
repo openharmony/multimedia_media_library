@@ -46,6 +46,8 @@ public:
     static int32_t QueryGallerySDCardCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryGalleryScreenVideoCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryGalleryCloudCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static int32_t QueryGalleryFavoriteCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static int32_t QueryGalleryImportsCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryExternalImageCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
     static int32_t QueryExternalVideoCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
     static int32_t QueryExternalAudioCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
@@ -59,10 +61,31 @@ public:
     static std::string GarbleInfoName(const std::string &infoName);
     static void UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap = false);
     static void UpdateSDWhereClause(std::string &querySql, int32_t sceneCode);
+    static int32_t GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
+        std::vector<uint8_t> &blobVal);
+    static std::string GetLandmarksStr(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet);
+    static std::string GetLandmarksStr(const std::vector<uint8_t> &bytes);
+    static uint32_t GetUint32ValFromBytes(const std::vector<uint8_t> &bytes, size_t start);
+    static void UpdateAnalysisTotalStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static void UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static bool GetFaceAnalysisVersion(std::unordered_map<int32_t, std::string> &faceAnalysisVersionMap,
+        const std::vector<int32_t> &faceAnalysisTypeList);
+    static bool SetTagIdNew(PortraitAlbumInfo &portraitAlbumInfo,
+        std::unordered_map<std::string, std::string> &tagIdMap);
+    static bool SetVersion(std::string &version, const std::unordered_map<int32_t, std::string> &versionMap,
+        int32_t type);
+    static bool SetGroupTagNew(PortraitAlbumInfo &portraitAlbumInfo,
+        const std::unordered_map<std::string, std::string> &groupTagMap);
+    static bool SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
+    static bool SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
+    static bool SetTagIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, std::string> &tagIdMap);
+    static bool SetAlbumIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, int32_t> &albumIdMap);
+    static void PrintErrorLog(const std::string &errorLog, int64_t start);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
     static std::string IsCallerSelfFunc(const std::vector<std::string> &args);
+    static std::string GetVersionByFaceAnalysisType(int32_t type);
 };
 
 class RdbCallback : public NativeRdb::RdbOpenCallback {

@@ -59,7 +59,7 @@ public:
     void AddImageInternal(int32_t fileId, const std::string &photoId, int32_t deferredProcType,
         bool discardable = false);
 
-    bool IsPhotoDeleted(const std::string &photoId);
+    EXPORT bool IsPhotoDeleted(const std::string &photoId);
 
     EXPORT void SyncWithDeferredProcSession();
     EXPORT void SyncWithDeferredProcSessionInternal();

@@ -89,6 +89,7 @@ public:
     EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status);
+    EXPORT static bool DoUpdateAstcDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
 #ifdef DISTRIBUTED
     EXPORT static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
 #endif
@@ -124,7 +125,10 @@ public:
     EXPORT static bool CheckDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
     EXPORT static void GetThumbnailInfo(ThumbRdbOpt &opts, ThumbnailData &outData);
     EXPORT static bool ScaleThumbnailFromSource(ThumbnailData &data, bool isSourceEx);
-    EXPORT static bool ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize);
+    EXPORT static bool ScaleTargetPixelMap(std::shared_ptr<PixelMap> &dataSource, const Size &targetSize,
+        const AntiAliasingOption &option);
+    EXPORT static bool CenterScaleEx(std::shared_ptr<PixelMap> &dataSource, const Size &desiredSize,
+        const std::string path);
     EXPORT static std::string GetThumbnailSuffix(ThumbnailType type);
 
     EXPORT static void RecordStartGenerateStats(ThumbnailData::GenerateStats &stats, GenerateScene scene,
@@ -175,6 +179,7 @@ private:
 
     EXPORT static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
     EXPORT static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
+    EXPORT static bool UpdateAstcDateAddedFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data);
 };
 } // namespace Media
 } // namespace OHOS
