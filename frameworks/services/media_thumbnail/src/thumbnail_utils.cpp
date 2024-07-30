@@ -202,32 +202,59 @@ bool ThumbnailUtils::LoadVideoFile(ThumbnailData &data, Size &desiredSize)
     if (err != 0) {
         return false;
     }
+    int32_t videoWidth = 0;
+    int32_t videoHeight = 0;
+    if (!ParseVideoSize(avMetadataHelper, videoWidth, videoHeight)) {
+        return false;
+    }
     PixelMapParams param;
     param.colorFormat = PixelFormat::RGBA_8888;
+    data.loaderOpts.needUpload = true;
+    ConvertDecodeSize(data, {videoWidth, videoHeight}, desiredSize);
+    param.dstWidth = desiredSize.width;
+    param.dstHeight = desiredSize.height;
     data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
         param);
     if (data.source == nullptr) {
         DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
         return false;
     }
-    int width = data.source->GetWidth();
-    int height = data.source->GetHeight();
-    data.loaderOpts.needUpload = true;
-    ConvertDecodeSize(data, {width, height}, desiredSize);
-    if ((desiredSize.width != data.source->GetWidth() || desiredSize.height != data.source->GetHeight())) {
-        param.dstWidth = desiredSize.width;
-        param.dstHeight = desiredSize.height;
-        data.source = avMetadataHelper->FetchFrameAtTime(AV_FRAME_TIME, AVMetadataQueryOption::AV_META_QUERY_NEXT_SYNC,
-            param);
-        if (data.source == nullptr) {
-            DfxManager::GetInstance()->HandleThumbnailError(path, DfxType::AV_FETCH_FRAME, err);
-            return false;
-        }
-    }
     data.orientation = 0;
     data.stats.sourceWidth = data.source->GetWidth();
     data.stats.sourceHeight = data.source->GetHeight();
-    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, width, height);
+    DfxManager::GetInstance()->HandleHighMemoryThumbnail(path, MEDIA_TYPE_VIDEO, videoWidth, videoHeight);
+    return true;
+}
+
+bool ThumbnailUtils::ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
+    int32_t &videoWidth, int32_t &videoHeight)
+{
+    auto resultMap = avMetadataHelper->ResolveMetadata();
+    if (resultMap.empty()) {
+        MEDIA_ERR_LOG("map of video size is empty");
+        return false;
+    }
+    int32_t rotation = 0;
+    const std::string strOfRotation = resultMap.at(AVMetadataCode::AV_KEY_VIDEO_ORIENTATION);
+    if (strOfRotation.empty()) {
+        // The field of rotation may be empty, and if it is empty, it means rotation is zero
+        MEDIA_INFO_LOG("rotation is zero");
+    } else if (!ConvertStrToInt32(strOfRotation, rotation)) {
+        MEDIA_ERR_LOG("Parse rotation from resultmap error");
+        return false;
+    }
+
+    bool needRevolve = ((rotation + VERTICAL_ANGLE) % STRAIGHT_ANGLE != 0);
+    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_WIDTH),
+        needRevolve ? videoWidth : videoHeight)) {
+        MEDIA_ERR_LOG("Parse width from resultmap error");
+        return false;
+    }
+    if (!ConvertStrToInt32(resultMap.at(AVMetadataCode::AV_KEY_VIDEO_HEIGHT),
+        needRevolve ? videoHeight : videoWidth)) {
+        MEDIA_ERR_LOG("Parse height from resultmap error");
+        return false;
+    }
     return true;
 }
 
@@ -1404,7 +1431,6 @@ int32_t ThumbnailUtils::SetSource(shared_ptr<AVMetadataHelper> avMetadataHelper,
             errno, absFilePath.c_str(), MediaFileUtils::IsFileExists(absFilePath));
         return E_ERR;
     }
-
     struct stat64 st;
     if (fstat64(fd, &st) != 0) {
         MEDIA_ERR_LOG("Get file state failed, err %{public}d", errno);
@@ -2130,6 +2156,25 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
             infos.push_back(data);
         }
     } while (resultSet->GoToNextRow() == E_OK);
+    return true;
+}
+
+bool ThumbnailUtils::ConvertStrToInt32(const std::string &str, int32_t &ret)
+{
+    if (str.empty() || str.length() > INT32_MAX_VALUE_LENGTH) {
+        MEDIA_ERR_LOG("convert failed, str = %{public}s", str.c_str());
+        return false;
+    }
+    if (!IsNumericStr(str)) {
+        MEDIA_ERR_LOG("convert failed, input is not number, str = %{public}s", str.c_str());
+        return false;
+    }
+    int64_t numberValue = std::stoll(str);
+    if (numberValue < INT32_MIN || numberValue > INT32_MAX) {
+        MEDIA_ERR_LOG("convert failed, Input is out of range, str = %{public}s", str.c_str());
+        return false;
+    }
+    ret = static_cast<int32_t>(numberValue);
     return true;
 }
 } // namespace Media
