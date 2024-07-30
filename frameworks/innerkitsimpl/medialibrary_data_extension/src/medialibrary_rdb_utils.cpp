@@ -53,7 +53,6 @@ constexpr int32_t E_EMPTY_ALBUM_ID = 1;
 constexpr int32_t E_NEED_UPDATE_ALBUM_COVER_URI = 2;
 constexpr size_t ALBUM_UPDATE_THRESHOLD = 1000;
 constexpr int32_t SINGLE_FACE = 1;
-constexpr int32_t ALBUM_COVER_SATISFIED = 1;
 constexpr double LOCATION_DB_ZERO = 0;
 constexpr double LOCATION_LATITUDE_MAX = 90.0;
 constexpr double LOCATION_LATITUDE_MIN = -90.0;
@@ -442,7 +441,7 @@ static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const s
     int32_t ret = E_SUCCESS;
     if (oldCover != newCover) {
         ret = E_NEED_UPDATE_ALBUM_COVER_URI;
-        values.PutInt(IS_COVER_SATISFIED, 0);
+        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING));
         values.PutString(targetColumn, newCover);
         MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s", targetColumn.c_str(),
             oldCover.c_str(), newCover.c_str());
@@ -913,10 +912,17 @@ static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string
     return true;
 }
 
-static bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string fileId,
+static inline void SetCoverSatisfied(const string &fileId, const vector<string> &fileIds, ValuesBucket &values)
+{
+    if (find(fileIds.begin(), fileIds.end(), fileId) != fileIds.end()) {
+        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING));
+    }
+}
+
+static inline bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string fileId,
     int32_t isCoverSatisfied, const vector<string> &fileIds)
 {
-    return isCoverSatisfied != ALBUM_COVER_SATISFIED || fileIds.empty() ||
+    return isCoverSatisfied == static_cast<int32_t>(CoverSatisfiedType::NO_SETTING) || fileIds.empty() ||
         find(fileIds.begin(), fileIds.end(), fileId) != fileIds.end() || !IsCoverValid(rdbStore, fileId);
 }
 
@@ -946,6 +952,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(countResult, albumResult, values, false, PhotoAlbumSubType::PORTRAIT);
+    SetCoverSatisfied(coverId, fileIds, values);
     if (!ShouldUpdatePortraitAlbumCover(rdbStore, coverId, isCoverSatisfied, fileIds)) {
         return E_SUCCESS;
     }
