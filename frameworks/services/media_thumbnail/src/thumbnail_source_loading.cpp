@@ -354,7 +354,7 @@ bool SourceLoader::RunLoading()
     // always check state not final after every state switch
     while (!IsFinal()) {
         SwitchToNextState(data_, state_);
-        MEDIA_INFO_LOG("SourceLoader new cycle status:%{public}s", STATE_NAME_MAP.at(state_).c_str());
+        MEDIA_DEBUG_LOG("SourceLoader new cycle status:%{public}s", STATE_NAME_MAP.at(state_).c_str());
         if (IsFinal()) {
             break;
         }
