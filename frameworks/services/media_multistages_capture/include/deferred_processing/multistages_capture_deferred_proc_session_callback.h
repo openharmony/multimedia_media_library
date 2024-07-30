@@ -37,7 +37,7 @@ public:
 private:
     EXPORT int32_t UpdatePhotoQuality(const std::string &photoId);
 };
-#endif
 } // namespace Media
 } // namespace OHOS
+#endif
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DEFERRED_PROC_SESSION_CALLBACK_H

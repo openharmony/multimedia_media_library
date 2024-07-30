@@ -164,11 +164,11 @@ void MultiStagesCaptureManager::AddImageInternal(int32_t fileId, const string &p
 {
     MultiStagesCaptureRequestTaskManager::AddPhotoInProgress(fileId, photoId, discardable);
 
-    #ifdef ABILITY_CAMERA_SUPPORT
+#ifdef ABILITY_CAMERA_SUPPORT
     DpsMetadata metadata;
     metadata.Set(CameraStandard::DEFERRED_PROCESSING_TYPE_KEY, deferredProcType);
     deferredProcSession_->AddImage(photoId, metadata, discardable);
-    #endif
+#endif
 }
 
 void MultiStagesCaptureManager::AddImage(int32_t fileId, const string &photoId, int32_t deferredProcType)
