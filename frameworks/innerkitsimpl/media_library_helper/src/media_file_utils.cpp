@@ -972,7 +972,7 @@ int32_t MediaFileUtils::OpenFile(const string &filePath, const string &mode, con
                       errno, filePath.c_str());
         return errCode;
     }
-    MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
+    MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
     int32_t fd = open(absFilePath.c_str(), MEDIA_OPEN_MODE_MAP.at(mode));
     if (clientbundleName.empty()) {
         MEDIA_DEBUG_LOG("ClientBundleName is empty,failed to to set caller_info to fd");
@@ -1079,7 +1079,7 @@ int32_t MediaFileUtils::OpenAsset(const string &filePath, const string &mode)
         MEDIA_ERR_LOG("File path too long %{public}d", (int)filePath.size());
         return E_INVALID_PATH;
     }
-    MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
+    MEDIA_DEBUG_LOG("File path is %{private}s", filePath.c_str());
     std::string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
@@ -1091,7 +1091,7 @@ int32_t MediaFileUtils::OpenAsset(const string &filePath, const string &mode)
         return E_INVALID_PATH;
     }
 
-    MEDIA_INFO_LOG("File absFilePath is %{private}s", absFilePath.c_str());
+    MEDIA_DEBUG_LOG("File absFilePath is %{private}s", absFilePath.c_str());
     return open(absFilePath.c_str(), flags);
 }
 
