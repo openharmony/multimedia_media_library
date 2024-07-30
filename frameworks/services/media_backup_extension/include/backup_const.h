@@ -32,6 +32,7 @@ constexpr int32_t PRE_CLONE_PHOTO_BATCH_COUNT = 100;
 constexpr int32_t CONNECT_SIZE = 10;
 constexpr int32_t MILLISECONDS = 1000;
 constexpr int32_t GALLERY_HIDDEN_ID = -4;
+constexpr int32_t GALLERY_TRASHED_ID = 0;
 constexpr int32_t UPGRADE_RESTORE_ID = 0;
 constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
 constexpr int32_t CLONE_RESTORE_ID = 2;
@@ -231,6 +232,7 @@ struct FileInfo {
     int32_t orientation {0};
     int64_t dateModified {0};
     int32_t mediaAlbumId {-1};  // 单相册id
+    int32_t localMediaId {-1};
     bool isNew {true};
     std::unordered_map<std::string, std::variant<int32_t, int64_t, double, std::string>> valMap;
     std::unordered_map<std::string, std::unordered_set<int32_t>> tableAlbumSetMap;
@@ -346,32 +348,33 @@ const std::string QUERY_GARBAGE_ALBUM = "SELECT type, cache_dir, nick_dir, nick_
 const std::string QUERY_MAX_ID_CAMERA_SCREENSHOT = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND bucket_id IN (-1739773001, 0, 1028075469, 0) AND \
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
-    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 ";
+    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
 
 const std::string QUERY_MAX_ID_OTHERS = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND bucket_id NOT IN (-1739773001, 0, 1028075469, 0) AND \
     (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
-    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 ";
+    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
 
-const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (storage_id IN (0, 65537)) AND \
-    relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1) AND _size > 0 AND \
-    _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
+const std::string ALL_PHOTOS_WHERE_CLAUSE = " (local_media_id != -1) AND (relative_bucket_id IS NULL OR \
+    relative_bucket_id NOT IN (SELECT DISTINCT relative_bucket_id FROM garbage_album WHERE type = 1)) AND _size > 0 \
+    AND _data NOT LIKE '/storage/emulated/0/Pictures/cloud/Imports%' ";
 
 const std::string ALL_PHOTOS_ORDER_BY = " ORDER BY _id ASC ";
 
-const std::string QUERY_GALLERY_COUNT = "SELECT count(1) AS count FROM gallery_media WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+const std::string EXCLUDE_SD = " (storage_id IN (0, 65537)) ";
+
+const std::string QUERY_GALLERY_COUNT = "SELECT count(1) AS count FROM gallery_media ";
 
 const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + GALLERY_FILE_DATA + "," +
     GALLERY_DISPLAY_NAME + "," + GALLERY_DESCRIPTION + "," + GALLERY_IS_FAVORITE + "," + GALLERY_RECYCLED_TIME +
     "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
     EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH + "," +
-    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + ", " + GALLERY_ID +
-    " FROM gallery_media WHERE " + ALL_PHOTOS_WHERE_CLAUSE + ALL_PHOTOS_ORDER_BY;
+    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + ", " + GALLERY_ID + " FROM gallery_media ";
 
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
-    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 ";
+    (storage_id IN (0, 65537) or storage_id IS NULL) AND _size > 0 "; // only in upgrade external
 
 const std::string QUERY_GALLERY_ALBUM_INFO = "SELECT " + GALLERY_ALBUM +
                                      ".*, COALESCE(garbage_album.nick_name, '') AS " +
