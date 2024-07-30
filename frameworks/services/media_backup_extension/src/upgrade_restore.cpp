@@ -689,6 +689,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.recycleFlag = GetInt32Val(GALLERY_RECYCLE_FLAG, resultSet);
     info.isBurst = GetInt32Val(GALLERY_IS_BURST, resultSet);
     info.hashCode = GetStringVal(GALLERY_HASH, resultSet);
+    info.fileIdOld = GetInt32Val(GALLERY_ID, resultSet);
 
     bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     if (!isSuccess) {
@@ -1380,13 +1381,13 @@ bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> 
     if (portraitAlbumIdMap_.empty()) {
         return false;
     }
-    std::string hashSelection;
+    std::string selection;
     for (const auto &fileInfo : fileInfos) {
-        BackupDatabaseUtils::UpdateSelection(hashSelection, fileInfo.hashCode, true);
+        BackupDatabaseUtils::UpdateSelection(selection, std::to_string(fileInfo.fileIdOld), false);
     }
     std::unordered_set<std::string> needQuerySet;
     std::string querySql = "SELECT DISTINCT " + GALLERY_MERGE_FACE_HASH + " FROM " + GALLERY_FACE_TABLE_JOIN_TAG +
-        " WHERE " + GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ") AND " + GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY;
+        " HAVING " + GALLERY_MEDIA_ID + " IN (" + selection + ") AND " + GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY;
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
@@ -1466,6 +1467,9 @@ void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, co
     for (const auto &fileInfo : fileInfos) {
         if (needQuerySet.count(fileInfo.hashCode) == 0 || fileInfo.fileIdNew <= 0) {
             continue;
+        }
+        if (fileInfoMap.count(fileInfo.hashCode) > 0) {
+            continue; // select the first one to build map
         }
         BackupDatabaseUtils::UpdateSelection(hashSelection, fileInfo.hashCode, true);
         fileInfoMap[fileInfo.hashCode] = fileInfo;

@@ -2816,6 +2816,20 @@ static void AddSchptReadyIndex(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+    };
+    MEDIA_INFO_LOG("start update source album and album bundlename triggers");
+    ExecSqls(executeSqlStrs, store);
+}
+
 static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
@@ -2864,6 +2878,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
     
     if (oldVersion < VERSION_ADD_APP_URI_PERMISSION_INFO) {
         AddAppUriPermissionInfo(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_AND_ALBUM_BUNDLENAME_TRIGGERS) {
+        UpdateSourceAlbumAndAlbumBundlenameTriggers(store);
     }
 }
 

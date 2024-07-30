@@ -28,7 +28,9 @@ constexpr int32_t DEFAULT_MTH_SIZE = 128;
 constexpr int32_t DEFAULT_THUMB_SIZE = 256;
 constexpr int32_t MAX_DEFAULT_THUMB_SIZE = 768;
 constexpr int32_t DEFAULT_LCD_SIZE = 1080;
-
+constexpr uint32_t INT32_MAX_VALUE_LENGTH = 10;
+constexpr int32_t VERTICAL_ANGLE = 90;
+constexpr int32_t STRAIGHT_ANGLE = 180;
 enum class ThumbnailType : int32_t {
     LCD,
     THUMB,

@@ -370,7 +370,8 @@ const std::string QUERY_ALL_PHOTOS = "SELECT " + GALLERY_LOCAL_MEDIA_ID + "," + 
     "," + GALLERY_FILE_SIZE + "," + GALLERY_DURATION + "," + GALLERY_MEDIA_TYPE + "," + GALLERY_SHOW_DATE_TOKEN + "," +
     GALLERY_HEIGHT + "," + GALLERY_WIDTH + "," + GALLERY_TITLE + ", " + GALLERY_ORIENTATION + ", " +
     EXTERNAL_DATE_MODIFIED + "," + GALLERY_MEDIA_BUCKET_ID + "," + GALLERY_MEDIA_SOURCE_PATH + "," +
-    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + " FROM gallery_media ";
+    GALLERY_IS_BURST + "," + GALLERY_RECYCLE_FLAG + "," + GALLERY_HASH + ", " + GALLERY_ID +
+    " FROM gallery_media ";
 
 const std::string QUERY_MAX_ID = "SELECT max(local_media_id) AS max_id FROM gallery_media \
     WHERE local_media_id > 0 AND (recycleFlag NOT IN (2, -1, 1, -2, -4) OR recycleFlag IS NULL) AND \
