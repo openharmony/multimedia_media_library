@@ -57,7 +57,6 @@ constexpr int32_t LOCAL_ALBUM = 1;
 constexpr int32_t ALBUM_NOT_FOUND = 0;
 constexpr int32_t QUERY_GROUP_PHOTO_ALBUM_RELATED_TO_ME = 1;
 const string GROUP_PHOTO_TAG = "group_photo_tag";
-const string GROUP_PHOTO_COUNT = "group_photo_count";
 const string GROUP_PHOTO_IS_ME = "group_photo_is_me";
 const string GROUP_PHOTO_ALBUM_NAME = "album_name";
 
@@ -330,16 +329,16 @@ static string GetGroupPhotoAlbumSql()
         PhotoAlbumColumns::ALBUM_COVER_URI + ", " + IS_COVER_SATISFIED + ", " +
         MediaColumn::MEDIA_ID + ", " + MediaColumn::MEDIA_FILE_PATH + ", " + MediaColumn::MEDIA_NAME + ", " +
         GROUP_PHOTO_ALBUM_NAME + ", " + IS_REMOVED + ", " + RENAME_OPERATION + ", " +
-        "COUNT (DISTINCT " + MediaColumn::MEDIA_ID + ") AS " + GROUP_PHOTO_COUNT + ", " + queryGroupPhotoIsMe + ", " +
-        "MAX(" + MediaColumn::MEDIA_DATE_ADDED + ") FROM (" + groupPhotoTagSql + ") AS GP " +
-        leftJoinAnalysisAlbum + " GROUP BY " + GROUP_PHOTO_TAG + ";";
+        "COUNT (DISTINCT " + MediaColumn::MEDIA_ID + ") AS " + PhotoAlbumColumns::ALBUM_COUNT + ", " +
+        queryGroupPhotoIsMe + ", " + "MAX(" + MediaColumn::MEDIA_DATE_ADDED + ") FROM (" + groupPhotoTagSql +
+        ") AS GP " + leftJoinAnalysisAlbum + " GROUP BY " + GROUP_PHOTO_TAG + ";";
     return fullSql;
 }
 
 static bool CheckGroupPhotoAlbumInfo(const GroupPhotoAlbumInfo &info, const GroupPhotoAlbumInfo &lastInfo)
 {
-    bool hasUpdated = ((!info.albumName.compare(lastInfo.albumName)) ||
-        (!info.coverUri.compare(lastInfo.coverUri)) ||
+    bool hasUpdated = ((info.albumName.compare(lastInfo.albumName) != 0) ||
+        (info.coverUri.compare(lastInfo.coverUri) != 0) ||
         (info.count != lastInfo.count) ||
         (info.isMe != lastInfo.isMe) ||
         (info.isRemoved != lastInfo.isRemoved) ||
@@ -352,7 +351,7 @@ static GroupPhotoAlbumInfo AssemblyInfo(shared_ptr<NativeRdb::ResultSet> resultS
 {
     string tagId = GetStringVal(GROUP_PHOTO_TAG, resultSet);
     int32_t isCoverSatisfied = GetInt32Val(IS_COVER_SATISFIED, resultSet);
-    int32_t count = GetInt32Val(GROUP_PHOTO_COUNT, resultSet);
+    int32_t count = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, resultSet);
     int32_t isMe = GetInt32Val(GROUP_PHOTO_IS_ME, resultSet);
     int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
     string coverUri = GetStringVal(PhotoAlbumColumns::ALBUM_COVER_URI, resultSet);
@@ -434,7 +433,7 @@ static void UpdateGroupPhotoAlbumAsync(AsyncTaskData *data)
         int32_t albumId = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, lastResultSet);
         lastResultMap[albumId].albumName = GetStringVal(GROUP_PHOTO_ALBUM_NAME, lastResultSet);
         lastResultMap[albumId].coverUri = GetStringVal(PhotoAlbumColumns::ALBUM_COVER_URI, lastResultSet);
-        lastResultMap[albumId].count = GetInt32Val(GROUP_PHOTO_COUNT, lastResultSet);
+        lastResultMap[albumId].count = GetInt32Val(PhotoAlbumColumns::ALBUM_COUNT, lastResultSet);
         lastResultMap[albumId].isMe = GetInt32Val(GROUP_PHOTO_IS_ME, lastResultSet);
         lastResultMap[albumId].isRemoved = GetInt32Val(IS_REMOVED, lastResultSet);
         lastResultMap[albumId].renameOperation = GetInt32Val(RENAME_OPERATION, lastResultSet);
