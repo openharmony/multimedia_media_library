@@ -1867,9 +1867,10 @@ int32_t SetCoverUri(const ValuesBucket &values, const DataSharePredicates &predi
         return E_INVALID_VALUES;
     }
     std::string updateForSetCoverUri = "UPDATE " + ANALYSIS_ALBUM_TABLE + " SET " + COVER_URI + " = '" + coverUri +
-        "', " + IS_COVER_SATISFIED + " = " + to_string(ALBUM_COVER_SATISFIED) + " WHERE " + GROUP_TAG + " IN(SELECT " +
-        GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID + " = " + targetAlbumId + ")";
-    vector<string> updateSqls = { updateForSetCoverUri};
+        "', " + IS_COVER_SATISFIED + " = " + to_string(static_cast<int32_t>(CoverSatisfiedType::USER_SETTING)) +
+        " WHERE " + GROUP_TAG + " IN(SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + ALBUM_ID +
+        " = " + targetAlbumId + ")";
+    vector<string> updateSqls = { updateForSetCoverUri };
     err = ExecSqls(updateSqls, uniStore);
     if (err == E_OK) {
         vector<int32_t> changeAlbumIds = { atoi(targetAlbumId.c_str()) };
