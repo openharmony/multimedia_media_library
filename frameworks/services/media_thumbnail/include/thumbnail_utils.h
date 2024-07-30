@@ -164,7 +164,9 @@ private:
     EXPORT static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
         Size &desiredSize, uint32_t &errCode);
     EXPORT static bool LoadAudioFile(ThumbnailData &data, Size &desiredSize);
-
+    EXPORT static bool ConvertStrToInt32(const std::string &str, int32_t &ret);
+    EXPORT static bool ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
+        int32_t &videoWidth, int32_t &videoHeight);
 #ifdef DISTRIBUTED
     // RDB Store
     EXPORT static bool GetUdidByNetworkId(ThumbRdbOpt &opts, const std::string &networkId,
