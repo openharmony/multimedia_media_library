@@ -20,7 +20,7 @@
 namespace OHOS {
 namespace Media {
 const string GalleryOpenCall::CREATE_GALLERY_MEDIA = string("CREATE TABLE IF NOT EXISTS gallery_media ") +
-    " (id INTEGER PRIMARY KEY AUTOINCREMENT, local_media_id INTEGER, _data TEXT COLLATE NOCASE," +
+    " (_id INTEGER PRIMARY KEY AUTOINCREMENT, local_media_id INTEGER, _data TEXT COLLATE NOCASE," +
     "_size INTEGER,  date_added INTEGER, date_modified INTEGER, title TEXT, description TEXT, _display_name TEXT, " +
     "orientation INTEGER, bucket_id TEXT, duration INTEGER, media_type INTEGER, storage_id INTEGER, width INTEGER, " +
     "height INTEGER, is_hw_favorite INTEGER,  relative_bucket_id TEXT, showDateToken INTEGER, recycleFlag INTEGER, " +
