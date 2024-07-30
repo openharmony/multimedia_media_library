@@ -44,8 +44,8 @@ namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
 constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
-constexpr int32_t INTERNAL_PREFIX_LEVEL = 3;
-constexpr int32_t SD_PREFIX_LEVEL = 4;
+constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
+constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
 const std::string INTERNAL_PREFIX = "/storage/emulated/0";
 
