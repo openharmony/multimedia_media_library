@@ -44,6 +44,10 @@ namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
 constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
+constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
+constexpr int32_t SD_PREFIX_LEVEL = 3;
+constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
+const std::string INTERNAL_PREFIX = "/storage/emulated/0";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -522,7 +526,10 @@ void UpgradeRestore::HandleRestData(void)
 
 int32_t UpgradeRestore::QueryTotalNumber(void)
 {
-    return BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_GALLERY_COUNT, CUSTOM_COUNT);
+    std::string querySql = QUERY_GALLERY_COUNT;
+    querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    BackupDatabaseUtils::UpdateSDWhereClause(querySql, sceneCode_);
+    return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
 
 std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
@@ -533,8 +540,11 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
         MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
         return result;
     }
-    std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS + "limit " + std::to_string(offset) + ", " +
-        std::to_string(QUERY_COUNT);
+    std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS;
+    queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    BackupDatabaseUtils::UpdateSDWhereClause(queryAllPhotosByCount, sceneCode_);
+    queryAllPhotosByCount += ALL_PHOTOS_ORDER_BY;
+    queryAllPhotosByCount += "limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = galleryRdb_->QuerySql(queryAllPhotosByCount);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
@@ -626,21 +636,21 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
         return false;
     }
     std::string oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
-    if (sceneCode_ == UPGRADE_RESTORE_ID ?
-        !BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath) :
-        !ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
-        return false;
-    }
-    info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
-    info.title = GetStringVal(GALLERY_TITLE, resultSet);
-    info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
     if (info.fileSize < fileMinSize_ && dbName == EXTERNAL_DB_NAME) {
         MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
             BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str(), fileMinSize_);
         return false;
     }
+    if (sceneCode_ == UPGRADE_RESTORE_ID ?
+        !BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath) :
+        !ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath, info)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+        return false;
+    }
+    info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
+    info.title = GetStringVal(GALLERY_TITLE, resultSet);
+    info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
     info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
@@ -670,8 +680,8 @@ void UpgradeRestore::ParseResultSetForMap(const std::shared_ptr<NativeRdb::Resul
 
 bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
-    int32_t localMediaId = GetInt32Val(GALLERY_LOCAL_MEDIA_ID, resultSet);
-    info.hidden = (localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
+    info.localMediaId = GetInt32Val(GALLERY_LOCAL_MEDIA_ID, resultSet);
+    info.hidden = (info.localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
     info.recycledTime = GetInt64Val(GALLERY_RECYCLED_TIME, resultSet);
     info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet);
     // fetch relative_bucket_id, recycleFlag, is_hw_burst, hash field to generate burst_key
@@ -755,18 +765,7 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
     std::string &newPath, std::string &relativePath)
 {
     size_t pos = 0;
-    int32_t count = 0;
-    constexpr int32_t prefixLevel = 4;
-    for (size_t i = 0; i < srcPath.length(); i++) {
-        if (srcPath[i] == '/') {
-            count++;
-            if (count == prefixLevel) {
-                pos = i;
-                break;
-            }
-        }
-    }
-    if (count < prefixLevel) {
+    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, INTERNAL_PREFIX_LEVEL, pos)) {
         return false;
     }
     newPath = prefix + srcPath;
@@ -1167,6 +1166,26 @@ void UpgradeRestore::UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, Fi
         info.packageName = it->albumName;
         info.bundleName = it->albumBundleName;
     }
+}
+
+bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
+    std::string &newPath, std::string &relativePath, FileInfo &fileInfo)
+{
+    if (MediaFileUtils::StartsWith(srcPath, INTERNAL_PREFIX)) {
+        return ConvertPathToRealPath(srcPath, prefix, newPath, relativePath);
+    }
+    size_t pos = 0;
+    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, SD_PREFIX_LEVEL, pos)) {
+        return false;
+    }
+    relativePath = srcPath.substr(pos);
+    if (fileInfo.fileSize < TAR_FILE_LIMIT || fileInfo.localMediaId == GALLERY_HIDDEN_ID ||
+        fileInfo.localMediaId == GALLERY_TRASHED_ID) {
+        newPath = prefix + srcPath; // packed as tar, hidden or trashed, use path in DB
+    } else {
+        newPath = prefix + relativePath; // others, remove sd prefix, use relative path
+    }
+    return true;
 }
 
 void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
