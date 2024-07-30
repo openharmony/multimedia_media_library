@@ -39,6 +39,7 @@ private:
     void HandleInsertEvent(const std::list<Uri> &uris);
     void HandleDeleteEvent(const std::list<Uri> &uris);
     void HandleTimeUpdateEvent(const std::list<Uri> &uris);
+    void HandleExtraEvent(const std::list<Uri> &uris, const DataShare::DataShareObserver::ChangeType &type);
 };
 } //namespace Media
 } //namespace OHOS
