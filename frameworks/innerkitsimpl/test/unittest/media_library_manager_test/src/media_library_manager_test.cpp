@@ -257,8 +257,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level0)
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
     EXPECT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
-    free(buf);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
+    free(buf);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
 }
 
@@ -288,8 +288,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level0)
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
     EXPECT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
-    free(buf);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4)), true);
+    free(buf);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
 }
 
