@@ -104,12 +104,16 @@ static int SendAlbumSub(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
     } else {
         changeType = ChangeType::DELETE;
     }
+    MEDIA_DEBUG_LOG("obsMgrClient->NotifyChangeExt URI is %{public}s, NotifyType is %{public}d",
+        notifyUri.ToString().c_str(), type);
     return obsMgrClient->NotifyChangeExt({changeType, {notifyUri}, uBuf, parcel.GetDataSize()});
 }
 
 static int SolveAlbumUri(const Uri &notifyUri, NotifyType type, list<Uri> &uris)
 {
     auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
+    MEDIA_DEBUG_LOG("obsMgrClient->NotifyChangeExt URI is %{public}s, NotifyType is %{public}d",
+        notifyUri.ToString().c_str(), type);
     if ((type == NotifyType::NOTIFY_ALBUM_ADD_ASSET) || (type == NotifyType::NOTIFY_ALBUM_REMOVE_ASSET)) {
         return SendAlbumSub(notifyUri, type, uris);
     } else {
@@ -126,6 +130,8 @@ static void PushNotifyDataMap(const string &uri, NotifyDataMap notifyDataMap)
             ret = SolveAlbumUri(notifyUri, type, uris);
         } else {
             auto obsMgrClient = AAFwk::DataObsMgrClient::GetInstance();
+            MEDIA_DEBUG_LOG("obsMgrClient->NotifyChangeExt URI is %{public}s, type is %{public}d",
+                uri.c_str(), static_cast<int>(type));
             ret = obsMgrClient->NotifyChangeExt({static_cast<ChangeType>(type), uris});
         }
         if (ret != E_OK) {
