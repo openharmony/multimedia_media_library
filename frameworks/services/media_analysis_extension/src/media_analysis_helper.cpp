@@ -62,10 +62,10 @@ void MediaAnalysisHelper::StartPortraitCoverSelectionAsync(const std::string alb
         return;
     }
 
-    std::thread(&PortraitCoverSelectionAsync, albumId).detach();
+    std::thread(&AnalysePortraitCover, albumId).detach();
 }
 
-void MediaAnalysisHelper::PortraitCoverSelectionAsync(const std::string albumId)
+void MediaAnalysisHelper::AnalysePortraitCover(const std::string albumId)
 {
     int32_t code = IMediaAnalysisService::ActivateServiceType::PORTRAIT_COVER_SELECTION;
     MessageParcel data;
