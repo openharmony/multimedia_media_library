@@ -376,11 +376,11 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_001, TestSize.Level
     TrashPortrait(portraits[1].fileId);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds,
         {fileIds[0], fileIds[1]});
-    CheckAlbum(albumId, 2, portraits[3].fileId, false);
+    CheckAlbum(albumId, 2, portraits[3].fileId, true);
 
     TrashPortrait(portraits[3].fileId);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[3]});
-    CheckAlbum(albumId, 1, portraits[2].fileId, false);
+    CheckAlbum(albumId, 1, portraits[2].fileId, true);
 
     MEDIA_INFO_LOG("portrait_album_update_test_001 End");
 }
@@ -407,11 +407,11 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_002, TestSize.Level
 
     HidePortrait(portraits[0].fileId);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[0]});
-    CheckAlbum(albumId, 2, portraits[3].fileId, false);
+    CheckAlbum(albumId, 2, portraits[3].fileId, true);
 
     HidePortrait(portraits[2].fileId);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[2]});
-    CheckAlbum(albumId, 1, portraits[3].fileId, false);
+    CheckAlbum(albumId, 1, portraits[3].fileId, true);
 
     MEDIA_INFO_LOG("portrait_album_update_test_002 End");
 }
@@ -438,11 +438,11 @@ HWTEST_F(PortraitAlbumUpdateTest, portrait_album_update_test_003, TestSize.Level
 
     DismissPortrait(albumId, portraits[0].fileId);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[0]});
-    CheckAlbum(albumId, 2, portraits[3].fileId, false);
+    CheckAlbum(albumId, 2, portraits[3].fileId, true);
 
     DismissPortrait(albumId, portraits[3].fileId);
     MediaLibraryRdbUtils::UpdateAnalysisAlbumInternal(g_rdbStore->GetRaw(), albumIds, {fileIds[3]});
-    CheckAlbum(albumId, 1, portraits[2].fileId, false);
+    CheckAlbum(albumId, 1, portraits[2].fileId, true);
 
     MEDIA_INFO_LOG("portrait_album_update_test_003 End");
 }
