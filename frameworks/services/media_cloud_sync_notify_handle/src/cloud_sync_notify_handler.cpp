@@ -112,6 +112,16 @@ void CloudSyncNotifyHandler::HandleTimeUpdateEvent(const std::list<Uri> &uris)
     }
 }
 
+void CloudSyncNotifyHandler::HandleExtraEvent(const std::list<Uri> &uris, const ChangeType &type)
+{
+    ExtraChangeType extraType = static_cast<ExtraChangeType>(type);
+    if (extraType == ExtraChangeType::PHOTO_TIME_UPDATE) {
+        HandleTimeUpdateEvent(uris);
+        return;
+    }
+    MEDIA_DEBUG_LOG("change type is %{public}d, no need ThumbnailObserverOnChange", type);
+}
+
 void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, const ChangeType &type)
 {
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
@@ -123,11 +133,8 @@ void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, co
         case ChangeType::DELETE:
             HandleDeleteEvent(uris);
             break;
-        case ChangeType::PHOTO_TIME_UPDATE:
-            HandleTimeUpdateEvent(uris);
-            break;
         default:
-            MEDIA_DEBUG_LOG("change type is %{public}d, no need ThumbnailObserverOnChange", type);
+            HandleExtraEvent(uris, type);
             break;
     }
 }

@@ -133,6 +133,13 @@ static inline DatashareBusinessError FuzzDataShareBusinessError(const uint8_t *d
     return error;
 }
 
+static inline void InitFuzzer(MediaDataShareExtAbility &extension)
+{
+    AAFwk::Want want;
+    extension.OnStart(want);
+    extension.OnConnect(want);
+}
+
 static inline void NotifyChangeFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
 {
     extension.NotifyChange(FuzzUri(data, size));
@@ -187,6 +194,23 @@ static inline void BatchInsertFuzzer(MediaDataShareExtAbility &extension, const 
     extension.BatchInsert(FuzzUri(data, size), FuzzVectorDataShareValuesBucket(data, size));
 }
 
+static inline void InsertExtFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+{
+    string result;
+    extension.InsertExt(FuzzUri(data, size), FuzzDataShareValuesBucket(data, size), result);
+}
+
+static inline void NormalizeUriFuzzer(MediaDataShareExtAbility &extension, const uint8_t* data, size_t size)
+{
+    extension.NormalizeUri(FuzzUri(data, size));
+    extension.DenormalizeUri(FuzzUri(data, size));
+}
+
+static inline void StopFuzzer(MediaDataShareExtAbility &extension)
+{
+    extension.OnStop();
+}
+
 class ArkJsRuntime : public AbilityRuntime::JsRuntime {
 public:
     ArkJsRuntime() {};
@@ -238,7 +262,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     auto extension = OHOS::Init();
+    OHOS::InitFuzzer(extension);
     OHOS::InsertFuzzer(extension, data, size);
+    OHOS::InsertExtFuzzer(extension, data, size);
     OHOS::UpdateFuzzer(extension, data, size);
     OHOS::QueryFuzzer(extension, data, size);
     OHOS::DeleteFuzzer(extension, data, size);
@@ -249,9 +275,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
     OHOS::GetFileTypesFuzzer(extension, data, size);
     OHOS::BatchInsertFuzzer(extension, data, size);
+    OHOS::NormalizeUriFuzzer(extension, data, size);
 #ifdef FILEEXT
     auto fileExtension = OHOS::FileExtInit();
     OHOS::CreateFileFuzzer(fileExtension, data, size);
 #endif
+    OHOS::StopFuzzer(extension);
     return 0;
 }

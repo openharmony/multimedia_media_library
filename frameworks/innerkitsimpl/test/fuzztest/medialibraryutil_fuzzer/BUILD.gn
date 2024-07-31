@@ -14,18 +14,21 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-ohos_fuzztest("MediaLibraryCommonFuzzTest") {
+ohos_fuzztest("MediaLibraryUtilFuzzTest") {
   module_out_path = "media_library/media_library"
   fuzz_config_file = "."
 
   include_dirs = [
     "./include",
-    "${MEDIALIB_SERVICES_PATH}/media_scanner/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
   ]
 
-  sources = [ "src/medialibrary_common_fuzzer.cpp" ]
+  sources = [ "src/medialibrary_util_fuzzer.cpp" ]
 
-  deps = [ "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension" ]
+  deps = [
+    "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
+  ]
 
   external_deps = [
     "ability_base:want",
@@ -38,6 +41,8 @@ ohos_fuzztest("MediaLibraryCommonFuzzTest") {
     "ability_runtime:runtime",
     "ability_runtime:uri_permission_mgr",
     "access_token:libaccesstoken_sdk",
+    "access_token:libprivacy_sdk",
+    "access_token:libtokenid_sdk",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
