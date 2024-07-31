@@ -31,6 +31,10 @@ enum class DirtyTypes : int32_t {
     TYPE_SDIRTY
 };
 
+enum class ExtraChangeType : uint32_t {
+    PHOTO_TIME_UPDATE = 100
+};
+
 class MediaColumn {
 public:
     // Asset Base Parameter
