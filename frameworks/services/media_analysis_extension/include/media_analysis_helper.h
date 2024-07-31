@@ -32,7 +32,7 @@ public:
 private:
     static void StartMediaAnalysisServiceInternal(int32_t code, MessageOption option,
         std::vector<std::string> fileIds = {});
-    static void PortraitCoverSelectionAsync(const std::string albumId);
+    static void AnalysePortraitCover(const std::string albumId);
 };
 } // namespace Media
 } // namespace OHOS
