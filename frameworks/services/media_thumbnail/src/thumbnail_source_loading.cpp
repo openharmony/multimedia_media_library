@@ -278,9 +278,7 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
         return false;
     }
     DecodeOptions decodeOpts;
-    if (data_.loaderOpts.isHdr && imageSource->IsHdrImage()) {
-        decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
-    }
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
     Size targetSize = ConvertDecodeSize(data_, imageInfo.size, desiredSize_);
     if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
         MEDIA_ERR_LOG("SourceLoader failed to generate decodeOpts, pixelmap path %{private}s", data_.path.c_str());
