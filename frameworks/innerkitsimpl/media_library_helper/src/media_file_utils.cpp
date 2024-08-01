@@ -62,8 +62,10 @@ const std::string PHOTO_DIR = "Photo";
 const std::string AUDIO_DIR = "Audio";
 const std::string THUMBS_DIR = ".thumbs";
 const std::string EDIT_DATA_DIR = ".editData";
+const std::string THUMBS_PHOTO_DIR = ".thumbs/Photo";
+const std::string EDIT_DATA_PHOTO_DIR = ".editData/Photo";
 const std::vector<std::string> SET_LISTEN_DIR = {
-    PHOTO_DIR, AUDIO_DIR, THUMBS_DIR, EDIT_DATA_DIR
+    PHOTO_DIR, AUDIO_DIR, THUMBS_DIR, EDIT_DATA_DIR, THUMBS_PHOTO_DIR, EDIT_DATA_PHOTO_DIR
 };
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
@@ -436,12 +438,36 @@ bool MediaFileUtils::SetEPolicy()
     return true;
 }
 
+void MediaFileUtils::SetDeletionRecord(int fd, const string &fileName)
+{
+    unsigned int flags = 0;
+    int ret = -1;
+    ret = ioctl(fd, HMFS_IOCTL_HW_GET_FLAGS, &flags);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("File %{public}s Failed to get flags, errno is %{public}d", fileName.c_str(), errno);
+        return;
+    }
+
+    if (flags & HMFS_MONITOR_FL) {
+        return;
+    }
+    flags |= HMFS_MONITOR_FL;
+    ret = ioctl(fd, HMFS_IOCTL_HW_SET_FLAGS, &flags);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("File %{public}s Failed to set flags, errno is %{public}d", fileName.c_str(), errno);
+        return;
+    }
+    MEDIA_INFO_LOG("Flie %{public}s Set Delete control flags is success", fileName.c_str());
+}
+
 void MediaFileUtils::MediaFileDeletionRecord()
 {
     int fd = -1;
-    unsigned int flags = 0;
+    int bucket_fd = -1;
     string path;
-    int ret = -1;
+    struct dirent* dirEntry;
+    DIR* fileDir;
+    MEDIA_INFO_LOG("Set DeletionRecord for directory");
     for (auto &dir : SET_LISTEN_DIR) {
         path = LISTENING_BASE_PATH + dir;
         fd = open(path.c_str(), O_RDONLY);
@@ -449,28 +475,29 @@ void MediaFileUtils::MediaFileDeletionRecord()
             MEDIA_ERR_LOG("Failed to open the Dir, errno is %{public}d, %{public}s", errno, dir.c_str());
             continue;
         }
-
-        ret = ioctl(fd, HMFS_IOCTL_HW_GET_FLAGS, &flags);
-        if (ret < 0) {
-            MEDIA_ERR_LOG("Failed to get flags, errno is %{public}d, %{public}s", errno, dir.c_str());
-            close(fd);
-            continue;
-        }
-
-        if (flags & HMFS_MONITOR_FL) {
-            close(fd);
-            continue;
-        }
-
-        flags |= HMFS_MONITOR_FL;
-        ret = ioctl(fd, HMFS_IOCTL_HW_SET_FLAGS, &flags);
-        if (ret < 0) {
-            MEDIA_ERR_LOG("Failed to set flags, errno is %{public}d, %{public}s", errno, dir.c_str());
-            close(fd);
-            continue;
-        }
+        SetDeletionRecord(fd, dir);
         close(fd);
-        MEDIA_INFO_LOG("Set Delete control flags is success %{public}s", dir.c_str());
+        if ((strcmp(dir.c_str(), ".thumbs") == 0) || (strcmp(dir.c_str(), ".editData") == 0)) {
+            continue;
+        }
+        if ((fileDir = opendir(path.c_str())) == nullptr) {
+            MEDIA_ERR_LOG("dir not exist: %{private}s, error: %{public}d", path.c_str(), errno);
+            continue;
+        }
+        while ((dirEntry = readdir(fileDir)) != nullptr) {
+            if ((strcmp(dirEntry->d_name, ".") == 0) || (strcmp(dirEntry->d_name, "..") == 0)) {
+                continue;
+            }
+            std::string fileName = path + "/" + dirEntry->d_name;
+            bucket_fd = open(fileName.c_str(), O_RDONLY);
+            if (fd < 0) {
+                MEDIA_ERR_LOG("Failed to open the bucket_fd Dir error: %{public}d", errno);
+                continue;
+            }
+            SetDeletionRecord(bucket_fd, dirEntry->d_name);
+            close(bucket_fd);
+        }
+        closedir(fileDir);
     }
 }
 
