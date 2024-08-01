@@ -437,6 +437,18 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteOriginImage_test_001, TestSize.Le
     EXPECT_EQ(ret, false);
 }
 
+HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateAddedFromKvStore_test_001, TestSize.Level0)
+{
+    ThumbnailData thumbnailData;
+    data.dateAdded = "medialib_UpdateAstcDateAddedFromKvStore_test_001"
+    ThumbRdbOpt opts = {
+        .dateAdded = "medialib_UpdateAstcDateAddedFromKvStore_test_001",
+        .row = "medialib_UpdateAstcDateAddedFromKvStore_test_001",
+    };
+    bool ret = ThumbnailUtils::medialib_UpdateAstcDateAddedFromKvStore(opts, data);
+    EXPECT_EQ(ret, false);
+}
+
 #ifdef DISTRIBUTED
 HWTEST_F(MediaLibraryUtilsTest, medialib_SyncPullKvstore_test_001, TestSize.Level0)
 {
