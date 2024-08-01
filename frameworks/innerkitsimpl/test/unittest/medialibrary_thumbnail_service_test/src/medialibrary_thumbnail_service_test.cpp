@@ -593,6 +593,18 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_035, T
     EXPECT_EQ(res, false);
 }
 
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_036, TestSize.Level0)
+{
+    std::shared_ptr<ThumbnailTaskData> data;
+    IThumbnailHelper::UpdateAstcDateAdded(data);
+    ThumbRdbOpt opts;
+    ThumbnailData thumbData;
+    int32_t requestId;
+    std::shared_ptr<ThumbnailTaskData> dataValue = std::make_shared<ThumbnailTaskData>(opts, thumbData, requestId);
+    IThumbnailHelper::CreateLcdAndThumbnail(dataValue);
+    EXPECT_EQ(requestId, dataValue->requestId_);
+}
+
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_001, TestSize.Level0)
 {
     ThumbnailType type = ThumbnailType::MTH;
