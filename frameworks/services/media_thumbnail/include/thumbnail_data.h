@@ -57,8 +57,6 @@ public:
         bool decodeInThumbSize {false};
         bool needUpload {false};
 
-        // if true, create HDR pixelMap
-        EXPORT bool isHdr {false};
         std::unordered_map<SourceState, SourceState> loadingStates;
     };
 
