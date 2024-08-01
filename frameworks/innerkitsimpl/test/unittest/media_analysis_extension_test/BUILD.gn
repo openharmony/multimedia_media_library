@@ -14,31 +14,31 @@
 import("//build/test.gni")
 import("//foundation/multimedia/media_library/media_library.gni")
 
-ohos_unittest("PortraitAlbumUpdateTest") {
-  module_out_path = "media_library/portrait_album_update_test"
+group("unittest") {
+  testonly = true
+
+  deps = [ ":media_analysis_extension_test" ]
+}
+
+ohos_unittest("media_analysis_extension_test") {
+  module_out_path = "media_library/media_analysis_extension_test"
   include_dirs = [
-    "./include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/device_manage",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
+    "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
     "../get_self_permissions/include",
-    "../medialibrary_unittest_utils/include",
-    "${MEDIALIB_UTILS_PATH}/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
-    "${MEDIALIB_INTERFACES_PATH}/inner_api/media_library_helper/include",
-    "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
+    "./include",
   ]
 
   sources = [
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_album_operations.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_analysis_album_operations.cpp",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/medialibrary_command.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
     "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
-    "./src/portrait_album_update_test.cpp",
+    "./src/media_analysis_callback_stub_test.cpp",
   ]
-
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension:medialibrary_data_extension",
-    "../../../../../../../ability/ability_runtime/interfaces/inner_api/dataobs_manager:dataobs_manager",
   ]
 
   external_deps = [
@@ -47,30 +47,27 @@ ohos_unittest("PortraitAlbumUpdateTest") {
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
     "ability_runtime:app_context",
-    "ability_runtime:dataobs_manager",
-    "ability_runtime:runtime",
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
     "data_share:datashare_provider",
+    "device_manager:devicemanagersdk",
     "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "image_framework:image_native",
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "player_framework:media_client",
     "relational_store:native_rdb",
     "relational_store:rdb_data_share_adapter",
-    "user_file_service:file_access_extension_ability_kit",
   ]
-
-  defines = []
-  defines += [ "MEDIALIBRARY_COMPATIBILITY=1" ]
 
   sanitize = {
     cfi = true
     cfi_cross_dso = true
     debug = false
   }
+
+  resource_config_file =
+      "${MEDIALIB_INNERKITS_PATH}/test/unittest/resources/ohos_test.xml"
 }
