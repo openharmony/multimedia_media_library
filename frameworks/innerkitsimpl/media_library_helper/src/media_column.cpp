@@ -97,6 +97,7 @@ const std::string PhotoColumn::PHOTO_THUMBNAIL_READY = "thumbnail_ready";
 const std::string PhotoColumn::PHOTO_FRONT_CAMERA = "front_camera";
 const std::string PhotoColumn::PHOTO_BURST_COVER_LEVEL = "burst_cover_level";
 const std::string PhotoColumn::PHOTO_BURST_KEY = "burst_key";
+const std::string PhotoColumn::PHOTO_BURST_SEQUENCE = "burst_sequence";
 const std::string PhotoColumn::PHOTO_COVER_POSITION = "cover_position";
 
 const std::string PhotoColumn::PHOTO_CLOUD_ID_INDEX = "cloud_id_index";
@@ -193,6 +194,7 @@ const std::string PhotoColumn::CREATE_PHOTO_TABLE = "CREATE TABLE IF NOT EXISTS 
     PHOTO_THUMB_SIZE + " TEXT," +
     PHOTO_FRONT_CAMERA + " TEXT, " +
     PHOTO_IS_TEMP + " INT DEFAULT 0," +
+    PHOTO_BURST_SEQUENCE + " INT, " +
     PHOTO_BURST_COVER_LEVEL + " INT, " +
     PHOTO_BURST_KEY + " TEXT)";
 
