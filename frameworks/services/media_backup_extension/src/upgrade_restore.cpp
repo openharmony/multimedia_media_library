@@ -697,6 +697,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
         return isSuccess;
     }
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
+    info.burstSequence = burstKeyGenerator_.FindBurstSequence(info);
     ParseResultSetForMap(resultSet, info);
     return isSuccess;
 }
@@ -757,6 +758,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (fileInfo.burstKey.size() > 0) {
         values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
+        values.PutInt(PhotoColumn::PHOTO_BURST_SEQUENCE, fileInfo.burstSequence);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading burst photo
     }
     return values;
