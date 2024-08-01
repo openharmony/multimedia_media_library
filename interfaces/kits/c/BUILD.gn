@@ -46,7 +46,7 @@ config("media_capi_public_config") {
 ohos_shared_library("native_media_asset_manager") {
   install_enable = true
 
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
