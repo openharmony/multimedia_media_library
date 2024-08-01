@@ -21,6 +21,7 @@
 #include <string>
 
 #include "deferred_photo_proc_session.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,6 +37,7 @@ public:
 
 private:
     EXPORT int32_t UpdatePhotoQuality(const std::string &photoId);
+    void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet);
 };
 } // namespace Media
 } // namespace OHOS
