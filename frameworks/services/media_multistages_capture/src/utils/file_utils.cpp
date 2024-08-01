@@ -36,7 +36,7 @@ int FileUtils::DeleteFile(const string &fileName)
 {
     int ret = remove(fileName.c_str());
     if (ret < 0) {
-        MEDIA_INFO_LOG("DeleteFile fail, ret: %{public}d, errno: %{public}d", ret, errno);
+        MEDIA_ERR_LOG("DeleteFile fail, ret: %{public}d, errno: %{public}d", ret, errno);
     }
     return ret;
 }

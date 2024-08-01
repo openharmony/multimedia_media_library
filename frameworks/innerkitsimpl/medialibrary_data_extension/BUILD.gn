@@ -50,10 +50,11 @@ config("media_data_extension_public_config") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "${MEDIALIB_UTILS_PATH}/include",
     "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
-    "${MEDIALIB_SERVICES_PATH}/media_active_task/include",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
     "${MEDIALIB_SERVICES_PATH}/media_async_worker/include",
     "${MEDIALIB_SERVICES_PATH}/media_thumbnail/include",
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/include",
+    "${MEDIALIB_SERVICES_PATH}/media_permission/include",
 
     "../../../../../bundlemanager/bundle_framework/interfaces/kits/js/common",
   ]
@@ -189,14 +190,27 @@ ohos_shared_library("medialibrary_data_extension") {
     "${MEDIALIB_SERVICES_PATH}/media_cloud_sync_notify_handle/src/notify_responsibility_chain_factory.cpp",
   ]
 
+  media_permission_source = [
+    "${MEDIALIB_SERVICES_PATH}/media_permission/src/abs_permission_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_permission/src/db_permission_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_permission/src/grant_permission_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_permission/src/media_tool_permission_handler.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_permission/src/pemission_common.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_permission/src/read_write_permission_handler.cpp",
+  ]
+
   sources = [
-    "${MEDIALIB_SERVICES_PATH}/media_active_task/src/media_actively_calling_analyse.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_callback_stub.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_helper.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/src/media_analysis_proxy.cpp",
     "${MEDIALIB_UTILS_PATH}/src/media_privacy_manager.cpp",
-    "src/download_cloud_files_background.cpp",
+    "src/background_cloud_file_processor.cpp",
     "src/media_datashare_ext_ability.cpp",
     "src/media_datashare_stub_impl.cpp",
     "src/medialibrary_album_operations.cpp",
     "src/medialibrary_analysis_album_operations.cpp",
+    "src/medialibrary_app_uri_permission_operations.cpp",
+    "src/medialibrary_appstate_observer.cpp",
     "src/medialibrary_asset_operations.cpp",
     "src/medialibrary_audio_operations.cpp",
     "src/medialibrary_bundle_manager.cpp",
@@ -229,6 +243,7 @@ ohos_shared_library("medialibrary_data_extension") {
   sources += media_multistages_capture_source
   sources += media_dfx_source
   sources += media_cloud_sync_notify_handle_source
+  sources += media_permission_source
 
   public_configs = [ ":media_data_extension_public_config" ]
 
@@ -277,6 +292,7 @@ ohos_shared_library("medialibrary_data_extension") {
     "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
+    "os_account:os_account_innerkits",
     "player_framework:media_client",
     "preferences:native_preferences",
     "relational_store:native_rdb",
@@ -306,7 +322,7 @@ ohos_shared_library("medialibrary_data_extension") {
     sources += [ "${MEDIALIB_SERVICES_PATH}/media_multistages_capture/src/deferred_processing/multistages_capture_deferred_proc_session_callback.cpp" ]
   }
 
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true

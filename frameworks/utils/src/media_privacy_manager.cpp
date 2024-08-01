@@ -136,7 +136,7 @@ static int32_t OpenOriginFd(const string &path, const string &mode)
 {
     string clientBundle = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     if (clientBundle.empty()) {
-        MEDIA_ERR_LOG("clientBundleName is empty,failed to get clientBundleName");
+        MEDIA_DEBUG_LOG("clientBundleName is empty");
     }
     return MediaFileUtils::OpenFile(path, mode, clientBundle);
 }

@@ -43,6 +43,7 @@ public:
     void StartRestoreEx(const std::string &backupRetorePath, const std::string &upgradePath,
         std::string &restoreExInfo);
     std::string GetRestoreExInfo();
+    void ReportPortraitStat(int32_t sceneCode);
 
 protected:
     int32_t Init(void);
@@ -57,6 +58,9 @@ protected:
     virtual void AnalyzeSource() = 0;
     virtual bool ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix, std::string &newPath,
         std::string &relativePath);
+    virtual bool NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
+    virtual void InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
+        int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum);
     std::vector<NativeRdb::ValuesBucket> GetInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos,
         int32_t sourceType);
     std::vector<NativeRdb::ValuesBucket> GetAudioInsertValues(int32_t sceneCode, std::vector<FileInfo> &fileInfos);
@@ -76,8 +80,8 @@ protected:
         FileInfo &fileInfo);
     bool HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
         FileInfo &fileInfo);
-    void InsertPhotoMap(std::vector<FileInfo> &fileInfos);
-    void BatchQueryPhoto(std::vector<FileInfo> &fileInfos);
+    void InsertPhotoMap(std::vector<FileInfo> &fileInfos, int64_t &mapRowNum);
+    void BatchQueryPhoto(std::vector<FileInfo> &fileInfos, bool isFull, const NeedQueryMap &needQueryMap);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
     nlohmann::json GetErrorInfoJson();
     nlohmann::json GetCountInfoJson(const std::vector<std::string> &countInfoTypes);
@@ -94,6 +98,13 @@ protected:
     void SetParameterForClone();
     void StopParameterForClone(int32_t sceneCode);
     std::string GetSameFileQuerySql(const FileInfo &fileInfo);
+    void InsertPhotoRelated(std::vector<FileInfo> &fileInfos, int32_t sourceType);
+    bool NeedBatchQueryPhoto(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
+    bool NeedBatchQueryPhotoForPhotoMap(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap);
+    bool NeedQuery(const FileInfo &fileInfo, const NeedQueryMap &needQueryMap);
+    bool NeedQueryByPhotoRelatedType(const FileInfo &fileInfo, PhotoRelatedType photoRelatedType,
+        const std::unordered_set<std::string> &needQuerySet);
+    void UpdateFaceAnalysisStatus();
 
 protected:
     std::atomic<uint64_t> migrateDatabaseNumber_;
@@ -101,6 +112,9 @@ protected:
     std::atomic<uint64_t> migrateVideoFileNumber_;
     std::atomic<uint64_t> migrateAudioDatabaseNumber_;
     std::atomic<uint64_t> migrateAudioFileNumber_;
+    std::atomic<uint64_t> migratePortraitPhotoNumber_{0};
+    std::atomic<uint64_t> migratePortraitFaceNumber_{0};
+    std::atomic<uint64_t> migratePortraitTotalTimeCost_{0};
     std::atomic<uint32_t> imageNumber_;
     std::atomic<uint32_t> videoNumber_;
     std::atomic<uint64_t> migrateDatabaseMapNumber_{0};
@@ -118,6 +132,10 @@ protected:
     int fileMinSize_ = 0;
     int maxFileId_ = 0;
     int maxCount_ = 0;
+    std::unordered_map<int32_t, std::string> faceAnalysisVersionMap_;
+    std::unordered_map<std::string, std::string> tagIdMap_;
+    std::unordered_map<std::string, std::string> groupTagMap_;
+    std::unordered_map<std::string, int32_t> portraitAlbumIdMap_;
 };
 } // namespace Media
 } // namespace OHOS

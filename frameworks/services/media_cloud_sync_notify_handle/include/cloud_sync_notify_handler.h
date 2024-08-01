@@ -29,8 +29,6 @@ public:
     ~CloudSyncNotifyHandler() = default;
     
     EXPORT void MakeResponsibilityChain();
-    void HandleCloudHeightErrorNotify(const std::list<Uri> &uris);
-    void HandleCloudDownloadSucceedNotify(const std::list<Uri> &uris);
     void ThumbnailObserverOnChange(const std::list<Uri> &uris, const DataShare::DataShareObserver::ChangeType &type);
 
     CloudSyncNotifyInfo notifyInfo_;
@@ -38,6 +36,8 @@ public:
 private:
     void HandleInsertEvent(const std::list<Uri> &uris);
     void HandleDeleteEvent(const std::list<Uri> &uris);
+    void HandleTimeUpdateEvent(const std::list<Uri> &uris);
+    void HandleExtraEvent(const std::list<Uri> &uris, const DataShare::DataShareObserver::ChangeType &type);
 };
 } //namespace Media
 } //namespace OHOS

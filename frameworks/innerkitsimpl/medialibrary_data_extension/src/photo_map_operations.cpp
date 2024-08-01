@@ -20,6 +20,7 @@
 #include "media_file_uri.h"
 #include "media_file_utils.h"
 #include "medialibrary_album_operations.h"
+#include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_data_manager.h"
@@ -255,17 +256,22 @@ static void GetDismissAssetsPredicates(NativeRdb::RdbPredicates &rdbPredicate, v
 
 int32_t DoDismissAssets(int32_t subtype, const string &albumId, const vector<string> &assetIds)
 {
+    int32_t deleteRow = 0;
     if (subtype == PhotoAlbumSubType::GROUP_PHOTO) {
         NativeRdb::RdbPredicates rdbPredicate { VISION_IMAGE_FACE_TABLE };
         rdbPredicate.In(MediaColumn::MEDIA_ID, assetIds);
-        return MediaLibraryRdbStore::Delete(rdbPredicate);
+        deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
+        if (deleteRow != 0 && MediaLibraryDataManagerUtils::IsNumber(albumId)) {
+            MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(atoi(albumId.c_str()));
+        }
+        return deleteRow;
     }
 
     vector<string> updateAlbumIds;
     NativeRdb::RdbPredicates rdbPredicate { ANALYSIS_PHOTO_MAP_TABLE };
     GetDismissAssetsPredicates(rdbPredicate, updateAlbumIds,
         static_cast<PhotoAlbumSubType>(subtype), albumId, assetIds);
-    int32_t deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
+    deleteRow = MediaLibraryRdbStore::Delete(rdbPredicate);
     if (deleteRow <= 0) {
         return deleteRow;
     }

@@ -1365,7 +1365,7 @@ void CloneRestore::QuerySource(vector<FileInfo> &fileInfos)
             MEDIA_ERR_LOG("Get fileId invalid or not found: %{public}d", fileId);
             continue;
         }
-        int32_t index = fileIndexMap.at(fileId);
+        uint32_t index = fileIndexMap.at(fileId);
         fileInfos[index].packageName = albumName;
         fileInfos[index].bundleName = bundleName;
         hasSourceCount++;

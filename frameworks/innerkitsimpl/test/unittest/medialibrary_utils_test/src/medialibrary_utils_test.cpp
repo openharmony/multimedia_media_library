@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "avmetadatahelper.h"
 #include "foundation/ability/form_fwk/test/mock/include/mock_single_kv_store.h"
 #include "kvstore.h"
@@ -19,10 +20,12 @@
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
+#define private public
 #include "medialibrary_sync_operation.h"
 #include "medialibrary_utils_test.h"
 #include "thumbnail_service.h"
 #include "thumbnail_utils.h"
+#include "post_event_utils.h"
 
 using namespace std;
 using namespace OHOS;
@@ -656,7 +659,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_scaleTargetImage_test_001, TestSize.Lev
     targetSize.height = 20;
     ThumbnailData data;
     data.source = make_shared<PixelMap>();
-    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data.source, targetSize);
+    bool ret = ThumbnailUtils::ScaleTargetPixelMap(data.source, targetSize, Media::AntiAliasingOption::MEDIUM);
     EXPECT_EQ(ret, false);
 }
 
@@ -675,6 +678,29 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_loadImageFile_test_001, TestSize.Level0
     ret = ThumbnailUtils::LoadVideoFile(data, desiredSize);
     EXPECT_EQ(ret, false);
     ret = ThumbnailUtils::LoadAudioFile(data, desiredSize);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_ParseVideoSize_test_001, TestSize.Level0)
+{
+    shared_ptr<AVMetadataHelper> avMetadataHelper = AVMetadataHelperFactory::CreateAVMetadataHelper();
+    int32_t videoWidth = 0;
+    int32_t videoHeight = 0;
+    bool ret = ThumbnailUtils::ParseVideoSize(avMetadataHelper, videoWidth, videoHeight);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, medialib_ConvertStrToInt32_test_001, TestSize.Level0)
+{
+    std::string testStr = "";
+    int32_t result = 0;
+    bool ret = ThumbnailUtils::ConvertStrToInt32(testStr, result);
+    EXPECT_EQ(ret, false);
+    testStr = "not number string";
+    ret = ThumbnailUtils::ConvertStrToInt32(testStr, result);
+    EXPECT_EQ(ret, false);
+    testStr = "10000000000";
+    ret = ThumbnailUtils::ConvertStrToInt32(testStr, result);
     EXPECT_EQ(ret, false);
 }
 
@@ -796,6 +822,24 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_resizeLcd_test_001, TestSize.Level0)
     EXPECT_TRUE(result);
     EXPECT_EQ(width, 512);
     EXPECT_EQ(height, 3840);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, PostErrorProcess_test_001, TestSize.Level0)
+{
+    PostEventUtils postEventUtils;
+    uint32_t errType = ErrType::DEFAULT_ERR;
+    VariantMap error;
+    postEventUtils.PostErrorProcess(errType, error);
+    EXPECT_EQ(errType, ErrType::DEFAULT_ERR);
+}
+
+HWTEST_F(MediaLibraryUtilsTest, PostStatProcess_test_002, TestSize.Level0)
+{
+    PostEventUtils postEventUtils;
+    uint32_t statType = StatType::DEFAULT_STAT;
+    VariantMap stat;
+    postEventUtils.PostStatProcess(statType, stat);
+    EXPECT_EQ(statType, StatType::DEFAULT_STAT);
 }
 } // namespace Media
 } // namespace OHOS

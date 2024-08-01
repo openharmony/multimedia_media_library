@@ -38,17 +38,17 @@ public:
 
     EXPORT virtual void BeginSynchronize();
     EXPORT virtual void EndSynchronize();
-    #ifdef ABILITY_CAMERA_SUPPORT
+#ifdef ABILITY_CAMERA_SUPPORT
     void AddImage(const std::string &imageId, CameraStandard::DpsMetadata &metadata, const bool isTrashed = false);
-    #endif
+#endif
     EXPORT virtual void RemoveImage(const std::string &imageId, const bool isRestorable = true);
     EXPORT void RestoreImage(const std::string &imageId);
     EXPORT void ProcessImage(const std::string &appName, const std::string &imageId);
     EXPORT bool CancelProcessImage(const std::string &imageId);
 private:
-    #ifdef ABILITY_CAMERA_SUPPORT
+#ifdef ABILITY_CAMERA_SUPPORT
     sptr<CameraStandard::DeferredPhotoProcSession> deferredProcSession_;
-    #endif
+#endif
 };
 } // namespace Media
 } // namespace OHOS

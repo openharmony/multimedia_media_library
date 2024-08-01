@@ -25,6 +25,18 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
+const std::string DIR_ALL_IMAGE_CONTAINER_TYPE = "." + IMAGE_CONTAINER_TYPE_BMP + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_BM + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_GIF + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPEG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_JPE + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_PNG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_WEBP + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_RAW + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_SVG + "?" +
+                                                 "." + IMAGE_CONTAINER_TYPE_HEIF + "?";
+
 /*
  * Feature : MediaLibraryHelperUnitTest
  * Function : Check set get function

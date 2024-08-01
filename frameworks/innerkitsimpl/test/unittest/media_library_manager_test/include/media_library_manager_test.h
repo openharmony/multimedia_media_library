@@ -17,6 +17,7 @@
 #define MEDIA_LIBRARY_MANANGER_TEST_H
 
 #include "gtest/gtest.h"
+#include "media_library_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -26,6 +27,7 @@ public:
     static void TearDownTestCase(void);
     void SetUp();
     void TearDown();
+    MediaLibraryManager manager;
 };
 } // namespace Media
 } // namespace OHOS
