@@ -256,6 +256,10 @@ struct FileInfo {
      * @brief the field data for media_library.db # Photos # burst_key. 36 length of uuid.
      */
     std::string burstKey;
+    /**
+     * @brief the burst sequence, generated from FileInfo.title, when isBurst=1 or isBurst=2
+    */
+    int32_t burstSequence;
 };
 
 struct AlbumInfo {
