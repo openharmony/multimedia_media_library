@@ -42,6 +42,8 @@ private:
 private:
     const std::string TITLE_KEY_WORDS_OF_BURST = "_BURST";
     const int TITLE_SEQUENCE_LEN_OF_BURST = 3;
+    const int BURST_COVER_TYPE = 1;
+    const int BURST_MEMBER_TYPE = 2;
     std::unordered_map<std::string, std::string> groupHashMap_;
     std::unordered_map<std::string, int32_t> objectHashMap_;
 };

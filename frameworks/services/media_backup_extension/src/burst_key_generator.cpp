@@ -103,7 +103,7 @@ std::string BurstKeyGenerator::GenerateUuid()
 std::string BurstKeyGenerator::FindBurstKey(const FileInfo &fileInfo)
 {
     // isBurst, 1=burst cover photo, 2=burst photo, 0=others
-    if (fileInfo.isBurst != 1 && fileInfo.isBurst != 2) {
+    if (fileInfo.isBurst != BURST_COVER_TYPE && fileInfo.isBurst != BURST_MEMBER_TYPE) {
         return "";
     }
     std::string groupHash = FindGroupHash(fileInfo);
@@ -125,7 +125,7 @@ std::string BurstKeyGenerator::FindBurstKey(const FileInfo &fileInfo)
 int32_t BurstKeyGenerator::FindBurstSequence(const FileInfo &fileInfo)
 {
     // only accept data of burst photo
-    if (fileInfo.isBurst != 1 && fileInfo.isBurst != 2) {
+    if (fileInfo.isBurst != BURST_COVER_TYPE && fileInfo.isBurst != BURST_MEMBER_TYPE) {
         return 0;
     }
     std::string title = fileInfo.title;
