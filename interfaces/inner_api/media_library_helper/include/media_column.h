@@ -31,6 +31,10 @@ enum class DirtyTypes : int32_t {
     TYPE_SDIRTY
 };
 
+enum class ExtraChangeType : uint32_t {
+    PHOTO_TIME_UPDATE = 100
+};
+
 class MediaColumn {
 public:
     // Asset Base Parameter
@@ -177,10 +181,6 @@ public:
 
     // cloud sync uri
     static const std::string PHOTO_CLOUD_URI_PREFIX EXPORT;
-
-    // cloud notify uri
-    static const std::string PHOTO_HEIGHT_ERROR_URI_PREFIX EXPORT;
-    static const std::string PHOTO_DOWNLOAD_SUCCEED_URI_PREFIX EXPORT;
 
     // all columns
     static const std::set<std::string> PHOTO_COLUMNS EXPORT;

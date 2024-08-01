@@ -765,4 +765,30 @@ int32_t MediaLibraryAnalysisAlbumOperations::HandleGroupPhotoAlbum(const Operati
             return E_ERR;
     }
 }
+
+void MediaLibraryAnalysisAlbumOperations::UpdateGroupPhotoAlbumById(int32_t albumId)
+{
+    const string &querySql = GetGroupPhotoAlbumSql();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("Update group photo album by id: %{public}d failed, rdbStore is null.", albumId);
+        return;
+    }
+    auto resultSet = rdbStore->QuerySql(querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Update group photo album by id: %{public}d failed, query resultSet is null.", albumId);
+        return;
+    }
+
+    vector<GroupPhotoAlbumInfo> updateAlbums;
+    while (resultSet->GoToNextRow() == E_OK) {
+        int32_t id = GetInt32Val(PhotoAlbumColumns::ALBUM_ID, resultSet);
+        if (id == albumId) {
+            auto info = AssemblyInfo(resultSet);
+            updateAlbums.push_back(info);
+            break;
+        }
+    }
+    UpdateGroupPhotoAlbumInfo(updateAlbums);
+}
 } // namespace OHOS::Media

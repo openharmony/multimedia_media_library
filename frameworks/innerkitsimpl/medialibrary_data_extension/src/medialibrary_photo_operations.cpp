@@ -22,8 +22,7 @@
 #include "abs_shared_result_set.h"
 #include "file_asset.h"
 #include "file_utils.h"
-#include "iservice_registry.h"
-#include "media_actively_calling_analyse.h"
+#include "media_analysis_helper.h"
 #include "media_change_effect.h"
 #include "media_column.h"
 #include "media_file_uri.h"
@@ -623,26 +622,6 @@ static void TrashPhotosSendNotify(vector<string> &notifyUris)
     }
 }
 
-static void StartAnalysisServiceAsync()
-{
-    string name("Photo StartAnalysisServiceAsync");
-    pthread_setname_np(pthread_self(), name.c_str());
-    int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_UPDATE_INDEX;
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option(MessageOption::TF_ASYNC);
-    MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
-    data.WriteInterfaceToken(mediaActivelyCallingAnalyse.GetDescriptor());
-    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
-        MEDIA_ERR_LOG("Actively Calling Analyse For update index Fail");
-    }
-}
-
-static void ActivelyStartAnalysisService()
-{
-    std::thread(&StartAnalysisServiceAsync).detach();
-}
-
 int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
@@ -665,7 +644,8 @@ int32_t MediaLibraryPhotoOperations::TrashPhotos(MediaLibraryCommand &cmd)
         MEDIA_ERR_LOG("Trash photo failed. Result %{public}d.", updatedRows);
         return E_HAS_DB_ERROR;
     }
-    ActivelyStartAnalysisService();
+    MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
+        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
     MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore->GetRaw(), notifyUris);
     if (static_cast<size_t>(updatedRows) != notifyUris.size()) {
         MEDIA_WARN_LOG("Try to notify %{public}zu items, but only %{public}d items updated.",
@@ -696,6 +676,9 @@ static string GetUriWithoutSeg(const string &oldUri)
 
 int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
+    MEDIA_INFO_LOG("start");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
     if (fileId.empty()) {
         MEDIA_ERR_LOG("get fileId fail");
@@ -738,6 +721,7 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
             ScanFile(path, true, true, true);
         }
     }
+    MEDIA_INFO_LOG("Success, updatedRows: %{public}d, needScanStr: %{public}s", updatedRows, needScanStr.c_str());
     return updatedRows;
 }
 
@@ -811,7 +795,8 @@ static int32_t HidePhotos(MediaLibraryCommand &cmd)
     if (changedRows < 0) {
         return changedRows;
     }
-    ActivelyStartAnalysisService();
+    MediaAnalysisHelper::StartMediaAnalysisServiceAsync(
+        static_cast<int32_t>(MediaAnalysisProxy::ActivateServiceType::START_UPDATE_INDEX), notifyUris);
     MediaLibraryRdbUtils::UpdateAllAlbums(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), notifyUris);
     SendHideNotify(notifyUris, hiddenState);
@@ -2033,6 +2018,14 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     if (ret != E_OK) {
         MEDIA_ERR_LOG("MediaLibraryPhotoOperations: AddFiltersToPhoto: TakeEffect error. ret = %d", ret);
         return E_ERR;
+    }
+
+    string editDataPath = GetEditDataPath(outputPath);
+    if (MediaFileUtils::IsFileExists(editDataPath)) {
+        MEDIA_INFO_LOG("Editdata path: %{private}s exists, cannot add filters to photo", editDataPath.c_str());
+        CHECK_AND_PRINT_LOG(MediaFileUtils::DeleteFile(tempOutputPath),
+            "Failed to delete temp filters file, errno: %{public}d", errno);
+        return E_OK;
     }
 
     ret = rename(tempOutputPath.c_str(), outputPath.c_str());

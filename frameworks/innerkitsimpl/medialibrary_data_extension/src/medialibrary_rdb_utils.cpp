@@ -20,6 +20,7 @@
 #include <sstream>
 #include <string>
 
+#include "media_analysis_helper.h"
 #include "media_log.h"
 #include "media_refresh_album_column.h"
 #include "medialibrary_business_record_column.h"
@@ -40,8 +41,6 @@
 #include "location_column.h"
 #include "search_column.h"
 #include "story_cover_info_column.h"
-#include "image_source.h"
-#include "result_set_utils.h"
 
 namespace OHOS::Media {
 using namespace std;
@@ -51,9 +50,9 @@ constexpr int32_t E_ERR = -1;
 constexpr int32_t E_HAS_DB_ERROR = -222;
 constexpr int32_t E_SUCCESS = 0;
 constexpr int32_t E_EMPTY_ALBUM_ID = 1;
+constexpr int32_t E_NEED_UPDATE_ALBUM_COVER_URI = 2;
 constexpr size_t ALBUM_UPDATE_THRESHOLD = 1000;
 constexpr int32_t SINGLE_FACE = 1;
-constexpr int32_t ALBUM_COVER_SATISFIED = 1;
 constexpr double LOCATION_DB_ZERO = 0;
 constexpr double LOCATION_LATITUDE_MAX = 90.0;
 constexpr double LOCATION_LATITUDE_MIN = -90.0;
@@ -430,7 +429,7 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
     return newCount;
 }
 
-static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
+static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
     ValuesBucket &values, int newCount)
 {
     string newCover;
@@ -439,14 +438,15 @@ static void SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shar
     }
     const string &targetColumn = PhotoAlbumColumns::ALBUM_COVER_URI;
     string oldCover = GetAlbumCover(albumResult, targetColumn);
+    int32_t ret = E_SUCCESS;
     if (oldCover != newCover) {
-        int totalFaces = GetIntValFromColumn(fileResult, TOTAL_FACES);
-        int isCoverSatisfied = totalFaces == SINGLE_FACE ? ALBUM_COVER_SATISFIED : 0;
-        values.PutInt(IS_COVER_SATISFIED, isCoverSatisfied);
+        ret = E_NEED_UPDATE_ALBUM_COVER_URI;
+        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING));
         values.PutString(targetColumn, newCover);
-        MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s, satisfied: %{public}d",
-            targetColumn.c_str(), oldCover.c_str(), newCover.c_str(), isCoverSatisfied);
+        MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s", targetColumn.c_str(),
+            oldCover.c_str(), newCover.c_str());
     }
+    return ret;
 }
 
 static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
@@ -886,6 +886,12 @@ static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string
     }
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
+    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
+    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
     predicates.Limit(1);
     vector<string> columns;
     auto resultSet = rdbStore->Query(predicates, columns);
@@ -906,10 +912,17 @@ static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string
     return true;
 }
 
-static bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string fileId,
+static inline void SetCoverSatisfied(const string &fileId, const vector<string> &fileIds, ValuesBucket &values)
+{
+    if (find(fileIds.begin(), fileIds.end(), fileId) != fileIds.end()) {
+        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING));
+    }
+}
+
+static inline bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string fileId,
     int32_t isCoverSatisfied, const vector<string> &fileIds)
 {
-    return isCoverSatisfied != ALBUM_COVER_SATISFIED || fileIds.empty() ||
+    return isCoverSatisfied == static_cast<int32_t>(CoverSatisfiedType::NO_SETTING) || fileIds.empty() ||
         find(fileIds.begin(), fileIds.end(), fileId) != fileIds.end() || !IsCoverValid(rdbStore, fileId);
 }
 
@@ -939,6 +952,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(countResult, albumResult, values, false, PhotoAlbumSubType::PORTRAIT);
+    SetCoverSatisfied(coverId, fileIds, values);
     if (!ShouldUpdatePortraitAlbumCover(rdbStore, coverId, isCoverSatisfied, fileIds)) {
         return E_SUCCESS;
     }
@@ -947,8 +961,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
     if (coverResult == nullptr) {
         return E_HAS_DB_ERROR;
     }
-    SetPortraitCover(coverResult, albumResult, values, newCount);
-    return E_SUCCESS;
+    return SetPortraitCover(coverResult, albumResult, values, newCount);
 }
 
 static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -1047,22 +1060,29 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
     }
 
     ValuesBucket values;
-    int err = SetPortraitUpdateValues(rdbStore, albumResult, fileIds, values);
-    if (err < 0) {
-        MEDIA_WARN_LOG("Failed to set portrait update value! err: %{public}d", err);
-        return err;
+    int setRet = SetPortraitUpdateValues(rdbStore, albumResult, fileIds, values);
+    if (setRet < 0) {
+        MEDIA_WARN_LOG("Failed to set portrait album update values! err: %{public}d", setRet);
+        return setRet;
     }
+    string albumId = to_string(GetAlbumId(albumResult));
     if (values.IsEmpty()) {
         return E_SUCCESS;
     }
 
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(GetAlbumId(albumResult)));
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
     int32_t changedRows = 0;
-    err = rdbStore->Update(changedRows, values, predicates);
-    if (err < 0) {
-        MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", err);
-        return err;
+    int updateRet = rdbStore->Update(changedRows, values, predicates);
+    if (updateRet < 0) {
+        MEDIA_WARN_LOG("Failed to update album count and cover! err: %{public}d", updateRet);
+        if (setRet == E_NEED_UPDATE_ALBUM_COVER_URI) {
+            MediaAnalysisHelper::StartPortraitCoverSelectionAsync(albumId);
+        }
+        return updateRet;
+    }
+    if (setRet == E_NEED_UPDATE_ALBUM_COVER_URI) {
+        MediaAnalysisHelper::StartPortraitCoverSelectionAsync(albumId);
     }
     return E_SUCCESS;
 }
@@ -1099,7 +1119,6 @@ static int32_t UpdateSourceAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore, c
     MediaLibraryTracer tracer;
     tracer.Start("UpdateSourceAlbumIfNeeded");
     ValuesBucket values;
-    values.PutInt(PhotoAlbumColumns::ALBUM_IS_LOCAL, 1); // local album is 1.
     auto subtype = static_cast<PhotoAlbumSubType>(GetAlbumSubType(albumResult));
     int err = SetUpdateValues(rdbStore, albumResult, values, subtype, hiddenState);
     if (err < 0) {
@@ -2145,68 +2164,4 @@ bool MediaLibraryRdbUtils::HasDataToAnalysis(const std::shared_ptr<NativeRdb::Rd
     bool highlight = HasHighLightData(rdbStore);
     return (loc || cv || search || highlight);
 }
-
-int32_t MediaLibraryRdbUtils::UpdatePhotoHeightAndWidth(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    std::string filePath)
-{
-    uint32_t err = 0;
-    SourceOptions opts;
-    unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(filePath, opts, err);
-    if (err != E_OK || imageSource == nullptr) {
-        MEDIA_ERR_LOG("Failed to LoadImageSource for path:%{public}s", filePath.c_str());
-        return E_ERR;
-    }
-    ImageInfo imageInfo;
-    err = imageSource->GetImageInfo(0, imageInfo);
-    if (err != E_OK) {
-        MEDIA_ERR_LOG("Failed to get imageInfo, path:%{public}s", filePath.c_str());
-        return E_ERR;
-    }
-    int32_t height = imageInfo.size.height;
-    int32_t width = imageInfo.size.width;
-
-    NativeRdb::ValuesBucket values;
-    values.PutInt(PhotoColumn::PHOTO_HEIGHT, height);
-    values.PutInt(PhotoColumn::PHOTO_WIDTH, width);
-
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(PhotoColumn::MEDIA_FILE_PATH, filePath);
-    int32_t changedRows = 0;
-    err = rdbStore->Update(changedRows, values, predicates);
-    if (err < 0) {
-        MEDIA_ERR_LOG("Failed to update photo height and width, err: %{public}d", err);
-        return E_ERR;
-    }
-    return err;
-}
-
-std::vector<std::string> MediaLibraryRdbUtils::GetPhotoPathsByCloudIds(const std::shared_ptr<NativeRdb::RdbStore>
-    &rdbStore, const std::list<Uri> &uris, const std::string prefix)
-{
-    string cloudIds;
-    for (auto &uri : uris) {
-        auto cloudId = uri.ToString().substr(prefix.length());
-        cloudIds.append("'").append(cloudId).append("'").append(",");
-    }
-    cloudIds = cloudIds.substr(0, cloudIds.length() - 1);
-
-    RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.SetWhereClause(PhotoColumn::PHOTO_CLOUD_ID + " in(" + cloudIds + ")");
-    vector<string> columns = {
-        PhotoColumn::MEDIA_FILE_PATH
-    };
-    auto resultSet = rdbStore->Query(predicates, columns);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Failed to get photo, cloudId: %{public}s", cloudIds.c_str());
-        return std::vector<std::string>();
-    }
-
-    std::vector<std::string> filePaths;
-    while (resultSet->GoToNextRow() == E_OK) {
-        filePaths.push_back(get<string>(ResultSetUtils::GetValFromColumn(PhotoColumn::MEDIA_FILE_PATH, resultSet,
-            ResultSetDataType::TYPE_STRING)));
-    }
-    return filePaths;
-}
-
 } // namespace OHOS::Media

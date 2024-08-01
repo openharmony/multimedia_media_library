@@ -26,5 +26,5 @@ MEDIALIB_CAMERA_FRAMEWORK_PATH = "${MEDIALIB_ROOT_PATH}/../camera_framework"
 MEDIALIB_GLOBAL_PATH = "//base/global"
 MEDIALIB_THIRD_PARTY_PATH = "//third_party"
 declare_args() {
-  link_opt = false
+  media_library_link_opt = false
 }

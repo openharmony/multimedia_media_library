@@ -133,7 +133,7 @@ public:
     void SetLastVisitTime(const VariantData &lastVisitTime);
     EXPORT int64_t GetLastVisitTime() const;
 
-    void SetPhotoSubType(const VariantData &photoSubType);
+    EXPORT void SetPhotoSubType(const VariantData &photoSubType);
     int32_t GetPhotoSubType() const;
 
     void SetFrontCamera(const VariantData &forntcamera);

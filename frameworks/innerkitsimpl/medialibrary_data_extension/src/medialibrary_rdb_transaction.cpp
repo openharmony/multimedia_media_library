@@ -29,6 +29,7 @@ std::mutex TransactionOperations::transactionMutex_;
 std::condition_variable TransactionOperations::transactionCV_;
 std::atomic<bool> TransactionOperations::isInTransaction_(false);
 constexpr int32_t MAX_TRY_TIMES = 30;
+constexpr int32_t MAX_TRY_TIMES_FOR_UPGRADE = 500;
 constexpr int32_t TRANSACTION_WAIT_INTERVAL = 50; // in milliseconds.
 
 TransactionOperations::TransactionOperations(
@@ -41,12 +42,12 @@ TransactionOperations::~TransactionOperations()
     }
 }
 
-int32_t TransactionOperations::Start()
+int32_t TransactionOperations::Start(bool isUpgrade)
 {
     if (isStart || isFinish) {
         return 0;
     }
-    int32_t errCode = BeginTransaction();
+    int32_t errCode = BeginTransaction(isUpgrade);
     if (errCode == 0) {
         isStart = true;
     }
@@ -66,13 +67,13 @@ void TransactionOperations::Finish()
     }
 }
 
-int32_t TransactionOperations::BeginTransaction()
+int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
 {
     if (rdbStore_ == nullptr) {
         MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
         return E_HAS_DB_ERROR;
     }
-    MEDIA_INFO_LOG("Start transaction");
+    MEDIA_DEBUG_LOG("Start transaction");
 
     unique_lock<mutex> cvLock(transactionMutex_);
     if (isInTransaction_.load()) {
@@ -81,7 +82,11 @@ int32_t TransactionOperations::BeginTransaction()
     }
 
     int curTryTime = 0;
-    while (curTryTime < MAX_TRY_TIMES) {
+    int maxTryTimes = MAX_TRY_TIMES;
+    if (isUpgrade) {
+        maxTryTimes = MAX_TRY_TIMES_FOR_UPGRADE;
+    }
+    while (curTryTime < maxTryTimes) {
         if (rdbStore_->IsInTransaction()) {
             if (!isInTransaction_.load()) {
                 MEDIA_INFO_LOG("Stop cloud sync");
@@ -113,7 +118,7 @@ int32_t TransactionOperations::BeginTransaction()
         }
     }
 
-    MEDIA_ERR_LOG("RdbStore is still in transaction after try %{public}d times, abort.", MAX_TRY_TIMES);
+    MEDIA_ERR_LOG("RdbStore is still in transaction after try %{public}d times, abort.", maxTryTimes);
     return E_HAS_DB_ERROR;
 }
 
@@ -122,7 +127,7 @@ int32_t TransactionOperations::TransactionCommit()
     if (rdbStore_ == nullptr) {
         return E_HAS_DB_ERROR;
     }
-    MEDIA_INFO_LOG("Try commit transaction");
+    MEDIA_DEBUG_LOG("Try commit transaction");
 
     if (!(isInTransaction_.load()) || !(rdbStore_->IsInTransaction())) {
         MEDIA_ERR_LOG("no transaction now");

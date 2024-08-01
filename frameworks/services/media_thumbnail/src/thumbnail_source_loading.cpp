@@ -278,13 +278,10 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
         return false;
     }
     DecodeOptions decodeOpts;
-    if (data_.loaderOpts.isHdr && imageSource->IsHdrImage()) {
-        decodeOpts.desiredDynamicRange = DecodeDynamicRange::HDR;
-    }
+    decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
     Size targetSize = ConvertDecodeSize(data_, imageInfo.size, desiredSize_);
     if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
-        MEDIA_ERR_LOG("SourceLoader Failed to generate decodeOpts, pixelmap path %{private}s",
-            data_.path.c_str());
+        MEDIA_ERR_LOG("SourceLoader failed to generate decodeOpts, pixelmap path %{private}s", data_.path.c_str());
         return false;
     }
     data_.source = imageSource->CreatePixelMap(decodeOpts, err);
@@ -292,7 +289,8 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
         DfxManager::GetInstance()->HandleThumbnailError(data_.path, DfxType::IMAGE_SOURCE_CREATE_PIXELMAP, err);
         return false;
     }
-    if (!NeedAutoResize(targetSize) && !ThumbnailUtils::ScaleTargetPixelMap(data_.source, targetSize)) {
+    if (!NeedAutoResize(targetSize) && !ThumbnailUtils::ScaleTargetPixelMap(data_.source, targetSize,
+        Media::AntiAliasingOption::MEDIUM)) {
         MEDIA_ERR_LOG("SourceLoader Failed to scale target, pixelmap path %{private}s", data_.path.c_str());
         return false;
     }
@@ -354,7 +352,7 @@ bool SourceLoader::RunLoading()
     // always check state not final after every state switch
     while (!IsFinal()) {
         SwitchToNextState(data_, state_);
-        MEDIA_INFO_LOG("SourceLoader new cycle status:%{public}s", STATE_NAME_MAP.at(state_).c_str());
+        MEDIA_DEBUG_LOG("SourceLoader new cycle status:%{public}s", STATE_NAME_MAP.at(state_).c_str());
         if (IsFinal()) {
             break;
         }

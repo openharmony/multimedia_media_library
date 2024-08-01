@@ -84,6 +84,8 @@ enum class EXPORT OperationObject : uint32_t {
     PAH_MOVING_PHOTO,
     MISCELLANEOUS,
     PAH_BATCH_THUMBNAIL_OPERATE,
+    APP_URI_PERMISSION_INNER,
+    MEDIA_APP_URI_PERMISSION,
 };
 
 enum class EXPORT OperationType : uint32_t {
