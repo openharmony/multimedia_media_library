@@ -17,6 +17,7 @@
 #define OHOS_MEDIA_BURST_KEY_GENERATOR_H
  
 #include <unordered_map>
+#include <string>
  
 #include "backup_const.h"
  
@@ -25,15 +26,22 @@ namespace Media {
 class BurstKeyGenerator {
 public:
     std::string FindBurstKey(const FileInfo &fileInfo);
- 
+    int32_t FindBurstSequence(const FileInfo &fileInfo);
+
 private:
     std::string FindTitlePrefix(const FileInfo &fileInfo);
     std::string FindGroupHash(const FileInfo &fileInfo);
     int32_t FindGroupIndex(const FileInfo &fileInfo);
     std::string FindObjectHash(const FileInfo &fileInfo);
     std::string GenerateUuid();
+    bool isNumeric(const std::string &str)
+    {
+        return str.find_first_not_of("0123456789") == std::string::npos;
+    }
  
 private:
+    const std::string TITLE_KEY_WORDS_OF_BURST = "_BURST";
+    const int TITLE_SEQUENCE_LEN_OF_BURST = 3;
     std::unordered_map<std::string, std::string> groupHashMap_;
     std::unordered_map<std::string, int32_t> objectHashMap_;
 };

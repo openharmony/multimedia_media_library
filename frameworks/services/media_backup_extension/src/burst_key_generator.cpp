@@ -29,12 +29,11 @@ namespace Media {
  */
 std::string BurstKeyGenerator::FindTitlePrefix(const FileInfo &fileInfo)
 {
-    const std::string keyWord = "_BURST";
-    auto suffixIndex = fileInfo.title.find(keyWord);
+    auto suffixIndex = fileInfo.title.find(TITLE_KEY_WORDS_OF_BURST);
     if (suffixIndex == std::string::npos) {
         return "";
     }
-    return fileInfo.title.substr(0, suffixIndex + keyWord.size());
+    return fileInfo.title.substr(0, suffixIndex + TITLE_KEY_WORDS_OF_BURST.size());
 }
  
 /**
@@ -115,6 +114,38 @@ std::string BurstKeyGenerator::FindBurstKey(const FileInfo &fileInfo)
     MEDIA_INFO_LOG("burst photo, objectHash: %{public}s, groupHash: %{public}s, burstKey: %{public}s",
         FindObjectHash(fileInfo).c_str(), groupHash.c_str(), groupHashMap_[groupHash].c_str());
     return groupHashMap_[groupHash];
+}
+
+/**
+ * parse burst sequence from FileInfo.title
+ *
+ * @param fileInfo the data from gallery.db#gallery_media
+ * @return the burst sequence, if not burst photo return 0.
+ */
+int32_t BurstKeyGenerator::FindBurstSequence(const FileInfo &fileInfo)
+{
+    // only accept data of burst photo
+    if (fileInfo.isBurst != 1 && fileInfo.isBurst != 2) {
+        return 0;
+    }
+    std::string title = fileInfo.title;
+    // title must contains _BURST
+    size_t pos = title.find(TITLE_KEY_WORDS_OF_BURST);
+    if (pos == std::string::npos) {
+        return 0;
+    }
+    // avoid crash for invalid data: out of range
+    int numberStartIndex = pos + TITLE_KEY_WORDS_OF_BURST.size();
+    int minLen = numberStartIndex + TITLE_SEQUENCE_LEN_OF_BURST;
+    if (minLen > title.size()) {
+        return 0;
+    }
+    std::string number = title.substr(numberStartIndex, TITLE_SEQUENCE_LEN_OF_BURST);
+    // avoid crash for invalid data: not number sequence
+    if (!isNumeric(number)) {
+        return 0;
+    }
+    return std::stoi(number);
 }
 }  // namespace Media
 }  // namespace OHOS
