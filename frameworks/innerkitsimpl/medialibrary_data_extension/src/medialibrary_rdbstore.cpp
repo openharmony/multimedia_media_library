@@ -395,6 +395,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredica
     DfxTimer dfxTimer(RDB_QUERY, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QueryByPredicates");
+    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", predicates.GetStatement().c_str());
     auto resultSet = rdbStore_->Query(predicates, columns);
     if (resultSet == nullptr) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
