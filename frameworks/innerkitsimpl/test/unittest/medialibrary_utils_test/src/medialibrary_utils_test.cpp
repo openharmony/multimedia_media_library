@@ -439,13 +439,13 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_DeleteOriginImage_test_001, TestSize.Le
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateAstcDateAddedFromKvStore_test_001, TestSize.Level0)
 {
-    ThumbnailData thumbnailData;
-    data.dateAdded = "medialib_UpdateAstcDateAddedFromKvStore_test_001"
+    ThumbnailData data;
+    data.dateAdded = "medialib_UpdateAstcDateAddedFromKvStore_test_001";
     ThumbRdbOpt opts = {
         .dateAdded = "medialib_UpdateAstcDateAddedFromKvStore_test_001",
         .row = "medialib_UpdateAstcDateAddedFromKvStore_test_001",
     };
-    bool ret = ThumbnailUtils::medialib_UpdateAstcDateAddedFromKvStore(opts, data);
+    bool ret = ThumbnailUtils::UpdateAstcDateAddedFromKvStore(opts, data);
     EXPECT_EQ(ret, false);
 }
 
