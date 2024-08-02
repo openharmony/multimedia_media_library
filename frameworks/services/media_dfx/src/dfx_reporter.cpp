@@ -353,7 +353,7 @@ std::string SecondsToTime(const int64_t& seconds)
     return std::to_string(hour) + "_h_" + std::to_string(minute) + "_m_" + std::to_string(remain_seconds) + "_s";
 }
 
-void DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,    
+int32_t DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,    
     const int32_t& totalDownload)
 {
     int32_t errCode;
@@ -361,10 +361,10 @@ void DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloaded
         NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get dfx common preferences error: %{public}d", errCode);
-        return;
+        return 0;
     }
     if (totalDownload == 0) {
-        return;
+        return 0;
     }
     int64_t start = prefs->GetLong(CLOUD_SYNC_START_TIME, 0);
     int64_t now = MediaFileUtils::UTCTimeSeconds();
@@ -385,6 +385,7 @@ void DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloaded
     if (ret != 0) {
         MEDIA_ERR_LOG("Report CloudSyncThumbGenerationStatus error:%{public}d", ret);
     }
+    return ret;
 }
 
 } // namespace Media

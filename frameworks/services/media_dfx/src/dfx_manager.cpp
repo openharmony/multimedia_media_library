@@ -514,6 +514,7 @@ void CloudSyncDfxManager::ShutDownTimer()
     if (timerId_ == 0) {
         return;
     }
+    MEDIA_INFO_LOG("CloudSyncDfxManager ShutDownTimer");
     timer_.Unregister(timerId_);
     timerId_ = 0;
     timer_.Shutdown();

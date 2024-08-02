@@ -43,7 +43,7 @@ public:
     void ReportCommonVersion(int32_t dbVersion);
     void ReportAnalysisVersion(const std::string &analysisName, int32_t version);
     void ReportAdaptationToMovingPhoto();
-    static void ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,
+    static int32_t ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,
         const int32_t& totalDownload);
     static void ReportStartResult(int32_t scene, int32_t errorCode, int32_t startTime);
 };
