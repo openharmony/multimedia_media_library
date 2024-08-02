@@ -135,8 +135,8 @@ int32_t BurstKeyGenerator::FindBurstSequence(const FileInfo &fileInfo)
         return 0;
     }
     // avoid crash for invalid data: out of range
-    int numberStartIndex = pos + TITLE_KEY_WORDS_OF_BURST.size();
-    int minLen = numberStartIndex + TITLE_SEQUENCE_LEN_OF_BURST;
+    size_t numberStartIndex = pos + TITLE_KEY_WORDS_OF_BURST.size();
+    size_t minLen = numberStartIndex + TITLE_SEQUENCE_LEN_OF_BURST;
     if (minLen > title.size()) {
         return 0;
     }
