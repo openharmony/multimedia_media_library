@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
+#include <sys/stat.h>
 #include "dfx_database_utils.h"
 
 #include "dfx_utils.h"
 #include "medialibrary_rdbstore.h"
+#include "medialibrary_unistore_manager.h"
 #include "media_log.h"
 #include "media_column.h"
 #include "medialibrary_errno.h"
@@ -85,6 +87,87 @@ std::vector<PhotoInfo> DfxDatabaseUtils::QueryDirtyCloudPhoto()
         photoInfoList.push_back(photoInfo);
     }
     return photoInfoList;
+}
+
+int32_t QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
+{
+    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (uniStore == nullptr) {
+        MEDIA_ERR_LOG("uniStore is nullptr!");
+        return E_FAIL;
+    }
+
+    const string imageAndVideoCountQuerySql = "select media_type,count(*) recordCount from photos group by media_type";
+    auto resultSet = uniStore->QuerySql(imageAndVideoCountQuerySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null");
+        return E_FAIL;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t  mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+        if (mediaType == MEDIA_TYPE_IMAGE) {
+            photoRecordInfo.imageCount = GetInt32Val("recordCount", resultSet);
+        }else if (mediaType == MEDIA_TYPE_VIDEO) {
+            photoRecordInfo.videoCount = GetInt32Val("recordCount", resultSet);
+        }
+    }
+
+    const string abnormalSizeCountQuerySql = "select count(*) recordCount from photos where size = -1";
+    auto resultSet = uniStore->QuerySql(abnormalSizeCountQuerySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null");
+        return E_FAIL;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            photoRecordInfo.abnormalSizeCount = GetInt32Val("recordCount", resultSet);
+    }
+
+    const string abnormalWHCountQuerySql = "select count(*) recordCount from photos where width = -1 or height = -1";
+    auto resultSet = uniStore->QuerySql(abnormalWHCountQuerySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null");
+        return E_FAIL;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            photoRecordInfo.abnormalWidthOrHeightCount = GetInt32Val("recordCount", resultSet);
+    }
+
+    const string abnormalVideoDurationQuerySql = "select count(*) recordCount from photos where duration = -1 and media_type = 2";
+    auto resultSet = uniStore->QuerySql(abnormalVideoDurationQuerySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null");
+        return E_FAIL;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            photoRecordInfo.abnormalVideoDurationCount = GetInt32Val("recordCount", resultSet);
+    }
+
+    const string totalAbnormalRecordSql = "select count(*) recordCount from photos where size = 0 or size is null or mime_type is null or mime_type = '' or height = 0 or height is null or width = 0 or width is null or (duration = 0 and media_type = 2)";
+    auto resultSet = uniStore->QuerySql(totalAbnormalRecordSql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("resultSet is null");
+        return E_FAIL;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+            photoRecordInfo.toBeUpdatedRecordCount = GetInt32Val("recordCount", resultSet);
+    }
+
+    string name = MEDIA_DATA_ABILITY_DB_NAME;
+    string databaseDir = MEDIA_DB_DIR + "/rdb";
+    if (access(databaseDir.c_str(), E_OK) != 0) {
+        MEDIA_WARN_LOG("can not get rdb through sandbox");
+        return E_FAIL;
+    }
+    string dbPath = databaseDir.append("/").append(name);
+
+    struct stat statInfo {};
+    if (stat(dbPath.c_str(), &statInfo) != 0) {
+        MEDIA_ERR_LOG("stat syscall err");
+        return E_FAIL;
+    }
+    photoRecordInfo.dbFileSize = statInfo.st_size;
+
+    return E_OK;
 }
 
 int32_t DfxDatabaseUtils::QueryAnalysisVersion(const std::string &table, const std::string &column)
