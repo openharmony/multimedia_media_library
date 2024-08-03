@@ -201,6 +201,12 @@ void MediaLibraryDataManager::ReCreateMediaDir()
     }
 }
 
+void MediaLibraryDataManager::HandleOtherInitOperations()
+{
+    InitRefreshAlbum();
+    UriPermissionOperations::DeleteAllTemporaryAsync();
+}
+
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
     const shared_ptr<OHOS::AbilityRuntime::Context> &context,
     const shared_ptr<OHOS::AbilityRuntime::Context> &extensionContext, int32_t &sceneCode)
@@ -253,7 +259,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
-    InitRefreshAlbum();
+    HandleOtherInitOperations();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
@@ -631,7 +637,7 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
     } else if (cmd.GetOprnObject() == OperationObject::ANALYSIS_PHOTO_MAP) {
         return PhotoMapOperations::AddAnaLysisPhotoAssets(values);
     } else if (cmd.GetOprnObject() == OperationObject::APP_URI_PERMISSION_INNER) {
-        return UriPermissionOperations::BatchInsertOperation(cmd, values);
+        return UriPermissionOperations::GrantUriPermission(cmd, values);
     } else if (cmd.GetOprnObject() == OperationObject::MEDIA_APP_URI_PERMISSION) {
         return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
     }
@@ -768,17 +774,6 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicatesAnalysis(MediaLibraryComma
     return E_FAIL;
 }
 
-static int32_t SolveOtherUpdateCmd(MediaLibraryCommand &cmd, bool &solved)
-{
-    switch (cmd.GetOprnObject()) {
-        case OperationObject::APP_URI_PERMISSION_INNER:
-            solved = true;
-            return UriPermissionOperations::UpdateOperation(cmd);
-        default:
-            return E_FAIL;
-    }
-}
-
 int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShareValuesBucket &dataShareValue,
     const DataSharePredicates &predicates)
 {
@@ -807,11 +802,6 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
 
-    bool solved = false;
-    int32_t ret = SolveOtherUpdateCmd(cmd, solved);
-    if (solved) {
-        return ret;
-    }
     return UpdateInternal(cmd, value, predicates);
 }
 

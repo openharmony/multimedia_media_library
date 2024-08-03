@@ -147,6 +147,7 @@ static void TryUnSubscribeAppState()
 void MedialibraryAppStateObserver::OnAppStopped(const AppStateData &appStateData)
 {
     auto bundleName = appStateData.bundleName;
+    auto uid = appStateData.uid;
     MEDIA_INFO_LOG("MedialibraryAppStateObserver OnAppStopped, bundleName:%{public}s", bundleName.c_str());
 
     auto rdbStore = MediaLibraryDataManager::GetInstance()->rdbStore_;
@@ -155,7 +156,7 @@ void MedialibraryAppStateObserver::OnAppStopped(const AppStateData &appStateData
         return;
     }
     NativeRdb::AbsRdbPredicates predicates(AppUriPermissionColumn::APP_URI_PERMISSION_TABLE);
-    string appId = PermissionUtils::GetAppIdByBundleName(bundleName);
+    string appId = PermissionUtils::GetAppIdByBundleName(bundleName, uid);
     predicates.EqualTo(AppUriPermissionColumn::APP_ID, appId);
     vector<string> permissionTypes;
     permissionTypes.emplace_back(to_string(
