@@ -119,6 +119,7 @@ public:
     static const std::string PHOTO_IS_TEMP EXPORT;
     static const std::string PHOTO_BURST_COVER_LEVEL EXPORT;
     static const std::string PHOTO_BURST_KEY EXPORT;
+    static const std::string PHOTO_BURST_SEQUENCE EXPORT;
     static const std::string PHOTO_COVER_POSITION EXPORT;
 
     // Photo-only default fetch columns
