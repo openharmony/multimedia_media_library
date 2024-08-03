@@ -167,7 +167,12 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
         opts.row = info.id;
         info.loaderOpts.loadingStates = SourceLoader::ALL_SOURCE_LOADING_STATES;
         ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
-        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts, info, requestId);
+        if (info.isLocalFile) {
+            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail, opts, info, requestId);
+        } else {
+            IThumbnailHelper::AddThumbnailGenBatchTask(info.orientation == 0 ?
+                IThumbnailHelper::CreateAstc : IThumbnailHelper::CreateAstcEx, opts, info, requestId);
+        }
     }
     return E_OK;
 }
