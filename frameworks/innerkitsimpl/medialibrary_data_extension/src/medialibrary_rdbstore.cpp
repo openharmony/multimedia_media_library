@@ -249,6 +249,27 @@ int32_t MediaLibraryRdbStore::BatchInsert(int64_t &outRowId, const std::string &
     return ret;
 }
 
+int32_t MediaLibraryRdbStore::BatchInsert(MediaLibraryCommand &cmd, int64_t& outInsertNum,
+    const std::vector<ValuesBucket>& values)
+{
+    DfxTimer dfxTimer(DfxType::RDB_BATCHINSERT, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::BatchInsert");
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t ret = rdbStore_->BatchInsert(outInsertNum, cmd.GetTableName(), values);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->BatchInsert failed, ret = %{public}d", ret);
+        return E_HAS_DB_ERROR;
+    }
+    tracer.Finish();
+    MEDIA_DEBUG_LOG("rdbStore_->BatchInsert end, rowId = %d, ret = %{public}d", (int)outInsertNum, ret);
+    return ret;
+}
+
 static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPredicates &predicates,
     int32_t &deletedRows)
 {

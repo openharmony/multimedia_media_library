@@ -42,6 +42,8 @@ public:
     EXPORT virtual void Stop() override;
 
     EXPORT virtual int32_t Insert(MediaLibraryCommand &cmd, int64_t &rowId) override;
+    EXPORT virtual int32_t BatchInsert(MediaLibraryCommand &cmd, int64_t& outInsertNum,
+        const std::vector<ValuesBucket>& values) override;
     EXPORT virtual int32_t Delete(MediaLibraryCommand &cmd, int32_t &deletedRows) override;
     EXPORT virtual int32_t Update(MediaLibraryCommand &cmd, int32_t &changedRows) override;
     EXPORT std::shared_ptr<NativeRdb::ResultSet> Query(MediaLibraryCommand &cmd,
