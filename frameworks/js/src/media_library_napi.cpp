@@ -3158,7 +3158,6 @@ static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_i
     string appid;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], appid) ==
         napi_ok, "Failed to get appid");
-    
     context->valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
 
     // parse fileId
@@ -3167,29 +3166,29 @@ static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_i
         napi_ok, "Failed to get uri");
     int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromAssetUri(uri);
     if (fileId < 0) {
-        NAPI_ERR_LOG("invalid file uri=%{public}s", uri.c_str());
         return nullptr;
     }
-    
     context->valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
 
     // parse permissionType
     int32_t permissionType;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_TWO], permissionType) ==
         napi_ok, "Failed to get permissionType");
-
+    if (AppUriPermissionColumn::PERMISSION_TYPES_PICKER.find((int)permissionType) ==
+        AppUriPermissionColumn::PERMISSION_TYPES_PICKER.end()) {
+        NAPI_ERR_LOG("invalid picker permissionType, permissionType=%{public}d", permissionType);
+        return nullptr;
+    }
     context->valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
     // parse uriType
     int uriType = 0;
+    // parse fileId ensured uri is photo or audio.
     if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         uriType = AppUriPermissionColumn::URI_PHOTO;
-    } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
-        uriType = AppUriPermissionColumn::URI_AUDIO;
     } else {
-        NAPI_ERR_LOG("invalid uriType, uri=%{public}s", uri.c_str());
+        uriType = AppUriPermissionColumn::URI_AUDIO;
     }
-
     context->valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, uriType);
 
     napi_value result = nullptr;
@@ -3219,8 +3218,9 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
     vector<string> uris;
     CHECK_ARGS(env, MediaLibraryNapiUtils::GetStringArray(env, context->argv[ARGS_ONE], uris),
         JS_ERR_PARAMETER_INVALID);
-    if (uris.empty()) {
-        NapiError::ThrowError(env, JS_E_URI, "Failed to check empty uris");
+    int urisMaxSize = 1000;
+    if (uris.empty() || uris.size() > urisMaxSize) {
+        NAPI_ERR_LOG("the size of uriList is invalid");
         return nullptr;
     }
 
@@ -3230,26 +3230,21 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
         napi_ok, "Failed to get permissionType");
 
     for (const auto &uri : uris) {
-        if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos
-        && uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
-            NapiError::ThrowError(env, JS_E_URI, "Failed to check uri format, not an asset uri!");
-            return nullptr;
-        }
-
         OHOS::DataShare::DataShareValuesBucket valuesBucket;
         valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
-        int32_t fieldId = MediaLibraryNapiUtils::GetFileIdFromAssetUri(uri);
-        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fieldId);
+        int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromAssetUri(uri);
+        if (fileId < 0) {
+            return nullptr;
+        }
+        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
         valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
         // parse uriType
         int uriType;
+        // parse fileId ensured uri is photo or audio.
         if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
             uriType = AppUriPermissionColumn::URI_PHOTO;
-        } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
-            uriType = AppUriPermissionColumn::URI_AUDIO;
         } else {
-            NAPI_ERR_LOG("invalid uriType, uri=%{public}s", uri.c_str());
-            return nullptr;
+            uriType = AppUriPermissionColumn::URI_AUDIO;
         }
         valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, uriType);
         context->valuesBucketArray.push_back(move(valuesBucket));
@@ -3277,21 +3272,27 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
     string appid;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ZERO], appid) ==
         napi_ok, "Failed to get appid");
-    
     context->predicates.And()->EqualTo(AppUriPermissionColumn::APP_ID, appid);
 
     // parse fileId
     string uri;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetParamStringPathMax(env, context->argv[ARGS_ONE], uri) ==
         napi_ok, "Failed to get uri");
-    context->predicates.And()->EqualTo(AppUriPermissionColumn::FILE_ID,
-        MediaLibraryNapiUtils::GetFileIdFromAssetUri(uri));
+    int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromAssetUri(uri);
+    if (fileId < 0) {
+        return nullptr;
+    }
+    context->predicates.And()->EqualTo(AppUriPermissionColumn::FILE_ID, fileId);
 
     // parse permissionType
     int32_t permissionType;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_TWO], permissionType) ==
         napi_ok, "Failed to get permissionType");
-    
+    if (AppUriPermissionColumn::PERMISSION_TYPES_PICKER.find((int)permissionType) ==
+            AppUriPermissionColumn::PERMISSION_TYPES_PICKER.end()) {
+        NAPI_ERR_LOG("invalid picker permissionType, permissionType=%{public}d", permissionType);
+        return nullptr;
+    }
     context->predicates.And()->EqualTo(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
     napi_value result = nullptr;
@@ -5379,7 +5380,7 @@ static void PhotoAccessGrantPhotoUrisPermissionExecute(napi_env env, void *data)
 static void PhotoAccessCancelPhotoUriPermissionExecute(napi_env env, void *data)
 {
     MediaLibraryTracer tracer;
-    tracer.Start("PhotoAccessCancelPhotoUrisPermissionExecute");
+    tracer.Start("PhotoAccessCancelPhotoUriPermissionExecute");
 
     auto *context = static_cast<MediaLibraryAsyncContext*>(data);
     if (context == nullptr) {
