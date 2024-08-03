@@ -53,6 +53,8 @@ public:
 
     EXPORT std::shared_ptr<NativeRdb::RdbStore> GetRaw() const;
 
+    EXPORT static int32_t BatchInsert(int64_t &outRowId, const std::string &table,
+        const std::vector<NativeRdb::ValuesBucket> &values);
     EXPORT static void BuildValuesSql(const NativeRdb::ValuesBucket &values,
         std::vector<NativeRdb::ValueObject> &bindArgs, std::string &sql);
     EXPORT static void BuildQuerySql(const NativeRdb::AbsRdbPredicates &predicates,
