@@ -2127,9 +2127,13 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_HEIGHT,
+        MEDIA_DATA_DB_WIDTH,
+        MEDIA_DATA_DB_POSITION,
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_ORIENTATION,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
     rdbPredicate.Limit(THUMBNAIL_GENERATE_BATCH_COUNT);
