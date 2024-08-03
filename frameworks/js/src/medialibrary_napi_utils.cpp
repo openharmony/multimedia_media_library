@@ -250,15 +250,27 @@ string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
 
 int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
 {
-    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) == string::npos) {
+    const static int ERROR = -1;
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
         std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
-        return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+        try {
+            return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+        } catch (const std::invalid_argument &e) {
+            NAPI_ERR_LOG("invalid uri, parse fileId failed");
+            return ERROR;
+        }
     }
-    if (uri.find(AudioColumn::AUDIO_URI_PREFIX) == string::npos) {
+    if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
         std::string tmp = uri.substr(AudioColumn::AUDIO_URI_PREFIX.size());
-        return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+        try {
+            return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
+        } catch (const std::invalid_argument &e) {
+            NAPI_ERR_LOG("invalid uri, parse fileId failed");
+            return ERROR;
+        }
     }
-    return -1;
+    NAPI_ERR_LOG("only photo or audio uri is valid");
+    return ERROR;
 }
 
 MediaType MediaLibraryNapiUtils::GetMediaTypeFromUri(const string &uri)

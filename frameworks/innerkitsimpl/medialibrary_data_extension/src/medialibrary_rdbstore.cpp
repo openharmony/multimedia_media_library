@@ -228,6 +228,27 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     return ret;
 }
 
+int32_t MediaLibraryRdbStore::BatchInsert(int64_t &outRowId, const std::string &table,
+    const std::vector<NativeRdb::ValuesBucket> &values)
+{
+    DfxTimer dfxTimer(DfxType::RDB_INSERT, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::BatchInsert");
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t ret = rdbStore_->BatchInsert(outRowId, table, values);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->BatchInsert failed, ret = %{public}d", ret);
+        return E_HAS_DB_ERROR;
+    }
+
+    MEDIA_DEBUG_LOG("rdbStore_->BatchInsert end, rowId = %d, ret = %{public}d", (int)outRowId, ret);
+    return ret;
+}
+
 static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPredicates &predicates,
     int32_t &deletedRows)
 {
@@ -934,6 +955,30 @@ static const string &TriggerUpdateUserAlbumCount()
     return TRIGGER_UPDATE_USER_ALBUM_COUNT;
 }
 
+static const string &TriggerDeletePhotoClearAppUriPermission()
+{
+    static const string TRIGGER_PHOTO_DELETE_APP_URI_PERMISSION = BaseColumn::CreateTrigger() +
+    "delete_photo_clear_App_uri_permission" + " AFTER DELETE ON " + PhotoColumn::PHOTOS_TABLE +
+    " BEGIN " +
+        "DELETE FROM " + AppUriPermissionColumn::APP_URI_PERMISSION_TABLE +
+        " WHERE " + AppUriPermissionColumn::FILE_ID + "=" + "OLD." + MediaColumn::MEDIA_ID +
+        " AND " + AppUriPermissionColumn::URI_TYPE + "=" + std::to_string(AppUriPermissionColumn::URI_PHOTO) + ";" +
+    " END;";
+    return TRIGGER_PHOTO_DELETE_APP_URI_PERMISSION;
+}
+
+static const string &TriggerDeleteAudioClearAppUriPermission()
+{
+    static const string TRIGGER_AUDIO_DELETE_APP_URI_PERMISSION = BaseColumn::CreateTrigger() +
+    "delete_audio_clear_App_uri_permission" + " AFTER DELETE ON " + AudioColumn::AUDIOS_TABLE +
+    " BEGIN " +
+        "DELETE FROM " + AppUriPermissionColumn::APP_URI_PERMISSION_TABLE +
+        " WHERE " + AppUriPermissionColumn::FILE_ID + "=" + "OLD." + MediaColumn::MEDIA_ID +
+        " AND " + AppUriPermissionColumn::URI_TYPE + "=" + std::to_string(AppUriPermissionColumn::URI_AUDIO) + ";" +
+    " END;";
+    return TRIGGER_AUDIO_DELETE_APP_URI_PERMISSION;
+}
+
 static const vector<string> onCreateSqlStrs = {
     CREATE_MEDIA_TABLE,
     PhotoColumn::CREATE_PHOTO_TABLE,
@@ -1045,6 +1090,8 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
     AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
     AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
+    TriggerDeletePhotoClearAppUriPermission(),
+    TriggerDeleteAudioClearAppUriPermission(),
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2792,6 +2839,8 @@ static void AddAppUriPermissionInfo(RdbStore &store)
         AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
         SYNC_DATA_FROM_PHOTOS_SQL,
         SYNC_DATA_FROM_AUDIOS_SQL,
+        TriggerDeletePhotoClearAppUriPermission(),
+        TriggerDeleteAudioClearAppUriPermission(),
     };
     MEDIA_INFO_LOG("add uriPermission table info when upgrade phone");
     ExecSqls(sqls, store);
