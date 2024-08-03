@@ -26,6 +26,7 @@
 #include "rdb_utils.h"
 #include "medialibrary_uripermission_operations.h"
 #include "permission_utils.h"
+#include "medialibrary_type_const.h"
 
 using namespace std;
 using namespace OHOS::RdbDataShareAdapter;
@@ -41,16 +42,23 @@ int32_t DbPermissionHandler::ExecuteCheckPermission(MediaLibraryCommand &cmd, Pe
     bool isWrite = permParam.isWrite;
     string appId = GetClientAppId();
     string fileId = MediaFileUtils::GetIdFromUri(cmd.GetUri().ToString());
-    MediaType mediaType = MediaFileUri::GetMediaTypeFromUri(cmd.GetUri().ToString());
-    MEDIA_DEBUG_LOG("isWrite=%{public}d,appId=%{public}s,fileId=%{public}s,mediaType=%{public}d",
-        isWrite, appId.c_str(), fileId.c_str(), mediaType);
+    int32_t uriType = 0;
+    if (MediaFileUtils::StartsWith(cmd.GetUri().ToString(), PhotoColumn::PHOTO_URI_PREFIX)) {
+        uriType = static_cast<int32_t>(TableType::TYPE_PHOTOS);
+    } else if (MediaFileUtils::StartsWith(cmd.GetUri().ToString(), AudioColumn::AUDIO_URI_PREFIX)) {
+        uriType = static_cast<int32_t>(TableType::TYPE_AUDIOS);
+    } else {
+        return E_INVALID_URI;
+    }
+    MEDIA_DEBUG_LOG("isWrite=%{public}d,appId=%{public}s,fileId=%{public}s,uriType=%{public}d",
+        isWrite, appId.c_str(), fileId.c_str(), uriType);
     if (appId.empty() || fileId.empty()) {
         MEDIA_ERR_LOG("invalid input");
         return E_INVALID_FILEID;
     }
     DataShare::DataSharePredicates predicates;
     predicates.SetWhereClause("file_id = ? and appid = ? and uri_type = ?");
-    predicates.SetWhereArgs({fileId, appId, to_string(mediaType)});
+    predicates.SetWhereArgs({fileId, appId, to_string(uriType)});
     vector<string> columns;
     auto queryResultSet = MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, TABLE_PERMISSION), columns);
     CHECK_AND_RETURN_RET_LOG(queryResultSet != nullptr, E_PERMISSION_DENIED, "queryResultSet is nullptr");
