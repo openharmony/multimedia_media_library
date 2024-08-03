@@ -20,6 +20,7 @@
 
 #include "datashare_values_bucket.h"
 #include "medialibrary_command.h"
+#include "values_bucket.h"
 
 namespace OHOS {
 namespace Media {
@@ -38,9 +39,12 @@ public:
         const std::string &tableName);
     EXPORT static int32_t UpdateOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t InsertOperation(MediaLibraryCommand &cmd);
-    EXPORT static int32_t DeleteOperation(MediaLibraryCommand &cmd);
     EXPORT static int32_t BatchInsertOperation(MediaLibraryCommand &cmd,
+        const std::vector<NativeRdb::ValuesBucket> &values);
+    EXPORT static int32_t DeleteOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t GrantUriPermission(MediaLibraryCommand &cmd,
         const std::vector<DataShareValuesBucket> &values);
+    EXPORT static void DeleteAllTemporaryAsync();
 };
 } // Media
 } // OHOS
