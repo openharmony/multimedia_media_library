@@ -1026,6 +1026,11 @@ int32_t MediaScannerDb::DeleteError(const std::string &err)
 void MediaScannerDb::UpdateAlbumInfo(const std::vector<std::string> &subtypes,
     const std::vector<std::string> &userAlbumIds, const std::vector<std::string> &sourceAlbumIds)
 {
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbstore is nullptr");
+        return;
+    }
     MediaLibraryRdbUtils::UpdateSystemAlbumInternal(
         MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw(), {
         to_string(PhotoAlbumSubType::IMAGE),
