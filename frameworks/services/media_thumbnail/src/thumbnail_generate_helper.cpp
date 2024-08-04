@@ -86,7 +86,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBackground(ThumbRdbOpt &opts)
     }
 
     if (infos.empty()) {
-        MEDIA_INFO_LOG("No need generate thumbnail.");
+        MEDIA_DEBUG_LOG("No need generate thumbnail.");
         return E_OK;
     }
 
@@ -118,7 +118,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
     auto kvStore = MediaLibraryKvStoreManager::GetInstance()
         .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
     if (infos.empty() || kvStore == nullptr) {
-        MEDIA_INFO_LOG("No need create Astc.");
+        MEDIA_DEBUG_LOG("No need create Astc.");
         return E_OK;
     }
 
@@ -158,7 +158,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
         return err;
     }
     if (infos.empty()) {
-        MEDIA_INFO_LOG("No need create Astc.");
+        MEDIA_DEBUG_LOG("No need create Astc.");
         return E_THUMBNAIL_ASTC_ALL_EXIST;
     }
 
@@ -219,7 +219,7 @@ int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
         return err;
     }
     if (infos.empty()) {
-        MEDIA_INFO_LOG("No need create Lcd.");
+        MEDIA_DEBUG_LOG("No need create Lcd.");
         return E_THUMBNAIL_LCD_ALL_EXIST;
     }
 
@@ -324,7 +324,7 @@ int32_t ThumbnailGenerateHelper::GetAvailableFile(ThumbRdbOpt &opts, ThumbnailDa
 
     // No need to create thumbnails if corresponding file exists
     if (access(fileName.c_str(), F_OK) == 0) {
-        MEDIA_INFO_LOG("File exists, path: %{public}s", fileName.c_str());
+        MEDIA_DEBUG_LOG("File exists, path: %{public}s", fileName.c_str());
         return E_OK;
     }
 
@@ -477,7 +477,7 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts)
         return err;
     }
     if (infos.empty()) {
-        MEDIA_INFO_LOG("No need upgrade thumbnail.");
+        MEDIA_DEBUG_LOG("No need upgrade thumbnail.");
         return E_OK;
     }
     MEDIA_INFO_LOG("will upgrade %{public}zu photo thumbnails.", infos.size());

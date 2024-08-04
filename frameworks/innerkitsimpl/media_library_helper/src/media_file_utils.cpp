@@ -383,7 +383,7 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
         MEDIA_ERR_LOG("File path too long %{public}d", static_cast<int>(filePath.size()));
         return errCode;
     }
-    MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
+    MEDIA_DEBUG_LOG("File path is %{private}s", filePath.c_str());
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
@@ -869,7 +869,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
 
     string networkId = GetNetworkIdFromUri(uri);
     if (networkId.empty()) {
-        MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
+        MEDIA_DEBUG_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
         return retStr;
     }
 
