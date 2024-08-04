@@ -780,7 +780,7 @@ bool IThumbnailHelper::DoRotateThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 
 bool IThumbnailHelper::DoCreateLcdAndThumbnail(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    MEDIA_DEBUG_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
+    MEDIA_INFO_LOG("Start DoCreateLcdAndThumbnail, id: %{public}s, path: %{public}s",
         data.id.c_str(), data.path.c_str());
     if (!DoCreateLcd(opts, data)) {
         MEDIA_ERR_LOG("Fail to create lcd, err path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
@@ -826,7 +826,7 @@ std::string GetAvailableThumbnailSuffix(ThumbnailData &data)
 
 bool IThumbnailHelper::DoCreateAstc(ThumbRdbOpt &opts, ThumbnailData &data)
 {
-    MEDIA_DEBUG_LOG("Start DoCreateAstc, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
+    MEDIA_INFO_LOG("Start DoCreateAstc, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
     data.loaderOpts.decodeInThumbSize = true;
     if (!TryLoadSource(opts, data)) {
         MEDIA_ERR_LOG("DoCreateAstc failed, try to load exist thumbnail failed, id: %{public}s", data.id.c_str());
@@ -900,7 +900,7 @@ bool IThumbnailHelper::DoCreateAstcEx(ThumbRdbOpt &opts, ThumbnailData &data)
         return ret == WaitStatus::WAIT_SUCCESS;
     }
     
-    MEDIA_DEBUG_LOG("Start DoCreateAstcEx, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
+    MEDIA_INFO_LOG("Start DoCreateAstcEx, id: %{public}s, path: %{public}s", data.id.c_str(), data.path.c_str());
     string fileName = GetThumbnailPath(data.path, THUMBNAIL_LCD_EX_SUFFIX);
     if (access(fileName.c_str(), F_OK) != 0) {
         MEDIA_ERR_LOG("No available file in THM_EX, path: %{public}s", DfxUtils::GetSafePath(data.path).c_str());
