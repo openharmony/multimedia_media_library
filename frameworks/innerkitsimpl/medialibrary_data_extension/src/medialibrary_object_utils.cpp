@@ -323,7 +323,7 @@ NativeAlbumAsset MediaLibraryObjectUtils::GetLastDirExistInDb(const string &dirP
             dirId = lastPathId;
         }
     } while (lastPathId < 0);
-    MEDIA_INFO_LOG("GetLastAlbumExistInDb lastPath = %{private}s", lastPath.c_str());
+    MEDIA_DEBUG_LOG("GetLastAlbumExistInDb lastPath = %{private}s", lastPath.c_str());
     dirAsset.SetAlbumId(dirId);
     dirAsset.SetAlbumPath(lastPath);
     return dirAsset;
