@@ -213,7 +213,7 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
         return E_ERR;
     }
 
-    MEDIA_INFO_LOG("start pack PixelMap");
+    MEDIA_DEBUG_LOG("start pack PixelMap");
     Media::InitializationOptions opts;
     opts.pixelFormat = Media::PixelFormat::RGBA_8888;
     opts.size = {

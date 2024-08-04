@@ -62,7 +62,7 @@ void DfxWorker::Init()
 
 static void HandleLoopTask(DfxData *data)
 {
-    MEDIA_INFO_LOG("HandleLoopTask");
+    MEDIA_DEBUG_LOG("HandleLoopTask");
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);

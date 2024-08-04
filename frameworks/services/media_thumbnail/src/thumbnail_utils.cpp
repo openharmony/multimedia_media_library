@@ -1799,7 +1799,7 @@ int ThumbnailUtils::SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailTy
     }
 
     int status = kvStore->Insert(key, type == ThumbnailType::MTH_ASTC ? data.monthAstc : data.yearAstc);
-    MEDIA_INFO_LOG("type:%{public}d, field_id:%{public}s, status:%{public}d", type, key.c_str(), status);
+    MEDIA_DEBUG_LOG("type:%{public}d, field_id:%{public}s, status:%{public}d", type, key.c_str(), status);
     return status;
 }
 
