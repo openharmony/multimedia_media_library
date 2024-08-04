@@ -273,6 +273,9 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         return;
     }
 
+    MEDIA_INFO_LOG("Start background operation, status:%{public}d,%{public}d,%{public}d,%{public}d,%{public}d",
+        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
+
     // delete temporary photos
     DeleteTemporaryPhotos();
 
@@ -318,9 +321,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         return;
     }
     scannerManager->ScanError();
-
-    MEDIA_DEBUG_LOG("Do success, current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 }
 
 void MedialibrarySubscriber::StopBackgroundOperation()
@@ -353,7 +353,7 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
         return;
     }
 
-    MEDIA_DEBUG_LOG("update timer status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, "
+    MEDIA_INFO_LOG("update timer status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, "
         "%{public}d, %{public}d",
         timerStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_,
         isWifiConn_);
