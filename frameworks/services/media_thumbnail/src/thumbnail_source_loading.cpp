@@ -128,7 +128,7 @@ bool IsCloudSourceAvailable(const std::string& path)
 
     int fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("open cloud file fail: %{public}s, errno: %{public}d", absFilePath.c_str(), errno);
+        MEDIA_ERR_LOG("open cloud file fail: %{private}s, errno: %{public}d", absFilePath.c_str(), errno);
         return false;
     }
     close(fd);

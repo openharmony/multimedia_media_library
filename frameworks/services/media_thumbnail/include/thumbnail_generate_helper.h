@@ -32,9 +32,9 @@ public:
     static int32_t CreateAstcBackground(ThumbRdbOpt &opts);
     static int32_t CreateAstcCloudDownload(ThumbRdbOpt &opts);
     static int32_t CreateLcdBackground(ThumbRdbOpt &opts);
-    static int32_t CreateAstcBatchOnDemand(ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId);
     EXPORT static int32_t UpgradeThumbnailBackground(ThumbRdbOpt &opts);
     EXPORT static int32_t RestoreAstcDualFrame(ThumbRdbOpt &opts);
+    static int32_t CreateAstcBatchOnDemand(ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId);
     static int32_t GetNewThumbnailCount(ThumbRdbOpt &opts, const int64_t &time, int &count);
     EXPORT static int32_t GetThumbnailPixelMap(ThumbRdbOpt &opts, ThumbnailType thumbType);
 

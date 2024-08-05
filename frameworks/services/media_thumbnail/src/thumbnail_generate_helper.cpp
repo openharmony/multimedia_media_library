@@ -148,40 +148,6 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
     return E_OK;
 }
 
-int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
-    ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId)
-{
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is not init");
-        return E_ERR;
-    }
-
-    vector<ThumbnailData> infos;
-    int32_t err = 0;
-    if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, infos, predicate, err)) {
-        MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
-        return err;
-    }
-    if (infos.empty()) {
-        MEDIA_DEBUG_LOG("No need create Astc.");
-        return E_THUMBNAIL_ASTC_ALL_EXIST;
-    }
-
-    MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
-    for (auto& info : infos) {
-        opts.row = info.id;
-        info.loaderOpts.loadingStates = SourceLoader::ALL_SOURCE_LOADING_STATES;
-        ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
-        if (info.isLocalFile) {
-            IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateThumbnail, opts, info, requestId);
-        } else {
-            IThumbnailHelper::AddThumbnailGenBatchTask(info.orientation == 0 ?
-                IThumbnailHelper::CreateAstc : IThumbnailHelper::CreateAstcEx, opts, info, requestId);
-        }
-    }
-    return E_OK;
-}
-
 int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts)
 {
     ThumbnailData data;
@@ -213,6 +179,35 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts)
 
     IThumbnailHelper::AddThumbnailGenerateTask(
         IThumbnailHelper::CreateAstc, opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+    return E_OK;
+}
+
+int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
+    ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId)
+{
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is not init");
+        return E_ERR;
+    }
+
+    vector<ThumbnailData> infos;
+    int32_t err = 0;
+    if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, infos, predicate, err)) {
+        MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
+        return err;
+    }
+    if (infos.empty()) {
+        MEDIA_INFO_LOG("No need create Astc.");
+        return E_THUMBNAIL_ASTC_ALL_EXIST;
+    }
+
+    MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
+    for (auto& info : infos) {
+        opts.row = info.id;
+        info.loaderOpts.loadingStates = SourceLoader::ALL_SOURCE_LOADING_STATES;
+        ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
+        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts, info, requestId);
+    }
     return E_OK;
 }
 
