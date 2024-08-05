@@ -18,6 +18,7 @@
 
 #include <fcntl.h>
 
+#include "acl.h"
 #include "dfx_const.h"
 #include "dfx_manager.h"
 #include "dfx_timer.h"
@@ -44,6 +45,9 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 const int FFRT_MAX_RESTORE_ASTC_THREADS = 8;
+const std::string SQL_REFRESH_THUMBNAIL_READY =
+    " Update " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY + " = 7 " +
+    " WHERE " + PhotoColumn::PHOTO_THUMBNAIL_READY + " != 0; END;";
 
 int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync)
 {
@@ -108,6 +112,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
         return E_ERR;
     }
 
+    CheckMonthAndYearKvStoreValid(opts);
     vector<ThumbnailData> infos;
     int32_t err = GetNoAstcData(opts, infos);
     if (err != E_OK) {
@@ -547,5 +552,37 @@ int32_t ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, 
     return E_OK;
 }
 
+void ThumbnailGenerateHelper::CheckMonthAndYearKvStoreValid(ThumbRdbOpt &opts)
+{
+    bool isMonthKvStoreValid = MediaLibraryKvStoreManager::GetInstance().IsKvStoreValid(KvStoreValueType::MONTH_ASTC);
+    bool isYearKvStoreValid = MediaLibraryKvStoreManager::GetInstance().IsKvStoreValid(KvStoreValueType::YEAR_ASTC);
+    if (isMonthKvStoreValid && isYearKvStoreValid) {
+        return;
+    }
+
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is not init");
+        return;
+    }
+
+    MEDIA_INFO_LOG("KvStore is invalid, start update rdb");
+    if (opts.store->ExecuteSql(SQL_REFRESH_THUMBNAIL_READY) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update rdb failed");
+        return;
+    }
+    MEDIA_INFO_LOG("Update rdb successfully");
+
+    if (!isMonthKvStoreValid) {
+        MediaLibraryKvStoreManager::GetInstance().RebuildInvalidKvStore(KvStoreValueType::MONTH_ASTC);
+    }
+
+    if (!isYearKvStoreValid) {
+        MediaLibraryKvStoreManager::GetInstance().RebuildInvalidKvStore(KvStoreValueType::YEAR_ASTC);
+    }
+
+    Acl::AclSetDatabase();
+    MEDIA_INFO_LOG("RebuildInvalidKvStore finish, isMonthKvStoreValid: %{public}d, isYearKvStoreValid: %{public}d",
+        isMonthKvStoreValid, isYearKvStoreValid);
+}
 } // namespace Media
 } // namespace OHOS
