@@ -27,6 +27,9 @@
 
 namespace OHOS {
 namespace Media {
+const std::string RECORD_COUNT = RECORD_COUNT;
+const std::string ABNORMAL_VALUE = -1;
+
 int32_t DfxDatabaseUtils::QueryFromPhotos(int32_t mediaType, bool isLocal)
 {
     NativeRdb::RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
@@ -89,76 +92,86 @@ std::vector<PhotoInfo> DfxDatabaseUtils::QueryDirtyCloudPhoto()
     return photoInfoList;
 }
 
-int32_t QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
+int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
 {
-    auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
-    if (uniStore == nullptr) {
-        MEDIA_ERR_LOG("uniStore is nullptr!");
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
+    if (rdbStore == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is nullptr!");
         return E_FAIL;
     }
 
-    const string imageAndVideoCountQuerySql = "select media_type,count(*) recordCount from photos group by media_type";
-    auto resultSet = uniStore->QuerySql(imageAndVideoCountQuerySql);
+    const string imageAndVideoCountQuerySql = "SELECT " + MediaColumn::MEDIA_TYPE + ", COUNT(*) AS " + RECORD_COUNT +" FROM " 
+        + PhotoColumn::PHOTOS_TABLE + " GROUP BY " + MediaColumn::MEDIA_TYPE;
+    auto resultSet = rdbStore->QuerySql(imageAndVideoCountQuerySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return E_FAIL;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t  mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+        int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
         if (mediaType == MEDIA_TYPE_IMAGE) {
-            photoRecordInfo.imageCount = GetInt32Val("recordCount", resultSet);
-        }else if (mediaType == MEDIA_TYPE_VIDEO) {
-            photoRecordInfo.videoCount = GetInt32Val("recordCount", resultSet);
+            photoRecordInfo.imageCount = GetInt32Val(RECORD_COUNT, resultSet);
+        } else if (mediaType == MEDIA_TYPE_VIDEO) {
+            photoRecordInfo.videoCount = GetInt32Val(RECORD_COUNT, resultSet);
         }
     }
 
-    const string abnormalSizeCountQuerySql = "select count(*) recordCount from photos where size = -1";
-    auto resultSet = uniStore->QuerySql(abnormalSizeCountQuerySql);
+    const string abnormalSizeCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT +" FROM "
+         + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_SIZE + " = " + ABNORMAL_VALUE;
+    auto resultSet = rdbStore->QuerySql(abnormalSizeCountQuerySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return E_FAIL;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            photoRecordInfo.abnormalSizeCount = GetInt32Val("recordCount", resultSet);
+        photoRecordInfo.abnormalSizeCount = GetInt32Val(RECORD_COUNT, resultSet);
     }
 
-    const string abnormalWHCountQuerySql = "select count(*) recordCount from photos where width = -1 or height = -1";
-    auto resultSet = uniStore->QuerySql(abnormalWHCountQuerySql);
+    const string abnormalWHCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT +" FROM "
+         + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTO_WIDTH + " = " 
+         + ABNORMAL_VALUE + "OR" + PhotoColumn::PHOTO_HEIGHT + " = " + ABNORMAL_VALUE;
+    auto resultSet = rdbStore->QuerySql(abnormalWHCountQuerySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return E_FAIL;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            photoRecordInfo.abnormalWidthOrHeightCount = GetInt32Val("recordCount", resultSet);
+        photoRecordInfo.abnormalWidthOrHeightCount = GetInt32Val(RECORD_COUNT, resultSet);
     }
-
-    const string abnormalVideoDurationQuerySql = "select count(*) recordCount from photos where duration = -1 and media_type = 2";
-    auto resultSet = uniStore->QuerySql(abnormalVideoDurationQuerySql);
+        
+    const string abnormalVideoDurationQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT +" FROM "
+         + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_DURATION + " = " + ABNORMAL_VALUE 
+         + " AND " + MediaColumn::MEDIA_TYPE " = " + MEDIA_TYPE_VIDEO;
+    auto resultSet = rdbStore->QuerySql(abnormalVideoDurationQuerySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return E_FAIL;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            photoRecordInfo.abnormalVideoDurationCount = GetInt32Val("recordCount", resultSet);
+        photoRecordInfo.abnormalVideoDurationCount = GetInt32Val(RECORD_COUNT, resultSet);
     }
 
-    const string totalAbnormalRecordSql = "select count(*) recordCount from photos where size = 0 or size is null or mime_type is null or mime_type = '' or height = 0 or height is null or width = 0 or width is null or (duration = 0 and media_type = 2)";
-    auto resultSet = uniStore->QuerySql(totalAbnormalRecordSql);
+    const string totalAbnormalRecordSql ="SELECT COUNT(*) AS " + RECORD_COUNT +" FROM "
+        + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_SIZE + " = 0 OR " + MediaColumn::MEDIA_SIZE + " IS NULL OR "
+        + MediaColumn::MEDIA_MIME_TYPE + " IS NULL OR " + MediaColumn::MEDIA_MIME_TYPE + " = '' OR " 
+        + PhotoColumn::PHOTO_HEIGHT + " = 0 OR " + PhotoColumn::PHOTO_HEIGHT + " IS NULL OR " 
+        + PhotoColumn::PHOTO_WIDTH + " = 0 OR " + PhotoColumn::PHOTO_WIDTH + " IS NULL OR (" 
+        + MediaColumn::MEDIA_DURATION + " = 0 AND " + MediaColumn::MEDIA_TYPE + " = " + MEDIA_TYPE_VIDEO + " )";
+    auto resultSet = rdbStore->QuerySql(totalAbnormalRecordSql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return E_FAIL;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-            photoRecordInfo.toBeUpdatedRecordCount = GetInt32Val("recordCount", resultSet);
+        photoRecordInfo.toBeUpdatedRecordCount = GetInt32Val(RECORD_COUNT, resultSet);
     }
 
-    string name = MEDIA_DATA_ABILITY_DB_NAME;
     string databaseDir = MEDIA_DB_DIR + "/rdb";
     if (access(databaseDir.c_str(), E_OK) != 0) {
         MEDIA_WARN_LOG("can not get rdb through sandbox");
         return E_FAIL;
     }
-    string dbPath = databaseDir.append("/").append(name);
+    string dbPath = databaseDir.append("/").append(MEDIA_DATA_ABILITY_DB_NAME);
 
     struct stat statInfo {};
     if (stat(dbPath.c_str(), &statInfo) != 0) {
