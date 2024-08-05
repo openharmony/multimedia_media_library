@@ -92,76 +92,65 @@ std::vector<PhotoInfo> DfxDatabaseUtils::QueryDirtyCloudPhoto()
     return photoInfoList;
 }
 
-int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
+static int32_t parseResultSet(const string querySql, int32_t &photoInfoCount, int32_t mediaTypePara)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
         MEDIA_ERR_LOG("rdbStore is nullptr!");
         return E_FAIL;
     }
-
-    const string imageAndVideoCountQuerySql = "SELECT " + MediaColumn::MEDIA_TYPE + ", COUNT(*) AS " + RECORD_COUNT +
-        " FROM " + PhotoColumn::PHOTOS_TABLE + " GROUP BY " + MediaColumn::MEDIA_TYPE;
-    auto resultSet = rdbStore->QuerySql(imageAndVideoCountQuerySql);
+    auto resultSet = rdbStore->QuerySql(querySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return E_FAIL;
     }
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
-        if (mediaType == MEDIA_TYPE_IMAGE) {
-            photoRecordInfo.imageCount = GetInt32Val(RECORD_COUNT, resultSet);
-        } else if (mediaType == MEDIA_TYPE_VIDEO) {
-            photoRecordInfo.videoCount = GetInt32Val(RECORD_COUNT, resultSet);
+        if (mediaTypePara > 0) {
+            int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
+            if (mediaType == mediaTypePara)
+            {
+                photoInfoCount = GetInt32Val(RECORD_COUNT, resultSet);
+            }
+        } else {
+            photoInfoCount = GetInt32Val(RECORD_COUNT, resultSet);
         }
     }
+    return E_OK;
+}
 
-    const string abnormalSizeCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " + PhotoColumn::PHOTOS_TABLE +
-        " WHERE " + MediaColumn::MEDIA_SIZE + " = " + ABNORMAL_VALUE;
-    resultSet = rdbStore->QuerySql(abnormalSizeCountQuerySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is null");
-        return E_FAIL;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        photoRecordInfo.abnormalSizeCount = GetInt32Val(RECORD_COUNT, resultSet);
-    }
+int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
+{
+    const string imageAndVideoCountQuerySql = "SELECT " + MediaColumn::MEDIA_TYPE + ", COUNT(*) AS " + RECORD_COUNT +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " GROUP BY " + MediaColumn::MEDIA_TYPE;
 
-    const string abnormalWHCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " + PhotoColumn::PHOTOS_TABLE +
-        " WHERE " + PhotoColumn::PHOTO_WIDTH + " = " + ABNORMAL_VALUE + "OR" + PhotoColumn::PHOTO_HEIGHT + " = " + ABNORMAL_VALUE;
-    resultSet = rdbStore->QuerySql(abnormalWHCountQuerySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is null");
-        return E_FAIL;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        photoRecordInfo.abnormalWidthOrHeightCount = GetInt32Val(RECORD_COUNT, resultSet);
-    }
+    const string abnormalSizeCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_SIZE + " = " + ABNORMAL_VALUE;
 
-    const string abnormalVideoDurationQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " + PhotoColumn::PHOTOS_TABLE +
-        " WHERE " + MediaColumn::MEDIA_DURATION + " = " + ABNORMAL_VALUE + " AND " + MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO);
-    resultSet = rdbStore->QuerySql(abnormalVideoDurationQuerySql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is null");
-        return E_FAIL;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        photoRecordInfo.abnormalVideoDurationCount = GetInt32Val(RECORD_COUNT, resultSet);
-    }
+    const string abnormalWidthHeightQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTO_WIDTH +
+        " = " + ABNORMAL_VALUE + "OR" + PhotoColumn::PHOTO_HEIGHT +
+        " = " + ABNORMAL_VALUE;
 
-    const string totalAbnormalRecordSql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " +
-        MediaColumn::MEDIA_SIZE + " = 0 OR " + MediaColumn::MEDIA_SIZE + " IS NULL OR " + MediaColumn::MEDIA_MIME_TYPE + " IS NULL OR " +
-        MediaColumn::MEDIA_MIME_TYPE + " = '' OR " + PhotoColumn::PHOTO_HEIGHT + " = 0 OR " + PhotoColumn::PHOTO_HEIGHT + " IS NULL OR " +
-        PhotoColumn::PHOTO_WIDTH + " = 0 OR " + PhotoColumn::PHOTO_WIDTH + " IS NULL OR (" + MediaColumn::MEDIA_DURATION + " = 0 AND " +
+    const string abnormalVideoDurationQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_DURATION + " = " +
+        ABNORMAL_VALUE + " AND " + MediaColumn::MEDIA_TYPE + " = " +
+        std::to_string(MEDIA_TYPE_VIDEO);
+
+    const string totalAbnormalRecordSql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_SIZE + " = 0 OR " +
+        MediaColumn::MEDIA_SIZE + " IS NULL OR " +
+        MediaColumn::MEDIA_MIME_TYPE + " IS NULL OR " + MediaColumn::MEDIA_MIME_TYPE + " = '' OR " +
+        PhotoColumn::PHOTO_HEIGHT + " = 0 OR " + PhotoColumn::PHOTO_HEIGHT + " IS NULL OR " +
+        PhotoColumn::PHOTO_WIDTH + " = 0 OR " + PhotoColumn::PHOTO_WIDTH + " IS NULL OR (" +
+        MediaColumn::MEDIA_DURATION + " = 0 AND " +
         MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " )";
-    resultSet = rdbStore->QuerySql(totalAbnormalRecordSql);
-    if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("resultSet is null");
-        return E_FAIL;
-    }
-    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
-        photoRecordInfo.toBeUpdatedRecordCount = GetInt32Val(RECORD_COUNT, resultSet);
-    }
+
+    int32_t ret = parseResultSet(imageAndVideoCountQuerySql, photoRecordInfo.videoCount, MEDIA_TYPE_VIDEO);
+    ret = ret | parseResultSet(imageAndVideoCountQuerySql, photoRecordInfo.imageCount, MEDIA_TYPE_IMAGE);
+    ret = ret | parseResultSet(abnormalSizeCountQuerySql, photoRecordInfo.abnormalSizeCount, 0);
+    ret = ret | parseResultSet(abnormalWidthHeightQuerySql, photoRecordInfo.abnormalWidthOrHeightCount, 0);
+    ret = ret | parseResultSet(abnormalVideoDurationQuerySql, photoRecordInfo.abnormalVideoDurationCount, 0);
+    ret = ret | parseResultSet(totalAbnormalRecordSql, photoRecordInfo.toBeUpdatedRecordCount, 0);
 
     string databaseDir = MEDIA_DB_DIR + "/rdb";
     if (access(databaseDir.c_str(), E_OK) != 0) {
