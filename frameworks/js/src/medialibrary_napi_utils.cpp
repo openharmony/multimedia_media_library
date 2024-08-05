@@ -53,6 +53,7 @@ namespace OHOS {
 namespace Media {
 static const string EMPTY_STRING = "";
 using json = nlohmann::json;
+static const std::string BURST_COVER_LEVEL = "1";
 napi_value MediaLibraryNapiUtils::NapiDefineClass(napi_env env, napi_value exports, const NapiClassInfo &info)
 {
     napi_value ctorObj;
@@ -905,6 +906,7 @@ inline void SetDefaultPredicatesCondition(DataSharePredicates &predicates, const
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(timePending));
     predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(isTemp));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
 }
 
 int32_t MediaLibraryNapiUtils::GetUserAlbumPredicates(
