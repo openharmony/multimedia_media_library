@@ -1016,7 +1016,8 @@ static bool IsFeaturedSinglePortraitAlbum(const shared_ptr<PhotoAlbum>& photoAlb
 
 static void ConvertColumnsForPortrait(PhotoAlbumNapiAsyncContext *context)
 {
-    if (context == nullptr) {
+    if (context == nullptr || context->objectInfo == nullptr) {
+        NAPI_ERR_LOG("context is null or PhotoAlbumNapi is null");
         return;
     }
 
