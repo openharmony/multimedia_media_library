@@ -162,7 +162,7 @@ std::shared_ptr<OHOS::NativeRdb::ResultSet> MediaLibraryAppUriPermissionOperatio
     if (numRows == 0) {
         return nullptr;
     }
-
+    resultSet->GoToFirstRow();
     return resultSet;
 }
 
@@ -239,7 +239,7 @@ int MediaLibraryAppUriPermissionOperations::UpdatePermissionType(shared_ptr<Resu
     ValuesBucket updateVB;
     updateVB.PutInt(AppUriPermissionColumn::PERMISSION_TYPE, permissionTypeParam);
     updateVB.PutLong(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
-    int idDB = MediaLibraryRdbStore::GetInt(resultSetDB, AppUriPermissionColumn::ID);
+    int32_t idDB = MediaLibraryRdbStore::GetInt(resultSetDB, AppUriPermissionColumn::ID);
 
     OHOS::DataShare::DataSharePredicates updatePredicates;
     updatePredicates.EqualTo(AppUriPermissionColumn::ID, idDB);

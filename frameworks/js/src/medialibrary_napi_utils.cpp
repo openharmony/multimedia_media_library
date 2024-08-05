@@ -16,6 +16,7 @@
 
 #include "medialibrary_napi_utils.h"
 
+#include <cctype>
 #include "basic/result_set.h"
 #include "datashare_predicates.h"
 #include "location_column.h"
@@ -251,25 +252,20 @@ string MediaLibraryNapiUtils::GetFileIdFromUri(const string &uri)
 int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
 {
     const static int ERROR = -1;
+    std::string tmp;
     if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-        std::string tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
-        try {
-            return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
-        } catch (const std::invalid_argument &e) {
-            NAPI_ERR_LOG("invalid uri, parse fileId failed");
-            return ERROR;
-        }
+        tmp = uri.substr(PhotoColumn::PHOTO_URI_PREFIX.size());
+    } else if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
+        tmp = uri.substr(AudioColumn::AUDIO_URI_PREFIX.size());
+    } else {
+        NAPI_ERR_LOG("only photo or audio uri is valid");
+        return ERROR;
     }
-    if (uri.find(AudioColumn::AUDIO_URI_PREFIX) != string::npos) {
-        std::string tmp = uri.substr(AudioColumn::AUDIO_URI_PREFIX.size());
-        try {
-            return std::stoi(tmp.substr(0, tmp.find_first_of('/')));
-        } catch (const std::invalid_argument &e) {
-            NAPI_ERR_LOG("invalid uri, parse fileId failed");
-            return ERROR;
-        }
+    std::string fileIdStr = tmp.substr(0, tmp.find_first_of('/'));
+    if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
+        return std::stoi(fileIdStr);
     }
-    NAPI_ERR_LOG("only photo or audio uri is valid");
+    NAPI_ERR_LOG("asset fileId is invalid");
     return ERROR;
 }
 
