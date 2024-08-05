@@ -142,6 +142,33 @@ bool MediaLibraryAsyncWorker::IsBgQueueEmpty()
     return bgTaskQueue_.empty();
 }
 
+void MediaLibraryAsyncWorker::ClearRefreshTaskQueue()
+{
+    lock_guard<mutex> lockGuardFg(fgTaskLock_);
+    std::queue<std::shared_ptr<MediaLibraryAsyncTask>> tmp;
+    while (!fgTaskQueue_.empty()) {
+        auto task = fgTaskQueue_.front();
+        fgTaskQueue_.pop();
+        if (task->taskType_ != TaskType::REFRESH_ALBUM) {
+            tmp.push(task);
+        }
+    }
+    fgTaskQueue_.swap(tmp);
+
+    std::queue<std::shared_ptr<MediaLibraryAsyncTask>> tail;
+    tmp.swap(tail);
+
+    lock_guard<mutex> lockGuardBg(bgTaskLock_);
+    while (!bgTaskQueue_.empty()) {
+        auto task = bgTaskQueue_.front();
+        bgTaskQueue_.pop();
+        if (task->taskType_ != TaskType::REFRESH_ALBUM) {
+            tmp.push(task);
+        }
+    }
+    bgTaskQueue_.swap(tmp);
+}
+
 void MediaLibraryAsyncWorker::WaitForTask()
 {
     std::unique_lock<std::mutex> lock(bgWorkLock_);
