@@ -200,7 +200,7 @@ void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *dat
     auto *taskData = static_cast<DownloadCloudFilesData *>(data);
     auto downloadFiles = taskData->downloadFiles_;
 
-    MEDIA_INFO_LOG("Try to download %{public}zu cloud files.", downloadFiles.paths.size());
+    MEDIA_DEBUG_LOG("Try to download %{public}zu cloud files.", downloadFiles.paths.size());
     for (const auto &path : downloadFiles.paths) {
         int32_t ret = CloudSyncManager::GetInstance().StartDownloadFile(path);
         if (ret != E_OK) {
