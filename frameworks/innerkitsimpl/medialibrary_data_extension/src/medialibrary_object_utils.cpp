@@ -1474,7 +1474,7 @@ int32_t MediaLibraryObjectUtils::GetFileResult(shared_ptr<NativeRdb::ResultSet> 
         unique_ptr<FileAsset> fileAsset = fetchFileResult->GetObjectFromRdb(resultSet, row);
         if (fileAsset == nullptr) {
             MEDIA_ERR_LOG("get fileAsset failed");
-            return E_SUCCESS;
+            continue;
         }
         if (fileAsset->GetMediaType() == MEDIA_TYPE_ALBUM) {
             errCode = CopyDir(move(fileAsset), relativePath + displayName + "/");
