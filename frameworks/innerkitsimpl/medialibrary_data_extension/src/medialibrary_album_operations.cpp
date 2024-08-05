@@ -324,16 +324,18 @@ static void RefreshAlbumAsyncTask(AsyncTaskData *data)
     }
 }
 
-static void RefreshAlbums()
+void RefreshAlbums(bool forceRefresh)
 {
-    if (MediaLibraryRdbUtils::IsNeedRefreshAlbum() && !MediaLibraryRdbUtils::IsInRefreshTask()) {
+    if (MediaLibraryRdbUtils::IsNeedRefreshAlbum() && (forceRefresh || !MediaLibraryRdbUtils::IsInRefreshTask())) {
         shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
         if (asyncWorker == nullptr) {
             MEDIA_ERR_LOG("Can not get asyncWorker");
             return;
         }
+
+        asyncWorker->ClearRefreshTaskQueue();
         shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(
-            RefreshAlbumAsyncTask, nullptr);
+            RefreshAlbumAsyncTask, nullptr, RefreshAlbum);
         if (notifyAsyncTask != nullptr) {
             asyncWorker->AddTask(notifyAsyncTask, true);
         } else {
@@ -396,7 +398,6 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
         MEDIA_ERR_LOG("uniStore is nullptr!");
         return nullptr;
     }
-    RefreshAlbums();
 
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
         size_t cloudPhotoThumbnailVolume = QueryCloudPhotoThumbnailVolumn(uniStore);
@@ -805,7 +806,6 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
-    RefreshAlbums();
     if (cmd.GetAbsRdbPredicates()->GetOrder().empty()) {
         cmd.GetAbsRdbPredicates()->OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
     }
