@@ -2538,6 +2538,18 @@ static void CreateBurstkeyIndex(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdateIndexForAlbumQuery(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+    };
+    MEDIA_INFO_LOG("start updating photo index");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2991,6 +3003,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
         CreateBurstkeyIndex(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
+        UpdateIndexForAlbumQuery(store);
     }
 }
 
