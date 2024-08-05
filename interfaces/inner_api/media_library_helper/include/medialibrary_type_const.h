@@ -196,6 +196,7 @@ const std::string DOCUMENT_URI_AUTHORITY = "docs";
 const std::string BACKUP_DATA_DIR_VALUE = "data/";
 const std::string THUMB_DIR_VALUE = ".thumbs/Photo";
 const std::string EDIT_DATA_DIR_VALUE = ".editData";
+const std::string MEDIALIBRARY_TEMP_DIR = ".medialibrarytemp";
 
 const std::vector<std::string> PRESET_ROOT_DIRS = {
     CAMERA_DIR_VALUES, VIDEO_DIR_VALUES, PIC_DIR_VALUES, AUDIO_DIR_VALUES,
