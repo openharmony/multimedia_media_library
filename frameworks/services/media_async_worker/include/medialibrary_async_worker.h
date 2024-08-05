@@ -35,7 +35,7 @@ public:
 };
 
 using MediaLibraryExecute = void (*)(AsyncTaskData *data);
-enum TaskType {RefreshAlbum, BUTT};
+enum TaskType {REFRESH_ALBUM, BUTT};
 
 class MediaLibraryAsyncTask {
 public:
