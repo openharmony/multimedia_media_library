@@ -18,6 +18,7 @@
 #include "medialibrary_audio_operations_test.h"
 
 #include <chrono>
+#include <cstdint>
 #include <fstream>
 #include <thread>
 #include <unistd.h>
