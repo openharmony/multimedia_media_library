@@ -118,6 +118,8 @@ const std::map<std::string, OperationObject>& GetOprnObjMap()
         { HIGHLIGHT_COVER_INFO_TABLE, OperationObject::STORY_COVER },
         { HIGHLIGHT_PLAY_INFO_TABLE, OperationObject::STORY_PLAY },
         { USER_PHOTOGRAPHY_INFO_TABLE, OperationObject::USER_PHOTOGRAPHY },
+        { PAH_HIGHLIGHT_COVER, OperationObject::STORY_COVER },
+        { PAH_HIGHLIGHT_PLAY, OperationObject::STORY_COVER },
 
         // others
         { MISC_OPERATION, OperationObject::MISCELLANEOUS },
@@ -264,11 +266,11 @@ const std::map<std::string, OperationType>& GetOprnTypeMap()
         { OPRN_GROUP_ALBUM_NAME, OperationType::GROUP_ALBUM_NAME },
         { OPRN_GROUP_COVER_URI, OperationType::GROUP_COVER_URI },
         { OPRN_ADD_FILTERS, OperationType::ADD_FILTERS },
-        { OPRN_START_GENERATE_THUMBNAILS, OperationType::START_GENERATE_THUMBNAILS },
-        { OPRN_STOP_GENERATE_THUMBNAILS, OperationType::STOP_GENERATE_THUMBNAILS },
         { OPRN_DISCARD_CAMERA_PHOTO, OperationType::DISCARD_CAMERA_PHOTO },
         { OPRN_SAVE_CAMERA_PHOTO, OperationType::SAVE_CAMERA_PHOTO },
         { OPRN_REMOVE_MSC_TASK, OperationType::REMOVE_MSC_TASK },
+        { OPRN_START_GENERATE_THUMBNAILS, OperationType::START_GENERATE_THUMBNAILS },
+        { OPRN_STOP_GENERATE_THUMBNAILS, OperationType::STOP_GENERATE_THUMBNAILS },
         { OPRN_TOOL_QUERY_BY_DISPLAY_NAME, OperationType::TOOL_QUERY_BY_DISPLAY_NAME },
     };
     return oprnTypeMap;
