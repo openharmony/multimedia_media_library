@@ -63,7 +63,7 @@ constexpr int32_t FACE_RECOGNITION = 1;
 constexpr int32_t FACE_FEATURE = 2;
 constexpr int32_t FACE_CLUSTERED = 3;
 constexpr int32_t CLOUD_POSITION_STATUS = 2;
-
+const std::string BURST_COVER_LEVEL = "1";
 
 // 注意，端云同步代码仓也有相同常量，添加新相册时，请通知端云同步进行相应修改
 const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
@@ -860,6 +860,7 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     string photosHidden = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_HIDDEN;
     string photosTimePending = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_TIME_PENDING;
     string photosIsTemp = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_TEMP;
+    string photoIsCover = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_BURST_COVER_LEVEL;
 
     string clause = anaPhotoMapAsset + " = " + photosFileId;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ clause });
@@ -874,6 +875,7 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     predicates.EqualTo(photosHidden, to_string(0));
     predicates.EqualTo(photosTimePending, to_string(0));
     predicates.EqualTo(photosIsTemp, to_string(0));
+    predicates.EqualTo(photoIsCover, BURST_COVER_LEVEL);
     predicates.EndWrap();
     predicates.Distinct();
 }

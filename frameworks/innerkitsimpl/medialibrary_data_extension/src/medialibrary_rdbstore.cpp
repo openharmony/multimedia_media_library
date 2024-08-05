@@ -1114,6 +1114,7 @@ static const vector<string> onCreateSqlStrs = {
     AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
     TriggerDeletePhotoClearAppUriPermission(),
     TriggerDeleteAudioClearAppUriPermission(),
+    PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2491,7 +2492,8 @@ static void AddMovingPhotoEffectMode(RdbStore &store)
 void AddBurstCoverLevelAndBurstKey(RdbStore &store)
 {
     const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " INT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_COVER_LEVEL +
+            " INT DEFAULT 1",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_KEY + " TEXT",
     };
     MEDIA_INFO_LOG("start add burst_cover_level and burst_key column");
@@ -2515,6 +2517,25 @@ static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
     };
     MEDIA_INFO_LOG("start update vision trigger for video label");
     ExecSqls(executeSqlStrs, store);
+}
+
+static void CreateBurstkeyIndex(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_DAY_INDEX,
+        PhotoColumn::DROP_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX
+    };
+    MEDIA_INFO_LOG("start create idx_burstkey");
+    ExecSqls(sqls, store);
 }
 
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
@@ -2966,6 +2987,10 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_ADD_BURST_SEQUENCE) {
         AddBurstSequence(store);
+    }
+
+    if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
+        CreateBurstkeyIndex(store);
     }
 }
 
