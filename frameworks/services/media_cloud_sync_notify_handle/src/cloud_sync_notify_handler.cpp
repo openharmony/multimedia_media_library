@@ -127,7 +127,6 @@ void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, co
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
     switch (type) {
         case ChangeType::INSERT:
-        case ChangeType::OTHER:
             HandleInsertEvent(uris);
             break;
         case ChangeType::DELETE:
