@@ -125,6 +125,8 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         values.Put(PhotoColumn::PHOTO_BURST_KEY, photoProxy->GetBurstKey());
         if (photoProxy->IsCoverPhoto()) {
             values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
+        } else {
+            values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 2);
         }
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));

@@ -754,6 +754,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (fileInfo.isBurst == 1) {
         // only when gallery.db # gallery_media # isBurst = 1, then media_library.db # Photos # burst_cover_level = 1.
         values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
+    } else if (fileInfo.isBurst == 2) {
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 2);
     }
     if (fileInfo.burstKey.size() > 0) {
         values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);

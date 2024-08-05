@@ -27,6 +27,7 @@
 namespace OHOS::Media {
 using namespace std;
 using namespace NativeRdb;
+const std::string BURST_COVER_LEVEL = "1";
 
 // PhotoAlbum table
 const string PhotoAlbumColumns::TABLE = "PhotoAlbum";
@@ -196,6 +197,7 @@ inline void SetDefaultPredicatesCondition(RdbPredicates &predicates, const int32
     predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(isHidden));
     predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(timePending));
     predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(isTemp));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
 }
 
 void PhotoAlbumColumns::GetUserAlbumPredicates(const int32_t albumId, RdbPredicates &predicates, const bool hiddenState)
