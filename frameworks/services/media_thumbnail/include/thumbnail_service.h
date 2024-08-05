@@ -61,10 +61,10 @@ public:
         const std::shared_ptr<OHOS::AbilityRuntime::Context> &context);
     int32_t GetAgingDataSize(const int64_t &time, int &count);
     int32_t QueryNewThumbnailCount(const int64_t &time, int &count);
+    void DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded);
     int32_t CreateAstcCloudDownload(const std::string &id);
     EXPORT int32_t CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId);
     EXPORT void CancelAstcBatchTask(int32_t requestId);
-    void DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded);
     void UpdateAstcWithNewDateAdded(const std::string &fileId, const std::string &newDateAdded,
         const std::string &formerDateAdded);
 private:
