@@ -580,7 +580,8 @@ int32_t MediaScannerDb::GetFileSet(MediaLibraryCommand &cmd, const vector<string
  * @param path The file path for which to obtain the latest modification info from the db
  * @return unique_ptr<Metadata> The metadata object representing the latest info for the given filepath
  */
-int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata> &ptr, MediaLibraryApi api)
+int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata> &ptr, MediaLibraryApi api,
+    int32_t fileId)
 {
     vector<string> columns;
     string whereClause;
@@ -589,7 +590,12 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
 
     vector<string> args;
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
-        args = { path };
+        if (fileId != 0) {
+            whereClause = MediaColumn::MEDIA_ID + " = ? ";
+            args = { to_string(fileId) };
+        } else {
+            args = { path };
+        }
     } else {
         args = { path, to_string(NOT_TRASHED) };
     }

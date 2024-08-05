@@ -1326,7 +1326,7 @@ void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int3
 }
 
 void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync, bool isInvalidateThumb,
-    bool isForceScan)
+    bool isForceScan, int32_t fileId)
 {
     // Force Scan means medialibrary will scan file without checking E_SCANNED
     shared_ptr<ScanAssetCallback> scanAssetCallback = make_shared<ScanAssetCallback>();
@@ -1342,7 +1342,7 @@ void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThum
     }
 
     int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanAssetCallback, MediaLibraryApi::API_10,
-        isForceScan);
+        isForceScan, fileId);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed with error: %{public}d", ret);
     }
