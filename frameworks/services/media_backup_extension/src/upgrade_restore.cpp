@@ -47,6 +47,8 @@ constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
+constexpr int32_t BURST_COVER = 1;
+constexpr int32_t BURST_MEMBER = 2;
 const std::string INTERNAL_PREFIX = "/storage/emulated/0";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
@@ -751,11 +753,11 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
-    if (fileInfo.isBurst == 1) {
+    if (fileInfo.isBurst == BURST_COVER) {
         // only when gallery.db # gallery_media # isBurst = 1, then media_library.db # Photos # burst_cover_level = 1.
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
-    } else if (fileInfo.isBurst == 2) {
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 2);
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER);
+    } else if (fileInfo.isBurst == BURST_MEMBER) {
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_MEMBER);
     }
     if (fileInfo.burstKey.size() > 0) {
         values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);
