@@ -27,8 +27,8 @@
 
 namespace OHOS {
 namespace Media {
-const std::string RECORD_COUNT = RECORD_COUNT;
-const std::string ABNORMAL_VALUE = -1;
+const std::string RECORD_COUNT = "recordCount";
+const std::string ABNORMAL_VALUE = "-1";
 
 int32_t DfxDatabaseUtils::QueryFromPhotos(int32_t mediaType, bool isLocal)
 {
@@ -118,7 +118,7 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
 
     const string abnormalSizeCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT +" FROM "
          + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_SIZE + " = " + ABNORMAL_VALUE;
-    auto resultSet = rdbStore->QuerySql(abnormalSizeCountQuerySql);
+    resultSet = rdbStore->QuerySql(abnormalSizeCountQuerySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return E_FAIL;
@@ -130,7 +130,7 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
     const string abnormalWHCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT +" FROM "
          + PhotoColumn::PHOTOS_TABLE + " WHERE " + PhotoColumn::PHOTO_WIDTH + " = " 
          + ABNORMAL_VALUE + "OR" + PhotoColumn::PHOTO_HEIGHT + " = " + ABNORMAL_VALUE;
-    auto resultSet = rdbStore->QuerySql(abnormalWHCountQuerySql);
+    resultSet = rdbStore->QuerySql(abnormalWHCountQuerySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return E_FAIL;
@@ -141,8 +141,8 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
         
     const string abnormalVideoDurationQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT +" FROM "
          + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_DURATION + " = " + ABNORMAL_VALUE 
-         + " AND " + MediaColumn::MEDIA_TYPE " = " + MEDIA_TYPE_VIDEO;
-    auto resultSet = rdbStore->QuerySql(abnormalVideoDurationQuerySql);
+         + " AND " + MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO);
+    resultSet = rdbStore->QuerySql(abnormalVideoDurationQuerySql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return E_FAIL;
@@ -156,8 +156,8 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
         + MediaColumn::MEDIA_MIME_TYPE + " IS NULL OR " + MediaColumn::MEDIA_MIME_TYPE + " = '' OR " 
         + PhotoColumn::PHOTO_HEIGHT + " = 0 OR " + PhotoColumn::PHOTO_HEIGHT + " IS NULL OR " 
         + PhotoColumn::PHOTO_WIDTH + " = 0 OR " + PhotoColumn::PHOTO_WIDTH + " IS NULL OR (" 
-        + MediaColumn::MEDIA_DURATION + " = 0 AND " + MediaColumn::MEDIA_TYPE + " = " + MEDIA_TYPE_VIDEO + " )";
-    auto resultSet = rdbStore->QuerySql(totalAbnormalRecordSql);
+        + MediaColumn::MEDIA_DURATION + " = 0 AND " + MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " )";
+    resultSet = rdbStore->QuerySql(totalAbnormalRecordSql);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("resultSet is null");
         return E_FAIL;
