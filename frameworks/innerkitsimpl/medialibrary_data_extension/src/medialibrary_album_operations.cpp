@@ -335,7 +335,7 @@ void RefreshAlbums(bool forceRefresh)
 
         asyncWorker->ClearRefreshTaskQueue();
         shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask = make_shared<MediaLibraryAsyncTask>(
-            RefreshAlbumAsyncTask, nullptr, RefreshAlbum);
+            RefreshAlbumAsyncTask, nullptr, REFRESH_ALBUM);
         if (notifyAsyncTask != nullptr) {
             asyncWorker->AddTask(notifyAsyncTask, true);
         } else {
