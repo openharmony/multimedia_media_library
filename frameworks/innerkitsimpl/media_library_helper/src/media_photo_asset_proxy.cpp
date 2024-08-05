@@ -39,7 +39,7 @@ namespace Media {
 const string API_VERSION = "api_version";
 const double TIMER_MULTIPLIER = 60.0;
 const int32_t BURST_COVER = 1;
-const int32_t BURST_MEMBER = 2; 
+const int32_t BURST_MEMBER = 2;
 
 PhotoAssetProxy::PhotoAssetProxy() {}
 
