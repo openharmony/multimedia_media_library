@@ -469,6 +469,12 @@ const ErrCode = {
   CONTEXT_NO_EXIST: 16000011,
 };
 
+const CompleteButtonText = {
+  TEXT_DONE: 0,
+  TEXT_SEND: 1,
+  TEXT_ADD: 2,
+};
+
 const ERRCODE_MAP = new Map([
   [ErrCode.INVALID_ARGS, 'Invalid argument'],
   [ErrCode.RESULT_ERROR, 'Unknown error'],
@@ -534,6 +540,7 @@ function parsePhotoPickerSelectOption(args) {
     config.parameters.isOriginalSupported = option.isOriginalSupported;
     config.parameters.subWindowName = option.subWindowName;
     config.parameters.themeColor = option.themeColor;
+    config.parameters.completeButtonText = option.completeButtonText;
   }
 
   return config;
@@ -616,6 +623,7 @@ function PhotoSelectOptions() {
   this.isPhotoTakingSupported = true;
   this.isEditSupported = true;
   this.isOriginalSupported = false;
+  this.completeButtonText = CompleteButtonText.TEXT_DONE;
 }
 
 function PhotoSelectResult(uris, isOriginalPhoto) {
@@ -709,4 +717,5 @@ export default {
   MediaAssetManager: photoAccessHelper.MediaAssetManager,
   MovingPhoto: photoAccessHelper.MovingPhoto,
   MovingPhotoEffectMode: photoAccessHelper.MovingPhotoEffectMode,
+  CompleteButtonText: CompleteButtonText,
 };
