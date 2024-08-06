@@ -73,7 +73,7 @@ private:
     static void ParseDownloadFiles(std::shared_ptr<NativeRdb::ResultSet> &resultSet, DownloadFiles &downloadFiles);
     static int32_t AddDownloadTask(const DownloadFiles &downloadFiles);
     static void DownloadCloudFilesExecutor(AsyncTaskData *data);
-    static void StopDownloadFiles(const std::vector<std::string> &filePaths);
+    static void StopDownloadFiles();
     static void ProcessCloudData();
     static void UpdateCloudData();
     static std::shared_ptr<NativeRdb::ResultSet> QueryUpdateData();
@@ -85,6 +85,8 @@ private:
     static int32_t GetExtractMetadata(std::unique_ptr<Metadata> &metadata);
     static void StopUpdateData();
 
+    static int32_t processInterval_;
+    static int32_t downloadDuration_;
     static std::recursive_mutex mutex_;
     static Utils::Timer timer_;
     static uint32_t startTimerId_;
