@@ -28,6 +28,7 @@
 #include "rdb_predicates.h"
 #include "rdb_result_set_bridge.h"
 #include "vision_column.h"
+#include "medialibrary_async_worker.h"
 
 namespace OHOS {
 namespace Media {
@@ -66,7 +67,7 @@ public:
         const std::vector<std::string> &columns);
 };
 
-void RefreshAlbums(bool forceRefresh = false);
+EXPORT void RefreshAlbums(bool forceRefresh = false);
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H

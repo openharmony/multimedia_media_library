@@ -39,8 +39,8 @@ enum TaskType {REFRESH_ALBUM, BUTT};
 
 class MediaLibraryAsyncTask {
 public:
-    MediaLibraryAsyncTask(MediaLibraryExecute executor, AsyncTaskData *data, TaskType taskType = BUTT):
-        executor_(executor), data_(data), taskType_(taskType) {}
+    MediaLibraryAsyncTask(MediaLibraryExecute executor, AsyncTaskData *data, TaskType taskType = BUTT)
+        : executor_(executor), data_(data), taskType_(taskType) {}
     MediaLibraryAsyncTask() : MediaLibraryAsyncTask(nullptr, nullptr, BUTT) {}
     virtual ~MediaLibraryAsyncTask()
     {
