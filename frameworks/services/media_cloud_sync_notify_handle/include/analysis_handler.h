@@ -16,14 +16,22 @@
 #ifndef FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_ANALYSYS_HANDLER_H
 #define FRAMEWORKS_SERVICES_CLOUD_SYNC_NOTIFY_HANDLE_INCLUDE_ANALYSYS_HANDLER_H
 
+#include <functional>
 #include "base_handler.h"
+#include "medialibrary_album_operations.h"
 
 namespace OHOS {
 namespace Media {
 
 class AnalysisHandler : public BaseHandler {
 public:
+    AnalysisHandler(std::function<void(bool)> refreshAlbums = nullptr)
+        : refreshAlbumsFunc_(refreshAlbums ? refreshAlbums : [](bool){ RefreshAlbums(true); }) {}
     void Handle(const CloudSyncHandleData &handleData) override;
+
+
+private:
+    std::function<void(bool)> refreshAlbumsFunc_;
 };
 } //namespace Media
 } //namespace OHOS
