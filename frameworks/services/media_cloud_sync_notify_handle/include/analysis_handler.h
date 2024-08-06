@@ -26,9 +26,9 @@ namespace Media {
 class AnalysisHandler : public BaseHandler {
 public:
     AnalysisHandler(std::function<void(bool)> refreshAlbums = nullptr)
-        : refreshAlbumsFunc_(refreshAlbums ? refreshAlbums : [](bool){ RefreshAlbums(true); }) {}
+        : refreshAlbumsFunc_(refreshAlbums ? refreshAlbums : [](bool) { RefreshAlbums(true); })
+    {}
     void Handle(const CloudSyncHandleData &handleData) override;
-
 
 private:
     std::function<void(bool)> refreshAlbumsFunc_;

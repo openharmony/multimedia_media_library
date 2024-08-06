@@ -109,6 +109,14 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
     string uriString = notifyInfo_.uris.front().ToString();
     MEDIA_DEBUG_LOG("observer get first uri is : %{public}s", uriString.c_str());
 
+    if (uriString.find("file://cloudsync/Photo/HeightError/") != string::npos) {
+        return;
+    }
+
+    if (uriString.find("file://cloudsync/Photo/DownloadSuccessed/") != string::npos) {
+        return;
+    }
+
     if (uriString.find(PhotoColumn::PHOTO_HEIGHT_ERROR_URI_PREFIX) != string::npos) {
         HandleCloudHeightErrorNotify(notifyInfo_.uris);
         return;
@@ -124,11 +132,11 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
     }
 
     shared_ptr<BaseHandler> chain = nullptr;
- 
+
     if (uriString.find(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX) != string::npos) {
         chain = NotifyResponsibilityChainFactory::CreateChain(TRANSPARENT);
     }
- 
+
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {
         if (notifyInfo_.type == ChangeType::UPDATE || notifyInfo_.type == ChangeType::OTHER) {
             chain = NotifyResponsibilityChainFactory::CreateChain(PHOTODELETE);
