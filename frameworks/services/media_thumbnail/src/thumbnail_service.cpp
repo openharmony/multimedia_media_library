@@ -590,6 +590,20 @@ int32_t ThumbnailService::CreateAstcCloudDownload(const string &id)
     return err;
 }
 
+void ThumbnailService::DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded)
+{
+    ThumbnailData data;
+    ThumbRdbOpt opts = {
+        .store = rdbStorePtr_,
+        .table = PhotoColumn::PHOTOS_TABLE,
+        .row = fileId,
+        .dateAdded = dateAdded
+    };
+
+    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::DeleteMonthAndYearAstc,
+        opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+}
+
 int32_t ThumbnailService::CreateAstcBatchOnDemand(NativeRdb::RdbPredicates &rdbPredicate, int32_t requestId)
 {
     CancelAstcBatchTask(requestId - 1);
@@ -610,20 +624,6 @@ void ThumbnailService::CancelAstcBatchTask(int32_t requestId)
         return;
     }
     thumbnailWorker->IgnoreTaskByRequestId(requestId);
-}
-
-void ThumbnailService::DeleteAstcWithFileIdAndDateAdded(const std::string &fileId, const std::string &dateAdded)
-{
-    ThumbnailData data;
-    ThumbRdbOpt opts = {
-        .store = rdbStorePtr_,
-        .table = PhotoColumn::PHOTOS_TABLE,
-        .row = fileId,
-        .dateAdded = dateAdded
-    };
-
-    IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::DeleteMonthAndYearAstc,
-        opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
 }
 
 void ThumbnailService::UpdateAstcWithNewDateAdded(const std::string &fileId, const std::string &newDateAdded,

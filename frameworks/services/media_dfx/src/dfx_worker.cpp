@@ -62,7 +62,7 @@ void DfxWorker::Init()
 
 static void HandleLoopTask(DfxData *data)
 {
-    MEDIA_INFO_LOG("HandleLoopTask");
+    MEDIA_DEBUG_LOG("HandleLoopTask");
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
        NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
@@ -71,7 +71,7 @@ static void HandleLoopTask(DfxData *data)
         return;
     }
     int64_t lastReportTime = prefs->GetLong(LAST_REPORT_TIME, 0);
-    int64_t lastMiddleReportTime = prefs->GetInt(LAST_MIDDLE_REPORT_TIME, 0);
+    int64_t lastMiddleReportTime = prefs->GetLong(LAST_MIDDLE_REPORT_TIME, 0);
     DfxManager::GetInstance()->HandleFiveMinuteTask();
     if (MediaFileUtils::UTCTimeSeconds() - lastMiddleReportTime >= SIX_HOUR) {
         MEDIA_INFO_LOG("Report Middle Xml");

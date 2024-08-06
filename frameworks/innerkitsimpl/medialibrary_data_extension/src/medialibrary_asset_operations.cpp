@@ -78,7 +78,6 @@ mutex g_uniqueNumberLock;
 const string DEFAULT_IMAGE_NAME = "IMG_";
 const string DEFAULT_VIDEO_NAME = "VID_";
 const string DEFAULT_AUDIO_NAME = "AUD_";
-constexpr int32_t OWNER_PRIVIEDGE = 4;
 constexpr int32_t NO_DESENSITIZE = 3;
 
 int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &cmd)
@@ -697,6 +696,23 @@ static void FillAssetInfo(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
     cmd.SetValueBucket(assetInfo);
 }
 
+static void GetUriPermissionValuesBucket(string &tableName, ValuesBucket &valuesBucket,
+    string appId, int64_t fileId)
+{
+    TableType mediaType;
+    if (tableName == PhotoColumn::PHOTOS_TABLE) {
+        mediaType = TableType::TYPE_PHOTOS;
+    } else {
+        mediaType = TableType::TYPE_AUDIOS;
+    }
+    valuesBucket.Put(AppUriPermissionColumn::FILE_ID, static_cast<int32_t>(fileId));
+    valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, static_cast<int32_t>(mediaType));
+    valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE,
+        AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE);
+    valuesBucket.Put(AppUriPermissionColumn::APP_ID, appId);
+    valuesBucket.Put(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+}
+
 int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, const FileAsset &fileAsset)
 {
     // All values inserted in this function are the base property for files
@@ -709,6 +725,11 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
         MEDIA_ERR_LOG("file %{private}s exists now", fileAsset.GetPath().c_str());
         return E_FILE_EXIST;
     }
+    int32_t callingUid = 0;
+    ValueObject value;
+    if (cmd.GetValueBucket().GetObject(MEDIA_DATA_CALLING_UID, value)) {
+        value.GetInt(callingUid);
+    }
     FillAssetInfo(cmd, fileAsset);
 
     int64_t outRowId = -1;
@@ -717,24 +738,18 @@ int32_t MediaLibraryAssetOperations::InsertAssetInDb(MediaLibraryCommand &cmd, c
         MEDIA_ERR_LOG("Insert into db failed, errCode = %{public}d", errCode);
         return E_HAS_DB_ERROR;
     }
-    string appId = PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName());
+    string appId;
+    if (PermissionUtils::IsNativeSAApp()) {
+        appId = PermissionUtils::GetAppIdByBundleName(fileAsset.GetOwnerPackage(), callingUid);
+    } else {
+        appId = PermissionUtils::GetAppIdByBundleName(cmd.GetBundleName());
+    }
     auto fileId = outRowId;
     string tableName = cmd.GetTableName();
+    ValuesBucket valuesBucket;
     if (!appId.empty()) {
-        TableType mediaType;
-        if (tableName == PhotoColumn::PHOTOS_TABLE) {
-            mediaType = TableType::TYPE_PHOTOS;
-        } else {
-            mediaType = TableType::TYPE_AUDIOS;
-        }
-        ValuesBucket valuesBucket;
         int64_t tmpOutRowId = -1;
-        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, static_cast<int32_t>(fileId));
-        valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, static_cast<int32_t>(mediaType));
-        valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, OWNER_PRIVIEDGE);
-        valuesBucket.Put(AppUriPermissionColumn::APP_ID, appId);
-        valuesBucket.Put(AppUriPermissionColumn::DATE_MODIFIED,
-            MediaFileUtils::UTCTimeMilliSeconds());
+        GetUriPermissionValuesBucket(tableName, valuesBucket, appId, fileId);
         MediaLibraryCommand cmd(Uri(MEDIALIBRARY_GRANT_URIPERM_URI), valuesBucket);
         errCode = rdbStore->Insert(cmd, tmpOutRowId);
         if (errCode != NativeRdb::E_OK) {
@@ -1311,7 +1326,7 @@ void MediaLibraryAssetOperations::InvalidateThumbnail(const string &fileId, int3
 }
 
 void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThumbSync, bool isInvalidateThumb,
-    bool isForceScan)
+    bool isForceScan, int32_t fileId)
 {
     // Force Scan means medialibrary will scan file without checking E_SCANNED
     shared_ptr<ScanAssetCallback> scanAssetCallback = make_shared<ScanAssetCallback>();
@@ -1327,7 +1342,7 @@ void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThum
     }
 
     int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanAssetCallback, MediaLibraryApi::API_10,
-        isForceScan);
+        isForceScan, fileId);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed with error: %{public}d", ret);
     }
