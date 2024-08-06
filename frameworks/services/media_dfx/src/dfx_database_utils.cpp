@@ -166,7 +166,7 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
     }
     photoRecordInfo.dbFileSize = statInfo.st_size;
 
-    return E_OK;
+    return ret;
 }
 
 int32_t DfxDatabaseUtils::QueryAnalysisVersion(const std::string &table, const std::string &column)
