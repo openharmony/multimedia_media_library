@@ -345,5 +345,27 @@ std::string BackupFileUtils::GetFailedFilesStr(const std::unordered_map<std::str
     failedFilesStream << "\n]";
     return failedFilesStream.str();
 }
+
+bool BackupFileUtils::GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel,
+    size_t &pos)
+{
+    int32_t count = 0;
+    for (size_t index = 0; index < path.length(); index++) {
+        if (path[index] != '/') {
+            continue;
+        }
+        count++;
+        if (count == prefixLevel) {
+            pos = index;
+            break;
+        }
+    }
+    if (count < prefixLevel) {
+        MEDIA_ERR_LOG("Get position failed for %{public}s, %{public}d < %{public}d",
+            GarbleFilePath(path, sceneCode).c_str(), count, prefixLevel);
+        return false;
+    }
+    return true;
+}
 } // namespace Media
 } // namespace OHOS

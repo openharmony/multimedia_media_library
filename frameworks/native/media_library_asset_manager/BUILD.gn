@@ -69,7 +69,7 @@ ohos_shared_library("media_library_asset_manager") {
 
   cflags_cc = [ "-Os" ]
 
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true

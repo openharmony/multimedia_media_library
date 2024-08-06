@@ -21,6 +21,7 @@
 #include <string>
 
 #include "deferred_photo_proc_session.h"
+#include "result_set_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,8 +37,9 @@ public:
 
 private:
     EXPORT int32_t UpdatePhotoQuality(const std::string &photoId);
+    void NotifyIfTempFile(std::shared_ptr<NativeRdb::ResultSet> resultSet);
 };
-#endif
 } // namespace Media
 } // namespace OHOS
+#endif
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_MULTISTAGES_CAPTURE_DEFERRED_PROC_SESSION_CALLBACK_H

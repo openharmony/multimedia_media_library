@@ -282,6 +282,9 @@ private:
     EXPORT static napi_value ShowAssetsCreationDialog(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperCreatePhotoAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperAgentCreateAssets(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGrantPhotoUriPermission(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGrantPhotoUrisPermission(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessCancelPhotoUriPermission(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperTrashAsset(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperOnCallback(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessHelperOffCallback(napi_env env, napi_callback_info info);
@@ -296,6 +299,7 @@ private:
     EXPORT static napi_value PhotoAccessGetFileAssetsInfo(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStartCreateThumbnailTask(napi_env env, napi_callback_info info);
     EXPORT static napi_value PhotoAccessStopCreateThumbnailTask(napi_env env, napi_callback_info info);
+    EXPORT static napi_value PhotoAccessGetBurstAssets(napi_env env, napi_callback_info info);
 
     EXPORT static napi_value SetHidden(napi_env env, napi_callback_info info);
     EXPORT static napi_value PahGetHiddenAlbums(napi_env env, napi_callback_info info);

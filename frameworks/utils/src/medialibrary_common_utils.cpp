@@ -161,6 +161,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     PhotoColumn::PHOTO_THUMB_STATUS,
     PhotoColumn::PHOTO_SUBTYPE,
     PhotoColumn::PHOTO_IS_TEMP,
+    PhotoColumn::PHOTO_BURST_KEY,
 
     // Photos table columns
     COMPAT_HIDDEN,
@@ -195,6 +196,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     SCALE_HEIGHT,
     SCALE_WIDTH,
     ANALYSIS_VERSION,
+    FEATURES,
 };
 
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)

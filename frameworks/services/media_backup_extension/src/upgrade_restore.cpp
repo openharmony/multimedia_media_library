@@ -17,6 +17,7 @@
 
 #include "upgrade_restore.h"
 
+#include "backup_const_column.h"
 #include "backup_const_map.h"
 #include "backup_database_utils.h"
 #include "backup_file_utils.h"
@@ -28,6 +29,11 @@
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
 #include "userfile_manager_types.h"
+#include "vision_album_column.h"
+#include "vision_column.h"
+#include "vision_face_tag_column.h"
+#include "vision_image_face_column.h"
+#include "vision_photo_map_column.h"
 
 #ifdef CLOUD_SYNC_MANAGER
 #include "cloud_sync_manager.h"
@@ -38,6 +44,12 @@ namespace Media {
 constexpr int32_t PHOTOS_TABLE_ALBUM_ID = -1;
 constexpr int32_t BASE_TEN_NUMBER = 10;
 constexpr int32_t SEVEN_NUMBER = 7;
+constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
+constexpr int32_t SD_PREFIX_LEVEL = 3;
+constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
+constexpr int32_t BURST_COVER = 1;
+constexpr int32_t BURST_MEMBER = 2;
+const std::string INTERNAL_PREFIX = "/storage/emulated/0";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
 {
@@ -312,6 +324,7 @@ void UpgradeRestore::RestorePhoto(void)
     InitGarbageAlbum();
     HandleClone();
     RestoreFromGalleryAlbum(); // 跨端相册融合
+    RestoreFromGalleryPortraitAlbum();
     RestoreFromGallery();
     StopParameterForClone(sceneCode_);
     MEDIA_INFO_LOG("migrate from gallery number: %{public}lld, file number: %{public}lld",
@@ -324,6 +337,8 @@ void UpgradeRestore::RestorePhoto(void)
         MEDIA_INFO_LOG("migrate from others number: %{public}lld, file number: %{public}lld",
             (long long) migrateDatabaseNumber_, (long long) migrateFileNumber_);
     }
+    UpdateFaceAnalysisStatus();
+    ReportPortraitStat(sceneCode_);
     (void)NativeRdb::RdbHelper::DeleteRdbStore(galleryDbPath_);
 }
 
@@ -348,11 +363,14 @@ void UpgradeRestore::AnalyzeGallerySource()
     int32_t galleryTrashedCount = BackupDatabaseUtils::QueryGalleryTrashedCount(galleryRdb_);
     int32_t gallerySDCardCount = BackupDatabaseUtils::QueryGallerySDCardCount(galleryRdb_);
     int32_t galleryScreenVideoCount = BackupDatabaseUtils::QueryGalleryScreenVideoCount(galleryRdb_);
+    int32_t galleryFavoriteCount =  BackupDatabaseUtils::QueryGalleryFavoriteCount(galleryRdb_);
+    int32_t galleryImportsCount = BackupDatabaseUtils::QueryGalleryImportsCount(galleryRdb_);
     MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, \
         galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, \
-        gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d",
+        gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, \
+        galleryImportsCount: %{public}d",
         galleryAllCount, galleryImageCount, galleryVideoCount, galleryHiddenCount, galleryTrashedCount,
-        gallerySDCardCount, galleryScreenVideoCount);
+        gallerySDCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount);
 }
 
 void UpgradeRestore::AnalyzeExternalSource()
@@ -503,11 +521,17 @@ void UpgradeRestore::HandleRestData(void)
         MEDIA_DEBUG_LOG("Start to delete media data.");
         (void)MediaFileUtils::DeleteDir(mediaData);
     }
+
+    // restore thumbnail for date fronted 500 photos
+    MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
 }
 
 int32_t UpgradeRestore::QueryTotalNumber(void)
 {
-    return BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_GALLERY_COUNT, CUSTOM_COUNT);
+    std::string querySql = QUERY_GALLERY_COUNT;
+    querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    BackupDatabaseUtils::UpdateSDWhereClause(querySql, sceneCode_);
+    return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
 
 std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
@@ -518,8 +542,11 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
         MEDIA_ERR_LOG("galleryRdb_ is nullptr, Maybe init failed.");
         return result;
     }
-    std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS + "limit " + std::to_string(offset) + ", " +
-        std::to_string(QUERY_COUNT);
+    std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS;
+    queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
+    BackupDatabaseUtils::UpdateSDWhereClause(queryAllPhotosByCount, sceneCode_);
+    queryAllPhotosByCount += ALL_PHOTOS_ORDER_BY;
+    queryAllPhotosByCount += "limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = galleryRdb_->QuerySql(queryAllPhotosByCount);
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Query resultSql is null.");
@@ -611,21 +638,21 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
         return false;
     }
     std::string oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
-    if (sceneCode_ == UPGRADE_RESTORE_ID ?
-        !BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath) :
-        !ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
-        return false;
-    }
-    info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
-    info.title = GetStringVal(GALLERY_TITLE, resultSet);
-    info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
     if (info.fileSize < fileMinSize_ && dbName == EXTERNAL_DB_NAME) {
         MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
             BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str(), fileMinSize_);
         return false;
     }
+    if (sceneCode_ == UPGRADE_RESTORE_ID ?
+        !BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath) :
+        !ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath, info)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+        return false;
+    }
+    info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
+    info.title = GetStringVal(GALLERY_TITLE, resultSet);
+    info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
     info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
@@ -655,8 +682,8 @@ void UpgradeRestore::ParseResultSetForMap(const std::shared_ptr<NativeRdb::Resul
 
 bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
-    int32_t localMediaId = GetInt32Val(GALLERY_LOCAL_MEDIA_ID, resultSet);
-    info.hidden = (localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
+    info.localMediaId = GetInt32Val(GALLERY_LOCAL_MEDIA_ID, resultSet);
+    info.hidden = (info.localMediaId == GALLERY_HIDDEN_ID) ? 1 : 0;
     info.recycledTime = GetInt64Val(GALLERY_RECYCLED_TIME, resultSet);
     info.showDateToken = GetInt64Val(GALLERY_SHOW_DATE_TOKEN, resultSet);
     // fetch relative_bucket_id, recycleFlag, is_hw_burst, hash field to generate burst_key
@@ -664,6 +691,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
     info.recycleFlag = GetInt32Val(GALLERY_RECYCLE_FLAG, resultSet);
     info.isBurst = GetInt32Val(GALLERY_IS_BURST, resultSet);
     info.hashCode = GetStringVal(GALLERY_HASH, resultSet);
+    info.fileIdOld = GetInt32Val(GALLERY_ID, resultSet);
 
     bool isSuccess = ParseResultSet(resultSet, info, GALLERY_DB_NAME);
     if (!isSuccess) {
@@ -671,6 +699,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
         return isSuccess;
     }
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
+    info.burstSequence = burstKeyGenerator_.FindBurstSequence(info);
     ParseResultSetForMap(resultSet, info);
     return isSuccess;
 }
@@ -688,7 +717,7 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
         MEDIA_ERR_LOG("ParseResultSetFromExternal fail");
         return isSuccess;
     }
-    info.showDateToken = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet);
+    info.showDateToken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
     return isSuccess;
 }
 
@@ -702,13 +731,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     if (fileInfo.showDateToken != 0) {
-        if (sourceType == SourceType::EXTERNAL_CAMERA || sourceType == SourceType::EXTERNAL_OTHERS) {
-            values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken * MILLISECONDS);
-            values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken);
-        } else {
-            values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
-            values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken / MILLISECONDS);
-        }
+        values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
+        values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken / MILLISECONDS);
     } else {
         MEDIA_WARN_LOG("Get showDateToken = 0, path: %{private}s", fileInfo.filePath.c_str());
     }
@@ -724,13 +748,17 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
-    if (fileInfo.isBurst == 1) {
+    if (fileInfo.isBurst == BURST_COVER) {
         // only when gallery.db # gallery_media # isBurst = 1, then media_library.db # Photos # burst_cover_level = 1.
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER);
+    } else if (fileInfo.isBurst == BURST_MEMBER) {
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_MEMBER);
     }
     if (fileInfo.burstKey.size() > 0) {
         values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
+        values.PutInt(PhotoColumn::PHOTO_BURST_SEQUENCE, fileInfo.burstSequence);
+        values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading burst photo
     }
     return values;
 }
@@ -739,18 +767,7 @@ bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std
     std::string &newPath, std::string &relativePath)
 {
     size_t pos = 0;
-    int32_t count = 0;
-    constexpr int32_t prefixLevel = 4;
-    for (size_t i = 0; i < srcPath.length(); i++) {
-        if (srcPath[i] == '/') {
-            count++;
-            if (count == prefixLevel) {
-                pos = i;
-                break;
-            }
-        }
-    }
-    if (count < prefixLevel) {
+    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, INTERNAL_PREFIX_LEVEL, pos)) {
         return false;
     }
     newPath = prefix + srcPath;
@@ -1150,6 +1167,456 @@ void UpgradeRestore::UpdateFileInfo(const GalleryAlbumInfo &galleryAlbumInfo, Fi
         it->albumSubType == PhotoAlbumSubType::SOURCE_GENERIC) {
         info.packageName = it->albumName;
         info.bundleName = it->albumBundleName;
+    }
+}
+
+bool UpgradeRestore::ConvertPathToRealPath(const std::string &srcPath, const std::string &prefix,
+    std::string &newPath, std::string &relativePath, FileInfo &fileInfo)
+{
+    if (MediaFileUtils::StartsWith(srcPath, INTERNAL_PREFIX)) {
+        return ConvertPathToRealPath(srcPath, prefix, newPath, relativePath);
+    }
+    size_t pos = 0;
+    if (!BackupFileUtils::GetPathPosByPrefixLevel(sceneCode_, srcPath, SD_PREFIX_LEVEL, pos)) {
+        return false;
+    }
+    relativePath = srcPath.substr(pos);
+    if (fileInfo.fileSize < TAR_FILE_LIMIT || fileInfo.localMediaId == GALLERY_HIDDEN_ID ||
+        fileInfo.localMediaId == GALLERY_TRASHED_ID) {
+        newPath = prefix + srcPath; // packed as tar, hidden or trashed, use path in DB
+    } else {
+        newPath = prefix + relativePath; // others, remove sd prefix, use relative path
+    }
+    return true;
+}
+
+void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
+{
+    if (sceneCode_ != UPGRADE_RESTORE_ID) {
+        MEDIA_ERR_LOG("Portrait restoration for %{public}d not supported", sceneCode_);
+        return;
+    }
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    std::vector<int32_t> faceAnalysisTypeList = { FaceAnalysisType::RECOGNITION };
+    if (!BackupDatabaseUtils::GetFaceAnalysisVersion(faceAnalysisVersionMap_, faceAnalysisTypeList)) {
+        MEDIA_ERR_LOG("Get face analysis version failed, quit");
+        return;
+    }
+    int32_t totalNumber = QueryPortraitAlbumTotalNumber();
+    MEDIA_INFO_LOG("QueryPortraitAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
+    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+        vector<PortraitAlbumInfo> portraitAlbumInfos = QueryPortraitAlbumInfos(offset);
+        InsertPortraitAlbum(portraitAlbumInfos);
+    }
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    migratePortraitTotalTimeCost_ += end - start;
+}
+
+int32_t UpgradeRestore::QueryPortraitAlbumTotalNumber()
+{
+    return BackupDatabaseUtils::QueryInt(galleryRdb_, QUERY_GALLERY_PORTRAIT_ALBUM_COUNT, CUSTOM_COUNT);
+}
+
+vector<PortraitAlbumInfo> UpgradeRestore::QueryPortraitAlbumInfos(int32_t offset)
+{
+    vector<PortraitAlbumInfo> result;
+    result.reserve(QUERY_COUNT);
+    std::string querySql = "SELECT " + GALLERY_MERGE_TAG_TAG_ID + ", " + GALLERY_GROUP_TAG + ", " +
+        GALLERY_TAG_NAME + ", " + GALLERY_USER_OPERATION + ", " + GALLERY_RENAME_OPERATION +
+        " FROM " + GALLERY_PORTRAIT_ALBUM_TABLE;
+    querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query resultSql is null.");
+        return result;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        PortraitAlbumInfo portraitAlbumInfo;
+        if (!ParsePortraitAlbumResultSet(resultSet, portraitAlbumInfo)) {
+            MEDIA_ERR_LOG("Parse portrait album result set failed, exclude %{public}s",
+                portraitAlbumInfo.tagName.c_str());
+            continue;
+        }
+        if (!SetAttributes(portraitAlbumInfo)) {
+            MEDIA_ERR_LOG("Set attributes failed, exclude %{public}s", portraitAlbumInfo.tagName.c_str());
+            continue;
+        }
+        UpdateGroupTagMap(portraitAlbumInfo);
+        result.emplace_back(portraitAlbumInfo);
+    }
+    return result;
+}
+
+bool UpgradeRestore::ParsePortraitAlbumResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet,
+    PortraitAlbumInfo &portraitAlbumInfo)
+{
+    portraitAlbumInfo.tagIdOld = GetStringVal(GALLERY_MERGE_TAG_TAG_ID, resultSet);
+    portraitAlbumInfo.groupTagOld = GetStringVal(GALLERY_GROUP_TAG, resultSet);
+    portraitAlbumInfo.tagName = GetStringVal(GALLERY_TAG_NAME, resultSet);
+    portraitAlbumInfo.userOperation = GetInt32Val(GALLERY_USER_OPERATION, resultSet);
+    portraitAlbumInfo.renameOperation = GetInt32Val(GALLERY_RENAME_OPERATION, resultSet);
+    return true;
+}
+
+bool UpgradeRestore::SetAttributes(PortraitAlbumInfo &portraitAlbumInfo)
+{
+    return BackupDatabaseUtils::SetTagIdNew(portraitAlbumInfo, tagIdMap_);
+}
+
+void UpgradeRestore::UpdateGroupTagMap(const PortraitAlbumInfo &portraitAlbumInfo)
+{
+    std::string &groupTagNew = groupTagMap_[portraitAlbumInfo.groupTagOld];
+    if (groupTagNew.empty()) {
+        groupTagNew = portraitAlbumInfo.tagIdNew;
+    } else {
+        groupTagNew = groupTagNew + "|" + portraitAlbumInfo.tagIdNew;
+    }
+}
+
+void UpgradeRestore::InsertPortraitAlbum(std::vector<PortraitAlbumInfo> &portraitAlbumInfos)
+{
+    if (mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
+        return;
+    }
+    if (portraitAlbumInfos.empty()) {
+        MEDIA_ERR_LOG("portraitAlbumInfos are empty");
+        return;
+    }
+    
+    int64_t startInsertAlbum = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t albumRowNum = InsertPortraitAlbumByTable(portraitAlbumInfos, true);
+    if (albumRowNum <= 0) {
+        BackupDatabaseUtils::PrintErrorLog("Insert portrait album failed", startInsertAlbum);
+        return;
+    }
+    
+    int64_t startInsertTag = MediaFileUtils::UTCTimeMilliSeconds();
+    int32_t tagRowNum = InsertPortraitAlbumByTable(portraitAlbumInfos, false);
+    if (tagRowNum <= 0) {
+        BackupDatabaseUtils::PrintErrorLog("Insert face tag failed", startInsertTag);
+        return;
+    }
+
+    int64_t startQuery = MediaFileUtils::UTCTimeMilliSeconds();
+    BatchQueryAlbum(portraitAlbumInfos);
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("insert %{public}ld albums cost %{public}ld, %{public}ld tags cost %{public}ld, query cost "
+        "%{public}ld.", (long)albumRowNum, (long)(startInsertTag - startInsertAlbum), (long)tagRowNum,
+        (long)(startQuery - startInsertTag), (long)(end - startQuery));
+}
+
+int32_t UpgradeRestore::InsertPortraitAlbumByTable(std::vector<PortraitAlbumInfo> &portraitAlbumInfos,
+    bool isAlbum)
+{
+    std::vector<NativeRdb::ValuesBucket> values = GetInsertValues(portraitAlbumInfos, isAlbum);
+    int64_t rowNum = 0;
+    std::string tableName = isAlbum ? ANALYSIS_ALBUM_TABLE : VISION_FACE_TAG_TABLE;
+    int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
+    if (errCode != E_OK) {
+        return 0;
+    }
+    return rowNum;
+}
+
+std::vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(std::vector<PortraitAlbumInfo> &portraitAlbumInfos,
+    bool isAlbum)
+{
+    std::vector<NativeRdb::ValuesBucket> values;
+    for (auto &portraitAlbumInfo : portraitAlbumInfos) {
+        if (!BackupDatabaseUtils::SetGroupTagNew(portraitAlbumInfo, groupTagMap_)) {
+            continue;
+        }
+        NativeRdb::ValuesBucket value = GetInsertValue(portraitAlbumInfo, isAlbum);
+        values.emplace_back(value);
+    }
+    return values;
+}
+
+NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const PortraitAlbumInfo &portraitAlbumInfo, bool isAlbum)
+{
+    NativeRdb::ValuesBucket values;
+    values.PutString(TAG_ID, portraitAlbumInfo.tagIdNew);
+    values.PutInt(COUNT, 0);
+    if (isAlbum) {
+        values.PutString(ALBUM_NAME, portraitAlbumInfo.tagName);
+        values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagNew);
+        values.PutInt(USER_OPERATION, portraitAlbumInfo.userOperation);
+        values.PutInt(RENAME_OPERATION, RENAME_OPERATION_RENAMED);
+        values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
+        values.PutInt(ALBUM_SUBTYPE, PhotoAlbumSubType::PORTRAIT);
+        values.PutInt(USER_DISPLAY_LEVEL, PortraitPages::FIRST_PAGE);
+        values.PutInt(IS_LOCAL, IS_LOCAL_TRUE);
+    } else {
+        values.PutString(TAG_VERSION, E_VERSION); // updated by analysis service
+    }
+    return values;
+}
+
+void UpgradeRestore::BatchQueryAlbum(std::vector<PortraitAlbumInfo> &portraitAlbumInfos)
+{
+    std::string tagIdSelection;
+    for (auto &portraitAlbumInfo : portraitAlbumInfos) {
+        BackupDatabaseUtils::UpdateSelection(tagIdSelection, portraitAlbumInfo.tagIdNew, true);
+    }
+    std::string querySql = "SELECT " + ALBUM_ID + ", " + TAG_ID + " FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " +
+        TAG_ID + " IN (" + tagIdSelection + ")";
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(mediaLibraryRdb_, querySql);
+    if (resultSet == nullptr) {
+        return;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        int32_t albumId = GetInt32Val(ALBUM_ID, resultSet);
+        std::string tagId = GetStringVal(TAG_ID, resultSet);
+        if (albumId <= 0 || tagId.empty()) {
+            continue;
+        }
+        portraitAlbumIdMap_[tagId] = albumId;
+    }
+}
+
+bool UpgradeRestore::NeedBatchQueryPhotoForPortrait(const std::vector<FileInfo> &fileInfos, NeedQueryMap &needQueryMap)
+{
+    if (sceneCode_ != UPGRADE_RESTORE_ID) {
+        return false;
+    }
+    if (portraitAlbumIdMap_.empty()) {
+        return false;
+    }
+    std::string selection;
+    for (const auto &fileInfo : fileInfos) {
+        BackupDatabaseUtils::UpdateSelection(selection, std::to_string(fileInfo.fileIdOld), false);
+    }
+    std::unordered_set<std::string> needQuerySet;
+    std::string querySql = "SELECT DISTINCT " + GALLERY_MERGE_FACE_HASH + " FROM " + GALLERY_FACE_TABLE_JOIN_TAG +
+        " HAVING " + GALLERY_MEDIA_ID + " IN (" + selection + ") AND " + GALLERY_TAG_NAME_NOT_NULL_OR_EMPTY;
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query resultSql is null.");
+        return false;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        std::string hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
+        if (hash.empty()) {
+            continue;
+        }
+        needQuerySet.insert(hash);
+    }
+    if (needQuerySet.empty()) {
+        return false;
+    }
+    needQueryMap[PhotoRelatedType::PORTRAIT] = needQuerySet;
+    return true;
+}
+
+void UpgradeRestore::InsertFaceAnalysisData(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
+    int64_t &faceRowNum, int64_t &mapRowNum, int64_t &photoNum)
+{
+    if (sceneCode_ != UPGRADE_RESTORE_ID) {
+        return;
+    }
+    int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
+    if (needQueryMap.count(PhotoRelatedType::PORTRAIT) == 0) {
+        return;
+    }
+    if (mediaLibraryRdb_ == nullptr) {
+        MEDIA_ERR_LOG("mediaLibraryRdb_ is null");
+        return;
+    }
+    if (fileInfos.empty()) {
+        MEDIA_ERR_LOG("fileInfos are empty");
+        return;
+    }
+    std::string hashSelection;
+    std::unordered_map<std::string, FileInfo> fileInfoMap;
+    SetHashReference(fileInfos, needQueryMap, hashSelection, fileInfoMap);
+
+    int32_t totalNumber = QueryFaceTotalNumber(hashSelection);
+    MEDIA_INFO_LOG("Current %{public}zu / %{public}zu have %{public}d faces", fileInfoMap.size(), fileInfos.size(),
+        totalNumber);
+    std::unordered_set<std::string> excludedFiles;
+    std::unordered_set<std::string> filesWithFace;
+    for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
+        std::vector<FaceInfo> faceInfos = QueryFaceInfos(hashSelection, fileInfoMap, offset, excludedFiles);
+        int64_t startInsertFace = MediaFileUtils::UTCTimeMilliSeconds();
+        faceRowNum += InsertFaceAnalysisDataByTable(faceInfos, false, excludedFiles);
+        if (faceRowNum <= 0) {
+            BackupDatabaseUtils::PrintErrorLog("Insert face failed", startInsertFace);
+            continue;
+        }
+        int64_t startInsertMap = MediaFileUtils::UTCTimeMilliSeconds();
+        mapRowNum += InsertFaceAnalysisDataByTable(faceInfos, true, excludedFiles);
+        if (mapRowNum <= 0) {
+            BackupDatabaseUtils::PrintErrorLog("Insert map failed", startInsertMap);
+            continue;
+        }
+        UpdateFilesWithFace(filesWithFace, faceInfos);
+        int64_t endInsert = MediaFileUtils::UTCTimeMilliSeconds();
+        MEDIA_INFO_LOG("insert %{public}ld faces cost %{public}ld, %{public}ld maps cost %{public}ld", (long)faceRowNum,
+            (long)(startInsertMap - startInsertFace), (long)mapRowNum, (long)(endInsert - startInsertMap));
+    }
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    photoNum = filesWithFace.size();
+    migratePortraitFaceNumber_ += faceRowNum;
+    migratePortraitPhotoNumber_ += photoNum;
+    migratePortraitTotalTimeCost_ += end - start;
+}
+
+void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, const NeedQueryMap &needQueryMap,
+    std::string &hashSelection, std::unordered_map<std::string, FileInfo> &fileInfoMap)
+{
+    auto needQuerySet = needQueryMap.at(PhotoRelatedType::PORTRAIT);
+    for (const auto &fileInfo : fileInfos) {
+        if (needQuerySet.count(fileInfo.hashCode) == 0 || fileInfo.fileIdNew <= 0) {
+            continue;
+        }
+        if (fileInfoMap.count(fileInfo.hashCode) > 0) {
+            continue; // select the first one to build map
+        }
+        BackupDatabaseUtils::UpdateSelection(hashSelection, fileInfo.hashCode, true);
+        fileInfoMap[fileInfo.hashCode] = fileInfo;
+    }
+}
+
+int32_t UpgradeRestore::QueryFaceTotalNumber(const std::string &hashSelection)
+{
+    std::string querySql = "SELECT count(1) as count FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
+        GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ")";
+    return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
+}
+
+std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSelection,
+    const std::unordered_map<std::string, FileInfo> &fileInfoMap, int32_t offset,
+    std::unordered_set<std::string> &excludedFiles)
+{
+    vector<FaceInfo> result;
+    result.reserve(QUERY_COUNT);
+    std::string querySql = "SELECT " + GALLERY_SCALE_X + ", " + GALLERY_SCALE_Y + ", " + GALLERY_SCALE_WIDTH + ", " +
+        GALLERY_SCALE_HEIGHT + ", " + GALLERY_PITCH + ", " + GALLERY_YAW + ", " + GALLERY_ROLL + ", " +
+        GALLERY_PROB + ", " + GALLERY_TOTAL_FACE + ", " + GALLERY_MERGE_FACE_HASH + ", " + GALLERY_FACE_ID + ", " +
+        GALLERY_MERGE_FACE_TAG_ID + ", " + GALLERY_LANDMARKS + " FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
+        GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ") ORDER BY " + GALLERY_MERGE_FACE_HASH + ", " +
+        GALLERY_FACE_ID;
+    querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
+    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
+    if (resultSet == nullptr) {
+        MEDIA_ERR_LOG("Query resultSql is null.");
+        return result;
+    }
+    while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
+        FaceInfo faceInfo;
+        if (!ParseFaceResultSet(resultSet, faceInfo)) {
+            MEDIA_ERR_LOG("Parse face result set failed, exclude %{public}s", faceInfo.hash.c_str());
+            excludedFiles.insert(faceInfo.hash);
+            continue;
+        }
+        if (!SetAttributes(faceInfo, fileInfoMap)) {
+            MEDIA_ERR_LOG("Set attributes failed, exclude %{public}s", faceInfo.hash.c_str());
+            excludedFiles.insert(faceInfo.hash);
+            continue;
+        }
+        result.emplace_back(faceInfo);
+    }
+    return result;
+}
+
+bool UpgradeRestore::ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FaceInfo &faceInfo)
+{
+    faceInfo.scaleX = GetDoubleVal(GALLERY_SCALE_X, resultSet);
+    faceInfo.scaleY = GetDoubleVal(GALLERY_SCALE_Y, resultSet);
+    faceInfo.scaleWidth = GetDoubleVal(GALLERY_SCALE_WIDTH, resultSet);
+    faceInfo.scaleHeight = GetDoubleVal(GALLERY_SCALE_HEIGHT, resultSet);
+    faceInfo.pitch = GetDoubleVal(GALLERY_PITCH, resultSet);
+    faceInfo.yaw = GetDoubleVal(GALLERY_YAW, resultSet);
+    faceInfo.roll = GetDoubleVal(GALLERY_ROLL, resultSet);
+    faceInfo.prob = GetDoubleVal(GALLERY_PROB, resultSet);
+    faceInfo.totalFaces = GetInt32Val(GALLERY_TOTAL_FACE, resultSet);
+    faceInfo.hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
+    faceInfo.faceId = GetStringVal(GALLERY_FACE_ID, resultSet);
+    faceInfo.tagIdOld = GetStringVal(GALLERY_MERGE_FACE_TAG_ID, resultSet);
+    faceInfo.landmarks = BackupDatabaseUtils::GetLandmarksStr(GALLERY_LANDMARKS, resultSet);
+    if (faceInfo.landmarks.empty()) {
+        MEDIA_ERR_LOG("Get invalid landmarks for face %{public}s", faceInfo.faceId.c_str());
+        return false;
+    }
+    faceInfo.analysisVersion = CURRENT_ANALYSIS_VERSION;
+    return true;
+}
+
+bool UpgradeRestore::SetAttributes(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap)
+{
+    return BackupDatabaseUtils::SetLandmarks(faceInfo, fileInfoMap) &&
+        BackupDatabaseUtils::SetFileIdNew(faceInfo, fileInfoMap) &&
+        BackupDatabaseUtils::SetTagIdNew(faceInfo, tagIdMap_) &&
+        BackupDatabaseUtils::SetAlbumIdNew(faceInfo, portraitAlbumIdMap_) &&
+        BackupDatabaseUtils::SetVersion(faceInfo.faceVersion, faceAnalysisVersionMap_, FaceAnalysisType::RECOGNITION);
+}
+
+int32_t UpgradeRestore::InsertFaceAnalysisDataByTable(const std::vector<FaceInfo> &faceInfos, bool isMap,
+    const std::unordered_set<std::string> &excludedFiles)
+{
+    std::vector<NativeRdb::ValuesBucket> values = GetInsertValues(faceInfos, isMap, excludedFiles);
+    int64_t rowNum = 0;
+    std::string tableName = isMap ? ANALYSIS_PHOTO_MAP_TABLE : VISION_IMAGE_FACE_TABLE;
+    int32_t errCode = BatchInsertWithRetry(tableName, values, rowNum);
+    if (errCode != E_OK) {
+        return 0;
+    }
+    return rowNum;
+}
+
+std::vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(const std::vector<FaceInfo> &faceInfos, bool isMap,
+    const std::unordered_set<std::string> &excludedFiles)
+{
+    std::vector<NativeRdb::ValuesBucket> values;
+    for (auto &faceInfo : faceInfos) {
+        if (excludedFiles.count(faceInfo.hash) > 0) {
+            continue;
+        }
+        if (isMap && faceInfo.tagIdNew == TAG_ID_UNPROCESSED) {
+            continue;
+        }
+        NativeRdb::ValuesBucket value = GetInsertValue(faceInfo, isMap);
+        values.emplace_back(value);
+    }
+    return values;
+}
+
+NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FaceInfo &faceInfo, bool isMap)
+{
+    NativeRdb::ValuesBucket values;
+    if (isMap) {
+        values.PutInt(MAP_ALBUM, faceInfo.albumIdNew);
+        values.PutInt(MAP_ASSET, faceInfo.fileIdNew);
+    } else {
+        values.PutDouble(SCALE_X, faceInfo.scaleX);
+        values.PutDouble(SCALE_Y, faceInfo.scaleY);
+        values.PutDouble(SCALE_WIDTH, faceInfo.scaleWidth);
+        values.PutDouble(SCALE_HEIGHT, faceInfo.scaleHeight);
+        values.PutDouble(PITCH, faceInfo.pitch);
+        values.PutDouble(YAW, faceInfo.yaw);
+        values.PutDouble(ROLL, faceInfo.roll);
+        values.PutDouble(PROB, faceInfo.prob);
+        values.PutInt(TOTAL_FACES, faceInfo.totalFaces);
+        values.PutInt(FILE_ID, faceInfo.fileIdNew);
+        values.PutString(FACE_ID, faceInfo.faceId);
+        values.PutString(TAG_ID, faceInfo.tagIdNew);
+        values.PutString(LANDMARKS, faceInfo.landmarks);
+        values.PutString(IMAGE_FACE_VERSION, faceInfo.faceVersion);
+        values.PutString(IMAGE_FEATURES_VERSION, E_VERSION); // updated by analysis service
+        values.PutString(ANALYSIS_VERSION, faceInfo.analysisVersion);
+    }
+    return values;
+}
+
+void UpgradeRestore::UpdateFilesWithFace(std::unordered_set<std::string> &filesWithFace,
+    const std::vector<FaceInfo> &faceInfos)
+{
+    for (const auto &faceInfo : faceInfos) {
+        if (faceInfo.hash.empty()) {
+            continue;
+        }
+        filesWithFace.insert(faceInfo.hash);
     }
 }
 } // namespace Media

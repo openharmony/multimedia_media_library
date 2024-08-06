@@ -53,9 +53,9 @@ export struct AlbumPickerComponent {
 }
 
 export class AlbumPickerOptions {
-  themeColorMode?: PickerColorMode;
+  public themeColorMode?: PickerColorMode;
 }
 
 export class AlbumInfo {
-  uri?: string;
+  public uri?: string;
 }
