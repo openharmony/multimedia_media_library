@@ -26,11 +26,13 @@ ohos_unittest("medialibrary_dfx_test") {
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
     "./include",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
   ]
 
   sources = [
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_analyzer.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_collector.cpp",
+    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_database_utils.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_manager.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
     "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_timer.cpp",
@@ -51,9 +53,12 @@ ohos_unittest("medialibrary_dfx_test") {
     "ability_runtime:abilitykit_native",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
+    "data_share:datashare_common",
+    "data_share:datashare_provider",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
+    "kv_store:distributeddata_inner",
     "napi:ace_napi",
     "preferences:native_preferences",
     "relational_store:native_rdb",
