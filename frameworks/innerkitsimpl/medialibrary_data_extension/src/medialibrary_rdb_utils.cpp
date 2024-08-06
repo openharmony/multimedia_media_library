@@ -429,7 +429,7 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
 }
 
 static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
-    ValuesBucket &values, int newCount)
+    ValuesBucket &values, int newCount, int coverSatisfied)
 {
     string newCover;
     if (newCount != 0) {
@@ -440,7 +440,7 @@ static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const s
     int32_t ret = E_SUCCESS;
     if (oldCover != newCover) {
         ret = E_NEED_UPDATE_ALBUM_COVER_URI;
-        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING));
+        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING) | coverSatisfied);
         values.PutString(targetColumn, newCover);
         MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s", targetColumn.c_str(),
             oldCover.c_str(), newCover.c_str());
@@ -833,7 +833,28 @@ bool MediaLibraryRdbUtils::IsInRefreshTask()
     return isInRefreshTask.load();
 }
 
-static void GetPortraitAlbumCoverPredicates(const string &coverId, RdbPredicates &predicates)
+static void GetPortraitAlbumCoverAnalysis(RdbPredicates &predicates)
+{
+    string imageFaceFileId = VISION_IMAGE_FACE_TABLE + "." + MediaColumn::MEDIA_ID;
+    string photosFileId = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID;
+    string isExcluded = VISION_IMAGE_FACE_TABLE + "." + IS_EXCLUDED;
+    string aestheticsScore = VISION_IMAGE_FACE_TABLE + "." + FACE_AESTHETICS_SCORE;
+
+    string clause = imageFaceFileId + " = " + photosFileId;
+    predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ clause });
+
+    string whereClause = predicates.GetWhereClause();
+    predicates.SetWhereClause(whereClause + " AND ");
+    predicates.BeginWrap();
+    predicates.EqualTo(isExcluded, to_string(1));
+    predicates.IsNotNull(aestheticsScore);
+    predicates.EndWrap();
+
+    predicates.OrderByDesc(aestheticsScore);
+    predicates.Limit(1);
+}
+
+static void GetPortraitAlbumCoverDefault(RdbPredicates &predicates)
 {
     string imageFaceFileId = VISION_IMAGE_FACE_TABLE + "." + MediaColumn::MEDIA_ID;
     string imageFaceTotalFaces = VISION_IMAGE_FACE_TABLE + "." + TOTAL_FACES;
@@ -913,10 +934,11 @@ static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string
     return true;
 }
 
-static inline void SetCoverSatisfied(const string &fileId, const vector<string> &fileIds, ValuesBucket &values)
+static inline void SetCoverSatisfied(const string &fileId, const vector<string> &fileIds, ValuesBucket &values,
+    int coverSatisfied)
 {
     if (find(fileIds.begin(), fileIds.end(), fileId) != fileIds.end()) {
-        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING));
+        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING) | coverSatisfied);
     }
 }
 
@@ -954,17 +976,23 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(countResult, albumResult, values, false, PhotoAlbumSubType::PORTRAIT);
-    SetCoverSatisfied(coverId, fileIds, values);
+    SetCoverSatisfied(coverId, fileIds, values, isCoverSatisfied);
     if (!ShouldUpdatePortraitAlbumCover(rdbStore, coverId, isCoverSatisfied, fileIds)) {
         return E_SUCCESS;
     }
-    GetPortraitAlbumCoverPredicates(coverId, predicates);
-    shared_ptr<ResultSet> coverResult = QueryGoToFirst(rdbStore, predicates, coverColumns);
+    RdbPredicates analysisPredicates(predicates);
+    GetPortraitAlbumCoverAnalysis(analysisPredicates);
+    shared_ptr<ResultSet> coverResult = QueryGoToFirst(rdbStore, analysisPredicates, coverColumns);
     if (coverResult == nullptr) {
-        MEDIA_ERR_LOG("Failed to query coverResult");
-        return E_HAS_DB_ERROR;
+        MEDIA_ERR_LOG("Failed to query coverResult by GetPortraitAlbumCoverAnalysis");
+        GetPortraitAlbumCoverDefault(predicates);
+        coverResult = QueryGoToFirst(rdbStore, predicates, coverColumns);
+        if (coverResult == nullptr) {
+            MEDIA_ERR_LOG("Failed to query coverResult by GetPortraitAlbumCoverDefault");
+            return E_HAS_DB_ERROR;
+        }
     }
-    return SetPortraitCover(coverResult, albumResult, values, newCount);
+    return SetPortraitCover(coverResult, albumResult, values, newCount, isCoverSatisfied);
 }
 
 static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
