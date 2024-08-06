@@ -21,9 +21,7 @@
 #include <memory>
 #include <string>
 #include <map>
-#include <list>
 
-#include "uri.h"
 #include "rdb_predicates.h"
 #include "rdb_store.h"
 #include "userfile_manager_types.h"
@@ -86,10 +84,6 @@ public:
     EXPORT static void AddVirtualColumnsOfDateType(std::vector<std::string>& columns);
     EXPORT static void AddQueryIndex(NativeRdb::AbsPredicates& predicates, const std::vector<std::string>& columns);
     EXPORT static bool HasDataToAnalysis(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
-    EXPORT static int32_t UpdatePhotoHeightAndWidth(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-        std::string filePath);
-    EXPORT static std::vector<std::string> GetPhotoPathsByCloudIds(const std::shared_ptr<NativeRdb::RdbStore>
-        &rdbStore, const std::list<Uri> &uris, const std::string prefix);
 
 private:
     static std::atomic<bool> isNeedRefreshAlbum;

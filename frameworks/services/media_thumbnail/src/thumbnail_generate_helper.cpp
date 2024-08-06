@@ -18,6 +18,7 @@
 
 #include <fcntl.h>
 
+#include "acl.h"
 #include "dfx_const.h"
 #include "dfx_manager.h"
 #include "dfx_timer.h"
@@ -44,6 +45,9 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 const int FFRT_MAX_RESTORE_ASTC_THREADS = 8;
+const std::string SQL_REFRESH_THUMBNAIL_READY =
+    " Update " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY + " = 7 " +
+    " WHERE " + PhotoColumn::PHOTO_THUMBNAIL_READY + " != 0; END;";
 
 int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bool isSync)
 {
@@ -86,7 +90,7 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailBackground(ThumbRdbOpt &opts)
     }
 
     if (infos.empty()) {
-        MEDIA_INFO_LOG("No need generate thumbnail.");
+        MEDIA_DEBUG_LOG("No need generate thumbnail.");
         return E_OK;
     }
 
@@ -108,6 +112,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
         return E_ERR;
     }
 
+    CheckMonthAndYearKvStoreValid(opts);
     vector<ThumbnailData> infos;
     int32_t err = GetNoAstcData(opts, infos);
     if (err != E_OK) {
@@ -118,7 +123,7 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
     auto kvStore = MediaLibraryKvStoreManager::GetInstance()
         .GetKvStore(KvStoreRoleType::OWNER, KvStoreValueType::MONTH_ASTC);
     if (infos.empty() || kvStore == nullptr) {
-        MEDIA_INFO_LOG("No need create Astc.");
+        MEDIA_DEBUG_LOG("No need create Astc.");
         return E_OK;
     }
 
@@ -139,35 +144,6 @@ int32_t ThumbnailGenerateHelper::CreateAstcBackground(ThumbRdbOpt &opts)
             IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateAstc,
                 opts, infos[i], ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::LOW);
         }
-    }
-    return E_OK;
-}
-
-int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
-    ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId)
-{
-    if (opts.store == nullptr) {
-        MEDIA_ERR_LOG("rdbStore is not init");
-        return E_ERR;
-    }
-
-    vector<ThumbnailData> infos;
-    int32_t err = 0;
-    if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, infos, predicate, err)) {
-        MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
-        return err;
-    }
-    if (infos.empty()) {
-        MEDIA_INFO_LOG("No need create Astc.");
-        return E_THUMBNAIL_ASTC_ALL_EXIST;
-    }
-
-    MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
-    for (auto& info : infos) {
-        opts.row = info.id;
-        info.loaderOpts.loadingStates = SourceLoader::ALL_SOURCE_LOADING_STATES;
-        ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
-        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts, info, requestId);
     }
     return E_OK;
 }
@@ -206,6 +182,35 @@ int32_t ThumbnailGenerateHelper::CreateAstcCloudDownload(ThumbRdbOpt &opts)
     return E_OK;
 }
 
+int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
+    ThumbRdbOpt &opts, NativeRdb::RdbPredicates &predicate, int32_t requestId)
+{
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is not init");
+        return E_ERR;
+    }
+
+    vector<ThumbnailData> infos;
+    int32_t err = 0;
+    if (!ThumbnailUtils::QueryNoAstcInfosOnDemand(opts, infos, predicate, err)) {
+        MEDIA_ERR_LOG("Failed to QueryNoAstcInfos %{public}d", err);
+        return err;
+    }
+    if (infos.empty()) {
+        MEDIA_INFO_LOG("No need create Astc.");
+        return E_THUMBNAIL_ASTC_ALL_EXIST;
+    }
+
+    MEDIA_INFO_LOG("no astc data size: %{public}d, requestId: %{public}d", static_cast<int>(infos.size()), requestId);
+    for (auto& info : infos) {
+        opts.row = info.id;
+        info.loaderOpts.loadingStates = SourceLoader::ALL_SOURCE_LOADING_STATES;
+        ThumbnailUtils::RecordStartGenerateStats(info.stats, GenerateScene::FOREGROUND, LoadSourceType::LOCAL_PHOTO);
+        IThumbnailHelper::AddThumbnailGenBatchTask(IThumbnailHelper::CreateAstc, opts, info, requestId);
+    }
+    return E_OK;
+}
+
 int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
 {
     if (opts.store == nullptr) {
@@ -219,7 +224,7 @@ int32_t ThumbnailGenerateHelper::CreateLcdBackground(ThumbRdbOpt &opts)
         return err;
     }
     if (infos.empty()) {
-        MEDIA_INFO_LOG("No need create Lcd.");
+        MEDIA_DEBUG_LOG("No need create Lcd.");
         return E_THUMBNAIL_LCD_ALL_EXIST;
     }
 
@@ -477,7 +482,7 @@ int32_t ThumbnailGenerateHelper::UpgradeThumbnailBackground(ThumbRdbOpt &opts)
         return err;
     }
     if (infos.empty()) {
-        MEDIA_INFO_LOG("No need upgrade thumbnail.");
+        MEDIA_DEBUG_LOG("No need upgrade thumbnail.");
         return E_OK;
     }
     MEDIA_INFO_LOG("will upgrade %{public}zu photo thumbnails.", infos.size());
@@ -542,5 +547,37 @@ int32_t ThumbnailGenerateHelper::GetThumbnailDataNeedUpgrade(ThumbRdbOpt &opts, 
     return E_OK;
 }
 
+void ThumbnailGenerateHelper::CheckMonthAndYearKvStoreValid(ThumbRdbOpt &opts)
+{
+    bool isMonthKvStoreValid = MediaLibraryKvStoreManager::GetInstance().IsKvStoreValid(KvStoreValueType::MONTH_ASTC);
+    bool isYearKvStoreValid = MediaLibraryKvStoreManager::GetInstance().IsKvStoreValid(KvStoreValueType::YEAR_ASTC);
+    if (isMonthKvStoreValid && isYearKvStoreValid) {
+        return;
+    }
+
+    if (opts.store == nullptr) {
+        MEDIA_ERR_LOG("rdbStore is not init");
+        return;
+    }
+
+    MEDIA_INFO_LOG("KvStore is invalid, start update rdb");
+    if (opts.store->ExecuteSql(SQL_REFRESH_THUMBNAIL_READY) != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("Update rdb failed");
+        return;
+    }
+    MEDIA_INFO_LOG("Update rdb successfully");
+
+    if (!isMonthKvStoreValid) {
+        MediaLibraryKvStoreManager::GetInstance().RebuildInvalidKvStore(KvStoreValueType::MONTH_ASTC);
+    }
+
+    if (!isYearKvStoreValid) {
+        MediaLibraryKvStoreManager::GetInstance().RebuildInvalidKvStore(KvStoreValueType::YEAR_ASTC);
+    }
+
+    Acl::AclSetDatabase();
+    MEDIA_INFO_LOG("RebuildInvalidKvStore finish, isMonthKvStoreValid: %{public}d, isYearKvStoreValid: %{public}d",
+        isMonthKvStoreValid, isYearKvStoreValid);
+}
 } // namespace Media
 } // namespace OHOS

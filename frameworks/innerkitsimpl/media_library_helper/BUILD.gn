@@ -110,7 +110,7 @@ ohos_shared_library("media_library") {
     external_deps += [ "image_effect:image_effect_impl" ]
   }
 
-  if (!link_opt) {
+  if (!media_library_link_opt) {
     sanitize = {
       cfi = true
       cfi_cross_dso = true

@@ -166,6 +166,7 @@ public:
     EXPORT static bool SetEPolicy();
     EXPORT static void PrintStatInformation(const std::string& path);
     EXPORT static void MediaFileDeletionRecord();
+    EXPORT static void SetDeletionRecord(int fd, const std::string &fileName);
     EXPORT static void BackupPhotoDir();
     EXPORT static void RecoverMediaTempDir();
 

@@ -318,6 +318,14 @@ void BackupDatabaseUtils::UpdateSelection(std::string &selection, const std::str
     selection += selection.empty() ? wrappedSelectionToAdd : ", " + wrappedSelectionToAdd;
 }
 
+void BackupDatabaseUtils::UpdateSDWhereClause(std::string &querySql, int32_t sceneCode)
+{
+    if (sceneCode != UPGRADE_RESTORE_ID) {
+        return;
+    }
+    querySql += " AND " + EXCLUDE_SD;
+}
+
 int32_t BackupDatabaseUtils::GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
     std::vector<uint8_t> &blobVal)
 {

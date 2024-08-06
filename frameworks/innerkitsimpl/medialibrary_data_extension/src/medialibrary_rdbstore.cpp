@@ -228,6 +228,48 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     return ret;
 }
 
+int32_t MediaLibraryRdbStore::BatchInsert(int64_t &outRowId, const std::string &table,
+    const std::vector<NativeRdb::ValuesBucket> &values)
+{
+    DfxTimer dfxTimer(DfxType::RDB_INSERT, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::BatchInsert");
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t ret = rdbStore_->BatchInsert(outRowId, table, values);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->BatchInsert failed, ret = %{public}d", ret);
+        return E_HAS_DB_ERROR;
+    }
+
+    MEDIA_DEBUG_LOG("rdbStore_->BatchInsert end, rowId = %d, ret = %{public}d", (int)outRowId, ret);
+    return ret;
+}
+
+int32_t MediaLibraryRdbStore::BatchInsert(MediaLibraryCommand &cmd, int64_t& outInsertNum,
+    const std::vector<ValuesBucket>& values)
+{
+    DfxTimer dfxTimer(DfxType::RDB_BATCHINSERT, INVALID_DFX, RDB_TIME_OUT, false);
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryRdbStore::BatchInsert");
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("Pointer rdbStore_ is nullptr. Maybe it didn't init successfully.");
+        return E_HAS_DB_ERROR;
+    }
+
+    int32_t ret = rdbStore_->BatchInsert(outInsertNum, cmd.GetTableName(), values);
+    if (ret != NativeRdb::E_OK) {
+        MEDIA_ERR_LOG("rdbStore_->BatchInsert failed, ret = %{public}d", ret);
+        return E_HAS_DB_ERROR;
+    }
+    tracer.Finish();
+    MEDIA_DEBUG_LOG("rdbStore_->BatchInsert end, rowId = %d, ret = %{public}d", (int)outInsertNum, ret);
+    return ret;
+}
+
 static int32_t DoDeleteFromPredicates(NativeRdb::RdbStore &rdb, const AbsRdbPredicates &predicates,
     int32_t &deletedRows)
 {
@@ -395,6 +437,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredica
     DfxTimer dfxTimer(RDB_QUERY, INVALID_DFX, RDB_TIME_OUT, false);
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QueryByPredicates");
+    MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", predicates.GetStatement().c_str());
     auto resultSet = rdbStore_->Query(predicates, columns);
     if (resultSet == nullptr) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
@@ -934,6 +977,30 @@ static const string &TriggerUpdateUserAlbumCount()
     return TRIGGER_UPDATE_USER_ALBUM_COUNT;
 }
 
+static const string &TriggerDeletePhotoClearAppUriPermission()
+{
+    static const string TRIGGER_PHOTO_DELETE_APP_URI_PERMISSION = BaseColumn::CreateTrigger() +
+    "delete_photo_clear_App_uri_permission" + " AFTER DELETE ON " + PhotoColumn::PHOTOS_TABLE +
+    " BEGIN " +
+        "DELETE FROM " + AppUriPermissionColumn::APP_URI_PERMISSION_TABLE +
+        " WHERE " + AppUriPermissionColumn::FILE_ID + "=" + "OLD." + MediaColumn::MEDIA_ID +
+        " AND " + AppUriPermissionColumn::URI_TYPE + "=" + std::to_string(AppUriPermissionColumn::URI_PHOTO) + ";" +
+    " END;";
+    return TRIGGER_PHOTO_DELETE_APP_URI_PERMISSION;
+}
+
+static const string &TriggerDeleteAudioClearAppUriPermission()
+{
+    static const string TRIGGER_AUDIO_DELETE_APP_URI_PERMISSION = BaseColumn::CreateTrigger() +
+    "delete_audio_clear_App_uri_permission" + " AFTER DELETE ON " + AudioColumn::AUDIOS_TABLE +
+    " BEGIN " +
+        "DELETE FROM " + AppUriPermissionColumn::APP_URI_PERMISSION_TABLE +
+        " WHERE " + AppUriPermissionColumn::FILE_ID + "=" + "OLD." + MediaColumn::MEDIA_ID +
+        " AND " + AppUriPermissionColumn::URI_TYPE + "=" + std::to_string(AppUriPermissionColumn::URI_AUDIO) + ";" +
+    " END;";
+    return TRIGGER_AUDIO_DELETE_APP_URI_PERMISSION;
+}
+
 static const vector<string> onCreateSqlStrs = {
     CREATE_MEDIA_TABLE,
     PhotoColumn::CREATE_PHOTO_TABLE,
@@ -1045,6 +1112,9 @@ static const vector<string> onCreateSqlStrs = {
     PhotoColumn::CREATE_PHOTO_DISPLAYNAME_INDEX,
     AppUriPermissionColumn::CREATE_APP_URI_PERMISSION_TABLE,
     AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
+    TriggerDeletePhotoClearAppUriPermission(),
+    TriggerDeleteAudioClearAppUriPermission(),
+    PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX,
 };
 
 static int32_t ExecuteSql(RdbStore &store)
@@ -2422,10 +2492,20 @@ static void AddMovingPhotoEffectMode(RdbStore &store)
 void AddBurstCoverLevelAndBurstKey(RdbStore &store)
 {
     const vector<string> sqls = {
-        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " INT",
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_COVER_LEVEL +
+            " INT DEFAULT 1",
         "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_KEY + " TEXT",
     };
     MEDIA_INFO_LOG("start add burst_cover_level and burst_key column");
+    ExecSqls(sqls, store);
+}
+
+void AddBurstSequence(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "ALTER TABLE " + PhotoColumn::PHOTOS_TABLE + " ADD COLUMN " + PhotoColumn::PHOTO_BURST_SEQUENCE + " INT",
+    };
+    MEDIA_INFO_LOG("start add burst_sequence column");
     ExecSqls(sqls, store);
 }
 
@@ -2437,6 +2517,25 @@ static void UpdateVisionTriggerForVideoLabel(RdbStore &store)
     };
     MEDIA_INFO_LOG("start update vision trigger for video label");
     ExecSqls(executeSqlStrs, store);
+}
+
+static void CreateBurstkeyIndex(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_SCHPT_DAY_INDEX,
+        PhotoColumn::DROP_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::DROP_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoColumn::DROP_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_SCHPT_DAY_INDEX,
+        PhotoColumn::CREATE_SCHPT_HIDDEN_TIME_INDEX,
+        PhotoColumn::CREATE_PHOTO_FAVORITE_INDEX,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+        PhotoColumn::CREATE_SCHPT_MEDIA_TYPE_INDEX,
+        PhotoColumn::CREATE_PHOTO_BURSTKEY_INDEX
+    };
+    MEDIA_INFO_LOG("start create idx_burstkey");
+    ExecSqls(sqls, store);
 }
 
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
@@ -2792,6 +2891,8 @@ static void AddAppUriPermissionInfo(RdbStore &store)
         AppUriPermissionColumn::CREATE_URI_URITYPE_APPID_INDEX,
         SYNC_DATA_FROM_PHOTOS_SQL,
         SYNC_DATA_FROM_AUDIOS_SQL,
+        TriggerDeletePhotoClearAppUriPermission(),
+        TriggerDeleteAudioClearAppUriPermission(),
     };
     MEDIA_INFO_LOG("add uriPermission table info when upgrade phone");
     ExecSqls(sqls, store);
@@ -2813,6 +2914,20 @@ static void AddSchptReadyIndex(RdbStore &store)
         PhotoColumn::INDEX_SCHPT_READY,
     };
     MEDIA_INFO_LOG("Add schpt ready index");
+    ExecSqls(executeSqlStrs, store);
+}
+
+static void UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
+{
+    static const vector<string> executeSqlStrs = {
+        DROP_INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+        INSERT_PHOTO_INSERT_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_SOURCE_ALBUM,
+        INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME,
+    };
+    MEDIA_INFO_LOG("start update source album and album bundlename triggers");
     ExecSqls(executeSqlStrs, store);
 }
 
@@ -2864,6 +2979,18 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
     
     if (oldVersion < VERSION_ADD_APP_URI_PERMISSION_INFO) {
         AddAppUriPermissionInfo(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_SOURCE_ALBUM_AND_ALBUM_BUNDLENAME_TRIGGERS) {
+        UpdateSourceAlbumAndAlbumBundlenameTriggers(store);
+    }
+
+    if (oldVersion < VERSION_ADD_BURST_SEQUENCE) {
+        AddBurstSequence(store);
+    }
+
+    if (oldVersion < VERSION_CREATE_BURSTKEY_INDEX) {
+        CreateBurstkeyIndex(store);
     }
 }
 
