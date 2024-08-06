@@ -86,10 +86,9 @@ public:
     void SetErrorPath(const std::string &path);
 
     /* set is Force Scan */
-    void SetForceScan(bool isForceScan)
-    {
-        isForceScan_ = isForceScan;
-    }
+    void SetForceScan(bool isForceScan);
+
+    void SetFileId(int32_t fileId);
 
 private:
     /* file */
@@ -144,6 +143,7 @@ private:
     std::vector<std::unique_ptr<Metadata>> dataBuffer_;
     MediaLibraryApi api_;
     bool isForceScan_ = false;
+    int32_t fileId_ = 0;
 };
 
 class ScanErrCallback : public IMediaScannerCallback {

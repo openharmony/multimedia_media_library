@@ -23,6 +23,7 @@
 #include "ability_scheduler_interface.h"
 #include "abs_rdb_predicates.h"
 #include "acl.h"
+#include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
 #include "datashare_abs_result_set.h"
 #ifdef DISTRIBUTED
@@ -30,7 +31,7 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
-#include "download_cloud_files_background.h"
+#include "dfx_utils.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -45,6 +46,7 @@
 #include "medialibrary_album_operations.h"
 #include "medialibrary_analysis_album_operations.h"
 #include "medialibrary_asset_operations.h"
+#include "medialibrary_app_uri_permission_operations.h"
 #include "medialibrary_async_worker.h"
 #include "medialibrary_audio_operations.h"
 #include "medialibrary_bundle_manager.h"
@@ -119,7 +121,6 @@ MediaLibraryDataManager::MediaLibraryDataManager(void)
 
 MediaLibraryDataManager::~MediaLibraryDataManager(void)
 {
-    MediaLibraryKvStoreManager::GetInstance().CloseAllKvStore();
 #ifdef DISTRIBUTED
     if (kvStorePtr_ != nullptr) {
         dataManager_.CloseKvStore(KVSTORE_APPID, kvStorePtr_);
@@ -169,17 +170,20 @@ static void MakeRootDirs(AsyncTaskData *data)
     if (data->dataDisplay.compare(E_POLICY) == 0 && !MediaFileUtils::SetEPolicy()) {
         MEDIA_ERR_LOG("Failed to SetEPolicy fail");
     }
+    MediaFileUtils::MediaFileDeletionRecord();
+    // recover temp dir
+    MediaFileUtils::RecoverMediaTempDir();
 }
 
 void MediaLibraryDataManager::ReCreateMediaDir()
 {
+    MediaFileUtils::BackupPhotoDir();
     // delete E policy dir
     for (const string &dir : E_POLICY_DIRS) {
         if (!MediaFileUtils::DeleteDir(dir)) {
-            MEDIA_ERR_LOG("Delete dir fail, dir: %{private}s", dir.c_str());
+            MEDIA_ERR_LOG("Delete dir fail, dir: %{public}s", DfxUtils::GetSafePath(dir).c_str());
         }
     }
-    
     // create C policy dir
     InitACLPermission();
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();
@@ -198,6 +202,12 @@ void MediaLibraryDataManager::ReCreateMediaDir()
     } else {
         MEDIA_WARN_LOG("Can not init make root dir task");
     }
+}
+
+void MediaLibraryDataManager::HandleOtherInitOperations()
+{
+    InitRefreshAlbum();
+    UriPermissionOperations::DeleteAllTemporaryAsync();
 }
 
 __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLibraryMgr(
@@ -252,7 +262,7 @@ __attribute__((no_sanitize("cfi"))) int32_t MediaLibraryDataManager::InitMediaLi
     errCode = InitialiseThumbnailService(extensionContext);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, errCode, "failed at InitialiseThumbnailService");
 
-    InitRefreshAlbum();
+    HandleOtherInitOperations();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     cloudPhotoObserver_ = std::make_shared<CloudSyncObserver>();
@@ -299,7 +309,7 @@ __attribute__((no_sanitize("cfi"))) void MediaLibraryDataManager::ClearMediaLibr
         return;
     }
 
-    DownloadCloudFilesBackground::StopTimer();
+    BackgroundCloudFileProcessor::StopTimer();
 
     auto shareHelper = MediaLibraryHelperContainer::GetInstance()->GetDataShareHelper();
     shareHelper->UnregisterObserverExt(Uri(PhotoColumn::PHOTO_CLOUD_URI_PREFIX), cloudPhotoObserver_);
@@ -499,7 +509,10 @@ int32_t MediaLibraryDataManager::SolveInsertCmd(MediaLibraryCommand &cmd)
         case OperationObject::ANALYSIS_PHOTO_MAP: {
             return MediaLibrarySearchOperations::InsertOperation(cmd);
         }
-
+        case OperationObject::APP_URI_PERMISSION_INNER:
+            return UriPermissionOperations::InsertOperation(cmd);
+        case OperationObject::MEDIA_APP_URI_PERMISSION:
+            return MediaLibraryAppUriPermissionOperations::HandleInsertOperation(cmd);
         default:
             MEDIA_ERR_LOG("MediaLibraryDataManager SolveInsertCmd: unsupported OperationObject: %{public}d",
                 cmd.GetOprnObject());
@@ -626,6 +639,10 @@ int32_t MediaLibraryDataManager::BatchInsert(MediaLibraryCommand &cmd, const vec
         return PhotoMapOperations::AddPhotoAssets(values);
     } else if (cmd.GetOprnObject() == OperationObject::ANALYSIS_PHOTO_MAP) {
         return PhotoMapOperations::AddAnaLysisPhotoAssets(values);
+    } else if (cmd.GetOprnObject() == OperationObject::APP_URI_PERMISSION_INNER) {
+        return UriPermissionOperations::GrantUriPermission(cmd, values);
+    } else if (cmd.GetOprnObject() == OperationObject::MEDIA_APP_URI_PERMISSION) {
+        return MediaLibraryAppUriPermissionOperations::BatchInsert(cmd, values);
     }
     if (uriString.find(MEDIALIBRARY_DATA_URI) == string::npos) {
         MEDIA_ERR_LOG("MediaLibraryDataManager BatchInsert: Input parameter is invalid");
@@ -713,6 +730,9 @@ int32_t MediaLibraryDataManager::DeleteInRdbPredicates(MediaLibraryCommand &cmd,
             }
             break;
         }
+        case OperationObject::MEDIA_APP_URI_PERMISSION: {
+            return MediaLibraryAppUriPermissionOperations::DeleteOperation(rdbPredicate);
+        }
         case OperationObject::FILESYSTEM_PHOTO:
         case OperationObject::FILESYSTEM_AUDIO: {
             return MediaLibraryAssetOperations::DeleteOperation(cmd);
@@ -784,6 +804,7 @@ int32_t MediaLibraryDataManager::Update(MediaLibraryCommand &cmd, const DataShar
         cmd.GetTableName());
     cmd.GetAbsRdbPredicates()->SetWhereClause(rdbPredicate.GetWhereClause());
     cmd.GetAbsRdbPredicates()->SetWhereArgs(rdbPredicate.GetWhereArgs());
+
     return UpdateInternal(cmd, value, predicates);
 }
 
@@ -1234,6 +1255,8 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryDataManager::QueryInternal(MediaLib
         case OperationObject::STORY_COVER:
         case OperationObject::STORY_PLAY:
         case OperationObject::USER_PHOTOGRAPHY:
+            return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
+        case OperationObject::APP_URI_PERMISSION_INNER:
             return MediaLibraryRdbStore::Query(RdbUtils::ToPredicates(predicates, cmd.GetTableName()), columns);
         case OperationObject::PAH_MULTISTAGES_CAPTURE:
             return MultiStagesCaptureManager::GetInstance().HandleMultiStagesOperation(cmd, columns);

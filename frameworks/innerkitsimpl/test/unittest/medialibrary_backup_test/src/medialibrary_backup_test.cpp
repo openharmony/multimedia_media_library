@@ -45,15 +45,22 @@ const std::string TEST_UPGRADE_FILE_DIR = "/data/test/backup/file";
 const std::string GALLERY_APP_NAME = "gallery";
 const std::string MEDIA_APP_NAME = "external";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
+const std::string TEST_PATH_PREFIX = "/TestPrefix";
+const std::string TEST_RELATIVE_PATH = "/Pictures/Test/test.jpg";
 
 const int EXPECTED_NUM = 30;
 const int EXPECTED_OREINTATION = 270;
+const int TEST_LOCAL_MEDIA_ID = 12345;
+const int TEST_PREFIX_LEVEL = 4;
 const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "user_comment";
 const int64_t EXPECTED_DATE_ADDED = 1432973383179;
 const int64_t EXPECTED_DATE_TAKEN = 1432973383;
 const int64_t TEST_TRUE_MEDIAID = 1;
 const int64_t TEST_FALSE_MEDIAID = -1;
+const int64_t TEST_SIZE_2MB = 2 * 1024 * 1024;
+const int64_t TEST_SIZE_2MB_BELOW = TEST_SIZE_2MB - 1;
+const int64_t TEST_SIZE_2MB_ABOVE = TEST_SIZE_2MB + 1;
 
 const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS Photos ") +
     " (file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, title TEXT, display_name TEXT, size BIGINT," +
@@ -1259,7 +1266,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_BatchQueryPhoto, TestSize.Level
     fileInfos.push_back(fileInfo4);
     std::unique_ptr<UpgradeRestore> upgrade =
         std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    upgrade->BatchQueryPhoto(fileInfos);
+    NeedQueryMap needQueryMap;
+    upgrade->NeedBatchQueryPhotoForPhotoMap(fileInfos, needQueryMap);
+    upgrade->BatchQueryPhoto(fileInfos, false, needQueryMap);
     EXPECT_EQ(fileInfos[0].fileIdNew, TEST_FALSE_MEDIAID);
     MEDIA_INFO_LOG("medialib_backup_BatchQueryPhoto end");
 }
@@ -1884,6 +1893,138 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_GetCountInfoJson_illegal_t
     str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
     EXPECT_EQ(str, "test");
     GTEST_LOG_(INFO) << "medialib_backup_test_GetCountInfoJson_illegal_types end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_need_batch_query_photo, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_need_batch_query_photo start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
+    std::vector<FileInfo> fileInfos;
+    NeedQueryMap needQueryMap;
+    auto ret = upgrade->NeedBatchQueryPhoto(fileInfos, needQueryMap);
+    EXPECT_EQ(ret, false);
+    EXPECT_EQ(needQueryMap.empty(), true);
+    GTEST_LOG_(INFO) << "medialib_backup_test_need_batch_query_photo end";
+}
+
+void TestConvertPathToRealPathByStorageType(bool isSD)
+{
+    std::string srcPath = isSD ? "/storage/ABCD-0000" : "/storage/emulated/0";
+    srcPath += TEST_RELATIVE_PATH;
+    FileInfo fileInfo;
+    fileInfo.fileSize = TEST_SIZE_2MB_BELOW;
+    fileInfo.localMediaId = TEST_LOCAL_MEDIA_ID;
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    std::string newPath;
+    std::string relativePath;
+    bool result = upgrade->ConvertPathToRealPath(srcPath, TEST_PATH_PREFIX, newPath, relativePath, fileInfo);
+    EXPECT_EQ(result, true);
+    EXPECT_EQ(newPath, TEST_PATH_PREFIX + srcPath);
+    EXPECT_EQ(relativePath, TEST_RELATIVE_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_001 start";
+    TestConvertPathToRealPathByStorageType(false); // internal, normal
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_001 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_002, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_002 start";
+    TestConvertPathToRealPathByStorageType(true); // sd card, normal
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_002 end";
+}
+
+void TestConvertPathToRealPathByFileSize(int64_t fileSize, const std::string &srcPath,
+    const std::string &expectedNewPath)
+{
+    FileInfo fileInfo;
+    fileInfo.fileSize = fileSize;
+    fileInfo.localMediaId = TEST_LOCAL_MEDIA_ID;
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    std::string newPath;
+    std::string relativePath;
+    bool result = upgrade->ConvertPathToRealPath(srcPath, TEST_PATH_PREFIX, newPath, relativePath, fileInfo);
+    EXPECT_EQ(result, true);
+    EXPECT_EQ(newPath, expectedNewPath);
+    EXPECT_EQ(relativePath, TEST_RELATIVE_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_003, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_003 start";
+    std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
+    std::string expectedNewPath = TEST_PATH_PREFIX + srcPath;
+    TestConvertPathToRealPathByFileSize(TEST_SIZE_2MB_BELOW, srcPath, expectedNewPath); // SD, below 2MB
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_003 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_004, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_004 start";
+    std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
+    std::string expectedNewPath = TEST_PATH_PREFIX + TEST_RELATIVE_PATH;
+    TestConvertPathToRealPathByFileSize(TEST_SIZE_2MB, srcPath, expectedNewPath); // SD, equal to 2MB
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_004 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_005, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_005 start";
+    std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
+    std::string expectedNewPath = TEST_PATH_PREFIX + TEST_RELATIVE_PATH;
+    TestConvertPathToRealPathByFileSize(TEST_SIZE_2MB_ABOVE, srcPath, expectedNewPath); // SD, above 2MB
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_005 end";
+}
+
+void TestConvertPathToRealPathByLocalMediaId(int32_t localMediaId, const std::string &srcPath,
+    const std::string &expectedNewPath)
+{
+    FileInfo fileInfo;
+    fileInfo.fileSize = TEST_SIZE_2MB_ABOVE;
+    fileInfo.localMediaId = localMediaId;
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    std::string newPath;
+    std::string relativePath;
+    bool result = upgrade->ConvertPathToRealPath(srcPath, TEST_PATH_PREFIX, newPath, relativePath, fileInfo);
+    EXPECT_EQ(result, true);
+    EXPECT_EQ(newPath, expectedNewPath);
+    EXPECT_EQ(relativePath, TEST_RELATIVE_PATH);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_006, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_006 start";
+    std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
+    std::string expectedNewPath = TEST_PATH_PREFIX + srcPath;
+    TestConvertPathToRealPathByLocalMediaId(GALLERY_HIDDEN_ID, srcPath, expectedNewPath); // SD, hidden
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_006 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_007, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_007 start";
+    std::string srcPath = "/storage/ABCD-0000" + TEST_RELATIVE_PATH;
+    std::string expectedNewPath = TEST_PATH_PREFIX + srcPath;
+    TestConvertPathToRealPathByLocalMediaId(GALLERY_TRASHED_ID, srcPath, expectedNewPath); // SD, trashed
+    GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_007 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level start";
+    std::string path = "/../";
+    size_t pos = 0;
+    bool result = BackupFileUtils::GetPathPosByPrefixLevel(DUAL_FRAME_CLONE_RESTORE_ID, path, TEST_PREFIX_LEVEL,
+        pos);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level end";
 }
 } // namespace Media
 } // namespace OHOS

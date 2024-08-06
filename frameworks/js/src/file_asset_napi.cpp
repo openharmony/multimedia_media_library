@@ -1056,7 +1056,8 @@ static const map<int32_t, struct AnalysisSourceInfo> ANALYSIS_SOURCE_INFO_MAP = 
         FILTER_TAG} } },
     { ANALYSIS_OCR, { OCR, PAH_QUERY_ANA_OCR, { OCR_TEXT, OCR_TEXT_MSG, OCR_WIDTH, OCR_HEIGHT } } },
     { ANALYSIS_FACE, { FACE, PAH_QUERY_ANA_FACE, { FACE_ID, TAG_ID, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT,
-        LANDMARKS, PITCH, YAW, ROLL, PROB, TOTAL_FACES, FEATURES, FACE_OCCLUSION } } },
+        LANDMARKS, PITCH, YAW, ROLL, PROB, TOTAL_FACES, FEATURES, FACE_OCCLUSION, BEAUTY_BOUNDER_X, BEAUTY_BOUNDER_Y,
+        BEAUTY_BOUNDER_WIDTH, BEAUTY_BOUNDER_HEIGHT} } },
     { ANALYSIS_OBJECT, { OBJECT, PAH_QUERY_ANA_OBJECT, { OBJECT_ID, OBJECT_LABEL, OBJECT_SCALE_X, OBJECT_SCALE_Y,
         OBJECT_SCALE_WIDTH, OBJECT_SCALE_HEIGHT, PROB, SCALE_X, SCALE_Y, SCALE_WIDTH, SCALE_HEIGHT } } },
     { ANALYSIS_RECOMMENDATION, { RECOMMENDATION, PAH_QUERY_ANA_RECOMMENDATION, { RECOMMENDATION_ID,
@@ -1115,7 +1116,9 @@ static void JSGetAnalysisDataExecute(FileAssetAsyncContext* context)
     predicates.EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
     int errCode = 0;
     auto resultSet = UserFileClient::Query(uri, predicates, fetchColumn, errCode);
-    context->analysisData = MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
+    context->analysisData = context->analysisType == ANALYSIS_FACE ?
+        MediaLibraryNapiUtils::ParseAnalysisFace2JsonStr(resultSet, fetchColumn) :
+        MediaLibraryNapiUtils::ParseResultSet2JsonStr(resultSet, fetchColumn);
     if (strcmp(context->analysisData.c_str(), ANALYSIS_NO_RESULTS.c_str()) == 0) {
         Uri uri(PAH_QUERY_ANA_TOTAL);
         DataShare::DataSharePredicates predicates;

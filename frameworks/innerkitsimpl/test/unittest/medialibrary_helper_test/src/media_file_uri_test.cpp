@@ -534,5 +534,51 @@ HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetPathFirstDentry_Test_001,
     Uri uri1("file://media/photo_operation/query");
     EXPECT_EQ(MediaFileUri::GetPathFirstDentry(uri1), "photo_operation");
 }
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaTypeUri_Test_001, TestSize.Level0)
+{
+    MediaType mediaType = MEDIA_TYPE_DEVICE;
+    int32_t apiVersion = MEDIA_API_VERSION_DEFAULT;
+    auto ret = MediaFileUri::GetMediaTypeUri(mediaType, apiVersion);
+    EXPECT_EQ(ret, "/file");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetMediaTypeUri_Test_002, TestSize.Level0)
+{
+    MediaType mediaType = MEDIA_TYPE_FILE;
+    int32_t apiVersion = MEDIA_API_VERSION_DEFAULT;
+    auto ret = MediaFileUri::GetMediaTypeUri(mediaType, apiVersion);
+    EXPECT_EQ(ret, "/file");
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetTimeIdFromUri_Test_001, TestSize.Level0)
+{
+    std::vector<std::string> uriBatch;
+    std::vector<std::string> timeIdBatch;
+    int32_t start = 0;
+    int32_t count = 0;
+    MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
+    EXPECT_NE(uriBatch.size(), 2);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetTimeIdFromUri_Test_002, TestSize.Level0)
+{
+    std::vector<std::string> uriBatch = {"", "&offset="};
+    std::vector<std::string> timeIdBatch;
+    int32_t start = 0;
+    int32_t count = 0;
+    MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
+    EXPECT_EQ(uriBatch.size(), 2);
+}
+
+HWTEST_F(MediaLibraryHelperUnitTest, MediaFileUtils_GetTimeIdFromUri_Test_003, TestSize.Level0)
+{
+    std::vector<std::string> uriBatch = {"&time_id=", "&time_id=1&offset=1"};
+    std::vector<std::string> timeIdBatch;
+    int32_t start = 0;
+    int32_t count = 0;
+    MediaFileUri::GetTimeIdFromUri(uriBatch, timeIdBatch, start, count);
+    EXPECT_EQ(uriBatch.size(), 2);
+}
 } // namespace Media
 } // namespace OHOS

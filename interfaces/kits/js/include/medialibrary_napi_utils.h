@@ -501,6 +501,7 @@ public:
     static napi_status GetStringArray(napi_env env, napi_value arg, std::vector<std::string> &array);
     static void UriAddTableName(std::string &uri, const std::string tableName);
     static std::string GetFileIdFromUri(const std::string &uri);
+    static int32_t GetFileIdFromAssetUri(const std::string &uri);
     static MediaType GetMediaTypeFromUri(const std::string &uri);
     template <class AsyncContext>
     static napi_status GetPredicate(napi_env env, const napi_value arg, const std::string &propName,
@@ -618,6 +619,10 @@ public:
         const std::string &propertyName);
     static std::string ParseResultSet2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::vector<std::string> &cloumns);
+
+    static std::string ParseAnalysisFace2JsonStr(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
+        const std::vector<std::string> &cloumns);
+
     static std::string GetStringValueByColumn(std::shared_ptr<DataShare::DataShareResultSet> resultSet,
         const std::string columnName);
 

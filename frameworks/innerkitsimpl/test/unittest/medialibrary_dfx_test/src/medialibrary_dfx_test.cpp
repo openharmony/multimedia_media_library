@@ -121,5 +121,11 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_split_string_test, TestSize.Level0)
     EXPECT_EQ(DfxUtils::SplitString("string1", ';'), unordered_set<string>{"string1"});
     EXPECT_EQ(DfxUtils::SplitString("", ';'), unordered_set<string>{});
 }
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_one_day_report_test, TestSize.Level0)
+{
+    int64_t result = DfxManager::GetInstance()->HandleOneDayReport();
+    EXPECT_GT(result, 0);
+}
 } // namespace Media
 } // namespace OHOS

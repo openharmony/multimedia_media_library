@@ -18,6 +18,7 @@
 
 #include <memory>
 #include "appexecfwk_errors.h"
+#include "background_cloud_file_processor.h"
 #include "background_task_mgr_helper.h"
 #ifdef HAS_BATTERY_MANAGER_PART
 #include "battery_srv_client.h"
@@ -25,7 +26,6 @@
 #include "bundle_info.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
-#include "download_cloud_files_background.h"
 #include "want.h"
 #include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
@@ -35,7 +35,6 @@
 #include "thermal_mgr_client.h"
 #endif
 
-#include "media_actively_calling_analyse.h"
 #include "medialibrary_bundle_manager.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
@@ -123,7 +122,7 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
         }
     }
 #endif
-    MEDIA_INFO_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+    MEDIA_DEBUG_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_, isWifiConn_);
 }
 
@@ -154,7 +153,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         return;
     }
 
-    MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+    MEDIA_DEBUG_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 
     currentStatus_ = newStatus;
@@ -162,25 +161,6 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         DoBackgroundOperation();
     } else {
         StopBackgroundOperation();
-    }
-}
-
-void MedialibrarySubscriber::StartAnalysisService()
-{
-    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
-    bool hasData = MediaLibraryRdbUtils::HasDataToAnalysis(rdbStore);\
-    if (!hasData) {
-        MEDIA_INFO_LOG("No data to analysis");
-        return;
-    }
-    int32_t code = MediaActivelyCallingAnalyse::ActivateServiceType::START_BACKGROUND_TASK;
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option(MessageOption::TF_ASYNC);
-    MediaActivelyCallingAnalyse mediaActivelyCallingAnalyse(nullptr);
-    data.WriteInterfaceToken(mediaActivelyCallingAnalyse.GetDescriptor());
-    if (!mediaActivelyCallingAnalyse.SendTransactCmd(code, data, reply, option)) {
-        MEDIA_ERR_LOG("StartAnalysisService Fail");
     }
 }
 
@@ -224,7 +204,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 {
     const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
-    MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
+    MEDIA_DEBUG_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
         isWifiConn_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
         UpdateBackgroundTimer();
@@ -289,9 +269,12 @@ void DeleteTemporaryPhotos()
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     if (!currentStatus_) {
-        MEDIA_INFO_LOG("The conditions for DoBackgroundOperation are not met, will return.");
+        MEDIA_DEBUG_LOG("The conditions for DoBackgroundOperation are not met, will return.");
         return;
     }
+
+    MEDIA_INFO_LOG("Start background operation, status:%{public}d,%{public}d,%{public}d,%{public}d,%{public}d",
+        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 
     // delete temporary photos
     DeleteTemporaryPhotos();
@@ -338,9 +321,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         return;
     }
     scannerManager->ScanError();
-
-    MEDIA_INFO_LOG("Do success, current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 }
 
 void MedialibrarySubscriber::StopBackgroundOperation()
@@ -380,9 +360,9 @@ void MedialibrarySubscriber::UpdateBackgroundTimer()
 
     timerStatus_ = newStatus;
     if (timerStatus_) {
-        DownloadCloudFilesBackground::StartTimer();
+        BackgroundCloudFileProcessor::StartTimer();
     } else {
-        DownloadCloudFilesBackground::StopTimer();
+        BackgroundCloudFileProcessor::StopTimer();
     }
 }
 }  // namespace Media

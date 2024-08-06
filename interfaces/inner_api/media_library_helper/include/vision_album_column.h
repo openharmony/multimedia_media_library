@@ -21,6 +21,7 @@
 namespace OHOS {
 namespace Media {
 const std::string ALBUM_ID = "album_id";
+const std::string ALBUM_URI = "album_uri";
 const std::string ALBUM_SUBTYPE = "album_subtype";
 const std::string ALBUM_NAME = "album_name";
 const std::string DATE_MODIFIED = "date_modified";

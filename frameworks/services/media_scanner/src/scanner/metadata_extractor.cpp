@@ -206,11 +206,11 @@ int32_t MetadataExtractor::ExtractImageMetadata(std::unique_ptr<Metadata> &data)
         ImageSource::CreateImageSource(data->GetFilePath(), opts, err);
     if (err != 0 || imageSource == nullptr) {
         MEDIA_ERR_LOG("Failed to obtain image source, err = %{public}d", err);
-        return E_OK;
+        return E_IMAGE;
     }
 
     ImageInfo imageInfo;
-    err = imageSource->GetImageInfo(0, imageInfo);
+    err = imageSource->GetImageInfoFromExif(0, imageInfo);
     if (err == 0) {
         data->SetFileWidth(imageInfo.size.width);
         data->SetFileHeight(imageInfo.size.height);

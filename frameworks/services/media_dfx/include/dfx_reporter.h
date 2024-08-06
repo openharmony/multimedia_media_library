@@ -44,6 +44,7 @@ public:
     void ReportAnalysisVersion(const std::string &analysisName, int32_t version);
     void ReportAdaptationToMovingPhoto();
     static void ReportStartResult(int32_t scene, int32_t errorCode, int32_t startTime);
+    void ReportPhotoRecordInfo();
 };
 } // namespace Media
 } // namespace OHOS

@@ -58,7 +58,7 @@ public:
     EXPORT static bool ResizeImage(const std::vector<uint8_t> &data, const Size &size,
         std::unique_ptr<PixelMap> &pixelMap);
     EXPORT static bool CompressImage(std::shared_ptr<PixelMap> &pixelMap, std::vector<uint8_t> &data,
-        bool isHigh = false, bool isAstc = false, bool forceSdr = true);
+        bool isHigh = false, bool isAstc = false);
     EXPORT static bool CleanThumbnailInfo(ThumbRdbOpt &opts, bool withThumb, bool withLcd = false);
 
     // RDB Store Query
@@ -89,6 +89,7 @@ public:
     EXPORT static bool UpdateLcdInfo(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateVisitTime(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
     EXPORT static bool UpdateLcdReadyStatus(ThumbRdbOpt &opts, ThumbnailData &data, int &err, LcdReady status);
+    EXPORT static bool DoUpdateAstcDateAdded(ThumbRdbOpt &opts, ThumbnailData &data);
 #ifdef DISTRIBUTED
     EXPORT static bool DoUpdateRemoteThumbnail(ThumbRdbOpt &opts, ThumbnailData &data, int &err);
 #endif
@@ -163,7 +164,9 @@ private:
     EXPORT static bool LoadAudioFileInfo(std::shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
         Size &desiredSize, uint32_t &errCode);
     EXPORT static bool LoadAudioFile(ThumbnailData &data, Size &desiredSize);
-
+    EXPORT static bool ConvertStrToInt32(const std::string &str, int32_t &ret);
+    EXPORT static bool ParseVideoSize(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
+        int32_t &videoWidth, int32_t &videoHeight);
 #ifdef DISTRIBUTED
     // RDB Store
     EXPORT static bool GetUdidByNetworkId(ThumbRdbOpt &opts, const std::string &networkId,
@@ -178,6 +181,7 @@ private:
 
     EXPORT static int SaveAstcDataToKvStore(ThumbnailData &data, const ThumbnailType &type);
     EXPORT static bool DeleteAstcDataFromKvStore(ThumbRdbOpt &opts, const ThumbnailType &type);
+    EXPORT static bool UpdateAstcDateAddedFromKvStore(ThumbRdbOpt &opts, const ThumbnailData &data);
 };
 } // namespace Media
 } // namespace OHOS

@@ -15,14 +15,30 @@
 
 #include "backup_database_utils.h"
 
+#include <nlohmann/json.hpp>
+
+#include "backup_const_column.h"
+#include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_errno.h"
 #include "result_set_utils.h"
+
+#ifdef AI_ALGORITHM_VERSION
+#include "face_recognition.h"
+#endif
 
 namespace OHOS {
 namespace Media {
 const size_t MIN_GARBLE_SIZE = 2;
 const size_t GARBLE_START = 1;
+const size_t XY_DIMENSION = 2;
+const size_t BYTE_LEN = 4;
+const size_t BYTE_BASE_OFFSET = 8;
+const size_t LANDMARKS_SIZE = 5;
+const std::string LANDMARK_X = "x";
+const std::string LANDMARK_Y = "y";
+const std::vector<uint32_t> HEX_MAX = { 0xff, 0xffff, 0xffffff, 0xffffffff };
+
 int32_t BackupDatabaseUtils::InitDb(std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &dbName,
     const std::string &dbPath, const std::string &bundleName, bool isMediaLibrary, int32_t area)
 {
@@ -163,6 +179,21 @@ int32_t BackupDatabaseUtils::QueryGalleryTrashedCount(std::shared_ptr<NativeRdb:
     return QueryInt(galleryRdb, QUERY_GALLERY_TRASHED_COUNT, CUSTOM_COUNT);
 }
 
+int32_t BackupDatabaseUtils::QueryGalleryFavoriteCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+{
+    static string QUERY_GALLERY_FAVORITE_COUNT =
+        "SELECT count(1) AS count FROM gallery_media WHERE is_hw_favorite = 1 AND _size > 0 AND local_media_id != -1";
+    return QueryInt(galleryRdb, QUERY_GALLERY_FAVORITE_COUNT, CUSTOM_COUNT);
+}
+
+int32_t BackupDatabaseUtils::QueryGalleryImportsCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
+{
+    static string QUERY_GALLERY_IMPORTS_COUNT =
+        string("SELECT count(1) AS count FROM gallery_media WHERE ") +
+        " _data LIKE '/storage/emulated/0/Pictures/cloud/Imports%' AND _size > 0 AND local_media_id != -1";
+    return QueryInt(galleryRdb, QUERY_GALLERY_IMPORTS_COUNT, CUSTOM_COUNT);
+}
+
 int32_t BackupDatabaseUtils::QueryGalleryCloneCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb)
 {
     static string QUERY_GALLERY_CLONE_COUNT =
@@ -285,6 +316,233 @@ void BackupDatabaseUtils::UpdateSelection(std::string &selection, const std::str
     }
     std::string wrappedSelectionToAdd = needWrap ? "'" + selectionToAdd + "'" : selectionToAdd;
     selection += selection.empty() ? wrappedSelectionToAdd : ", " + wrappedSelectionToAdd;
+}
+
+void BackupDatabaseUtils::UpdateSDWhereClause(std::string &querySql, int32_t sceneCode)
+{
+    if (sceneCode != UPGRADE_RESTORE_ID) {
+        return;
+    }
+    querySql += " AND " + EXCLUDE_SD;
+}
+
+int32_t BackupDatabaseUtils::GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
+    std::vector<uint8_t> &blobVal)
+{
+    int32_t columnIndex = 0;
+    int32_t errCode = resultSet->GetColumnIndex(columnName, columnIndex);
+    if (errCode) {
+        MEDIA_ERR_LOG("Get column index errCode: %{public}d", errCode);
+        return E_FAIL;
+    }
+    if (resultSet->GetBlob(columnIndex, blobVal) != NativeRdb::E_OK) {
+        return E_FAIL;
+    }
+    return E_OK;
+}
+
+std::string BackupDatabaseUtils::GetLandmarksStr(const std::string &columnName,
+    std::shared_ptr<NativeRdb::ResultSet> resultSet)
+{
+    std::vector<uint8_t> blobVal;
+    if (GetBlob(columnName, resultSet, blobVal) != E_OK) {
+        MEDIA_ERR_LOG("Get blob failed");
+        return "";
+    }
+    return GetLandmarksStr(blobVal);
+}
+
+std::string BackupDatabaseUtils::GetLandmarksStr(const std::vector<uint8_t> &bytes)
+{
+    if (bytes.size() != LANDMARKS_SIZE * XY_DIMENSION * BYTE_LEN) {
+        MEDIA_ERR_LOG("Get landmarks bytes size: %{public}zu, not %{public}zu", bytes.size(),
+            LANDMARKS_SIZE * XY_DIMENSION * BYTE_LEN);
+        return "";
+    }
+    nlohmann::json landmarksJson;
+    for (size_t index = 0; index < bytes.size(); index += XY_DIMENSION * BYTE_LEN) {
+        nlohmann::json landmarkJson;
+        landmarkJson[LANDMARK_X] = GetUint32ValFromBytes(bytes, index);
+        landmarkJson[LANDMARK_Y] = GetUint32ValFromBytes(bytes, index + BYTE_LEN);
+        landmarksJson.push_back(landmarkJson);
+    }
+    return landmarksJson.dump();
+}
+
+uint32_t BackupDatabaseUtils::GetUint32ValFromBytes(const std::vector<uint8_t> &bytes, size_t start)
+{
+    uint32_t uint32Val = 0;
+    for (size_t index = 0; index < BYTE_LEN; index++) {
+        uint32Val |= static_cast<uint32_t>(bytes[start + index]) << (index * BYTE_BASE_OFFSET);
+        uint32Val &= HEX_MAX[index];
+    }
+    return uint32Val;
+}
+
+void BackupDatabaseUtils::UpdateAnalysisTotalStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    std::string updateSql = "UPDATE tab_analysis_total SET face = CASE WHEN EXISTS \
+        (SELECT 1 FROM tab_analysis_image_face WHERE tab_analysis_image_face.file_id = tab_analysis_total.file_id \
+        AND tag_id = '-1') THEN 2 ELSE 3 END WHERE EXISTS (SELECT 1 FROM tab_analysis_image_face WHERE \
+        tab_analysis_image_face.file_id = tab_analysis_total.file_id)";
+    int32_t errCode = rdbStore->ExecuteSql(updateSql);
+    if (errCode < 0) {
+        MEDIA_ERR_LOG("execute update analysis total failed, ret=%{public}d", errCode);
+    }
+}
+
+void BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(std::shared_ptr<NativeRdb::RdbStore> rdbStore)
+{
+    std::string updateSql = "UPDATE tab_analysis_face_tag SET count = (SELECT count(1) from tab_analysis_image_face \
+        WHERE tab_analysis_image_face.tag_id = tab_analysis_face_tag.tag_id)";
+    int32_t errCode = rdbStore->ExecuteSql(updateSql);
+    if (errCode < 0) {
+        MEDIA_ERR_LOG("execute update analysis face tag count failed, ret=%{public}d", errCode);
+    }
+}
+
+bool BackupDatabaseUtils::GetFaceAnalysisVersion(std::unordered_map<int32_t, std::string> &faceAnalysisVersionMap,
+    const std::vector<int32_t> &faceAnalysisTypeList)
+{
+    for (auto type : faceAnalysisTypeList) {
+        std::string version = GetVersionByFaceAnalysisType(type);
+        if (version == E_VERSION) {
+            MEDIA_ERR_LOG("Get face analysis version for %{public}d failed", type);
+            return false;
+        }
+        faceAnalysisVersionMap[type] = version;
+    }
+    return true;
+}
+
+std::string BackupDatabaseUtils::GetVersionByFaceAnalysisType(int32_t type)
+{
+    std::string version = E_VERSION;
+#ifdef AI_ALGORITHM_VERSION
+    switch (type) {
+        case FaceAnalysisType::RECOGNITION: {
+            AI::FaceRecognition faceRecognitionAnalyzer;
+            version = faceRecognitionAnalyzer.GetAlgorithmVersion();
+            break;
+        }
+        default:
+            MEDIA_ERR_LOG("Invalid face analysis type: %{public}d", type);
+    }
+#endif
+    return version;
+}
+
+bool BackupDatabaseUtils::SetTagIdNew(PortraitAlbumInfo &portraitAlbumInfo,
+    std::unordered_map<std::string, std::string> &tagIdMap)
+{
+    portraitAlbumInfo.tagIdNew = TAG_ID_PREFIX + std::to_string(MediaFileUtils::UTCTimeNanoSeconds());
+    tagIdMap[portraitAlbumInfo.tagIdOld] = portraitAlbumInfo.tagIdNew;
+    return true;
+}
+
+bool BackupDatabaseUtils::SetVersion(std::string &version, const std::unordered_map<int32_t, std::string> &versionMap,
+    int32_t type)
+{
+    if (versionMap.count(type) == 0) {
+        MEDIA_ERR_LOG("Set version for type %{public}d failed", type);
+        return false;
+    }
+    version = versionMap.at(type);
+    return true;
+}
+
+bool BackupDatabaseUtils::SetGroupTagNew(PortraitAlbumInfo &portraitAlbumInfo,
+    const std::unordered_map<std::string, std::string> &groupTagMap)
+{
+    if (groupTagMap.count(portraitAlbumInfo.groupTagOld) == 0) {
+        MEDIA_ERR_LOG("Set new group tag for %{public}s failed, no such group tag", portraitAlbumInfo.tagName.c_str());
+        return false;
+    }
+    portraitAlbumInfo.groupTagNew = groupTagMap.at(portraitAlbumInfo.groupTagOld);
+    return true;
+}
+
+bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap)
+{
+    if (faceInfo.hash.empty() || fileInfoMap.count(faceInfo.hash) == 0) {
+        MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, no such file hash", faceInfo.faceId.c_str());
+        return false;
+    }
+    FileInfo fileInfo = fileInfoMap.at(faceInfo.hash);
+    if (fileInfo.width == 0 || fileInfo.height == 0) {
+        MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, invalid width %{public}d or height %{public}d",
+            faceInfo.faceId.c_str(), fileInfo.width, fileInfo.height);
+        return false;
+    }
+    nlohmann::json landmarksJson = nlohmann::json::parse(faceInfo.landmarks);
+    for (auto &landmark : landmarksJson) {
+        if (!landmark.contains(LANDMARK_X) || !landmark.contains(LANDMARK_Y)) {
+            MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, lack of x or y", faceInfo.faceId.c_str());
+            return false;
+        }
+        landmark[LANDMARK_X] = float(landmark[LANDMARK_X]) / fileInfo.width;
+        landmark[LANDMARK_Y] = float(landmark[LANDMARK_Y]) / fileInfo.height;
+    }
+    faceInfo.landmarks = landmarksJson.dump();
+    return true;
+}
+
+bool BackupDatabaseUtils::SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap)
+{
+    if (faceInfo.hash.empty() || fileInfoMap.count(faceInfo.hash) == 0) {
+        MEDIA_ERR_LOG("Set new file_id for face %{public}s failed, no such file hash", faceInfo.faceId.c_str());
+        return false;
+    }
+    faceInfo.fileIdNew = fileInfoMap.at(faceInfo.hash).fileIdNew;
+    if (faceInfo.fileIdNew <= 0) {
+        MEDIA_ERR_LOG("Set new file_id for face %{public}s failed, file_id %{public}d <= 0", faceInfo.faceId.c_str(),
+            faceInfo.fileIdNew);
+        return false;
+    }
+    return true;
+}
+
+bool BackupDatabaseUtils::SetTagIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, std::string> &tagIdMap)
+{
+    if (faceInfo.tagIdOld.empty()) {
+        MEDIA_ERR_LOG("Set new tag_id for face %{public}s failed, empty tag_id", faceInfo.faceId.c_str());
+        return false;
+    }
+    if (tagIdMap.count(faceInfo.tagIdOld) == 0) {
+        faceInfo.tagIdNew = TAG_ID_UNPROCESSED;
+        return true;
+    }
+    faceInfo.tagIdNew = tagIdMap.at(faceInfo.tagIdOld);
+    if (faceInfo.tagIdNew.empty() || !MediaFileUtils::StartsWith(faceInfo.tagIdNew, TAG_ID_PREFIX)) {
+        MEDIA_ERR_LOG("Set new tag_id for face %{public}s failed, new tag_id %{public}s empty or invalid",
+            faceInfo.tagIdNew.c_str(), faceInfo.faceId.c_str());
+        return false;
+    }
+    return true;
+}
+
+bool BackupDatabaseUtils::SetAlbumIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, int32_t> &albumIdMap)
+{
+    if (faceInfo.tagIdNew == TAG_ID_UNPROCESSED) {
+        return true;
+    }
+    if (albumIdMap.count(faceInfo.tagIdNew) == 0) {
+        MEDIA_ERR_LOG("Set new album_id for face %{public}s failed, no such tag_id", faceInfo.faceId.c_str());
+        return false;
+    }
+    faceInfo.albumIdNew = albumIdMap.at(faceInfo.tagIdNew);
+    if (faceInfo.albumIdNew <= 0) {
+        MEDIA_ERR_LOG("Set new album_id for face %{public}s failed, album_id %{public}d <= 0", faceInfo.faceId.c_str(),
+            faceInfo.albumIdNew);
+        return false;
+    }
+    return true;
+}
+
+void BackupDatabaseUtils::PrintErrorLog(const std::string &errorLog, int64_t start)
+{
+    int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
+    MEDIA_INFO_LOG("%{public}s, cost %{public}ld", errorLog.c_str(), (long)(end - start));
 }
 } // namespace Media
 } // namespace OHOS

@@ -29,6 +29,7 @@
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
+#include "medialibrary_appstate_observer.h"
 #include "medialibrary_data_manager.h"
 #include "medialibrary_bundle_manager.h"
 #include "dfx_manager.h"
@@ -42,6 +43,7 @@
 #include "multistages_capture_manager.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "os_account_manager.h"
 #include "permission_utils.h"
 #include "photo_album_column.h"
 #include "runtime.h"
@@ -55,6 +57,10 @@
 #endif
 #include "userfilemgr_uri.h"
 #include "parameters.h"
+#include "media_tool_permission_handler.h"
+#include "grant_permission_handler.h"
+#include "read_write_permission_handler.h"
+#include "db_permission_handler.h"
 
 using namespace std;
 using namespace OHOS::AppExecFwk;
@@ -92,6 +98,39 @@ void MediaDataShareExtAbility::Init(const shared_ptr<AbilityLocalRecord> &record
     DataShareExtAbility::Init(record, application, handler, token);
 }
 
+static bool IsStartBeforeUserUnlock()
+{
+    int32_t activeUserId = 0;
+    ErrCode ret = OHOS::AccountSA::OsAccountManager::GetForegroundOsAccountLocalId(activeUserId);
+    if (ret != ERR_OK) {
+        MEDIA_ERR_LOG("GetForegroundOsAccountLocalId fail, ret code %{public}d, result is not credible", ret);
+        return false;
+    }
+    MEDIA_INFO_LOG("Current active account is %{public}d ", activeUserId);
+    bool isAccountVerified = true; // Assume verified to avoid unknown killing
+    ErrCode err = AccountSA::OsAccountManager::IsOsAccountVerified(activeUserId, isAccountVerified);
+    if (err != ERR_OK) {
+        MEDIA_ERR_LOG("Check activeUserId fail caused by %{public}d, check result is not credible", err);
+        return false;
+    }
+    MEDIA_INFO_LOG("Current user verification result: %{public}d", isAccountVerified);
+    return !isAccountVerified;
+}
+
+void MediaDataShareExtAbility::InitPermissionHandler()
+{
+    MEDIA_DEBUG_LOG("InitPermissionHandler begin");
+    // 构造鉴权处理器责任链
+    auto mediaToolPermissionHandler = std::make_shared<MediaToolPermissionHandler>();
+    auto grantPermissionHandler = std::make_shared<GrantPermissionHandler>();
+    grantPermissionHandler->SetNextHandler(mediaToolPermissionHandler);
+    auto dbPermissionHandler = std::make_shared<DbPermissionHandler>();
+    dbPermissionHandler->SetNextHandler(grantPermissionHandler);
+    permissionHandler_ = std::make_shared<ReadWritePermissionHandler>();
+    permissionHandler_->SetNextHandler(dbPermissionHandler);
+    MEDIA_DEBUG_LOG("InitPermissionHandler end:permissionHandler_=%{public}d", permissionHandler_ != nullptr);
+}
+
 void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 {
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
@@ -104,11 +143,17 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
         return;
     }
     MEDIA_INFO_LOG("%{public}s runtime language  %{public}d", __func__, runtime_.GetLanguage());
-
+    InitPermissionHandler();
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
         DfxReporter::ReportStartResult(DfxType::START_DATAMANAGER_FAIL, 0, startTime);
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        return;
+    }
+    if (IsStartBeforeUserUnlock()) {
+        DfxReporter::ReportStartResult(DfxType::CHECK_USER_UNLOCK_FAIL, 0, startTime);
+        DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
+        MEDIA_INFO_LOG("%{public}s Killing self caused by booting before unlocking", __func__);
         return;
     }
     auto extensionContext = GetContext();
@@ -149,6 +194,7 @@ void MediaDataShareExtAbility::OnStop()
         scannerManager->Stop();
     }
     MediaLibraryDataManager::GetInstance()->ClearMediaLibraryMgr();
+    MedialibraryAppStateObserverManager::GetInstance().UnSubscribeAppState();
     MEDIA_INFO_LOG("%{public}s end.", __func__);
 }
 
@@ -230,26 +276,6 @@ static void CollectPermissionInfo(MediaLibraryCommand &cmd, const string &mode,
             PermissionUtils::CollectPermissionInfo(PERM_WRITE_IMAGEVIDEO, permGranted, type);
         }
     }
-}
-
-static bool IsDeveloperMediaTool(MediaLibraryCommand &cmd)
-{
-    if (!PermissionUtils::IsRootShell() &&
-        !(PermissionUtils::IsHdcShell() && cmd.GetOprnType() == Media::OperationType::TOOL_QUERY_BY_DISPLAY_NAME)) {
-        MEDIA_ERR_LOG("Mediatool permission check failed: target is not root");
-        return false;
-    }
-    if (!OHOS::system::GetBoolParameter("const.security.developermode.state", true)) {
-        MEDIA_ERR_LOG("Mediatool permission check failed: target is not in developer mode");
-        return false;
-    }
-    return true;
-}
-
-static bool IsMediatoolOperation(MediaLibraryCommand &cmd)
-{
-    return cmd.GetOprnObject() == OperationObject::TOOL_PHOTO || cmd.GetOprnObject() == OperationObject::TOOL_AUDIO ||
-        cmd.GetOprnObject() == OperationObject::TOOL_ALBUM || cmd.GetOprnType() == Media::OperationType::DELETE_TOOL;
 }
 
 static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
@@ -338,6 +364,28 @@ static inline int32_t HandleBundlePermCheck()
     return PermissionUtils::CheckHasPermission(WRITE_PERMS_V10) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
+static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
+{
+    static const set<string> NO_NEED_PERM_CHECK_URI = {
+        URI_CLOSE_FILE,
+        MEDIALIBRARY_DIRECTORY_URI,
+    };
+
+    static const set<OperationObject> NO_NEED_PERM_CHECK_OBJ = {
+        OperationObject::ALL_DEVICE,
+        OperationObject::ACTIVE_DEVICE,
+        OperationObject::MISCELLANEOUS,
+    };
+
+    string uri = cmd.GetUri().ToString();
+    OperationObject obj = cmd.GetOprnObject();
+    if (NO_NEED_PERM_CHECK_URI.find(uri) != NO_NEED_PERM_CHECK_URI.end() ||
+        NO_NEED_PERM_CHECK_OBJ.find(obj) != NO_NEED_PERM_CHECK_OBJ.end()) {
+        return E_SUCCESS;
+    }
+    return E_NEED_FURTHER_CHECK;
+}
+
 static int32_t HandleSecurityComponentPermission(MediaLibraryCommand &cmd)
 {
     if (cmd.GetUri().ToString().find(OPRN_CREATE_COMPONENT) != string::npos ||
@@ -419,6 +467,7 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
         OperationObject::USER_PHOTOGRAPHY,
         OperationObject::PAH_BATCH_THUMBNAIL_OPERATE,
         OperationObject::INDEX_CONSTRUCTION_STATUS,
+        OperationObject::MEDIA_APP_URI_PERMISSION,
     };
 
     int32_t err = HandleSecurityComponentPermission(cmd);
@@ -436,28 +485,6 @@ static int32_t PhotoAccessHelperPermCheck(MediaLibraryCommand &cmd, const bool i
     return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
-static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
-{
-    static const set<string> NO_NEED_PERM_CHECK_URI = {
-        URI_CLOSE_FILE,
-        MEDIALIBRARY_DIRECTORY_URI,
-    };
-
-    static const set<OperationObject> NO_NEED_PERM_CHECK_OBJ = {
-        OperationObject::ALL_DEVICE,
-        OperationObject::ACTIVE_DEVICE,
-        OperationObject::MISCELLANEOUS,
-    };
-
-    string uri = cmd.GetUri().ToString();
-    OperationObject obj = cmd.GetOprnObject();
-    if (NO_NEED_PERM_CHECK_URI.find(uri) != NO_NEED_PERM_CHECK_URI.end() ||
-        NO_NEED_PERM_CHECK_OBJ.find(obj) != NO_NEED_PERM_CHECK_OBJ.end()) {
-        return E_SUCCESS;
-    }
-    return E_NEED_FURTHER_CHECK;
-}
-
 static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWrite)
 {
     int err = HandleNoPermCheck(cmd);
@@ -470,6 +497,8 @@ static int32_t HandleSpecialObjectPermission(MediaLibraryCommand &cmd, bool isWr
         return HandleMediaVolumePerm();
     } else if (obj == OperationObject::BUNDLE_PERMISSION) {
         return HandleBundlePermCheck();
+    } else if (obj == OperationObject::APP_URI_PERMISSION_INNER) {
+        return E_SUCCESS;
     }
 
     return E_NEED_FURTHER_CHECK;
@@ -548,12 +577,6 @@ static int32_t CheckPermFromUri(MediaLibraryCommand &cmd, bool isWrite)
     return E_SUCCESS;
 }
 
-static string GetClientAppId()
-{
-    string bundleName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
-    return PermissionUtils::GetAppIdByBundleName(bundleName);
-}
-
 static bool CheckIsOwner(const Uri &uri, MediaLibraryCommand &cmd, const string &mode)
 {
     auto ret = false;
@@ -602,21 +625,20 @@ static uint32_t GetFlagFromMode(const string &mode)
     return AAFwk::Want::FLAG_AUTH_READ_URI_PERMISSION;
 }
 
-int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
+int MediaDataShareExtAbility::CheckPermissionForOpenFile(const Uri &uri,
+    MediaLibraryCommand &command, string &unifyMode)
 {
-#ifdef MEDIALIBRARY_COMPATIBILITY
-    string realUriStr = MediaFileUtils::GetRealUriFromVirtualUri(uri.ToString());
-    Uri realUri(realUriStr);
-    MediaLibraryCommand command(realUri, Media::OperationType::OPEN);
-
-#else
-    MediaLibraryCommand command(uri, Media::OperationType::OPEN);
-#endif
-
-    string unifyMode = mode;
-    transform(unifyMode.begin(), unifyMode.end(), unifyMode.begin(), ::tolower);
-
-    int err = CheckOpenFilePermission(command, unifyMode);
+    PermParam permParam = {
+        .isWrite = false,
+        .isOpenFile = true,
+        .openFileNode = unifyMode
+    };
+    CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
+    int err = permissionHandler_->CheckPermission(command, permParam);
+    MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    if (err != E_SUCCESS) {
+        err = CheckOpenFilePermission(command, unifyMode);
+    }
     if (err == E_PERMISSION_DENIED) {
         err = UriPermissionOperations::CheckUriPermission(command.GetUriStringWithoutSegment(), unifyMode);
         if (err != E_OK) {
@@ -634,9 +656,29 @@ int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
                 CollectPermissionInfo(command, unifyMode, false,
                     PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
                 return err;
+            } else {
+                return E_OK;
             }
         }
-    } else if (err < 0) {
+    }
+    return err;
+}
+
+int MediaDataShareExtAbility::OpenFile(const Uri &uri, const string &mode)
+{
+#ifdef MEDIALIBRARY_COMPATIBILITY
+    string realUriStr = MediaFileUtils::GetRealUriFromVirtualUri(uri.ToString());
+    Uri realUri(realUriStr);
+    MediaLibraryCommand command(realUri, Media::OperationType::OPEN);
+
+#else
+    MediaLibraryCommand command(uri, Media::OperationType::OPEN);
+#endif
+
+    string unifyMode = mode;
+    transform(unifyMode.begin(), unifyMode.end(), unifyMode.begin(), ::tolower);
+    int err = CheckPermissionForOpenFile(uri, command, unifyMode);
+    if (err < 0) {
         return err;
     }
     int32_t object = static_cast<int32_t>(command.GetOprnObject());
@@ -665,7 +707,15 @@ int MediaDataShareExtAbility::OpenRawFile(const Uri &uri, const string &mode)
 int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket &value)
 {
     MediaLibraryCommand cmd(uri);
-    int32_t err = CheckPermFromUri(cmd, true);
+    PermParam permParam = {
+        .isWrite = true,
+    };
+    CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
+    int err = permissionHandler_->CheckPermission(cmd, permParam);
+    MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    if (err != E_SUCCESS) {
+        err = CheckPermFromUri(cmd, true);
+    }
     if (err != E_SUCCESS) {
         return err;
     }
@@ -678,7 +728,15 @@ int MediaDataShareExtAbility::Insert(const Uri &uri, const DataShareValuesBucket
 int MediaDataShareExtAbility::InsertExt(const Uri &uri, const DataShareValuesBucket &value, string &result)
 {
     MediaLibraryCommand cmd(uri);
-    int32_t err = CheckPermFromUri(cmd, true);
+    PermParam permParam = {
+        .isWrite = true,
+    };
+    CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
+    int err = permissionHandler_->CheckPermission(cmd, permParam);
+    MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    if (err != E_SUCCESS) {
+        err = CheckPermFromUri(cmd, true);
+    }
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err < 0) {
@@ -694,8 +752,16 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
     const DataShareValuesBucket &value)
 {
     MediaLibraryCommand cmd(uri);
+    PermParam permParam = {
+        .isWrite = true,
+    };
+    CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
+    int err = permissionHandler_->CheckPermission(cmd, permParam);
+    MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    if (err != E_SUCCESS) {
+        err = CheckPermFromUri(cmd, true);
+    }
     bool isMediatoolOperation = IsMediatoolOperation(cmd);
-    int32_t err = CheckPermFromUri(cmd, true);
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
 
@@ -723,7 +789,15 @@ int MediaDataShareExtAbility::Update(const Uri &uri, const DataSharePredicates &
 int MediaDataShareExtAbility::Delete(const Uri &uri, const DataSharePredicates &predicates)
 {
     MediaLibraryCommand cmd(uri, Media::OperationType::DELETE);
-    int err = CheckPermFromUri(cmd, true);
+    PermParam permParam = {
+        .isWrite = true,
+    };
+    CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, E_PERMISSION_DENIED, "permissionHandler_ is nullptr");
+    int err = permissionHandler_->CheckPermission(cmd, permParam);
+    MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    if (err != E_SUCCESS) {
+        err = CheckPermFromUri(cmd, true);
+    }
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     if (err != E_SUCCESS) {
@@ -739,11 +813,17 @@ shared_ptr<DataShareResultSet> MediaDataShareExtAbility::Query(const Uri &uri,
     const DataSharePredicates &predicates, vector<string> &columns, DatashareBusinessError &businessError)
 {
     MediaLibraryCommand cmd(uri);
+    PermParam permParam = {.isWrite = false};
+    CHECK_AND_RETURN_RET_LOG(permissionHandler_ != nullptr, nullptr, "permissionHandler_ is nullptr");
+    int err = permissionHandler_->CheckPermission(cmd, permParam);
+    MEDIA_DEBUG_LOG("permissionHandler_ err=%{public}d", err);
+    if (err != E_SUCCESS) {
+        err = CheckPermFromUri(cmd, false);
+    }
     int32_t object = static_cast<int32_t>(cmd.GetOprnObject());
     int32_t type = static_cast<int32_t>(cmd.GetOprnType());
     DfxTimer dfxTimer(type, object, COMMON_TIME_OUT, true);
     bool isMediatoolOperation = IsMediatoolOperation(cmd);
-    int32_t err = CheckPermFromUri(cmd, false);
     int errCode = businessError.GetCode();
     DataSharePredicates appidPredicates = predicates;
     if (err != E_SUCCESS) {

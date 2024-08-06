@@ -72,6 +72,7 @@ enum DfxType {
     RDB_UPDATE_BY_CMD,
     RDB_QUERY,
     RDB_EXECUTE_SQL,
+    RDB_BATCHINSERT,
     IMAGE_SOURCE_CREATE = 1200,
     IMAGE_SOURCE_GET_INFO,
     IMAGE_SOURCE_CREATE_PIXELMAP,
@@ -85,6 +86,7 @@ enum DfxType {
     START_DIR_SET_FAIL,
     START_THUMBNAIL_SERVICE_FAIL,
     START_SCANNER_FAIL,
+    CHECK_USER_UNLOCK_FAIL
 };
 
 const std::string NULL_STRING = "";
@@ -132,6 +134,16 @@ struct PhotoInfo {
     std::string data;
     int32_t dirty;
     int32_t cloudVersion;
+};
+
+struct PhotoRecordInfo {
+    int32_t imageCount;
+    int32_t videoCount;
+    int32_t abnormalSizeCount;
+    int32_t abnormalWidthOrHeightCount;
+    int32_t abnormalVideoDurationCount;
+    int32_t toBeUpdatedRecordCount;
+    int64_t dbFileSize;
 };
 
 struct AdaptationToMovingPhotoInfo {
