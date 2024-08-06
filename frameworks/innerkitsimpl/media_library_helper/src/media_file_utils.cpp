@@ -504,7 +504,7 @@ void MediaFileUtils::SetDeletionRecord(int fd, const string &fileName)
 void MediaFileUtils::MediaFileDeletionRecord()
 {
     int fd = -1;
-    int bucket_fd = -1;
+    int bucketFd = -1;
     string path;
     struct dirent* dirEntry;
     DIR* fileDir;
@@ -530,13 +530,13 @@ void MediaFileUtils::MediaFileDeletionRecord()
                 continue;
             }
             std::string fileName = path + "/" + dirEntry->d_name;
-            bucket_fd = open(fileName.c_str(), O_RDONLY);
-            if (fd < 0) {
-                MEDIA_ERR_LOG("Failed to open the bucket_fd Dir error: %{public}d", errno);
+            bucketFd = open(fileName.c_str(), O_RDONLY);
+            if (bucketFd < 0) {
+                MEDIA_ERR_LOG("Failed to open the bucketFd Dir error: %{public}d", errno);
                 continue;
             }
-            SetDeletionRecord(bucket_fd, dirEntry->d_name);
-            close(bucket_fd);
+            SetDeletionRecord(bucketFd, dirEntry->d_name);
+            close(bucketFd);
         }
         closedir(fileDir);
     }
