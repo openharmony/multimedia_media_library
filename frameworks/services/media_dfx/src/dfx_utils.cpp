@@ -21,6 +21,7 @@
 
 #include "dfx_const.h"
 #include "media_file_utils.h"
+#include "media_log.h"
 using namespace std;
 namespace OHOS {
 namespace Media {
@@ -95,9 +96,13 @@ string DfxUtils::GetCurrentDate()
 {
     auto now = std::chrono::system_clock::now();
     auto time = std::chrono::system_clock::to_time_t(now);
-    std::tm tm = *std::localtime(&time);
+    std::tm* tmPtr = std::localtime(&time);
+    if (tmPtr == nullptr) {
+        MEDIA_ERR_LOG("GetCurrentDate failed: tmPtr is nullptr");
+        return "";
+    }
     std::stringstream ss;
-    ss << std::put_time(&tm, "%Y-%m-%d");
+    ss << std::put_time(tmPtr, "%Y-%m-%d");
     return ss.str();
 }
 
