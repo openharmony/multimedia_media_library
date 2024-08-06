@@ -652,8 +652,9 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
             } else if (GetMergeAlbumCoverUri(newInfo, info, it->second) != E_OK) {
                 return E_HAS_DB_ERROR;
             }
-            updateMap[reorderedTagId].isCoverSatisfied = static_cast<uint32_t>(info.isCoverSatisfied) |
-                it->second.isCoverSatisfied;
+            if (info.isCoverSatisfied == 1 || it->second.isCoverSatisfied == 1) {
+                updateMap[reorderedTagId].isCoverSatisfied = 1;
+            }
             updateMap[reorderedTagId].coverUri = newInfo.coverUri;
             deleteId.push_back(info.albumId);
         }
