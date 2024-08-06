@@ -460,10 +460,7 @@ int32_t InitQueryParentResultSet(int32_t dirId, int32_t &parentIdVal, string &di
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::QUERY);
     cmd.GetAbsRdbPredicates()->EqualTo(MEDIA_DATA_DB_ID, to_string(dirId));
     shared_ptr<NativeRdb::ResultSet> queryParentResultSet = uniStore->Query(cmd, {});
-    if (queryParentResultSet == nullptr) {
-        return E_SUCCESS;
-    }
-    if (queryParentResultSet->GoToNextRow() != NativeRdb::E_OK) {
+    if (queryParentResultSet == nullptr || queryParentResultSet->GoToNextRow() != NativeRdb::E_OK) {
         return E_SUCCESS;
     }
     int32_t colIndex = 0;
