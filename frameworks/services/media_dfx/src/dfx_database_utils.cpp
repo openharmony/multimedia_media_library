@@ -107,8 +107,7 @@ static int32_t parseResultSet(const string querySql, int32_t &photoInfoCount, in
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         if (mediaTypePara > 0) {
             int32_t mediaType = GetInt32Val(MediaColumn::MEDIA_TYPE, resultSet);
-            if (mediaType == mediaTypePara)
-            {
+            if (mediaType == mediaTypePara) {
                 photoInfoCount = GetInt32Val(RECORD_COUNT, resultSet);
             }
         } else {
