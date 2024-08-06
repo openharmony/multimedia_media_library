@@ -34,6 +34,7 @@ public:
     static std::vector<PhotoInfo> QueryDirtyCloudPhoto();
     static int32_t QueryAnalysisVersion(const std::string &table, const std::string &column);
     static int32_t QueryDbVersion();
+    static int32_t QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo);
 
 private:
     static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,

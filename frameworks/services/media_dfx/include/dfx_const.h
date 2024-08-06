@@ -136,6 +136,16 @@ struct PhotoInfo {
     int32_t cloudVersion;
 };
 
+struct PhotoRecordInfo {
+    int32_t imageCount;
+    int32_t videoCount;
+    int32_t abnormalSizeCount;
+    int32_t abnormalWidthOrHeightCount;
+    int32_t abnormalVideoDurationCount;
+    int32_t toBeUpdatedRecordCount;
+    int64_t dbFileSize;
+};
+
 struct AdaptationToMovingPhotoInfo {
     std::unordered_set<std::string> unadaptedAppPackages;
     std::unordered_set<std::string> adaptedAppPackages;
