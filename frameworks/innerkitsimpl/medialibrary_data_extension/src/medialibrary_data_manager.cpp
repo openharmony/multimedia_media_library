@@ -31,6 +31,7 @@
 #include "device_manager_callback.h"
 #endif
 #include "dfx_manager.h"
+#include "dfx_utils.h"
 #include "efficiency_resource_info.h"
 #include "hitrace_meter.h"
 #include "ipc_skeleton.h"
@@ -170,17 +171,19 @@ static void MakeRootDirs(AsyncTaskData *data)
         MEDIA_ERR_LOG("Failed to SetEPolicy fail");
     }
     MediaFileUtils::MediaFileDeletionRecord();
+    // recover temp dir
+    MediaFileUtils::RecoverMediaTempDir();
 }
 
 void MediaLibraryDataManager::ReCreateMediaDir()
 {
+    MediaFileUtils::BackupPhotoDir();
     // delete E policy dir
     for (const string &dir : E_POLICY_DIRS) {
         if (!MediaFileUtils::DeleteDir(dir)) {
-            MEDIA_ERR_LOG("Delete dir fail, dir: %{private}s", dir.c_str());
+            MEDIA_ERR_LOG("Delete dir fail, dir: %{public}s", DfxUtils::GetSafePath(dir).c_str());
         }
     }
-    
     // create C policy dir
     InitACLPermission();
     shared_ptr<MediaLibraryAsyncWorker> asyncWorker = MediaLibraryAsyncWorker::GetInstance();

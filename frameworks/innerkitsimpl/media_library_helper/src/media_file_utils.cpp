@@ -366,6 +366,47 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
     return errRet;
 }
 
+void MediaFileUtils::BackupPhotoDir()
+{
+    string dirPath = ROOT_MEDIA_DIR + PHOTO_BUCKET;
+    // check whether dir empty
+    if (!IsDirEmpty(dirPath)) {
+        MEDIA_INFO_LOG("backup for: %{private}s", dirPath.c_str());
+        string suffixName = dirPath.substr(ROOT_MEDIA_DIR.length());
+        CreateDirectory(ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR);
+        MoveFile(dirPath, ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + suffixName);
+    }
+}
+
+void MediaFileUtils::RecoverMediaTempDir()
+{
+    string recoverPath = ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + PHOTO_BUCKET;
+    if (!IsDirEmpty(recoverPath)) {
+        DIR *dir = opendir((recoverPath).c_str());
+        if (dir == nullptr) {
+            MEDIA_ERR_LOG("Error opening temp directory");
+            return;
+        }
+        
+        struct dirent *entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            // filter . && .. dir
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+            std::string fullPath = recoverPath + SLASH_STR + entry->d_name;
+            struct stat fileStat;
+            if (stat(fullPath.c_str(), &fileStat) == -1) {
+                closedir(dir);
+                return;
+            }
+            string suffixName = fullPath.substr((recoverPath).length());
+            MoveFile(fullPath, ROOT_MEDIA_DIR + PHOTO_BUCKET + SLASH_STR + suffixName);
+        }
+        DeleteDir(ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR);
+    }
+}
+
 bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
 {
     bool errRet = false;
