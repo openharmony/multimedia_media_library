@@ -23,6 +23,7 @@
 #include "get_self_permissions.h"
 #include "hilog/log.h"
 #include "iservice_registry.h"
+#include "media_app_uri_permission_column.h"
 #include "medialibrary_db_const.h"
 #include "medialibrary_errno.h"
 #include "media_file_utils.h"
@@ -59,10 +60,39 @@ int g_albumMediaType = MEDIA_TYPE_ALBUM;
 int64_t g_oneImageSize = 0;
 const int CLEAN_TIME = 1;
 const int SCAN_WAIT_TIME = 10;
+constexpr int32_t OWNER_PRIVIEDGE = 4;
+constexpr int32_t PhotosType = 1;
+constexpr int32_t AudiosType = 2;
+uint64_t tokenId = 0;
+int32_t txtIndex = 0;
+int32_t audioIndex = 0;
+
+static const unsigned char FILE_CONTENT_TXT[] = {
+    0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24
+};
 
 static const unsigned char FILE_CONTENT_JPG[] = {
     0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b,
     0x20, 0x20, 0x20,
+};
+
+static const unsigned char FILE_CONTENT_MP3[] = {
+    0x49, 0x44, 0x33, 0x03, 0x20, 0x20, 0x20, 0x0c, 0x24, 0x5d, 0x54, 0x45, 0x4e, 0x43, 0x20, 0x20, 0x20, 0x0b, 0x20,
+    0x20, 0x20, 0x50, 0x72, 0x6f, 0x20, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x20, 0x54, 0x58, 0x58, 0x58, 0x20, 0x20, 0x20,
+    0x27, 0x20, 0x20, 0x20, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x72, 0x65, 0x66, 0x65,
+    0x72, 0x65, 0x6e, 0x63, 0x65, 0x20, 0x21, 0x46, 0x6c, 0x4c, 0x55, 0x6b, 0x6e, 0x45, 0x6d, 0x52, 0x62, 0x61, 0x61,
+    0x61, 0x47, 0x6b, 0x20, 0x54, 0x59, 0x45, 0x52, 0x20, 0x20, 0x20, 0x06, 0x20, 0x20, 0x20, 0x32, 0x30, 0x31, 0x35,
+    0x20, 0x54, 0x44, 0x41, 0x54, 0x20, 0x20, 0x20, 0x06, 0x20, 0x20, 0x20, 0x32, 0x33, 0x31, 0x31, 0x20, 0x54, 0x58,
+    0x58, 0x58, 0x20, 0x20, 0x20, 0x17, 0x20, 0x20, 0x20, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x72, 0x65, 0x66, 0x65, 0x72,
+    0x65, 0x6e, 0x63, 0x65, 0x20, 0x31, 0x36, 0x36, 0x31, 0x31, 0x39, 0x20, 0x54, 0x43, 0x4f, 0x4d, 0x20, 0x20, 0x20,
+    0x09, 0x20, 0x20, 0x01, 0xff, 0xfe, 0x4b, 0x6d, 0xd5, 0x8b, 0x20, 0x20, 0x54, 0x50, 0x45, 0x31, 0x20, 0x20, 0x20,
+    0x0f, 0x20, 0x20, 0x01, 0xff, 0xfe, 0x43, 0x51, 0x70, 0x65, 0x6e, 0x63, 0x4b, 0x6d, 0xd5, 0x8b, 0x20, 0x20, 0x54,
+    0x41, 0x4c, 0x42, 0x20, 0x20, 0x20, 0x07, 0x20, 0x20, 0x20, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x20, 0x54, 0x49, 0x54,
+    0x32, 0x20, 0x20, 0x20, 0x06, 0x20, 0x20, 0x20, 0x74, 0x65, 0x73, 0x74, 0x20, 0x54, 0x50, 0x45, 0x32, 0x20, 0x20,
+    0x20, 0x0c, 0x20, 0x20, 0x20, 0x6d, 0x65, 0x64, 0x69, 0x61, 0x5f, 0x74, 0x65, 0x73, 0x74, 0x20, 0x54, 0x58, 0x58,
+    0x58, 0x20, 0x20, 0x20, 0x0e, 0x20, 0x20, 0x20, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x20, 0x6d, 0x65, 0x64, 0x69,
+    0x61, 0x20, 0x54, 0x43, 0x4f, 0x4e, 0x20, 0x20, 0x20, 0x09, 0x20, 0x20, 0x20, 0x4c, 0x79, 0x72, 0x69, 0x63, 0x61,
+    0x6c, 0x20, 0x54, 0x53, 0x53, 0x45, 0x20, 0x20, 0x20, 0x0f, 0x20, 0x20, 0x20, 0x4c, 0x61
 };
 
 static const unsigned char FILE_CONTENT_MP4[] = {
@@ -116,6 +146,16 @@ void MediaLibraryManagerTest::TearDownTestCase(void)
 // SetUp:Execute before each test case
 void MediaLibraryManagerTest::SetUp(void)
 {
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    perms.push_back("ohos.permission.READ_AUDIO");
+    perms.push_back("ohos.permission.WRITE_AUDIO");
+    perms.push_back("ohos.permission.READ_MEDIA");
+    perms.push_back("ohos.permission.WRITE_MEDIA");
+    perms.push_back("ohos.permission.MEDIA_LOCATION");
+    perms.push_back("ohos.permission.GET_BUNDLE_INFO_PRIVILEGED");
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
     system("rm -rf /storage/cloud/100/files/Photo/*");
 }
 
@@ -197,6 +237,99 @@ void ClearFile()
     }
 }
 
+string CreateFile(std::string baseURI, std::string targetPath, std::string newName, MediaType mediaType,
+    const unsigned char fileContent[])
+{
+    bool audioFlag = false;
+    MEDIA_INFO_LOG("CreateFile:: start Create file: %s", newName.c_str());
+    if (sDataShareHelper_ == nullptr) {
+        return "";
+    }
+    string abilityUri = Media::MEDIALIBRARY_DATA_URI;
+    if (MediaFileUtils::StartsWith(targetPath, "Audios/")) {
+        audioFlag = true;
+        abilityUri += Media::MEDIA_AUDIOOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET;
+    } else {
+        abilityUri += Media::MEDIA_FILEOPRN + "/" + Media::MEDIA_FILEOPRN_CREATEASSET;
+    }
+    Uri createAssetUri(abilityUri);
+    DataShareValuesBucket valuesBucket;
+    valuesBucket.Put(MEDIA_DATA_DB_MEDIA_TYPE, mediaType);
+    valuesBucket.Put(MEDIA_DATA_DB_NAME, newName);
+    valuesBucket.Put(MEDIA_DATA_DB_RELATIVE_PATH, targetPath);
+    
+    int32_t index = sDataShareHelper_->Insert(createAssetUri, valuesBucket);
+
+    int64_t virtualIndex = MediaFileUtils::GetVirtualIdByType(index, mediaType);
+    string destUri = baseURI + "/" + std::to_string(virtualIndex);
+
+    Uri openFileUriDest(destUri);
+    int32_t destFd = sDataShareHelper_->OpenFile(openFileUriDest, MEDIA_FILEMODE_READWRITE);
+    EXPECT_NE(destFd <= 0, true);
+    int len;
+    if (audioFlag == true) {
+        len = sizeof(FILE_CONTENT_MP3);
+    } else {
+        len = sizeof(FILE_CONTENT_TXT);
+    }
+    int32_t resWrite = write(destFd, fileContent, len);
+    if (resWrite == -1) {
+        EXPECT_EQ(false, true);
+    }
+    mediaLibraryManager->CloseAsset(destUri, destFd);
+    MEDIA_INFO_LOG("CreateFile:: end Create file: %s", newName.c_str());
+    return destUri;
+}
+
+string CreatePhotoAsset(string displayName)
+{
+    int32_t resWrite = -1;
+    auto uri = mediaLibraryManager->CreateAsset(displayName);
+    int32_t destFd = mediaLibraryManager->OpenAsset(uri, MEDIA_FILEMODE_READWRITE);
+    EXPECT_NE(destFd <= 0, true);
+    if (displayName.find(".jpg") != std::string::npos) {
+        resWrite = write(destFd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    } else if (displayName.find(".mp4") != std::string::npos) {
+        resWrite = write(destFd, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4));
+    }
+    if (resWrite == -1) {
+        EXPECT_EQ(false, true);
+    }
+    return uri;
+}
+
+void QueryUriPermissionResult(string appid, vector<string> inColumn, int32_t mediaType,
+    std::shared_ptr<DataShareResultSet>  &queryResult)
+{
+    DataSharePredicates predicates;
+    vector<string> columns;
+    DatashareBusinessError error;
+    predicates.In(AppUriPermissionColumn::FILE_ID, inColumn);
+    predicates.And()->EqualTo(AppUriPermissionColumn::APP_ID, appid);
+    predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, to_string(mediaType));
+    predicates.OrderByAsc(AppUriPermissionColumn::FILE_ID);
+    Uri queryUri(MEDIALIBRARY_GRANT_URIPERM_URI);
+    ASSERT_NE(sDataShareHelper_, nullptr);
+    queryResult = sDataShareHelper_->Query(queryUri, predicates, columns, &error);
+    ASSERT_NE(queryResult, nullptr);
+}
+
+static string CreateOwnerPrivliegeAssets(string appid)
+{
+    string photoUri = CreatePhotoAsset("test.jpg");
+    Uri insertUri(MEDIALIBRARY_GRANT_URIPERM_URI);
+    string fileId = MediaFileUtils::GetIdFromUri(photoUri);
+    DataShareValuesBucket ValuesBucket;
+
+    ValuesBucket.Put(AppUriPermissionColumn::FILE_ID, static_cast<int32_t>(std::stoi(fileId)));
+    ValuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
+    ValuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, OWNER_PRIVIEDGE);
+    ValuesBucket.Put(AppUriPermissionColumn::URI_TYPE, PhotosType);
+    ValuesBucket.Put(AppUriPermissionColumn::DATE_MODIFIED, MediaFileUtils::UTCTimeMilliSeconds());
+    sDataShareHelper_->Insert(insertUri, ValuesBucket);
+    return photoUri;
+}
+
 static bool CompareIfArraysEquals(const unsigned char originArray[],
     const unsigned char targetArray[], int32_t size)
 {
@@ -257,8 +390,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_002, TestSize.Level0)
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
     EXPECT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
-    free(buf);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG)), true);
+    free(buf);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
 }
 
@@ -288,8 +421,8 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_test_003, TestSize.Level0)
     unsigned char *buf = static_cast<unsigned char*>(malloc(srcLen));
     EXPECT_NE((buf == nullptr), true);
     read(srcFd, buf, srcLen);
-    free(buf);
     EXPECT_EQ(CompareIfArraysEquals(buf, FILE_CONTENT_MP4, sizeof(FILE_CONTENT_MP4)), true);
+    free(buf);
     MEDIA_INFO_LOG("CreateFile:: end Create file: %{public}s", displayName.c_str());
 }
 
@@ -642,6 +775,1065 @@ HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_002, TestSize.Level0)
     std::string uri = "mediaLibraryUri";
     std::string result = manager.GetMovingPhotoImageUri(uri);
     EXPECT_EQ(result, uri);
+}
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_001 enter");
+    string appid = "granttest1";
+    vector<string> uris;
+    vector<string> inColumn;
+    for (int i = 0; i < 5; i++) {
+        auto uri = CreatePhotoAsset("test.jpg");
+        uris.push_back(uri);
+        inColumn.push_back(MediaFileUtils::GetIdFromUri(uri));
+    }
+    auto permissionType = PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
+    QueryUriPermissionResult(appid, inColumn, PhotosType, queryPhotoResult);
+    ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
+        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO));
+    } while (!queryPhotoResult->GoToNextRow());
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_002
+ * @tc.name      : grant vidio type uri permissions
+ * @tc.desc      : check database grant results whether match
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_002 enter");
+    string appid = "granttest2";
+    vector<string> uris;
+    vector<string> inColumn;
+    for (int i = 0; i < 5; i++) {
+        auto uri = CreatePhotoAsset("test.mp4");
+        uris.push_back(uri);
+        inColumn.push_back(MediaFileUtils::GetIdFromUri(uri));
+    }
+    auto permissionType = PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
+    QueryUriPermissionResult(appid, inColumn, PhotosType, queryPhotoResult);
+    ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
+        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO));
+    } while (!queryPhotoResult->GoToNextRow());
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_003
+ * @tc.name      : grant audio type for uri permissions
+ * @tc.desc      : check database grant results whether match
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_003 enter");
+    string appid = "granttest3";
+    vector<string> uris;
+    vector<string> inColumn;
+    for (int i = 0; i < 5; i++) {
+        string struri = CreateFile(MEDIALIBRARY_AUDIO_URI, "Audios/", "Test" + to_string(audioIndex++) + ".mp3",
+        MEDIA_TYPE_AUDIO, FILE_CONTENT_MP3);
+        inColumn.push_back(MediaFileUtils::GetIdFromUri(struri));
+        uris.push_back(struri);
+    }
+    auto permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryAudioResult;
+    QueryUriPermissionResult(appid, inColumn, AudiosType, queryAudioResult);
+    ASSERT_EQ(queryAudioResult->GoToFirstRow(), E_OK);
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryAudioResult);
+        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO));
+    } while (!queryAudioResult->GoToNextRow());
+     
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_003 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_004
+ * @tc.name      : grant photo 、vidio and audio type mixed uris of permissions
+ * @tc.desc      : check database grant results whether match
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_004 enter");
+    string appid = "granttest4";
+    vector<string> photoUris;
+    vector<string> vedioUris;
+    vector<string> audioUris;
+    vector<string> photoInColumn;
+    vector<string> vedioInColumn;
+    vector<string> audioInColumn;
+    for (int i = 0; i < 5; i++) {
+        auto photoUri = CreatePhotoAsset("test.jpg");
+        auto vedioUri = CreatePhotoAsset("test.mp4");
+        string audioUri = CreateFile(MEDIALIBRARY_AUDIO_URI, "Audios/", "Test" + to_string(audioIndex++) + ".mp3",
+        MEDIA_TYPE_AUDIO, FILE_CONTENT_MP3);
+        photoUris.push_back(photoUri);
+        vedioUris.push_back(vedioUri);
+        audioUris.push_back(audioUri);
+        photoInColumn.push_back(MediaFileUtils::GetIdFromUri(photoUri));
+        vedioInColumn.push_back(MediaFileUtils::GetIdFromUri(vedioUri));
+        audioInColumn.push_back(MediaFileUtils::GetIdFromUri(audioUri));
+    }
+    auto permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, photoUris, permissionType, HideSensitiveType::NO_DESENSITIZE);
+    permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, vedioUris, permissionType, HideSensitiveType::NO_DESENSITIZE);
+    permissionType = PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, audioUris, permissionType, HideSensitiveType::NO_DESENSITIZE);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryVedioResult;
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryAudioResult;
+    QueryUriPermissionResult(appid, photoInColumn, PhotosType, queryPhotoResult);
+    QueryUriPermissionResult(appid, vedioInColumn, PhotosType, queryVedioResult);
+    QueryUriPermissionResult(appid, audioInColumn, AudiosType, queryAudioResult);
+    ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+    ASSERT_EQ(queryVedioResult->GoToFirstRow(), E_OK);
+    ASSERT_EQ(queryAudioResult->GoToFirstRow(), E_OK);
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
+        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO));
+    } while (!queryPhotoResult->GoToNextRow());
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryVedioResult);
+        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO));
+    } while (!queryVedioResult->GoToNextRow());
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryAudioResult);
+        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO));
+    } while (!queryAudioResult->GoToNextRow());
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_004 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_005
+ * @tc.name      : same type but different uri grant different permissions
+ * @tc.desc      : check database grant results whether match
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_005 enter");
+    string appid = "granttest5";
+    vector<string> uris;
+    vector<string> uris1;
+    vector<string> uris2;
+    vector<string> uris3;
+    vector<string> uris4;
+    vector<string> inColumn;
+    vector<int32_t> expectResult;
+    for (int i = 0; i < 20; i++) {
+        auto uriStr = CreatePhotoAsset("test.jpg");
+        inColumn.push_back(MediaFileUtils::GetIdFromUri(uriStr));
+        uris.push_back(uriStr);
+    }
+    uris1.assign(uris.begin(), uris.begin()+5);
+    uris2.assign(uris.begin()+5, uris.begin()+10);
+    uris3.assign(uris.begin()+10, uris.begin()+15);
+    uris4.assign(uris.begin()+15, uris.begin()+20);
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    auto permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris1, permissionType, SensitiveType);
+    expectResult.insert(expectResult.begin(), 5, 0);
+
+    permissionType = PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris2, permissionType, SensitiveType);
+    expectResult.insert(expectResult.end(), 5, 2);
+
+    permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris3, permissionType, SensitiveType);
+    expectResult.insert(expectResult.end(), 5, 1);
+
+    permissionType = PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris4, permissionType, SensitiveType);
+    expectResult.insert(expectResult.end(), 5, 3);
+
+    vector<int32_t>::iterator it = expectResult.begin();
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
+    QueryUriPermissionResult(appid, inColumn, PhotosType, queryPhotoResult);
+    ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
+        EXPECT_EQ(*it++, permissionType);
+    } while (!queryPhotoResult->GoToNextRow());
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_005 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_006
+ * @tc.name      : same type but different uri grant random permissions
+ * @tc.desc      : check database grant results whether match
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_006 enter");
+    string appid = "granttest6";
+    vector<string> uris;
+    vector<string> inColumn;
+    vector<int32_t> expectResult;
+    auto permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    for (int i = 0; i < 20; i++) {
+        auto uri = CreatePhotoAsset("test.jpg");
+        inColumn.push_back(MediaFileUtils::GetIdFromUri(uri));
+        vector<string> Tempuris{uri};
+        uris.push_back(uri);
+        permissionType = static_cast<PhotoPermissionType>((unsigned)rand() % 4);
+        expectResult.push_back(static_cast<int32_t>(permissionType));
+        mediaLibraryManager->GrantPhotoUriPermission(appid, Tempuris, permissionType, SensitiveType);
+    }
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
+    QueryUriPermissionResult(appid, inColumn, PhotosType, queryPhotoResult);
+    vector<int32_t>::iterator it = expectResult.begin();
+    ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
+        EXPECT_EQ(*it++, permissionType);
+    } while (!queryPhotoResult->GoToNextRow());
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_006 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_007
+ * @tc.name      : grand file type do not match
+ * @tc.desc      : check error result
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_007 enter");
+    string appid = "granttest7";
+    vector<string> uris;
+    for (int i = 0; i < 5; i++) {
+        auto uri = CreateFile(MEDIALIBRARY_FILE_URI, "Docs/Documents/", "Test" + to_string(txtIndex++) + ".txt",
+        MEDIA_TYPE_FILE, FILE_CONTENT_TXT);
+        uris.push_back(uri);
+    }
+    auto permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    auto ret = mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    ASSERT_EQ(ret, E_INVALID_URI);
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_007 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_008
+ * @tc.name      : uri number are over size
+ * @tc.desc      : check error result
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_008 enter");
+    string appid = "granttest8";
+    vector<string> uris;
+    uris.resize(1001);
+    auto permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    auto ret = mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    ASSERT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_008 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_009
+ * @tc.name      : All uris are grant permission and then grant other permissions
+ * @tc.desc      : check database grant results whether match
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_009 enter");
+    string appid = "granttest9";
+    vector<string> uris;
+    vector<string> uris1;
+    vector<string> uris2;
+    vector<string> uris3;
+    vector<string> uris4;
+    vector<string> inColumn;
+    vector<int32_t> expectResult;
+    for (int i = 0; i < 20; i++) {
+        auto uriStr = CreatePhotoAsset("test.jpg");
+        uris.push_back(uriStr);
+        inColumn.push_back(MediaFileUtils::GetIdFromUri(uriStr));
+    }
+    uris1.assign(uris.begin(), uris.begin()+5);
+    uris2.assign(uris.begin()+5, uris.begin()+10);
+    uris3.assign(uris.begin()+10, uris.begin()+15);
+    uris4.assign(uris.begin()+15, uris.begin()+20);
+    auto permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+
+    permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris1, permissionType, SensitiveType);
+    expectResult.insert(expectResult.begin(), 5, 0);
+    permissionType = PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris2, permissionType, SensitiveType);
+    expectResult.insert(expectResult.end(), 5, 2);
+    permissionType = PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris3, permissionType, SensitiveType);
+    expectResult.insert(expectResult.end(), 5, 3);
+    permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris4, permissionType, SensitiveType);
+    expectResult.insert(expectResult.end(), 5, 1);
+
+    vector<int32_t>::iterator it = expectResult.begin();
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
+    QueryUriPermissionResult(appid, inColumn, PhotosType, queryPhotoResult);
+    ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
+        EXPECT_EQ(*it++, permissionType);
+    } while (!queryPhotoResult->GoToNextRow());
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_009 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_010
+ * @tc.name      : All uris are grant rand permission and then grant a same permission type
+ * @tc.desc      : check database grant results whether match
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_010, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_010 enter");
+    string appid = "granttest10";
+    vector<string> uris;
+    vector<string> inColumn;
+    auto permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    for (int i = 0; i < 20; i++) {
+        auto uri = CreatePhotoAsset("test.jpg");
+        string fileId = MediaFileUtils::GetIdFromUri(uri);
+        inColumn.push_back(fileId);
+        vector<string> Tempuris{uri};
+        uris.push_back(uri);
+        permissionType = static_cast<PhotoPermissionType>((unsigned)rand() % 4);
+        printf("grant permission level:%d\n", static_cast<int>(permissionType));
+        mediaLibraryManager->GrantPhotoUriPermission(appid, Tempuris, permissionType, SensitiveType);
+    }
+    permissionType = PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
+    QueryUriPermissionResult(appid, inColumn, PhotosType, queryPhotoResult);
+    ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
+        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO));
+    } while (!queryPhotoResult->GoToNextRow());
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_010 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_011
+ * @tc.name      : grant uris serial times of permission
+ * @tc.desc      : check database grant results whether match
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_011, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_011 enter");
+    string appid = "granttest11";
+    vector<string> uris;
+    vector<string> inColumn;
+    for (int i = 0; i < 10; i++) {
+        string uri = CreateOwnerPrivliegeAssets(appid);
+        uris.push_back(uri);
+        inColumn.push_back(MediaFileUtils::GetIdFromUri(uri));
+    }
+    auto permissionType = PhotoPermissionType::TEMPORARY_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    permissionType = PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    permissionType = PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
+    QueryUriPermissionResult(appid, inColumn, PhotosType, queryPhotoResult);
+    ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
+        EXPECT_EQ(permissionType, OWNER_PRIVIEDGE);
+    } while (!queryPhotoResult->GoToNextRow());
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_011 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_GrantPhotoUriPermission_test_012
+ * @tc.name      : uris are mix with all grant permissions
+ * @tc.desc      : check database grant results whether match
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_012, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_012 enter");
+    string appid = "granttest12";
+    vector<string> uris;
+    vector<string> photosInColumn;
+    vector<string> previliegeInColumn;
+    auto permissionType = PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    for (int i = 0; i < 10; i++)
+    {
+        string previlegeUri = CreateOwnerPrivliegeAssets(appid);
+        auto photouri = CreatePhotoAsset("test.jpg");
+        uris.push_back(previlegeUri);
+        uris.push_back(photouri);
+        previliegeInColumn.push_back(MediaFileUtils::GetIdFromUri(previlegeUri));
+        photosInColumn.push_back(MediaFileUtils::GetIdFromUri(photouri));
+        vector<string> Tempuris{photouri};
+        permissionType = static_cast<PhotoPermissionType>((unsigned)rand() % 4);
+        mediaLibraryManager->GrantPhotoUriPermission(appid, Tempuris, permissionType, SensitiveType);
+    }
+    permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    mediaLibraryManager->GrantPhotoUriPermission(appid, uris, permissionType, SensitiveType);
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPhotoResult;
+    std::shared_ptr<OHOS::DataShare::DataShareResultSet> queryPreviliegeResult;
+    QueryUriPermissionResult(appid, photosInColumn, PhotosType, queryPhotoResult);
+    QueryUriPermissionResult(appid, previliegeInColumn, PhotosType, queryPreviliegeResult);
+    ASSERT_EQ(queryPhotoResult->GoToFirstRow(), E_OK);
+    ASSERT_EQ(queryPreviliegeResult->GoToFirstRow(), E_OK);
+
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPhotoResult);
+        EXPECT_EQ(permissionType, static_cast<int32_t>(PhotoPermissionType::PERSIST_READ_IMAGEVIDEO));
+    } while (!queryPhotoResult->GoToNextRow());
+
+    do {
+        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryPreviliegeResult);
+        EXPECT_EQ(permissionType, OWNER_PRIVIEDGE);
+    } while (!queryPreviliegeResult->GoToNextRow());
+
+    MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_012 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_001
+ * @tc.name      : Check only read system permission uri permission results
+ * @tc.desc      : Grant system read permission to see CheckPhotoUriPermission results
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_001 enter");
+    string appid = "checktest1";
+    vector<string> uris;
+    vector<bool> resultSet;
+    for (int i = 0; i < 10; i++) {
+        auto uri = CreatePhotoAsset("test.jpg");
+        uris.push_back(uri);
+    }
+    vector<string> perms;
+    uint64_t tokenId = 0;
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
+    int32_t permissionFlag = 1;
+    auto ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    EXPECT_EQ(ret, E_SUCCESS);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_001 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_002
+ * @tc.name      : Check wirte system permission uri permission results
+ * @tc.desc      : Grant system write permission to see CheckPhotoUriPermission results
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_002 enter");
+    string appid = "checktest2";
+    vector<string> uris;
+    vector<bool> resultSet;
+    for (int i = 0; i < 10; i++) {
+        auto uri = CreatePhotoAsset("test.jpg");
+        uris.push_back(uri);
+    }
+    vector<string> perms;
+    uint64_t tokenId = 0;
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
+    uint32_t permissionFlag = 1;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_002 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_003
+ * @tc.name      : Check has read and wirte system permission uri permission results
+ * @tc.desc      : Grant system read and write permission to see CheckPhotoUriPermission results
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_003 enter");
+    string appid = "checktest3";
+    vector<string> uris;
+    vector<bool> resultSet;
+    for (int i = 0; i < 10; i++) {
+        auto uri = CreatePhotoAsset("test.jpg");
+        uris.push_back(uri);
+    }
+    vector<string> perms;
+    uint64_t tokenId = 0;
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
+    uint32_t permissionFlag = 1;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_003 exit");
+}
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_004
+ * @tc.name      : Check no system permission uri permission results
+ * @tc.desc      : No system permission and see CheckPhotoUriPermission check results
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_004, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_004 enter");
+    vector<string> perms;
+    uint64_t tokenId = 0;
+    string appid = "checktest4";
+    vector<string> uris;
+    vector<bool> resultSet;
+    for (int i = 0; i < 10; i++) {
+        auto uriStr = CreatePhotoAsset("test.jpg");
+        uris.push_back(uriStr);
+    }
+    uint32_t permissionFlag = 1;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_004 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_005
+ * @tc.name      : Grant Audio system read permission
+ * @tc.desc      : Check uri permission results when has Audio system read permission
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_005, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_005 enter");
+    vector<string> uris;
+    string appid = "checktest5";
+    vector<bool> resultSet;
+    for (int i = 0; i < 10; i++) {
+        string uri = CreateFile(MEDIALIBRARY_AUDIO_URI, "Audios/", "Test" + to_string(audioIndex++) + ".mp3",
+        MEDIA_TYPE_AUDIO, FILE_CONTENT_MP3);
+        uris.push_back(uri);
+    }
+    uint64_t tokenId = 0;
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_AUDIO");
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
+    uint32_t permissionFlag = 1;
+    auto ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    EXPECT_EQ(ret, E_SUCCESS);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_005 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_006
+ * @tc.name      : Grant Audio system write permission
+ * @tc.desc      : Check uri permission results when has Audio system wirte permission
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_006, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_006 enter");
+    vector<string> uris;
+    string appid = "checktest6";
+    vector<bool> resultSet;
+    for (int i = 0; i < 10; i++) {
+        string uri = CreateFile(MEDIALIBRARY_AUDIO_URI, "Audios/", "Test" + to_string(audioIndex++) + ".mp3",
+        MEDIA_TYPE_AUDIO, FILE_CONTENT_MP3);
+        uris.push_back(uri);
+    }
+    uint64_t tokenId = 0;
+    vector<string> perms;
+    perms.push_back("ohos.permission.WRITE_AUDIO");
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
+    uint32_t permissionFlag = 1;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, false);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_006 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_006
+ * @tc.name      : Grant Audio system read and write permission
+ * @tc.desc      : Check uri permission results when has Audio system read and wirte permission
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_007, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_007 enter");
+    vector<string> uris;
+    string appid = "checktest7";
+    vector<bool> resultSet;
+    for (int i = 0; i < 10; i++)
+    {
+        string uri = CreateFile(MEDIALIBRARY_AUDIO_URI, "Audios/", "Test" + to_string(audioIndex++) + ".mp3",
+        MEDIA_TYPE_AUDIO, FILE_CONTENT_MP3);
+        uris.push_back(uri);
+    }
+    uint64_t tokenId = 0;
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_AUDIO");
+    perms.push_back("ohos.permission.WRITE_AUDIO");
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
+    uint32_t permissionFlag = 1;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (const auto res : resultSet) {
+        EXPECT_EQ(res, true);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_007 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_008
+ * @tc.name      : Has no system permissions but all uri have grant other permissions
+ * @tc.desc      : Check uri permissions results when all uri have grant other permissions
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_008, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_008 enter");
+    vector<string> perms;
+    uint64_t tokenId = 0;
+    string appid = "checktest8";
+    vector<string> uris;
+    vector<bool> resultSet;
+    vector<bool> expectReadResult;
+    vector<bool> expectWriteResult;
+    vector<bool> expectReadWriteResult;
+    auto permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    for (int i = 0; i < 20; i++) {
+        string uri = CreatePhotoAsset("test.jpg");
+        vector<string> Tempuris{uri};
+        uris.push_back(uri);
+        permissionType = static_cast<PhotoPermissionType>((unsigned)rand() % 4);
+        if (static_cast<int32_t>(permissionType) == 0 || static_cast<int32_t>(permissionType) == 1) {
+            expectReadResult.push_back(true);
+            expectWriteResult.push_back(false);
+            expectReadWriteResult.push_back(false);
+        } else if (static_cast<int32_t>(permissionType) == 2) {
+            expectReadResult.push_back(false);
+            expectWriteResult.push_back(true);
+            expectReadWriteResult.push_back(false);
+        } else {
+            expectReadResult.push_back(true);
+            expectWriteResult.push_back(true);
+            expectReadWriteResult.push_back(true);
+        }
+        mediaLibraryManager->GrantPhotoUriPermission(appid, Tempuris, permissionType, SensitiveType);
+    }
+    uint32_t permissionFlag = 1;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], expectReadResult[i]);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], expectWriteResult[i]);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], expectReadWriteResult[i]);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_008 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_009
+ * @tc.name      : Has no system permissions but part of uri have grant other permissions
+ * @tc.desc      : Check uri permissions results when part of have grant other permissions
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_009, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_009 enter");
+    vector<string> perms;
+    uint64_t tokenId = 0;
+    string appid = "checktest9";
+    vector<string> uris;
+    vector<bool> resultSet;
+    vector<vector<bool>> expectResult;
+    expectResult.resize(3);
+    auto permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    for (int i = 0; i < 10; i++) {
+        auto uri = CreatePhotoAsset("test.jpg");
+        vector<string> Tempuris{uri};
+        uris.push_back(uri);
+        permissionType = static_cast<PhotoPermissionType>((unsigned)rand() % 4);
+        if (static_cast<int32_t>(permissionType) == 0 || static_cast<int32_t>(permissionType) == 1) {
+            expectResult[0].push_back(true);
+            expectResult[1].push_back(false);
+            expectResult[2].push_back(false);
+        } else if (static_cast<int32_t>(permissionType) == 2) {
+            expectResult[0].push_back(false);
+            expectResult[1].push_back(true);
+            expectResult[2].push_back(false);
+        } else {
+            expectResult[0].push_back(true);
+            expectResult[1].push_back(true);
+            expectResult[2].push_back(true);
+        }
+        mediaLibraryManager->GrantPhotoUriPermission(appid, Tempuris, permissionType, SensitiveType);
+    }
+    for (int i = 0; i < 5; i++) {
+        uris.push_back(CreatePhotoAsset("test.jpg"));
+        expectResult[0].push_back(false);
+        expectResult[1].push_back(false);
+        expectResult[2].push_back(false);
+    }
+    uint32_t permissionFlag = 1;
+    for (int i = 0; i < 3; i++) {
+        mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+        for (int j = 0; j < resultSet.size(); j++) {
+            EXPECT_EQ(resultSet[j], expectResult[i][j]);
+        }
+        permissionFlag++;
+        MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_009 exit");
+    }
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_010
+ * @tc.name      : Has read system permissions and also uri have grant other permissions
+ * @tc.desc      : Check uri permissions results when has system read permission and other permission
+ */
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_010, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_010 enter");
+    string appid = "checktest10";
+    vector<string> uris;
+    vector<bool> resultSet;
+    vector<bool> expectWriteResult;
+    vector<bool> expectReadWriteResult;
+    auto permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    for (int i = 0; i < 10; i++) {
+        string uri = CreatePhotoAsset("test.jpg");
+        vector<string> Tempuris{uri};
+        uris.push_back(uri);
+        permissionType = static_cast<PhotoPermissionType>((unsigned)rand() % 4);
+        if (static_cast<int32_t>(permissionType) == 0 || static_cast<int32_t>(permissionType) == 1) {
+            expectWriteResult.push_back(false);
+            expectReadWriteResult.push_back(false);
+        } else if (static_cast<int32_t>(permissionType) == 2) {
+            expectWriteResult.push_back(true);
+            expectReadWriteResult.push_back(true);
+        } else {
+            expectWriteResult.push_back(true);
+            expectReadWriteResult.push_back(true);
+        }
+        mediaLibraryManager->GrantPhotoUriPermission(appid, Tempuris, permissionType, SensitiveType);
+    }
+    uint64_t tokenId = 0;
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
+    uint32_t permissionFlag = 1;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], true);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], expectWriteResult[i]);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], expectReadWriteResult[i]);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_005 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_011
+ * @tc.name      : Has write system permissions and also uri have grant other permissions
+ * @tc.desc      : Check uri permissions results when has system write permission and other permissions
+ */
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_011, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_010 enter");
+    string appid = "checktest11";
+    vector<string> uris;
+    vector<bool> resultSet;
+    vector<bool> expectReadResult;
+    vector<bool> expectWriteResult;
+    vector<bool> expectReadWriteResult;
+    auto permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    for (int i = 0; i < 10; i++) {
+        string uri = CreatePhotoAsset("test.jpg");
+        vector<string> Tempuris{uri};
+        uris.push_back(uri);
+        permissionType = static_cast<PhotoPermissionType>((unsigned)rand() % 4);
+        if (static_cast<int32_t>(permissionType) == 0 || static_cast<int32_t>(permissionType) == 1) {
+            expectReadResult.push_back(true);
+            expectReadWriteResult.push_back(true);
+        } else if (static_cast<int32_t>(permissionType) == 2) {
+            expectReadResult.push_back(false);
+            expectReadWriteResult.push_back(false);
+        } else {
+            expectReadResult.push_back(true);
+            expectReadWriteResult.push_back(true);
+        }
+        mediaLibraryManager->GrantPhotoUriPermission(appid, Tempuris, permissionType, SensitiveType);
+    }
+    uint64_t tokenId = 0;
+    vector<string> perms;
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
+    uint32_t permissionFlag = 1;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], expectReadResult[i]);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], true);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], expectReadWriteResult[i]);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_0011 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_012
+ * @tc.name      : Has read and write system permissions and also uri have grant other permissions
+ * @tc.desc      : Check uri permissions results when has system read and write permission and other permissions
+ */
+
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_012, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_012 enter");
+    string appid = "checktest12";
+    vector<string> uris;
+    vector<bool> resultSet;
+    auto permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    for (int i = 0; i < 10; i++) {
+        string uri = CreatePhotoAsset("test.jpg");
+        vector<string> Tempuris{uri};
+        uris.push_back(uri);
+        permissionType = static_cast<PhotoPermissionType>((unsigned)rand() % 4);
+        mediaLibraryManager->GrantPhotoUriPermission(appid, Tempuris, permissionType, SensitiveType);
+    }
+    uint64_t tokenId = 0;
+    vector<string> perms;
+    perms.push_back("ohos.permission.READ_IMAGEVIDEO");
+    perms.push_back("ohos.permission.WRITE_IMAGEVIDEO");
+    PermissionUtilsUnitTest::SetAccessTokenPermission("MediaLibraryManagerTest", perms, tokenId);
+    ASSERT_TRUE(tokenId != 0);
+
+    int32_t permissionFlag = 1;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], true);
+    }
+    permissionFlag = 2;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], true);
+    }
+    permissionFlag = 3;
+    mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    for (int i = 0; i < resultSet.size(); i++) {
+        EXPECT_EQ(resultSet[i], true);
+    }
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_0012 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_013
+ * @tc.name      : uri numuber are oversize
+ * @tc.desc      : check error result
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_013, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_013 enter");
+    ASSERT_TRUE(tokenId != 0);
+    tokenId = 0;
+    vector<string> uris;
+    string appid = "checktest13";
+    vector<bool> resultSet;
+    uint32_t permissionFlag = 1;
+    uris.resize(2000);
+    auto ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_013 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_014
+ * @tc.name      : file type do not match
+ * @tc.desc      : check error result
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_014, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_014 enter");
+    ASSERT_TRUE(tokenId != 0);
+    tokenId = 0;
+    vector<string> uris;
+    string appid = "checktest14";
+    vector<bool> resultSet;
+    uint32_t permissionFlag = 1;
+    for (int i = 0; i < 5; i++) {
+        string uri = CreateFile(MEDIALIBRARY_FILE_URI, "Docs/Documents/", "Test" + to_string(txtIndex++) + ".txt",
+        MEDIA_TYPE_FILE, FILE_CONTENT_TXT);
+        uris.push_back(uri);
+    }
+    auto ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_014 exit");
+}
+
+/**
+ * @tc.number    : MediaLibraryManager_CheckPhotoUriPermission_test_015
+ * @tc.name      : file check flag do not match
+ * @tc.desc      : check error result
+ */
+HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_015, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_015 enter");
+    ASSERT_TRUE(tokenId != 0);
+    tokenId = 0;
+    vector<string> uris;
+    string appid = "checktest15";
+    vector<bool> resultSet;
+    auto permissionType = PhotoPermissionType::PERSIST_READ_IMAGEVIDEO;
+    auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
+    uint32_t permissionFlag = 0;
+    for (int i = 0; i < 5; i++) {
+        string uri = CreatePhotoAsset("test.jpg");
+        vector<string> Tempuris{uri};
+        uris.push_back(uri);
+        permissionType = static_cast<PhotoPermissionType>((unsigned)rand() % 4);
+        mediaLibraryManager->GrantPhotoUriPermission(appid, Tempuris, permissionType, SensitiveType);
+    }
+    auto ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
+    EXPECT_EQ(ret, E_ERR);
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_015 exit");
 }
 } // namespace Media
 } // namespace OHOS

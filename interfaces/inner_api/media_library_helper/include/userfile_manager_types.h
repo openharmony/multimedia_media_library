@@ -173,6 +173,13 @@ enum class RequestPhotoType : int32_t {
     REQUEST_QUALITY_THUMBNAIL = 2,
     REQUEST_TYPE_END
 };
+
+enum class CoverSatisfiedType : int32_t {
+    NO_SETTING = 0,
+    DEFAULT_SETTING,
+    USER_SETTING,
+    ANALYSIS_SETTING
+};
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_FILEMANAGEMENT_USERFILEMGR_TYPES_H

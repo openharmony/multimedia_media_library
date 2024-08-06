@@ -656,6 +656,8 @@ int MediaDataShareExtAbility::CheckPermissionForOpenFile(const Uri &uri,
                 CollectPermissionInfo(command, unifyMode, false,
                     PermissionUsedTypeValue::SECURITY_COMPONENT_TYPE);
                 return err;
+            } else {
+                return E_OK;
             }
         }
     }

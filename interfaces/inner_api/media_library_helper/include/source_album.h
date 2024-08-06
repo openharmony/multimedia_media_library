@@ -97,12 +97,13 @@ const std::string SOURCE_ALBUM_WHERE_UPDATE =
     " AND " + PhotoAlbumColumns::ALBUM_SUBTYPE + " = " + std::to_string(OHOS::Media::PhotoAlbumSubType::SOURCE_GENERIC);
 
 const std::string WHEN_SOURCE_PHOTO_COUNT =
-    " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND ( SELECT COUNT(1) FROM " +
-    PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
+    " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND NEW." + MediaColumn::MEDIA_PACKAGE_NAME +
+    " != '' AND ( SELECT COUNT(1) FROM " + PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " )";
 
 const std::string WHEN_SOURCE_PHOTO_COUNT_FOR_BUNDLENAME =
-    " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND ( SELECT COUNT(1) FROM " +
-    PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " AND " + PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " IS NULL" + " )";
+    " WHEN NEW." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL AND NEW." +  MediaColumn::MEDIA_PACKAGE_NAME +
+    " != '' AND ( SELECT COUNT(1) FROM " + PhotoAlbumColumns::TABLE + SOURCE_ALBUM_WHERE + " AND " +
+    PhotoAlbumColumns::ALBUM_BUNDLE_NAME + " IS NULL" + " )";
 
 const std::string WHEN_UPDATE_AND_DELETE = " WHEN OLD." + MediaColumn::MEDIA_PACKAGE_NAME + " IS NOT NULL ";
 
@@ -124,6 +125,9 @@ const std::string DROP_INSERT_PHOTO_UPDATE_SOURCE_ALBUM = "DROP TRIGGER IF EXIST
 const std::string DROP_UPDATE_PHOTO_UPDATE_SOURCE_ALBUM = "DROP TRIGGER IF EXISTS update_photo_update_source_album";
 
 const std::string DROP_DELETE_PHOTO_UPDATE_SOURCE_ALBUM = "DROP TRIGGER IF EXISTS delete_photo_update_source_album";
+
+const std::string DROP_INSERT_PHOTO_UPDATE_ALBUM_BUNDLENAME =
+    "DROP TRIGGER IF EXISTS insert_photo_update_album_bundlename";
 
 const std::string CLEAR_SOURCE_ALBUM_PHOTO_MAP = "DELETE FROM " + PhotoMap::TABLE + " WHERE " + PhotoMap::ASSET_ID +
     " in (SELECT " + MediaColumn::MEDIA_ID + " FROM "+ PhotoColumn::PHOTOS_TABLE +")";

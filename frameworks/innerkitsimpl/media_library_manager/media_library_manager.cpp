@@ -64,15 +64,10 @@ constexpr int32_t DEFAULT_THUMBNAIL_SIZE = 256;
 constexpr int32_t MAX_DEFAULT_THUMBNAIL_SIZE = 768;
 constexpr int32_t DEFAULT_MONTH_THUMBNAIL_SIZE = 128;
 constexpr int32_t DEFAULT_YEAR_THUMBNAIL_SIZE = 64;
-constexpr int32_t NO_DB_OPERATION = -1;
-constexpr int32_t UPDATE_DB_OPERATION = 0;
-constexpr int32_t INSERT_DB_OPERATION = 1;
 constexpr int32_t URI_MAX_SIZE = 1000;
 constexpr uint32_t URI_PERMISSION_FLAG_READ = 1;
 constexpr uint32_t URI_PERMISSION_FLAG_WRITE = 2;
-constexpr uint32_t URI_PERMISSION_FLAG_READWRITE = 0;
-constexpr int32_t OWNER_PRIVIEDGE = 4;
-const string DB_OPERATION = "uriPermission_operation";
+constexpr uint32_t URI_PERMISSION_FLAG_READWRITE = 3;
 
 struct UriParams {
     string path;
@@ -875,7 +870,7 @@ static int32_t UrisSourceMediaTypeClassify(const vector<string> &urisSource,
             }
         }
         if (tableType == -1) {
-            MEDIA_ERR_LOG("Uri invalid error,uri:%{private}s", uri.c_str());
+            MEDIA_ERR_LOG("Uri invalid error, uri:%{private}s", uri.c_str());
             return E_ERR;
         }
         string fileId = MediaFileUtils::GetIdFromUri(uri);
@@ -884,7 +879,7 @@ static int32_t UrisSourceMediaTypeClassify(const vector<string> &urisSource,
         } else if (tableType == static_cast<int32_t>(TableType::TYPE_AUDIOS)) {
             audioFileIds.emplace_back(fileId);
         } else {
-            MEDIA_ERR_LOG("Uri invalid error,uri:%{private}s", uri.c_str());
+            MEDIA_ERR_LOG("Uri invalid error, uri:%{private}s", uri.c_str());
             return E_ERR;
         }
     }
@@ -955,7 +950,7 @@ static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSha
             permissionTypes.emplace_back(
                 to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
             permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(OWNER_PRIVIEDGE)));
+                to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
             break;
         case URI_PERMISSION_FLAG_WRITE:
             permissionTypes.emplace_back(
@@ -963,13 +958,13 @@ static void MakePredicatesForCheckPhotoUriPermission(int32_t &checkFlag, DataSha
             permissionTypes.emplace_back(
                 to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
             permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(OWNER_PRIVIEDGE)));
+                to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
             break;
         case URI_PERMISSION_FLAG_READWRITE:
             permissionTypes.emplace_back(
                 to_string(static_cast<int32_t>(PhotoPermissionType::TEMPORARY_READWRITE_IMAGEVIDEO)));
             permissionTypes.emplace_back(
-                to_string(static_cast<int32_t>(OWNER_PRIVIEDGE)));
+                to_string(static_cast<int32_t>(AppUriPermissionColumn::PERMISSION_PERSIST_READ_WRITE)));
             break;
         default:
             MEDIA_ERR_LOG("error flag object: %{public}d", checkFlag);
@@ -1036,8 +1031,7 @@ static int32_t SetCheckPhotoUriPermissionResult(const vector<string> &urisSource
     return E_SUCCESS;
 }
 
-int32_t MediaLibraryManager::CheckPhotoUriPermission(uint32_t tokenId, const string &appid,
-    const vector<string> &urisSource, vector<bool> &results, uint32_t flag)
+static int32_t CheckInputParameters(const vector<string> &urisSource, uint32_t flag)
 {
     if (urisSource.empty()) {
         MEDIA_ERR_LOG("Media Uri list is empty");
@@ -1047,9 +1041,23 @@ int32_t MediaLibraryManager::CheckPhotoUriPermission(uint32_t tokenId, const str
         MEDIA_ERR_LOG("Uri list is exceed one Thousand, current list size: %{public}d", (int)urisSource.size());
         return E_ERR;
     }
+    if (flag == 0 || flag > URI_PERMISSION_FLAG_READWRITE) {
+        MEDIA_ERR_LOG("Flag is invalid, current flag is: %{public}d", flag);
+        return E_ERR;
+    }
+    return E_SUCCESS;
+}
+
+int32_t MediaLibraryManager::CheckPhotoUriPermission(uint32_t tokenId, const string &appid,
+    const vector<string> &urisSource, vector<bool> &results, uint32_t flag)
+{
+    auto ret = CheckInputParameters(urisSource, flag);
+    if (ret != E_SUCCESS) {
+        return E_ERR;
+    }
     vector<string> photoFileIds;
     vector<string> audioFileIds;
-    auto ret = UrisSourceMediaTypeClassify(urisSource, photoFileIds, audioFileIds);
+    ret = UrisSourceMediaTypeClassify(urisSource, photoFileIds, audioFileIds);
     if (ret != E_SUCCESS) {
         return E_ERR;
     }
@@ -1089,55 +1097,12 @@ int32_t MediaLibraryManager::CheckPhotoUriPermission(uint32_t tokenId, const str
         queryPhotoFlag, queryAudioFlag);
 }
 
-static int32_t GetDbOperation(DataShareValuesBucket values, int32_t permissionType)
-{
-    bool isvaild;
-    if ((static_cast<int32_t>(values.Get(AppUriPermissionColumn::PERMISSION_TYPE, isvaild)) == permissionType) ||
-    (permissionType == OWNER_PRIVIEDGE)) {
-        return NO_DB_OPERATION;
-    }
-    return UPDATE_DB_OPERATION;
-}
-
-static void QueryAllResultByAppid(const string appid, vector<DataShareValuesBucket>& resultSet,
-    shared_ptr<DataShare::DataShareHelper> sDataShareHelper_)
-{
-    Uri queryUri(MEDIALIBRARY_GRANT_URIPERM_URI);
-    DataSharePredicates predicates;
-    vector<string> columns;
-    DatashareBusinessError error;
-    vector<string> valuesIn;
-    bool isvaild;
-    for (const auto &res : resultSet) {
-        valuesIn.push_back(to_string(static_cast<int32_t>(res.Get(AppUriPermissionColumn::FILE_ID, isvaild))));
-    }
-    predicates.In(AppUriPermissionColumn::FILE_ID, valuesIn);
-    predicates.And()->EqualTo(AppUriPermissionColumn::APP_ID, appid);
-    auto queryResult = sDataShareHelper_->Query(queryUri, predicates, columns, &error);
-    if (queryResult == nullptr || queryResult->GoToFirstRow() != 0) {
-        return;
-    }
-
-    do {
-        int32_t fileId = GetInt32Val(AppUriPermissionColumn::FILE_ID, queryResult);
-        int32_t mediaType = GetInt32Val(AppUriPermissionColumn::URI_TYPE, queryResult);
-        int32_t permissionType = GetInt32Val(AppUriPermissionColumn::PERMISSION_TYPE, queryResult);
-        for (int i = 0; i < resultSet.size(); i++) {
-            bool isvaild;
-            if ((static_cast<int32_t>(resultSet[i].Get(AppUriPermissionColumn::FILE_ID, isvaild)) == fileId) &&
-            (static_cast<int32_t>(resultSet[i].Get(AppUriPermissionColumn::URI_TYPE, isvaild)) == mediaType)) {
-                resultSet[i].Put(DB_OPERATION, GetDbOperation(resultSet[i], permissionType));
-            }
-        }
-    } while (!queryResult->GoToNextRow());
-}
-
 int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const vector<string> &uris,
     PhotoPermissionType photoPermissionType, HideSensitiveType hideSensitiveTpye)
 {
     vector<DataShareValuesBucket> valueSet;
     if ((uris.empty()) || (uris.size() > URI_MAX_SIZE)) {
-        MEDIA_ERR_LOG("Media Uri list error,please check!");
+        MEDIA_ERR_LOG("Media Uri list error, please check!");
         return E_ERR;
     }
     shared_ptr<DataShare::DataShareHelper> dataShareHelper =
@@ -1154,25 +1119,16 @@ int32_t MediaLibraryManager::GrantPhotoUriPermission(const string &appid, const 
             }
         }
         if (tableType == -1) {
-            MEDIA_ERR_LOG("Uri invalid error,uri:%{private}s", uri.c_str());
+            MEDIA_ERR_LOG("Uri invalid error, uri:%{private}s", uri.c_str());
             return E_INVALID_URI;
         }
         string fileId = MediaFileUtils::GetIdFromUri(uri);
         DataShareValuesBucket valuesBucket;
         valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
-        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, static_cast<int32_t>(stoi(fileId)));
+        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
         valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, tableType);
         valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, static_cast<int32_t>(photoPermissionType));
         valueSet.push_back(valuesBucket);
-    }
-
-    QueryAllResultByAppid(appid, valueSet, dataShareHelper);
-    for (int i = 0; i < valueSet.size(); i++) {
-        bool isvaild;
-        valueSet[i].Get(DB_OPERATION, isvaild);
-        if (!isvaild) {
-            valueSet[i].Put(DB_OPERATION, INSERT_DB_OPERATION);
-        }
     }
     Uri insertUri(MEDIALIBRARY_GRANT_URIPERM_URI);
     dataShareHelper->BatchInsert(insertUri, valueSet);

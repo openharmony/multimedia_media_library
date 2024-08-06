@@ -40,11 +40,13 @@ public:
     // permissionTypes
     static const int PERMISSION_TEMPORARY_READ EXPORT;
     static const int PERMISSION_PERSIST_READ EXPORT;
-    static const int PERMISSION_TEMPORARY_WHRITE EXPORT;
-    static const int PERMISSION_PERSIST_WHRITE EXPORT;
+    static const int PERMISSION_TEMPORARY_WRITE EXPORT;
+    static const int PERMISSION_TEMPORARY_READ_WRITE EXPORT;
     static const int PERMISSION_PERSIST_READ_WRITE EXPORT;
     static const std::set<int> PERMISSION_TYPES_ALL EXPORT;
     static const std::set<int> PERMISSION_TYPES_PICKER EXPORT;
+    static const std::set<int> PERMISSION_TYPES_TEMPORARY EXPORT;
+    static const std::set<int> PERMISSION_TYPES_PERSIST EXPORT;
 
     // index
     static const std::string URI_URITYPE_APPID_INDEX EXPORT;
@@ -55,7 +57,7 @@ public:
     // default fetch columns
     static const std::set<std::string> DEFAULT_FETCH_COLUMNS EXPORT;
 
-    // create table sql
+    // create sql
     static const std::string CREATE_APP_URI_PERMISSION_TABLE EXPORT;
     static const std::string CREATE_URI_URITYPE_APPID_INDEX EXPORT;
 

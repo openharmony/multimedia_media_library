@@ -28,19 +28,19 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Media {
-void MediaLibrarySmartalbumMapOperationTest::SetUpTestCase(void) {}
+void MediaLibrarySmartalbumMapOperationsTest::SetUpTestCase(void) {}
 
-void MediaLibrarySmartalbumMapOperationTest::TearDownTestCase(void) {}
+void MediaLibrarySmartalbumMapOperationsTest::TearDownTestCase(void) {}
 
 //SetUp:Execute before each test case
-void MediaLibrarySmartalbumMapOperationTest::SetUp()
+void MediaLibrarySmartalbumMapOperationsTest::SetUp()
 {
     MediaLibraryUnitTestUtils::InitUnistore();
 }
 
-void MediaLibrarySmartalbumMapOperationTest::TearDown(void) {}
+void MediaLibrarySmartalbumMapOperationsTest::TearDown(void) {}
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialib_HandleSmartAlbumMapOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
@@ -59,7 +59,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOpe
     EXPECT_EQ(ret, E_SMARTALBUM_IS_NOT_EXISTED);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialib_HandleSmartAlbumMapOperation_test_002, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
@@ -79,7 +79,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOpe
     EXPECT_EQ(ret, E_GET_VALUEBUCKET_FAIL);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOperation_test_003, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialib_HandleSmartAlbumMapOperation_test_003, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleSmartAlbumMapOperation(cmd);
@@ -92,7 +92,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleSmartAlbumMapOpe
     EXPECT_EQ(ret, E_SMARTALBUM_IS_NOT_EXISTED);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialib_HandleAddAssetOperation_test_001, TestSize.Level0)
 {
     MediaLibraryUnistoreManager::GetInstance().Stop();
 
@@ -122,7 +122,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperatio
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialib_HandleAddAssetOperation_test_002, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     cmd.SetTableName(MEDIALIBRARY_TABLE);
@@ -135,7 +135,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperatio
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperation_test_003, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialib_HandleAddAssetOperation_test_003, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::CREATE);
     MediaLibraryUnistoreManager::GetInstance().Stop();
@@ -159,7 +159,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAddAssetOperatio
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleRemoveAssetOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialib_HandleRemoveAssetOperation_test_001, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     int32_t ret = MediaLibrarySmartAlbumMapOperations::HandleRemoveAssetOperation(0, 0, cmd);
@@ -184,7 +184,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleRemoveAssetOpera
     EXPECT_EQ(ret, E_INVALID_FILEID);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleRemoveAssetOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialib_HandleRemoveAssetOperation_test_002, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::DELETE);
     NativeRdb::ValuesBucket values;
@@ -197,7 +197,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleRemoveAssetOpera
     EXPECT_EQ(ret, E_HAS_DB_ERROR);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAgingOperation_test_001, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialib_HandleAgingOperation_test_001, TestSize.Level0)
 {
     MediaLibraryUnistoreManager::GetInstance().Stop();
 
@@ -222,7 +222,7 @@ HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAgingOperation_t
     EXPECT_EQ(ret, E_OK);
 }
 
-HWTEST_F(MediaLibrarySmartalbumMapOperationTest, medialib_HandleAgingOperation_test_002, TestSize.Level0)
+HWTEST_F(MediaLibrarySmartalbumMapOperationsTest, medialib_HandleAgingOperation_test_002, TestSize.Level0)
 {
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_ASSET, OperationType::AGING);
     cmd.SetTableName(MEDIALIBRARY_TABLE);

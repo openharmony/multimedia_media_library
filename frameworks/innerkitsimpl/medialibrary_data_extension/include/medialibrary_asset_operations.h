@@ -71,7 +71,9 @@ EXPORT const std::unordered_map<std::string, int> FILEASSET_MEMBER_MAP = {
     { PhotoColumn::MOVING_PHOTO_EFFECT_MODE, MEMBER_TYPE_INT32 },
     { PhotoColumn::PHOTO_COVER_POSITION, MEMBER_TYPE_INT64 },
     { AudioColumn::AUDIO_ALBUM, MEMBER_TYPE_STRING },
-    { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING }
+    { AudioColumn::AUDIO_ARTIST, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_BURST_KEY, MEMBER_TYPE_STRING },
+    { PhotoColumn::PHOTO_BURST_COVER_LEVEL, MEMBER_TYPE_INT32 }
 };
 
 class MediaLibraryAssetOperations {
@@ -144,7 +146,7 @@ protected:
         std::string &value);
     static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
-        bool isForceScan = false);
+        bool isForceScan = false, int32_t fileId = 0);
 
     static std::string GetEditDataDirPath(const std::string &path);
     static std::string GetEditDataPath(const std::string &path);

@@ -43,6 +43,7 @@ public:
     static std::string GetDetailsPath(const std::string &type,
         const std::unordered_map<std::string, int32_t> &failedFiles);
     static std::string GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles);
+    static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);

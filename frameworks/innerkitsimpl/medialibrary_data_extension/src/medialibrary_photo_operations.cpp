@@ -676,6 +676,9 @@ static string GetUriWithoutSeg(const string &oldUri)
 
 int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("MediaLibraryPhotoOperations::SaveCameraPhoto");
+    MEDIA_INFO_LOG("start");
     string fileId = cmd.GetQuerySetParam(PhotoColumn::MEDIA_ID);
     if (fileId.empty()) {
         MEDIA_ERR_LOG("get fileId fail");
@@ -708,16 +711,20 @@ int32_t MediaLibraryPhotoOperations::SaveCameraPhoto(MediaLibraryCommand &cmd)
             MEDIA_INFO_LOG("update temp flag fail.");
         }
     }
+    string uri = cmd.GetQuerySetParam(PhotoColumn::MEDIA_FILE_PATH);
+    auto watch = MediaLibraryNotify::GetInstance();
+    if (watch != nullptr) {
+        watch->Notify(GetUriWithoutSeg(uri), NOTIFY_ADD);
+    }
+
     string needScanStr = cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD);
     if (needScanStr.compare("1") == 0) {
-        string uri = cmd.GetQuerySetParam(PhotoColumn::MEDIA_FILE_PATH);
         string path = MediaFileUri::GetPathFromUri(uri, true);
         if (!path.empty()) {
-            auto watch = MediaLibraryNotify::GetInstance();
-            watch->Notify(GetUriWithoutSeg(uri), NOTIFY_ADD);
-            ScanFile(path, true, true, true);
+            ScanFile(path, false, true, true, stoi(fileId));
         }
     }
+    MEDIA_INFO_LOG("Success, updatedRows: %{public}d, needScanStr: %{public}s", updatedRows, needScanStr.c_str());
     return updatedRows;
 }
 

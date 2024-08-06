@@ -37,6 +37,7 @@ using namespace OHOS::AppExecFwk::Constants;
 
 const int32_t CAPACITY = 50;
 const int32_t HDC_SHELL_UID = 2000;
+const int32_t BASE_USER_RANGE = 200000;
 
 std::list<std::pair<int32_t, BundleInfo>> PermissionUtils::bundleInfoList_ = {};
 std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> PermissionUtils::bundleInfoMap_ = {};
@@ -494,7 +495,6 @@ string PermissionUtils::GetAppIdByBundleName(const string &bundleName, int32_t u
         return appId;
     }
 
-    const static int32_t BASE_USER_RANGE = 200000;
     int32_t userId = uid / BASE_USER_RANGE;
     MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
 
