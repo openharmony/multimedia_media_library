@@ -20,9 +20,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include "directory_ex.h"
-#include "iservice_registry.h"
-#include "media_actively_calling_analyse.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "medialibrary_analysis_album_operations.h"
@@ -36,19 +33,8 @@
 #include "medialibrary_rdbstore.h"
 #include "medialibrary_tracer.h"
 #include "medialibrary_unistore_manager.h"
-#include "multistages_capture_manager.h"
 #include "photo_album_column.h"
 #include "photo_map_column.h"
-
-#include "result_set_utils.h"
-#include "values_bucket.h"
-#include "medialibrary_formmap_operations.h"
-#include "media_file_uri.h"
-#include "media_file_utils.h"
-#include "vision_album_column.h"
-#include "vision_face_tag_column.h"
-#include "vision_photo_map_column.h"
-#include "vision_total_column.h"
 
 using namespace std;
 using namespace OHOS::NativeRdb;
