@@ -262,7 +262,16 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
         NAPI_ERR_LOG("only photo or audio uri is valid");
         return ERROR;
     }
-    std::string fileIdStr = tmp.substr(0, tmp.find_first_of('/'));
+    size_t fisrtSlashIndex = tmp.find_first_of('/');
+    if (fisrtSlashIndex == string::npos) {
+        NAPI_ERR_LOG("second half of uri includes no slash");
+        return ERROR;
+    }
+    std::string fileIdStr = tmp.substr(0, fisrtSlashIndex);
+    if (fileIdStr.empty()) {
+        NAPI_ERR_LOG("intercepted fileId is empty");
+        return ERROR;
+    }
     if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
         return std::stoi(fileIdStr);
     }
