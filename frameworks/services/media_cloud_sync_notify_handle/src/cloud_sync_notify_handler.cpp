@@ -147,11 +147,6 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
         return;
     }
 
-    if (uriString.find(PhotoColumn::PHOTO_HEIGHT_ERROR_URI_PREFIX) != string::npos) {
-        HandleCloudHeightErrorNotify(notifyInfo_.uris);
-        return;
-    }
-
     if (uriString.find("file://cloudsync/Photo/DownloadSuccessed/") != string::npos) {
         return;
     }
