@@ -73,16 +73,16 @@ public:
     EXPORT void SetAlbum(const VariantData &album);
     EXPORT const std::string &GetAlbum() const;
 
-    void SetFileHeight(const VariantData &height);
+    EXPORT void SetFileHeight(const VariantData &height);
     EXPORT int32_t GetFileHeight() const;
 
-    void SetFileWidth(const VariantData &width);
+    EXPORT void SetFileWidth(const VariantData &width);
     EXPORT int32_t GetFileWidth() const;
 
     void SetOrientation(const VariantData &orientation);
     EXPORT int32_t GetOrientation() const;
 
-    void SetFileDuration(const VariantData &duration);
+    EXPORT void SetFileDuration(const VariantData &duration);
     EXPORT int32_t GetFileDuration() const;
 
     EXPORT int32_t GetParentId() const;
