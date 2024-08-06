@@ -76,7 +76,7 @@ public:
     EXPORT void SetFileHeight(const VariantData &height);
     EXPORT int32_t GetFileHeight() const;
 
-    void SetFileWidth(const VariantData &width);
+    EXPORT void SetFileWidth(const VariantData &width);
     EXPORT int32_t GetFileWidth() const;
 
     void SetOrientation(const VariantData &orientation);
