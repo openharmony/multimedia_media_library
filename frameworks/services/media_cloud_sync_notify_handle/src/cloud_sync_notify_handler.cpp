@@ -143,6 +143,14 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
     string uriString = notifyInfo_.uris.front().ToString();
     MEDIA_DEBUG_LOG("observer get first uri is : %{public}s", uriString.c_str());
 
+    if (uriString.find("file://cloudsync/Photo/HeightError/") != string::npos) {
+        return;
+    }
+
+    if (uriString.find("file://cloudsync/Photo/DownloadSuccessed/") != string::npos) {
+        return;
+    }
+
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {
         ThumbnailObserverOnChange(notifyInfo_.uris, notifyInfo_.type);
     }
