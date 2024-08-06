@@ -130,8 +130,7 @@ void AnalysisHandler::Handle(const CloudSyncHandleData &handleData)
     if (nextHandler_ != nullptr) {
         nextHandler_->Handle(newHandleData);
     }
-
-    RefreshAlbums(true);
+    refreshAlbumsFunc_(true);
 }
 } //namespace Media
 } //namespace OHOS
