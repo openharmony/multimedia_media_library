@@ -1118,7 +1118,6 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
         vector<string> Tempuris{uri};
         uris.push_back(uri);
         permissionType = static_cast<PhotoPermissionType>((unsigned)rand() % 4);
-        printf("grant permission level:%d\n", static_cast<int>(permissionType));
         mediaLibraryManager->GrantPhotoUriPermission(appid, Tempuris, permissionType, SensitiveType);
     }
     permissionType = PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO;
@@ -1183,8 +1182,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_te
     vector<string> previliegeInColumn;
     auto permissionType = PhotoPermissionType::TEMPORARY_WRITE_IMAGEVIDEO;
     auto SensitiveType = HideSensitiveType::GEOGRAPHIC_LOCATION_DESENSITIZE;
-    for (int i = 0; i < 10; i++)
-    {
+    for (int i = 0; i < 10; i++) {
         string previlegeUri = CreateOwnerPrivliegeAssets(appid);
         auto photouri = CreatePhotoAsset("test.jpg");
         uris.push_back(previlegeUri);
@@ -1462,8 +1460,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
     vector<string> uris;
     string appid = "checktest7";
     vector<bool> resultSet;
-    for (int i = 0; i < 10; i++)
-    {
+    for (int i = 0; i < 10; i++) {
         string uri = CreateFile(MEDIALIBRARY_AUDIO_URI, "Audios/", "Test" + to_string(audioIndex++) + ".mp3",
         MEDIA_TYPE_AUDIO, FILE_CONTENT_MP3);
         uris.push_back(uri);
@@ -1608,7 +1605,6 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Has read system permissions and also uri have grant other permissions
  * @tc.desc      : Check uri permissions results when has system read permission and other permission
  */
-
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_010, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_010 enter");
@@ -1665,10 +1661,9 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Has write system permissions and also uri have grant other permissions
  * @tc.desc      : Check uri permissions results when has system write permission and other permissions
  */
-
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_011, TestSize.Level0)
 {
-    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_010 enter");
+    MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_011 enter");
     string appid = "checktest11";
     vector<string> uris;
     vector<bool> resultSet;
@@ -1723,7 +1718,6 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
  * @tc.name      : Has read and write system permissions and also uri have grant other permissions
  * @tc.desc      : Check uri permissions results when has system read and write permission and other permissions
  */
-
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_test_012, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_012 enter");
@@ -1778,7 +1772,7 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
     string appid = "checktest13";
     vector<bool> resultSet;
     uint32_t permissionFlag = 1;
-    uris.resize(2000);
+    uris.resize(1001);
     auto ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_013 exit");
