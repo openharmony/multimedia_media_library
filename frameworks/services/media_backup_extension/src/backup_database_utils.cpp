@@ -29,6 +29,10 @@
 
 namespace OHOS {
 namespace Media {
+const int32_t SCALE_FACTOR = 2;
+const int32_t SCALE_MIN_SIZE = 1080;
+const int32_t SCALE_MAX_SIZE = 2560;
+const float SCALE_DEFAULT = 0.25;
 const size_t MIN_GARBLE_SIZE = 2;
 const size_t GARBLE_START = 1;
 const size_t XY_DIMENSION = 2;
@@ -488,14 +492,15 @@ bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_
             faceInfo.faceId.c_str(), fileInfo.width, fileInfo.height);
         return false;
     }
+    float scale = GetLandmarksScale(fileInfo.width, fileInfo.height);
     nlohmann::json landmarksJson = nlohmann::json::parse(faceInfo.landmarks);
     for (auto &landmark : landmarksJson) {
         if (!landmark.contains(LANDMARK_X) || !landmark.contains(LANDMARK_Y)) {
             MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, lack of x or y", faceInfo.faceId.c_str());
             return false;
         }
-        landmark[LANDMARK_X] = float(landmark[LANDMARK_X]) / fileInfo.width;
-        landmark[LANDMARK_Y] = float(landmark[LANDMARK_Y]) / fileInfo.height;
+        landmark[LANDMARK_X] = float(landmark[LANDMARK_X]) / fileInfo.width / scale;
+        landmark[LANDMARK_Y] = float(landmark[LANDMARK_Y]) / fileInfo.height / scale;
     }
     faceInfo.landmarks = landmarksJson.dump();
     return true;
@@ -557,6 +562,28 @@ void BackupDatabaseUtils::PrintErrorLog(const std::string &errorLog, int64_t sta
 {
     int64_t end = MediaFileUtils::UTCTimeMilliSeconds();
     MEDIA_INFO_LOG("%{public}s, cost %{public}ld", errorLog.c_str(), (long)(end - start));
+}
+
+float BackupDatabaseUtils::GetLandmarksScale(int32_t width, int32_t height)
+{
+    float scale = 1;
+    int32_t minWidthHeight = width <= height : width : height;
+    if (minWidthHeight >= SCALE_MIN_SIZE * SCALE_FACTOR) {
+        minWidthHeight = static_cast<int32_t>(minWidthHeight * SCALE_DEFAULT);
+        scale = SCALE_DEFAULT;
+        if (minWidthHeight < SCALE_MIN_SIZE) {
+            minWidthHeight *= SCALE_FACTOR;
+            scale *= SCALE_FACTOR;
+        }
+        if (minWidthHeight < SCALE_MIN_SIZE) {
+            scale = 1;
+        }
+    }
+    width = static_cast<int32_t>(width * scale);
+    height = static_cast<int32_t>(height * scale);
+    int32_t maxWidthHeight = width >= height : width : height;
+    scale *= maxWidthHeight >= SCALE_MAX_SIZE ? static_cast<float>(SCALE_MAX_SIZE) / maxWidthHeight : 1;
+    return scale;
 }
 } // namespace Media
 } // namespace OHOS
