@@ -197,6 +197,7 @@ static const std::unordered_set<std::string> FILE_KEY_WHITE_LIST {
     SCALE_WIDTH,
     ANALYSIS_VERSION,
     FEATURES,
+    PHOTO_FILE_ID,
 };
 
 bool MediaLibraryCommonUtils::CheckWhiteList(const std::string &express)
