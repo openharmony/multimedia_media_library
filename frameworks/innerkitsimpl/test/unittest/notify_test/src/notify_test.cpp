@@ -200,6 +200,15 @@ static void CheckInfo(shared_ptr<TestObserver> obs, const std::string &uriPrefix
         if (changeType == DataShareObserver::ChangeType::OTHER) {
             EXPECT_EQ(obs->changeInfo_.changeType_,
                 static_cast<DataShareObserver::ChangeType>(NotifyType::NOTIFY_REMOVE));
+        } else if (changeType == DataShareObserver::ChangeType::INSERT) {
+            EXPECT_EQ(obs->changeInfo_.changeType_,
+                static_cast<DataShareObserver::ChangeType>(NotifyType::NOTIFY_ADD));
+        } else if (changeType == DataShareObserver::ChangeType::UPDATE) {
+            EXPECT_EQ(obs->changeInfo_.changeType_,
+                static_cast<DataShareObserver::ChangeType>(NotifyType::NOTIFY_UPDATE));
+        } else if (changeType == DataShareObserver::ChangeType::DELETE) {
+            EXPECT_EQ(obs->changeInfo_.changeType_,
+                static_cast<DataShareObserver::ChangeType>(NotifyType::NOTIFY_REMOVE));
         } else {
             EXPECT_EQ(obs->changeInfo_.changeType_, changeType);
         }
