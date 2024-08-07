@@ -57,6 +57,7 @@ ohos_shared_library("media_library_manager") {
     "image_framework:image_native",
     "kv_store:distributeddata_inner",
     "relational_store:rdb_data_share_adapter",
+    "samgr:samgr_proxy",
   ]
 
   ldflags = [ "-Wl,--gc-sections" ]
