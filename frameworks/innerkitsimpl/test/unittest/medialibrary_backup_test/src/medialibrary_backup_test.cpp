@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define MLOG_TAG "BackupTest"
+
 #include "medialibrary_backup_test.h"
 
 #include <sys/stat.h>
@@ -52,6 +54,15 @@ const int EXPECTED_NUM = 30;
 const int EXPECTED_OREINTATION = 270;
 const int TEST_LOCAL_MEDIA_ID = 12345;
 const int TEST_PREFIX_LEVEL = 4;
+const int TEST_SIZE_MIN = 1080;
+const int TEST_SIZE_MAX = 2560;
+const int TEST_SIZE_INCR_UNIT = 100;
+const int TEST_SIZE_MULT_UNIT = 2;
+const float TEST_SCALE_MIN = 0.2;
+const float TEST_SCALE_MAX = 0.8;
+const float TEST_LANDMARK_BELOW = 0.1;
+const float TEST_LANDMARK_BETWEEN = 0.5;
+const float TEST_LANDMARK_ABOVE = 0.9;
 const std::string EXPECTED_PACKAGE_NAME = "wechat";
 const std::string EXPECTED_USER_COMMENT = "user_comment";
 const int64_t EXPECTED_DATE_ADDED = 1432973383179;
@@ -2006,15 +2017,140 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_007 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level_001, TestSize.Level0)
 {
-    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level start";
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_001 start";
     std::string path = "/../";
     size_t pos = 0;
     bool result = BackupFileUtils::GetPathPosByPrefixLevel(DUAL_FRAME_CLONE_RESTORE_ID, path, TEST_PREFIX_LEVEL,
         pos);
     EXPECT_EQ(result, false);
-    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level end";
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_001 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level_002, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_002 start";
+    std::string path = "/../";
+    size_t pos = 0;
+    bool result = BackupFileUtils::GetPathPosByPrefixLevel(DUAL_FRAME_CLONE_RESTORE_ID, path, TEST_PREFIX_LEVEL,
+        pos);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_002 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level_003, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_003 start";
+    std::string path = "/../";
+    size_t pos = 0;
+    bool result = BackupFileUtils::GetPathPosByPrefixLevel(DUAL_FRAME_CLONE_RESTORE_ID, path, TEST_PREFIX_LEVEL,
+        pos);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_003 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_001 start";
+    int length = TEST_SIZE_MIN; // (0, 2 * min), no need to scale
+    float scale = BackupDatabaseUtils::GetLandmarksScale(length, length);
+    EXPECT_EQ(scale, 1);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_001 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_002, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_002 start";
+    int length = TEST_SIZE_MIN * TEST_SIZE_MULT_UNIT + TEST_SIZE_INCR_UNIT; // [2 * min, 4 * min)
+    float scale = BackupDatabaseUtils::GetLandmarksScale(length , length);
+    float expectedScale = 1.0 / TEST_SIZE_MULT_UNIT;
+    EXPECT_EQ(scale, expectedScale);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_002 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_003, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_003 start";
+    int length = TEST_SIZE_MIN * TEST_SIZE_MULT_UNIT * TEST_SIZE_MULT_UNIT; // [4 * min, ...)
+    float scale = BackupDatabaseUtils::GetLandmarksScale(length , length);
+    float expectedScale = 1.0 / TEST_SIZE_MULT_UNIT / TEST_SIZE_MULT_UNIT;
+    EXPECT_EQ(scale, expectedScale);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_003 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_004, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_004 start";
+    int width = TEST_SIZE_MIN;
+    int height = TEST_SIZE_MAX * TEST_SIZE_MULT_UNIT; // max len exceeds
+    float scale = BackupDatabaseUtils::GetLandmarksScale(width , height);
+    float expectedScale = 1.0 / TEST_SIZE_MULT_UNIT;
+    EXPECT_EQ(scale, expectedScale);
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_004 end";
+}
+
+void InitFaceInfoScale(FaceInfo &faceInfo, float scaleX, float scaleY, float scaleWidth, float scaleHeight)
+{
+    faceInfo.scaleX = scaleX;
+    faceInfo.scaleY = scaleY.scaleX;
+    faceInfo.scaleWidth = scaleWidth;
+    faceInfo.scaleHeight = scaleHeight;
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_001 start";
+    FaceInfo faceInfo;
+    InitFaceInfoScale(faceInfo, TEST_SCALE_MIN, TEST_SCALE_MIN, TEST_SCALE_MAX - TEST_SCALE_MIN,
+        TEST_SCALE_MAX - TEST_SCALE_MIN);
+    bool result = BackupDatabaseUtils::IsLandmarkValid(faceInfo, TEST_LANDMARK_BETWEEN, TEST_LANDMARK_BETWEEN);
+    EXPECT_EQ(result, true);
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_001 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_002, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_002 start";
+    FaceInfo faceInfo;
+    InitFaceInfoScale(faceInfo, TEST_SCALE_MIN, TEST_SCALE_MIN, TEST_SCALE_MAX - TEST_SCALE_MIN,
+        TEST_SCALE_MAX - TEST_SCALE_MIN);
+    bool result = BackupDatabaseUtils::IsLandmarkValid(faceInfo, TEST_LANDMARK_BETWEEN, TEST_LANDMARK_BELOW);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_002 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_003, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_003 start";
+    FaceInfo faceInfo;
+    InitFaceInfoScale(faceInfo, TEST_SCALE_MIN, TEST_SCALE_MIN, TEST_SCALE_MAX - TEST_SCALE_MIN,
+        TEST_SCALE_MAX - TEST_SCALE_MIN);
+    bool result = BackupDatabaseUtils::IsLandmarkValid(faceInfo, TEST_LANDMARK_BETWEEN, TEST_LANDMARK_ABOVE);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_003 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_004, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_004 start";
+    FaceInfo faceInfo;
+    InitFaceInfoScale(faceInfo, TEST_SCALE_MIN, TEST_SCALE_MIN, TEST_SCALE_MAX - TEST_SCALE_MIN,
+        TEST_SCALE_MAX - TEST_SCALE_MIN);
+    bool result = BackupDatabaseUtils::IsLandmarkValid(faceInfo, TEST_LANDMARK_BELOW, TEST_LANDMARK_BETWEEN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_004 end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_005, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_005 start";
+    FaceInfo faceInfo;
+    InitFaceInfoScale(faceInfo, TEST_SCALE_MIN, TEST_SCALE_MIN, TEST_SCALE_MAX - TEST_SCALE_MIN,
+        TEST_SCALE_MAX - TEST_SCALE_MIN);
+    bool result = BackupDatabaseUtils::IsLandmarkValid(faceInfo, TEST_LANDMARK_ABOVE, TEST_LANDMARK_BETWEEN);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_005 end";
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_duplicate_number, TestSize.Level0)

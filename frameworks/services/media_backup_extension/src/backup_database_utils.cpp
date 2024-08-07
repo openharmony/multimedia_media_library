@@ -501,6 +501,12 @@ bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_
         }
         landmark[LANDMARK_X] = float(landmark[LANDMARK_X]) / fileInfo.width / scale;
         landmark[LANDMARK_Y] = float(landmark[LANDMARK_Y]) / fileInfo.height / scale;
+        if (IsLandmarkValid(faceInfo, landmark[LANDMARK_X], landmark[LANDMARK_Y]) {
+            continue;
+        }
+        MEDIA_WARN_LOG("Given landmark may be invalid, (%{public}f, %{public}f), rect TL: (%{public}f, %{public}f), "
+            "rect BR: (%{public}f, %{public}f)", landmark[LANDMARK_X], landmark[LANDMARK_Y], faceInfo.scaleX,
+            faceInfo.scaleY, faceInfo.scaleX + faceInfo.scaleWidth, faceInfo.scaleY + faceInfo.scaleHeight);
     }
     faceInfo.landmarks = landmarksJson.dump();
     return true;
@@ -584,6 +590,17 @@ float BackupDatabaseUtils::GetLandmarksScale(int32_t width, int32_t height)
     int32_t maxWidthHeight = width >= height : width : height;
     scale *= maxWidthHeight >= SCALE_MAX_SIZE ? static_cast<float>(SCALE_MAX_SIZE) / maxWidthHeight : 1;
     return scale;
+}
+
+bool BackupDatabaseUtils::IsLandmarkValid(const FaceInfo &faceInfo, float landmarkX, float landmarkY)
+{
+    return IsValInBound(landmarkX, faceInfo.scaleX, faceInfo.scaleX + faceInfo.scaleWidth) &&
+        IsValInBound(landmarkY, faceInfo.scaleY, faceInfo.scaleY + faceInfo.scaleHeight);
+}
+
+bool BackupDatabaseUtils::IsValInBound(float val, float minVal, float maxVal)
+{
+    return val >= minVal && val <= maxVal;
 }
 } // namespace Media
 } // namespace OHOS
