@@ -24,13 +24,19 @@ namespace OHOS {
 namespace Media {
 
 using ChangeType = DataShare::DataShareObserver::ChangeType;
+unordered_map<ChangeType, NotifyType> NotifyTypeChangeMap = {
+    {ChangeType::INSERT, NotifyType::NOTIFY_ADD},
+    {ChangeType::UPDATE, NotifyType::NOTIFY_UPDATE},
+    {ChangeType::DELETE, NotifyType::NOTIFY_REMOVE},
+};
 
-static inline void AddNewNotify(CloudSyncHandleData &newHandleData,
-    const list<Uri> &sendUris, const ChangeType &sendType)
+static void AddNewNotify(CloudSyncHandleData &newHandleData,
+    const list<Uri> &sendUris, const ChangeType &changeType)
 {
     if (sendUris.size() <= 0) {
         return;
     }
+    ChangeType sendType = static_cast<ChangeType>(NotifyTypeChangeMap[changeType]);
     if (newHandleData.notifyInfo.find(sendType) == newHandleData.notifyInfo.end()) {
         newHandleData.notifyInfo[sendType] = sendUris;
     } else {
@@ -48,10 +54,8 @@ void UriConvertHandler::Handle(const CloudSyncHandleData &handleData)
     CloudSyncHandleData newHandleData = handleData;
 
     if (handleData.orgInfo.type == ChangeType::OTHER) {
-        AddNewNotify(newHandleData, { Uri(PhotoColumn::PHOTO_URI_PREFIX) },
-            static_cast<ChangeType>(NotifyType::NOTIFY_REMOVE));
-        AddNewNotify(newHandleData, { Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX) },
-            static_cast<ChangeType>(NotifyType::NOTIFY_REMOVE));
+        AddNewNotify(newHandleData, { Uri(PhotoColumn::PHOTO_URI_PREFIX) }, ChangeType::DELETE);
+        AddNewNotify(newHandleData, { Uri(PhotoAlbumColumns::ALBUM_URI_PREFIX) }, ChangeType::DELETE);
     } else {
         newNotifyInfo.type = handleData.orgInfo.type;
         for (auto &uri : handleData.orgInfo.uris) {
