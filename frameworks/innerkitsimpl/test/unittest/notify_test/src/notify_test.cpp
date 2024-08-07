@@ -622,8 +622,16 @@ HWTEST_F(NotifyTest, handle_empty_data_001, TestSize.Level0)
     ASSERT_TRUE(rdbStore != nullptr);
     CloudSyncHandleData emptyHandleData;
     emptyHandleData.orgInfo.type = DataShareObserver::ChangeType::OTHER;
-    AnalysisHandler handler;
-    handler.Handle(emptyHandleData);
+
+    bool refreshAlbumsCalled = false;
+    auto mockRefreshAlbums = [&refreshAlbumsCalled](bool) {
+        refreshAlbumsCalled = true;
+    };
+
+    auto handler = make_shared<AnalysisHandler>(mockRefreshAlbums);
+    handler->Handle(emptyHandleData);
+
+    ASSERT_TRUE(refreshAlbumsCalled);
     MEDIA_INFO_LOG("handle_empty_data_001 exit");
 }
 

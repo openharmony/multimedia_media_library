@@ -41,6 +41,7 @@ public:
     static const int ERROR;
     static const int SUCCEED;
     static const int ALREADY_EXIST;
+    static const int NO_DATA;
 
     static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
     static int32_t BatchInsert(MediaLibraryCommand &cmd,
@@ -49,10 +50,30 @@ public:
     static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryOperation(
         DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumns);
 private:
+    /**
+     * query newData before insert, use this method.
+     * @param resultFlag ERROR: query newData error.
+     *                   NO_DATA: newData not exist in database.
+     *                   ALREADY_EXIST: newData already exist in database.
+     */
     static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryNewData(
         OHOS::NativeRdb::ValuesBucket &valueBucket, int &resultFlag);
+    /**
+     * get the value of the int type corresponding to {@code column} from {@code valueBucket}.
+     * @param result target value
+     * @return true: Successfully obtained the value.
+     *         false: failed to get the value.
+     */
     static bool GetIntFromValuesBucket(OHOS::NativeRdb::ValuesBucket &valueBucket,
-        const std::string column, int &result);
+        const std::string &column, int &result);
+    /**
+     * @param resultSetDB must contain id value.
+     * @param valueBucketParam must contain permissionType value.
+     */
+    static int UpdatePermissionType(std::shared_ptr<OHOS::NativeRdb::ResultSet> &resultSetDB,
+        int &permissionTypeParam);
+    static bool IsValidPermissionType(int &permissionType);
+    static bool CanOverride(int &permissionTypeParam, int &permissionTypeDB);
 };
 } // namespace Media
 } // namespace OHOS

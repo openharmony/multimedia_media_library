@@ -38,6 +38,8 @@ namespace OHOS {
 namespace Media {
 const string API_VERSION = "api_version";
 const double TIMER_MULTIPLIER = 60.0;
+const int32_t BURST_COVER = 1;
+const int32_t BURST_MEMBER = 2;
 
 PhotoAssetProxy::PhotoAssetProxy() {}
 
@@ -107,7 +109,6 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         MEDIA_ERR_LOG("Failed to create Asset, burstKey is empty when CameraShotType::BURST");
         return;
     }
-
     string displayName = photoProxy->GetTitle() + "." + photoProxy->GetExtension();
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
     if (mediaType != MEDIA_TYPE_IMAGE) {
@@ -124,12 +125,13 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
         values.Put(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
         values.Put(PhotoColumn::PHOTO_BURST_KEY, photoProxy->GetBurstKey());
         if (photoProxy->IsCoverPhoto()) {
-            values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
+            values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER);
+        } else {
+            values.Put(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_MEMBER);
         }
     }
     values.Put(MEDIA_DATA_CALLING_UID, static_cast<int32_t>(callingUid_));
     values.Put(PhotoColumn::PHOTO_IS_TEMP, true);
-
     string uri = PAH_CREATE_PHOTO;
     MediaFileUtils::UriAppendKeyValue(uri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri createUri(uri);
@@ -140,10 +142,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
     }
     MEDIA_INFO_LOG(
         "CreatePhotoAsset Success, photoId: %{public}s, fileId: %{public}d, uri: %{public}s, burstKey: %{public}s",
-        photoProxy->GetPhotoId().c_str(),
-        fileId_,
-        uri_.c_str(),
-        photoProxy->GetBurstKey().c_str());
+        photoProxy->GetPhotoId().c_str(), fileId_, uri_.c_str(), photoProxy->GetBurstKey().c_str());
 }
 
 static bool isHighQualityPhotoExist(string uri)
@@ -213,7 +212,7 @@ int PhotoAssetProxy::PackAndSaveImage(int fd, const string &uri, const sptr<Phot
         return E_ERR;
     }
 
-    MEDIA_INFO_LOG("start pack PixelMap");
+    MEDIA_DEBUG_LOG("start pack PixelMap");
     Media::InitializationOptions opts;
     opts.pixelFormat = Media::PixelFormat::RGBA_8888;
     opts.size = {

@@ -63,7 +63,7 @@ public:
 
     EXPORT int32_t GetIdFromPath(const std::string &path);
     EXPORT int32_t GetFileBasicInfo(const std::string &path, std::unique_ptr<Metadata> &ptr,
-        MediaLibraryApi api = MediaLibraryApi::API_OLD);
+        MediaLibraryApi api = MediaLibraryApi::API_OLD, int32_t fileId = 0);
 
     EXPORT int32_t RecordError(const std::string &err);
     EXPORT std::set<std::string> ReadError();

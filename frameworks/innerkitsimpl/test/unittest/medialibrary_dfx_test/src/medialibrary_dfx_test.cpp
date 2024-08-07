@@ -131,7 +131,7 @@ HWTEST_F(MediaLibraryDfxTest, medialib_cloud_manager_test, TestSize.Level0)
     int32_t generatedThumb = 0;
     int32_t totalDownload = 0;
     DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(downloadedThumb, generatedThumb);
-    DfxDatabaseUtils::QueryCloudThumbTotalDownload(totalDownload);
+    DfxDatabaseUtils::QueryTotalCloudThumb(totalDownload);
 
     EXPECT_EQ(downloadedThumb, 0);
     EXPECT_EQ(generatedThumb, 0);
@@ -143,6 +143,12 @@ HWTEST_F(MediaLibraryDfxTest, medialib_cloud_manager_test, TestSize.Level0)
     StartState::Process(CloudSyncDfxManager::GetInstance());
     EndState::StateSwitch(CloudSyncDfxManager::GetInstance());
     EndState::Process(CloudSyncDfxManager::GetInstance());
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_dfx_one_day_report_test, TestSize.Level0)
+{
+    int64_t result = DfxManager::GetInstance()->HandleOneDayReport();
+    EXPECT_GT(result, 0);
 }
 } // namespace Media
 } // namespace OHOS

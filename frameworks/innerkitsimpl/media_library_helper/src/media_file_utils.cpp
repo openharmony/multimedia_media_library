@@ -62,8 +62,10 @@ const std::string PHOTO_DIR = "Photo";
 const std::string AUDIO_DIR = "Audio";
 const std::string THUMBS_DIR = ".thumbs";
 const std::string EDIT_DATA_DIR = ".editData";
+const std::string THUMBS_PHOTO_DIR = ".thumbs/Photo";
+const std::string EDIT_DATA_PHOTO_DIR = ".editData/Photo";
 const std::vector<std::string> SET_LISTEN_DIR = {
-    PHOTO_DIR, AUDIO_DIR, THUMBS_DIR, EDIT_DATA_DIR
+    PHOTO_DIR, AUDIO_DIR, THUMBS_DIR, EDIT_DATA_DIR, THUMBS_PHOTO_DIR, EDIT_DATA_PHOTO_DIR
 };
 #define HMFS_IOCTL_HW_GET_FLAGS _IOR(0XF5, 70, unsigned int)
 #define HMFS_IOCTL_HW_SET_FLAGS _IOR(0XF5, 71, unsigned int)
@@ -364,6 +366,47 @@ bool MediaFileUtils::DeleteDir(const string &dirName)
     return errRet;
 }
 
+void MediaFileUtils::BackupPhotoDir()
+{
+    string dirPath = ROOT_MEDIA_DIR + PHOTO_BUCKET;
+    // check whether dir empty
+    if (!IsDirEmpty(dirPath)) {
+        MEDIA_INFO_LOG("backup for: %{private}s", dirPath.c_str());
+        string suffixName = dirPath.substr(ROOT_MEDIA_DIR.length());
+        CreateDirectory(ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR);
+        MoveFile(dirPath, ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + suffixName);
+    }
+}
+
+void MediaFileUtils::RecoverMediaTempDir()
+{
+    string recoverPath = ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR + SLASH_STR + PHOTO_BUCKET;
+    if (!IsDirEmpty(recoverPath)) {
+        DIR *dir = opendir((recoverPath).c_str());
+        if (dir == nullptr) {
+            MEDIA_ERR_LOG("Error opening temp directory");
+            return;
+        }
+        
+        struct dirent *entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            // filter . && .. dir
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+            std::string fullPath = recoverPath + SLASH_STR + entry->d_name;
+            struct stat fileStat;
+            if (stat(fullPath.c_str(), &fileStat) == -1) {
+                closedir(dir);
+                return;
+            }
+            string suffixName = fullPath.substr((recoverPath).length());
+            MoveFile(fullPath, ROOT_MEDIA_DIR + PHOTO_BUCKET + SLASH_STR + suffixName);
+        }
+        DeleteDir(ROOT_MEDIA_DIR + MEDIALIBRARY_TEMP_DIR);
+    }
+}
+
 bool MediaFileUtils::MoveFile(const string &oldPath, const string &newPath)
 {
     bool errRet = false;
@@ -383,7 +426,7 @@ bool MediaFileUtils::CopyFileUtil(const string &filePath, const string &newPath)
         MEDIA_ERR_LOG("File path too long %{public}d", static_cast<int>(filePath.size()));
         return errCode;
     }
-    MEDIA_INFO_LOG("File path is %{private}s", filePath.c_str());
+    MEDIA_DEBUG_LOG("File path is %{private}s", filePath.c_str());
     string absFilePath;
     if (!PathToRealPath(filePath, absFilePath)) {
         MEDIA_ERR_LOG("file is not real path, file path: %{private}s", filePath.c_str());
@@ -436,12 +479,36 @@ bool MediaFileUtils::SetEPolicy()
     return true;
 }
 
+void MediaFileUtils::SetDeletionRecord(int fd, const string &fileName)
+{
+    unsigned int flags = 0;
+    int ret = -1;
+    ret = ioctl(fd, HMFS_IOCTL_HW_GET_FLAGS, &flags);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("File %{public}s Failed to get flags, errno is %{public}d", fileName.c_str(), errno);
+        return;
+    }
+
+    if (flags & HMFS_MONITOR_FL) {
+        return;
+    }
+    flags |= HMFS_MONITOR_FL;
+    ret = ioctl(fd, HMFS_IOCTL_HW_SET_FLAGS, &flags);
+    if (ret < 0) {
+        MEDIA_ERR_LOG("File %{public}s Failed to set flags, errno is %{public}d", fileName.c_str(), errno);
+        return;
+    }
+    MEDIA_INFO_LOG("Flie %{public}s Set Delete control flags is success", fileName.c_str());
+}
+
 void MediaFileUtils::MediaFileDeletionRecord()
 {
     int fd = -1;
-    unsigned int flags = 0;
+    int bucketFd = -1;
     string path;
-    int ret = -1;
+    struct dirent* dirEntry;
+    DIR* fileDir;
+    MEDIA_INFO_LOG("Set DeletionRecord for directory");
     for (auto &dir : SET_LISTEN_DIR) {
         path = LISTENING_BASE_PATH + dir;
         fd = open(path.c_str(), O_RDONLY);
@@ -449,28 +516,29 @@ void MediaFileUtils::MediaFileDeletionRecord()
             MEDIA_ERR_LOG("Failed to open the Dir, errno is %{public}d, %{public}s", errno, dir.c_str());
             continue;
         }
-
-        ret = ioctl(fd, HMFS_IOCTL_HW_GET_FLAGS, &flags);
-        if (ret < 0) {
-            MEDIA_ERR_LOG("Failed to get flags, errno is %{public}d, %{public}s", errno, dir.c_str());
-            close(fd);
-            continue;
-        }
-
-        if (flags & HMFS_MONITOR_FL) {
-            close(fd);
-            continue;
-        }
-
-        flags |= HMFS_MONITOR_FL;
-        ret = ioctl(fd, HMFS_IOCTL_HW_SET_FLAGS, &flags);
-        if (ret < 0) {
-            MEDIA_ERR_LOG("Failed to set flags, errno is %{public}d, %{public}s", errno, dir.c_str());
-            close(fd);
-            continue;
-        }
+        SetDeletionRecord(fd, dir);
         close(fd);
-        MEDIA_INFO_LOG("Set Delete control flags is success %{public}s", dir.c_str());
+        if ((strcmp(dir.c_str(), ".thumbs") == 0) || (strcmp(dir.c_str(), ".editData") == 0)) {
+            continue;
+        }
+        if ((fileDir = opendir(path.c_str())) == nullptr) {
+            MEDIA_ERR_LOG("dir not exist: %{private}s, error: %{public}d", path.c_str(), errno);
+            continue;
+        }
+        while ((dirEntry = readdir(fileDir)) != nullptr) {
+            if ((strcmp(dirEntry->d_name, ".") == 0) || (strcmp(dirEntry->d_name, "..") == 0)) {
+                continue;
+            }
+            std::string fileName = path + "/" + dirEntry->d_name;
+            bucketFd = open(fileName.c_str(), O_RDONLY);
+            if (bucketFd < 0) {
+                MEDIA_ERR_LOG("Failed to open the bucketFd Dir error: %{public}d", errno);
+                continue;
+            }
+            SetDeletionRecord(bucketFd, dirEntry->d_name);
+            close(bucketFd);
+        }
+        closedir(fileDir);
     }
 }
 
@@ -869,7 +937,7 @@ string MediaFileUtils::UpdatePath(const string &path, const string &uri)
 
     string networkId = GetNetworkIdFromUri(uri);
     if (networkId.empty()) {
-        MEDIA_INFO_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
+        MEDIA_DEBUG_LOG("MediaFileUtils::UpdatePath retStr = %{private}s", retStr.c_str());
         return retStr;
     }
 

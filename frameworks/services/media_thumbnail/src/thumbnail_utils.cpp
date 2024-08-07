@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #define MLOG_TAG "Thumbnail"
 
 #include "thumbnail_utils.h"
@@ -731,6 +732,8 @@ bool ThumbnailUtils::QueryNoAstcInfosRestored(ThumbRdbOpt &opts, vector<Thumbnai
     };
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
+    rdbPredicates.BeginWrap()->EqualTo(PhotoColumn::PHOTO_POSITION, "1")->Or()->
+        EqualTo(PhotoColumn::PHOTO_POSITION, "3")->EndWrap();
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     rdbPredicates.Limit(ASTC_GENERATE_COUNT_AFTER_RESTORE);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
@@ -774,6 +777,8 @@ bool ThumbnailUtils::QueryNoAstcInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &
         ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0")
         ->Or()
         ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "2")
+        ->Or()
+        ->EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "7")
         ->EndWrap();
     rdbPredicates.BeginWrap()
         ->BeginWrap()
@@ -1715,16 +1720,15 @@ bool ThumbnailUtils::ResizeThumb(int &width, int &height)
             width = maxLen;
             height = minLen;
         }
-    } else if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD) {
-        if (ratio > ASPECT_RATIO_THRESHOLD) {
-            int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
-            if (height > width) {
-                width = minLen;
-                height = newMaxLen;
-            } else {
-                width = newMaxLen;
-                height = minLen;
-            }
+    }
+    if (minLen <= SHORT_SIDE_THRESHOLD && maxLen > SHORT_SIDE_THRESHOLD && ratio > ASPECT_RATIO_THRESHOLD) {
+        int newMaxLen = static_cast<int>(minLen * ASPECT_RATIO_THRESHOLD);
+        if (height > width) {
+            width = minLen;
+            height = newMaxLen;
+        } else {
+            width = newMaxLen;
+            height = minLen;
         }
     }
     return true;
@@ -2127,11 +2131,16 @@ bool ThumbnailUtils::QueryNoAstcInfosOnDemand(ThumbRdbOpt &opts,
     vector<string> column = {
         MEDIA_DATA_DB_ID,
         MEDIA_DATA_DB_FILE_PATH,
+        MEDIA_DATA_DB_HEIGHT,
+        MEDIA_DATA_DB_WIDTH,
+        MEDIA_DATA_DB_POSITION,
         MEDIA_DATA_DB_MEDIA_TYPE,
         MEDIA_DATA_DB_DATE_ADDED,
         MEDIA_DATA_DB_NAME,
+        MEDIA_DATA_DB_ORIENTATION,
     };
     rdbPredicate.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, "0");
+    rdbPredicate.EqualTo(MEDIA_DATA_DB_TIME_PENDING, "0");
     rdbPredicate.Limit(THUMBNAIL_GENERATE_BATCH_COUNT);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicate, column);
     if (!CheckResultSetCount(resultSet, err)) {

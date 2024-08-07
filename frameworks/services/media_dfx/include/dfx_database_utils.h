@@ -34,8 +34,9 @@ public:
     static std::vector<PhotoInfo> QueryDirtyCloudPhoto();
     static int32_t QueryAnalysisVersion(const std::string &table, const std::string &column);
     static int32_t QueryDownloadedAndGeneratedThumb(int32_t& downloadedThumb, int32_t& generatedThumb);
-    static int32_t QueryCloudThumbTotalDownload(int32_t& totalDownload);
+    static int32_t QueryTotalCloudThumb(int32_t& totalDownload);
     static int32_t QueryDbVersion();
+    static int32_t QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo);
 
 private:
     static int32_t QueryInt(const NativeRdb::AbsRdbPredicates &predicates, const std::vector<std::string> &columns,

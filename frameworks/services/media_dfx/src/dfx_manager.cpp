@@ -316,6 +316,7 @@ int64_t DfxManager::HandleOneDayReport()
     }
     dfxReporter_->ReportThumbnailError();
     dfxReporter_->ReportAdaptationToMovingPhoto();
+    dfxReporter_->ReportPhotoRecordInfo();
     return MediaFileUtils::UTCTimeSeconds();
 }
 
@@ -328,7 +329,7 @@ void DfxManager::HandleAdaptationToMovingPhoto(const string &appName, bool adapt
     dfxCollector_->CollectAdaptationToMovingPhotoInfo(appName, adapted);
 }
 
-bool GetIsReported()
+bool IsReported()
 {
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
@@ -340,7 +341,7 @@ bool GetIsReported()
     return prefs->GetBool(IS_REPORTED, false);
 }
 
-void SetIsReported(bool isReported)
+void SetReported(bool isReported)
 {
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
@@ -377,12 +378,14 @@ void CloudSyncDfxManager::InitSyncState()
         case CloudSyncStatus::BEGIN:
         case CloudSyncStatus::SYNC_SWITCHED_OFF:
             syncState_ = SyncState::INIT_STATE;
-            break;
+            return;
         case CloudSyncStatus::FIRST_FIVE_HUNDRED:
         case CloudSyncStatus::TOTAL_DOWNLOAD:
             syncState_ = SyncState::START_STATE;
+            return;
         case CloudSyncStatus::TOTAL_DOWNLOAD_FINISH:
             syncState_ = SyncState::END_STATE;
+            return;
         default:
             return;
     }
@@ -397,7 +400,8 @@ bool InitState::StateSwitch(CloudSyncDfxManager& manager)
             manager.syncState_ = SyncState::START_STATE;
             return true;
         case CloudSyncStatus::TOTAL_DOWNLOAD_FINISH:
-            manager.syncState_ =  SyncState::END_STATE;
+            manager.syncState_ = SyncState::END_STATE;
+            MEDIA_INFO_LOG("CloudSyncDfxManager new status:%{public}hu", manager.syncState_);
             return true;
         default:
             return false;
@@ -406,9 +410,10 @@ bool InitState::StateSwitch(CloudSyncDfxManager& manager)
 
 void InitState::Process(CloudSyncDfxManager& manager)
 {
+    MEDIA_INFO_LOG("CloudSyncDfxManager new status:%{public}hu", manager.syncState_);
     manager.ResetStartTime();
     manager.ShutDownTimer();
-    SetIsReported(false);
+    SetReported(false);
 }
 
 void CloudSyncDfxManager::RunDfx()
@@ -416,7 +421,6 @@ void CloudSyncDfxManager::RunDfx()
     uint16_t oldState = static_cast<uint16_t>(syncState_);
     if (stateProcessFuncs_[oldState].StateSwitch(*this)) {
         uint16_t newState = static_cast<uint16_t>(syncState_);
-        MEDIA_INFO_LOG("CloudSyncDfxManager new status:%{public}hu", syncState_);
         stateProcessFuncs_[newState].Process(*this);
     }
 }
@@ -431,6 +435,7 @@ bool StartState::StateSwitch(CloudSyncDfxManager& manager)
             return true;
         case CloudSyncStatus::TOTAL_DOWNLOAD_FINISH:
             manager.syncState_ = SyncState::END_STATE;
+            MEDIA_INFO_LOG("CloudSyncDfxManager new status:%{public}hu", manager.syncState_);
             return true;
         default:
             return false;
@@ -439,9 +444,10 @@ bool StartState::StateSwitch(CloudSyncDfxManager& manager)
 
 void StartState::Process(CloudSyncDfxManager& manager)
 {
+    MEDIA_INFO_LOG("CloudSyncDfxManager new status:%{public}hu", manager.syncState_);
     manager.SetStartTime();
-    manager.SetTimer();
-    SetIsReported(false);
+    manager.StartTimer();
+    SetReported(false);
 }
 
 bool EndState::StateSwitch(CloudSyncDfxManager& manager)
@@ -461,26 +467,30 @@ bool EndState::StateSwitch(CloudSyncDfxManager& manager)
 
 void EndState::Process(CloudSyncDfxManager& manager)
 {
-    if (!GetIsReported()) {
-        manager.SetStartTime();
-        manager.SetTimer();
-        int32_t downloadedThumb = 0;
-        int32_t generatedThumb = 0;
-        if (!DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(downloadedThumb, generatedThumb)) {
-            if (downloadedThumb != generatedThumb) return;
-            int32_t totalDownload = 0;
-            DfxDatabaseUtils::QueryCloudThumbTotalDownload(totalDownload);
-            if (totalDownload != downloadedThumb) return;
-            SetIsReported(true);
-            manager.ShutDownTimer();
-            DfxReporter::ReportCloudSyncThumbGenerationStatus(downloadedThumb, generatedThumb, totalDownload);
-        }
-    } else {
+    if (IsReported()) {
         manager.ShutDownTimer();
+        return;
+    }
+    manager.SetStartTime();
+    manager.StartTimer();
+    int32_t downloadedThumb = 0;
+    int32_t generatedThumb = 0;
+    if (!DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(downloadedThumb, generatedThumb)) {
+        if (downloadedThumb != generatedThumb) {
+            return;
+        }
+        int32_t totalDownload = 0;
+        DfxDatabaseUtils::QueryTotalCloudThumb(totalDownload);
+        if (totalDownload != downloadedThumb) {
+            return;
+        }
+        SetReported(true);
+        manager.ShutDownTimer();
+        DfxReporter::ReportCloudSyncThumbGenerationStatus(downloadedThumb, generatedThumb, totalDownload);
     }
 }
 
-void CloudSyncDfxManager::SetTimer()
+void CloudSyncDfxManager::StartTimer()
 {
     if (timerId_ != 0) {
         return;
@@ -490,19 +500,19 @@ void CloudSyncDfxManager::SetTimer()
         return;
     }
     Utils::Timer::TimerCallback timerCallback = [this]() {
-        if (GetIsReported()) {
+        if (IsReported()) {
             return;
         }
         int32_t generatedThumb = 0;
         int32_t downloadedThumb = 0;
         if (!DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(downloadedThumb, generatedThumb)) {
             int32_t totalDownload = 0;
-            DfxDatabaseUtils::QueryCloudThumbTotalDownload(totalDownload);
+            DfxDatabaseUtils::QueryTotalCloudThumb(totalDownload);
             if (downloadedThumb == generatedThumb && totalDownload == generatedThumb) {
                 MEDIA_INFO_LOG("CloudSyncDfxManager Dfx report Thumb generation status, "
                     "download: %{public}d, generate: %{public}d", downloadedThumb, generatedThumb);
-                SetIsReported(true);
-            }     
+                SetReported(true);
+            }
             DfxReporter::ReportCloudSyncThumbGenerationStatus(downloadedThumb, generatedThumb, totalDownload);
         }
     };
@@ -543,6 +553,7 @@ void CloudSyncDfxManager::SetStartTime()
         return;
     }
     int64_t time = prefs->GetLong(CLOUD_SYNC_START_TIME, 0);
+    // if startTime exists, no need to reset startTime
     if (time != 0) {
         return;
     }

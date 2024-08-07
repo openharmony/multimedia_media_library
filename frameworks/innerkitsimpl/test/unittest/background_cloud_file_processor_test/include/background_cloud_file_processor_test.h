@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,22 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef MEDIALIBRARY_EXT_UNIT_TEST_H
-#define MEDIALIBRARY_EXT_UNIT_TEST_H
-
-#include "medialibrary_unittest_utils.h"
+#ifndef BACKGROUND_CLOUD_FILE_PROCESSOR_TEST_H
+#define BACKGROUND_CLOUD_FILE_PROCESSOR_TEST_H
 
 #include <gtest/gtest.h>
 
-namespace OHOS {
-namespace Media {
-class MediaLibrarySmartalbumMapOperationsTest : public testing::Test {
+namespace OHOS::Media {
+class BackgroundCloudFileProcessorTest : public testing::Test {
 public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
+    static void SetUpTestCase();
+    static void TearDownTestCase();
+    void SetUp() override;
+    void TearDown() override;
 };
-}
-}
-#endif
+} // namespace OHOS::Media
+#endif // BACKGROUND_CLOUD_FILE_PROCESSOR_TEST_H
