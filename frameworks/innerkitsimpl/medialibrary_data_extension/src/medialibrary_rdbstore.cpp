@@ -2550,6 +2550,16 @@ static void UpdateIndexForAlbumQuery(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::UPDATE_READY_ON_THUMBNAIL_UPGRADE,
+    };
+    MEDIA_INFO_LOG("start update ready for thumbnail upgrade");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2943,6 +2953,17 @@ static void UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
+static void UpgradeExtensionTwice(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
+        UpdateIndexForAlbumQuery(store);
+    }
+    
+    if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
+        UpdateReadyOnThumbnailUpgrade(store);
+    }
+}
+
 static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
@@ -3005,9 +3026,8 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
         CreateBurstkeyIndex(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
-        UpdateIndexForAlbumQuery(store);
-    }
+    UpgradeExtensionTwice(store, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 static void CreatePhotosExtTable(RdbStore &store)
