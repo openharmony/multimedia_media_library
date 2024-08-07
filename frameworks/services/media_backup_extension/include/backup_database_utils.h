@@ -84,6 +84,8 @@ public:
     static bool SetAlbumIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, int32_t> &albumIdMap);
     static void PrintErrorLog(const std::string &errorLog, int64_t start);
     static float GetLandmarksScale(int32_t width, int32_t height);
+    static bool IsLandmarkValid(const FaceInfo &faceInfo, float landmarkX, float landmarkY);
+    static bool IsValInBound(float val, float minVal, float maxVal);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);
