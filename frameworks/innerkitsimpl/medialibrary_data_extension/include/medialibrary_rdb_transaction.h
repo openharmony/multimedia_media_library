@@ -25,7 +25,6 @@
 
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
-static constexpr int32_t SQLITE3_DATABASE_LOCKER = -5;
 /**
  * This class is used for database transaction creation, commit, and rollback
  * The usage of class is as follows:
