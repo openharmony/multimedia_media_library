@@ -119,24 +119,30 @@ static int32_t ParseResultSet(const string &querySql, int32_t mediaTypePara, int
 
 int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
 {
+    const string sameCondition = MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
+        PhotoColumn::PHOTO_SYNC_STATUS + " = " +
+        to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
+        PhotoColumn::PHOTO_CLEAN_FLAG + " = " +
+        to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN));
+
     const string imageAndVideoCountQuerySql = "SELECT " + MediaColumn::MEDIA_TYPE + ", COUNT(*) AS " + RECORD_COUNT +
-        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_TIME_PENDING + " = 0 GROUP BY " +
+        " FROM " + PhotoColumn::PHOTOS_TABLE + " WHERE " + sameCondition + " GROUP BY " +
         MediaColumn::MEDIA_TYPE;
 
     const string abnormalSizeCountQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_SIZE + " = " + ABNORMAL_VALUE +
-        " AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0";
+        " AND " + sameCondition;
 
     const string abnormalWidthHeightQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE (" + PhotoColumn::PHOTO_WIDTH +
         " = " + ABNORMAL_VALUE + "OR" + PhotoColumn::PHOTO_HEIGHT +
-        " = " + ABNORMAL_VALUE + ") AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0";
+        " = " + ABNORMAL_VALUE + ") AND " + sameCondition;
 
     const string abnormalVideoDurationQuerySql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_DURATION + " = " +
         ABNORMAL_VALUE + " AND " + MediaColumn::MEDIA_TYPE + " = " +
         std::to_string(MEDIA_TYPE_VIDEO) +
-        " AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0";
+        " AND " + sameCondition;
 
     const string totalAbnormalRecordSql = "SELECT COUNT(*) AS " + RECORD_COUNT + " FROM " +
         PhotoColumn::PHOTOS_TABLE + " WHERE (" + MediaColumn::MEDIA_SIZE + " = 0 OR " +
@@ -146,8 +152,7 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
         PhotoColumn::PHOTO_WIDTH + " = 0 OR " + PhotoColumn::PHOTO_WIDTH + " IS NULL OR ((" +
         MediaColumn::MEDIA_DURATION + " IS NULL OR " +
         MediaColumn::MEDIA_DURATION + " = 0 ) AND " +
-        MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " )) AND " +
-        MediaColumn::MEDIA_TIME_PENDING + " = 0";
+        MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " )) AND " + sameCondition;
 
     int32_t ret = ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_VIDEO, photoRecordInfo.videoCount);
     ret = ret | ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_IMAGE, photoRecordInfo.imageCount);

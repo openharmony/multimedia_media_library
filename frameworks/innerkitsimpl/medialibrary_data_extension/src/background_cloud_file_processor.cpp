@@ -266,6 +266,10 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
         ->EndWrap()
         ->And()
         ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0)
+        ->And()
+        ->EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE))
+        ->And()
+        ->EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN))
         ->Limit(UPDATE_BATCH_SIZE);
 
     return MediaLibraryRdbStore::Query(predicates, columns);
