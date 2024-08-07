@@ -150,6 +150,8 @@ thread_local napi_ref MediaLibraryNapi::sDeliveryModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sSourceModeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPositionTypeEnumRef_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sPhotoSubType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sPhotoPermissionType_ = nullptr;
+thread_local napi_ref MediaLibraryNapi::sHideSensitiveType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sDynamicRangeType_ = nullptr;
 thread_local napi_ref MediaLibraryNapi::sHiddenPhotosDisplayModeEnumRef_ = nullptr;
 using CompleteCallback = napi_async_complete_callback;
@@ -272,6 +274,8 @@ napi_value MediaLibraryNapi::UserFileMgrInit(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("AlbumSubType", CreateAlbumSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoSubType", CreatePhotoSubTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("PhotoPermissionType", CreatePhotoPermissionTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("HideSensitiveType", CreateHideSensitiveTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DynamicRangeType", CreateDynamicRangeTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
@@ -330,6 +334,8 @@ napi_value MediaLibraryNapi::PhotoAccessHelperInit(napi_env env, napi_value expo
         DECLARE_NAPI_PROPERTY("AlbumSubtype", CreateAlbumSubTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PositionType", CreatePositionTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("PhotoSubtype", CreatePhotoSubTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("PhotoPermissionType", CreatePhotoPermissionTypeEnum(env)),
+        DECLARE_NAPI_PROPERTY("HideSensitiveType", CreateHideSensitiveTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("NotifyType", CreateNotifyTypeEnum(env)),
         DECLARE_NAPI_PROPERTY("DefaultChangeUri", CreateDefaultChangeUriEnum(env)),
         DECLARE_NAPI_PROPERTY("HiddenPhotosDisplayMode", CreateHiddenPhotosDisplayModeEnum(env)),
@@ -5328,6 +5334,16 @@ napi_value MediaLibraryNapi::CreatePositionTypeEnum(napi_env env)
 napi_value MediaLibraryNapi::CreatePhotoSubTypeEnum(napi_env env)
 {
     return CreateNumberEnumProperty(env, photoSubTypeEnum, sPhotoSubType_);
+}
+
+napi_value MediaLibraryNapi::CreatePhotoPermissionTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, photoPermissionTypeEnum, sPhotoPermissionType_);
+}
+
+napi_value MediaLibraryNapi::CreateHideSensitiveTypeEnum(napi_env env)
+{
+    return CreateNumberEnumProperty(env, hideSensitiveTypeEnum, sHideSensitiveType_);
 }
 
 napi_value MediaLibraryNapi::CreateDynamicRangeTypeEnum(napi_env env)
