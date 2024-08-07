@@ -42,13 +42,13 @@ namespace Media {
 using namespace FileManagement::CloudSync;
 
 static constexpr int32_t DOWNLOAD_BATCH_SIZE = 5;
-static constexpr int32_t PROCESS_INTERVAL = 60 * 1000; // 1 minute
-static constexpr int32_t DOWNLOAD_DURATION = 20 * 1000; // 20 seconds
 static constexpr int32_t UPDATE_BATCH_SIZE = 3;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
 
+int32_t BackgroundCloudFileProcessor::processInterval_ = 60 * 1000;  // 1 minute
+int32_t BackgroundCloudFileProcessor::downloadDuration_ = 20 * 1000; // 20 seconds
 recursive_mutex BackgroundCloudFileProcessor::mutex_;
 Utils::Timer BackgroundCloudFileProcessor::timer_("background_cloud_file_processor");
 uint32_t BackgroundCloudFileProcessor::startTimerId_ = 0;
@@ -200,7 +200,7 @@ void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *dat
     auto *taskData = static_cast<DownloadCloudFilesData *>(data);
     auto downloadFiles = taskData->downloadFiles_;
 
-    MEDIA_INFO_LOG("Try to download %{public}zu cloud files.", downloadFiles.paths.size());
+    MEDIA_DEBUG_LOG("Try to download %{public}zu cloud files.", downloadFiles.paths.size());
     for (const auto &path : downloadFiles.paths) {
         int32_t ret = CloudSyncManager::GetInstance().StartDownloadFile(path);
         if (ret != E_OK) {
@@ -214,19 +214,20 @@ void BackgroundCloudFileProcessor::DownloadCloudFilesExecutor(AsyncTaskData *dat
         if (stopTimerId_ > 0) {
             timer_.Unregister(stopTimerId_);
         }
-        stopTimerId_ = timer_.Register([=]() { StopDownloadFiles(downloadFiles.paths); }, DOWNLOAD_DURATION, true);
+        stopTimerId_ = timer_.Register(StopDownloadFiles, downloadDuration_, true);
     }
 }
 
-void BackgroundCloudFileProcessor::StopDownloadFiles(const std::vector<std::string> &filePaths)
+void BackgroundCloudFileProcessor::StopDownloadFiles()
 {
-    for (const auto &path : filePaths) {
+    for (const auto &path : curDownloadPaths_) {
         MEDIA_INFO_LOG("Try to Stop downloading cloud file, the path is %{public}s", path.c_str());
         int32_t ret = CloudSyncManager::GetInstance().StopDownloadFile(path);
         if (ret != E_OK) {
             MEDIA_ERR_LOG("Stop downloading cloud file failed, err: %{public}d, path: %{public}s", ret, path.c_str());
         }
     }
+    curDownloadPaths_.clear();
 }
 
 std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateData()
@@ -466,7 +467,7 @@ void BackgroundCloudFileProcessor::StartTimer()
         MEDIA_ERR_LOG("Failed to start background download cloud files timer, err: %{public}d", ret);
     }
     isUpdating_ = true;
-    startTimerId_ = timer_.Register(ProcessCloudData, PROCESS_INTERVAL);
+    startTimerId_ = timer_.Register(ProcessCloudData, processInterval_);
 }
 
 void BackgroundCloudFileProcessor::StopTimer()
@@ -480,7 +481,7 @@ void BackgroundCloudFileProcessor::StopTimer()
     startTimerId_ = 0;
     stopTimerId_ = 0;
     StopUpdateData();
-    StopDownloadFiles(curDownloadPaths_);
+    StopDownloadFiles();
 }
 } // namespace Media
 } // namespace OHOS

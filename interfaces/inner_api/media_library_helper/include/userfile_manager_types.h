@@ -176,9 +176,9 @@ enum class RequestPhotoType : int32_t {
 
 enum class CoverSatisfiedType : int32_t {
     NO_SETTING = 0,
-    DEFAULT_SETTING,
-    USER_SETTING,
-    ANALYSIS_SETTING
+    DEFAULT_SETTING = 1,
+    USER_SETTING = 2,
+    ANALYSIS_SETTING = 4
 };
 } // namespace Media
 } // namespace OHOS

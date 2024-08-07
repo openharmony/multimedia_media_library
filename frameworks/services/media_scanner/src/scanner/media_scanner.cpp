@@ -67,6 +67,16 @@ void MediaScannerObj::SetErrorPath(const std::string &path)
     errorPath_ = path;
 }
 
+void MediaScannerObj::SetForceScan(bool isForceScan)
+{
+    isForceScan_ = isForceScan;
+}
+
+void MediaScannerObj::SetFileId(int32_t fileId)
+{
+    fileId_ = fileId;
+}
+
 int32_t MediaScannerObj::ScanFile()
 {
     MEDIA_DEBUG_LOG("scan file %{private}s", path_.c_str());
@@ -404,7 +414,7 @@ int32_t MediaScannerObj::BuildData(const struct stat &statInfo)
         return E_INVALID_ARGUMENTS;
     }
 
-    int32_t err = mediaScannerDb_->GetFileBasicInfo(path_, data_, api_);
+    int32_t err = mediaScannerDb_->GetFileBasicInfo(path_, data_, api_, fileId_);
     if (err != E_OK) {
         MEDIA_ERR_LOG("failed to get file basic info");
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, err},

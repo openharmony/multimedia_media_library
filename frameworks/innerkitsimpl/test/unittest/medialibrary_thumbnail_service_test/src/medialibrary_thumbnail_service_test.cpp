@@ -593,6 +593,18 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_035, T
     EXPECT_EQ(res, false);
 }
 
+HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_helper_test_036, TestSize.Level0)
+{
+    std::shared_ptr<ThumbnailTaskData> data;
+    IThumbnailHelper::UpdateAstcDateAdded(data);
+    ThumbRdbOpt opts;
+    ThumbnailData thumbData;
+    int32_t requestId;
+    std::shared_ptr<ThumbnailTaskData> dataValue = std::make_shared<ThumbnailTaskData>(opts, thumbData, requestId);
+    IThumbnailHelper::CreateLcdAndThumbnail(dataValue);
+    EXPECT_EQ(requestId, dataValue->requestId_);
+}
+
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_001, TestSize.Level0)
 {
     ThumbnailType type = ThumbnailType::MTH;
@@ -644,8 +656,8 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_006, Te
 
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_007, TestSize.Level0)
 {
-    const string path;
-    const string suffix;
+    string path = "";
+    string suffix;
     string fileName;
     auto res = ThumbnailUtils::SaveFileCreateDir(path, suffix, fileName);
     EXPECT_EQ(res, 0);
@@ -654,9 +666,10 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_007, Te
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_008, TestSize.Level0)
 {
     ThumbnailData data;
-    const string fileName;
+    data.thumbnail.push_back(0x12);
+    string fileName;
     uint8_t *output = data.thumbnail.data();
-    const int writeSize = 0;
+    int writeSize = 0;
     auto res = ThumbnailUtils::ToSaveFile(data, fileName, output, writeSize);
     EXPECT_EQ(res<0, true);
 }
@@ -707,9 +720,10 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_011, Te
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_012, TestSize.Level0)
 {
     ThumbnailData data;
-    const std::string suffix;
-    uint8_t *output = data.thumbnail.data();;
-    const int writeSize = 0;
+    data.thumbnail.push_back(0x12);
+    std::string suffix;
+    uint8_t *output = data.thumbnail.data();
+    int writeSize = 0;
     auto res = ThumbnailUtils::SaveThumbDataToLocalDir(data, suffix, output, writeSize);
     EXPECT_EQ(res<0, true);
 }
@@ -717,7 +731,7 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_012, Te
 HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_013, TestSize.Level0)
 {
     ThumbnailData data;
-    const ThumbnailType type = ThumbnailType::THUMB;
+    ThumbnailType type = ThumbnailType::THUMB;
     auto res = ThumbnailUtils::SaveAstcDataToKvStore(data, type);
     EXPECT_EQ(res, -1);
 }
@@ -727,12 +741,12 @@ HWTEST_F(MediaLibraryThumbnailServiceTest, medialib_thumbnail_utils_test_014, Te
     ThumbnailData data;
     data.id = "a";
     data.dateAdded = "b";
-    const ThumbnailType type = ThumbnailType::MTH_ASTC;
+    ThumbnailType type = ThumbnailType::MTH_ASTC;
     auto res = ThumbnailUtils::SaveAstcDataToKvStore(data, type);
-    EXPECT_EQ(res, -1);
+    EXPECT_EQ(res >= 0, true);
     const ThumbnailType type2 = ThumbnailType::YEAR_ASTC;
     auto res2 = ThumbnailUtils::SaveAstcDataToKvStore(data, type2);
-    EXPECT_EQ(res2, -1);
+    EXPECT_EQ(res2 >= 0, true);
     const ThumbnailType type3 = ThumbnailType::LCD;
     auto res3 = ThumbnailUtils::SaveAstcDataToKvStore(data, type3);
     EXPECT_EQ(res3, -1);

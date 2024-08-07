@@ -20,6 +20,7 @@
 
 #include "dfx_const.h"
 #include "dfx_utils.h"
+#include "dfx_database_utils.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "hisysevent.h"
@@ -353,17 +354,17 @@ std::string SecondsToTime(const int64_t& seconds)
     return std::to_string(hour) + "_h_" + std::to_string(minute) + "_m_" + std::to_string(remain_seconds) + "_s";
 }
 
-int32_t DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb, const int32_t& generatedThumb,    
-    const int32_t& totalDownload)
+int32_t DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloadedThumb,
+    const int32_t& generatedThumb, const int32_t& totalDownload)
 {
+    if (totalDownload == 0) {
+        return 0;
+    }
     int32_t errCode;
     shared_ptr<NativePreferences::Preferences> prefs =
         NativePreferences::PreferencesHelper::GetPreferences(DFX_COMMON_XML, errCode);
     if (!prefs) {
         MEDIA_ERR_LOG("get dfx common preferences error: %{public}d", errCode);
-        return 0;
-    }
-    if (totalDownload == 0) {
         return 0;
     }
     int64_t start = prefs->GetLong(CLOUD_SYNC_START_TIME, 0);
@@ -388,5 +389,35 @@ int32_t DfxReporter::ReportCloudSyncThumbGenerationStatus(const int32_t& downloa
     return ret;
 }
 
+void DfxReporter::ReportPhotoRecordInfo()
+{
+    PhotoRecordInfo photoRecordInfo;
+    int32_t result = DfxDatabaseUtils::QueryPhotoRecordInfo(photoRecordInfo);
+    if (result != 0) {
+        MEDIA_ERR_LOG("QueryPhotoRecordInfo error:%{public}d", result);
+        return;
+    }
+    int32_t imageCount = photoRecordInfo.imageCount;
+    int32_t videoCount = photoRecordInfo.videoCount;
+    int32_t abnormalSizeCount = photoRecordInfo.abnormalSizeCount;
+    int32_t abnormalWidthOrHeightCount = photoRecordInfo.abnormalWidthOrHeightCount;
+    int32_t abnormalVideoDurationCount = photoRecordInfo.abnormalVideoDurationCount;
+    int32_t toBeUpdatedRecordCount = photoRecordInfo.toBeUpdatedRecordCount;
+    int64_t dbFileSize = photoRecordInfo.dbFileSize;
+    int ret = HiSysEventWrite(
+        MEDIA_LIBRARY,
+        "MEDIALIB_DATABASE_INFO",
+        HiviewDFX::HiSysEvent::EventType::STATISTIC,
+        "DB_FILE_SIZE", dbFileSize,
+        "IMAGE_COUNT", imageCount,
+        "VIDEO_COUNT", videoCount,
+        "ABNORMAL_SIZE_COUNT", abnormalSizeCount,
+        "ABNORMAL_WIDTH_OR_HEIGHT_COUNT", abnormalWidthOrHeightCount,
+        "ABNORMAL_VIDEO_DURATION_COUNT", abnormalVideoDurationCount,
+        "ABNORMAL_COUNT_TO_UPDATE", toBeUpdatedRecordCount);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("ReportPhotoRecordInfo error:%{public}d", ret);
+    }
+}
 } // namespace Media
 } // namespace OHOS

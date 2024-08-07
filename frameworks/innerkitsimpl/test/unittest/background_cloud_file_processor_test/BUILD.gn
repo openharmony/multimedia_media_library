@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Huawei Device Co., Ltd.
+# Copyright (c) 2024-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,28 +17,23 @@ import("//foundation/multimedia/media_library/media_library.gni")
 group("unittest") {
   testonly = true
 
-  deps = [ ":medialibrary_dfx_test" ]
+  deps = [ ":background_cloud_file_processor_test" ]
 }
 
-ohos_unittest("medialibrary_dfx_test") {
-  module_out_path = "media_library/medialibraryextention"
+ohos_unittest("background_cloud_file_processor_test") {
+  module_out_path = "media_library/background_cloud_file_processor_test"
   include_dirs = [
-    "${MEDIALIB_INNERKITS_PATH}/media_library_helper/include",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include",
+    "${MEDIALIB_INNERKITS_PATH}/test/unittest/medialibrary_unittest_utils/include",
+    "${MEDIALIB_SERVICES_PATH}/media_analysis_extension/include",
+    "../get_self_permissions/include",
     "./include",
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/include",
-    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/include/distributed_media_library/database_manage",
   ]
 
   sources = [
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_analyzer.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_collector.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_database_utils.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_manager.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_reporter.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_timer.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_utils.cpp",
-    "${MEDIALIB_SERVICES_PATH}/media_dfx/src/dfx_worker.cpp",
-    "./src/medialibrary_dfx_test.cpp",
+    "${MEDIALIB_INNERKITS_PATH}/medialibrary_data_extension/src/background_cloud_file_processor.cpp",
+    "../medialibrary_unittest_utils/src/medialibrary_unittest_utils.cpp",
+    "./src/background_cloud_file_processor_test.cpp",
   ]
   deps = [
     "${MEDIALIB_INNERKITS_PATH}/media_library_helper:media_library",
@@ -46,23 +41,25 @@ ohos_unittest("medialibrary_dfx_test") {
   ]
 
   external_deps = [
-    "ability_base:want",
     "ability_base:zuri",
     "ability_runtime:ability_context_native",
     "ability_runtime:ability_manager",
     "ability_runtime:abilitykit_native",
+    "ability_runtime:app_context",
+    "bundle_framework:appexecfwk_core",
     "c_utils:utils",
     "common_event_service:cesfwk_innerkits",
     "data_share:datashare_common",
-    "data_share:datashare_consumer",
     "data_share:datashare_provider",
+    "device_manager:devicemanagersdk",
+    "dfs_service:cloudsync_kit_inner",
     "hilog:libhilog",
-    "hisysevent:libhisysevent",
-    "init:libbegetutil",
+    "ipc:ipc_single",
     "kv_store:distributeddata_inner",
     "napi:ace_napi",
-    "preferences:native_preferences",
+    "player_framework:media_client",
     "relational_store:native_rdb",
+    "relational_store:rdb_data_share_adapter",
   ]
 
   sanitize = {

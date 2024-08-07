@@ -73,7 +73,7 @@ public:
 private:
     void InitSyncState();
     CloudSyncDfxManager();
-    void SetTimer();
+    void StartTimer();
     void ShutDownTimer();
     void SetStartTime();
     void ResetStartTime();

@@ -124,7 +124,7 @@ MedialibrarySubscriber::MedialibrarySubscriber(const EventFwk::CommonEventSubscr
         }
     }
 #endif
-    MEDIA_INFO_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+    MEDIA_DEBUG_LOG("MedialibrarySubscriber current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_, isWifiConn_);
 }
 
@@ -155,7 +155,7 @@ void MedialibrarySubscriber::UpdateCurrentStatus()
         return;
     }
 
-    MEDIA_INFO_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
+    MEDIA_DEBUG_LOG("update status current:%{public}d, new:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
         currentStatus_, newStatus, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 
     currentStatus_ = newStatus;
@@ -206,7 +206,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
 {
     const AAFwk::Want &want = eventData.GetWant();
     std::string action = want.GetAction();
-    MEDIA_INFO_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
+    MEDIA_DEBUG_LOG("OnReceiveEvent action:%{public}s.", action.c_str());
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_WIFI_CONN_STATE) {
         isWifiConn_ = eventData.GetCode() == WIFI_STATE_CONNECTED;
         UpdateBackgroundTimer();
@@ -271,9 +271,12 @@ void DeleteTemporaryPhotos()
 void MedialibrarySubscriber::DoBackgroundOperation()
 {
     if (!currentStatus_) {
-        MEDIA_INFO_LOG("The conditions for DoBackgroundOperation are not met, will return.");
+        MEDIA_DEBUG_LOG("The conditions for DoBackgroundOperation are not met, will return.");
         return;
     }
+
+    MEDIA_INFO_LOG("Start background operation, status:%{public}d,%{public}d,%{public}d,%{public}d,%{public}d",
+        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 
     // delete temporary photos
     DeleteTemporaryPhotos();
@@ -320,9 +323,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
         return;
     }
     scannerManager->ScanError();
-
-    MEDIA_INFO_LOG("Do success, current status:%{public}d, %{public}d, %{public}d, %{public}d, %{public}d",
-        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
 }
 
 void MedialibrarySubscriber::StopBackgroundOperation()
@@ -349,7 +349,7 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
 
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
-    if (isCharging_ || isScreenOff_) {
+    if (isCharging_ && isScreenOff_) {
         CloudSyncDfxManager::GetInstance().RunDfx();
     }
     std::lock_guard<std::mutex> lock(mutex_);

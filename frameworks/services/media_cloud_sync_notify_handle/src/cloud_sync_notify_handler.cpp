@@ -127,7 +127,6 @@ void CloudSyncNotifyHandler::ThumbnailObserverOnChange(const list<Uri> &uris, co
     MediaLibraryRdbUtils::SetNeedRefreshAlbum(true);
     switch (type) {
         case ChangeType::INSERT:
-        case ChangeType::OTHER:
             HandleInsertEvent(uris);
             break;
         case ChangeType::DELETE:
@@ -144,16 +143,24 @@ void CloudSyncNotifyHandler::MakeResponsibilityChain()
     string uriString = notifyInfo_.uris.front().ToString();
     MEDIA_DEBUG_LOG("observer get first uri is : %{public}s", uriString.c_str());
 
+    if (uriString.find("file://cloudsync/Photo/HeightError/") != string::npos) {
+        return;
+    }
+
+    if (uriString.find("file://cloudsync/Photo/DownloadSuccessed/") != string::npos) {
+        return;
+    }
+
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {
         ThumbnailObserverOnChange(notifyInfo_.uris, notifyInfo_.type);
     }
 
     shared_ptr<BaseHandler> chain = nullptr;
- 
+
     if (uriString.find(PhotoAlbumColumns::ALBUM_CLOUD_URI_PREFIX) != string::npos) {
         chain = NotifyResponsibilityChainFactory::CreateChain(TRANSPARENT);
     }
- 
+
     if (uriString.find(PhotoColumn::PHOTO_CLOUD_URI_PREFIX) != string::npos) {
         if (notifyInfo_.type == ChangeType::UPDATE || notifyInfo_.type == ChangeType::OTHER) {
             chain = NotifyResponsibilityChainFactory::CreateChain(PHOTODELETE);

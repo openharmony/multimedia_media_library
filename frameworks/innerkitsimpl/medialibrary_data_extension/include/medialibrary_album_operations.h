@@ -28,6 +28,7 @@
 #include "rdb_predicates.h"
 #include "rdb_result_set_bridge.h"
 #include "vision_column.h"
+#include "medialibrary_async_worker.h"
 
 namespace OHOS {
 namespace Media {
@@ -65,6 +66,8 @@ public:
     static std::shared_ptr<NativeRdb::ResultSet> QueryPortraitAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
 };
+
+EXPORT void RefreshAlbums(bool forceRefresh = false);
 } // namespace Media
 } // namespace OHOS
 #endif // OHOS_MEDIALIBRARY_ALBUM_OPERATIONS_H

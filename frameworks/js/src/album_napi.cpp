@@ -34,6 +34,7 @@ using namespace std;
 using namespace OHOS::DataShare;
 thread_local napi_ref AlbumNapi::sConstructor_ = nullptr;
 thread_local AlbumAsset *AlbumNapi::sAlbumData_ = nullptr;
+const std::string BURST_COVER_LEVEL = "1";
 using CompleteCallback = napi_async_complete_callback;
 
 thread_local napi_ref AlbumNapi::userFileMgrConstructor_ = nullptr;
@@ -678,6 +679,7 @@ static void UpdateSelection(AlbumNapiAsyncContext *context)
         context->predicates.EqualTo(MEDIA_DATA_DB_BUCKET_ID, context->objectPtr->GetAlbumId());
         context->predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
         context->predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
+        context->predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
         MediaLibraryNapiUtils::UpdateMediaTypeSelections(context);
     } else {
 #ifdef MEDIALIBRARY_COMPATIBILITY

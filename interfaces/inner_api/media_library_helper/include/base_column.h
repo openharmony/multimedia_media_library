@@ -26,6 +26,7 @@ public:
     EXPORT static const std::string &CreateIndex();
     EXPORT static const std::string &CreateTrigger();
     EXPORT static const std::string &DropTrigger();
+    EXPORT static const std::string &DropIndex();
     EXPORT static std::string AlterTableAddIntColumn(const std::string &table, const std::string &column);
     EXPORT static std::string AlterTableAddTextColumn(const std::string &table, const std::string &column);
 };

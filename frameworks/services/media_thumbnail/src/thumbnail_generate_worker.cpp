@@ -120,7 +120,12 @@ void ThumbnailGenerateWorker::WaitForTask()
     RegisterWorkerTimer();
     if (highPriorityTaskQueue_.Empty() && lowPriorityTaskQueue_.Empty() && isThreadRunning_) {
         ignoreRequestId_ = 0;
-        workerCv_.wait(lock);
+        bool ret = workerCv_.wait_for(lock, std::chrono::milliseconds(CLOSE_THUMBNAIL_WORKER_TIME_INTERVAL), [this]() {
+            return !isThreadRunning_ || !highPriorityTaskQueue_.Empty() || !lowPriorityTaskQueue_.Empty();
+        });
+        if (!ret) {
+            MEDIA_INFO_LOG("Wait for task timeout");
+        }
     }
 }
 
@@ -215,6 +220,7 @@ void ThumbnailGenerateWorker::ClearWorkerThreads()
         thread.join();
     }
     threads_.clear();
+    MEDIA_INFO_LOG("Clear ThumbnailGenerateWorker threads successfully, taskType:%{public}d", taskType_);
 }
 
 void ThumbnailGenerateWorker::TryClearWorkerThreads()

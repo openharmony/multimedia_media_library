@@ -63,7 +63,7 @@ constexpr int32_t FACE_RECOGNITION = 1;
 constexpr int32_t FACE_FEATURE = 2;
 constexpr int32_t FACE_CLUSTERED = 3;
 constexpr int32_t CLOUD_POSITION_STATUS = 2;
-
+const std::string BURST_COVER_LEVEL = "1";
 
 // 注意，端云同步代码仓也有相同常量，添加新相册时，请通知端云同步进行相应修改
 const std::vector<std::string> ALL_SYS_PHOTO_ALBUM = {
@@ -430,7 +430,7 @@ static int32_t SetCount(const shared_ptr<ResultSet> &fileResult, const shared_pt
 }
 
 static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<ResultSet> &albumResult,
-    ValuesBucket &values, int newCount)
+    ValuesBucket &values, int newCount, int coverSatisfied)
 {
     string newCover;
     if (newCount != 0) {
@@ -441,9 +441,9 @@ static int32_t SetPortraitCover(const shared_ptr<ResultSet> &fileResult, const s
     int32_t ret = E_SUCCESS;
     if (oldCover != newCover) {
         ret = E_NEED_UPDATE_ALBUM_COVER_URI;
-        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING));
+        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING) | coverSatisfied);
         values.PutString(targetColumn, newCover);
-        MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s", targetColumn.c_str(),
+        MEDIA_DEBUG_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s", targetColumn.c_str(),
             oldCover.c_str(), newCover.c_str());
     }
     return ret;
@@ -460,22 +460,53 @@ static void SetCover(const shared_ptr<ResultSet> &fileResult, const shared_ptr<R
     const string &targetColumn = hiddenState ? PhotoAlbumColumns::HIDDEN_COVER : PhotoAlbumColumns::ALBUM_COVER_URI;
     string oldCover = GetAlbumCover(albumResult, targetColumn);
     if (oldCover != newCover) {
-        MEDIA_INFO_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s",
+        MEDIA_DEBUG_LOG("Update album %{public}s. oldCover: %{private}s, newCover: %{private}s",
             targetColumn.c_str(), oldCover.c_str(), newCover.c_str());
         values.PutString(targetColumn, newCover);
     }
 }
 
 static void GetAlbumPredicates(PhotoAlbumSubType subtype, const shared_ptr<ResultSet> &albumResult,
-    NativeRdb::RdbPredicates &predicates, const bool hiddenState)
+    NativeRdb::RdbPredicates &predicates, const bool hiddenState, const bool isUpdateAlbum = false)
 {
-    if (!subtype) {
+    static const string QUERY_ASSETS_FROM_PHOTO_ALBUM =
+        PhotoColumn::PHOTO_SYNC_STATUS + " = " + to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) +
+        " AND " + PhotoColumn::PHOTO_CLEAN_FLAG + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
+        " AND " + MediaColumn::MEDIA_ID + " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " + PhotoMap::TABLE + " WHERE " +
+        PhotoMap::ALBUM_ID + " = ?) AND " + MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + MediaColumn::MEDIA_HIDDEN +
+        " = ? AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " + PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
+        PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + BURST_COVER_LEVEL;
+
+    static const string QUERY_ASSETS_FROM_ANALYSIS_ALBUM =
+        PhotoColumn::PHOTO_SYNC_STATUS + " = " + to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) +
+        " AND " + PhotoColumn::PHOTO_CLEAN_FLAG + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
+        " AND " + MediaColumn::MEDIA_ID + " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " + ANALYSIS_PHOTO_MAP_TABLE +
+        " WHERE " + PhotoMap::ALBUM_ID + " = ?) AND " + MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " +
+        MediaColumn::MEDIA_HIDDEN + " = ? AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " +
+        PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " + PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + BURST_COVER_LEVEL;
+
+    bool isUserAlbum = !subtype;
+    bool isSourceAlbum = subtype == PhotoAlbumSubType::SOURCE_GENERIC;
+    bool isAnalysisAlbum = subtype >= PhotoAlbumSubType::ANALYSIS_START && subtype <= PhotoAlbumSubType::ANALYSIS_END;
+    if (isUpdateAlbum) {
+        if (isUserAlbum || isSourceAlbum) {
+            predicates.SetWhereClause(QUERY_ASSETS_FROM_PHOTO_ALBUM);
+            predicates.SetWhereArgs({ to_string(GetAlbumId(albumResult)), to_string(hiddenState) });
+            return;
+        } else if (isAnalysisAlbum) {
+            predicates.SetWhereClause(QUERY_ASSETS_FROM_ANALYSIS_ALBUM);
+            predicates.SetWhereArgs({ to_string(GetAlbumId(albumResult)), to_string(hiddenState) });
+            return;
+        }
+    }
+
+    if (isUserAlbum) {
         PhotoAlbumColumns::GetUserAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
     } else if (subtype == PhotoAlbumSubType::PORTRAIT) {
         PhotoAlbumColumns::GetPortraitAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
-    } else if (subtype >= PhotoAlbumSubType::ANALYSIS_START && subtype <= PhotoAlbumSubType::ANALYSIS_END) {
+    } else if (isAnalysisAlbum) {
         PhotoAlbumColumns::GetAnalysisAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
-    } else if (subtype == PhotoAlbumSubType::SOURCE_GENERIC) {
+    } else if (isSourceAlbum) {
         PhotoAlbumColumns::GetSourceAlbumPredicates(GetAlbumId(albumResult), predicates, hiddenState);
     } else {
         PhotoAlbumColumns::GetSystemAlbumPredicates(subtype, predicates, hiddenState);
@@ -489,14 +520,14 @@ static void SetImageVideoCount(int32_t newTotalCount,
     int32_t oldVideoCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_VIDEO_COUNT);
     int32_t newVideoCount = GetFileCount(fileResultVideo);
     if (oldVideoCount != newVideoCount) {
-        MEDIA_INFO_LOG("Update album %{public}s, oldCount: %{public}d, newCount: %{public}d",
+        MEDIA_DEBUG_LOG("Update album %{public}s, oldCount: %{public}d, newCount: %{public}d",
             PhotoAlbumColumns::ALBUM_VIDEO_COUNT.c_str(), oldVideoCount, newVideoCount);
         values.PutInt(PhotoAlbumColumns::ALBUM_VIDEO_COUNT, newVideoCount);
     }
     int32_t oldImageCount = GetAlbumCount(albumResult, PhotoAlbumColumns::ALBUM_IMAGE_COUNT);
     int32_t newImageCount = newTotalCount - newVideoCount;
     if (oldImageCount != newImageCount) {
-        MEDIA_INFO_LOG("Update album %{public}s, oldCount: %{public}d, newCount: %{public}d",
+        MEDIA_DEBUG_LOG("Update album %{public}s, oldCount: %{public}d, newCount: %{public}d",
             PhotoAlbumColumns::ALBUM_IMAGE_COUNT.c_str(), oldImageCount, newImageCount);
         values.PutInt(PhotoAlbumColumns::ALBUM_IMAGE_COUNT, newImageCount);
     }
@@ -834,7 +865,28 @@ bool MediaLibraryRdbUtils::IsInRefreshTask()
     return isInRefreshTask.load();
 }
 
-static void GetPortraitAlbumCoverPredicates(const string &coverId, RdbPredicates &predicates)
+static void GetPortraitAlbumCoverAnalysis(RdbPredicates &predicates)
+{
+    string imageFaceFileId = VISION_IMAGE_FACE_TABLE + "." + MediaColumn::MEDIA_ID;
+    string photosFileId = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID;
+    string isExcluded = VISION_IMAGE_FACE_TABLE + "." + IS_EXCLUDED;
+    string aestheticsScore = VISION_IMAGE_FACE_TABLE + "." + FACE_AESTHETICS_SCORE;
+
+    string clause = imageFaceFileId + " = " + photosFileId;
+    predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ clause });
+
+    string whereClause = predicates.GetWhereClause();
+    predicates.SetWhereClause(whereClause + " AND ");
+    predicates.BeginWrap();
+    predicates.EqualTo(isExcluded, to_string(1));
+    predicates.IsNotNull(aestheticsScore);
+    predicates.EndWrap();
+
+    predicates.OrderByDesc(aestheticsScore);
+    predicates.Limit(1);
+}
+
+static void GetPortraitAlbumCoverDefault(RdbPredicates &predicates)
 {
     string imageFaceFileId = VISION_IMAGE_FACE_TABLE + "." + MediaColumn::MEDIA_ID;
     string imageFaceTotalFaces = VISION_IMAGE_FACE_TABLE + "." + TOTAL_FACES;
@@ -860,6 +912,7 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     string photosHidden = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_HIDDEN;
     string photosTimePending = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_TIME_PENDING;
     string photosIsTemp = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_TEMP;
+    string photoIsCover = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_BURST_COVER_LEVEL;
 
     string clause = anaPhotoMapAsset + " = " + photosFileId;
     predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ clause });
@@ -874,6 +927,7 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     predicates.EqualTo(photosHidden, to_string(0));
     predicates.EqualTo(photosTimePending, to_string(0));
     predicates.EqualTo(photosIsTemp, to_string(0));
+    predicates.EqualTo(photoIsCover, BURST_COVER_LEVEL);
     predicates.EndWrap();
     predicates.Distinct();
 }
@@ -912,10 +966,11 @@ static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string
     return true;
 }
 
-static inline void SetCoverSatisfied(const string &fileId, const vector<string> &fileIds, ValuesBucket &values)
+static inline void SetCoverSatisfied(const string &fileId, const vector<string> &fileIds, ValuesBucket &values,
+    int coverSatisfied)
 {
     if (find(fileIds.begin(), fileIds.end(), fileId) != fileIds.end()) {
-        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING));
+        values.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::DEFAULT_SETTING) | coverSatisfied);
     }
 }
 
@@ -953,17 +1008,23 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
         return E_HAS_DB_ERROR;
     }
     int32_t newCount = SetCount(countResult, albumResult, values, false, PhotoAlbumSubType::PORTRAIT);
-    SetCoverSatisfied(coverId, fileIds, values);
+    SetCoverSatisfied(coverId, fileIds, values, isCoverSatisfied);
     if (!ShouldUpdatePortraitAlbumCover(rdbStore, coverId, isCoverSatisfied, fileIds)) {
         return E_SUCCESS;
     }
-    GetPortraitAlbumCoverPredicates(coverId, predicates);
-    shared_ptr<ResultSet> coverResult = QueryGoToFirst(rdbStore, predicates, coverColumns);
+    RdbPredicates analysisPredicates(predicates);
+    GetPortraitAlbumCoverAnalysis(analysisPredicates);
+    shared_ptr<ResultSet> coverResult = QueryGoToFirst(rdbStore, analysisPredicates, coverColumns);
     if (coverResult == nullptr) {
-        MEDIA_ERR_LOG("Failed to query coverResult");
-        return E_HAS_DB_ERROR;
+        MEDIA_ERR_LOG("Failed to query coverResult by GetPortraitAlbumCoverAnalysis");
+        GetPortraitAlbumCoverDefault(predicates);
+        coverResult = QueryGoToFirst(rdbStore, predicates, coverColumns);
+        if (coverResult == nullptr) {
+            MEDIA_ERR_LOG("Failed to query coverResult by GetPortraitAlbumCoverDefault");
+            return E_HAS_DB_ERROR;
+        }
     }
-    return SetPortraitCover(coverResult, albumResult, values, newCount);
+    return SetPortraitCover(coverResult, albumResult, values, newCount, isCoverSatisfied);
 }
 
 static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -977,7 +1038,7 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     };
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    GetAlbumPredicates(subtype, albumResult, predicates, hiddenState);
+    GetAlbumPredicates(subtype, albumResult, predicates, hiddenState, true);
     if (subtype == PhotoAlbumSubType::HIDDEN || hiddenState) {
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_HIDDEN_TIME_INDEX);
     } else if (subtype == PhotoAlbumSubType::VIDEO || subtype == PhotoAlbumSubType::IMAGE) {
@@ -999,9 +1060,15 @@ static int32_t SetUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
     if (hiddenState == 0 && (subtype < PhotoAlbumSubType::ANALYSIS_START ||
         subtype > PhotoAlbumSubType::ANALYSIS_END)) {
         predicates.Clear();
-        GetAlbumPredicates(subtype, albumResult, predicates, hiddenState);
+        GetAlbumPredicates(subtype, albumResult, predicates, hiddenState, true);
         predicates.IndexedBy(PhotoColumn::PHOTO_SCHPT_MEDIA_TYPE_INDEX);
-        predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
+        string queryCondition = predicates.GetWhereClause();
+        if (queryCondition.empty()) {
+            predicates.EqualTo(MediaColumn::MEDIA_TYPE, to_string(MEDIA_TYPE_VIDEO));
+        } else {
+            predicates.SetWhereClause(
+                "(" + queryCondition + ") AND " + MediaColumn::MEDIA_TYPE + " = " + to_string(MEDIA_TYPE_VIDEO));
+        }
         auto fileResultVideo = QueryGoToFirst(rdbStore, predicates, columns);
         if (fileResultVideo == nullptr) {
             MEDIA_ERR_LOG("Failed to query fileResultVideo");

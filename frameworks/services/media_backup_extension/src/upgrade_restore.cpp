@@ -47,6 +47,8 @@ constexpr int32_t SEVEN_NUMBER = 7;
 constexpr int32_t INTERNAL_PREFIX_LEVEL = 4;
 constexpr int32_t SD_PREFIX_LEVEL = 3;
 constexpr int64_t TAR_FILE_LIMIT = 2 * 1024 * 1024;
+constexpr int32_t BURST_COVER = 1;
+constexpr int32_t BURST_MEMBER = 2;
 const std::string INTERNAL_PREFIX = "/storage/emulated/0";
 
 UpgradeRestore::UpgradeRestore(const std::string &galleryAppName, const std::string &mediaAppName, int32_t sceneCode)
@@ -697,6 +699,7 @@ bool UpgradeRestore::ParseResultSetFromGallery(const std::shared_ptr<NativeRdb::
         return isSuccess;
     }
     info.burstKey = burstKeyGenerator_.FindBurstKey(info);
+    info.burstSequence = burstKeyGenerator_.FindBurstSequence(info);
     ParseResultSetForMap(resultSet, info);
     return isSuccess;
 }
@@ -714,7 +717,7 @@ bool UpgradeRestore::ParseResultSetFromExternal(const std::shared_ptr<NativeRdb:
         MEDIA_ERR_LOG("ParseResultSetFromExternal fail");
         return isSuccess;
     }
-    info.showDateToken = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet);
+    info.showDateToken = GetInt64Val(EXTERNAL_DATE_TAKEN, resultSet);
     return isSuccess;
 }
 
@@ -728,13 +731,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     values.PutLong(MediaColumn::MEDIA_SIZE, fileInfo.fileSize);
     values.PutInt(MediaColumn::MEDIA_TYPE, fileInfo.fileType);
     if (fileInfo.showDateToken != 0) {
-        if (sourceType == SourceType::EXTERNAL_CAMERA || sourceType == SourceType::EXTERNAL_OTHERS) {
-            values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken * MILLISECONDS);
-            values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken);
-        } else {
-            values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
-            values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken / MILLISECONDS);
-        }
+        values.PutLong(MediaColumn::MEDIA_DATE_ADDED, fileInfo.showDateToken);
+        values.PutLong(MediaColumn::MEDIA_DATE_TAKEN, fileInfo.showDateToken / MILLISECONDS);
     } else {
         MEDIA_WARN_LOG("Get showDateToken = 0, path: %{private}s", fileInfo.filePath.c_str());
     }
@@ -750,13 +748,16 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     if (package_name != "") {
         values.PutString(PhotoColumn::MEDIA_PACKAGE_NAME, package_name);
     }
-    if (fileInfo.isBurst == 1) {
+    if (fileInfo.isBurst == BURST_COVER) {
         // only when gallery.db # gallery_media # isBurst = 1, then media_library.db # Photos # burst_cover_level = 1.
-        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, 1);
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER);
+    } else if (fileInfo.isBurst == BURST_MEMBER) {
+        values.PutInt(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_MEMBER);
     }
     if (fileInfo.burstKey.size() > 0) {
         values.PutString(PhotoColumn::PHOTO_BURST_KEY, fileInfo.burstKey);
         values.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::BURST));
+        values.PutInt(PhotoColumn::PHOTO_BURST_SEQUENCE, fileInfo.burstSequence);
         values.PutInt(PhotoColumn::PHOTO_DIRTY, -1); // prevent uploading burst photo
     }
     return values;
