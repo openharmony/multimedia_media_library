@@ -237,7 +237,8 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
         MediaColumn::MEDIA_MIME_TYPE, MediaColumn::MEDIA_DURATION };
 
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(MediaColumn::MEDIA_SIZE, 0)
+    predicates.BeginWrap()
+        ->EqualTo(MediaColumn::MEDIA_SIZE, 0)
         ->Or()
         ->IsNull(MediaColumn::MEDIA_SIZE)
         ->Or()
@@ -262,6 +263,9 @@ std::shared_ptr<NativeRdb::ResultSet> BackgroundCloudFileProcessor::QueryUpdateD
         ->IsNull(MediaColumn::MEDIA_DURATION)
         ->EndWrap()
         ->EndWrap()
+        ->EndWrap()
+        ->And()
+        ->EqualTo(MediaColumn::MEDIA_TIME_PENDING, 0)
         ->Limit(UPDATE_BATCH_SIZE);
 
     return MediaLibraryRdbStore::Query(predicates, columns);
