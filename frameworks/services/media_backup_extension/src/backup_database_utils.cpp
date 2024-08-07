@@ -573,7 +573,7 @@ void BackupDatabaseUtils::PrintErrorLog(const std::string &errorLog, int64_t sta
 float BackupDatabaseUtils::GetLandmarksScale(int32_t width, int32_t height)
 {
     float scale = 1;
-    int32_t minWidthHeight = width <= height : width : height;
+    int32_t minWidthHeight = width <= height ? width : height;
     if (minWidthHeight >= SCALE_MIN_SIZE * SCALE_FACTOR) {
         minWidthHeight = static_cast<int32_t>(minWidthHeight * SCALE_DEFAULT);
         scale = SCALE_DEFAULT;
@@ -587,7 +587,7 @@ float BackupDatabaseUtils::GetLandmarksScale(int32_t width, int32_t height)
     }
     width = static_cast<int32_t>(width * scale);
     height = static_cast<int32_t>(height * scale);
-    int32_t maxWidthHeight = width >= height : width : height;
+    int32_t maxWidthHeight = width >= height ? width : height;
     scale *= maxWidthHeight >= SCALE_MAX_SIZE ? static_cast<float>(SCALE_MAX_SIZE) / maxWidthHeight : 1;
     return scale;
 }

@@ -2017,37 +2017,15 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_path_to_real_path_
     GTEST_LOG_(INFO) << "medialib_backup_test_convert_path_to_real_path_007 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level_001, TestSize.Level0)
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level, TestSize.Level0)
 {
-    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_001 start";
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level start";
     std::string path = "/../";
     size_t pos = 0;
     bool result = BackupFileUtils::GetPathPosByPrefixLevel(DUAL_FRAME_CLONE_RESTORE_ID, path, TEST_PREFIX_LEVEL,
         pos);
     EXPECT_EQ(result, false);
-    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_001 end";
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level_002, TestSize.Level0)
-{
-    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_002 start";
-    std::string path = "/../";
-    size_t pos = 0;
-    bool result = BackupFileUtils::GetPathPosByPrefixLevel(DUAL_FRAME_CLONE_RESTORE_ID, path, TEST_PREFIX_LEVEL,
-        pos);
-    EXPECT_EQ(result, false);
-    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_002 end";
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_level_003, TestSize.Level0)
-{
-    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_003 start";
-    std::string path = "/../";
-    size_t pos = 0;
-    bool result = BackupFileUtils::GetPathPosByPrefixLevel(DUAL_FRAME_CLONE_RESTORE_ID, path, TEST_PREFIX_LEVEL,
-        pos);
-    EXPECT_EQ(result, false);
-    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level_003 end";
+    GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level end";
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_001, TestSize.Level0)
@@ -2093,7 +2071,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_004, T
 void InitFaceInfoScale(FaceInfo &faceInfo, float scaleX, float scaleY, float scaleWidth, float scaleHeight)
 {
     faceInfo.scaleX = scaleX;
-    faceInfo.scaleY = scaleY.scaleX;
+    faceInfo.scaleY = scaleY;
     faceInfo.scaleWidth = scaleWidth;
     faceInfo.scaleHeight = scaleHeight;
 }
