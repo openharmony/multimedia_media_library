@@ -92,7 +92,7 @@ std::vector<PhotoInfo> DfxDatabaseUtils::QueryDirtyCloudPhoto()
     return photoInfoList;
 }
 
-static int32_t parseResultSet(const string querySql, int32_t &photoInfoCount, int32_t mediaTypePara)
+static int32_t ParseResultSet(const string &querySql, int32_t mediaTypePara, int32_t &photoInfoCount)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
     if (rdbStore == nullptr) {
@@ -144,12 +144,12 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
         MediaColumn::MEDIA_DURATION + " = 0 AND " +
         MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " )";
 
-    int32_t ret = parseResultSet(imageAndVideoCountQuerySql, photoRecordInfo.videoCount, MEDIA_TYPE_VIDEO);
-    ret = ret | parseResultSet(imageAndVideoCountQuerySql, photoRecordInfo.imageCount, MEDIA_TYPE_IMAGE);
-    ret = ret | parseResultSet(abnormalSizeCountQuerySql, photoRecordInfo.abnormalSizeCount, 0);
-    ret = ret | parseResultSet(abnormalWidthHeightQuerySql, photoRecordInfo.abnormalWidthOrHeightCount, 0);
-    ret = ret | parseResultSet(abnormalVideoDurationQuerySql, photoRecordInfo.abnormalVideoDurationCount, 0);
-    ret = ret | parseResultSet(totalAbnormalRecordSql, photoRecordInfo.toBeUpdatedRecordCount, 0);
+    int32_t ret = ParseResultSet(imageAndVideoCountQuerySql, photoRecordInfo.videoCount, MEDIA_TYPE_VIDEO);
+    ret = ret | ParseResultSet(imageAndVideoCountQuerySql, photoRecordInfo.imageCount, MEDIA_TYPE_IMAGE);
+    ret = ret | ParseResultSet(abnormalSizeCountQuerySql, photoRecordInfo.abnormalSizeCount, 0);
+    ret = ret | ParseResultSet(abnormalWidthHeightQuerySql, photoRecordInfo.abnormalWidthOrHeightCount, 0);
+    ret = ret | ParseResultSet(abnormalVideoDurationQuerySql, photoRecordInfo.abnormalVideoDurationCount, 0);
+    ret = ret | ParseResultSet(totalAbnormalRecordSql, photoRecordInfo.toBeUpdatedRecordCount, 0);
 
     string databaseDir = MEDIA_DB_DIR + "/rdb";
     if (access(databaseDir.c_str(), E_OK) != 0) {
