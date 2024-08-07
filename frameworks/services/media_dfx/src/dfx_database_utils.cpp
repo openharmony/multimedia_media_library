@@ -144,12 +144,12 @@ int32_t DfxDatabaseUtils::QueryPhotoRecordInfo(PhotoRecordInfo &photoRecordInfo)
         MediaColumn::MEDIA_DURATION + " = 0 AND " +
         MediaColumn::MEDIA_TYPE + " = " + std::to_string(MEDIA_TYPE_VIDEO) + " )";
 
-    int32_t ret = ParseResultSet(imageAndVideoCountQuerySql, photoRecordInfo.videoCount, MEDIA_TYPE_VIDEO);
-    ret = ret | ParseResultSet(imageAndVideoCountQuerySql, photoRecordInfo.imageCount, MEDIA_TYPE_IMAGE);
-    ret = ret | ParseResultSet(abnormalSizeCountQuerySql, photoRecordInfo.abnormalSizeCount, 0);
-    ret = ret | ParseResultSet(abnormalWidthHeightQuerySql, photoRecordInfo.abnormalWidthOrHeightCount, 0);
-    ret = ret | ParseResultSet(abnormalVideoDurationQuerySql, photoRecordInfo.abnormalVideoDurationCount, 0);
-    ret = ret | ParseResultSet(totalAbnormalRecordSql, photoRecordInfo.toBeUpdatedRecordCount, 0);
+    int32_t ret = ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_VIDEO, photoRecordInfo.videoCount);
+    ret = ret | ParseResultSet(imageAndVideoCountQuerySql, MEDIA_TYPE_IMAGE, photoRecordInfo.imageCount);
+    ret = ret | ParseResultSet(abnormalSizeCountQuerySql, 0, photoRecordInfo.abnormalSizeCount);
+    ret = ret | ParseResultSet(abnormalWidthHeightQuerySql, 0, photoRecordInfo.abnormalWidthOrHeightCount);
+    ret = ret | ParseResultSet(abnormalVideoDurationQuerySql, 0, photoRecordInfo.abnormalVideoDurationCount);
+    ret = ret | ParseResultSet(totalAbnormalRecordSql, 0, photoRecordInfo.toBeUpdatedRecordCount);
 
     string databaseDir = MEDIA_DB_DIR + "/rdb";
     if (access(databaseDir.c_str(), E_OK) != 0) {
