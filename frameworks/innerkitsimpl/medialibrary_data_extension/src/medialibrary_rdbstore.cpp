@@ -2550,6 +2550,18 @@ static void UpdateIndexForAlbumQuery(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdateVideoLabelTableForSubLabelType(RdbStore &store)
+{
+    const vector<string> sqls = {
+        "DROP TABLE IF EXISTS " + VISION_VIDEO_LABEL_TABLE,
+        CREATE_TAB_ANALYSIS_VIDEO_LABEL,
+        UPDATE_VIDEO_LABEL_TOTAL_VALUE,
+        UPDATE_SEARCH_INDEX_FOR_VIDEO,
+    };
+    MEDIA_INFO_LOG("start update video label table for sub_label_type");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2943,7 +2955,18 @@ static void UpdateSourceAlbumAndAlbumBundlenameTriggers(RdbStore &store)
     ExecSqls(executeSqlStrs, store);
 }
 
-static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
+static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
+{
+    if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
+        UpdateIndexForAlbumQuery(store);
+    }
+
+    if (oldVersion < VERSION_UPDATE_VIDEO_LABEL_TABLE_FOR_SUB_LABEL_TYPE) {
+        UpdateVideoLabelTableForSubLabelType(store);
+    }
+}
+
+static void UpgradeExtensionPart1(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_OWNER_APPID_TO_FILES_TABLE) {
         AddOwnerAppIdToFiles(store);
@@ -3005,9 +3028,8 @@ static void UpgradeExtensionMore(RdbStore &store, int32_t oldVersion)
         CreateBurstkeyIndex(store);
     }
 
-    if (oldVersion < VERSION_UPDATE_PHOTO_INDEX_FOR_ALBUM_COUNT_COVER) {
-        UpdateIndexForAlbumQuery(store);
-    }
+    UpgradeExtensionPart2(store, oldVersion);
+    // !! Do not add upgrade code here !!
 }
 
 static void CreatePhotosExtTable(RdbStore &store)
@@ -3077,7 +3099,7 @@ static void UpgradeExtension(RdbStore &store, int32_t oldVersion)
         AddIsTemp(store);
     }
 
-    UpgradeExtensionMore(store, oldVersion);
+    UpgradeExtensionPart1(store, oldVersion);
     // !! Do not add upgrade code here !!
 }
 
