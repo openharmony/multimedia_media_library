@@ -693,6 +693,8 @@ export default {
   HighlightAlbum: photoAccessHelper.HighlightAlbum,
   PositionType: photoAccessHelper.PositionType,
   PhotoSubtype: photoAccessHelper.PhotoSubtype,
+  PhotoPermissionType: photoAccessHelper.PhotoPermissionType,
+  HideSensitiveType: photoAccessHelper.HideSensitiveType,
   NotifyType: photoAccessHelper.NotifyType,
   DefaultChangeUri: photoAccessHelper.DefaultChangeUri,
   HiddenPhotosDisplayMode: photoAccessHelper.HiddenPhotosDisplayMode,
