@@ -54,8 +54,8 @@ Metadata::Metadata()
     albumName_(FILE_ALBUM_NAME_DEFAULT),
     recyclePath_(FILE_RECYCLE_PATH_DEFAULT),
     timePending_(FILE_TIME_PENDING_DEFAULT),
-    frontcamera_(FILE_FRONT_CAMERA_DEFAULT),
-    isTemp_(FILE_IS_TEMP_DEFAULT)
+    isTemp_(FILE_IS_TEMP_DEFAULT),
+    frontcamera_(FILE_FRONT_CAMERA_DEFAULT)
 {
     Init();
 }
@@ -98,11 +98,15 @@ void Metadata::Init()
     memberFuncMap_[PhotoColumn::PHOTO_SUBTYPE] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetPhotoSubType);
     memberFuncMap_[PhotoColumn::PHOTO_DYNAMIC_RANGE_TYPE] = make_pair(ResultSetDataType::TYPE_INT32,
         &Metadata::SetDynamicRangeType);
+    memberFuncMap_[PhotoColumn::PHOTO_IS_TEMP] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetIsTemp);
     memberFuncMap_[PhotoColumn::PHOTO_FRONT_CAMERA] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetFrontCamera);
+<<<<<<< HEAD
     memberFuncMap_[PhotoColumn::MEDIA_FILE_PATH] = make_pair(ResultSetDataType::TYPE_STRING,
         &Metadata::SetMovingPhotoImagePath);
     memberFuncMap_[PhotoColumn::PHOTO_IS_TEMP] = make_pair(ResultSetDataType::TYPE_INT32, &Metadata::SetIsTemp);
+=======
+>>>>>>> 7788b9a56 (蓝黄同步)
 }
 
 void Metadata::SetFileId(const VariantData &id)
@@ -543,6 +547,16 @@ void Metadata::SetIsTemp(const VariantData &isTemp)
 int32_t Metadata::GetIsTemp()
 {
     return isTemp_;
+}
+
+void Metadata::SetFrontCamera(const VariantData &frontcamera)
+{
+    frontcamera_ = std::get<string>(frontcamera);
+}
+
+std::string Metadata::GetFrontCamera() const
+{
+    return frontcamera_;
 }
 } // namespace Media
 } // namespace OHOS
