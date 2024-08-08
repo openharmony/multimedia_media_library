@@ -103,7 +103,7 @@ int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
         }
 
         int32_t errCode = rdbStore_->BeginTransaction();
-        if (errCode == SQLITE3_DATABASE_LOCKER || errCode == NativeRdb::E_DATABASE_BUSY ||
+        if (errCode == NativeRdb::E_SQLITE_LOCKED || errCode == NativeRdb::E_DATABASE_BUSY ||
             errCode == NativeRdb::E_SQLITE_BUSY) {
             curTryTime++;
             MEDIA_ERR_LOG("Sqlite database file is locked! try %{public}d times...", curTryTime);

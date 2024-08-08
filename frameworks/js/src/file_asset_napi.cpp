@@ -1927,7 +1927,8 @@ static void UserFileMgrGetExifComplete(napi_env env, napi_status status, void *d
         allExifJson[PHOTO_DATA_IMAGE_USER_COMMENT] = obj->GetUserComment();
         allExifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION] =
             AppFileService::SandboxHelper::Decode(allExifJson[PHOTO_DATA_IMAGE_IMAGE_DESCRIPTION]);
-        napi_create_string_utf8(env, allExifJson.dump().c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
+        string allExifJsonStr = allExifJson.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
+        napi_create_string_utf8(env, allExifJsonStr.c_str(), NAPI_AUTO_LENGTH, &jsContext->data);
         jsContext->status = true;
         napi_get_undefined(env, &jsContext->error);
     }
