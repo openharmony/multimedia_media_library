@@ -176,11 +176,12 @@ void MultiStagesCaptureDeferredProcSessionCallback::OnProcessImageDone(const str
             static_cast<int32_t>(MultiStagesCaptureResultErrCode::SAVE_IMAGE_FAIL));
         return;
     }
-    NotifyIfTempFile(resultSet);
     MediaLibraryObjectUtils::ScanFileAsync(data, to_string(fileId), MediaLibraryApi::API_10);
 
     // 2. 更新数据库 photoQuality 到高质量
     UpdatePhotoQuality(imageId);
+
+    NotifyIfTempFile(resultSet);
 
     MultiStagesCaptureDfxTotalTime::GetInstance().Report(imageId);
     MultiStagesCaptureDfxResult::Report(imageId, static_cast<int32_t>(MultiStagesCaptureResultErrCode::SUCCESS));
