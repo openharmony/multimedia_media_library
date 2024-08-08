@@ -37,8 +37,8 @@ public:
     EXPORT void SetFilePath(const VariantData &path);
     EXPORT const std::string &GetFilePath() const;
 
-    void SetUri(const VariantData &uri);
-    const std::string &GetUri() const;
+    EXPORT void SetUri(const VariantData &uri);
+    EXPORT const std::string &GetUri() const;
 
     EXPORT void SetRelativePath(const VariantData &relativePath);
     EXPORT const std::string &GetRelativePath() const;
@@ -62,7 +62,7 @@ public:
     EXPORT int64_t GetFileDateModified() const;
 
     EXPORT void SetFileExtension(const VariantData &fileExt);
-    const std::string &GetFileExtension() const;
+    EXPORT const std::string &GetFileExtension() const;
 
     EXPORT void SetFileTitle(const VariantData &title);
     EXPORT const std::string &GetFileTitle() const;
@@ -79,7 +79,7 @@ public:
     EXPORT void SetFileWidth(const VariantData &width);
     EXPORT int32_t GetFileWidth() const;
 
-    void SetOrientation(const VariantData &orientation);
+    EXPORT void SetOrientation(const VariantData &orientation);
     EXPORT int32_t GetOrientation() const;
 
     EXPORT void SetFileDuration(const VariantData &duration);
@@ -88,8 +88,8 @@ public:
     EXPORT int32_t GetParentId() const;
     EXPORT void SetParentId(const VariantData &id);
 
-    void SetAlbumId(const VariantData &albumId);
-    int32_t GetAlbumId() const;
+    EXPORT void SetAlbumId(const VariantData &albumId);
+    EXPORT int32_t GetAlbumId() const;
 
     EXPORT void SetAlbumName(const VariantData &album);
     EXPORT const std::string &GetAlbumName() const;
@@ -100,53 +100,53 @@ public:
     EXPORT void SetDateTaken(const VariantData &dateTaken);
     EXPORT int64_t GetDateTaken() const;
 
-    void SetLongitude(const VariantData &longitude);
+    EXPORT void SetLongitude(const VariantData &longitude);
     EXPORT double GetLongitude() const;
 
-    void SetLatitude(const VariantData &latitude);
+    EXPORT void SetLatitude(const VariantData &latitude);
     EXPORT double GetLatitude() const;
 
-    void SetTimePending(const VariantData &timePending);
-    int64_t GetTimePending() const;
+    EXPORT void SetTimePending(const VariantData &timePending);
+    EXPORT int64_t GetTimePending() const;
 
-    void SetUserComment(const VariantData &userComment);
-    const std::string &GetUserComment() const;
+    EXPORT void SetUserComment(const VariantData &userComment);
+    EXPORT const std::string &GetUserComment() const;
 
-    void SetAllExif(const VariantData &allExif);
+    EXPORT void SetAllExif(const VariantData &allExif);
     EXPORT const std::string &GetAllExif() const;
 
-    void SetDateYear(const VariantData &dateYear);
-    const std::string &getDateYear() const;
+    EXPORT void SetDateYear(const VariantData &dateYear);
+    EXPORT const std::string &getDateYear() const;
 
-    void SetDateMonth(const VariantData &dateMonth);
-    const std::string &getDateMonth() const;
+    EXPORT void SetDateMonth(const VariantData &dateMonth);
+    EXPORT const std::string &getDateMonth() const;
 
-    void SetDateDay(const VariantData &dateDay);
-    const std::string &GetDateDay() const;
+    EXPORT void SetDateDay(const VariantData &dateDay);
+    EXPORT const std::string &GetDateDay() const;
 
-    void SetShootingMode(const VariantData &shootingMode);
+    EXPORT void SetShootingMode(const VariantData &shootingMode);
     EXPORT const std::string &GetShootingMode() const;
 
-    void SetShootingModeTag(const VariantData &shootingMode);
+    EXPORT void SetShootingModeTag(const VariantData &shootingMode);
     EXPORT const std::string &GetShootingModeTag() const;
 
-    void SetLastVisitTime(const VariantData &lastVisitTime);
+    EXPORT void SetLastVisitTime(const VariantData &lastVisitTime);
     EXPORT int64_t GetLastVisitTime() const;
 
     EXPORT void SetPhotoSubType(const VariantData &photoSubType);
-    int32_t GetPhotoSubType() const;
+    EXPORT int32_t GetPhotoSubType() const;
 
-    void SetFrontCamera(const VariantData &forntcamera);
+    EXPORT void SetFrontCamera(const VariantData &forntcamera);
     EXPORT std::string GetFrontCamera() const;
     
     void SetMovingPhotoImagePath(const VariantData &imagePath);
     EXPORT std::string GetMovingPhotoImagePath() const;
 
-    void SetDynamicRangeType(const VariantData &type);
+    EXPORT void SetDynamicRangeType(const VariantData &type);
     EXPORT int32_t GetDynamicRangeType() const;
 
-    void SetCoverPosition(const VariantData &coverPosition);
-    int64_t GetCoverPosition() const;
+    EXPORT void SetCoverPosition(const VariantData &coverPosition);
+    EXPORT int64_t GetCoverPosition() const;
 
     void SetFrameIndex(const VariantData &frameIndex);
     int32_t GetFrameIndex() const;
@@ -154,17 +154,17 @@ public:
     EXPORT void SetIsTemp(const VariantData &isTemp);
     EXPORT int32_t GetIsTemp();
 
-    void SetForAdd(bool forAdd);
-    bool GetForAdd() const;
-    void SetTableName(const std::string &tableName);
-    std::string GetTableName();
+    EXPORT void SetForAdd(bool forAdd);
+    EXPORT bool GetForAdd() const;
+    EXPORT void SetTableName(const std::string &tableName);
+    EXPORT std::string GetTableName();
     void SetOwnerPackage(const VariantData &ownerPackage);
     const std::string GetOwnerPackage() const;
 
     EXPORT void Init();
 
     using MetadataFnPtr = void (Metadata::*)(const VariantData &);
-    std::unordered_map<std::string, std::pair<ResultSetDataType, MetadataFnPtr>> memberFuncMap_;
+    EXPORT std::unordered_map<std::string, std::pair<ResultSetDataType, MetadataFnPtr>> memberFuncMap_;
 
 private:
     int32_t id_;
@@ -242,6 +242,8 @@ private:
     int32_t frameIndex_ = 0;
 
     int32_t isTemp_;
+     // front camera
+    std::string frontcamera_;
 };
 } // namespace Media
 } // namespace OHOS
