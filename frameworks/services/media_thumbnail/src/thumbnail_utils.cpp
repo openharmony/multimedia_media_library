@@ -1465,6 +1465,10 @@ bool ThumbnailUtils::ResizeImage(const vector<uint8_t> &data, const Size &size, 
     SourceOptions opts;
     unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data.data(),
         data.size(), opts, err);
+    if (imageSource == nullptr) {
+        MEDIA_ERR_LOG("imageSource is nullptr");
+        return false;
+    }
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to create image source %{public}d", err);
         return false;

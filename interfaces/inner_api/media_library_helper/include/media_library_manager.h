@@ -73,6 +73,14 @@ public:
     EXPORT void InitMediaLibraryManager(const sptr<IRemoteObject> &token);
 
     /**
+     * @brief Initializes the environment for Media Library Manager
+     *
+     * @since 1.0
+     * @version 1.0
+     */
+    EXPORT void InitMediaLibraryManager();
+
+    /**
      * @brief Close an opened file
      *
      * @param uri source uri of a file which is to be closed

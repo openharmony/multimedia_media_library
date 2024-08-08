@@ -738,8 +738,20 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FileInfo &fileInfo,
     }
     values.PutLong(MediaColumn::MEDIA_DURATION, fileInfo.duration);
     values.PutInt(MediaColumn::MEDIA_IS_FAV, fileInfo.isFavorite);
+    if (fileInfo.isFavorite != 0) {
+        string fileName = fileInfo.displayName;
+        MEDIA_WARN_LOG("the file :%{public}s is favorite.", BackupFileUtils::GarbleFileName(fileName).c_str());
+    }
     values.PutLong(MediaColumn::MEDIA_DATE_TRASHED, fileInfo.recycledTime);
+    if (fileInfo.recycledTime != 0) {
+        string fileName = fileInfo.displayName;
+        MEDIA_WARN_LOG("the file :%{public}s is trash.", BackupFileUtils::GarbleFileName(fileName).c_str());
+    }
     values.PutInt(MediaColumn::MEDIA_HIDDEN, fileInfo.hidden);
+    if (fileInfo.hidden != 0) {
+        string fileName = fileInfo.displayName;
+        MEDIA_WARN_LOG("the file :%{public}s is hidden.", BackupFileUtils::GarbleFileName(fileName).c_str());
+    }
     values.PutInt(PhotoColumn::PHOTO_HEIGHT, fileInfo.height);
     values.PutInt(PhotoColumn::PHOTO_WIDTH, fileInfo.width);
     values.PutString(PhotoColumn::PHOTO_USER_COMMENT, fileInfo.userComment);

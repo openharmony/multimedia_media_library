@@ -262,7 +262,16 @@ int32_t MediaLibraryNapiUtils::GetFileIdFromAssetUri(const string &uri)
         NAPI_ERR_LOG("only photo or audio uri is valid");
         return ERROR;
     }
-    std::string fileIdStr = tmp.substr(0, tmp.find_first_of('/'));
+    size_t fisrtSlashIndex = tmp.find_first_of('/');
+    if (fisrtSlashIndex == string::npos) {
+        NAPI_ERR_LOG("second half of uri includes no slash");
+        return ERROR;
+    }
+    std::string fileIdStr = tmp.substr(0, fisrtSlashIndex);
+    if (fileIdStr.empty()) {
+        NAPI_ERR_LOG("intercepted fileId is empty");
+        return ERROR;
+    }
     if (std::all_of(fileIdStr.begin(), fileIdStr.end(), ::isdigit)) {
         return std::stoi(fileIdStr);
     }
@@ -1492,6 +1501,10 @@ napi_status MediaLibraryNapiUtils::ParsePredicates(napi_env env, const napi_valu
 {
     JSProxy::JSProxy<DataShareAbsPredicates> *jsProxy = nullptr;
     napi_unwrap(env, arg, reinterpret_cast<void **>(&jsProxy));
+    if (jsProxy == nullptr) {
+        NAPI_ERR_LOG("jsProxy is invalid");
+        return napi_invalid_arg;
+    }
     shared_ptr<DataShareAbsPredicates> predicate = jsProxy->GetInstance();
     CHECK_COND_RET(HandleSpecialPredicate(context, predicate, fetchOptType) == TRUE,
         napi_invalid_arg, "invalid predicate");

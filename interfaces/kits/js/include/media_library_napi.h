@@ -273,6 +273,8 @@ private:
     EXPORT static napi_value CreateAlbumKeyEnum(napi_env env);
     EXPORT static napi_value CreatePositionTypeEnum(napi_env env);
     EXPORT static napi_value CreatePhotoSubTypeEnum(napi_env env);
+    EXPORT static napi_value CreatePhotoPermissionTypeEnum(napi_env env);
+    EXPORT static napi_value CreateHideSensitiveTypeEnum(napi_env env);
     EXPORT static napi_value CreateDynamicRangeTypeEnum(napi_env env);
 
     EXPORT static napi_value GetPhotoAccessHelper(napi_env env, napi_callback_info info);
@@ -353,6 +355,8 @@ private:
     static thread_local napi_ref sPositionTypeEnumRef_;
     static thread_local napi_ref sHiddenPhotosDisplayModeEnumRef_;
     static thread_local napi_ref sPhotoSubType_;
+    static thread_local napi_ref sPhotoPermissionType_;
+    static thread_local napi_ref sHideSensitiveType_;
     static thread_local napi_ref sDynamicRangeType_;
     static thread_local napi_ref sNotifyType_;
     static thread_local napi_ref sDefaultChangeUriRef_;
