@@ -493,20 +493,29 @@ bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_
         return false;
     }
     float scale = GetLandmarksScale(fileInfo.width, fileInfo.height);
+    if (scale == 0) {
+        MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, scale = 0", faceInfo.faceId.c_str());
+        return false;
+    }
     nlohmann::json landmarksJson = nlohmann::json::parse(faceInfo.landmarks);
+    if (landmarksJson.is_discarded()) {
+        MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, parse landmarks failed", faceInfo.faceId.c_str());
+        return false;
+    }
     for (auto &landmark : landmarksJson) {
         if (!landmark.contains(LANDMARK_X) || !landmark.contains(LANDMARK_Y)) {
             MEDIA_ERR_LOG("Set landmarks for face %{public}s failed, lack of x or y", faceInfo.faceId.c_str());
             return false;
         }
-        landmark[LANDMARK_X] = float(landmark[LANDMARK_X]) / fileInfo.width / scale;
-        landmark[LANDMARK_Y] = float(landmark[LANDMARK_Y]) / fileInfo.height / scale;
-        if (IsLandmarkValid(faceInfo, landmark[LANDMARK_X], landmark[LANDMARK_Y]) {
+        landmark[LANDMARK_X] = static_cast<float>(landmark[LANDMARK_X]) / fileInfo.width / scale;
+        landmark[LANDMARK_Y] = static_cast<float>(landmark[LANDMARK_Y]) / fileInfo.height / scale;
+        if (IsLandmarkValid(faceInfo, landmark[LANDMARK_X], landmark[LANDMARK_Y])) {
             continue;
         }
         MEDIA_WARN_LOG("Given landmark may be invalid, (%{public}f, %{public}f), rect TL: (%{public}f, %{public}f), "
-            "rect BR: (%{public}f, %{public}f)", landmark[LANDMARK_X], landmark[LANDMARK_Y], faceInfo.scaleX,
-            faceInfo.scaleY, faceInfo.scaleX + faceInfo.scaleWidth, faceInfo.scaleY + faceInfo.scaleHeight);
+            "rect BR: (%{public}f, %{public}f)", static_cast<float>(landmark[LANDMARK_X]),
+            static_cast<float>(landmark[LANDMARK_Y]), faceInfo.scaleX, faceInfo.scaleY,
+            faceInfo.scaleX + faceInfo.scaleWidth, faceInfo.scaleY + faceInfo.scaleHeight);
     }
     faceInfo.landmarks = landmarksJson.dump();
     return true;

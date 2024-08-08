@@ -2041,7 +2041,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_002, T
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_002 start";
     int length = TEST_SIZE_MIN * TEST_SIZE_MULT_UNIT + TEST_SIZE_INCR_UNIT; // [2 * min, 4 * min)
-    float scale = BackupDatabaseUtils::GetLandmarksScale(length , length);
+    float scale = BackupDatabaseUtils::GetLandmarksScale(length, length);
     float expectedScale = 1.0 / TEST_SIZE_MULT_UNIT;
     EXPECT_EQ(scale, expectedScale);
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_002 end";
@@ -2051,7 +2051,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_003, T
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_003 start";
     int length = TEST_SIZE_MIN * TEST_SIZE_MULT_UNIT * TEST_SIZE_MULT_UNIT; // [4 * min, ...)
-    float scale = BackupDatabaseUtils::GetLandmarksScale(length , length);
+    float scale = BackupDatabaseUtils::GetLandmarksScale(length, length);
     float expectedScale = 1.0 / TEST_SIZE_MULT_UNIT / TEST_SIZE_MULT_UNIT;
     EXPECT_EQ(scale, expectedScale);
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_003 end";
