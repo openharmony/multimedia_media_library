@@ -1997,7 +1997,9 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
             string editData;
             CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
                 "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-            CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(editDataSourcePath, path, editData, fileId, "high") == E_OK,
+            const string HIGH_QUALITY_PHOTO_STATUS = "high";
+            CHECK_AND_RETURN_RET_LOG(
+                AddFiltersToPhoto(editDataSourcePath, path, editData, fileId, HIGH_QUALITY_PHOTO_STATUS) == E_OK,
                 E_FAIL, "Failed to add filters to photo");
             return E_OK;
         }
