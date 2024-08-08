@@ -323,6 +323,10 @@ const std::string PhotoColumn::CREATE_PHOTOS_UPDATE_CLOUD_SYNC =
                         std::to_string(static_cast<int32_t>(DirtyTypes::TYPE_SYNCED)) +
                         " BEGIN SELECT cloud_sync_func(); END;";
 
+const std::string PhotoColumn::UPDATE_READY_ON_THUMBNAIL_UPGRADE =
+                        " UPDATE " + PhotoColumn::PHOTOS_TABLE + " SET " + PhotoColumn::PHOTO_THUMBNAIL_READY +
+                        " = 6 " + " WHERE " + PhotoColumn::PHOTO_THUMBNAIL_READY + " != 0; END;";
+
 const std::set<std::string> PhotoColumn::PHOTO_COLUMNS = {
     PhotoColumn::PHOTO_ORIENTATION, PhotoColumn::PHOTO_LATITUDE, PhotoColumn::PHOTO_LONGITUDE,
     PhotoColumn::PHOTO_HEIGHT, PhotoColumn::PHOTO_WIDTH, PhotoColumn::PHOTO_LCD_VISIT_TIME, PhotoColumn::PHOTO_POSITION,

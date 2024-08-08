@@ -2562,6 +2562,16 @@ static void UpdateVideoLabelTableForSubLabelType(RdbStore &store)
     ExecSqls(sqls, store);
 }
 
+static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::UPDATE_READY_ON_THUMBNAIL_UPGRADE,
+    };
+    MEDIA_INFO_LOG("start update ready for thumbnail upgrade");
+    ExecSqls(sqls, store);
+    MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2963,6 +2973,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPDATE_VIDEO_LABEL_TABLE_FOR_SUB_LABEL_TYPE) {
         UpdateVideoLabelTableForSubLabelType(store);
+    }
+
+    if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
+        UpdateReadyOnThumbnailUpgrade(store);
     }
 }
 
