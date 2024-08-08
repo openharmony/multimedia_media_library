@@ -31,6 +31,7 @@
 #include "file_asset.h"
 #include "file_uri.h"
 #include "image_source.h"
+#include "iservice_registry.h"
 #include "media_asset_rdbstore.h"
 #include "media_file_uri.h"
 #include "media_file_utils.h"
@@ -45,6 +46,7 @@
 #include "permission_utils.h"
 #include "result_set_utils.h"
 #include "string_ex.h"
+#include "system_ability_definition.h"
 #include "thumbnail_const.h"
 #include "unique_fd.h"
 
@@ -94,6 +96,29 @@ void MediaLibraryManager::InitMediaLibraryManager(const sptr<IRemoteObject> &tok
     token_ = token;
     if (sDataShareHelper_ == nullptr) {
         sDataShareHelper_ = DataShare::DataShareHelper::Creator(token, MEDIALIBRARY_DATA_URI);
+    }
+}
+
+static sptr<IRemoteObject> InitToken()
+{
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saManager == nullptr) {
+        MEDIA_ERR_LOG("get system ability mgr failed.");
+        return nullptr;
+    }
+    auto remoteObj = saManager->GetSystemAbility(STORAGE_MANAGER_MANAGER_ID);
+    if (remoteObj == nullptr) {
+        MEDIA_ERR_LOG("GetSystemAbility Service failed.");
+        return nullptr;
+    }
+    return remoteObj;
+}
+
+void MediaLibraryManager::InitMediaLibraryManager()
+{
+    token_ = InitToken();
+    if (sDataShareHelper_ == nullptr && token_ != nullptr) {
+        sDataShareHelper_ = DataShare::DataShareHelper::Creator(token_, MEDIALIBRARY_DATA_URI);
     }
 }
 
