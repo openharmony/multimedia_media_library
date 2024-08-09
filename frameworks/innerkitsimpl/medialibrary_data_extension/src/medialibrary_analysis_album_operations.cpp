@@ -608,6 +608,17 @@ static string ReorderTagId(string target, const vector<MergeAlbumInfo> &mergeAlb
     return reordererTagId;
 }
 
+int32_t GetMergeAlbumInfo(shared_ptr<ResultSet> resultSet, MergeAlbumInfo &info)
+{
+    if (GetIntValueFromResultSet(resultSet, ALBUM_ID, info.albumId) != E_OK ||
+        GetStringValueFromResultSet(resultSet, TAG_ID, info.tagId) != E_OK ||
+        GetStringValueFromResultSet(resultSet, COVER_URI, info.coverUri) != E_OK ||
+        GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, info.isCoverSatisfied) != E_OK) {
+        return E_HAS_DB_ERROR;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const vector<MergeAlbumInfo> &mergeAlbumInfo)
 {
     auto uniStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStore();
@@ -628,10 +639,7 @@ int32_t MediaLibraryAnalysisAlbumOperations::UpdateMergeGroupAlbumsInfo(const ve
     std::unordered_map<string, MergeAlbumInfo> updateMap;
     while (resultSet->GoToNextRow() == NativeRdb::E_OK) {
         MergeAlbumInfo info;
-        if (GetIntValueFromResultSet(resultSet, ALBUM_ID, info.albumId) != E_OK ||
-            GetStringValueFromResultSet(resultSet, TAG_ID, info.tagId) != E_OK  ||
-            GetStringValueFromResultSet(resultSet, COVER_URI, info.coverUri) != E_OK ||
-            GetIntValueFromResultSet(resultSet, IS_COVER_SATISFIED, info.isCoverSatisfied) != E_OK) {
+        if (GetMergeAlbumInfo(resultSet, info) != E_OK) {
             return E_HAS_DB_ERROR;
         }
         string reorderedTagId = ReorderTagId(info.tagId, mergeAlbumInfo);
