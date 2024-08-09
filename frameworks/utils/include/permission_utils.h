@@ -82,13 +82,14 @@ private:
     COMPILE_HIDDEN static sptr<AppExecFwk::IBundleMgr> bundleMgr_;
     COMPILE_HIDDEN static std::mutex bundleMgrMutex_;
     static void GetBundleNameFromCache(int uid, std::string &bundleName);
-    static void GetPackageNameFromCache(int uid, std::string &packageName);
-    static void GetAppIdFromCache(int uid, std::string &appId);
+    static void GetPackageNameFromCache(int uid, const std::string &bundleName, std::string &packageName);
+    static void GetAppIdFromCache(int uid, const std::string &bundleName, std::string &appId);
     static void UpdateLatestBundleInfo(int uid, const BundleInfo &bundleInfo);
     static void UpdateBundleNameInCache(int uid, const std::string &bundleName);
     static void UpdatePackageNameInCache(int uid, const std::string &packageName);
     static void UpdateAppIdInCache(int uid, const std::string &appId);
 
+    static std::mutex uninstallMutex_;
     static std::list<std::pair<int32_t, BundleInfo>> bundleInfoList_; // 用来快速获取使用频率最低的uid
     static std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> bundleInfoMap_;
 };
