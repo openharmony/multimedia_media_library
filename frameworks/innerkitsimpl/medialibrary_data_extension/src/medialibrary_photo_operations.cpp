@@ -1997,15 +1997,17 @@ int32_t MediaLibraryPhotoOperations::ProcessMultistagesPhoto(bool isEdited, cons
             string editData;
             CHECK_AND_RETURN_RET_LOG(ReadEditdataFromFile(editDataCameraPath, editData) == E_OK, E_HAS_FS_ERROR,
                 "Failed to read editdata, path=%{public}s", editDataCameraPath.c_str());
-            CHECK_AND_RETURN_RET_LOG(AddFiltersToPhoto(editDataSourcePath, path, editData, fileId) == E_OK, E_FAIL,
-                "Failed to add filters to photo");
+            const string HIGH_QUALITY_PHOTO_STATUS = "high";
+            CHECK_AND_RETURN_RET_LOG(
+                AddFiltersToPhoto(editDataSourcePath, path, editData, fileId, HIGH_QUALITY_PHOTO_STATUS) == E_OK,
+                E_FAIL, "Failed to add filters to photo");
             return E_OK;
         }
     }
 }
 
 int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputPath,
-    const std::string &outputPath, const std::string &editdata, int32_t fileId)
+    const std::string &outputPath, const std::string &editdata, int32_t fileId, const std::string &photoStatus)
 {
     MEDIA_INFO_LOG("AddFiltersToPhoto inputPath: %{public}s, outputPath: %{public}s, editdata: %{public}s",
         inputPath.c_str(), outputPath.c_str(), editdata.c_str());
@@ -2013,7 +2015,8 @@ int32_t MediaLibraryPhotoOperations::AddFiltersToPhoto(const std::string &inputP
     size_t lastSlash = outputPath.rfind('/');
     CHECK_AND_RETURN_RET_LOG(lastSlash != string::npos && outputPath.size() > (lastSlash + 1), E_INVALID_VALUES,
         "Failed to check outputPath: %{public}s", outputPath.c_str());
-    string tempOutputPath = outputPath.substr(0, lastSlash) + "/filters_" + outputPath.substr(lastSlash + 1);
+    string tempOutputPath = outputPath.substr(0, lastSlash) +
+        "/filters_" + photoStatus + outputPath.substr(lastSlash + 1);
     int32_t ret = MediaFileUtils::CreateAsset(tempOutputPath);
     CHECK_AND_RETURN_RET_LOG(ret == E_SUCCESS || ret == E_FILE_EXIST, E_HAS_FS_ERROR,
         "Failed to create temp filters file %{private}s", tempOutputPath.c_str());
