@@ -26,6 +26,8 @@
 #include "bundle_info.h"
 #include "common_event_manager.h"
 #include "common_event_support.h"
+#include "dfx_cloud_manager.h"
+
 #include "want.h"
 #include "post_event_utils.h"
 #ifdef HAS_POWER_MANAGER_PART
@@ -349,6 +351,9 @@ void MedialibrarySubscriber::RevertPendingByPackage(const std::string &bundleNam
 
 void MedialibrarySubscriber::UpdateBackgroundTimer()
 {
+    if (isCharging_ && isScreenOff_) {
+        CloudSyncDfxManager::GetInstance().RunDfx();
+    }
     std::lock_guard<std::mutex> lock(mutex_);
     bool newStatus = isScreenOff_ && isCharging_ && isPowerSufficient_ && isDeviceTemperatureProper_ && isWifiConn_;
     if (timerStatus_ == newStatus) {

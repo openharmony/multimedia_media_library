@@ -18,8 +18,10 @@
 #include <string>
 #include <unordered_set>
 
+#include "dfx_cloud_manager.h"
 #include "dfx_collector.h"
 #include "dfx_const.h"
+#include "dfx_database_utils.h"
 #include "dfx_manager.h"
 #include "dfx_reporter.h"
 #include "dfx_utils.h"
@@ -120,6 +122,27 @@ HWTEST_F(MediaLibraryDfxTest, medialib_dfx_split_string_test, TestSize.Level0)
     EXPECT_EQ(DfxUtils::SplitString("string1!string2", '!'), set);
     EXPECT_EQ(DfxUtils::SplitString("string1", ';'), unordered_set<string>{"string1"});
     EXPECT_EQ(DfxUtils::SplitString("", ';'), unordered_set<string>{});
+}
+
+HWTEST_F(MediaLibraryDfxTest, medialib_cloud_manager_test, TestSize.Level0)
+{
+    CloudSyncDfxManager::GetInstance().RunDfx();
+    int32_t downloadedThumb = 0;
+    int32_t generatedThumb = 0;
+    int32_t totalDownload = 0;
+    DfxDatabaseUtils::QueryDownloadedAndGeneratedThumb(downloadedThumb, generatedThumb);
+    DfxDatabaseUtils::QueryTotalCloudThumb(totalDownload);
+
+    EXPECT_EQ(downloadedThumb, 0);
+    EXPECT_EQ(generatedThumb, 0);
+    EXPECT_EQ(totalDownload, 0);
+
+    InitState::StateSwitch(CloudSyncDfxManager::GetInstance());
+    InitState::Process(CloudSyncDfxManager::GetInstance());
+    StartState::StateSwitch(CloudSyncDfxManager::GetInstance());
+    StartState::Process(CloudSyncDfxManager::GetInstance());
+    EndState::StateSwitch(CloudSyncDfxManager::GetInstance());
+    EndState::Process(CloudSyncDfxManager::GetInstance());
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_one_day_report_test, TestSize.Level0)

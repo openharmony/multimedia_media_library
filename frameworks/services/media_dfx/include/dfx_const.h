@@ -33,6 +33,7 @@ constexpr int32_t CLOUD_LCD_TIME_OUT = 800;
 constexpr int32_t RDB_TIME_OUT = 100;
 constexpr int32_t TO_MILLION = 1000;
 constexpr int32_t ONE_MINUTE = 60;
+constexpr int32_t ONE_HOUR = 60 * 60;
 constexpr int32_t FIVE_MINUTE = 5 * 60 * 1000;
 constexpr int32_t SIX_HOUR = 6 * 60 * 60;
 constexpr int32_t HALF_DAY = 12 * 60 * 60;
@@ -106,6 +107,9 @@ const std::string MOVING_PHOTO_KEY_UNADAPTED_NUM = "unadapted_app_num";
 const std::string MOVING_PHOTO_KEY_UNADAPTED_PACKAGE = "unadapted_app_package";
 const std::string MOVING_PHOTO_KEY_ADAPTED_NUM = "adapted_app_num";
 const std::string MOVING_PHOTO_KEY_ADAPTED_PACKAGE = "adapted_app_package";
+const std::string CLOUD_SYNC_START_TIME = "cloud_sync_start_time";
+const std::string CLOUDSYNC_STATUS_KEY = "persist.kernel.cloudsync.status";
+const std::string IS_REPORTED = "is_reported";
 
 const std::string CLOUD_PHOTO_PATH = "/storage/cloud/files/Photo/";
 const std::string CLOUD_FILE_PATH = "/storage/cloud/files/";
