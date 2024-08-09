@@ -136,12 +136,12 @@ bool ThumbnailUtils::DeleteThumbExDir(ThumbnailData &data)
 bool ThumbnailUtils::LoadAudioFileInfo(shared_ptr<AVMetadataHelper> avMetadataHelper, ThumbnailData &data,
     Size &desiredSize, uint32_t &errCode)
 {
-    auto audioPicMemory = avMetadataHelper->FetchArtPicture();
-    if (audioPicMemory == nullptr) {
+    if (avMetadataHelper == nullptr || avMetadataHelper->FetchArtPicture() == nullptr) {
         MEDIA_ERR_LOG("FetchArtPicture failed!");
         return false;
     }
 
+    auto audioPicMemory = avMetadataHelper->FetchArtPicture();
     SourceOptions opts;
     unique_ptr<ImageSource> audioImageSource = ImageSource::CreateImageSource(audioPicMemory->GetBase(),
         audioPicMemory->GetSize(), opts, errCode);
