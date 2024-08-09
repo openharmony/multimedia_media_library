@@ -58,9 +58,9 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_Extract_empty_path, TestSize.Level0
     mediaScannerDb->GetFileBasicInfo(path, data);
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_IMAGE));
     data->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
-    // empty path Extract wil return E_OK
+    // empty path Extract will return E_IMAGE
     int32_t ret = MetadataExtractor::Extract(data);
-    EXPECT_EQ(ret, E_OK);
+    EXPECT_EQ(ret, E_IMAGE);
 }
 
 HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractAVMetadata_test_001, TestSize.Level0)
@@ -100,6 +100,7 @@ HWTEST_F(MediaLibraryScannerDbTest, medialib_ExtractImageMetadata_test_001, Test
     string path = "/storage/cloud/files/";
     mediaScannerDb->GetFileBasicInfo(path, data);
     data->SetFileMediaType(static_cast<MediaType>(MEDIA_TYPE_DEVICE));
+    data->SetFilePath(path);
     int32_t ret = MetadataExtractor::ExtractImageMetadata(data);
     EXPECT_EQ(ret, E_OK);
 }
