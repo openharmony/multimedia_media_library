@@ -332,9 +332,9 @@ void BackupDatabaseUtils::UpdateSelection(std::string &selection, const std::str
     selection += selection.empty() ? wrappedSelectionToAdd : ", " + wrappedSelectionToAdd;
 }
 
-void BackupDatabaseUtils::UpdateSDWhereClause(std::string &querySql, int32_t sceneCode)
+void BackupDatabaseUtils::UpdateSDWhereClause(std::string &querySql, bool shouldIncludeSD)
 {
-    if (sceneCode != UPGRADE_RESTORE_ID) {
+    if (shouldIncludeSD) {
         return;
     }
     querySql += " AND " + EXCLUDE_SD;

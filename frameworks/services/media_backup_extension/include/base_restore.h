@@ -137,7 +137,7 @@ protected:
     int fileMinSize_ = 0;
     int maxFileId_ = 0;
     int maxCount_ = 0;
-    int32_t sceneCode_;
+    int32_t sceneCode_ = -1;
     std::unordered_map<int32_t, std::string> faceAnalysisVersionMap_;
     std::unordered_map<std::string, std::string> tagIdMap_;
     std::unordered_map<std::string, std::string> groupTagMap_;

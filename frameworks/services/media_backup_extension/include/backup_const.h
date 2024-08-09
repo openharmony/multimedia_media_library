@@ -103,6 +103,8 @@ const std::string AUDIO_DATE_MODIFIED = "date_modified";
 const std::string AUDIO_DATE_TAKEN = "datetaken";
 
 // statistics
+const int32_t STAT_DEFAULT_ERROR_CODE_SUCCESS = 0;
+const int32_t STAT_DEFAULT_ERROR_CODE_FAILED = 13500099;
 const std::string STAT_KEY_RESULT_INFO = "resultInfo";
 const std::string STAT_KEY_TYPE = "type";
 const std::string STAT_KEY_ERROR_CODE = "errorCode";
@@ -110,8 +112,8 @@ const std::string STAT_KEY_ERROR_INFO = "errorInfo";
 const std::string STAT_KEY_INFOS = "infos";
 const std::string STAT_KEY_BACKUP_INFO = "backupInfo";
 const std::string STAT_KEY_SUCCESS_COUNT = "successCount";
-const std::string STAT_KEY_FAILED_COUNT = "failedCount";
 const std::string STAT_KEY_DUPLICATE_COUNT = "duplicateCount";
+const std::string STAT_KEY_FAILED_COUNT = "failedCount";
 const std::string STAT_KEY_DETAILS = "details";
 const std::string STAT_KEY_NUMBER = "number";
 const std::string STAT_VALUE_ERROR_INFO = "ErrorInfo";
@@ -124,6 +126,8 @@ const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, 
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
 const std::string AUDIO_DB_NAME = "audio_MediaInfo.db";
+const std::string PHOTO_SD_DB_NAME = "photo_sd_MediaInfo.db";
+const std::string VIDEO_SD_DB_NAME = "video_sd_MediaInfo.db";
 
 const std::string GALLERY_ALBUM = "gallery_album";
 const std::string GALLERY_ALBUM_NAME = "albumName";

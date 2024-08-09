@@ -128,19 +128,20 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   }
 
   async onRestoreEx(bundleVersion: BundleVersion, bundleInfo: string): Promise<string> {
-    console.log(TAG, `onRestoreEx ok ${JSON.stringify(bundleVersion)}, ${bundleInfo}`);
+    console.log(TAG, `onRestoreEx ok ${JSON.stringify(bundleVersion)}, ${JSON.stringify(bundleInfo)}`);
     console.time(TAG + ' RESTORE EX');
     const backupDir = this.context.backupDir + 'restore';
     let restoreExResult: string;
     let path: string;
     if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
-      restoreExResult = await mediabackup.startRestore(UPGRADE_RESTORE, galleryAppName, mediaAppName, backupDir);
+      restoreExResult = await mediabackup.startRestoreEx(UPGRADE_RESTORE, galleryAppName, mediaAppName, backupDir);
       path = backupDir;
     } else if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
-      restoreExResult = await mediabackup.startRestore(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
+      restoreExResult = await mediabackup.startRestoreEx(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName,
+        backupDir);
       path = backupDir;
     } else {
-      restoreExResult = await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
+      restoreExResult = await mediabackup.startRestoreEx(CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
       path = backupDir + '/storage/media/local/files/';
     }
     let restoreExInfo: string = await this.getRestoreExInfo(restoreExResult);

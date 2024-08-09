@@ -55,7 +55,7 @@ void BaseRestore::StartRestore(const std::string &backupRetoreDir, const std::st
         RestorePhoto();
         RestoreAudio();
         MEDIA_INFO_LOG("migrate database number: %{public}lld, file number: %{public}lld (%{public}lld + "
-            "%{public}lld)), duplicate number: %{public}lld + %{public}lld, audio database number:%{public}lld, "
+            "%{public}lld), duplicate number: %{public}lld + %{public}lld, audio database number:%{public}lld, "
             "audio file number:%{public}lld, duplicate audio number: %{public}lld, map number: %{public}lld",
             (long long)migrateDatabaseNumber_, (long long)migrateFileNumber_,
             (long long)(migrateFileNumber_ - migrateVideoFileNumber_), (long long)migrateVideoFileNumber_,
@@ -720,9 +720,11 @@ std::string BaseRestore::GetRestoreExInfo()
 
 nlohmann::json BaseRestore::GetErrorInfoJson()
 {
+    int32_t errorCode = errorCode_ == RestoreError::SUCCESS ? STAT_DEFAULT_ERROR_CODE_SUCCESS :
+        STAT_DEFAULT_ERROR_CODE_FAILED;
     nlohmann::json errorInfoJson = {
         { STAT_KEY_TYPE, STAT_VALUE_ERROR_INFO },
-        { STAT_KEY_ERROR_CODE, std::to_string(errorCode_) }, // TODO ERROR CODE SHOULD CONVERT TO GENERAL ERROR CODE 
+        { STAT_KEY_ERROR_CODE, std::to_string(errorCode) },
         { STAT_KEY_ERROR_INFO, errorInfo_ }
     };
     return errorInfoJson;
