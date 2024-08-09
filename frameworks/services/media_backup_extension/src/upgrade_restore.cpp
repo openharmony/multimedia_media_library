@@ -77,6 +77,8 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         galleryDbPath_ = upgradeFilePath + "/" + GALLERY_DB_NAME;
         audioDbPath_ = GARBLE_DUAL_FRAME_CLONE_DIR + "/0/" + AUDIO_DB_NAME;
         photosPreferencesPath = UPGRADE_FILE_DIR + "/" + galleryAppName_ + "_preferences.xml";
+        // gallery db may include both internal & external, set flag to differentiate, default false
+        shouldIncludeSD_ = BackupFileUtils::ShouldIncludeSD(filePath_);
         SetParameterForClone();
 #ifdef CLOUD_SYNC_MANAGER
         FileManagement::CloudSync::CloudSyncManager::GetInstance().StopSync("com.ohos.medialibrary.medialibrarydata");
@@ -87,6 +89,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
         externalDbPath_ = backupRetoreDir + "/" + mediaAppName_ + "/ce/databases/external.db";
         photosPreferencesPath =
             backupRetoreDir + "/" + galleryAppName_ + "/ce/shared_prefs/" + galleryAppName_ + "_preferences.xml";
+        shouldIncludeSD_ = false;
         if (!MediaFileUtils::IsFileExists(externalDbPath_)) {
             MEDIA_ERR_LOG("External db is not exist.");
             return E_FAIL;
@@ -101,6 +104,7 @@ int32_t UpgradeRestore::Init(const std::string &backupRetoreDir, const std::stri
             MediaLibraryDataManager::GetInstance()->ReCreateMediaDir();
         }
     }
+    MEDIA_INFO_LOG("Shoud include SD: %{public}d", static_cast<int32_t>(shouldIncludeSD_));
     return InitDbAndXml(photosPreferencesPath, isUpgrade);
 }
 
@@ -369,11 +373,11 @@ void UpgradeRestore::AnalyzeGallerySource()
     int32_t galleryCloudCount = BackupDatabaseUtils::QueryGalleryCloudCount(galleryRdb_);
     int32_t galleryBurstCoverCount = BackupDatabaseUtils::QueryGalleryBurstCoverCount(galleryRdb_);
     int32_t galleryBurstTotalCount = BackupDatabaseUtils::QueryGalleryBurstTotalCount(galleryRdb_);
-    MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, \
-        galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, \
-        gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, \
-        galleryImportsCount: %{public}d, galleryCloudCount: %{public}d, galleryBurstCount: cover %{public}d, \
-        total %{public}d",
+    MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, "
+        "galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, "
+        "gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, "
+        "galleryImportsCount: %{public}d, galleryCloudCount: %{public}d, galleryBurstCount: cover %{public}d, "
+        "total %{public}d",
         galleryAllCount, galleryImageCount, galleryVideoCount, galleryHiddenCount, galleryTrashedCount,
         gallerySDCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount, galleryCloudCount,
         galleryBurstCoverCount, galleryBurstTotalCount);
@@ -527,6 +531,7 @@ void UpgradeRestore::HandleRestData(void)
         MEDIA_DEBUG_LOG("Start to delete media data.");
         (void)MediaFileUtils::DeleteDir(mediaData);
     }
+    BackupFileUtils::DeleteSDDatabase(filePath_);
 
     // restore thumbnail for date fronted 500 photos
     MediaLibraryDataManager::GetInstance()->RestoreThumbnailDualFrame();
@@ -536,7 +541,7 @@ int32_t UpgradeRestore::QueryTotalNumber(void)
 {
     std::string querySql = QUERY_GALLERY_COUNT;
     querySql += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
-    BackupDatabaseUtils::UpdateSDWhereClause(querySql, sceneCode_);
+    BackupDatabaseUtils::UpdateSDWhereClause(querySql, shouldIncludeSD_);
     return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
 
@@ -550,7 +555,7 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
     }
     std::string queryAllPhotosByCount = QUERY_ALL_PHOTOS;
     queryAllPhotosByCount += " WHERE " + ALL_PHOTOS_WHERE_CLAUSE;
-    BackupDatabaseUtils::UpdateSDWhereClause(queryAllPhotosByCount, sceneCode_);
+    BackupDatabaseUtils::UpdateSDWhereClause(queryAllPhotosByCount, shouldIncludeSD_);
     queryAllPhotosByCount += ALL_PHOTOS_ORDER_BY;
     queryAllPhotosByCount += "limit " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = galleryRdb_->QuerySql(queryAllPhotosByCount);

@@ -44,6 +44,8 @@ public:
         const std::unordered_map<std::string, int32_t> &failedFiles);
     static std::string GetFailedFilesStr(const std::unordered_map<std::string, int32_t> &failedFiles);
     static bool GetPathPosByPrefixLevel(int32_t sceneCode, const std::string &path, int32_t prefixLevel, size_t &pos);
+    static bool ShouldIncludeSD(const std::string &prefix);
+    static void DeleteSDDatabase(const std::string &prefix);
 
 private:
     static int32_t GetFileMetadata(std::unique_ptr<Metadata> &data);

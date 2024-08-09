@@ -367,5 +367,25 @@ bool BackupFileUtils::GetPathPosByPrefixLevel(int32_t sceneCode, const std::stri
     }
     return true;
 }
+
+bool BackupFileUtils::ShouldIncludeSD(const std::string &prefix)
+{
+    return MediaFileUtils::IsFileExists(prefix + "/" + PHOTO_SD_DB_NAME) ||
+        MediaFileUtils::IsFileExists(prefix + "/" + VIDEO_SD_DB_NAME);
+}
+
+void BackupFileUtils::DeleteSDDatabase(const std::string &prefix)
+{
+    std::vector<std::string> sdDBs = { PHOTO_SD_DB_NAME, VIDEO_SD_DB_NAME };
+    for (const auto &sdDB : sdDBs) {
+        std::string sdDBPath = prefix + "/" + sdDB;
+        if (!MediaFileUtils::IsFileExists(sdDBPath)) {
+            continue;
+        }
+        if (!MediaFileUtils::DeleteFile(sdDBPath)) {
+            MEDIA_ERR_LOG("Delete SD database %{public}s failed, errno: %{public}d", sdDB.c_str(), errno);
+        }
+    }
+}
 } // namespace Media
 } // namespace OHOS

@@ -142,6 +142,7 @@ private:
     std::string audioDbPath_;
     std::string hiddenAlbumBucketId_;
     int32_t mediaScreenreCorderAlbumId_{-1};
+    bool shouldIncludeSD_{false};
 };
 } // namespace Media
 } // namespace OHOS
