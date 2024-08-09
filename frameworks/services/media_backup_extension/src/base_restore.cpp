@@ -813,7 +813,6 @@ void BaseRestore::UpdateFailedFileByFileType(int32_t fileType, const std::string
 
 void BaseRestore::UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode)
 {
-    MEDIA_INFO_LOG("@test, sceneCode: %{public}d", sceneCode_);
     SetErrorCode(errorCode);
     std::string realPath = sceneCode_ != CLONE_RESTORE_ID ? filePath :
         BackupFileUtils::GetReplacedPathByPrefixType(PrefixType::CLOUD, PrefixType::LOCAL, filePath);

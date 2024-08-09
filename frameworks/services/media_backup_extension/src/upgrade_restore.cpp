@@ -647,7 +647,8 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
     int32_t mediaType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
     if (mediaType != DUAL_MEDIA_TYPE::IMAGE_TYPE && mediaType != DUAL_MEDIA_TYPE::VIDEO_TYPE) {
-        MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s", mediaType, info.oldPath.c_str()); // TODO garble
+        MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s", mediaType,
+            BackupFileUtils::GarbleFilePath(info.oldPath, UPGRADE_RESTORE_ID).c_str());
         return false;
     }
     info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
