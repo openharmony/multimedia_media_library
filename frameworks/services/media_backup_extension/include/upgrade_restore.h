@@ -139,7 +139,6 @@ private:
     std::unordered_map<std::string, std::string> nickMap_;
     std::unordered_map<std::string, GalleryAlbumInfo> galleryAlbumMap_;
     std::vector<AlbumInfo> photoAlbumInfos_;
-    bool sceneCode_;
     std::string audioDbPath_;
     std::string hiddenAlbumBucketId_;
     int32_t mediaScreenreCorderAlbumId_{-1};
