@@ -279,14 +279,15 @@ std::vector<FileInfo> UpgradeRestore::QueryAudioFileInfosFromAudio(int32_t offse
 
 bool UpgradeRestore::ParseResultSetFromAudioDb(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
-    std::string oldPath = GetStringVal(AUDIO_DATA, resultSet);
-    if (!ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+    info.fileType = MediaType::MEDIA_TYPE_AUDIO;
+    info.oldPath = GetStringVal(AUDIO_DATA, resultSet);
+    if (!ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
     info.showDateToken = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet);
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
-    info.fileType = MediaType::MEDIA_TYPE_AUDIO;
     info.displayName = BackupFileUtils::GetFileNameFromPath(info.filePath);
     info.title = BackupFileUtils::GetFileTitle(info.displayName);
     info.isFavorite = 0;
@@ -365,12 +366,17 @@ void UpgradeRestore::AnalyzeGallerySource()
     int32_t galleryScreenVideoCount = BackupDatabaseUtils::QueryGalleryScreenVideoCount(galleryRdb_);
     int32_t galleryFavoriteCount =  BackupDatabaseUtils::QueryGalleryFavoriteCount(galleryRdb_);
     int32_t galleryImportsCount = BackupDatabaseUtils::QueryGalleryImportsCount(galleryRdb_);
+    int32_t galleryCloudCount = BackupDatabaseUtils::QueryGalleryCloudCount(galleryRdb_);
+    int32_t galleryBurstCoverCount = BackupDatabaseUtils::QueryGalleryBurstCoverCount(galleryRdb_);
+    int32_t galleryBurstTotalCount = BackupDatabaseUtils::QueryGalleryBurstTotalCount(galleryRdb_);
     MEDIA_INFO_LOG("gallery analyze result: {galleryAllCount: %{public}d, galleryImageCount: %{public}d, \
         galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, \
         gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, \
-        galleryImportsCount: %{public}d",
+        galleryImportsCount: %{public}d, galleryCloudCount: %{public}d, galleryBurstCount: cover %{public}d, \
+        total %{public}d",
         galleryAllCount, galleryImageCount, galleryVideoCount, galleryHiddenCount, galleryTrashedCount,
-        gallerySDCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount);
+        gallerySDCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount, galleryCloudCount,
+        galleryBurstCoverCount, galleryBurstTotalCount);
 }
 
 void UpgradeRestore::AnalyzeExternalSource()
@@ -568,9 +574,11 @@ bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::Res
         MEDIA_ERR_LOG("Invalid media type: %{public}d.", mediaType);
         return false;
     }
-    std::string oldPath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
-    if (!BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+    info.fileType = MediaType::MEDIA_TYPE_AUDIO;
+    info.oldPath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
+    if (!BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
     info.displayName = GetStringVal(EXTERNAL_DISPLAY_NAME, resultSet);
@@ -578,11 +586,10 @@ bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::Res
     info.fileSize = GetInt64Val(EXTERNAL_FILE_SIZE, resultSet);
     if (info.fileSize < GARBAGE_PHOTO_SIZE) {
         MEDIA_WARN_LOG("maybe garbage path = %{public}s.",
-            BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str());
+            BackupFileUtils::GarbleFilePath(info.oldPath, UPGRADE_RESTORE_ID).c_str());
     }
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(EXTERNAL_IS_FAVORITE, resultSet);
-    info.fileType = MediaType::MEDIA_TYPE_AUDIO;
     info.dateModified = GetInt64Val(EXTERNAL_DATE_MODIFIED, resultSet) * MSEC_TO_SEC;
     return true;
 }
@@ -632,22 +639,25 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     string dbName)
 {
     // only parse image and video
+    info.oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
     int32_t mediaType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
     if (mediaType != DUAL_MEDIA_TYPE::IMAGE_TYPE && mediaType != DUAL_MEDIA_TYPE::VIDEO_TYPE) {
-        MEDIA_ERR_LOG("Invalid media type: %{public}d.", mediaType);
+        MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s", mediaType, info.oldPath.c_str()); // TODO garble
         return false;
     }
-    std::string oldPath = GetStringVal(GALLERY_FILE_DATA, resultSet);
+    info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
+        MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
     if (info.fileSize < fileMinSize_ && dbName == EXTERNAL_DB_NAME) {
         MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
-            BackupFileUtils::GarbleFilePath(oldPath, UPGRADE_RESTORE_ID).c_str(), fileMinSize_);
+            BackupFileUtils::GarbleFilePath(info.oldPath, UPGRADE_RESTORE_ID).c_str(), fileMinSize_);
         return false;
     }
     if (sceneCode_ == UPGRADE_RESTORE_ID ?
-        !BaseRestore::ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath) :
-        !ConvertPathToRealPath(oldPath, filePath_, info.filePath, info.relativePath, info)) {
-        MEDIA_ERR_LOG("Invalid path: %{private}s.", oldPath.c_str());
+        !BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath) :
+        !ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath, info)) {
+        MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
+        UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
         return false;
     }
     info.displayName = GetStringVal(GALLERY_DISPLAY_NAME, resultSet);
@@ -655,8 +665,6 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.userComment = GetStringVal(GALLERY_DESCRIPTION, resultSet);
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(GALLERY_IS_FAVORITE, resultSet);
-    info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
-        MediaType::MEDIA_TYPE_VIDEO : MediaType::MEDIA_TYPE_IMAGE;
     info.height = GetInt64Val(GALLERY_HEIGHT, resultSet);
     info.width = GetInt64Val(GALLERY_WIDTH, resultSet);
     info.orientation = GetInt64Val(GALLERY_ORIENTATION, resultSet);

@@ -37,6 +37,7 @@ const STAT_KEY_ERROR_INFO = 'errorInfo';
 const STAT_KEY_INFOS = 'infos';
 const STAT_KEY_BACKUP_INFO = 'backupInfo';
 const STAT_KEY_SUCCESS_COUNT = 'successCount';
+const STAT_KEY_DUPLICATE_COUNT = 'duplicateCount';
 const STAT_KEY_FAILED_COUNT = 'failedCount';
 const STAT_KEY_DETAILS = 'details';
 const STAT_KEY_NUMBER = 'number';
@@ -53,8 +54,8 @@ const DEFAULT_RESTORE_EX_INFO = {
   [
     {
       'type': STAT_VALUE_ERROR_INFO,
-      'errorCode': '0',
-      'errorInfo': ''
+      'errorCode': '13500099',
+      'errorInfo': 'Get restoreEx info failed'
     },
     {
       'type': STAT_VALUE_COUNT_INFO,
@@ -63,18 +64,21 @@ const DEFAULT_RESTORE_EX_INFO = {
         {
           'backupInfo': STAT_TYPE_PHOTO,
           'successCount': 0,
+          'duplicateCount': 0,
           'failedCount': 0,
           'details': null
         },
         {
           'backupInfo': STAT_TYPE_VIDEO,
           'successCount': 0,
+          'duplicateCount': 0,
           'failedCount': 0,
           'details': null
         },
         {
           'backupInfo': STAT_TYPE_AUDIO,
           'successCount': 0,
+          'duplicateCount': 0,
           'failedCount': 0,
           'details': null
         }
@@ -124,19 +128,23 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
   }
 
   async onRestoreEx(bundleVersion: BundleVersion, bundleInfo: string): Promise<string> {
-    console.log(TAG, `onRestoreEx ok ${JSON.stringify(bundleVersion)}, ${JSON.stringify(bundleInfo)}`);
+    console.log(TAG, `onRestoreEx ok ${JSON.stringify(bundleVersion)}, ${bundleInfo}`);
     console.time(TAG + ' RESTORE EX');
     const backupDir = this.context.backupDir + 'restore';
-    if (bundleVersion.name.startsWith(UPGRADE_NAME) ||
-      (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0)) {
-      console.log(TAG, 'onRestoreEx only supports single-to-single-frame clone');
-      return '';
+    let restoreExResult: string;
+    let path: string;
+    if (bundleVersion.name.startsWith(UPGRADE_NAME)) {
+      restoreExResult = await mediabackup.startRestore(UPGRADE_RESTORE, galleryAppName, mediaAppName, backupDir);
+      path = backupDir;
+    } else if (bundleVersion.name === DUAL_FRAME_CLONE_NAME && bundleVersion.code === 0) {
+      restoreExResult = await mediabackup.startRestore(DUAL_FRAME_CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
+      path = backupDir;
+    } else {
+      restoreExResult = await mediabackup.startRestore(CLONE_RESTORE, galleryAppName, mediaAppName, backupDir);
+      path = backupDir + '/storage/media/local/files/';
     }
-    let restoreExResult: string = await mediabackup.startRestoreEx(CLONE_RESTORE, galleryAppName, mediaAppName,
-      backupDir);
     let restoreExInfo: string = await this.getRestoreExInfo(restoreExResult);
     console.log(TAG, `GET restoreExInfo: ${restoreExInfo}`);
-    let path: string = backupDir + '/storage/media/local/files/';
     console.timeEnd(TAG + ' RESTORE EX');
     console.time(TAG + ' MOVE REST FILES');
     await this.moveRestFiles(path);
@@ -257,14 +265,16 @@ export default class MediaBackupExtAbility extends BackupExtensionAbility {
 
   private isSubCountInfoValid(subCountInfo: JSON): boolean {
     if (!this.hasKey(subCountInfo, STAT_KEY_BACKUP_INFO) || !this.hasKey(subCountInfo, STAT_KEY_SUCCESS_COUNT) ||
-      !this.hasKey(subCountInfo, STAT_KEY_FAILED_COUNT) || !this.hasKey(subCountInfo, STAT_KEY_DETAILS)) {
+      !this.hasKey(subCountInfo, STAT_KEY_DUPLICATE_COUNT) || !this.hasKey(subCountInfo, STAT_KEY_FAILED_COUNT) ||
+      !this.hasKey(subCountInfo, STAT_KEY_DETAILS)) {
       return false;
     }
     if (!STAT_TYPES.includes(subCountInfo[STAT_KEY_BACKUP_INFO])) {
       console.error(TAG, `SubCountInfo ${subCountInfo[STAT_KEY_BACKUP_INFO]} not in ${JSON.stringify(STAT_TYPES)}`);
       return false;
     }
-    return !isNaN(subCountInfo[STAT_KEY_SUCCESS_COUNT]) && !isNaN(subCountInfo[STAT_KEY_FAILED_COUNT]);
+    return !isNaN(subCountInfo[STAT_KEY_SUCCESS_COUNT]) && !isNaN(subCountInfo[STAT_KEY_DUPLICATE_COUNT]) &&
+      !isNaN(subCountInfo[STAT_KEY_FAILED_COUNT]) ;
   }
 
   private isBackupInfoValid(backupInfo: string): boolean {
