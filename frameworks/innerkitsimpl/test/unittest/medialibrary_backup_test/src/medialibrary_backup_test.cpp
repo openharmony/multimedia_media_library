@@ -2026,5 +2026,37 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_lev
     EXPECT_EQ(result, false);
     GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level end";
 }
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_duplicate_number, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_update_duplicate_number start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    upgrade->UpdateDuplicateNumber(MediaType::MEDIA_TYPE_IMAGE);
+    EXPECT_GT(upgrade->migratePhotoDuplicateNumber_, 0);
+    upgrade->UpdateDuplicateNumber(MediaType::MEDIA_TYPE_VIDEO);
+    EXPECT_GT(upgrade->migrateVideoDuplicateNumber_, 0);
+    upgrade->UpdateDuplicateNumber(MediaType::MEDIA_TYPE_AUDIO);
+    EXPECT_GT(upgrade->migrateAudioDuplicateNumber_, 0);
+    uint64_t photoBefore = upgrade->migratePhotoDuplicateNumber_;
+    uint64_t videoBefore = upgrade->migrateVideoDuplicateNumber_;
+    uint64_t audioBefore = upgrade->migrateAudioDuplicateNumber_;
+    upgrade->UpdateDuplicateNumber(-1);
+    EXPECT_EQ(upgrade->migratePhotoDuplicateNumber_, photoBefore);
+    EXPECT_EQ(upgrade->migrateVideoDuplicateNumber_, videoBefore);
+    EXPECT_EQ(upgrade->migrateAudioDuplicateNumber_, audioBefore);
+    GTEST_LOG_(INFO) << "medialib_backup_test_update_duplicate_number end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause start";
+    std::string whereClause;
+    BackupDatabaseUtils::UpdateSDWhereClause(whereClause, false);
+    EXPECT_EQ(whereClause.empty(), true);
+    BackupDatabaseUtils::UpdateSDWhereClause(whereClause, true);
+    EXPECT_EQ(whereClause.empty(), false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause end";
+}
 } // namespace Media
 } // namespace OHOS

@@ -527,7 +527,27 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_
     BackupRestoreService::GetInstance().StartRestoreEx(UPGRADE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR,
         restoreExInfo);
     MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
-    EXPECT_EQ(restoreExInfo, EMPTY_STR); // upgrade is not supported
+    EXPECT_NE(restoreExInfo, EMPTY_STR); // upgrade is now supported
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_002 start");
+    string restoreExInfo = INVALID_STR;
+    BackupRestoreService::GetInstance().StartRestoreEx(DUAL_FRAME_CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR,
+        restoreExInfo);
+    MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
+    EXPECT_NE(restoreExInfo, EMPTY_STR); // dual clone is now supported
+}
+
+HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_start_restore_ex_003, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialibrary_backup_service_start_restore_ex_003 start");
+    string restoreExInfo = INVALID_STR;
+    BackupRestoreService::GetInstance().StartRestoreEx(CLONE_RESTORE_ID, EMPTY_STR, EMPTY_STR, EMPTY_STR,
+        restoreExInfo);
+    MEDIA_INFO_LOG("Get restoreExInfo: %{public}s", restoreExInfo.c_str());
+    EXPECT_NE(restoreExInfo, EMPTY_STR); // single clone is now supported
 }
 
 HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_service_get_backup_info_001, TestSize.Level0)
