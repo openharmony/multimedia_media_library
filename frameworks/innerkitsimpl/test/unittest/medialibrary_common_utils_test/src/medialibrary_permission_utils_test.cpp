@@ -91,7 +91,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_not_in_ca
     PermissionUtils::ClearBundleInfoInCache();
     int uid = 1;
     string packageName = "";
-    PermissionUtils::GetPackageNameFromCache(uid, packageName);
+    PermissionUtils::GetPackageNameFromCache(uid, "", packageName);
     EXPECT_EQ(packageName, "");
 }
 
@@ -105,7 +105,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_
     PermissionUtils::UpdateLatestBundleInfo(uid, bundleInfo);
 
     string packageNameActual = "";
-    PermissionUtils::GetPackageNameFromCache(uid, packageNameActual);
+    PermissionUtils::GetPackageNameFromCache(uid, "", packageNameActual);
     EXPECT_EQ(packageNameActual, packageName);
 }
 
@@ -116,9 +116,9 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_
     PermissionUtils::UpdateLatestBundleInfo(2, {"com.test.demo2", "demo2", ""});
 
     string packageNameActual = "";
-    PermissionUtils::GetPackageNameFromCache(2, packageNameActual);
+    PermissionUtils::GetPackageNameFromCache(2, "com.test.demo2", packageNameActual);
     EXPECT_EQ(packageNameActual, "demo2");
-    PermissionUtils::GetPackageNameFromCache(1, packageNameActual);
+    PermissionUtils::GetPackageNameFromCache(1, "com.test.demo1", packageNameActual);
     EXPECT_EQ(packageNameActual, "demo1");
 }
 
@@ -129,7 +129,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetPackageNameFromCache_in_cache_
     PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo2", "demo2", ""});
 
     string packageNameActual = "";
-    PermissionUtils::GetPackageNameFromCache(1, packageNameActual);
+    PermissionUtils::GetPackageNameFromCache(1, "com.test.demo2", packageNameActual);
     EXPECT_EQ(packageNameActual, "demo2");
 }
 
@@ -138,7 +138,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_not_in_cache_00
     PermissionUtils::ClearBundleInfoInCache();
     int uid = 1;
     string appId = "";
-    PermissionUtils::GetAppIdFromCache(uid, appId);
+    PermissionUtils::GetAppIdFromCache(uid, "", appId);
     EXPECT_EQ(appId, "");
 }
 
@@ -153,7 +153,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_002, T
     PermissionUtils::UpdateLatestBundleInfo(uid, bundleInfo);
 
     string appIdActual = "";
-    PermissionUtils::GetAppIdFromCache(uid, appIdActual);
+    PermissionUtils::GetAppIdFromCache(uid, "", appIdActual);
     EXPECT_EQ(appIdActual, appId);
 }
 
@@ -164,9 +164,9 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_003, T
     PermissionUtils::UpdateLatestBundleInfo(2, {"com.test.demo2", "demo2", "demo2.appid"});
 
     string appIdActual = "";
-    PermissionUtils::GetAppIdFromCache(1, appIdActual);
+    PermissionUtils::GetAppIdFromCache(1, "com.test.demo1", appIdActual);
     EXPECT_EQ(appIdActual, "demo1.appid");
-    PermissionUtils::GetAppIdFromCache(2, appIdActual);
+    PermissionUtils::GetAppIdFromCache(2, "com.test.demo2", appIdActual);
     EXPECT_EQ(appIdActual, "demo2.appid");
 }
 
@@ -177,7 +177,7 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_GetAppIdFromCache_in_cache_004, T
     PermissionUtils::UpdateLatestBundleInfo(1, {"com.test.demo2", "demo2", "demo2.appid"});
 
     string appIdActual = "";
-    PermissionUtils::GetAppIdFromCache(1, appIdActual);
+    PermissionUtils::GetAppIdFromCache(1, "com.test.demo2", appIdActual);
     EXPECT_EQ(appIdActual, "demo2.appid");
 }
 
@@ -191,11 +191,11 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_tha
     }
 
     string packageNameActual = "";
-    PermissionUtils::GetPackageNameFromCache(0, packageNameActual);
+    PermissionUtils::GetPackageNameFromCache(0, "", packageNameActual);
     EXPECT_EQ(packageNameActual, "");
-    PermissionUtils::GetPackageNameFromCache(4, packageNameActual);
+    PermissionUtils::GetPackageNameFromCache(4, "", packageNameActual);
     EXPECT_EQ(packageNameActual, "");
-    PermissionUtils::GetPackageNameFromCache(5, packageNameActual);
+    PermissionUtils::GetPackageNameFromCache(5, "com.test.demo5", packageNameActual);
     EXPECT_EQ(packageNameActual, "demo5");
 }
 
@@ -209,9 +209,9 @@ HWTEST_F(MediaLibraryCommonUtilsTest, medialib_UpdateLatestBundleInfo_larger_tha
     }
 
     string packageNameActual = "";
-    PermissionUtils::GetPackageNameFromCache(0, packageNameActual);
+    PermissionUtils::GetPackageNameFromCache(0, "", packageNameActual);
     EXPECT_EQ(packageNameActual, "");
-    PermissionUtils::GetPackageNameFromCache(1, packageNameActual);
+    PermissionUtils::GetPackageNameFromCache(1, "", packageNameActual);
     EXPECT_EQ(packageNameActual, name);
 }
 

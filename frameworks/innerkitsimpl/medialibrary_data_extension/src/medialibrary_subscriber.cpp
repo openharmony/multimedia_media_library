@@ -50,6 +50,7 @@
 #include "dfx_manager.h"
 #include "medialibrary_unistore_manager.h"
 #include "medialibrary_rdb_utils.h"
+#include "permission_utils.h"
 #include "thumbnail_generate_worker_manager.h"
 
 #ifdef HAS_WIFI_MANAGER_PART
@@ -216,6 +217,7 @@ void MedialibrarySubscriber::OnReceiveEvent(const EventFwk::CommonEventData &eve
         string packageName = want.GetElement().GetBundleName();
         RevertPendingByPackage(packageName);
         MediaLibraryBundleManager::GetInstance()->Clear();
+        PermissionUtils::ClearBundleInfoInCache();
     }
 }
 
