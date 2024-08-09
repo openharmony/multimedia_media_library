@@ -167,6 +167,7 @@ public:
     static const std::string DROP_PHOTO_FAVORITE_INDEX EXPORT;
     static const std::string CREATE_PHOTO_DISPLAYNAME_INDEX EXPORT;
     static const std::string CREATE_PHOTO_BURSTKEY_INDEX EXPORT;
+    static const std::string UPDATE_READY_ON_THUMBNAIL_UPGRADE EXPORT;
 
     // create indexes for Photo
     static const std::string INDEX_SCTHP_ADDTIME EXPORT;

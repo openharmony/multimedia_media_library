@@ -114,6 +114,11 @@ void UriPermissionOperations::DeleteAllTemporaryAsync()
     }
     shared_ptr<MediaLibraryAsyncTask> notifyAsyncTask =
         make_shared<MediaLibraryAsyncTask>(DeleteAllTemporaryOperation, nullptr);
+    if (notifyAsyncTask != nullptr) {
+        asyncWorker->AddTask(notifyAsyncTask, false);
+    } else {
+        MEDIA_ERR_LOG("Failed to create async task for UriPermission");
+    }
 }
 
 int32_t UriPermissionOperations::DeleteOperation(MediaLibraryCommand &cmd)

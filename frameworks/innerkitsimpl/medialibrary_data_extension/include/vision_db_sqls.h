@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_DB_SQLS_H
 #define FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_DB_SQLS_H
 
+#include "search_column.h"
 #include "vision_aesthetics_score_column.h"
 #include "vision_album_column.h"
 #include "vision_column_comm.h"
@@ -68,7 +69,7 @@ const std::string CREATE_TAB_ANALYSIS_VIDEO_LABEL = "CREATE TABLE IF NOT EXISTS 
     SUB_CONFIDENCE_PROB + " REAL, " +
     SUB_LABEL + " TEXT, " +
     SUB_LABEL_PROB + " REAL, " +
-    SUB_LABEL_TYPE + " INT, " +
+    SUB_LABEL_TYPE + " TEXT, " +
     TRACKS + " TEXT, " +
     VIDEO_PART_FEATURE + " BLOB, " +
     FILTER_TAG + " TEXT, " +
@@ -515,6 +516,13 @@ const std::string UPDATE_HEAD_NOT_SUPPORT_VALUE = "UPDATE " + VISION_TOTAL_TABLE
 const std::string HEAD_INDEX = "head_index";
 const std::string CREATE_HEAD_INDEX = "CREATE UNIQUE INDEX IF NOT EXISTS " + HEAD_INDEX + " ON " + VISION_HEAD_TABLE +
     " (" + FILE_ID + "," + HEAD_ID + ")";
+
+const std::string UPDATE_VIDEO_LABEL_TOTAL_VALUE = "UPDATE " + VISION_TOTAL_TABLE + " SET " + STATUS + " = 0, " +
+    LABEL + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " + PhotoColumn::PHOTOS_TABLE +
+    " WHERE media_type = 2)";
+const std::string UPDATE_SEARCH_INDEX_FOR_VIDEO = "UPDATE " + SEARCH_TOTAL_TABLE + " SET " + TBL_SEARCH_PHOTO_STATUS +
+    " = 2, " + TBL_SEARCH_CV_STATUS + " = 0 WHERE " + FILE_ID + " IN (SELECT " + FILE_ID + " FROM " +
+    PhotoColumn::PHOTOS_TABLE + " WHERE media_type = 2)";
 } // namespace Media
 } // namespace OHOS
 #endif  // FRAMEWORKS_SERVICES_MEDIA_MULTI_STAGES_CAPTURE_INCLUDE_VISION_DB_SQLS_H
