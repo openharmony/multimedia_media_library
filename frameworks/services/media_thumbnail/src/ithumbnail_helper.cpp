@@ -48,14 +48,14 @@ using namespace OHOS::NativeRdb;
 namespace OHOS {
 namespace Media {
 
-void StoreThumbnailSize(ThumbRdbOpt& opts, ThumbnailData& data)
+void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data)
 {
+    std::string photoId = opts.row.empty() ? data.id : opts.row;
     std::string tmpPath = opts.path.empty() ? data.path : opts.path;
     if (tmpPath.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, tmpPath);
+        MediaLibraryPhotoOperations::StoreThumbnailSize(photoId, tmpPath);
     }
 }
-
 
 void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
 {
