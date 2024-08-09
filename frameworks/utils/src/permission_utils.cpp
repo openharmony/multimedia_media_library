@@ -39,6 +39,7 @@ const int32_t CAPACITY = 50;
 const int32_t HDC_SHELL_UID = 2000;
 const int32_t BASE_USER_RANGE = 200000;
 
+std::mutex PermissionUtils::uninstallMutex_;
 std::list<std::pair<int32_t, BundleInfo>> PermissionUtils::bundleInfoList_ = {};
 std::unordered_map<int32_t, std::list<std::pair<int32_t, BundleInfo>>::iterator> PermissionUtils::bundleInfoMap_ = {};
 
@@ -84,29 +85,80 @@ sptr<AppExecFwk::IBundleMgr> PermissionUtils::GetSysBundleManager()
 
 void PermissionUtils::GetBundleNameFromCache(int uid, string &bundleName)
 {
+    lock_guard<mutex> lock(uninstallMutex_);
     auto iter = bundleInfoMap_.find(uid);
     if (iter != bundleInfoMap_.end() && !iter->second->second.bundleName.empty()) {
         bundleInfoList_.splice(bundleInfoList_.begin(), bundleInfoList_, iter->second);
         bundleName = iter->second->second.bundleName;
+        return;
     }
+    bundleMgr_ = GetSysBundleManager();
+    if (bundleMgr_ == nullptr) {
+        bundleName = "";
+        return;
+    }
+    auto result = bundleMgr_->GetBundleNameForUid(uid, bundleName);
+    if (!result) {
+        bundleName = "";
+        return;
+    }
+
+    UpdateBundleNameInCache(uid, bundleName);
 }
 
-void PermissionUtils::GetPackageNameFromCache(int uid, string &packageName)
+void PermissionUtils::GetPackageNameFromCache(int uid, const string &bundleName, string &packageName)
 {
+    lock_guard<mutex> lock(uninstallMutex_);
     auto iter = bundleInfoMap_.find(uid);
     if (iter != bundleInfoMap_.end() && !iter->second->second.packageName.empty()) {
         bundleInfoList_.splice(bundleInfoList_.begin(), bundleInfoList_, iter->second);
         packageName = iter->second->second.packageName;
+        return;
     }
+
+    int32_t userId = uid / BASE_USER_RANGE;
+    MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
+
+    AAFwk::Want want;
+    auto bundleMgr = GetSysBundleManager();
+    if (bundleMgr == nullptr) {
+        MEDIA_ERR_LOG("Get BundleManager failed");
+        packageName = "";
+        return;
+    }
+    int ret = bundleMgr->GetLaunchWantForBundle(bundleName, want, userId);
+    if (ret != ERR_OK) {
+        MEDIA_ERR_LOG("Can not get bundleName by want, err=%{public}d, userId=%{private}d", ret, userId);
+        packageName = "";
+        return;
+    }
+    string abilityName = want.GetOperation().GetAbilityName();
+    packageName = bundleMgr->GetAbilityLabel(bundleName, abilityName);
+
+    UpdatePackageNameInCache(uid, packageName);
 }
 
-void PermissionUtils::GetAppIdFromCache(int uid, string &appId)
+void PermissionUtils::GetAppIdFromCache(int uid, const string &bundleName, string &appId)
 {
+    lock_guard<mutex> lock(uninstallMutex_);
     auto iter = bundleInfoMap_.find(uid);
     if (iter != bundleInfoMap_.end() && !iter->second->second.appId.empty()) {
         bundleInfoList_.splice(bundleInfoList_.begin(), bundleInfoList_, iter->second);
         appId = iter->second->second.appId;
+        return;
     }
+    int32_t userId = uid / BASE_USER_RANGE;
+    MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
+
+    auto bundleMgr_ = GetSysBundleManager();
+    if (bundleMgr_ == nullptr) {
+        MEDIA_ERR_LOG("Get BundleManager failed");
+        return;
+    }
+
+    appId = bundleMgr_->GetAppIdByBundleName(bundleName, userId);
+
+    UpdateAppIdInCache(uid, appId);
 }
 
 void PermissionUtils::UpdateLatestBundleInfo(int uid, const BundleInfo &bundleInfo)
@@ -163,29 +215,15 @@ void PermissionUtils::UpdateAppIdInCache(int uid, const string &appId)
 
 void PermissionUtils::ClearBundleInfoInCache()
 {
+    lock_guard<mutex> lock(uninstallMutex_);
     bundleInfoMap_.clear();
     bundleInfoList_.clear();
+    MEDIA_INFO_LOG("clear all info from cache");
 }
 
 void PermissionUtils::GetClientBundle(const int uid, string &bundleName)
 {
     GetBundleNameFromCache(uid, bundleName);
-    if (!bundleName.empty()) {
-        MEDIA_INFO_LOG("[FOR_TEST] uid: %{public}d, bundleName: %{public}s", uid, bundleName.c_str());
-        return;
-    }
-
-    bundleMgr_ = GetSysBundleManager();
-    if (bundleMgr_ == nullptr) {
-        bundleName = "";
-        return;
-    }
-    auto result = bundleMgr_->GetBundleNameForUid(uid, bundleName);
-    if (!result) {
-        bundleName = "";
-    }
-
-    UpdateBundleNameInCache(uid, bundleName);
 }
 
 void PermissionUtils::GetPackageName(const int uid, std::string &packageName)
@@ -198,30 +236,7 @@ void PermissionUtils::GetPackageName(const int uid, std::string &packageName)
         return;
     }
 
-    GetPackageNameFromCache(uid, packageName);
-    if (!packageName.empty()) {
-        MEDIA_INFO_LOG("[FOR_TEST] uid: %{public}d, packageName: %{public}s", uid, packageName.c_str());
-        return;
-    }
-
-    int32_t userId = uid / BASE_USER_RANGE;
-    MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
-
-    AAFwk::Want want;
-    auto bundleMgr = GetSysBundleManager();
-    if (bundleMgr == nullptr) {
-        MEDIA_ERR_LOG("Get BundleManager failed");
-        return;
-    }
-    int ret = bundleMgr->GetLaunchWantForBundle(bundleName, want, userId);
-    if (ret != ERR_OK) {
-        MEDIA_ERR_LOG("Can not get bundleName by want, err=%{public}d, userId=%{private}d", ret, userId);
-        return;
-    }
-    string abilityName = want.GetOperation().GetAbilityName();
-    packageName = bundleMgr->GetAbilityLabel(bundleName, abilityName);
-
-    UpdatePackageNameInCache(uid, packageName);
+    GetPackageNameFromCache(uid, bundleName, packageName);
 }
 
 bool inline ShouldAddPermissionRecord(const AccessTokenID &token)
@@ -449,30 +464,7 @@ string PermissionUtils::GetPackageNameByBundleName(const string &bundleName)
         MEDIA_ERR_LOG("Get INVALID_UID UID %{public}d", uid);
         return packageName;
     }
-    GetPackageNameFromCache(uid, packageName);
-    if (!packageName.empty()) {
-        MEDIA_INFO_LOG("[FOR_TEST] uid: %{public}d, packageName: %{public}s", uid, packageName.c_str());
-        return packageName;
-    }
-    int32_t userId = uid / BASE_USER_RANGE;
-    MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
-
-    AAFwk::Want want;
-    auto bundleMgr_ = GetSysBundleManager();
-    if (bundleMgr_ == nullptr) {
-        MEDIA_ERR_LOG("Get BundleManager failed");
-        return "";
-    }
-    int ret = bundleMgr_->GetLaunchWantForBundle(bundleName, want, userId);
-    if (ret != ERR_OK) {
-        MEDIA_ERR_LOG("Can not get bundleName by want, err=%{public}d, userId=%{private}d",
-            ret, userId);
-        return "";
-    }
-    string abilityName = want.GetOperation().GetAbilityName();
-    packageName = bundleMgr_->GetAbilityLabel(bundleName, abilityName);
-
-    UpdatePackageNameInCache(uid, packageName);
+    GetPackageNameFromCache(uid, bundleName, packageName);
 
     return packageName;
 }
@@ -490,23 +482,7 @@ string PermissionUtils::GetAppIdByBundleName(const string &bundleName, int32_t u
         return "";
     }
     string appId = "";
-    GetAppIdFromCache(uid, appId);
-    if (!appId.empty()) {
-        return appId;
-    }
-
-    int32_t userId = uid / BASE_USER_RANGE;
-    MEDIA_DEBUG_LOG("uid:%{private}d, userId:%{private}d", uid, userId);
-
-    auto bundleMgr_ = GetSysBundleManager();
-    if (bundleMgr_ == nullptr) {
-        MEDIA_ERR_LOG("Get BundleManager failed");
-        return appId;
-    }
-
-    appId = bundleMgr_->GetAppIdByBundleName(bundleName, userId);
-
-    UpdateAppIdInCache(uid, appId);
+    GetAppIdFromCache(uid, bundleName, appId);
 
     return appId;
 }
