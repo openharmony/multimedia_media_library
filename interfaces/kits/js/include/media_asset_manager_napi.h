@@ -66,7 +66,6 @@ struct MediaAssetManagerAsyncContext : NapiError {
     std::string photoId;
     std::string displayName;
     std::string photoPath;
-    std::string callingPkgName;
     std::string requestId;
     napi_value requestIdNapiValue;
     napi_value dataHandler;
@@ -125,7 +124,7 @@ private:
     static napi_value JSRequestVideoFile(napi_env env, napi_callback_info info);
     static napi_value JSCancelRequest(napi_env env, napi_callback_info info);
     static napi_value JSLoadMovingPhoto(napi_env env, napi_callback_info info);
-    static void ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName);
+    static void ProcessImage(const int fileId, const int deliveryMode);
     static void CancelProcessImage(const std::string &photoId);
     static void AddImage(const int fileId, DeliveryMode deliveryMode);
     static void OnHandleRequestImage(napi_env env, MediaAssetManagerAsyncContext *asyncContext);
