@@ -71,7 +71,6 @@ constexpr int32_t QUERY_IS_ME_VALUE = 2;
 constexpr int32_t FACE_ANALYSISED_STATE = 3;
 constexpr int32_t FACE_NO_NEED_ANALYSIS_STATE = -2;
 constexpr int32_t ALBUM_NAME_NOT_NULL_ENABLED = 1;
-constexpr int32_t ALBUM_COVER_SATISFIED = 1;
 
 int32_t MediaLibraryAlbumOperations::CreateAlbumOperation(MediaLibraryCommand &cmd)
 {
@@ -1542,7 +1541,9 @@ int32_t GetMergeAlbumCoverUri(MergeAlbumInfo &updateAlbumInfo, const MergeAlbumI
     if (currentAlbum.isCoverSatisfied == targetAlbum.isCoverSatisfied) {
         candidateIds = currentFileId + ", " + targetFileId;
     } else {
-        candidateIds = currentAlbum.isCoverSatisfied == ALBUM_COVER_SATISFIED ? currentFileId : targetFileId;
+        candidateIds = currentAlbum.isCoverSatisfied != static_cast<int32_t>(CoverSatisfiedType::NO_SETTING) ?
+            currentFileId :
+            targetFileId;
     }
     const std::string queryAlbumInfo = "SELECT " + MediaColumn::MEDIA_ID + "," + MediaColumn::MEDIA_TITLE + "," +
         MediaColumn::MEDIA_NAME + ", MAX(" + MediaColumn::MEDIA_DATE_ADDED + ") FROM " + PhotoColumn::PHOTOS_TABLE +
