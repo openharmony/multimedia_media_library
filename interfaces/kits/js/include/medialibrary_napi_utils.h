@@ -301,6 +301,14 @@ const std::vector<std::string> photoSubTypeEnum {
     "DEFAULT", "SCREENSHOT", "CAMERA", "MOVING_PHOTO"
 };
 
+const std::vector<std::string> photoPermissionTypeEnum {
+    "TEMPORARY_READ_IMAGEVIDEO", "PERSIST_READ_IMAGEVIDEO"
+};
+
+const std::vector<std::string> hideSensitiveTypeEnum {
+    "HIDE_LOCATION_AND_SHOTING_PARM", "HIDE_LOCATION_ONLY", "HIDE_SHOTING_PARM_ONLY", "NO_HIDE_SENSITIVE_TYPE"
+};
+
 const std::vector<std::string> notifyTypeEnum {
     "NOTIFY_ADD", "NOTIFY_UPDATE", "NOTIFY_REMOVE", "NOTIFY_ALBUM_ADD_ASSET", "NOTIFY_ALBUM_REMOVE_ASSET"
 };
