@@ -113,11 +113,14 @@ string BackupFileUtils::GarbleFileName(const std::string &fileName)
         fileName.find("SVID_") == 0) {
         return fileName;
     }
-    size_t titleIndex = fileName.find(".");
+    size_t titleIndex = fileName.rfind(".");
     if (titleIndex == string::npos) {
+        titleIndex = fileName.size();
+    }
+    if (titleIndex <= GARBLE.size() * GARBLE_UNIT) {
         return fileName;
     }
-    return GARBLE + fileName.substr(titleIndex / 2);
+    return GARBLE + fileName.substr(GARBLE.size());
 }
 
 int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, const string &extension,
