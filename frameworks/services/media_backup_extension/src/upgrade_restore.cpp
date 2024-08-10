@@ -574,13 +574,14 @@ std::vector<FileInfo> UpgradeRestore::QueryFileInfos(int32_t offset)
 
 bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::ResultSet> &resultSet, FileInfo &info)
 {
+    info.oldPath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
     int32_t mediaType = GetInt32Val(EXTERNAL_MEDIA_TYPE, resultSet);
     if (mediaType != DUAL_MEDIA_TYPE::AUDIO_TYPE) {
-        MEDIA_ERR_LOG("Invalid media type: %{public}d.", mediaType);
+        MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s", mediaType,
+            BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
         return false;
     }
     info.fileType = MediaType::MEDIA_TYPE_AUDIO;
-    info.oldPath = GetStringVal(EXTERNAL_FILE_DATA, resultSet);
     if (!BaseRestore::ConvertPathToRealPath(info.oldPath, filePath_, info.filePath, info.relativePath)) {
         MEDIA_ERR_LOG("Invalid path: %{private}s.", info.oldPath.c_str());
         UpdateFailedFiles(info.fileType, info.oldPath, RestoreError::PATH_INVALID);
@@ -591,7 +592,7 @@ bool UpgradeRestore::ParseResultSetForAudio(const std::shared_ptr<NativeRdb::Res
     info.fileSize = GetInt64Val(EXTERNAL_FILE_SIZE, resultSet);
     if (info.fileSize < GARBAGE_PHOTO_SIZE) {
         MEDIA_WARN_LOG("maybe garbage path = %{public}s.",
-            BackupFileUtils::GarbleFilePath(info.oldPath, UPGRADE_RESTORE_ID).c_str());
+            BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
     }
     info.duration = GetInt64Val(GALLERY_DURATION, resultSet);
     info.isFavorite = GetInt32Val(EXTERNAL_IS_FAVORITE, resultSet);
@@ -648,7 +649,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     int32_t mediaType = GetInt32Val(GALLERY_MEDIA_TYPE, resultSet);
     if (mediaType != DUAL_MEDIA_TYPE::IMAGE_TYPE && mediaType != DUAL_MEDIA_TYPE::VIDEO_TYPE) {
         MEDIA_ERR_LOG("Invalid media type: %{public}d, path: %{public}s", mediaType,
-            BackupFileUtils::GarbleFilePath(info.oldPath, UPGRADE_RESTORE_ID).c_str());
+            BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str());
         return false;
     }
     info.fileType = (mediaType == DUAL_MEDIA_TYPE::VIDEO_TYPE) ?
@@ -656,7 +657,7 @@ bool UpgradeRestore::ParseResultSet(const std::shared_ptr<NativeRdb::ResultSet> 
     info.fileSize = GetInt64Val(GALLERY_FILE_SIZE, resultSet);
     if (info.fileSize < fileMinSize_ && dbName == EXTERNAL_DB_NAME) {
         MEDIA_WARN_LOG("maybe garbage path = %{public}s, minSize:%{public}d.",
-            BackupFileUtils::GarbleFilePath(info.oldPath, UPGRADE_RESTORE_ID).c_str(), fileMinSize_);
+            BackupFileUtils::GarbleFilePath(info.oldPath, sceneCode_).c_str(), fileMinSize_);
         return false;
     }
     if (sceneCode_ == UPGRADE_RESTORE_ID ?
