@@ -941,7 +941,7 @@ void CloneRestore::RestoreGallery()
         "%{public}lld), duplicate number: %{public}lld + %{public}lld, album number: %{public}lld, map number: "
         "%{public}lld", (long long)migrateDatabaseNumber_, (long long)migrateFileNumber_,
         (long long)(migrateFileNumber_ - migrateVideoFileNumber_), (long long)migrateVideoFileNumber_,
-        (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_, 
+        (long long)migratePhotoDuplicateNumber_, (long long)migrateVideoDuplicateNumber_,
         (long long)migrateDatabaseAlbumNumber_, (long long)migrateDatabaseMapNumber_);
     MediaLibraryRdbUtils::UpdateAllAlbums(mediaLibraryRdb_);
     NotifyAlbum();
