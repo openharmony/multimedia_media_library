@@ -92,9 +92,11 @@ protected:
     void UpdateFailedFileByFileType(int32_t fileType, const std::string &filePath, int32_t errorCode);
     void UpdateFailedFiles(int32_t fileType, const std::string &filePath, int32_t errorCode);
     void UpdateFailedFiles(const std::vector<FileInfo> &fileInfos, int32_t errorCode);
+    void UpdateDuplicateNumber(int32_t fileType);
     void GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore);
     void DeleteMoveFailedData(std::vector<std::string> &moveFailedData);
-    void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t sceneCode);
+    void MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fileMoveCount, int32_t &videoFileMoveCount,
+        int32_t sceneCode);
     void SetParameterForClone();
     void StopParameterForClone(int32_t sceneCode);
     std::string GetSameFileQuerySql(const FileInfo &fileInfo);
@@ -112,6 +114,9 @@ protected:
     std::atomic<uint64_t> migrateVideoFileNumber_;
     std::atomic<uint64_t> migrateAudioDatabaseNumber_;
     std::atomic<uint64_t> migrateAudioFileNumber_;
+    std::atomic<uint64_t> migratePhotoDuplicateNumber_{0};
+    std::atomic<uint64_t> migrateVideoDuplicateNumber_{0};
+    std::atomic<uint64_t> migrateAudioDuplicateNumber_{0};
     std::atomic<uint64_t> migratePortraitPhotoNumber_{0};
     std::atomic<uint64_t> migratePortraitFaceNumber_{0};
     std::atomic<uint64_t> migratePortraitTotalTimeCost_{0};
@@ -132,6 +137,7 @@ protected:
     int fileMinSize_ = 0;
     int maxFileId_ = 0;
     int maxCount_ = 0;
+    int32_t sceneCode_ = -1;
     std::unordered_map<int32_t, std::string> faceAnalysisVersionMap_;
     std::unordered_map<std::string, std::string> tagIdMap_;
     std::unordered_map<std::string, std::string> groupTagMap_;
