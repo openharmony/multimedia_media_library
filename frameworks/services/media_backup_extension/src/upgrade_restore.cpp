@@ -1298,14 +1298,14 @@ void UpgradeRestore::InsertPortraitAlbum(std::vector<PortraitAlbumInfo> &portrai
         MEDIA_ERR_LOG("portraitAlbumInfos are empty");
         return;
     }
-    
+
     int64_t startInsertAlbum = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t albumRowNum = InsertPortraitAlbumByTable(portraitAlbumInfos, true);
     if (albumRowNum <= 0) {
         BackupDatabaseUtils::PrintErrorLog("Insert portrait album failed", startInsertAlbum);
         return;
     }
-    
+
     int64_t startInsertTag = MediaFileUtils::UTCTimeMilliSeconds();
     int32_t tagRowNum = InsertPortraitAlbumByTable(portraitAlbumInfos, false);
     if (tagRowNum <= 0) {
