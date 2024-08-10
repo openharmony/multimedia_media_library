@@ -39,6 +39,7 @@ constexpr int32_t CLONE_RESTORE_ID = 2;
 constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
 constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
+constexpr size_t GARBLE_UNIT = 2;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";

@@ -377,7 +377,7 @@ void UpgradeRestore::AnalyzeGallerySource()
         "galleryVideoCount: %{public}d, galleryHiddenCount: %{public}d, galleryTrashedCount: %{public}d, "
         "gallerySDCardCount: %{public}d, galleryScreenVideoCount: %{public}d, galleryFavoriteCount: %{public}d, "
         "galleryImportsCount: %{public}d, galleryCloudCount: %{public}d, galleryBurstCount: cover %{public}d, "
-        "total %{public}d",
+        "total %{public}d}",
         galleryAllCount, galleryImageCount, galleryVideoCount, galleryHiddenCount, galleryTrashedCount,
         gallerySDCardCount, galleryScreenVideoCount, galleryFavoriteCount, galleryImportsCount, galleryCloudCount,
         galleryBurstCoverCount, galleryBurstTotalCount);

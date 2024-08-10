@@ -664,25 +664,15 @@ HWTEST_F(MediaLibraryBackupTest, BackupFileUtils_GarbleFileName_normal_name, Tes
     ret = BackupFileUtils::GarbleFileName(name);
     EXPECT_EQ(ret, "VID_test");
 
-    // name lenght > 20
-    name = "BackupFileUtils_GarbleFileName_normal_name";
+    // name without extension and size <= GARBLE.size() * 2
+    name = "test";
     ret = BackupFileUtils::GarbleFileName(name);
-    EXPECT_EQ(ret, "***leFileName_normal_name");
+    EXPECT_EQ(ret, name);
 
-    // name lenght = 20
-    name = "BackupFileUtils_Garb";
+    // name with extension
+    name = "test_garble_file_name.ext";
     ret = BackupFileUtils::GarbleFileName(name);
-    EXPECT_EQ(ret, "***Utils_Garb");
-
-    // name lenght = 10
-    name = "BackupFile";
-    ret = BackupFileUtils::GarbleFileName(name);
-    EXPECT_EQ(ret, "***kupFile");
-
-    // name lenght < 3
-    name = "Bk";
-    ret = BackupFileUtils::GarbleFileName(name);
-    EXPECT_EQ(ret, "***k");
+    EXPECT_EQ(ret.find(GARBLE), 0);
     MEDIA_INFO_LOG("BackupFileUtils_GarbleFileName_normal_name end");
 }
 
