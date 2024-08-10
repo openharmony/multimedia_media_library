@@ -1006,6 +1006,7 @@ void BaseRestore::UpdateFaceAnalysisStatus()
         MEDIA_INFO_LOG("There is no need to update face analysis status");
         return;
     }
+    BackupDatabaseUtils::UpdateGroupTag(mediaLibraryRdb_, groupTagMap_);
     BackupDatabaseUtils::UpdateAnalysisTotalStatus(mediaLibraryRdb_);
     BackupDatabaseUtils::UpdateAnalysisFaceTagStatus(mediaLibraryRdb_);
 }

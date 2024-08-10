@@ -76,8 +76,6 @@ public:
         std::unordered_map<std::string, std::string> &tagIdMap);
     static bool SetVersion(std::string &version, const std::unordered_map<int32_t, std::string> &versionMap,
         int32_t type);
-    static bool SetGroupTagNew(PortraitAlbumInfo &portraitAlbumInfo,
-        const std::unordered_map<std::string, std::string> &groupTagMap);
     static bool SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
     static bool SetFileIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap);
     static bool SetTagIdNew(FaceInfo &faceInfo, const std::unordered_map<std::string, std::string> &tagIdMap);
@@ -86,6 +84,8 @@ public:
     static float GetLandmarksScale(int32_t width, int32_t height);
     static bool IsLandmarkValid(const FaceInfo &faceInfo, float landmarkX, float landmarkY);
     static bool IsValInBound(float val, float minVal, float maxVal);
+    static void UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+        const std::unordered_map<std::string, std::string> &groupTagMap);
 
 private:
     static std::string CloudSyncTriggerFunc(const std::vector<std::string> &args);

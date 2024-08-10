@@ -1351,9 +1351,6 @@ std::vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(std::vector
 {
     std::vector<NativeRdb::ValuesBucket> values;
     for (auto &portraitAlbumInfo : portraitAlbumInfos) {
-        if (!BackupDatabaseUtils::SetGroupTagNew(portraitAlbumInfo, groupTagMap_)) {
-            continue;
-        }
         NativeRdb::ValuesBucket value = GetInsertValue(portraitAlbumInfo, isAlbum);
         values.emplace_back(value);
     }
@@ -1367,7 +1364,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const PortraitAlbumInfo &
     values.PutInt(COUNT, 0);
     if (isAlbum) {
         values.PutString(ALBUM_NAME, portraitAlbumInfo.tagName);
-        values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagNew);
+        values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagOld);
         values.PutInt(USER_OPERATION, portraitAlbumInfo.userOperation);
         values.PutInt(RENAME_OPERATION, RENAME_OPERATION_RENAMED);
         values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
