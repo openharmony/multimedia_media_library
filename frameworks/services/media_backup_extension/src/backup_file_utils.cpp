@@ -86,11 +86,10 @@ string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t scen
         return filePath;
     }
     size_t displayNameIndex = filePath.rfind("/");
-    if (displayNameIndex == string::npos) {
+    if (displayNameIndex == string::npos || displayNameIndex + 1 >= filePath.size()) {
         return filePath;
     }
-    std::string displayName = filePath.substr(displayNameIndex);
-    std::string garbleDisplayName = GarbleFileName(displayName);
+    std::string garbleDisplayName = GarbleFileName(filePath.substr(displayNameIndex + 1));
     std::string path;
     if (sceneCode == UPGRADE_RESTORE_ID) {
         path = filePath.substr(0, displayNameIndex).replace(0, UPGRADE_FILE_DIR.length(), GARBLE);
@@ -101,11 +100,11 @@ string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t scen
     } else {
         path = filePath.substr(0, displayNameIndex);
     }
-    path += displayName;
+    path += "/" + garbleDisplayName;
     return path;
 }
 
-string BackupFileUtils::GarbleFileName(std::string &fileName)
+string BackupFileUtils::GarbleFileName(const std::string &fileName)
 {
     if (fileName.empty()) {
         return fileName;
@@ -114,15 +113,11 @@ string BackupFileUtils::GarbleFileName(std::string &fileName)
         fileName.find("SVID_") == 0) {
         return fileName;
     }
-    if (fileName.length() > GARBLE_HIGH_LENGTH) {
-        return fileName.replace(0, GARBLE_HIGH_LENGTH, GARBLE);
-    } else if (fileName.length() > GARBLE_MID_LENGTH) {
-        return fileName.replace(0, GARBLE_MID_LENGTH, GARBLE);
-    } else if (fileName.length() > GARBLE_LOW_LENGTH) {
-        return fileName.replace(0, GARBLE_LOW_LENGTH, GARBLE);
-    } else {
-        return fileName.replace(0, 1, GARBLE);
+    size_t titleIndex = fileName.find(".");
+    if (titleIndex == string::npos) {
+        return fileName;
     }
+    return GARBLE + fileName.substr(titleIndex / 2);
 }
 
 int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, const string &extension,
