@@ -201,7 +201,7 @@ void InsertPortraitsToAlbum(const vector<PortraitData> &portraitData,
         MediaLibraryCommand cmd(OperationObject::ANALYSIS_PHOTO_ALBUM, OperationType::UPDATE);
         ValuesBucket updateValues;
         updateValues.PutString(COVER_URI, coverUri);
-        updateValues.PutInt(IS_COVER_SATISFIED, 0);
+        updateValues.PutInt(IS_COVER_SATISFIED, static_cast<int32_t>(CoverSatisfiedType::NO_SETTING));
         cmd.SetValueBucket(updateValues);
         cmd.GetAbsRdbPredicates()->EqualTo(ALBUM_ID, to_string(albumData.albumId));
         int32_t ret = g_rdbStore->Update(cmd, changedRows);
