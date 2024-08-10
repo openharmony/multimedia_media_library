@@ -2052,9 +2052,9 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, Te
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause start";
     std::string whereClause;
-    BackupDatabaseUtils::UpdateSDWhereClause(whereClause, false);
-    EXPECT_EQ(whereClause.empty(), true);
     BackupDatabaseUtils::UpdateSDWhereClause(whereClause, true);
+    EXPECT_EQ(whereClause.empty(), true);
+    BackupDatabaseUtils::UpdateSDWhereClause(whereClause, false);
     EXPECT_EQ(whereClause.empty(), false);
     GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause end";
 }
