@@ -777,6 +777,50 @@ HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoImageUri_002, TestSize.Level0)
     EXPECT_EQ(result, uri);
 }
 
+HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_001, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetMovingPhotoDateModified_001 enter");
+    int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();
+    auto photoAssetProxy = mediaLibraryManager->CreatePhotoAssetProxy(CameraShotType::MOVING_PHOTO, 0, 0);
+    ASSERT_NE(photoAssetProxy, nullptr);
+    sptr<PhotoProxyTest> photoProxyTest = new (std::nothrow) PhotoProxyTest();
+    ASSERT_NE(photoProxyTest, nullptr);
+    photoProxyTest->SetFormat(PhotoFormat::JPG);
+    photoProxyTest->SetPhotoQuality(PhotoQuality::LOW);
+    photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
+    auto fileAsset = photoAssetProxy->GetFileAsset();
+    ASSERT_NE(fileAsset, nullptr);
+
+    string filePath = fileAsset->GetPath();
+    string displayName = fileAsset->GetDisplayName();
+    string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
+    string assetUri = MediaFileUtils::GetUriByExtrConditions("file://media/Photo/",
+        to_string(fileAsset->GetId()), extrUri);
+    int32_t fd = mediaLibraryManager->OpenAsset(assetUri, MEDIA_FILEMODE_READWRITE);
+    EXPECT_NE(fd <= 0, true);
+    write(fd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    mediaLibraryManager->CloseAsset(assetUri, fd);
+
+    int64_t movingPhotoDateModified = mediaLibraryManager->GetMovingPhotoDateModified(assetUri);
+    EXPECT_EQ(movingPhotoDateModified > startTime, true);
+    EXPECT_EQ(movingPhotoDateModified <= MediaFileUtils::UTCTimeMilliSeconds(), true);
+    MEDIA_INFO_LOG("GetMovingPhotoDateModified_001 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_002, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("GetMovingPhotoDateModified_002 enter");
+    int64_t dateModified = mediaLibraryManager->GetMovingPhotoDateModified("");
+    EXPECT_EQ(dateModified, E_ERR);
+
+    dateModified = mediaLibraryManager->GetMovingPhotoDateModified("file://media/image/1/test/test.jpg");
+    EXPECT_EQ(dateModified, E_ERR);
+
+    dateModified = mediaLibraryManager->GetMovingPhotoDateModified("file://media/Photo/4096/IMG_2024_001/test.jpg");
+    EXPECT_EQ(dateModified, E_ERR);
+    MEDIA_INFO_LOG("GetMovingPhotoDateModified_002 exit");
+}
+
 HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_GrantPhotoUriPermission_test_001, TestSize.Level0)
 {
     MEDIA_INFO_LOG("MediaLibraryManager_GrantPhotoUriPermission_test_001 enter");
