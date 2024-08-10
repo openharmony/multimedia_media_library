@@ -790,13 +790,18 @@ HWTEST_F(MediaLibraryManagerTest, GetMovingPhotoDateModified_001, TestSize.Level
     photoAssetProxy->AddPhotoProxy((sptr<PhotoProxy>&)photoProxyTest);
     auto fileAsset = photoAssetProxy->GetFileAsset();
     ASSERT_NE(fileAsset, nullptr);
-    sleep(200); // wait for scan
 
     string filePath = fileAsset->GetPath();
     string displayName = fileAsset->GetDisplayName();
     string extrUri = MediaFileUtils::GetExtraUri(displayName, filePath);
-    int64_t movingPhotoDateModified = mediaLibraryManager->GetMovingPhotoDateModified(
-        MediaFileUtils::GetUriByExtrConditions("file://media/Photo/", to_string(fileAsset->GetId()), extrUri));
+    string assetUri = MediaFileUtils::GetUriByExtrConditions("file://media/Photo/",
+        to_string(fileAsset->GetId()), extrUri);
+    int32_t fd = mediaLibraryManager->OpenAsset(assetUri, MEDIA_FILEMODE_READWRITE);
+    EXPECT_NE(fd <= 0, true);
+    write(fd, FILE_CONTENT_JPG, sizeof(FILE_CONTENT_JPG));
+    mediaLibraryManager->CloseAsset(assetUri, fd);
+
+    int64_t movingPhotoDateModified = mediaLibraryManager->GetMovingPhotoDateModified(assetUri);
     EXPECT_EQ(movingPhotoDateModified > startTime, true);
     EXPECT_EQ(movingPhotoDateModified <= MediaFileUtils::UTCTimeMilliSeconds(), true);
     MEDIA_INFO_LOG("GetMovingPhotoDateModified_001 exit");
