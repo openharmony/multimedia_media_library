@@ -1049,7 +1049,7 @@ bool CloneRestore::ParseResultSet(const string &tableName, const shared_ptr<Nati
         UpdateFailedFiles(fileInfo.fileType, fileInfo.oldPath, RestoreError::FILE_INVALID);
         return false;
     }
-    
+
     fileInfo.fileIdOld = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
     fileInfo.displayName = GetStringVal(MediaColumn::MEDIA_NAME, resultSet);
     fileInfo.dateAdded = GetInt64Val(MediaColumn::MEDIA_DATE_ADDED, resultSet);

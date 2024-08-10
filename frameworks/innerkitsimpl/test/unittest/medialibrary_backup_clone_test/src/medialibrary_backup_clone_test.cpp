@@ -668,7 +668,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generat
     }
     MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_001 end");
 }
- 
+
 /**
  * @brief BurstKeyGenerator should give the different uuid for same FileInfo in Recycle Bin
  */
@@ -697,7 +697,7 @@ HWTEST_F(MediaLibraryBackupCloneTest, medialibrary_backup_file_burst_key_generat
     }
     MEDIA_INFO_LOG("medialibrary_backup_file_burst_key_generator_002 end");
 }
- 
+
 /**
  * @brief BurstKeyGenerator should give the different uuid for same FileInfo in different Bucket
  */
