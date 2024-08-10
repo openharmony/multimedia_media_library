@@ -469,17 +469,6 @@ bool BackupDatabaseUtils::SetVersion(std::string &version, const std::unordered_
     return true;
 }
 
-bool BackupDatabaseUtils::SetGroupTagNew(PortraitAlbumInfo &portraitAlbumInfo,
-    const std::unordered_map<std::string, std::string> &groupTagMap)
-{
-    if (groupTagMap.count(portraitAlbumInfo.groupTagOld) == 0) {
-        MEDIA_ERR_LOG("Set new group tag for %{public}s failed, no such group tag", portraitAlbumInfo.tagName.c_str());
-        return false;
-    }
-    portraitAlbumInfo.groupTagNew = groupTagMap.at(portraitAlbumInfo.groupTagOld);
-    return true;
-}
-
 bool BackupDatabaseUtils::SetLandmarks(FaceInfo &faceInfo, const std::unordered_map<std::string, FileInfo> &fileInfoMap)
 {
     if (faceInfo.hash.empty() || fileInfoMap.count(faceInfo.hash) == 0) {
@@ -610,6 +599,31 @@ bool BackupDatabaseUtils::IsLandmarkValid(const FaceInfo &faceInfo, float landma
 bool BackupDatabaseUtils::IsValInBound(float val, float minVal, float maxVal)
 {
     return val >= minVal && val <= maxVal;
+}
+
+void BackupDatabaseUtils::UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rdbStore,
+    const std::unordered_map<std::string, std::string> &groupTagMap)
+{
+    static std::string UPDATE_SQL_START = "UPDATE AnalysisAlbum SET group_tag = CASE ";
+    static std::string UPDATE_SQL_END = " END ";
+    auto it = groupTagMap.begin();
+    while (it != groupTagMap.end()) {
+        std::string updateCase;
+        int32_t offset;
+        while (offset < QUERY_COUNT && it != groupTagMap.end()) {
+            updateCase += " WHEN group_tag = '" + it->first + "' THEN '" + it->second + "'";
+            offset++;
+            it++;
+        }
+        if (updateCase.empty()) {
+            break;
+        }
+        std::string updateSql = UPDATE_SQL_START + updateCase + UPDATE_SQL_END;
+        int32_t errCode = rdbStore->ExecuteSql(updateSql);
+        if (errCode < 0) {
+            MEDIA_ERR_LOG("execute update group tag failed, ret=%{public}d", errCode);
+        }
+    }
 }
 } // namespace Media
 } // namespace OHOS
