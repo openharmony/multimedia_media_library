@@ -18,8 +18,6 @@
 
 #include <string>
 
-#include "nlohmann/json.hpp"
-
 namespace OHOS::Media {
 #define EXPORT __attribute__ ((visibility ("default")))
 EXPORT const std::string LIVE_TAG = "LIVE_";

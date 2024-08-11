@@ -385,6 +385,8 @@ void BackupFileUtils::DeleteSDDatabase(const std::string &prefix)
             MEDIA_ERR_LOG("Delete SD database %{public}s failed, errno: %{public}d", sdDB.c_str(), errno);
         }
     }
+}
+
 bool BackupFileUtils::IsLivePhoto(const FileInfo &fileInfo)
 {
     return fileInfo.specialFileType == LIVE_PHOTO_TYPE;
