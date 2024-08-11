@@ -33,8 +33,8 @@ public:
     EXPORT static int32_t ConvertToMovingPhoto(const std::string &livePhotoPath,
         const std::string &movingPhotoImagePath, const std::string &movingPhotoVideoPath,
         const std::string &extraDataPath);
-    EXPORT static int32_t ParseVideoMetadata(const std::string &videoPath, const uint32_t frameIndex,
-        int64_t &size, int64_t &coverPosition, int32_t scene = 0);
+    EXPORT static int32_t GetCoverPosition(const std::string &videoPath, const uint32_t frameIndex,
+        int64_t &coverPosition, int32_t scene = 0);
     EXPORT static int32_t GetVersionAndFrameNum(const std::string &tag,
         uint32_t &version, uint32_t &frameIndex, bool &hasCinemagraphInfo);
     EXPORT static int32_t GetVersionAndFrameNum(int32_t fd, uint32_t &version, uint32_t &frameIndex,
