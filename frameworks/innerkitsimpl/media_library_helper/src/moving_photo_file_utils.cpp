@@ -189,8 +189,8 @@ static int32_t GetMovingPhotoCoverPosition(const UniqueFd &uniqueFd, const int64
     return E_OK;
 }
 
-int32_t MovingPhotoFileUtils::ParseVideoMetadata(const std::string &videoPath, const uint32_t frameIndex,
-    int64_t &size, int64_t &coverPosition, int32_t scene)
+int32_t MovingPhotoFileUtils::GetCoverPosition(const std::string &videoPath, const uint32_t frameIndex,
+    int64_t &coverPosition, int32_t scene)
 {
     string absVideoPath;
     if (!PathToRealPath(videoPath, absVideoPath)) {
@@ -208,8 +208,7 @@ int32_t MovingPhotoFileUtils::ParseVideoMetadata(const std::string &videoPath, c
         MEDIA_ERR_LOG("Failed to get file state, errno: %{public}d", errno);
         return E_HAS_FS_ERROR;
     }
-    size = st.st_size;
-    return GetMovingPhotoCoverPosition(uniqueFd, size, frameIndex, coverPosition, scene);
+    return GetMovingPhotoCoverPosition(uniqueFd, st.st_size, frameIndex, coverPosition, scene);
 }
 
 bool EndsWith(const string &str, const string &endStr)

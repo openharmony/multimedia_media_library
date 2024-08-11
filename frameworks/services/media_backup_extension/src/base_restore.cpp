@@ -209,8 +209,6 @@ vector<NativeRdb::ValuesBucket> BaseRestore::GetInsertValues(const int32_t scene
     vector<NativeRdb::ValuesBucket> values;
     for (size_t i = 0; i < fileInfos.size(); i++) {
         if (!IsFileValid(fileInfos[i], sceneCode)) {
-            MEDIA_WARN_LOG("File is not exist, filePath = %{public}s.",
-                BackupFileUtils::GarbleFilePath(fileInfos[i].filePath, sceneCode).c_str());
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::FILE_INVALID);
             continue;
         }
@@ -345,10 +343,8 @@ static void SetValueForMovingPhoto(const FileInfo &fileInfo,
     (void)MovingPhotoFileUtils::GetVersionAndFrameNum(extraDataFd.Get(), version, frameIndex, hasCinemagraphInfo);
 
     int64_t coverPosition = 0;
-    int64_t size = 0;
-    (void)MovingPhotoFileUtils::ParseVideoMetadata(fileInfo.movingPhotoVideoPath,
-        frameIndex, size, coverPosition, Scene::AV_META_SCENE_CLONE);
-    value.Put(MediaColumn::MEDIA_SIZE, size + imageMetaData->GetFileSize());
+    (void)MovingPhotoFileUtils::GetCoverPosition(fileInfo.movingPhotoVideoPath,
+        frameIndex, coverPosition, Scene::AV_META_SCENE_CLONE);
     value.PutLong(PhotoColumn::PHOTO_COVER_POSITION, coverPosition);
 }
 
