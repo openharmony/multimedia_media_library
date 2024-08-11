@@ -83,8 +83,6 @@ protected:
     void InsertPhotoMap(std::vector<FileInfo> &fileInfos, int64_t &mapRowNum);
     void BatchQueryPhoto(std::vector<FileInfo> &fileInfos, bool isFull, const NeedQueryMap &needQueryMap);
     void BatchInsertMap(const std::vector<FileInfo> &fileInfos, int64_t &totalRowNum);
-    bool IsLivePhotoDuplicate(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &tableName,
-        FileInfo &fileInfo);
     nlohmann::json GetErrorInfoJson();
     nlohmann::json GetCountInfoJson(const std::vector<std::string> &countInfoTypes);
     SubCountInfo GetSubCountInfo(const std::string &type);
