@@ -398,6 +398,24 @@ void MetadataExtractor::FillExtractedMetadata(const std::unordered_map<int32_t, 
     }
 }
 
+static void FillFrameIndex(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
+    std::unique_ptr<Metadata> &data)
+{
+    if (data->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+        MEDIA_WARN_LOG("data is not moving photo");
+        return;
+    }
+
+    int64_t coverPosition = data->GetCoverPosition();
+    uint32_t frameIndex = 0;
+    int32_t err = avMetadataHelper->GetFrameIndexByTime(coverPosition, frameIndex);
+    if (err != E_OK) {
+        MEDIA_ERR_LOG("Failed to get frame index, err: %{public}d", err);
+        return;
+    }
+    data->SetFrameIndex(static_cast<int32_t>(frameIndex));
+}
+
 int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, int32_t scene)
 {
     MediaLibraryTracer tracer;
@@ -442,13 +460,15 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
         MEDIA_ERR_LOG("SetSource failed for the given file descriptor, err = %{public}d", err);
         (void)close(fd);
         return E_AVMETADATA;
-    } else {
-        tracer.Start("avMetadataHelper->ResolveMetadata");
-        std::shared_ptr<Meta> meta = avMetadataHelper->GetAVMetadata();
-        std::unordered_map<int32_t, std::string> resultMap = avMetadataHelper->ResolveMetadata();
-        tracer.Finish();
-        if (!resultMap.empty()) {
-            FillExtractedMetadata(resultMap, meta, data);
+    }
+    tracer.Start("avMetadataHelper->ResolveMetadata");
+    std::shared_ptr<Meta> meta = avMetadataHelper->GetAVMetadata();
+    std::unordered_map<int32_t, std::string> resultMap = avMetadataHelper->ResolveMetadata();
+    tracer.Finish();
+    if (!resultMap.empty()) {
+        FillExtractedMetadata(resultMap, meta, data);
+        if (data->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+            FillFrameIndex(avMetadataHelper, data);
         }
     }
 
