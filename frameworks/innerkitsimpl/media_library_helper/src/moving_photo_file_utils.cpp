@@ -258,7 +258,7 @@ int32_t MovingPhotoFileUtils::GetVersionAndFrameNum(int32_t fd,
         "Failed to lseek version tag, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(read(fd, versionTag, VERSION_TAG_LEN) != -1, E_HAS_FS_ERROR,
         "Failed to read version tag, errno:%{public}d", errno);
-    return MovingPhotoFileUtils::GetVersionAndFrameNum(versionTag, version, frameIndex, hasCinemagraph);
+    return MovingPhotoFileUtils::GetVersionAndFrameNum(versionTag, version, frameIndex, hasCinemagraphInfo);
 }
 
 string MovingPhotoFileUtils::GetMovingPhotoVideoPath(const string &imagePath)
