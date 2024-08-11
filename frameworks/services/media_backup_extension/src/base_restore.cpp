@@ -260,40 +260,6 @@ void BaseRestore::GetMaxFileId(const std::shared_ptr<NativeRdb::RdbStore> &rdbSt
     MEDIA_INFO_LOG("maxFIleId:%{public}d, maxCount:%{public}d", maxFileId_, maxCount_);
 }
 
-bool BaseRestore::IsLivePhotoDuplicate(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
-    const std::string &tableName, FileInfo &fileInfo)
-{
-    if (fileInfo.specialFileType != LIVE_PHOTO_TYPE) {
-        return false;
-    }
-
-    string querySql =
-        "SELECT p." + MediaColumn::MEDIA_ID + " , p." + MediaColumn::MEDIA_FILE_PATH +
-        " FROM (SELECT file_id, size, orientation, data FROM Photos " + " WHERE file_id <= " + to_string(maxFileId_) +
-        " AND subtype = " + to_string(static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) + " AND display_name = '" +
-        fileInfo.displayName + "' LIMIT " + to_string(maxCount_) +
-        ") as p INNER JOIN PhotoMap ON p.file_id = PhotoMap.map_asset " +
-        "INNER JOIN PhotoAlbum ON PhotoAlbum.album_id = PhotoMap.map_album WHERE " +
-        "(((PhotoAlbum.bundle_name = '' OR PhotoAlbum.bundle_name is null ) AND PhotoAlbum.album_name = '" +
-        fileInfo.packageName + "') OR (((PhotoAlbum.bundle_name != '' AND PhotoAlbum.bundle_name is not null) " +
-        "AND PhotoAlbum.bundle_name = '" + fileInfo.bundleName + "') OR PhotoAlbum.album_name = '" +
-        fileInfo.packageName + "')) AND p.orientation = " + to_string(fileInfo.orientation) + " LIMIT 1";
-
-    auto resultSet = BackupDatabaseUtils::GetQueryResultSet(rdbStore, querySql);
-    if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
-        return false;
-    }
-    int32_t fileId = GetInt32Val(MediaColumn::MEDIA_ID, resultSet);
-    string cloudPath = GetStringVal(MediaColumn::MEDIA_FILE_PATH, resultSet);
-    if (fileId <= 0 || cloudPath.empty()) {
-        MEDIA_ERR_LOG("Get invalid fileId or cloudPath: %{public}d", fileId);
-        return false;
-    }
-    fileInfo.fileIdNew = fileId;
-    fileInfo.cloudPath = cloudPath;
-    return true;
-}
-
 bool BaseRestore::HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore,
     const std::string &tableName, FileInfo &fileInfo)
 {
@@ -324,7 +290,7 @@ bool BaseRestore::HasSameFileForDualClone(const std::shared_ptr<NativeRdb::RdbSt
     }
     fileInfo.fileIdNew = fileId;
     fileInfo.cloudPath = cloudPath;
-    return IsLivePhotoDuplicate(rdbStore, tableName, fileInfo);
+    return true;
 }
 
 static void InsertDateAdded(std::unique_ptr<Metadata> &metadata, NativeRdb::ValuesBucket &value)
