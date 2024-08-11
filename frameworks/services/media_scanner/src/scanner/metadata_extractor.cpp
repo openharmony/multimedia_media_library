@@ -406,7 +406,7 @@ static void FillFrameIndex(std::shared_ptr<AVMetadataHelper> &avMetadataHelper,
         return;
     }
 
-    int64_t coverPosition = data->GetCoverPosition();
+    uint64_t coverPosition = static_cast<uint64_t>(data->GetCoverPosition());
     uint32_t frameIndex = 0;
     int32_t err = avMetadataHelper->GetFrameIndexByTime(coverPosition, frameIndex);
     if (err != E_OK) {

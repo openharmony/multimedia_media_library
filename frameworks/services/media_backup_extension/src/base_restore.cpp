@@ -342,10 +342,10 @@ static void SetValueForMovingPhoto(const FileInfo &fileInfo,
     UniqueFd extraDataFd(open(fileInfo.extraDataPath.c_str(), O_RDONLY));
     (void)MovingPhotoFileUtils::GetVersionAndFrameNum(extraDataFd.Get(), version, frameIndex, hasCinemagraphInfo);
 
-    int64_t coverPosition = 0;
+    uint64_t coverPosition = 0;
     (void)MovingPhotoFileUtils::GetCoverPosition(fileInfo.movingPhotoVideoPath,
         frameIndex, coverPosition, Scene::AV_META_SCENE_CLONE);
-    value.PutLong(PhotoColumn::PHOTO_COVER_POSITION, coverPosition);
+    value.PutLong(PhotoColumn::PHOTO_COVER_POSITION, static_cast<int64_t>(coverPosition));
 }
 
 void BaseRestore::SetValueFromMetaData(FileInfo &fileInfo, NativeRdb::ValuesBucket &value)
