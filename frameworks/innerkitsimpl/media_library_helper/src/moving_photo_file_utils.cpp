@@ -158,7 +158,7 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
 }
 
 static int32_t GetMovingPhotoCoverPosition(const UniqueFd &uniqueFd, const int64_t size,
-    const uint32_t frameIndex, int64_t &coverPosition, int32_t scene)
+    const uint32_t frameIndex, uint64_t &coverPosition, int32_t scene)
 {
     MediaLibraryTracer tracer;
     tracer.Start("AVMetadataHelper");
@@ -190,7 +190,7 @@ static int32_t GetMovingPhotoCoverPosition(const UniqueFd &uniqueFd, const int64
 }
 
 int32_t MovingPhotoFileUtils::GetCoverPosition(const std::string &videoPath, const uint32_t frameIndex,
-    int64_t &coverPosition, int32_t scene)
+    uint64_t &coverPosition, int32_t scene)
 {
     string absVideoPath;
     if (!PathToRealPath(videoPath, absVideoPath)) {
