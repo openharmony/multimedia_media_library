@@ -188,6 +188,7 @@ static bool IsFileValid(const FileInfo &fileInfo, const int32_t sceneCode)
         if (!MediaFileUtils::IsFileValid(fileInfo.extraDataPath)) {
             MEDIA_WARN_LOG("Media extra data is not valid: %{public}s, errno=%{public}d.",
                 BackupFileUtils::GarbleFilePath(fileInfo.extraDataPath, sceneCode).c_str(), errno);
+            return false;
         }
     }
     return true;
@@ -564,7 +565,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             return false;
         }
         BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified);
-        MoveExtraData(fileInfo, sceneCode);
+        MoveExtraData(fileInfo, sceneCode); // extraData is not necessary, contine cloning if fail
     }
     return true;
 }
@@ -577,8 +578,6 @@ void BaseRestore::MoveMigrateFile(std::vector<FileInfo> &fileInfos, int32_t &fil
         if (!IsFileValid(fileInfos[i], sceneCode)) {
             continue;
         }
-        std::string tmpPath = fileInfos[i].cloudPath;
-        std::string localPath = tmpPath.replace(0, RESTORE_CLOUD_DIR.length(), RESTORE_LOCAL_DIR);
         if (!MoveAndModifyFile(fileInfos[i], sceneCode)) {
             UpdateFailedFiles(fileInfos[i].fileType, fileInfos[i].oldPath, RestoreError::MOVE_FAILED);
             moveFailedData.push_back(fileInfos[i].cloudPath);
