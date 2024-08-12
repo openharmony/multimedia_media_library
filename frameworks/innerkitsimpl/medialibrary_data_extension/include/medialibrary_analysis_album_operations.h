@@ -17,6 +17,7 @@
 #define OHOS_MEDIALIBRARY_ANALYSIS_ALBUM_OPERATIONS_H
 
 #include <memory>
+#include <mutex>
 #include <securec.h>
 #include <string>
 
@@ -54,15 +55,6 @@ public:
     static std::shared_ptr<NativeRdb::ResultSet> QueryGroupPhotoAlbum(MediaLibraryCommand &cmd,
         const std::vector<std::string> &columns);
     static void UpdateGroupPhotoAlbumById(int32_t albumId);
-};
-
-class UpdateGroupPhotoAlbumTask : public AsyncTaskData {
-public:
-    UpdateGroupPhotoAlbumTask(const std::shared_ptr<NativeRdb::ResultSet> lastResultSet)
-        : lastResultSet_(lastResultSet) {}
-    virtual ~UpdateGroupPhotoAlbumTask() override = default;
-
-    std::shared_ptr<NativeRdb::ResultSet> lastResultSet_;
 };
 } // namespace Media
 } // namespace OHOS

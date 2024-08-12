@@ -196,6 +196,14 @@ public:
     EXPORT std::string GetMovingPhotoImageUri(const string &uri);
 
     /**
+     * @brief Get date modified of moving photo
+     *
+     * @param uri asset uri of the moving photo
+     * @return if obtain success, return date_modified; Otherwise return -1
+     */
+    EXPORT int64_t GetMovingPhotoDateModified(const string &uri);
+
+    /**
      * @brief Create PhotoAssetProxy
      *
      * @param cameraShotType a parameter for input, indicates camera shot type
