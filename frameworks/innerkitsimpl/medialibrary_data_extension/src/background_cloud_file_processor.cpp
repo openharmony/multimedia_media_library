@@ -41,14 +41,14 @@ namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
 
-static constexpr int32_t DOWNLOAD_BATCH_SIZE = 5;
-static constexpr int32_t UPDATE_BATCH_SIZE = 3;
+static constexpr int32_t DOWNLOAD_BATCH_SIZE = 2;
+static constexpr int32_t UPDATE_BATCH_SIZE = 1;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
 
-int32_t BackgroundCloudFileProcessor::processInterval_ = 60 * 1000;  // 1 minute
-int32_t BackgroundCloudFileProcessor::downloadDuration_ = 20 * 1000; // 20 seconds
+int32_t BackgroundCloudFileProcessor::processInterval_ = 5 * 60 * 1000;  // 5 minute
+int32_t BackgroundCloudFileProcessor::downloadDuration_ = 10 * 1000; // 10 seconds
 recursive_mutex BackgroundCloudFileProcessor::mutex_;
 Utils::Timer BackgroundCloudFileProcessor::timer_("background_cloud_file_processor");
 uint32_t BackgroundCloudFileProcessor::startTimerId_ = 0;
@@ -86,6 +86,11 @@ void BackgroundCloudFileProcessor::DownloadCloudFiles()
 void BackgroundCloudFileProcessor::UpdateCloudData()
 {
     MEDIA_DEBUG_LOG("Start update cloud data task");
+    if (IsStorageInsufficient()) {
+        MEDIA_WARN_LOG("Insufficient storage space, stop update cloud files");
+        return;
+    }
+
     auto resultSet = QueryUpdateData();
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query update data!");
