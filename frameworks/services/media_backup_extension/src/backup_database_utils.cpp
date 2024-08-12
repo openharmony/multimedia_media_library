@@ -609,7 +609,7 @@ void BackupDatabaseUtils::UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rd
     auto it = groupTagMap.begin();
     while (it != groupTagMap.end()) {
         std::string updateCase;
-        int32_t offset;
+        int32_t offset = 0;
         while (offset < QUERY_COUNT && it != groupTagMap.end()) {
             updateCase += " WHEN group_tag = '" + it->first + "' THEN '" + it->second + "'";
             offset++;
