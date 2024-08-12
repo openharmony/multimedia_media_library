@@ -1004,6 +1004,13 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(const std::string &requestUri
     }
 }
 
+bool IsMovingPhoto(int32_t photoSubType, int32_t effectMode, int32_t sourceMode)
+{
+    return photoSubType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+    (MediaLibraryNapiUtils::IsSystemApp() && sourceMode == SourceMode::ORIGINAL_MODE && 
+    effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
+}
+
 static napi_value ParseArgsForRequestMovingPhoto(napi_env env, size_t argc, const napi_value argv[],
     unique_ptr<MediaAssetManagerAsyncContext> &context)
 {
@@ -1019,9 +1026,6 @@ static napi_value ParseArgsForRequestMovingPhoto(napi_env env, size_t argc, cons
     CHECK_COND_WITH_MESSAGE(env, fileAssetNapi != nullptr, "Failed to parse photo asset");
     auto fileAssetPtr = fileAssetNapi->GetFileAssetInstance();
     CHECK_COND_WITH_MESSAGE(env, fileAssetPtr != nullptr, "fileAsset is null");
-    CHECK_COND_WITH_MESSAGE(env,
-        fileAssetPtr->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO),
-        "Asset is not a moving photo");
     context->photoUri = fileAssetPtr->GetUri();
     context->fileId = fileAssetPtr->GetId();
     context->returnDataType = ReturnDataType::TYPE_MOVING_PHOTO;
@@ -1031,7 +1035,9 @@ static napi_value ParseArgsForRequestMovingPhoto(napi_env env, size_t argc, cons
     CHECK_COND_WITH_MESSAGE(env,
         ParseArgGetRequestOption(env, argv[PARAM2], context->deliveryMode, context->sourceMode) == napi_ok,
         "Failed to parse request option");
-
+    CHECK_COND_WITH_MESSAGE(env, IsMovingPhoto(fileAssetPtr->GetPhotoSubType(),
+        fileAssetPtr->GetMovingPhotoEffectMode(), static_cast<int32_t>(context->sourceMode)),
+        "Asset is not a moving photo");
     if (ParseArgGetDataHandler(env, argv[PARAM3], context->dataHandler, context->needsExtraInfo) != napi_ok) {
         NAPI_ERR_LOG("requestMovingPhoto ParseArgGetDataHandler error");
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMovingPhoto ParseArgGetDataHandler error");
