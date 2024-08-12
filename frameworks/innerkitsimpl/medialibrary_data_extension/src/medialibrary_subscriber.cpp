@@ -322,11 +322,6 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (watch != nullptr) {
         watch->DoAging();
     }
-    auto scannerManager = MediaScannerManager::GetInstance();
-    if (scannerManager == nullptr) {
-        return;
-    }
-    scannerManager->ScanError();
 }
 
 void MedialibrarySubscriber::StopBackgroundOperation()
