@@ -47,6 +47,16 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace Media {
+
+void StoreThumbnailSize(const ThumbRdbOpt& opts, const ThumbnailData& data)
+{
+    std::string photoId = opts.row.empty() ? data.id : opts.row;
+    std::string tmpPath = opts.path.empty() ? data.path : opts.path;
+    if (tmpPath.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
+        MediaLibraryPhotoOperations::StoreThumbnailSize(photoId, tmpPath);
+    }
+}
+
 void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
 {
     if (data == nullptr) {
@@ -56,9 +66,6 @@ void IThumbnailHelper::CreateLcdAndThumbnail(std::shared_ptr<ThumbnailTaskData> 
     bool isSuccess = DoCreateLcdAndThumbnail(data->opts_, data->thumbnailData_);
     UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
-    if (data->opts_.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, data->opts_.path);
-    }
 }
 
 void IThumbnailHelper::CreateLcd(std::shared_ptr<ThumbnailTaskData> &data)
@@ -79,9 +86,6 @@ void IThumbnailHelper::CreateThumbnail(std::shared_ptr<ThumbnailTaskData> &data)
     bool isSuccess = DoCreateThumbnail(data->opts_, data->thumbnailData_);
     UpdateThumbnailState(data->opts_, data->thumbnailData_, isSuccess);
     ThumbnailUtils::RecordCostTimeAndReport(data->thumbnailData_.stats);
-    if (data->opts_.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-        MediaLibraryPhotoOperations::StoreThumbnailSize(data->opts_.row, data->opts_.path);
-    }
 }
 
 void IThumbnailHelper::CreateAstc(std::shared_ptr<ThumbnailTaskData> &data)
@@ -459,6 +463,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
     }
 
     data.lcd.clear();
+    StoreThumbnailSize(opts, data);
     if (opts.table == PhotoColumn::PHOTOS_TABLE) {
         if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
             MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
@@ -678,6 +683,7 @@ int32_t IThumbnailHelper::UpdateThumbDbState(const ThumbRdbOpt &opts, const Thum
     }
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?",
         vector<string> { data.id });
+    StoreThumbnailSize(opts, data);
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
         return E_ERR;
