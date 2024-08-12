@@ -143,6 +143,8 @@ HWTEST_F(MediaLibraryDfxTest, medialib_cloud_manager_test, TestSize.Level0)
     StartState::Process(CloudSyncDfxManager::GetInstance());
     EndState::StateSwitch(CloudSyncDfxManager::GetInstance());
     EndState::Process(CloudSyncDfxManager::GetInstance());
+
+    CloudSyncDfxManager::GetInstance().ShutDownTimer();
 }
 
 HWTEST_F(MediaLibraryDfxTest, medialib_dfx_one_day_report_test, TestSize.Level0)
