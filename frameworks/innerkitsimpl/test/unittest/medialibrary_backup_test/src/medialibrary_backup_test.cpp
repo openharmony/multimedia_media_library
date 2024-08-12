@@ -49,6 +49,7 @@ const std::string MEDIA_APP_NAME = "external";
 const std::string MEDIA_LIBRARY_APP_NAME = "medialibrary";
 const std::string TEST_PATH_PREFIX = "/TestPrefix";
 const std::string TEST_RELATIVE_PATH = "/Pictures/Test/test.jpg";
+const std::string TEST_CLOUD_PATH_PREFIX = "/storage/cloud/files/Photo/1/";
 
 const int EXPECTED_NUM = 30;
 const int EXPECTED_OREINTATION = 270;
@@ -58,6 +59,10 @@ const int TEST_SIZE_MIN = 1080;
 const int TEST_SIZE_MAX = 2560;
 const int TEST_SIZE_INCR_UNIT = 100;
 const int TEST_SIZE_MULT_UNIT = 2;
+const int TEST_PORTRAIT_ALBUM_COUNT = 2;
+const int TEST_PORTRAIT_TAG_COUNT = 3;
+const int TEST_PORTRAIT_PHOTO_COUNT = 3;
+const int TEST_PORTRAIT_FACE_COUNT = 4;
 const float TEST_SCALE_MIN = 0.2;
 const float TEST_SCALE_MAX = 0.8;
 const float TEST_LANDMARK_BELOW = 0.1;
@@ -72,6 +77,16 @@ const int64_t TEST_FALSE_MEDIAID = -1;
 const int64_t TEST_SIZE_2MB = 2 * 1024 * 1024;
 const int64_t TEST_SIZE_2MB_BELOW = TEST_SIZE_2MB - 1;
 const int64_t TEST_SIZE_2MB_ABOVE = TEST_SIZE_2MB + 1;
+const vector<string> CLEAR_SQLS = {
+    "DELETE FROM " + PhotoColumn::PHOTOS_TABLE,
+    "DELETE FROM " + PhotoAlbumColumns::TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_TYPE + " != " +
+        to_string(PhotoAlbumType::SYSTEM),
+    "DELETE FROM " + PhotoMap::TABLE,
+    "DELETE FROM " + ANALYSIS_ALBUM_TABLE + " WHERE " + PhotoAlbumColumns::ALBUM_SUBTYPE + " != " +
+        to_string(PhotoAlbumSubType::SHOOTING_MODE),
+    "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE,
+    "DELETE FROM " + AudioColumn::AUDIOS_TABLE,
+};
 
 const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS Photos ") +
     " (file_id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, title TEXT, display_name TEXT, size BIGINT," +
@@ -2161,6 +2176,111 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, Te
     BackupDatabaseUtils::UpdateSDWhereClause(whereClause, false);
     EXPECT_EQ(whereClause.empty(), false);
     GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause end";
+}
+
+void ExecuteSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sqls)
+{
+    for (const auto &sql : sqls) {
+        int32_t errCode = store->ExecuteSql(sql);
+        if (errCode == E_OK) {
+            continue;
+        }
+        MEDIA_ERR_LOG("Execute %{public}s failed: %{public}d", sql.c_str(), errCode);
+    }
+}
+
+void ClearData()
+{
+    MEDIA_INFO_LOG("Start clear data");
+    ExecuteSqls(photosStorePtr, CLEAR_SQLS);
+    MediaLibraryRdbUtils::UpdateAllAlbums(photosStorePtr);
+    MEDIA_INFO_LOG("End clear data");
+}
+
+void InsertPhoto(unique_ptr<UpgradeRestore> &upgrade, vector<FileInfo> &fileInfos)
+{
+    // Photo
+    for (const auto fileInfo : fileInfos) {
+        string cloudPath = TEST_CLOUD_PATH_PREFIX + fileInfo.displayName;
+        const NativeRdb::ValuesBucket values = upgrade->GetInsertValue(fileInfo, cloudPath, SourceType::GALLERY);
+        int64_t rowNum = 0;
+        if (upgrade->mediaLibraryRdb_->Insert(rowNum, PhotoColumn::PHOTOS_TABLE, values) != E_OK) {
+            MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s", fileInfo.filePath.c_str());
+        }
+    }
+    // Photo related
+    InsertPhotoRelated(fileInfos, SourceType::GALLERY);
+}
+
+void RestorePhotoWithPortrait(unique_ptr<UpgradeRestore> &upgrade)
+{
+    vector<FileInfo> fileInfos = upgrade->QueryFileInfos(upgrade->sceneCode_, 0);
+    InsertPhoto(upgrade, fileInfos);
+}
+
+void QueryInt(shared_ptr<NativeRdb::RdbStore> rdbStore, const string &querySql, const string &columnName,
+    int32_t &result)
+{
+    ASSERT_NE(rdbStore, nullptr);
+    auto resultSet = rdbStore->QuerySql(querySql);
+    ASSERT_NE(resultSet, nullptr);
+    ASSERT_EQ(resultSet->GoToFirstRow(), E_OK);
+    result = GetInt32Val(columnName, resultSet);
+    MEDIA_INFO_LOG("Query %{public}s result: %{public}d", querySql.c_str(), result);
+}
+
+void QueryPortraitAlbumCount(int32_t &result)
+{
+    string querySql = "SELECT count(1) AS count FROM AnalysisAlbum WHERE album_type = 4096 AND \
+        album_subtype = 4102";
+    QueryInt(photosStorePtr, querySql, "count", result);
+}
+
+void QueryPortraitTagCount()
+{
+    string querySql = "SELECT count(1) as count FROM tab_analysis_face_tag";
+    QueryInt(photosStorePtr, querySql, "count", result);
+}
+
+void QueryPortraitPhotoCount()
+{
+    string querySql = "SELECT count(DISTINCT file_id) as count FROM tab_analysis_image_face";
+    QueryInt(photosStorePtr, querySql, "count", result);
+}
+
+void QueryPortraitFaceCount()
+{
+    string querySql = "SELECT count(1) as count FROM tab_analysis_image_face";
+    QueryInt(photosStorePtr, querySql, "count", result);
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_portrait, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_restore_portrait start");
+    ClearData();
+    unique_ptr<UpgradeRestore> upgrade =
+        make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
+    upgrade->mediaLibraryRdb_ = photosStorePtr;
+
+    // restore portrait album
+    upgrade->RestoreFromGalleryPortraitAlbum();
+    int32_t albumCount = 0;
+    QueryPortraitAlbumCount(albumCount);
+    EXPECT_EQ(albumCount, TEST_PORTRAIT_ALBUM_COUNT);
+    int32_t tagCount = 0;
+    QueryPortraitTagCount(tagCount);
+    EXPECT_EQ(tagCount, TEST_PORTRAIT_TAG_COUNT);
+    EXPECT_EQ(static_cast<int32_t>(upgrade->portraitAlbumIdMap_.size()), TEST_PORTRAIT_TAG_COUNT);
+
+    // restore face analysis data
+    RestorePhotoWithPortrait(upgrade);
+    int32_t photoCount = 0;
+    QueryPortraitPhotoCount(photoCount);
+    EXPECT_EQ(photoCount, TEST_PORTRAIT_PHOTO_COUNT);
+    int32_t faceCount = 0;
+    QueryPortraitFaceCount(faceCount);
+    EXPECT_EQ(faceCount, TEST_PORTRAIT_FACE_COUNT);
+    MEDIA_INFO_LOG("medialib_backup_test_restore_portrait start");
 }
 } // namespace Media
 } // namespace OHOS
