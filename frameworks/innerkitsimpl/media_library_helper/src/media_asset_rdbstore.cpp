@@ -356,6 +356,15 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
         MEDIA_ERR_LOG("fail to acquire result from visitor query");
         return nullptr;
     }
+    int rowCount = 0;
+    if (!resultSet->GetRowCount(rowCount) && rowCount == 0) {
+        std::string columnStr = "";
+        for (auto& column : columns) {
+            columnStr += column + " ";
+        }
+        MEDIA_INFO_LOG("MediaAssetRdbStore predicates:%{public}s, columns:%{public}s, object:%{public}d",
+            rdbPredicates.ToString().c_str(), columnStr.c_str(), object);
+    }
     return resultSet;
 }
 
