@@ -154,8 +154,8 @@ void BackgroundCloudFileProcessorTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest TearDownTestCase");
     ClearTables();
-    BackgroundCloudFileProcessor::processInterval_ = 60000;  // 60000 milliseconds
-    BackgroundCloudFileProcessor::downloadDuration_ = 20000; // 20000 milliseconds
+    BackgroundCloudFileProcessor::processInterval_ = PROCESS_INTERVAL;  // // 5 minute
+    BackgroundCloudFileProcessor::downloadDuration_ = DOWNLOAD_DURATION; // 10 seconds
 }
 
 void BackgroundCloudFileProcessorTest::SetUp()
