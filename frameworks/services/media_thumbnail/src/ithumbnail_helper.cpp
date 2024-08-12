@@ -425,6 +425,18 @@ bool IThumbnailHelper::DoCreateLcd(ThumbRdbOpt &opts, ThumbnailData &data)
     return true;
 }
 
+void UpdateLcdDbState(ThumbRdbOpt &opts, ThumbnailData &data)
+{
+    if (opts.table != PhotoColumn::PHOTOS_TABLE) {
+        return;
+    }
+    StoreThumbnailSize(opts, data);
+    int err = 0;
+    if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
+        MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
+    }
+}
+
 bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data)
 {
     data.loaderOpts.decodeInThumbSize = false;
@@ -463,13 +475,7 @@ bool IThumbnailHelper::IsCreateLcdSuccess(ThumbRdbOpt &opts, ThumbnailData &data
     }
 
     data.lcd.clear();
-    StoreThumbnailSize(opts, data);
-    if (opts.table == PhotoColumn::PHOTOS_TABLE) {
-        if (!ThumbnailUtils::UpdateLcdInfo(opts, data, err)) {
-            MEDIA_INFO_LOG("UpdateLcdInfo faild err : %{public}d", err);
-        }
-    }
-
+    UpdateLcdDbState(opts, data);
     return true;
 }
 
