@@ -275,8 +275,8 @@ static void GetTrashPredicates(RdbPredicates &predicates)
     predicates.BeginWrap();
     predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
     predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
-    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
     predicates.GreaterThan(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
+    predicates.EqualTo(PhotoColumn::PHOTO_BURST_COVER_LEVEL, BURST_COVER_LEVEL);
     predicates.EndWrap();
 }
 
