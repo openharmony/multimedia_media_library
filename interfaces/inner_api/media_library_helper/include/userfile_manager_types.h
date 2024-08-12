@@ -144,7 +144,9 @@ enum class MovingPhotoEffectMode : int32_t {
     LOOP_PLAY,
     LONG_EXPOSURE,
     MULTI_EXPOSURE,
-    EFFECT_MODE_END = MULTI_EXPOSURE
+    CINEMA_GRAPH,
+    EFFECT_MODE_END = CINEMA_GRAPH,
+    IMAGE_ONLY = 10
 };
 
 const std::string URI_PARAM_API_VERSION = "api_version";

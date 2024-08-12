@@ -261,7 +261,9 @@ bool MediaAssetChangeRequestNapi::ContainsResource(ResourceType resourceType) co
 bool MediaAssetChangeRequestNapi::IsMovingPhoto() const
 {
     return fileAsset_ != nullptr &&
-        fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO);
+        (fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
+        (fileAsset_->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
+        fileAsset_->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)));
 }
 
 bool MediaAssetChangeRequestNapi::CheckMovingPhotoResource(ResourceType resourceType) const
@@ -284,10 +286,14 @@ static const unordered_map<MovingPhotoEffectMode, unordered_map<ResourceType, bo
         { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, true } } },
     { MovingPhotoEffectMode::LOOP_PLAY,
         { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, true } } },
+    { MovingPhotoEffectMode::CINEMA_GRAPH,
+        { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, true } } },
     { MovingPhotoEffectMode::LONG_EXPOSURE,
         { { ResourceType::IMAGE_RESOURCE, true }, { ResourceType::VIDEO_RESOURCE, false } } },
     { MovingPhotoEffectMode::MULTI_EXPOSURE,
         { { ResourceType::IMAGE_RESOURCE, true }, { ResourceType::VIDEO_RESOURCE, false } } },
+    { MovingPhotoEffectMode::IMAGE_ONLY,
+        { { ResourceType::IMAGE_RESOURCE, false }, { ResourceType::VIDEO_RESOURCE, false } } },
 };
 
 bool MediaAssetChangeRequestNapi::CheckEffectModeWriteOperation()
@@ -1163,7 +1169,9 @@ napi_value MediaAssetChangeRequestNapi::JSSetEffectMode(napi_env env, napi_callb
     auto changeRequest = asyncContext->objectInfo;
     auto fileAsset = changeRequest->GetFileAssetInstance();
     CHECK_COND(env, fileAsset != nullptr, JS_INNER_FAIL);
-    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO)) {
+    if (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        (fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::DEFAULT) ||
+        fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY))) {
         NapiError::ThrowError(env, JS_E_OPERATION_NOT_SUPPORT, "Operation not support: the asset is not moving photo");
         return nullptr;
     }
