@@ -3303,6 +3303,16 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
     }
     context->predicates.And()->EqualTo(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
 
+    // parse uriType
+    int uriType = 0;
+    // parse fileId ensured uri is photo or audio.
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
+        uriType = AppUriPermissionColumn::URI_PHOTO;
+    } else {
+        uriType = AppUriPermissionColumn::URI_AUDIO;
+    }
+    context->predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, uriType);
+
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
     return result;
