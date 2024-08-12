@@ -362,6 +362,26 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUri(const AbsRd
     return rdbStore_->QuerySql(sql, args);
 }
 
+shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUriForPhotos(const AbsRdbPredicates &predicates,
+    const vector<string> &columns, const string &id)
+{
+    if (rdbStore_ == nullptr) {
+        MEDIA_ERR_LOG("rdbStore_ is nullptr");
+        return nullptr;
+    }
+    MediaLibraryTracer tracer;
+    tracer.Start("GetIndexOfUriForPhotos");
+    string sql;
+    sql.append(RdbSqlUtils::BuildQueryString(predicates, columns));
+    MEDIA_DEBUG_LOG("sql = %{private}s", sql.c_str());
+    const vector<string> &args = predicates.GetWhereArgs();
+    for (const auto &arg : args) {
+        MEDIA_DEBUG_LOG("arg = %{private}s", arg.c_str());
+    }
+    return rdbStore_->QuerySql(sql, args);
+}
+
+
 int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int32_t &changedRows)
 {
     if (rdbStore_ == nullptr) {
@@ -2572,6 +2592,16 @@ static void UpdateReadyOnThumbnailUpgrade(RdbStore &store)
     MEDIA_INFO_LOG("finish update ready for thumbnail upgrade");
 }
 
+static void UpdateDataAddedIndexWithFileId(RdbStore &store)
+{
+    const vector<string> sqls = {
+        PhotoColumn::DROP_INDEX_SCTHP_ADDTIME,
+        PhotoColumn::INDEX_SCTHP_ADDTIME,
+    };
+    MEDIA_INFO_LOG("start update index of date added with file desc");
+    ExecSqls(sqls, store);
+}
+
 static void UpgradeOtherTable(RdbStore &store, int32_t oldVersion)
 {
     if (oldVersion < VERSION_ADD_PACKAGE_NAME) {
@@ -2977,6 +3007,10 @@ static void UpgradeExtensionPart2(RdbStore &store, int32_t oldVersion)
 
     if (oldVersion < VERSION_UPGRADE_THUMBNAIL) {
         UpdateReadyOnThumbnailUpgrade(store);
+    }
+
+    if (oldVersion < VISION_UPDATE_DATA_ADDED_INDEX) {
+        UpdateDataAddedIndexWithFileId(store);
     }
 }
 
