@@ -91,7 +91,7 @@ private:
     static int32_t UpdateFileAsset(MediaLibraryCommand &cmd);
     static int32_t BatchSetUserComment(MediaLibraryCommand &cmd);
     static int32_t AddFiltersToPhoto(const std::string &inputPath, const std::string &outputPath,
-        const std::string &editdata, int32_t fileId);
+        const std::string &editdata, int32_t fileId, const std::string &photoStatus = "");
     static int32_t RevertToOriginalEffectMode(MediaLibraryCommand &cmd, const std::shared_ptr<FileAsset> &fileAsset,
         bool &isNeedScan);
     static int32_t SaveCameraPhoto(MediaLibraryCommand &cmd);

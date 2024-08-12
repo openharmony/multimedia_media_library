@@ -204,7 +204,7 @@ static int32_t UserFileMgrPermissionCheck(MediaLibraryCommand &cmd, const bool i
 
 static inline int32_t HandleBundlePermCheck()
 {
-    bool ret = PermissionUtils::CheckCallerPermission(PERMISSION_NAME_WRITE_MEDIA);
+    bool ret = PermissionUtils::CheckCallerPermission(PERM_WRITE_IMAGEVIDEO);
     if (ret) {
         return E_SUCCESS;
     }
@@ -236,7 +236,7 @@ static int32_t HandleNoPermCheck(MediaLibraryCommand &cmd)
 
 static inline int32_t HandleMediaVolumePerm()
 {
-    return PermissionUtils::CheckCallerPermission(PERMISSION_NAME_READ_MEDIA) ? E_SUCCESS : E_PERMISSION_DENIED;
+    return PermissionUtils::CheckCallerPermission(PERM_READ_IMAGEVIDEO) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 

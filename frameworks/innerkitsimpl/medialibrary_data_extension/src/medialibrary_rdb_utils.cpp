@@ -865,23 +865,40 @@ bool MediaLibraryRdbUtils::IsInRefreshTask()
     return isInRefreshTask.load();
 }
 
-static void GetPortraitAlbumCoverAnalysis(RdbPredicates &predicates)
+static void GetPortraitAlbumCoverAnalysis(const string &albumId, RdbPredicates &predicates)
 {
-    string imageFaceFileId = VISION_IMAGE_FACE_TABLE + "." + MediaColumn::MEDIA_ID;
+    string anaPhotoMapAsset = ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ASSET;
     string photosFileId = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID;
+    string clause = anaPhotoMapAsset + " = " + photosFileId;
+    predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ clause });
+
+    string anaAlbumId = ANALYSIS_ALBUM_TABLE + "." + ALBUM_ID;
+    string anaPhotoMapAlbum = ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM;
+    clause = anaAlbumId + " = " + anaPhotoMapAlbum;
+    predicates.InnerJoin(ANALYSIS_ALBUM_TABLE)->On({ clause });
+
+    string imageFaceFileId = VISION_IMAGE_FACE_TABLE + "." + MediaColumn::MEDIA_ID;
+    clause = imageFaceFileId + " = " + photosFileId;
+    predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ clause });
+
+    string anaAlbumGroupTag = ANALYSIS_ALBUM_TABLE + "." + GROUP_TAG;
+    string photosDateTrashed = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_DATE_TRASHED;
+    string photosHidden = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_HIDDEN;
+    string photosTimePending = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_TIME_PENDING;
+    string photosIsTemp = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_TEMP;
+    string photoIsCover = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_BURST_COVER_LEVEL;
     string isExcluded = VISION_IMAGE_FACE_TABLE + "." + IS_EXCLUDED;
     string aestheticsScore = VISION_IMAGE_FACE_TABLE + "." + FACE_AESTHETICS_SCORE;
 
-    string clause = imageFaceFileId + " = " + photosFileId;
-    predicates.InnerJoin(VISION_IMAGE_FACE_TABLE)->On({ clause });
+    string whereClause = "( " + anaAlbumGroupTag + " IN ( SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
+        " WHERE " + ALBUM_ID + " = " + albumId + " )) AND " + photosDateTrashed + " = " + to_string(0) + " AND " +
+        photosHidden + " = " + to_string(0) + " AND " + photosTimePending + " = " + to_string(0) + " AND " +
+        photosIsTemp + " = " + to_string(0) + " AND " + photoIsCover + " = " + BURST_COVER_LEVEL + " AND " +
+        isExcluded + " = " + to_string(1) + " AND " + aestheticsScore + " IS NOT NULL ";
 
-    string whereClause = predicates.GetWhereClause();
-    predicates.SetWhereClause(whereClause + " AND ");
-    predicates.BeginWrap();
-    predicates.EqualTo(isExcluded, to_string(1));
-    predicates.IsNotNull(aestheticsScore);
-    predicates.EndWrap();
+    predicates.SetWhereClause(whereClause);
 
+    predicates.Distinct();
     predicates.OrderByDesc(aestheticsScore);
     predicates.Limit(1);
 }
@@ -1012,14 +1029,14 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
     if (!ShouldUpdatePortraitAlbumCover(rdbStore, coverId, isCoverSatisfied, fileIds)) {
         return E_SUCCESS;
     }
-    RdbPredicates analysisPredicates(predicates);
-    GetPortraitAlbumCoverAnalysis(analysisPredicates);
+    RdbPredicates analysisPredicates(PhotoColumn::PHOTOS_TABLE);
+    GetPortraitAlbumCoverAnalysis(albumId, analysisPredicates);
     shared_ptr<ResultSet> coverResult = QueryGoToFirst(rdbStore, analysisPredicates, coverColumns);
-    if (coverResult == nullptr) {
+    if (coverResult == nullptr || GetCover(coverResult).empty()) {
         MEDIA_ERR_LOG("Failed to query coverResult by GetPortraitAlbumCoverAnalysis");
         GetPortraitAlbumCoverDefault(predicates);
         coverResult = QueryGoToFirst(rdbStore, predicates, coverColumns);
-        if (coverResult == nullptr) {
+        if (coverResult == nullptr || GetCover(coverResult).empty()) {
             MEDIA_ERR_LOG("Failed to query coverResult by GetPortraitAlbumCoverDefault");
             return E_HAS_DB_ERROR;
         }

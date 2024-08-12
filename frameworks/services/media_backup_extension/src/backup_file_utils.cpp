@@ -86,11 +86,10 @@ string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t scen
         return filePath;
     }
     size_t displayNameIndex = filePath.rfind("/");
-    if (displayNameIndex == string::npos) {
+    if (displayNameIndex == string::npos || displayNameIndex + 1 >= filePath.size()) {
         return filePath;
     }
-    std::string displayName = filePath.substr(displayNameIndex);
-    std::string garbleDisplayName = GarbleFileName(displayName);
+    std::string garbleDisplayName = GarbleFileName(filePath.substr(displayNameIndex + 1));
     std::string path;
     if (sceneCode == UPGRADE_RESTORE_ID) {
         path = filePath.substr(0, displayNameIndex).replace(0, UPGRADE_FILE_DIR.length(), GARBLE);
@@ -101,11 +100,11 @@ string BackupFileUtils::GarbleFilePath(const std::string &filePath, int32_t scen
     } else {
         path = filePath.substr(0, displayNameIndex);
     }
-    path += displayName;
+    path += "/" + garbleDisplayName;
     return path;
 }
 
-string BackupFileUtils::GarbleFileName(std::string &fileName)
+string BackupFileUtils::GarbleFileName(const std::string &fileName)
 {
     if (fileName.empty()) {
         return fileName;
@@ -114,15 +113,14 @@ string BackupFileUtils::GarbleFileName(std::string &fileName)
         fileName.find("SVID_") == 0) {
         return fileName;
     }
-    if (fileName.length() > GARBLE_HIGH_LENGTH) {
-        return fileName.replace(0, GARBLE_HIGH_LENGTH, GARBLE);
-    } else if (fileName.length() > GARBLE_MID_LENGTH) {
-        return fileName.replace(0, GARBLE_MID_LENGTH, GARBLE);
-    } else if (fileName.length() > GARBLE_LOW_LENGTH) {
-        return fileName.replace(0, GARBLE_LOW_LENGTH, GARBLE);
-    } else {
-        return fileName.replace(0, 1, GARBLE);
+    size_t titleIndex = fileName.rfind(".");
+    if (titleIndex == string::npos) {
+        titleIndex = fileName.size();
     }
+    if (titleIndex <= GARBLE.size() * GARBLE_UNIT) {
+        return fileName;
+    }
+    return GARBLE + fileName.substr(GARBLE.size());
 }
 
 int32_t BackupFileUtils::CreateAssetPathById(int32_t fileId, int32_t mediaType, const string &extension,
@@ -366,6 +364,26 @@ bool BackupFileUtils::GetPathPosByPrefixLevel(int32_t sceneCode, const std::stri
         return false;
     }
     return true;
+}
+
+bool BackupFileUtils::ShouldIncludeSD(const std::string &prefix)
+{
+    return MediaFileUtils::IsFileExists(prefix + "/" + PHOTO_SD_DB_NAME) ||
+        MediaFileUtils::IsFileExists(prefix + "/" + VIDEO_SD_DB_NAME);
+}
+
+void BackupFileUtils::DeleteSDDatabase(const std::string &prefix)
+{
+    std::vector<std::string> sdDBs = { PHOTO_SD_DB_NAME, VIDEO_SD_DB_NAME };
+    for (const auto &sdDB : sdDBs) {
+        std::string sdDBPath = prefix + "/" + sdDB;
+        if (!MediaFileUtils::IsFileExists(sdDBPath)) {
+            continue;
+        }
+        if (!MediaFileUtils::DeleteFile(sdDBPath)) {
+            MEDIA_ERR_LOG("Delete SD database %{public}s failed, errno: %{public}d", sdDB.c_str(), errno);
+        }
+    }
 }
 } // namespace Media
 } // namespace OHOS

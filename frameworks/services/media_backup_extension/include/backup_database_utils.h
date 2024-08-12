@@ -48,6 +48,8 @@ public:
     static int32_t QueryGalleryCloudCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryGalleryFavoriteCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
     static int32_t QueryGalleryImportsCount(std::shared_ptr<NativeRdb::RdbStore> rdbStore);
+    static int32_t QueryGalleryBurstCoverCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
+    static int32_t QueryGalleryBurstTotalCount(std::shared_ptr<NativeRdb::RdbStore> galleryRdb);
     static int32_t QueryExternalImageCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
     static int32_t QueryExternalVideoCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
     static int32_t QueryExternalAudioCount(std::shared_ptr<NativeRdb::RdbStore> externalRdb);
@@ -60,7 +62,7 @@ public:
     static int32_t QueryUniqueNumber(const std::shared_ptr<NativeRdb::RdbStore> &rdbStore, const std::string &type);
     static std::string GarbleInfoName(const std::string &infoName);
     static void UpdateSelection(std::string &selection, const std::string &selectionToAdd, bool needWrap = false);
-    static void UpdateSDWhereClause(std::string &querySql, int32_t sceneCode);
+    static void UpdateSDWhereClause(std::string &querySql, bool shouldIncludeSD);
     static int32_t GetBlob(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet,
         std::vector<uint8_t> &blobVal);
     static std::string GetLandmarksStr(const std::string &columnName, std::shared_ptr<NativeRdb::ResultSet> resultSet);

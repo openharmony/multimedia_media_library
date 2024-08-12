@@ -36,12 +36,10 @@ constexpr int32_t GALLERY_TRASHED_ID = 0;
 constexpr int32_t UPGRADE_RESTORE_ID = 0;
 constexpr int32_t DUAL_FRAME_CLONE_RESTORE_ID = 1;
 constexpr int32_t CLONE_RESTORE_ID = 2;
-constexpr int32_t GARBLE_LOW_LENGTH = 3;
-constexpr int32_t GARBLE_MID_LENGTH = 10;
-constexpr int32_t GARBLE_HIGH_LENGTH = 20;
 constexpr int32_t RETRY_TIME = 5;
 constexpr int32_t SLEEP_INTERVAL = 1;
 constexpr int32_t GARBAGE_PHOTO_SIZE = 2048;
+constexpr size_t GARBLE_UNIT = 2;
 
 const std::string RESTORE_CLOUD_DIR = "/storage/cloud/files/Photo";
 const std::string RESTORE_AUDIO_CLOUD_DIR = "/storage/cloud/files/Audio";
@@ -103,6 +101,8 @@ const std::string AUDIO_DATE_MODIFIED = "date_modified";
 const std::string AUDIO_DATE_TAKEN = "datetaken";
 
 // statistics
+const int32_t STAT_DEFAULT_ERROR_CODE_SUCCESS = 0;
+const int32_t STAT_DEFAULT_ERROR_CODE_FAILED = 13500099;
 const std::string STAT_KEY_RESULT_INFO = "resultInfo";
 const std::string STAT_KEY_TYPE = "type";
 const std::string STAT_KEY_ERROR_CODE = "errorCode";
@@ -110,6 +110,7 @@ const std::string STAT_KEY_ERROR_INFO = "errorInfo";
 const std::string STAT_KEY_INFOS = "infos";
 const std::string STAT_KEY_BACKUP_INFO = "backupInfo";
 const std::string STAT_KEY_SUCCESS_COUNT = "successCount";
+const std::string STAT_KEY_DUPLICATE_COUNT = "duplicateCount";
 const std::string STAT_KEY_FAILED_COUNT = "failedCount";
 const std::string STAT_KEY_DETAILS = "details";
 const std::string STAT_KEY_NUMBER = "number";
@@ -123,6 +124,8 @@ const std::vector<std::string> STAT_TYPES = { STAT_TYPE_PHOTO, STAT_TYPE_VIDEO, 
 const std::string GALLERY_DB_NAME = "gallery.db";
 const std::string EXTERNAL_DB_NAME = "external.db";
 const std::string AUDIO_DB_NAME = "audio_MediaInfo.db";
+const std::string PHOTO_SD_DB_NAME = "photo_sd_MediaInfo.db";
+const std::string VIDEO_SD_DB_NAME = "video_sd_MediaInfo.db";
 
 const std::string GALLERY_ALBUM = "gallery_album";
 const std::string GALLERY_ALBUM_NAME = "albumName";
@@ -218,6 +221,7 @@ struct FileInfo {
     std::string cloudPath;
     std::string packageName;
     std::string bundleName;
+    std::string oldPath;
     int32_t fileIdOld {-1};
     int32_t fileIdNew {-1};
     int64_t fileSize {0};
@@ -293,9 +297,11 @@ struct MapInfo {
 
 struct SubCountInfo {
     uint64_t successCount {0};
+    uint64_t duplicateCount {0};
     std::unordered_map<std::string, int32_t> failedFiles;
-    SubCountInfo(int64_t successCount, const std::unordered_map<std::string, int32_t> &failedFiles)
-        : successCount(successCount), failedFiles(failedFiles) {}
+    SubCountInfo(int64_t successCount, int64_t duplicateCount,
+        const std::unordered_map<std::string, int32_t> &failedFiles)
+        : successCount(successCount), duplicateCount(duplicateCount), failedFiles(failedFiles) {}
 };
 
 struct PortraitAlbumInfo {
