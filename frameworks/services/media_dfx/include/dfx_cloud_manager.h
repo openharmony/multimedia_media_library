@@ -65,6 +65,7 @@ class CloudSyncDfxManager {
 public:
     ~CloudSyncDfxManager() = default;
     static CloudSyncDfxManager& GetInstance();
+    void ShutDownTimer();
     void RunDfx();
 
     friend class InitState;
@@ -74,7 +75,6 @@ private:
     void InitSyncState();
     CloudSyncDfxManager();
     void StartTimer();
-    void ShutDownTimer();
     void SetStartTime();
     void ResetStartTime();
     Utils::Timer timer_{ "CloudSyncTimer" };
