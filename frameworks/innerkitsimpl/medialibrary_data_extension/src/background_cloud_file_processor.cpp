@@ -86,11 +86,6 @@ void BackgroundCloudFileProcessor::DownloadCloudFiles()
 void BackgroundCloudFileProcessor::UpdateCloudData()
 {
     MEDIA_DEBUG_LOG("Start update cloud data task");
-    if (IsStorageInsufficient()) {
-        MEDIA_WARN_LOG("Insufficient storage space, stop update cloud files");
-        return;
-    }
-
     auto resultSet = QueryUpdateData();
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("Failed to query update data!");
