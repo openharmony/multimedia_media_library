@@ -466,31 +466,34 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         MEDIA_ERR_LOG("Failed to open thumbnail, sDataShareHelper_ is nullptr");
         return E_ERR;
     }
-    if (!path.empty()) {
-        string sandboxPath = GetSandboxPath(path, size, isAstc);
-        int fd = -1;
-        if (!sandboxPath.empty()) {
-            fd = open(sandboxPath.c_str(), O_RDONLY);
-            if (fd < 0 && isAstc) {
-                string suffixStr = "THM_ASTC.astc";
-                size_t thmIdx = sandboxPath.find(suffixStr);
+    if (path.empty()) {
+        MEDIA_ERR_LOG("OpenThumbnail path is empty");
+        return E_ERR;
+    }
+    string sandboxPath = GetSandboxPath(path, size, isAstc);
+    int fd = -1;
+    if (!sandboxPath.empty()) {
+        fd = open(sandboxPath.c_str(), O_RDONLY);
+        if (fd < 0 && isAstc) {
+            string suffixStr = "THM_ASTC.astc";
+            size_t thmIdx = sandboxPath.find(suffixStr);
+            if (thmIdx != string::npos) {
                 sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
                 fd = open(sandboxPath.c_str(), O_RDONLY);
             }
-        } else {
-            MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s", path.c_str());
-        }
-        if (fd > 0) {
-            return fd;
-        }
-        MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, path :%{public}s fd %{public}d errno %{public}d",
-            path.c_str(), fd, errno);
-        if (IsAsciiString(path)) {
-            uriStr += "&" + THUMBNAIL_PATH + "=" + path;
         }
     } else {
-        MEDIA_ERR_LOG("OpenThumbnail path is empty");
+        MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s", path.c_str());
     }
+    if (fd > 0) {
+        return fd;
+    }
+    MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, path :%{public}s fd %{public}d errno %{public}d",
+        path.c_str(), fd, errno);
+    if (IsAsciiString(path)) {
+        uriStr += "&" + THUMBNAIL_PATH + "=" + path;
+    }
+
     Uri openUri(uriStr);
     return sDataShareHelper_->OpenFile(openUri, "R");
 }
