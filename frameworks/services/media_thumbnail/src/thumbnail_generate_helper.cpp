@@ -65,9 +65,6 @@ int32_t ThumbnailGenerateHelper::CreateThumbnailFileScaned(ThumbRdbOpt &opts, bo
         bool isSuccess = IThumbnailHelper::DoCreateLcdAndThumbnail(opts, thumbnailData);
         IThumbnailHelper::UpdateThumbnailState(opts, thumbnailData, isSuccess);
         ThumbnailUtils::RecordCostTimeAndReport(thumbnailData.stats);
-        if (opts.path.find(ROOT_MEDIA_DIR + PHOTO_BUCKET) != string::npos) {
-            MediaLibraryPhotoOperations::StoreThumbnailSize(opts.row, opts.path);
-        }
     } else {
         IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::CreateLcdAndThumbnail,
             opts, thumbnailData, ThumbnailTaskType::FOREGROUND, ThumbnailTaskPriority::HIGH);
