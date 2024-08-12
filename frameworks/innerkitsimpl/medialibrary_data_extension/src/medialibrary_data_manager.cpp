@@ -1549,5 +1549,15 @@ int32_t MediaLibraryDataManager::ProcessThumbnailBatchCmd(const MediaLibraryComm
         return E_INVALID_ARGUMENTS;
     }
 }
+
+int32_t MediaLibraryDataManager::CheckCloudThumbnailDownloadFinish()
+{
+    if (thumbnailService_ == nullptr) {
+        MEDIA_ERR_LOG("thumbanilService is nullptr");
+        return E_THUMBNAIL_SERVICE_NULLPTR;
+    }
+
+    return thumbnailService_->CheckCloudThumbnailDownloadFinish();
+}
 }  // namespace Media
 }  // namespace OHOS
