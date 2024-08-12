@@ -25,8 +25,8 @@
 
 namespace OHOS {
 namespace Media {
-    constexpr int32_t  PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minute
-    constexpr int32_t  DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
+constexpr int32_t PROCESS_INTERVAL = 5 * 60 * 1000;  // 5 minute
+constexpr int32_t DOWNLOAD_DURATION = 10 * 1000; // 10 seconds
 
 class BackgroundCloudFileProcessor {
 public:
