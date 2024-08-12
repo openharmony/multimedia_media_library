@@ -54,7 +54,7 @@ public:
     void RemoveImages(const NativeRdb::AbsRdbPredicates &predicates, bool isRestorable = true);
     void RestoreImages(const NativeRdb::AbsRdbPredicates &predicates);
     EXPORT void AddImage(int32_t fileId, const std::string &photoId, int32_t deferredProcType);
-    void ProcessImage(int fileId, int deliveryMode, const std::string &appName);
+    void ProcessImage(int fileId, int deliveryMode);
 
     void AddImageInternal(int32_t fileId, const std::string &photoId, int32_t deferredProcType,
         bool discardable = false);

@@ -288,14 +288,14 @@ MultiStagesCapturePhotoStatus MediaAssetManagerNapi::QueryPhotoStatus(int fileId
     return MultiStagesCapturePhotoStatus::HIGH_QUALITY_STATUS;
 }
 
-void MediaAssetManagerNapi::ProcessImage(const int fileId, const int deliveryMode, const std::string &packageName)
+void MediaAssetManagerNapi::ProcessImage(const int fileId, const int deliveryMode)
 {
     std::string uriStr = PAH_PROCESS_IMAGE;
     MediaLibraryNapiUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
     Uri uri(uriStr);
     DataShare::DataSharePredicates predicates;
     int errCode = 0;
-    std::vector<std::string> columns { std::to_string(fileId), std::to_string(deliveryMode), packageName };
+    std::vector<std::string> columns { std::to_string(fileId), std::to_string(deliveryMode) };
     UserFileClient::Query(uri, predicates, columns, errCode);
 }
 
@@ -380,33 +380,6 @@ napi_status ParseArgGetRequestOption(napi_env env, napi_value arg, DeliveryMode 
     CHECK_STATUS_RET(GetDeliveryMode(env, arg, "deliveryMode", deliveryMode), "Failed to parse deliveryMode");
     CHECK_STATUS_RET(GetSourceMode(env, arg, "sourceMode", sourceMode), "Failed to parse sourceMode");
     return napi_ok;
-}
-
-napi_status ParseArgGetCallingPackageName(napi_env env, napi_value arg, std::string &callingPackageName)
-{
-    if (arg == nullptr) {
-        NAPI_ERR_LOG("arg is invalid");
-        return napi_invalid_arg;
-    }
-    auto context = AbilityRuntime::GetStageModeContext(env, arg);
-    if (context == nullptr) {
-        NAPI_ERR_LOG("Failed to get context");
-        return napi_invalid_arg;
-    }
-    auto abilityContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::AbilityContext>(context);
-    if (abilityContext != nullptr) {
-        auto abilityInfo = abilityContext->GetAbilityInfo();
-        callingPackageName = abilityInfo->bundleName;
-        return napi_ok;
-    }
-    auto extensionContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::UIExtensionContext>(context);
-    if (extensionContext != nullptr) {
-        auto abilityInfo = extensionContext->GetAbilityInfo();
-        callingPackageName = abilityInfo->bundleName;
-        return napi_ok;
-    }
-    NAPI_ERR_LOG("abilityContext invalid");
-    return napi_invalid_arg;
 }
 
 napi_status ParseArgGetPhotoAsset(napi_env env, napi_value arg, int &fileId, std::string &uri,
@@ -510,8 +483,7 @@ void MediaAssetManagerNapi::RegisterTaskObserver(napi_env env, MediaAssetManager
 
     InsertDataHandler(NotifyMode::WAIT_FOR_HIGH_QUALITY, env, asyncContext);
 
-    MediaAssetManagerNapi::ProcessImage(asyncContext->fileId, static_cast<int32_t>(asyncContext->deliveryMode),
-        asyncContext->callingPkgName);
+    MediaAssetManagerNapi::ProcessImage(asyncContext->fileId, static_cast<int32_t>(asyncContext->deliveryMode));
 }
 
 napi_status MediaAssetManagerNapi::ParseRequestMediaArgs(napi_env env, napi_callback_info info,
@@ -522,11 +494,6 @@ napi_status MediaAssetManagerNapi::ParseRequestMediaArgs(napi_env env, napi_call
     if (asyncContext->argc != ARGS_FOUR && asyncContext->argc != ARGS_FIVE) {
         NAPI_ERR_LOG("requestMedia argc error");
         NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia argc invalid");
-        return napi_invalid_arg;
-    }
-    if (ParseArgGetCallingPackageName(env, asyncContext->argv[PARAM0], asyncContext->callingPkgName) != napi_ok) {
-        NAPI_ERR_LOG("requestMedia ParseArgGetCallingPackageName error");
-        NapiError::ThrowError(env, OHOS_INVALID_PARAM_CODE, "requestMedia ParseArgGetPhotoAsset error");
         return napi_invalid_arg;
     }
     if (ParseArgGetPhotoAsset(env, asyncContext->argv[PARAM1], asyncContext->fileId, asyncContext->photoUri,
@@ -1008,9 +975,6 @@ static napi_value ParseArgsForRequestMovingPhoto(napi_env env, size_t argc, cons
     unique_ptr<MediaAssetManagerAsyncContext> &context)
 {
     CHECK_COND_WITH_MESSAGE(env, (argc == ARGS_FOUR), "Invalid number of arguments");
-    CHECK_COND_WITH_MESSAGE(env,
-        (ParseArgGetCallingPackageName(env, argv[PARAM0], context->callingPkgName) == napi_ok),
-        "Failed to parse calling context");
 
     FileAssetNapi *fileAssetNapi = nullptr;
     CHECK_COND_WITH_MESSAGE(env,
@@ -1190,9 +1154,6 @@ static napi_value ParseArgsForLoadMovingPhoto(napi_env env, size_t argc, const n
     unique_ptr<MediaAssetManagerAsyncContext> &context)
 {
     CHECK_COND_WITH_MESSAGE(env, (argc == ARGS_THREE), "Invalid number of arguments");
-    CHECK_COND_WITH_MESSAGE(env,
-        (ParseArgGetCallingPackageName(env, argv[PARAM0], context->callingPkgName) == napi_ok),
-        "Failed to parse calling context");
 
     std::string imageFileUri;
     CHECK_COND_WITH_MESSAGE(env,
@@ -1306,7 +1267,6 @@ void MediaAssetManagerNapi::JSRequestExecute(napi_env env, void *data)
         Uri logMovingPhotoUri(uri);
         DataShare::DataShareValuesBucket valuesBucket;
         string result;
-        valuesBucket.Put("package_name", context->callingPkgName);
         valuesBucket.Put("adapted", context->returnDataType == ReturnDataType::TYPE_MOVING_PHOTO);
         UserFileClient::InsertExt(logMovingPhotoUri, valuesBucket, result);
     }
