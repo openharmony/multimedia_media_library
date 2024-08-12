@@ -683,7 +683,8 @@ bool ThumbnailUtils::QueryNoThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailDa
     return true;
 }
 
-bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos, int &err)
+bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<ThumbnailData> &infos,
+    bool isWifiConnected, int &err)
 {
     vector<string> column = {
         MEDIA_DATA_DB_ID,
@@ -695,6 +696,9 @@ bool ThumbnailUtils::QueryUpgradeThumbnailInfos(ThumbRdbOpt &opts, vector<Thumbn
     RdbPredicates rdbPredicates(opts.table);
     rdbPredicates.EqualTo(PhotoColumn::PHOTO_THUMBNAIL_READY, std::to_string(
         static_cast<int32_t>(ThumbnailReady::THUMB_UPGRADE)));
+    if (!isWifiConnected) {
+        rdbPredicates.NotEqualTo(PhotoColumn::PHOTO_POSITION, "2");
+    }
     rdbPredicates.OrderByDesc(MEDIA_DATA_DB_DATE_ADDED);
     shared_ptr<ResultSet> resultSet = opts.store->QueryByStep(rdbPredicates, column);
     if (!CheckResultSetCount(resultSet, err)) {

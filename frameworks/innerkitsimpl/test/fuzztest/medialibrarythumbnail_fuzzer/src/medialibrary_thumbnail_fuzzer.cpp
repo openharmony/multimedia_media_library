@@ -54,7 +54,7 @@ static void ThumhnailTest(const uint8_t* data, size_t size)
     Media::ThumbnailService::GetInstance()->CreateAstcBatchOnDemand(rdbPredicate, FuzzInt32(data));
     Media::ThumbnailService::GetInstance()->CancelAstcBatchTask(FuzzInt32(data));
     Media::ThumbnailService::GetInstance()->GenerateThumbnailBackground();
-    Media::ThumbnailService::GetInstance()->UpgradeThumbnailBackground();
+    Media::ThumbnailService::GetInstance()->UpgradeThumbnailBackground(false);
     Media::ThumbnailService::GetInstance()->RestoreThumbnailDualFrame();
     Media::ThumbnailService::GetInstance()->InterruptBgworker();
     Media::ThumbnailService::GetInstance()->ReleaseService();
@@ -71,7 +71,7 @@ static void ThumbnailHelperTest(const uint8_t* data, size_t size)
     };
     Media::ThumbnailGenerateHelper::GetThumbnailPixelMap(opts,
         static_cast<Media::ThumbnailType>(FuzzInt32(data)));
-    Media::ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts);
+    Media::ThumbnailGenerateHelper::UpgradeThumbnailBackground(opts, false);
 }
 
 static void ThumbnailSourceTest(const uint8_t* data, size_t size)
