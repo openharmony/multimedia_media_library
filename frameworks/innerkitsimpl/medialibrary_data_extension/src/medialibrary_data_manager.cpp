@@ -902,7 +902,7 @@ int32_t MediaLibraryDataManager::GenerateThumbnailBackground()
     return thumbnailService_->GenerateThumbnailBackground();
 }
 
-int32_t MediaLibraryDataManager::UpgradeThumbnailBackground()
+int32_t MediaLibraryDataManager::UpgradeThumbnailBackground(bool isWifiConnected)
 {
     shared_lock<shared_mutex> sharedLock(mgrSharedMutex_);
     if (refCnt_.load() <= 0) {
@@ -913,7 +913,7 @@ int32_t MediaLibraryDataManager::UpgradeThumbnailBackground()
     if (thumbnailService_ == nullptr) {
         return E_THUMBNAIL_SERVICE_NULLPTR;
     }
-    return thumbnailService_->UpgradeThumbnailBackground();
+    return thumbnailService_->UpgradeThumbnailBackground(isWifiConnected);
 }
 
 int32_t MediaLibraryDataManager::RestoreThumbnailDualFrame()

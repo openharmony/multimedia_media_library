@@ -1320,7 +1320,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, T
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_new_002, TestSize.Level0)
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
-    auto ret = mediaLibraryDataManager->UpgradeThumbnailBackground();
+    auto ret = mediaLibraryDataManager->UpgradeThumbnailBackground(false);
     EXPECT_EQ(ret<=0, true);
 }
 
