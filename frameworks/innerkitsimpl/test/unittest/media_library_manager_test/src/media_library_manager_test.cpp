@@ -34,6 +34,7 @@
 #include "result_set_utils.h"
 #include "scanner_utils.h"
 #include "system_ability_definition.h"
+#include "thumbnail_const.h"
 
 using namespace std;
 using namespace OHOS;
@@ -1872,6 +1873,146 @@ HWTEST_F(MediaLibraryManagerTest, MediaLibraryManager_CheckPhotoUriPermission_te
     auto ret = mediaLibraryManager->CheckPhotoUriPermission(tokenId, appid, uris, resultSet, permissionFlag);
     EXPECT_EQ(ret, E_ERR);
     MEDIA_INFO_LOG("MediaLibraryManager_CheckPhotoUriPermission_test_015 exit");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetUriFromFilePath_001, TestSize.Level0)
+{
+    string filePath;
+    string file = "/path/to/file";
+    Uri fileUri(file);
+    string userId;
+    auto result = manager.GetUriFromFilePath(filePath, fileUri, userId);
+    EXPECT_EQ(result, E_INVALID_PATH);
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetUriFromFilePath_002, TestSize.Level0)
+{
+    string filePath = PRE_PATH_VALUES;
+    string file = "/path/to/file";
+    Uri fileUri(file);
+    string userId;
+    auto result = manager.GetUriFromFilePath(filePath, fileUri, userId);
+    EXPECT_EQ(result, E_CHECK_ROOT_DIR_FAIL);
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_001, TestSize.Level0)
+{
+    std::string path = "/storage/cloud/";
+    Size size;
+    bool isAstc = true;
+    auto result = manager.GetSandboxPath(path, size, isAstc);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_001, TestSize.Level0)
+{
+    std::string path = "/storage/cloud/";
+    Size size;
+    bool isAstc = true;
+    auto result = manager.GetSandboxPath(path, size, isAstc);
+    EXPECT_EQ(result, "");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_002, TestSize.Level0)
+{
+    std::string path = ROOT_MEDIA_DIR;
+    Size size;
+    size.width = DEFAULT_ORIGINAL;
+    size.height = DEFAULT_ORIGINAL;
+    bool isAstc = false;
+    auto result = manager.GetSandboxPath(path, size, isAstc);
+    EXPECT_EQ(result, ROOT_SANDBOX_DIR + ".thumbs/" + "/LCD.jpg");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_003, TestSize.Level0)
+{
+    std::string path = ROOT_MEDIA_DIR;
+    Size size;
+    size.width = 256;
+    size.height = 768;
+    bool isAstc = false;
+    auto result = manager.GetSandboxPath(path, size, isAstc);
+    EXPECT_NE(result, ROOT_SANDBOX_DIR + ".thumbs/" + "/LCD.jpg");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_004, TestSize.Level0)
+{
+    std::string path = ROOT_MEDIA_DIR;
+    Size size;
+    size.width = 768;
+    size.height = 768;
+    bool isAstc = false;
+    auto result = manager.GetSandboxPath(path, size, isAstc);
+    EXPECT_EQ(result, ROOT_SANDBOX_DIR + ".thumbs/" + "/LCD.jpg");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetUriIdPrefix_001, TestSize.Level0)
+{
+    std::string fileUri = "";
+    manager.GetUriIdPrefix(fileUri);
+    EXPECT_EQ(fileUri, "");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetUriIdPrefix_002, TestSize.Level0)
+{
+    std::string fileUri = "/Photo";
+    manager.GetUriIdPrefix(fileUri);
+    EXPECT_EQ(fileUri, "/Photo");
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetUriIdPrefix_003, TestSize.Level0)
+{
+    std::string fileUri = "a/b/Photo";
+    manager.GetUriIdPrefix(fileUri);
+    EXPECT_EQ(fileUri, "a");
+}
+
+HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_001, TestSize.Level0)
+{
+    Size imageSize;
+    imageSize.height = 0;
+    Size targetSize;
+    targetSize.height = 0;
+    auto ret = manager.IfSizeEqualsRatio(imageSize, targetSize);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_002, TestSize.Level0)
+{
+    Size imageSize;
+    imageSize.height = 10;
+    imageSize.width = 10;
+    Size targetSize;
+    targetSize.height = 20;
+    targetSize.width = 90000;
+    auto ret = manager.IfSizeEqualsRatio(imageSize, targetSize);
+    EXPECT_EQ(ret, false);
+}
+
+HWTEST_F(MediaLibraryManagerTest, IfSizeEqualsRatio_003, TestSize.Level0)
+{
+    Size imageSize;
+    imageSize.height = 100;
+    imageSize.width = 100;
+    Size targetSize;
+    targetSize.height = 300;
+    targetSize.width = 300;
+    auto ret = manager.IfSizeEqualsRatio(imageSize, targetSize);
+    EXPECT_EQ(ret, true);
+}
+
+HWTEST_F(MediaLibraryManagerTest, OpenReadOnlyAppSandboxVideo_001, TestSize.Level0)
+{
+    string uri;
+    auto ret = manager.OpenReadOnlyAppSandboxVideo(uri);
+    EXPECT_EQ(ret, -1);
+}
+
+HWTEST_F(MediaLibraryManagerTest, GetSandboxMovingPhotoTime_001, TestSize.Level0)
+{
+    string uri;
+    auto ret = manager.GetSandboxMovingPhotoTime(uri);
+    EXPECT_EQ(ret, -1);
 }
 } // namespace Media
 } // namespace OHOS
