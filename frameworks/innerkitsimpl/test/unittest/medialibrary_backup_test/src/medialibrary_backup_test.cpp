@@ -32,6 +32,9 @@
 #include "upgrade_restore.h"
 #include "media_file_utils.h"
 #include "medialibrary_errno.h"
+#include "medialibrary_rdb_utils.h"
+#include "medialibrary_unistore_manager.h"
+#include "medialibrary_unittest_utils.h"
 #undef private
 #undef protected
 
@@ -51,7 +54,7 @@ const std::string TEST_PATH_PREFIX = "/TestPrefix";
 const std::string TEST_RELATIVE_PATH = "/Pictures/Test/test.jpg";
 const std::string TEST_CLOUD_PATH_PREFIX = "/storage/cloud/files/Photo/1/";
 
-const int EXPECTED_NUM = 30;
+const int EXPECTED_NUM = 34;
 const int EXPECTED_OREINTATION = 270;
 const int TEST_LOCAL_MEDIA_ID = 12345;
 const int TEST_PREFIX_LEVEL = 4;
@@ -86,6 +89,9 @@ const vector<string> CLEAR_SQLS = {
         to_string(PhotoAlbumSubType::SHOOTING_MODE),
     "DELETE FROM " + ANALYSIS_PHOTO_MAP_TABLE,
     "DELETE FROM " + AudioColumn::AUDIOS_TABLE,
+    "DELETE FROM tab_analysis_image_face",
+    "DELETE FROM tab_analysis_face_tag",
+    "DELETE FROM tab_analysis_total",
 };
 
 const string PhotosOpenCall::CREATE_PHOTOS = string("CREATE TABLE IF NOT EXISTS Photos ") +
@@ -2043,6 +2049,38 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_path_pos_by_prefix_lev
     GTEST_LOG_(INFO) << "medialib_backup_test_get_path_pos_by_prefix_level end";
 }
 
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_duplicate_number, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_update_duplicate_number start";
+    std::unique_ptr<UpgradeRestore> upgrade =
+        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
+    upgrade->UpdateDuplicateNumber(MediaType::MEDIA_TYPE_IMAGE);
+    EXPECT_GT(upgrade->migratePhotoDuplicateNumber_, 0);
+    upgrade->UpdateDuplicateNumber(MediaType::MEDIA_TYPE_VIDEO);
+    EXPECT_GT(upgrade->migrateVideoDuplicateNumber_, 0);
+    upgrade->UpdateDuplicateNumber(MediaType::MEDIA_TYPE_AUDIO);
+    EXPECT_GT(upgrade->migrateAudioDuplicateNumber_, 0);
+    uint64_t photoBefore = upgrade->migratePhotoDuplicateNumber_;
+    uint64_t videoBefore = upgrade->migrateVideoDuplicateNumber_;
+    uint64_t audioBefore = upgrade->migrateAudioDuplicateNumber_;
+    upgrade->UpdateDuplicateNumber(-1);
+    EXPECT_EQ(upgrade->migratePhotoDuplicateNumber_, photoBefore);
+    EXPECT_EQ(upgrade->migrateVideoDuplicateNumber_, videoBefore);
+    EXPECT_EQ(upgrade->migrateAudioDuplicateNumber_, audioBefore);
+    GTEST_LOG_(INFO) << "medialib_backup_test_update_duplicate_number end";
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause start";
+    std::string whereClause;
+    BackupDatabaseUtils::UpdateSDWhereClause(whereClause, true);
+    EXPECT_EQ(whereClause.empty(), true);
+    BackupDatabaseUtils::UpdateSDWhereClause(whereClause, false);
+    EXPECT_EQ(whereClause.empty(), false);
+    GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause end";
+}
+
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_001 start";
@@ -2146,42 +2184,10 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_landmark_valid_005, Tes
     GTEST_LOG_(INFO) << "medialib_backup_test_is_landmark_valid_005 end";
 }
 
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_duplicate_number, TestSize.Level0)
-{
-    GTEST_LOG_(INFO) << "medialib_backup_test_update_duplicate_number start";
-    std::unique_ptr<UpgradeRestore> upgrade =
-        std::make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, DUAL_FRAME_CLONE_RESTORE_ID);
-    upgrade->UpdateDuplicateNumber(MediaType::MEDIA_TYPE_IMAGE);
-    EXPECT_GT(upgrade->migratePhotoDuplicateNumber_, 0);
-    upgrade->UpdateDuplicateNumber(MediaType::MEDIA_TYPE_VIDEO);
-    EXPECT_GT(upgrade->migrateVideoDuplicateNumber_, 0);
-    upgrade->UpdateDuplicateNumber(MediaType::MEDIA_TYPE_AUDIO);
-    EXPECT_GT(upgrade->migrateAudioDuplicateNumber_, 0);
-    uint64_t photoBefore = upgrade->migratePhotoDuplicateNumber_;
-    uint64_t videoBefore = upgrade->migrateVideoDuplicateNumber_;
-    uint64_t audioBefore = upgrade->migrateAudioDuplicateNumber_;
-    upgrade->UpdateDuplicateNumber(-1);
-    EXPECT_EQ(upgrade->migratePhotoDuplicateNumber_, photoBefore);
-    EXPECT_EQ(upgrade->migrateVideoDuplicateNumber_, videoBefore);
-    EXPECT_EQ(upgrade->migrateAudioDuplicateNumber_, audioBefore);
-    GTEST_LOG_(INFO) << "medialib_backup_test_update_duplicate_number end";
-}
-
-HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_update_sd_where_clause, TestSize.Level0)
-{
-    GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause start";
-    std::string whereClause;
-    BackupDatabaseUtils::UpdateSDWhereClause(whereClause, true);
-    EXPECT_EQ(whereClause.empty(), true);
-    BackupDatabaseUtils::UpdateSDWhereClause(whereClause, false);
-    EXPECT_EQ(whereClause.empty(), false);
-    GTEST_LOG_(INFO) << "medialib_backup_test_update_sd_where_clause end";
-}
-
-void ExecuteSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sqls)
+void ExecuteSqls(shared_ptr<RdbStore> rdbStore, const vector<string> &sqls)
 {
     for (const auto &sql : sqls) {
-        int32_t errCode = store->ExecuteSql(sql);
+        int32_t errCode = rdbStore->ExecuteSql(sql);
         if (errCode == E_OK) {
             continue;
         }
@@ -2189,36 +2195,37 @@ void ExecuteSqls(shared_ptr<NativeRdb::RdbStore> store, const vector<string> &sq
     }
 }
 
-void ClearData()
+void ClearData(shared_ptr<RdbStore> rdbStore)
 {
     MEDIA_INFO_LOG("Start clear data");
-    ExecuteSqls(photosStorePtr, CLEAR_SQLS);
-    MediaLibraryRdbUtils::UpdateAllAlbums(photosStorePtr);
+    ExecuteSqls(rdbStore, CLEAR_SQLS);
+    MediaLibraryRdbUtils::UpdateAllAlbums(rdbStore);
     MEDIA_INFO_LOG("End clear data");
 }
 
 void InsertPhoto(unique_ptr<UpgradeRestore> &upgrade, vector<FileInfo> &fileInfos)
 {
     // Photo
-    for (const auto fileInfo : fileInfos) {
-        string cloudPath = TEST_CLOUD_PATH_PREFIX + fileInfo.displayName;
-        const NativeRdb::ValuesBucket values = upgrade->GetInsertValue(fileInfo, cloudPath, SourceType::GALLERY);
+    for (auto &fileInfo : fileInfos) {
+        fileInfo.cloudPath = TEST_CLOUD_PATH_PREFIX + fileInfo.displayName;
+        ValuesBucket values = upgrade->GetInsertValue(fileInfo, fileInfo.cloudPath, SourceType::GALLERY);
         int64_t rowNum = 0;
         if (upgrade->mediaLibraryRdb_->Insert(rowNum, PhotoColumn::PHOTOS_TABLE, values) != E_OK) {
-            MEDIA_ERR_LOG("InsertSql failed, filePath = %{private}s", fileInfo.filePath.c_str());
+            MEDIA_ERR_LOG("InsertSql failed, filePath = %{public}s", fileInfo.filePath.c_str());
         }
     }
     // Photo related
-    InsertPhotoRelated(fileInfos, SourceType::GALLERY);
+    upgrade->InsertPhotoRelated(fileInfos, SourceType::GALLERY);
 }
 
 void RestorePhotoWithPortrait(unique_ptr<UpgradeRestore> &upgrade)
 {
-    vector<FileInfo> fileInfos = upgrade->QueryFileInfos(upgrade->sceneCode_, 0);
+    vector<FileInfo> fileInfos = upgrade->QueryFileInfos(0);
     InsertPhoto(upgrade, fileInfos);
+    upgrade->UpdateFaceAnalysisStatus();
 }
 
-void QueryInt(shared_ptr<NativeRdb::RdbStore> rdbStore, const string &querySql, const string &columnName,
+void QueryInt(shared_ptr<RdbStore> rdbStore, const string &querySql, const string &columnName,
     int32_t &result)
 {
     ASSERT_NE(rdbStore, nullptr);
@@ -2229,58 +2236,73 @@ void QueryInt(shared_ptr<NativeRdb::RdbStore> rdbStore, const string &querySql, 
     MEDIA_INFO_LOG("Query %{public}s result: %{public}d", querySql.c_str(), result);
 }
 
-void QueryPortraitAlbumCount(int32_t &result)
+void QueryPortraitAlbumCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
 {
-    string querySql = "SELECT count(1) AS count FROM AnalysisAlbum WHERE album_type = 4096 AND \
+    string querySql = "SELECT count(DISTINCT group_tag) AS count FROM AnalysisAlbum WHERE album_type = 4096 AND \
         album_subtype = 4102";
-    QueryInt(photosStorePtr, querySql, "count", result);
+    QueryInt(rdbStore, querySql, "count", result);
 }
 
-void QueryPortraitTagCount()
+void QueryPortraitTagCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
 {
     string querySql = "SELECT count(1) as count FROM tab_analysis_face_tag";
-    QueryInt(photosStorePtr, querySql, "count", result);
+    QueryInt(rdbStore, querySql, "count", result);
 }
 
-void QueryPortraitPhotoCount()
+void QueryPortraitPhotoCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
 {
     string querySql = "SELECT count(DISTINCT file_id) as count FROM tab_analysis_image_face";
-    QueryInt(photosStorePtr, querySql, "count", result);
+    QueryInt(rdbStore, querySql, "count", result);
 }
 
-void QueryPortraitFaceCount()
+void QueryPortraitFaceCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
 {
     string querySql = "SELECT count(1) as count FROM tab_analysis_image_face";
-    QueryInt(photosStorePtr, querySql, "count", result);
+    QueryInt(rdbStore, querySql, "count", result);
+}
+
+void QueryPortraitTotalCount(shared_ptr<RdbStore> rdbStore, int32_t &result)
+{
+    string querySql = "SELECT count(1) as count FROM tab_analysis_total WHERE face > 0";
+    QueryInt(rdbStore, querySql, "count", result);
 }
 
 HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_portrait, TestSize.Level0)
 {
     MEDIA_INFO_LOG("medialib_backup_test_restore_portrait start");
-    ClearData();
+    MediaLibraryUnitTestUtils::Init();
+    auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw()->GetRaw();
+    ASSERT_NE(rdbStore, nullptr);
     unique_ptr<UpgradeRestore> upgrade =
         make_unique<UpgradeRestore>(GALLERY_APP_NAME, MEDIA_APP_NAME, UPGRADE_RESTORE_ID);
-    upgrade->mediaLibraryRdb_ = photosStorePtr;
+    upgrade->galleryRdb_ = restoreService->galleryRdb_;
+    upgrade->mediaLibraryRdb_ = rdbStore;
+    upgrade->filePath_ = TEST_UPGRADE_FILE_DIR;
+    ClearData(rdbStore);
 
     // restore portrait album
     upgrade->RestoreFromGalleryPortraitAlbum();
     int32_t albumCount = 0;
-    QueryPortraitAlbumCount(albumCount);
+    QueryPortraitAlbumCount(rdbStore, albumCount);
     EXPECT_EQ(albumCount, TEST_PORTRAIT_ALBUM_COUNT);
     int32_t tagCount = 0;
-    QueryPortraitTagCount(tagCount);
+    QueryPortraitTagCount(rdbStore, tagCount);
     EXPECT_EQ(tagCount, TEST_PORTRAIT_TAG_COUNT);
     EXPECT_EQ(static_cast<int32_t>(upgrade->portraitAlbumIdMap_.size()), TEST_PORTRAIT_TAG_COUNT);
 
     // restore face analysis data
     RestorePhotoWithPortrait(upgrade);
     int32_t photoCount = 0;
-    QueryPortraitPhotoCount(photoCount);
+    QueryPortraitPhotoCount(rdbStore, photoCount);
     EXPECT_EQ(photoCount, TEST_PORTRAIT_PHOTO_COUNT);
     int32_t faceCount = 0;
-    QueryPortraitFaceCount(faceCount);
+    QueryPortraitFaceCount(rdbStore, faceCount);
     EXPECT_EQ(faceCount, TEST_PORTRAIT_FACE_COUNT);
-    MEDIA_INFO_LOG("medialib_backup_test_restore_portrait start");
+    int32_t totalCount = 0;
+    QueryPortraitTotalCount(rdbStore, totalCount);
+    EXPECT_EQ(totalCount, TEST_PORTRAIT_PHOTO_COUNT);
+    ClearData(rdbStore);
+    MEDIA_INFO_LOG("medialib_backup_test_restore_portrait end");
 }
 } // namespace Media
 } // namespace OHOS
