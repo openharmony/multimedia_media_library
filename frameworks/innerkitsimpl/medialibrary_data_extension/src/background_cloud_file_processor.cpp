@@ -41,14 +41,14 @@ namespace OHOS {
 namespace Media {
 using namespace FileManagement::CloudSync;
 
-static constexpr int32_t DOWNLOAD_BATCH_SIZE = 5;
-static constexpr int32_t UPDATE_BATCH_SIZE = 3;
+static constexpr int32_t DOWNLOAD_BATCH_SIZE = 2;
+static constexpr int32_t UPDATE_BATCH_SIZE = 1;
 
 // The task can be performed only when the ratio of available storage capacity reaches this value
 static constexpr double PROPER_DEVICE_STORAGE_CAPACITY_RATIO = 0.55;
 
-int32_t BackgroundCloudFileProcessor::processInterval_ = 60 * 1000;  // 1 minute
-int32_t BackgroundCloudFileProcessor::downloadDuration_ = 20 * 1000; // 20 seconds
+int32_t BackgroundCloudFileProcessor::processInterval_ = PROCESS_INTERVAL;  // 5 minute
+int32_t BackgroundCloudFileProcessor::downloadDuration_ = DOWNLOAD_DURATION; // 10 seconds
 recursive_mutex BackgroundCloudFileProcessor::mutex_;
 Utils::Timer BackgroundCloudFileProcessor::timer_("background_cloud_file_processor");
 uint32_t BackgroundCloudFileProcessor::startTimerId_ = 0;

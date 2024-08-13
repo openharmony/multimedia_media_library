@@ -154,8 +154,8 @@ void BackgroundCloudFileProcessorTest::TearDownTestCase()
 {
     MEDIA_INFO_LOG("BackgroundCloudFileProcessorTest TearDownTestCase");
     ClearTables();
-    BackgroundCloudFileProcessor::processInterval_ = 60000;  // 60000 milliseconds
-    BackgroundCloudFileProcessor::downloadDuration_ = 20000; // 20000 milliseconds
+    BackgroundCloudFileProcessor::processInterval_ = PROCESS_INTERVAL;
+    BackgroundCloudFileProcessor::downloadDuration_ = DOWNLOAD_DURATION;
 }
 
 void BackgroundCloudFileProcessorTest::SetUp()
@@ -199,8 +199,8 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     MEDIA_INFO_LOG("background_cloud_file_processor_test_002 Start");
     PreparePhotos(5, MEDIA_TYPE_IMAGE);
     PreparePhotos(10, MEDIA_TYPE_IMAGE);
-    vector<string> lastBatch = PreparePhotos(5, MEDIA_TYPE_IMAGE);
-    EXPECT_EQ(QueryPhotosCount(), 20);
+    vector<string> lastBatch = PreparePhotos(2, MEDIA_TYPE_IMAGE);
+    EXPECT_EQ(QueryPhotosCount(), 17);
 
     EXPECT_EQ(BackgroundCloudFileProcessor::processInterval_, 50);
     BackgroundCloudFileProcessor::StartTimer();
@@ -285,7 +285,7 @@ HWTEST_F(BackgroundCloudFileProcessorTest, background_cloud_file_processor_test_
     BackgroundCloudFileProcessor::StartTimer();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(80));
-    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_.size(), 5);
+    EXPECT_EQ(BackgroundCloudFileProcessor::curDownloadPaths_.size(), 2);
 
     BackgroundCloudFileProcessor::StopTimer();
     MEDIA_INFO_LOG("background_cloud_file_processor_test_006 End");

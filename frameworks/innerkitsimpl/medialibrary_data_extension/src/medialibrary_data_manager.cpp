@@ -527,7 +527,7 @@ static int32_t LogMovingPhoto(MediaLibraryCommand &cmd, const DataShareValuesBuc
     if (!inValid) {
         MEDIA_ERR_LOG("Invalid adapted value");
     }
-    string packageName = string(dataShareValue.Get("package_name", inValid));
+    string packageName = MediaLibraryBundleManager::GetInstance()->GetClientBundleName();
     if (!inValid) {
         MEDIA_ERR_LOG("Invalid package name");
     } else if (packageName.empty()) {

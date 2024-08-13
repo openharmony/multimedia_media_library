@@ -171,9 +171,7 @@ void MediaDataShareExtAbility::OnStart(const AAFwk::Want &want)
 
     DfxManager::GetInstance();
     auto scannerManager = MediaScannerManager::GetInstance();
-    if (scannerManager != nullptr) {
-        scannerManager->Start();
-    } else {
+    if (scannerManager == nullptr) {
         DfxReporter::ReportStartResult(DfxType::START_SCANNER_FAIL, 0, startTime);
         DelayedSingleton<AppExecFwk::AppMgrClient>::GetInstance()->KillApplicationSelf();
         return;
