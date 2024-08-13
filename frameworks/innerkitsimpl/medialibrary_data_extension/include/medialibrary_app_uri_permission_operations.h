@@ -27,6 +27,7 @@
 
 namespace OHOS {
 namespace Media {
+#define EXPORT __attribute__ ((visibility ("default")))
 
 EXPORT const std::unordered_map<std::string, int> APP_URI_PERMISSION_MEMBER_MAP = {
     {AppUriPermissionColumn::ID, MEMBER_TYPE_INT32},
@@ -38,16 +39,16 @@ EXPORT const std::unordered_map<std::string, int> APP_URI_PERMISSION_MEMBER_MAP 
 
 class MediaLibraryAppUriPermissionOperations {
 public:
-    static const int ERROR;
-    static const int SUCCEED;
-    static const int ALREADY_EXIST;
-    static const int NO_DATA;
+    EXPORT static const int ERROR;
+    EXPORT static const int SUCCEED;
+    EXPORT static const int ALREADY_EXIST;
+    EXPORT static const int NO_DATA;
 
-    static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
-    static int32_t BatchInsert(MediaLibraryCommand &cmd,
+    EXPORT static int32_t HandleInsertOperation(MediaLibraryCommand &cmd);
+    EXPORT static int32_t BatchInsert(MediaLibraryCommand &cmd,
         const std::vector<DataShare::DataShareValuesBucket> &values);
-    static int32_t DeleteOperation(NativeRdb::RdbPredicates &predicates);
-    static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryOperation(
+    EXPORT static int32_t DeleteOperation(NativeRdb::RdbPredicates &predicates);
+    EXPORT static std::shared_ptr<OHOS::NativeRdb::ResultSet> QueryOperation(
         DataShare::DataSharePredicates &predicates, std::vector<std::string> &fetchColumns);
 private:
     /**
