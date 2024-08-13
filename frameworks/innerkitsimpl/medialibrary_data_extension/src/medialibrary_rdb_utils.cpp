@@ -994,8 +994,7 @@ static inline void SetCoverSatisfied(const string &fileId, const vector<string> 
 static inline bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string fileId,
     int32_t isCoverSatisfied, const vector<string> &fileIds)
 {
-    return isCoverSatisfied == static_cast<int32_t>(CoverSatisfiedType::NO_SETTING) || fileIds.empty() ||
-        find(fileIds.begin(), fileIds.end(), fileId) != fileIds.end() || !IsCoverValid(rdbStore, fileId);
+    return isCoverSatisfied == static_cast<int32_t>(CoverSatisfiedType::NO_SETTING) || !IsCoverValid(rdbStore, fileId);
 }
 
 static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -1153,32 +1152,25 @@ static int32_t UpdatePortraitAlbumIfNeeded(const shared_ptr<RdbStore> &rdbStore,
     }
 
     ValuesBucket values;
+    int32_t albumId = GetAlbumId(albumResult);
     int setRet = SetPortraitUpdateValues(rdbStore, albumResult, fileIds, values);
     if (setRet < 0) {
-        MEDIA_ERR_LOG(
-            "Failed to set portrait album update values, album id: %{public}d",
-            GetAlbumId(albumResult));
+        MEDIA_ERR_LOG("Failed to set portrait album update values! album id: %{public}d, err: %{public}d", albumId,
+            setRet);
         return setRet;
     }
-    string albumId = to_string(GetAlbumId(albumResult));
     if (values.IsEmpty()) {
         return E_SUCCESS;
     }
 
     RdbPredicates predicates(ANALYSIS_ALBUM_TABLE);
-    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, albumId);
+    predicates.EqualTo(PhotoAlbumColumns::ALBUM_ID, to_string(albumId));
     int32_t changedRows = 0;
     int updateRet = rdbStore->Update(changedRows, values, predicates);
     if (updateRet != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("Failed to update album count and cover! album id: %{public}d",
-            GetAlbumId(albumResult));
-        if (setRet == E_NEED_UPDATE_ALBUM_COVER_URI) {
-            MediaAnalysisHelper::StartPortraitCoverSelectionAsync(albumId);
-        }
+        MEDIA_ERR_LOG("Failed to update album count and cover! album id: %{public}d, err: %{public}d", albumId,
+            updateRet);
         return updateRet;
-    }
-    if (setRet == E_NEED_UPDATE_ALBUM_COVER_URI) {
-        MediaAnalysisHelper::StartPortraitCoverSelectionAsync(albumId);
     }
     return E_SUCCESS;
 }
