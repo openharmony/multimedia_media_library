@@ -458,7 +458,24 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
 
     return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
 }
-
+static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool isAstc)
+{
+    int32_t fd = -1;
+    if (!sandboxPath.empty()) {
+        fd = open(sandboxPath.c_str(), O_RDONLY);
+        if (fd < 0 && isAstc) {
+            string suffixStr = "THM_ASTC.astc";
+            size_t thmIdx = sandboxPath.find(suffixStr);
+            if (thmIdx != std::string::npos) {
+                sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
+                fd = open(sandboxPath.c_str(), O_RDONLY);
+            }
+        }
+    } else {
+        MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s", path.c_str());
+    }
+    return fd;
+}
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
 {
     // To ensure performance.
@@ -468,23 +485,11 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     }
     if (path.empty()) {
         MEDIA_ERR_LOG("OpenThumbnail path is empty");
-        return E_ERR;
+        Uri openUri(uriStr);
+        return sDataShareHelper_->OpenFile(openUri, "R");
     }
     string sandboxPath = GetSandboxPath(path, size, isAstc);
-    int fd = -1;
-    if (!sandboxPath.empty()) {
-        fd = open(sandboxPath.c_str(), O_RDONLY);
-        if (fd < 0 && isAstc) {
-            string suffixStr = "THM_ASTC.astc";
-            size_t thmIdx = sandboxPath.find(suffixStr);
-            if (thmIdx != string::npos) {
-                sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
-                fd = open(sandboxPath.c_str(), O_RDONLY);
-            }
-        }
-    } else {
-        MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s", path.c_str());
-    }
+    int32_t fd = GetFdFromSandbox(path, sandboxPath, isAstc);
     if (fd > 0) {
         return fd;
     }
@@ -493,7 +498,6 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     if (IsAsciiString(path)) {
         uriStr += "&" + THUMBNAIL_PATH + "=" + path;
     }
-
     Uri openUri(uriStr);
     return sDataShareHelper_->OpenFile(openUri, "R");
 }
