@@ -302,6 +302,7 @@ shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryAlbumOperation(
         return nullptr;
     }
 
+    RefreshAlbums(true);
     if (cmd.GetOprnObject() == OperationObject::MEDIA_VOLUME) {
         size_t cloudPhotoThumbnailVolume = QueryCloudPhotoThumbnailVolumn(uniStore);
         size_t localPhotoThumbnailVolumn = QueryLocalPhotoThumbnailVolumn(uniStore);
@@ -709,6 +710,7 @@ std::shared_ptr<NativeRdb::ResultSet> MediaLibraryAlbumOperations::QueryPortrait
 shared_ptr<ResultSet> MediaLibraryAlbumOperations::QueryPhotoAlbum(MediaLibraryCommand &cmd,
     const vector<string> &columns)
 {
+    RefreshAlbums(true);
     if (cmd.GetAbsRdbPredicates()->GetOrder().empty()) {
         cmd.GetAbsRdbPredicates()->OrderByAsc(PhotoAlbumColumns::ALBUM_ORDER);
     }
