@@ -238,6 +238,11 @@ public:
      */
     EXPORT int32_t GrantPhotoUriPermission(const string &appid, const std::vector<string> &uris,
         PhotoPermissionType photoPermissionType, HideSensitiveType hideSensitiveTpye);
+    EXPORT static std::string GetSandboxPath(const std::string &path, const Size &size, bool isAstc);
+    EXPORT static void GetUriIdPrefix(std::string &fileUri);
+    EXPORT static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize);
+    EXPORT static int32_t OpenReadOnlyAppSandboxVideo(const string& uri);
+    EXPORT static int64_t GetSandboxMovingPhotoTime(const string& uri);
 
 private:
     static int OpenThumbnail(std::string &uriStr, const std::string &path, const Size &size, bool isAstc);

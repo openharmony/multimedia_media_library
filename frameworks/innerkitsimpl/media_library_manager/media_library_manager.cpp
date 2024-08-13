@@ -440,7 +440,7 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     return E_SUCCESS;
 }
 
-static std::string GetSandboxPath(const std::string &path, const Size &size, bool isAstc)
+std::string MediaLibraryManager::GetSandboxPath(const std::string &path, const Size &size, bool isAstc)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
@@ -500,7 +500,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
  * eg. Input: file://media/Photo/10/IMG_xxx/01.jpg
  *     Output: file://media/Photo/10
  */
-static void GetUriIdPrefix(std::string &fileUri)
+void MediaLibraryManager::GetUriIdPrefix(std::string &fileUri)
 {
     MediaFileUri mediaUri(fileUri);
     if (!mediaUri.IsApi10()) {
@@ -530,7 +530,7 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
             return false;
         }
         uriParams.fileUri = uri.substr(0, index - 1);
-        GetUriIdPrefix(uriParams.fileUri);
+        MediaLibraryManager::GetUriIdPrefix(uriParams.fileUri);
         index += strlen("thumbnail");
         index = uri.find('/', index);
         if (index == string::npos) {
@@ -553,7 +553,7 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
             return false;
         }
         uriParams.fileUri = uri.substr(0, qIdx);
-        GetUriIdPrefix(uriParams.fileUri);
+        MediaLibraryManager::GetUriIdPrefix(uriParams.fileUri);
         auto &queryKey = mediaUri.GetQueryKeys();
         if (queryKey.count(THUMBNAIL_PATH) != 0) {
             uriParams.path = queryKey[THUMBNAIL_PATH];
@@ -571,7 +571,7 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
     return true;
 }
 
-static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
+bool MediaLibraryManager::IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
 {
     if (imageSize.height <= 0 || targetSize.height <= 0) {
         return false;
@@ -829,7 +829,7 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetAstc(const Uri &uri)
     return pixelmap;
 }
 
-static int32_t OpenReadOnlyAppSandboxVideo(const string& uri)
+int32_t MediaLibraryManager::OpenReadOnlyAppSandboxVideo(const string& uri)
 {
     std::vector<std::string> uris;
     if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
@@ -884,7 +884,7 @@ std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
     return uris[MOVING_PHOTO_IMAGE_POS];
 }
 
-static int64_t GetSandboxMovingPhotoTime(const string& uri)
+int64_t MediaLibraryManager::GetSandboxMovingPhotoTime(const string& uri)
 {
     vector<string> uris;
     if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
