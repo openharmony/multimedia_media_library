@@ -2115,7 +2115,7 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_get_landmarks_scale_004, T
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_004 start";
     int width = TEST_SIZE_MIN;
     int height = TEST_SIZE_MAX * TEST_SIZE_MULT_UNIT; // max len exceeds
-    float scale = BackupDatabaseUtils::GetLandmarksScale(width , height);
+    float scale = BackupDatabaseUtils::GetLandmarksScale(width, height);
     float expectedScale = 1.0 / TEST_SIZE_MULT_UNIT;
     EXPECT_EQ(scale, expectedScale);
     GTEST_LOG_(INFO) << "medialib_backup_test_get_landmarks_scale_004 end";
