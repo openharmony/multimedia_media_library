@@ -86,8 +86,7 @@ shared_ptr<OHOS::NativeRdb::ResultSet> MultiStagesCaptureManager::HandleMultiSta
         case OperationType::PROCESS_IMAGE: {
             int fileId = std::stoi(columns[0]); // 0 indicates file id
             int deliveryMode = std::stoi(columns[1]); // 1 indicates delivery mode
-            string appName = columns[2]; // 2 indicates app name
-            ProcessImage(fileId, deliveryMode, appName);
+            ProcessImage(fileId, deliveryMode);
             MultiStagesCaptureDfxTriggerRatio::GetInstance().SetTrigger(MultiStagesCaptureTriggerType::THIRD_PART);
             break;
         }
@@ -326,7 +325,7 @@ void MultiStagesCaptureManager::RestoreImages(const AbsRdbPredicates &predicates
     }
 }
 
-void MultiStagesCaptureManager::ProcessImage(int fileId, int deliveryMode, const std::string &appName)
+void MultiStagesCaptureManager::ProcessImage(int fileId, int deliveryMode)
 {
     string photoId = MultiStagesCaptureRequestTaskManager::GetProcessingPhotoId(fileId) ;
     if (photoId.size() == 0) {
