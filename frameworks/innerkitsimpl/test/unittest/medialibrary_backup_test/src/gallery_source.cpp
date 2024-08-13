@@ -40,9 +40,11 @@ const string GalleryOpenCall::CREATE_GALLERY_MERGE_TAG = string("CREATE TABLE IF
     "(tag_id TEXT, group_tag TEXT, tag_name TEXT, user_operation INTEGER, rename_operation TEXT);";
 
 const string GalleryOpenCall::CREATE_GALLERY_MERGE_FACE = string("CREATE TABLE IF NOT EXISTS merge_face ") +
-    "(hash TEXT, face_id TEXT, tag_id TEXT);";
+    "(hash TEXT, face_id TEXT, tag_id TEXT NOT NULL, scale_x REAL NOT NULL, scale_y REAL NOT NULL, " +
+    "scale_width REAL NOT NULL, scale_height REAL NOT NULL, landmarks BLOB, prob REAL, " +
+    "yaw REAL NOT NULL, pitch REAL NOT NULL, roll REAL NOT NULL, total_face INTEGER NOT NULL);";
 
-const string GalleryOpenCall::CREATE_GALLERY_FACE = string("CREATE TABLE IF NOT EXISTS merge_face ") +
+const string GalleryOpenCall::CREATE_GALLERY_FACE = string("CREATE TABLE IF NOT EXISTS face ") +
     "(hash TEXT, face_id TEXT, tag_id TEXT NOT NULL, scale_x REAL NOT NULL, scale_y REAL NOT NULL, " +
     "scale_width REAL NOT NULL, scale_height REAL NOT NULL, landmarks BLOB, prob REAL, " +
     "yaw REAL NOT NULL, pitch REAL NOT NULL, roll REAL NOT NULL, total_face INTEGER NOT NULL);";
@@ -326,56 +328,71 @@ void GallerySource::InitGalleryAlbumTwo()
 void GallerySource::InitGalleryMergeTag()
 {
     galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_tag (tag_id, group_tag, user_operation, \
-        rename_operation) VALUES ('ser_1660318467974', 'ser_1660318467974', 0, 0")); // without tag_name
+        rename_operation) VALUES ('ser_1660318467974', 'ser_1660318467974', 0, 0)")); // without tag_name
     galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_tag (tag_id, group_tag, tag_name, user_operation, \
-        rename_operation) VALUES ('ser_1660239135682', 'ser_1660239135682', 'B', 0, 1")); // 'B'
+        rename_operation) VALUES ('ser_1660239135682', 'ser_1660239135682', 'B', 0, 1)")); // 'B'
     galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_tag (tag_id, group_tag, tag_name, user_operation, \
-        rename_operation) VALUES ('ser_274602026436444', 'ser_274602026436444', 'Y', 1, 0")); // 'Y', groupped
+        rename_operation) VALUES ('ser_274602026436444', 'ser_274602026436444', 'Y', 1, 0)")); // 'Y', groupped
     galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_tag (tag_id, group_tag, tag_name, user_operation, \
-        rename_operation) VALUES ('ser_274602037407069', 'ser_274602026436444', 'Y', 0, 1")); // 'Y', groupped
+        rename_operation) VALUES ('ser_274602037407069', 'ser_274602026436444', 'Y', 0, 1)")); // 'Y', groupped
 }
 
 void GallerySource::InitGalleryMergeFace()
 {
-    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id) VALUES \
-        ('5659', '0', 'ser_1660318467974'")); // without tag_name
-    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id) VALUES \
-        ('1c05', '0', 'ser_1660239135682'")); // 'B'
-    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id) VALUES \
-        ('23f2', '0', 'ser_1660239135682'")); // 'B'
-    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id) VALUES \
-        ('3275', '0', 'ser_274602037407069'")); // 'Y'
-    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id) VALUES \
-        ('3275', '1', 'ser_274602026436444'")); // 'Y'
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('5659', '0', \
+        'ser_1660318467974', 0.6097, 0.5799, 0.0796, 0.1299, \
+        x'95040000e6020000df040000e2020000ba040000fb0200009e04000026030000db04000022030000', NULL, 0.5064, 0.7402, \
+        0.1916, 1)")); // without tag_name
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('1c05', '0', \
+        'ser_1660239135682', 0.5449, 0.2419, 0.1722, 0.3022, \
+        x'0906000034020000d40600005b02000065060000c6020000dd050000f4020000a806000020030000', NULL, -5.5875, -7.4554, \
+        -0.3196, 1)")); // 'B'
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('23f2', '0', \
+        'ser_1660239135682', 0.3797, 0.3199, 0.2172, 0.4048, \
+        x'7f0400001f0300006b0500004b030000d6040000be0300005a0400001d0400001f05000047040000', NULL, -0.6532, -5.2244, \
+        3.9188, 1)")); // 'B'
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('3275', '0', \
+        'ser_274602037407069', 0.5696, 0.4046, 0.0449, 0.0645, \
+        x'7c04000079020000ab04000074020000920400008b02000085040000a7020000ab040000a3020000', NULL, 1.9596, -1.3064, \
+        2.6128, 2)")); // 'Y'
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('3275', '1', \
+        'ser_274602026436444', 0.4325, 0.4294, 0.0473, 0.0746, \
+        x'71030000a70200009e030000a502000086030000bc02000076030000d40200009b030000d3020000', NULL, 1.9596, -1.9596, \
+        3.9188, 2)")); // 'Y'
 }
 
 void GallerySource::InitGalleryFace()
 {
-    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO face (hash, face_id, tag_id, scale_x, scale_y, \
         scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('5659', '0', \
         'ser_1660318467974', 0.6097, 0.5799, 0.0796, 0.1299, \
         x'95040000e6020000df040000e2020000ba040000fb0200009e04000026030000db04000022030000', 0, 0.5064, 0.7402, \
-        0.1916, 1")); // without tag_name
-    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        0.1916, 1)")); // without tag_name
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO face (hash, face_id, tag_id, scale_x, scale_y, \
         scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('1c05', '0', \
         'ser_1660239135682', 0.5449, 0.2419, 0.1722, 0.3022, \
         x'0906000034020000d40600005b02000065060000c6020000dd050000f4020000a806000020030000', 0, -5.5875, -7.4554, \
-        -0.3196, 1")); // 'B'
-    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        -0.3196, 1)")); // 'B'
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO face (hash, face_id, tag_id, scale_x, scale_y, \
         scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('23f2', '0', \
         'ser_1660239135682', 0.3797, 0.3199, 0.2172, 0.4048, \
         x'7f0400001f0300006b0500004b030000d6040000be0300005a0400001d0400001f05000047040000', 0, -0.6532, -5.2244, \
-        3.9188, 1")); // 'B'
-    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        3.9188, 1)")); // 'B'
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO face (hash, face_id, tag_id, scale_x, scale_y, \
         scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('3275', '0', \
         'ser_274602037407069', 0.5696, 0.4046, 0.0449, 0.0645, \
         x'7c04000079020000ab04000074020000920400008b02000085040000a7020000ab040000a3020000', 0, 1.9596, -1.3064, \
-        2.6128, 2")); // 'Y'
-    galleryStorePtr_->ExecuteSql(string("INSERT INTO merge_face (hash, face_id, tag_id, scale_x, scale_y, \
+        2.6128, 2)")); // 'Y'
+    galleryStorePtr_->ExecuteSql(string("INSERT INTO face (hash, face_id, tag_id, scale_x, scale_y, \
         scale_width, scale_height, landmarks, prob, yaw, pitch, roll, total_face) VALUES ('3275', '1', \
         'ser_274602026436444', 0.4325, 0.4294, 0.0473, 0.0746, \
         x'71030000a70200009e030000a502000086030000bc02000076030000d40200009b030000d3020000', 0, 1.9596, -1.9596, \
-        3.9188, 2")); // 'Y'
+        3.9188, 2)")); // 'Y'
 }
 } // namespace Media
 } // namespace OHOS

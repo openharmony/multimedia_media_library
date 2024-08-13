@@ -32,6 +32,7 @@ namespace Media {
 const int32_t SCALE_FACTOR = 2;
 const int32_t SCALE_MIN_SIZE = 1080;
 const int32_t SCALE_MAX_SIZE = 2560;
+const int32_t UPDATE_COUNT = 200;
 const float SCALE_DEFAULT = 0.25;
 const size_t MIN_GARBLE_SIZE = 2;
 const size_t GARBLE_START = 1;
@@ -610,7 +611,7 @@ void BackupDatabaseUtils::UpdateGroupTag(std::shared_ptr<NativeRdb::RdbStore> rd
     while (it != groupTagMap.end()) {
         std::string updateCase;
         int32_t offset = 0;
-        while (offset < QUERY_COUNT && it != groupTagMap.end()) {
+        while (offset < UPDATE_COUNT && it != groupTagMap.end()) {
             updateCase += " WHEN group_tag = '" + it->first + "' THEN '" + it->second + "'";
             offset++;
             it++;
