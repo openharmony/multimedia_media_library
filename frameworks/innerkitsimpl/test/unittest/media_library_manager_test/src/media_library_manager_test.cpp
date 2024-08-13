@@ -1904,15 +1904,6 @@ HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_001, TestSize.Level0)
     EXPECT_EQ(result, "");
 }
 
-HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_001, TestSize.Level0)
-{
-    std::string path = "/storage/cloud/";
-    Size size;
-    bool isAstc = true;
-    auto result = manager.GetSandboxPath(path, size, isAstc);
-    EXPECT_EQ(result, "");
-}
-
 HWTEST_F(MediaLibraryManagerTest, GetSandboxPath_002, TestSize.Level0)
 {
     std::string path = ROOT_MEDIA_DIR;
