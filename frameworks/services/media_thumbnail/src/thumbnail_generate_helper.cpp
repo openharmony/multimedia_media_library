@@ -173,7 +173,6 @@ int32_t ThumbnailGenerateHelper::CreateAstcBatchOnDemand(
             IThumbnailHelper::AddThumbnailGenBatchTask(info.orientation == 0 ?
                 IThumbnailHelper::CreateAstc : IThumbnailHelper::CreateAstcEx, opts, info, requestId);
         }
-        
     }
     return E_OK;
 }
