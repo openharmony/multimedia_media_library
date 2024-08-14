@@ -1351,9 +1351,6 @@ std::vector<NativeRdb::ValuesBucket> UpgradeRestore::GetInsertValues(std::vector
 {
     std::vector<NativeRdb::ValuesBucket> values;
     for (auto &portraitAlbumInfo : portraitAlbumInfos) {
-        if (!BackupDatabaseUtils::SetGroupTagNew(portraitAlbumInfo, groupTagMap_)) {
-            continue;
-        }
         NativeRdb::ValuesBucket value = GetInsertValue(portraitAlbumInfo, isAlbum);
         values.emplace_back(value);
     }
@@ -1367,7 +1364,7 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const PortraitAlbumInfo &
     values.PutInt(COUNT, 0);
     if (isAlbum) {
         values.PutString(ALBUM_NAME, portraitAlbumInfo.tagName);
-        values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagNew);
+        values.PutString(GROUP_TAG, portraitAlbumInfo.groupTagOld);
         values.PutInt(USER_OPERATION, portraitAlbumInfo.userOperation);
         values.PutInt(RENAME_OPERATION, RENAME_OPERATION_RENAMED);
         values.PutInt(ALBUM_TYPE, PhotoAlbumType::SMART);
@@ -1507,7 +1504,7 @@ void UpgradeRestore::SetHashReference(const std::vector<FileInfo> &fileInfos, co
 
 int32_t UpgradeRestore::QueryFaceTotalNumber(const std::string &hashSelection)
 {
-    std::string querySql = "SELECT count(1) as count FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
+    std::string querySql = "SELECT count(1) as count FROM " + GALLERY_FACE_TABLE_FULL + " WHERE " +
         GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ")";
     return BackupDatabaseUtils::QueryInt(galleryRdb_, querySql, CUSTOM_COUNT);
 }
@@ -1520,10 +1517,10 @@ std::vector<FaceInfo> UpgradeRestore::QueryFaceInfos(const std::string &hashSele
     result.reserve(QUERY_COUNT);
     std::string querySql = "SELECT " + GALLERY_SCALE_X + ", " + GALLERY_SCALE_Y + ", " + GALLERY_SCALE_WIDTH + ", " +
         GALLERY_SCALE_HEIGHT + ", " + GALLERY_PITCH + ", " + GALLERY_YAW + ", " + GALLERY_ROLL + ", " +
-        GALLERY_PROB + ", " + GALLERY_TOTAL_FACE + ", " + GALLERY_MERGE_FACE_HASH + ", " + GALLERY_FACE_ID + ", " +
-        GALLERY_MERGE_FACE_TAG_ID + ", " + GALLERY_LANDMARKS + " FROM " + GALLERY_TABLE_MERGE_FACE + " WHERE " +
+        GALLERY_PROB + ", " + GALLERY_TOTAL_FACE + ", " + GALLERY_MERGE_FACE_HASH + ", " + GALLERY_MERGE_FACE_FACE_ID +
+        ", " + GALLERY_MERGE_FACE_TAG_ID + ", " + GALLERY_LANDMARKS + " FROM " + GALLERY_FACE_TABLE_FULL + " WHERE " +
         GALLERY_MERGE_FACE_HASH + " IN (" + hashSelection + ") ORDER BY " + GALLERY_MERGE_FACE_HASH + ", " +
-        GALLERY_FACE_ID;
+        GALLERY_MERGE_FACE_FACE_ID;
     querySql += " LIMIT " + std::to_string(offset) + ", " + std::to_string(QUERY_COUNT);
     auto resultSet = BackupDatabaseUtils::GetQueryResultSet(galleryRdb_, querySql);
     if (resultSet == nullptr) {
@@ -1559,7 +1556,7 @@ bool UpgradeRestore::ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultS
     faceInfo.prob = GetDoubleVal(GALLERY_PROB, resultSet);
     faceInfo.totalFaces = GetInt32Val(GALLERY_TOTAL_FACE, resultSet);
     faceInfo.hash = GetStringVal(GALLERY_MERGE_FACE_HASH, resultSet);
-    faceInfo.faceId = GetStringVal(GALLERY_FACE_ID, resultSet);
+    faceInfo.faceId = GetStringVal(GALLERY_MERGE_FACE_FACE_ID, resultSet);
     faceInfo.tagIdOld = GetStringVal(GALLERY_MERGE_FACE_TAG_ID, resultSet);
     faceInfo.landmarks = BackupDatabaseUtils::GetLandmarksStr(GALLERY_LANDMARKS, resultSet);
     if (faceInfo.landmarks.empty()) {

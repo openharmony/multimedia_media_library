@@ -440,7 +440,7 @@ int32_t MediaLibraryManager::GetUriFromFilePath(const string &filePath, Uri &fil
     return E_SUCCESS;
 }
 
-static std::string GetSandboxPath(const std::string &path, const Size &size, bool isAstc)
+std::string MediaLibraryManager::GetSandboxPath(const std::string &path, const Size &size, bool isAstc)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
         return "";
@@ -458,7 +458,24 @@ static std::string GetSandboxPath(const std::string &path, const Size &size, boo
 
     return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
 }
-
+static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool isAstc)
+{
+    int32_t fd = -1;
+    if (!sandboxPath.empty()) {
+        fd = open(sandboxPath.c_str(), O_RDONLY);
+        if (fd < 0 && isAstc) {
+            string suffixStr = "THM_ASTC.astc";
+            size_t thmIdx = sandboxPath.find(suffixStr);
+            if (thmIdx != std::string::npos) {
+                sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
+                fd = open(sandboxPath.c_str(), O_RDONLY);
+            }
+        }
+    } else {
+        MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s", path.c_str());
+    }
+    return fd;
+}
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
 {
     // To ensure performance.
@@ -466,30 +483,20 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
         MEDIA_ERR_LOG("Failed to open thumbnail, sDataShareHelper_ is nullptr");
         return E_ERR;
     }
-    if (!path.empty()) {
-        string sandboxPath = GetSandboxPath(path, size, isAstc);
-        int fd = -1;
-        if (!sandboxPath.empty()) {
-            fd = open(sandboxPath.c_str(), O_RDONLY);
-            if (fd < 0 && isAstc) {
-                string suffixStr = "THM_ASTC.astc";
-                size_t thmIdx = sandboxPath.find(suffixStr);
-                sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
-                fd = open(sandboxPath.c_str(), O_RDONLY);
-            }
-        } else {
-            MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s", path.c_str());
-        }
-        if (fd > 0) {
-            return fd;
-        }
-        MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, path :%{public}s fd %{public}d errno %{public}d",
-            path.c_str(), fd, errno);
-        if (IsAsciiString(path)) {
-            uriStr += "&" + THUMBNAIL_PATH + "=" + path;
-        }
-    } else {
+    if (path.empty()) {
         MEDIA_ERR_LOG("OpenThumbnail path is empty");
+        Uri openUri(uriStr);
+        return sDataShareHelper_->OpenFile(openUri, "R");
+    }
+    string sandboxPath = GetSandboxPath(path, size, isAstc);
+    int32_t fd = GetFdFromSandbox(path, sandboxPath, isAstc);
+    if (fd > 0) {
+        return fd;
+    }
+    MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, path :%{public}s fd %{public}d errno %{public}d",
+        path.c_str(), fd, errno);
+    if (IsAsciiString(path)) {
+        uriStr += "&" + THUMBNAIL_PATH + "=" + path;
     }
     Uri openUri(uriStr);
     return sDataShareHelper_->OpenFile(openUri, "R");
@@ -500,7 +507,7 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
  * eg. Input: file://media/Photo/10/IMG_xxx/01.jpg
  *     Output: file://media/Photo/10
  */
-static void GetUriIdPrefix(std::string &fileUri)
+void MediaLibraryManager::GetUriIdPrefix(std::string &fileUri)
 {
     MediaFileUri mediaUri(fileUri);
     if (!mediaUri.IsApi10()) {
@@ -530,7 +537,7 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
             return false;
         }
         uriParams.fileUri = uri.substr(0, index - 1);
-        GetUriIdPrefix(uriParams.fileUri);
+        MediaLibraryManager::GetUriIdPrefix(uriParams.fileUri);
         index += strlen("thumbnail");
         index = uri.find('/', index);
         if (index == string::npos) {
@@ -553,7 +560,7 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
             return false;
         }
         uriParams.fileUri = uri.substr(0, qIdx);
-        GetUriIdPrefix(uriParams.fileUri);
+        MediaLibraryManager::GetUriIdPrefix(uriParams.fileUri);
         auto &queryKey = mediaUri.GetQueryKeys();
         if (queryKey.count(THUMBNAIL_PATH) != 0) {
             uriParams.path = queryKey[THUMBNAIL_PATH];
@@ -571,7 +578,7 @@ static bool GetParamsFromUri(const string &uri, const bool isOldVer, UriParams &
     return true;
 }
 
-static bool IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
+bool MediaLibraryManager::IfSizeEqualsRatio(const Size &imageSize, const Size &targetSize)
 {
     if (imageSize.height <= 0 || targetSize.height <= 0) {
         return false;
@@ -829,7 +836,7 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetAstc(const Uri &uri)
     return pixelmap;
 }
 
-static int32_t OpenReadOnlyAppSandboxVideo(const string& uri)
+int32_t MediaLibraryManager::OpenReadOnlyAppSandboxVideo(const string& uri)
 {
     std::vector<std::string> uris;
     if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
@@ -884,7 +891,7 @@ std::string MediaLibraryManager::GetMovingPhotoImageUri(const string &uri)
     return uris[MOVING_PHOTO_IMAGE_POS];
 }
 
-static int64_t GetSandboxMovingPhotoTime(const string& uri)
+int64_t MediaLibraryManager::GetSandboxMovingPhotoTime(const string& uri)
 {
     vector<string> uris;
     if (!MediaFileUtils::SplitMovingPhotoUri(uri, uris)) {
