@@ -325,9 +325,12 @@ bool MediaAssetRdbStore::IsQueryAccessibleViaSandBox(Uri& uri, OperationObject& 
     if (OPERATION_TYPE_SET.count(type) == 0) {
         return false;
     }
+    if (object != OperationObject::PAH_MAP) {
+        return true;
+    }
     std::string tableName = GetTableNameFromOprnObject(object);
     NativeRdb::RdbPredicates rdbPredicates = RdbUtils::ToPredicates(predicates, tableName);
-    auto whereArgs = predicates.GetWhereArgs();
+    auto whereArgs = rdbPredicates.GetWhereArgs();
     if (!whereArgs.empty()) {
         string albumId = whereArgs[0];
         if (IsQueryGroupPhotoAlbumAssets(albumId)) {
@@ -355,6 +358,15 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
     if (resultSet == nullptr) {
         MEDIA_ERR_LOG("fail to acquire result from visitor query");
         return nullptr;
+    }
+    int rowCount = 0;
+    if (!resultSet->GetRowCount(rowCount) && rowCount == 0) {
+        std::string columnStr = "";
+        for (auto& column : columns) {
+            columnStr += column + " ";
+        }
+        MEDIA_INFO_LOG("MediaAssetRdbStore predicates:%{public}s, columns:%{public}s, object:%{public}d",
+            rdbPredicates.ToString().c_str(), columnStr.c_str(), object);
     }
     return resultSet;
 }

@@ -67,6 +67,7 @@ public:
     EXPORT void CancelAstcBatchTask(int32_t requestId);
     void UpdateAstcWithNewDateAdded(const std::string &fileId, const std::string &newDateAdded,
         const std::string &formerDateAdded);
+    EXPORT int32_t CheckCloudThumbnailDownloadFinish();
 private:
     EXPORT ThumbnailService();
     bool CheckSizeValid();

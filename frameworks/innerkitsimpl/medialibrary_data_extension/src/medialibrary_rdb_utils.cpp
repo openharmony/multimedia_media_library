@@ -473,8 +473,10 @@ static void GetAlbumPredicates(PhotoAlbumSubType subtype, const shared_ptr<Resul
         PhotoColumn::PHOTO_SYNC_STATUS + " = " + to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) +
         " AND " + PhotoColumn::PHOTO_CLEAN_FLAG + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) +
         " AND " + MediaColumn::MEDIA_ID + " IN (SELECT " + PhotoMap::ASSET_ID + " FROM " + PhotoMap::TABLE + " WHERE " +
-        PhotoMap::ALBUM_ID + " = ?) AND " + MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + MediaColumn::MEDIA_HIDDEN +
-        " = ? AND " + MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " + PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
+        PhotoMap::ALBUM_ID + " = ? AND " + PhotoMap::DIRTY + " != " +
+        to_string(static_cast<int32_t>(DirtyTypes::TYPE_DELETED)) + ") AND " +
+        MediaColumn::MEDIA_DATE_TRASHED + " = 0 AND " + MediaColumn::MEDIA_HIDDEN + " = ? AND " +
+        MediaColumn::MEDIA_TIME_PENDING + " = 0 AND " + PhotoColumn::PHOTO_IS_TEMP + " = 0 AND " +
         PhotoColumn::PHOTO_BURST_COVER_LEVEL + " = " + BURST_COVER_LEVEL;
 
     static const string QUERY_ASSETS_FROM_ANALYSIS_ALBUM =
