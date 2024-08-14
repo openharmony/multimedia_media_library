@@ -857,6 +857,7 @@ static void GetPortraitAlbumCoverAnalysis(const string &albumId, RdbPredicates &
     string photoIsCover = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_BURST_COVER_LEVEL;
     string isExcluded = VISION_IMAGE_FACE_TABLE + "." + IS_EXCLUDED;
     string aestheticsScore = VISION_IMAGE_FACE_TABLE + "." + FACE_AESTHETICS_SCORE;
+    string photoDateAdded = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_DATE_ADDED;
 
     string whereClause = "( " + anaAlbumGroupTag + " IN ( SELECT " + GROUP_TAG + " FROM " + ANALYSIS_ALBUM_TABLE +
         " WHERE " + ALBUM_ID + " = " + albumId + " )) AND " + photosDateTrashed + " = " + to_string(0) + " AND " +
@@ -868,6 +869,7 @@ static void GetPortraitAlbumCoverAnalysis(const string &albumId, RdbPredicates &
 
     predicates.Distinct();
     predicates.OrderByDesc(aestheticsScore);
+    predicates.OrderByDesc(photoDateAdded);
     predicates.Limit(1);
 }
 
@@ -917,35 +919,57 @@ static void GetPortraitAlbumCountPredicates(const string &albumId, RdbPredicates
     predicates.Distinct();
 }
 
-static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string fileId)
+static bool IsCoverValid(const shared_ptr<NativeRdb::RdbStore> &rdbStore, const string &albumId, const string &fileId)
 {
     if (fileId.empty()) {
         MEDIA_WARN_LOG("Invalid cover: empty file_id");
         return false;
     }
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
-    predicates.EqualTo(MediaColumn::MEDIA_ID, fileId);
-    predicates.EqualTo(PhotoColumn::PHOTO_SYNC_STATUS, to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-    predicates.EqualTo(PhotoColumn::PHOTO_CLEAN_FLAG, to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
-    predicates.EqualTo(MediaColumn::MEDIA_DATE_TRASHED, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_HIDDEN, to_string(0));
-    predicates.EqualTo(MediaColumn::MEDIA_TIME_PENDING, to_string(0));
-    predicates.EqualTo(PhotoColumn::PHOTO_IS_TEMP, to_string(0));
+
+    string anaPhotoMapAsset = ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ASSET;
+    string photosFileId = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::MEDIA_ID;
+    string clause = anaPhotoMapAsset + " = " + photosFileId;
+    predicates.InnerJoin(ANALYSIS_PHOTO_MAP_TABLE)->On({ clause });
+
+    string anaAlbumId = ANALYSIS_ALBUM_TABLE + "." + ALBUM_ID;
+    string anaPhotoMapAlbum = ANALYSIS_PHOTO_MAP_TABLE + "." + MAP_ALBUM;
+    clause = anaAlbumId + " = " + anaPhotoMapAlbum;
+    predicates.InnerJoin(ANALYSIS_ALBUM_TABLE)->On({ clause });
+
+    string photoSyncStatus = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_SYNC_STATUS;
+    string photoCleanFlag = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_CLEAN_FLAG;
+    string photosDateTrashed = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_DATE_TRASHED;
+    string photosHidden = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_HIDDEN;
+    string photosTimePending = PhotoColumn::PHOTOS_TABLE + "." + MediaColumn::MEDIA_TIME_PENDING;
+    string photosIsTemp = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_IS_TEMP;
+    string photoIsCover = PhotoColumn::PHOTOS_TABLE + "." + PhotoColumn::PHOTO_BURST_COVER_LEVEL;
+
+    string whereClause = anaAlbumId + " = " + albumId + " AND " + photosFileId + " = " + fileId + " AND " +
+        photoSyncStatus + " = " + to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)) + " AND " +
+        photoCleanFlag + " = " + to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)) + " AND " +
+        photosDateTrashed + " = " + to_string(0) + " AND " + photosHidden + " = " + to_string(0) + " AND " +
+        photosTimePending + " = " + to_string(0) + " AND " + photosIsTemp + " = " + to_string(0) + " AND " +
+        photoIsCover + " = " + BURST_COVER_LEVEL;
+
+    predicates.SetWhereClause(whereClause);
     predicates.Limit(1);
     vector<string> columns;
     auto resultSet = rdbStore->Query(predicates, columns);
     if (resultSet == nullptr) {
-        MEDIA_ERR_LOG("Can not query Photos");
+        MEDIA_ERR_LOG("Can not query Photos, albumId: %{public}s, fileId: %{public}s", albumId.c_str(), fileId.c_str());
         return false;
     }
     int32_t count = 0;
     int32_t ret = resultSet->GetRowCount(count);
     if (ret != NativeRdb::E_OK) {
-        MEDIA_ERR_LOG("GetRowCount failed ret:%{public}d", ret);
+        MEDIA_ERR_LOG("GetRowCount failed, albumId: %{public}s, fileId: %{public}s, ret:%{public}d", albumId.c_str(),
+            fileId.c_str(), ret);
         return false;
     }
     if (count == 0) {
-        MEDIA_WARN_LOG("Invalid cover: %{public}s not exist", fileId.c_str());
+        MEDIA_WARN_LOG("Invalid cover: albumId: %{public}s, fileId: %{public}s not exist", albumId.c_str(),
+            fileId.c_str());
         return false;
     }
     return true;
@@ -959,10 +983,11 @@ static inline void SetCoverSatisfied(const string &fileId, const vector<string> 
     }
 }
 
-static inline bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore, string fileId,
-    int32_t isCoverSatisfied, const vector<string> &fileIds)
+static inline bool ShouldUpdatePortraitAlbumCover(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
+    const string &albumId, const string &fileId, const int32_t isCoverSatisfied)
 {
-    return isCoverSatisfied == static_cast<int32_t>(CoverSatisfiedType::NO_SETTING) || !IsCoverValid(rdbStore, fileId);
+    return isCoverSatisfied == static_cast<int32_t>(CoverSatisfiedType::NO_SETTING) ||
+        !IsCoverValid(rdbStore, albumId, fileId);
 }
 
 static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rdbStore,
@@ -993,7 +1018,7 @@ static int32_t SetPortraitUpdateValues(const shared_ptr<NativeRdb::RdbStore> &rd
     }
     int32_t newCount = SetCount(countResult, albumResult, values, false, PhotoAlbumSubType::PORTRAIT);
     SetCoverSatisfied(coverId, fileIds, values, isCoverSatisfied);
-    if (!ShouldUpdatePortraitAlbumCover(rdbStore, coverId, isCoverSatisfied, fileIds)) {
+    if (!ShouldUpdatePortraitAlbumCover(rdbStore, albumId, coverId, isCoverSatisfied)) {
         return E_SUCCESS;
     }
     RdbPredicates analysisPredicates(PhotoColumn::PHOTOS_TABLE);
