@@ -24,6 +24,7 @@ namespace Media {
 enum class PhotoFormat : int32_t {
     RGBA = 0,
     JPG,
+    MP4,
 };
 
 enum class PhotoQuality : int32_t {
