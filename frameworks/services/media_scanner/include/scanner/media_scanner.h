@@ -144,6 +144,7 @@ private:
     MediaLibraryApi api_;
     bool isForceScan_ = false;
     int32_t fileId_ = 0;
+    bool isSkipAlbumUpdate_ = false;
 };
 
 class ScanErrCallback : public IMediaScannerCallback {
