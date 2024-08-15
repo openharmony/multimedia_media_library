@@ -15,7 +15,7 @@
 
 #include "cloud_sync_helper.h"
 #include "medialibrary_rdb_transaction.h"
-
+#include "medialibrary_restore.h"
 #include "media_log.h"
 
 namespace OHOS::Media {
@@ -82,10 +82,7 @@ int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
     }
 
     int curTryTime = 0;
-    int maxTryTimes = MAX_TRY_TIMES;
-    if (isUpgrade) {
-        maxTryTimes = MAX_TRY_TIMES_FOR_UPGRADE;
-    }
+    int maxTryTimes = isUpgrade ? MAX_TRY_TIMES_FOR_UPGRADE : MAX_TRY_TIMES;
     while (curTryTime < maxTryTimes) {
         if (rdbStore_->IsInTransaction()) {
             if (!isInTransaction_.load()) {
@@ -112,6 +109,7 @@ int32_t TransactionOperations::BeginTransaction(bool isUpgrade)
             MEDIA_ERR_LOG("Start Transaction failed, errCode=%{public}d", errCode);
             isInTransaction_.store(false);
             transactionCV_.notify_one();
+            MediaLibraryRestore::GetInstance().CheckRestore(errCode);
             return E_HAS_DB_ERROR;
         } else {
             isInTransaction_.store(true);
