@@ -222,6 +222,8 @@ const std::string FAVOURTIE_ALBUM_NAME_VALUES = "FavoritAlbum";
 static constexpr int UNCREATE_FILE_TIMEPENDING = -1;
 static constexpr int UNCLOSE_FILE_TIMEPENDING = -2;
 static constexpr int UNOPEN_FILE_COMPONENT_TIMEPENDING = -3;
+
+const int32_t FILE_ID_WHICH_NO_NEED_UPDATE_ALBUM_INFO_IN_SCAN = -1;
 } // namespace OHOS
 } // namespace Media
 

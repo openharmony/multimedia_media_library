@@ -108,6 +108,9 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
         case OperationType::ADD_FILTERS:
             errCode = MediaLibraryPhotoOperations::AddFilters(cmd);
             break;
+        case OperationType::SCAN_WITHOUT_ALBUM_UPDATE:
+            errCode = MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(cmd);
+            break;
         default:
             MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
             break;
