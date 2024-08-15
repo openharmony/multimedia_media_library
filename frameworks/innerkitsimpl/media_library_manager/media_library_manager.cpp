@@ -458,24 +458,26 @@ std::string MediaLibraryManager::GetSandboxPath(const std::string &path, const S
 
     return ROOT_SANDBOX_DIR + ".thumbs/" + suffixStr;
 }
+
 static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool isAstc)
 {
     int32_t fd = -1;
-    if (!sandboxPath.empty()) {
-        fd = open(sandboxPath.c_str(), O_RDONLY);
-        if (fd < 0 && isAstc) {
-            string suffixStr = "THM_ASTC.astc";
-            size_t thmIdx = sandboxPath.find(suffixStr);
-            if (thmIdx != std::string::npos) {
-                sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
-                fd = open(sandboxPath.c_str(), O_RDONLY);
-            }
-        }
-    } else {
+    if (sandboxPath.empty()) {
         MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s", path.c_str());
+        return fd;
+    }
+    fd = open(sandboxPath.c_str(), O_RDONLY);
+    if (fd < 0 && isAstc) {
+        string suffixStr = "THM_ASTC.astc";
+        size_t thmIdx = sandboxPath.find(suffixStr);
+        if (thmIdx != std::string::npos) {
+            sandboxPath.replace(thmIdx, suffixStr.length(), "THM.jpg");
+            fd = open(sandboxPath.c_str(), O_RDONLY);
+        }
     }
     return fd;
 }
+
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
 {
     // To ensure performance.

@@ -109,7 +109,7 @@ static void UpdateAstcInfo(ThumbRdbOpt &opts, std::string id)
 
     ValuesBucket values;
     int changedRows;
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_COMPLETED));
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?", vector<string> { id });
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
