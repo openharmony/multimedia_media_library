@@ -67,6 +67,7 @@ export class AlbumPickerComponent extends ViewPU {
                 if ('selectAlbum' === n && this.onAlbumClick) {
                     let e = new AlbumInfo;
                     e.uri = o.albumUri;
+                    e.albumName = o.albumName;
                     this.onAlbumClick(e);
                 }
                 console.info('AlbumPickerComponent onReceive ' + n);
