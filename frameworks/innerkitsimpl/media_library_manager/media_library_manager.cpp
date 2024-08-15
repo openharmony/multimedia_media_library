@@ -463,7 +463,8 @@ static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool is
 {
     int32_t fd = -1;
     if (sandboxPath.empty()) {
-        MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s", path.c_str());
+        MEDIA_ERR_LOG("OpenThumbnail sandboxPath is empty, path :%{public}s",
+            MediaFileUtils::DesensitizePath(path).c_str());
         return fd;
     }
     fd = open(sandboxPath.c_str(), O_RDONLY);
@@ -495,8 +496,8 @@ int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const
     if (fd > 0) {
         return fd;
     }
-    MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, path :%{public}s fd %{public}d errno %{public}d",
-        path.c_str(), fd, errno);
+    MEDIA_INFO_LOG("OpenThumbnail from andboxPath failed, errno %{public}d path :%{public}s fd %{public}d",
+        errno, MediaFileUtils::DesensitizePath(path).c_str(), fd);
     if (IsAsciiString(path)) {
         uriStr += "&" + THUMBNAIL_PATH + "=" + path;
     }
@@ -680,7 +681,8 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetThumbnail(const Uri &uri)
     }
     auto pixelmap = QueryThumbnail(uriParams.fileUri, uriParams.size, uriParams.path, uriParams.isAstc);
     if (pixelmap == nullptr) {
-        MEDIA_ERR_LOG("pixelmap is null, uri :%{public}s", uriStr.c_str());
+        MEDIA_ERR_LOG("pixelmap is null, uri :%{public}s, path :%{public}s",
+            uriParams.fileUri.c_str(), MediaFileUtils::DesensitizePath(uriParams.path).c_str());
     }
     return pixelmap;
 }
@@ -827,13 +829,15 @@ std::unique_ptr<PixelMap> MediaLibraryManager::GetAstc(const Uri &uri)
     tracer.Start("MediaLibraryManager::OpenThumbnail");
     UniqueFd uniqueFd(MediaLibraryManager::OpenThumbnail(openUriStr, uriParams.path, uriParams.size, true));
     if (uniqueFd.Get() < 0) {
-        MEDIA_ERR_LOG("OpenThumbnail failed, errCode is %{public}d, uri :%{public}s", uniqueFd.Get(), uriStr.c_str());
+        MEDIA_ERR_LOG("OpenThumbnail failed, errCode is %{public}d, uri :%{public}s, path :%{public}s",
+            uniqueFd.Get(), uriParams.fileUri.c_str(), MediaFileUtils::DesensitizePath(uriParams.path).c_str());
         return nullptr;
     }
     tracer.Finish();
     auto pixelmap = DecodeAstc(uniqueFd);
     if (pixelmap == nullptr) {
-        MEDIA_ERR_LOG("pixelmap is null, uri :%{public}s", uriStr.c_str());
+        MEDIA_ERR_LOG("pixelmap is null, uri :%{public}s, path :%{public}s",
+            uriParams.fileUri.c_str(), MediaFileUtils::DesensitizePath(uriParams.path).c_str());
     }
     return pixelmap;
 }
