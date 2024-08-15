@@ -169,6 +169,7 @@ public:
     EXPORT static void SetDeletionRecord(int fd, const std::string &fileName);
     EXPORT static void BackupPhotoDir();
     EXPORT static void RecoverMediaTempDir();
+    EXPORT static std::string DesensitizePath(const std::string &path);
 
 private:
     static bool Mkdir(const std::string &subStr, std::shared_ptr<int> errCodePtr);
