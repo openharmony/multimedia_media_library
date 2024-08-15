@@ -20,13 +20,9 @@
 
 namespace OHOS {
 namespace Media {
-// portrait related
-enum FaceAnalysisType {
-    RECOGNITION = 0,
-};
 const int32_t IS_LOCAL_TRUE = 1;
 const int32_t RENAME_OPERATION_RENAMED = 1;
-const std::string CURRENT_ANALYSIS_VERSION = "1.0"; // update-to-date face analysis version
+const std::string DEFAULT_BACKUP_VERSION = "backup1.0";
 const std::string GALLERY_TABLE_MERGE_FACE = "merge_face";
 const std::string GALLERY_TABLE_MERGE_TAG = "merge_tag";
 const std::string GALLERY_TABLE_MEDIA = "gallery_media";
