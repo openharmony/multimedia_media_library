@@ -38,6 +38,7 @@ export struct AlbumPickerComponent {
             if (this.onAlbumClick) {
               let albumInfo: AlbumInfo = new AlbumInfo();
               albumInfo.uri = wantParam['albumUri'] as string;
+              albumInfo.albumName = wantParam['albumName'] as string;
               this.onAlbumClick(albumInfo);
             }
           }
@@ -58,4 +59,5 @@ export class AlbumPickerOptions {
 
 export class AlbumInfo {
   public uri?: string;
+  public albumName?: string;
 }

@@ -477,6 +477,7 @@ static int32_t GetFdFromSandbox(const string &path, string &sandboxPath, bool is
     }
     return fd;
 }
+
 int MediaLibraryManager::OpenThumbnail(string &uriStr, const string &path, const Size &size, bool isAstc)
 {
     // To ensure performance.
