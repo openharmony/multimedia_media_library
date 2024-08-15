@@ -41,6 +41,7 @@
 #include "medialibrary_data_manager.h"
 #include "medialibrary_errno.h"
 #include "medialibrary_inotify.h"
+#include "medialibrary_restore.h"
 #include "media_file_utils.h"
 #include "media_log.h"
 #include "media_scanner_manager.h"
@@ -145,6 +146,10 @@ void MedialibrarySubscriber::CheckHalfDayMissions()
 {
     if (isScreenOff_ && isCharging_) {
         DfxManager::GetInstance()->HandleHalfDayMissions();
+        MediaLibraryRestore::GetInstance().DoRdbHAModeSwitch();
+    }
+    if (!isScreenOff_ || !isCharging_) {
+        MediaLibraryRestore::GetInstance().InterruptRdbHAModeSwitch();
     }
 }
 

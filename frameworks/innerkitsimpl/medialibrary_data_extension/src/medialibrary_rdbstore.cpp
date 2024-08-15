@@ -36,6 +36,7 @@
 #include "medialibrary_errno.h"
 #include "medialibrary_object_utils.h"
 #include "medialibrary_photo_operations.h"
+#include "medialibrary_restore.h"
 #include "medialibrary_tracer.h"
 #include "media_container_types.h"
 #include "media_scanner.h"
@@ -133,6 +134,9 @@ MediaLibraryRdbStore::MediaLibraryRdbStore(const shared_ptr<OHOS::AbilityRuntime
     string name = MEDIA_DATA_ABILITY_DB_NAME;
     int32_t errCode = 0;
     string realPath = RdbSqlUtils::GetDefaultDatabasePath(databaseDir, name, errCode);
+    int32_t haMode = MediaLibraryRestore::GetInstance().DetectHaMode(realPath);
+    config_.SetHaMode(move(haMode));
+    config_.SetAllowRebuild(true);
     config_.SetName(move(name));
     config_.SetPath(move(realPath));
     config_.SetBundleName(context->GetBundleName());
@@ -221,6 +225,7 @@ int32_t MediaLibraryRdbStore::Insert(MediaLibraryCommand &cmd, int64_t &rowId)
     int32_t ret = rdbStore_->Insert(rowId, cmd.GetTableName(), cmd.GetValueBucket());
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Insert failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
     }
 
@@ -242,6 +247,7 @@ int32_t MediaLibraryRdbStore::BatchInsert(int64_t &outRowId, const std::string &
     int32_t ret = rdbStore_->BatchInsert(outRowId, table, values);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->BatchInsert failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
     }
 
@@ -263,6 +269,7 @@ int32_t MediaLibraryRdbStore::BatchInsert(MediaLibraryCommand &cmd, int64_t& out
     int32_t ret = rdbStore_->BatchInsert(outInsertNum, cmd.GetTableName(), values);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->BatchInsert failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
     }
     tracer.Finish();
@@ -309,6 +316,7 @@ int32_t MediaLibraryRdbStore::Delete(MediaLibraryCommand &cmd, int32_t &deletedR
     int32_t ret = DoDeleteFromPredicates(*rdbStore_, *(cmd.GetAbsRdbPredicates()), deletedRows);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Delete failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
     }
     CloudSyncHelper::GetInstance()->StartSync();
@@ -336,6 +344,7 @@ int32_t MediaLibraryRdbStore::Update(MediaLibraryCommand &cmd, int32_t &changedR
         cmd.GetAbsRdbPredicates()->GetWhereClause(), cmd.GetAbsRdbPredicates()->GetWhereArgs());
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->Update failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
     }
     return ret;
@@ -359,7 +368,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUri(const AbsRd
     for (const auto &arg : args) {
         MEDIA_DEBUG_LOG("arg = %{private}s", arg.c_str());
     }
-    return rdbStore_->QuerySql(sql, args);
+    auto resultSet = rdbStore_->QuerySql(sql, args);
+    MediaLibraryRestore::GetInstance().CheckResultSet(resultSet);
+    return resultSet;
 }
 
 shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUriForPhotos(const AbsRdbPredicates &predicates,
@@ -378,7 +389,9 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::GetIndexOfUriForPhotos(co
     for (const auto &arg : args) {
         MEDIA_DEBUG_LOG("arg = %{private}s", arg.c_str());
     }
-    return rdbStore_->QuerySql(sql, args);
+    auto resultSet = rdbStore_->QuerySql(sql, args);
+    MediaLibraryRestore::GetInstance().CheckResultSet(resultSet);
+    return resultSet;
 }
 
 
@@ -396,6 +409,7 @@ int32_t MediaLibraryRdbStore::UpdateLastVisitTime(MediaLibraryCommand &cmd, int3
     if (ret != NativeRdb::E_OK || changedRows <= 0) {
         MEDIA_ERR_LOG("rdbStore_->UpdateLastVisitTime failed, changedRows = %{public}d, ret = %{public}d",
             changedRows, ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
     }
     return changedRows;
 }
@@ -459,6 +473,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::Query(const AbsRdbPredica
     tracer.Start("RdbStore->QueryByPredicates");
     MEDIA_DEBUG_LOG("Predicates Statement is %{public}s", predicates.GetStatement().c_str());
     auto resultSet = rdbStore_->Query(predicates, columns);
+    MediaLibraryRestore::GetInstance().CheckResultSet(resultSet);
     if (resultSet == nullptr) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
             {KEY_OPT_TYPE, OptType::QUERY}};
@@ -479,6 +494,7 @@ int32_t MediaLibraryRdbStore::ExecuteSql(const string &sql)
     int32_t ret = rdbStore_->ExecuteSql(sql);
     if (ret != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->ExecuteSql failed, ret = %{public}d", ret);
+        MediaLibraryRestore::GetInstance().CheckRestore(ret);
         return E_HAS_DB_ERROR;
     }
     return ret;
@@ -491,6 +507,7 @@ int32_t MediaLibraryRdbStore::QueryPragma(const string &key, int64_t &value)
         return E_HAS_DB_ERROR;
     }
     std::shared_ptr<ResultSet> resultSet = rdbStore_->QuerySql("PRAGMA " + key);
+    MediaLibraryRestore::GetInstance().CheckResultSet(resultSet);
     if (resultSet == nullptr || resultSet->GoToFirstRow() != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("rdbStore_->QuerySql failed");
         return E_HAS_DB_ERROR;
@@ -544,6 +561,7 @@ int32_t MediaLibraryRdbStore::ExecuteForLastInsertedRowId(const string &sql, con
     int32_t err = rdbStore_->ExecuteForLastInsertedRowId(lastInsertRowId, sql, bindArgs);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute insert, err: %{public}d", err);
+        MediaLibraryRestore::GetInstance().CheckRestore(err);
         return E_HAS_DB_ERROR;
     }
     return lastInsertRowId;
@@ -560,6 +578,7 @@ int32_t MediaLibraryRdbStore::Delete(const AbsRdbPredicates &predicates)
     err = DoDeleteFromPredicates(*rdbStore_, predicates, deletedRows);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute delete, err: %{public}d", err);
+        MediaLibraryRestore::GetInstance().CheckRestore(err);
         return E_HAS_DB_ERROR;
     }
     CloudSyncHelper::GetInstance()->StartSync();
@@ -589,6 +608,7 @@ int32_t MediaLibraryRdbStore::Update(ValuesBucket &values,
     int err = rdbStore_->Update(changedRows, values, predicates);
     if (err != E_OK) {
         MEDIA_ERR_LOG("Failed to execute update, err: %{public}d", err);
+        MediaLibraryRestore::GetInstance().CheckRestore(err);
         return E_HAS_DB_ERROR;
     }
 
@@ -608,6 +628,7 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryRdbStore::QuerySql(const string &sq
     MediaLibraryTracer tracer;
     tracer.Start("RdbStore->QuerySql");
     auto resultSet = rdbStore_->QuerySql(sql, selectionArgs);
+    MediaLibraryRestore::GetInstance().CheckResultSet(resultSet);
     if (resultSet == nullptr) {
         VariantMap map = {{KEY_ERR_FILE, __FILE__}, {KEY_ERR_LINE, __LINE__}, {KEY_ERR_CODE, E_HAS_DB_ERROR},
             {KEY_OPT_TYPE, OptType::QUERY}};
