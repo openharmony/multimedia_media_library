@@ -1224,11 +1224,6 @@ void UpgradeRestore::RestoreFromGalleryPortraitAlbum()
         return;
     }
     int64_t start = MediaFileUtils::UTCTimeMilliSeconds();
-    std::vector<int32_t> faceAnalysisTypeList = { FaceAnalysisType::RECOGNITION };
-    if (!BackupDatabaseUtils::GetFaceAnalysisVersion(faceAnalysisVersionMap_, faceAnalysisTypeList)) {
-        MEDIA_ERR_LOG("Get face analysis version failed, quit");
-        return;
-    }
     int32_t totalNumber = QueryPortraitAlbumTotalNumber();
     MEDIA_INFO_LOG("QueryPortraitAlbumTotalNumber, totalNumber = %{public}d", totalNumber);
     for (int32_t offset = 0; offset < totalNumber; offset += QUERY_COUNT) {
@@ -1563,7 +1558,6 @@ bool UpgradeRestore::ParseFaceResultSet(const std::shared_ptr<NativeRdb::ResultS
         MEDIA_ERR_LOG("Get invalid landmarks for face %{public}s", faceInfo.faceId.c_str());
         return false;
     }
-    faceInfo.analysisVersion = CURRENT_ANALYSIS_VERSION;
     return true;
 }
 
@@ -1572,8 +1566,7 @@ bool UpgradeRestore::SetAttributes(FaceInfo &faceInfo, const std::unordered_map<
     return BackupDatabaseUtils::SetLandmarks(faceInfo, fileInfoMap) &&
         BackupDatabaseUtils::SetFileIdNew(faceInfo, fileInfoMap) &&
         BackupDatabaseUtils::SetTagIdNew(faceInfo, tagIdMap_) &&
-        BackupDatabaseUtils::SetAlbumIdNew(faceInfo, portraitAlbumIdMap_) &&
-        BackupDatabaseUtils::SetVersion(faceInfo.faceVersion, faceAnalysisVersionMap_, FaceAnalysisType::RECOGNITION);
+        BackupDatabaseUtils::SetAlbumIdNew(faceInfo, portraitAlbumIdMap_);
 }
 
 int32_t UpgradeRestore::InsertFaceAnalysisDataByTable(const std::vector<FaceInfo> &faceInfos, bool isMap,
@@ -1626,9 +1619,8 @@ NativeRdb::ValuesBucket UpgradeRestore::GetInsertValue(const FaceInfo &faceInfo,
         values.PutString(FACE_ID, faceInfo.faceId);
         values.PutString(TAG_ID, faceInfo.tagIdNew);
         values.PutString(LANDMARKS, faceInfo.landmarks);
-        values.PutString(IMAGE_FACE_VERSION, faceInfo.faceVersion);
+        values.PutString(IMAGE_FACE_VERSION, DEFAULT_BACKUP_VERSION); // replaced by the latest
         values.PutString(IMAGE_FEATURES_VERSION, E_VERSION); // updated by analysis service
-        values.PutString(ANALYSIS_VERSION, faceInfo.analysisVersion);
     }
     return values;
 }
