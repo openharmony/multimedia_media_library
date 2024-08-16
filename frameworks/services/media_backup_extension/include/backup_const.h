@@ -331,8 +331,6 @@ struct FaceInfo {
     std::string tagIdOld;
     std::string tagIdNew;
     std::string landmarks;
-    std::string faceVersion;
-    std::string analysisVersion;
 };
 
 using NeedQueryMap = std::unordered_map<PhotoRelatedType, std::unordered_set<std::string>>;
