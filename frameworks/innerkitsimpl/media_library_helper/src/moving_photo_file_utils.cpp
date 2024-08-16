@@ -151,14 +151,14 @@ int32_t MovingPhotoFileUtils::ConvertToMovingPhoto(const std::string &livePhotoP
     string tempImagePath = isSameImagePath ? movingPhotoImagePath + ".temp" : movingPhotoImagePath;
     CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd, tempImagePath, imageSize, offset)) == E_OK, err,
         "Failed to copy image of live photo");
-    if (isSameImagePath && (err = rename(tempImagePath.c_str(), movingPhotoImagePath.c_str())) < 0) {
-        MEDIA_ERR_LOG("Failed to rename moving photo image, ret:%{public}d, errno:%{public}d", err, errno);
-        return err;
-    }
     CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd, movingPhotoVideoPath, videoSize, offset)) == E_OK, err,
         "Failed to copy video of live photo");
     CHECK_AND_RETURN_RET_LOG((err = SendLivePhoto(livePhotoFd, extraDataPath, extraDataSize, offset)) == E_OK, err,
         "Failed to copy extra data of live photo");
+    if (isSameImagePath && (err = rename(tempImagePath.c_str(), movingPhotoImagePath.c_str())) < 0) {
+        MEDIA_ERR_LOG("Failed to rename moving photo image, ret:%{public}d, errno:%{public}d", err, errno);
+        return err;
+    }
     return E_OK;
 }
 
