@@ -346,12 +346,14 @@ bool ThumbnailUtils::LoadImageFile(ThumbnailData &data, Size &desiredSize)
     return sourceLoader.RunLoading();
 }
 
-bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isHigh, bool isAstc)
+bool ThumbnailUtils::CompressImage(shared_ptr<PixelMap> &pixelMap, vector<uint8_t> &data, bool isHigh, bool isAstc,
+    bool forceSdr)
 {
     PackOption option = {
         .format = isAstc ? THUMBASTC_FORMAT : THUMBNAIL_FORMAT,
         .quality = isAstc ? ASTC_LOW_QUALITY : (isHigh ? THUMBNAIL_HIGH : THUMBNAIL_MID),
-        .numberHint = NUMBER_HINT_1
+        .numberHint = NUMBER_HINT_1,
+        .desiredDynamicRange = forceSdr ? EncodeDynamicRange::SDR :EncodeDynamicRange::AUTO
     };
     data.resize(max(pixelMap->GetByteCount(), MIN_COMPRESS_BUF_SIZE));
 
