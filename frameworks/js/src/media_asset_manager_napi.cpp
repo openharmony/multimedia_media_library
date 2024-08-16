@@ -974,7 +974,7 @@ void MediaAssetManagerNapi::GetByteArrayNapiObject(const std::string &requestUri
 bool IsMovingPhoto(int32_t photoSubType, int32_t effectMode, int32_t sourceMode)
 {
     return photoSubType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
-        (MediaLibraryNapiUtils::IsSystemApp() && sourceMode == SourceMode::ORIGINAL_MODE &&
+        (MediaLibraryNapiUtils::IsSystemApp() && sourceMode == static_cast<int32_t>(SourceMode::ORIGINAL_MODE) &&
         effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY));
 }
 

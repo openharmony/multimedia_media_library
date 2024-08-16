@@ -317,6 +317,23 @@ bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string
         request == SOURCE_REQUEST);
 }
 
+int32_t ProcMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<FileAsset>& fileAsset, const string& id,
+    bool& isMovingPhotoVideo)
+{
+    string movingPhotoOprnKey = cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD);
+    if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO) {
+        CHECK_AND_RETURN_RET_LOG(
+            CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode(),
+                cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)),
+            E_INVALID_VALUES,
+            "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
+            id.c_str(), fileAsset->GetPhotoSubType());
+        fileAsset->SetPath(MediaFileUtils::GetMovingPhotoVideoPath(fileAsset->GetPath()));
+        isMovingPhotoVideo = true;
+    }
+    return E_OK;
+}
+
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
 {
     MediaLibraryTracer tracer;
@@ -345,15 +362,8 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     }
 
     bool isMovingPhotoVideo = false;
-    string movingPhotoOprnKey = cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD);
-    if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO) {
-        CHECK_AND_RETURN_RET_LOG(
-            CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode(),
-            cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)), E_INVALID_VALUES,
-            "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
-            id.c_str(), fileAsset->GetPhotoSubType());
-        fileAsset->SetPath(MediaFileUtils::GetMovingPhotoVideoPath(fileAsset->GetPath()));
-        isMovingPhotoVideo = true;
+    if (ProcMovingPhotoOprnKey(cmd, fileAsset, id, isMovingPhotoVideo) != E_OK) {
+        return E_INVALID_VALUES;
     }
 
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
@@ -1561,21 +1571,29 @@ static int32_t Move(const string& srcPath, const string& destPath)
     return ret;
 }
 
+bool IsNeedRevertEffectMode(MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset, int32_t& effectMode)
+{
+    if ((fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
+        fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) ||
+        fileAsset->GetPhotoEditTime() != 0) {
+        return false;
+    }
+
+    if (!GetInt32FromValuesBucket(cmd.GetValueBucket(), PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode) ||
+        (effectMode != static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT) &&
+        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY))) {
+        return false;
+    }
+    return true;
+}
+
 int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset, bool& isNeedScan)
 {
     isNeedScan = false;
     int32_t photoSubType = fileAsset->GetPhotoSubType();
-    if ((photoSubType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
-        fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) ||
-        fileAsset->GetPhotoEditTime() != 0) {
-        return E_OK;
-    }
-
-    int32_t effectMode;
-    if (!GetInt32FromValuesBucket(cmd.GetValueBucket(), PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode) ||
-        (effectMode != static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT) &&
-        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY))) {
+    int32_t effectMode{0};
+    if (!IsNeedRevertEffectMode(cmd, fileAsset, effectMode)) {
         return E_OK;
     }
     ValuesBucket& updateValues = cmd.GetValueBucket();
@@ -1599,7 +1617,6 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
             isSourceImageExist, isSourceVideoExist);
         return E_OK;
     }
-
     string videoPath = MediaFileUtils::GetMovingPhotoVideoPath(imagePath);
     int32_t errCode = Move(sourceVideoPath, videoPath);
     CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_FS_ERROR, "Failed to move video from %{private}s to %{private}s",
@@ -1607,7 +1624,8 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     string editDataCameraPath = GetEditDataCameraPath(imagePath);
     if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
         errCode = Move(sourceImagePath, imagePath);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_FS_ERROR, "Failed to move image from %{private}s to %{private}s",
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_FS_ERROR, 
+            "Failed to move image from %{private}s to %{private}s",
             sourceImagePath.c_str(), imagePath.c_str());
         isNeedScan = true;
     } else {
@@ -1971,7 +1989,7 @@ int32_t MediaLibraryPhotoOperations::SubmitEffectModeExecute(MediaLibraryCommand
         MediaFileUtils::CheckMovingPhotoEffectMode(effectMode), E_INVALID_VALUES,
         "Failed to check effect mode: %{public}d", effectMode);
     vector<string> columns = { PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE,
-        PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED, PhotoColumn::PHOTO_EDIT_TIME
+        PhotoColumn::MEDIA_TIME_PENDING, PhotoColumn::MEDIA_DATE_TRASHED, PhotoColumn::PHOTO_EDIT_TIME,
         PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(PhotoColumn::MEDIA_ID, to_string(id),
         OperationObject::FILESYSTEM_PHOTO, columns);
