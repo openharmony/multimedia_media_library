@@ -270,25 +270,15 @@ void DeleteTemporaryPhotos()
     MEDIA_INFO_LOG("delete %{public}d temp files exceeding 24 hous or exceed maximum quantity.", changedRows);
 }
 
-void MedialibrarySubscriber::DoBackgroundOperation()
+void MedialibrarySubscriber::DoThumbnailOperation()
 {
-    if (!currentStatus_) {
-        MEDIA_DEBUG_LOG("The conditions for DoBackgroundOperation are not met, will return.");
-        return;
-    }
-
-    MEDIA_INFO_LOG("Start background operation, status:%{public}d,%{public}d,%{public}d,%{public}d,%{public}d",
-        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
-
-    // delete temporary photos
-    DeleteTemporaryPhotos();
-
-    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
-        BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
-    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
-    Init();
     auto dataManager = MediaLibraryDataManager::GetInstance();
     if (dataManager == nullptr) {
+        return;
+    }
+    
+    if (isWifiConn_ && dataManager->CheckCloudThumbnailDownloadFinish() != E_OK) {
+        MEDIA_INFO_LOG("CheckCloudThumbnailDownloadFinish failed");
         return;
     }
 
@@ -312,19 +302,33 @@ void MedialibrarySubscriber::DoBackgroundOperation()
     if (result != E_OK) {
         MEDIA_ERR_LOG("DoTrashAging faild");
     }
-
     VariantMap map = {{KEY_COUNT, *trashCountPtr}};
     PostEventUtils::GetInstance().PostStatProcess(StatType::AGING_STAT, map);
+}
+
+void MedialibrarySubscriber::DoBackgroundOperation()
+{
+    if (!currentStatus_) {
+        MEDIA_DEBUG_LOG("The conditions for DoBackgroundOperation are not met, will return.");
+        return;
+    }
+
+    MEDIA_INFO_LOG("Start background operation, status:%{public}d,%{public}d,%{public}d,%{public}d,%{public}d",
+        currentStatus_, isScreenOff_, isCharging_, isPowerSufficient_, isDeviceTemperatureProper_);
+
+    // delete temporary photos
+    DeleteTemporaryPhotos();
+
+    BackgroundTaskMgr::EfficiencyResourceInfo resourceInfo = BackgroundTaskMgr::EfficiencyResourceInfo(
+        BackgroundTaskMgr::ResourceType::CPU, true, 0, "apply", true, true);
+    BackgroundTaskMgr::BackgroundTaskMgrHelper::ApplyEfficiencyResources(resourceInfo);
+    Init();
+    DoThumbnailOperation();
 
     auto watch = MediaLibraryInotify::GetInstance();
     if (watch != nullptr) {
         watch->DoAging();
     }
-    auto scannerManager = MediaScannerManager::GetInstance();
-    if (scannerManager == nullptr) {
-        return;
-    }
-    scannerManager->ScanError();
 }
 
 void MedialibrarySubscriber::StopBackgroundOperation()

@@ -41,8 +41,8 @@ public:
     static const string CREATE_TABLE_TEST;
 };
 
-const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT EXISTS test ") +
-    "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, age INTEGER, salary REAL, blobType BLOB)";
+const string ConfigTestOpenCall::CREATE_TABLE_TEST = string("CREATE TABLE IF NOT EXISTS test_table ") +
+    "(file_id INTEGER PRIMARY KEY AUTOINCREMENT, media_type TEXT NOT NULL, age INTEGER, salary REAL, blobType BLOB)";
 
 int ConfigTestOpenCall::OnCreate(RdbStore &store)
 {
@@ -105,6 +105,21 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryThumbnailInfo_test_001, TestSize.L
     EXPECT_EQ(resultSetPtr, nullptr);
 }
 
+HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_table, TestSize.Level0)
+{
+    if (storePtr == nullptr) {
+        exit(1);
+    }
+    ThumbRdbOpt opts = {
+        .store = storePtr,
+        .table = "test_table"
+    };
+    int outLcdCount = 0;
+    int err = 0;
+    bool ret = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
+    EXPECT_EQ(ret, true);
+}
+
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_001, TestSize.Level0)
 {
     if (storePtr == nullptr) {
@@ -117,7 +132,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_001, TestSize.Level0
     int outLcdCount = 0;
     int err = 0;
     bool ret = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_002, TestSize.Level0)
@@ -133,7 +148,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryLcdCount_test_002, TestSize.Level0
     int outLcdCount = 0;
     int err = 0;
     bool ret = ThumbnailUtils::QueryLcdCount(opts, outLcdCount, err);
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestSize.Level0)
@@ -147,7 +162,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryDistributeLcdCount_test_001, TestS
     int outLcdCount = 0;
     int err = 0;
     bool ret = ThumbnailUtils::QueryDistributeLcdCount(opts, outLcdCount, err);
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 #ifdef DISTRIBUTED
@@ -199,7 +214,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_001, TestSize.Leve
     vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryNoLcdInfos(opts, infos, err);
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_002, TestSize.Level0)
@@ -215,7 +230,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoLcdInfos_test_002, TestSize.Leve
     vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryNoLcdInfos(opts, infos, err);
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_001, TestSize.Level0)
@@ -231,7 +246,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_001, TestSiz
     vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryNoThumbnailInfos(opts, infos, err);
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_002, TestSize.Level0)
@@ -247,7 +262,7 @@ HWTEST_F(MediaLibraryUtilsTest, medialib_QueryNoThumbnailInfos_test_002, TestSiz
     vector<ThumbnailData> infos;
     int err = 0;
     bool ret = ThumbnailUtils::QueryNoThumbnailInfos(opts, infos, err);
-    EXPECT_EQ(ret, true);
+    EXPECT_EQ(ret, false);
 }
 
 HWTEST_F(MediaLibraryUtilsTest, medialib_UpdateLcdInfo_test_001, TestSize.Level0)
