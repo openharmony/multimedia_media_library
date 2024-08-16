@@ -77,6 +77,11 @@ void MediaScannerObj::SetFileId(int32_t fileId)
     fileId_ = fileId;
 }
 
+void MediaScannerObj::SetIsSkipAlbumUpdate(bool isSkipAlbumUpdate)
+{
+    isSkipAlbumUpdate_ = isSkipAlbumUpdate;
+}
+
 int32_t MediaScannerObj::ScanFile()
 {
     MEDIA_DEBUG_LOG("scan file %{private}s", path_.c_str());
@@ -270,7 +275,9 @@ int32_t MediaScannerObj::Commit()
     auto watch = MediaLibraryNotify::GetInstance();
     if (data_->GetFileId() != FILE_ID_DEFAULT) {
         uri_ = mediaScannerDb_->UpdateMetadata(*data_, tableName, api_);
-        mediaScannerDb_->UpdateAlbumInfoByMetaData(*data_);
+        if (!isSkipAlbumUpdate_) {
+            mediaScannerDb_->UpdateAlbumInfoByMetaData(*data_);
+        }
         if (watch != nullptr && data_->GetIsTemp() == FILE_IS_TEMP_DEFAULT) {
             if (data_->GetForAdd()) {
                 watch->Notify(GetUriWithoutSeg(uri_), NOTIFY_ADD);
@@ -287,7 +294,7 @@ int32_t MediaScannerObj::Commit()
         }
     }
 
-    if (!data_->GetShootingMode().empty()) {
+    if (!data_->GetShootingMode().empty() && !isSkipAlbumUpdate_) {
         auto err = MaintainAlbumRelationship(data_);
         if (err != E_OK) {
             return err;

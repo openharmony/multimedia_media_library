@@ -147,6 +147,8 @@ protected:
     static int32_t OpenFileWithPrivacy(const std::string &filePath, const std::string &mode);
     static void ScanFile(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
         bool isForceScan = false, int32_t fileId = 0);
+    static void ScanFileWithoutAlbumUpdate(const std::string &path, bool isCreateThumbSync, bool isInvalidateThumb,
+        bool isForceScan = false, int32_t fileId = 0);
 
     static std::string GetEditDataDirPath(const std::string &path);
     static std::string GetEditDataPath(const std::string &path);
