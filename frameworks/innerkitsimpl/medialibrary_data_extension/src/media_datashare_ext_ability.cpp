@@ -289,7 +289,14 @@ static int32_t CheckOpenFilePermission(MediaLibraryCommand &cmd, string &mode)
     if (err == E_SUCCESS) {
         return E_SUCCESS;
     }
-    return E_PERMISSION_DENIED;
+    perms.clear();
+    if (containsRead) {
+        perms.push_back(PERM_READ_IMAGEVIDEO);
+    }
+    if (containsWrite) {
+        perms.push_back(PERM_WRITE_IMAGEVIDEO);
+    }
+    return PermissionUtils::CheckCallerPermission(perms) ? E_SUCCESS : E_PERMISSION_DENIED;
 }
 
 static inline void AddHiddenAlbumPermission(MediaLibraryCommand &cmd, vector<string> &outPerms)
