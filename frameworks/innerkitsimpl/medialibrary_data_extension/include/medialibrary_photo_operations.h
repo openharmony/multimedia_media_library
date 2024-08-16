@@ -49,7 +49,6 @@ public:
         const uint8_t *addr, const long bytes, int32_t fileId);
     EXPORT static void StoreThumbnailSize(const std::string& photoId, const std::string& photoPath);
     EXPORT static void DropThumbnailSize(const std::string& photoId);
-    EXPORT static int32_t ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd);
 
 private:
     static int32_t CreateV9(MediaLibraryCommand &cmd);
