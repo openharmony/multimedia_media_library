@@ -1672,6 +1672,89 @@ static napi_status SetValueArray(const napi_env& env,
     return status;
 }
 
+static string GetFileIdFromUri(const string& uri)
+{
+    const std::string img = "/IMG";
+    auto startIndex = uri.find(PhotoColumn::PHOTO_URI_PREFIX);
+    auto endIndex = uri.find(img);
+    string fileId = "";
+    if (startIndex != std::string::npos && endIndex != std::string::npos) {
+        int len = endIndex - startIndex - PhotoColumn::PHOTO_URI_PREFIX.length();
+        std::string fileId = uri.substr(startIndex + PhotoColumn::PHOTO_URI_PREFIX.length(), len);
+    }
+    return fileId;
+}
+
+static string GetAlbumIdFromUri(const string& uri)
+{
+    string albumId = "";
+    auto startIndex = uri.find(PhotoAlbumColumns::ALBUM_URI_PREFIX);
+    if (startIndex != std::string::npos) {
+        std::string albumId = uri.substr(startIndex + PhotoAlbumColumns::Album_URI_PREFIX.length());
+    }
+    return albumId;
+}
+
+static NativeRdb::AbsSharedResultSet GetSharedPhotoAssets(const napi_env& env, vector<string>& fileId)
+{
+    string queryUri = PAH_QUERY_PHOTO;
+    MediaLibraryNapiUtils::UriAppendKeyValue(queryUri, API_VERSION, to_string(MEDIA_API_VERSION_V10));
+    Uri photoUri(queryUri);
+    DataShare::DataSharePredicates predicates;
+    predicates.In(MediaColumn::MEDIA_ID, file_Id);
+    std::vector<std::string> columns = {};
+    return UserFileClient::QueryRdb(photoUri, predicates, columns);
+}
+
+static napi_value GetSharedAlbumAssets(const napi_env& env, vector<string>& albumId)
+{
+    string queryUri = PAH_QUERY_PHOTO_ALBUM;
+    Uri albumUri(queryUri);
+    DataShare::DataSharePredicates prediacates;
+    prediacates.In(PhotoAlbumColumn::ALBUM_ID, albumId);
+    std::vector<std::string> columns = {};
+    return UserFileClient::QueryRdb(albumUri, predicates, columns);
+}
+
+static napi_status SetSharedAssetArray(const napi_env& env,
+    cosnt char* fieldStr, const std::list<Uri>& listValue, napi_value& result, bool isPhoto)
+{
+    napi_value value = nullptr;
+    napi_status status = napi_create_array_with_length(env, listValue.size(), &value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Create array error! Id: %{public}s", fieldStr);
+        return status;
+    }
+    int elementIndex = 0;
+    std::vector<std::string> assetIds;
+    for (auto& uri : listValue) {
+        string assetId = isPhoto ? GetFileIdFromUri(uri.ToString()) : GetAlbumIdFromUri(uri.ToString());
+        if (assetId == "") {
+            NAPI_ERR_LOG("Failed to read assetId");
+            status = napi_invalid_arg;
+            return status;
+        }
+        assetIds.push_back(assetId);
+    }
+    NativeRdb::AbsSharedResultSet assetResult = isPhoto ? GetSharedPhotoAsset(assetIds) : GetSharedAlbumAsset(assetIds);
+        if (napi_value == nullptr) {
+            NAPI_ERR_LOG("Failed to read assetInfo from assetId");
+            status = napi_invalid_arg;
+            return status;
+        }
+        status = napi_set_element(env, value, elementIndex++, assetInfo);
+        if (status != napi_ok) {
+            NAPI_ERR_LOG("Failed to set assetInfo");
+            return status;
+        }
+    }
+    status = napi_set_named_property(env, result, fieldStr, value);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("set arrary named property error: %{public}s", fieldStr);
+    }
+    return status;
+}
+
 static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParcel> parcel, napi_value& result)
 {
     uint32_t len = 0;
@@ -1680,22 +1763,41 @@ static napi_status SetSubUris(const napi_env& env, const shared_ptr<MessageParce
         NAPI_ERR_LOG("Failed to read sub uri list length");
         return status;
     }
-    napi_value subUriArray = nullptr;
-    napi_create_array_with_length(env, len, &subUriArray);
-    int subElementIndex = 0;
     if (len > MAX_UINT32) {
         NAPI_ERR_LOG("suburi length exceed the limit.");
         return status;
     }
+    napi_value photoAssetArray = nullptr;
+    napi_create_array_with_length(env, len, &photoAssetArray);
+    napi_value subUriArray = nullptr;
+    napi_create_array_with_length(env, len, &subUriArray);
+    int subElementIndex = 0;
+    int elementIndex = 0;
     for (uint32_t i = 0; i < len; i++) {
         string subUri = parcel->ReadString();
         if (subUri.empty()) {
             NAPI_ERR_LOG("Failed to read sub uri");
+            status = napi_invalid_arg;
             return status;
         }
         napi_value subUriRet = nullptr;
         napi_create_string_utf8(env, subUri.c_str(), NAPI_AUTO_LENGTH, &subUriRet);
         napi_set_element(env, subUriArray, subElementIndex++, subUriRet);
+        string fileId = GetFileIdFromUri(subUri);
+        if (fileId == "") {
+            NAPI_ERR_LOG("Failed to read sub uri fileId");
+            continue;
+        }
+        napi_value assetRet = GetSharedPhotoAsset(env, fileId);
+        if (assetRet == nullptr) {
+            NAPI_ERR_LOG("Failed to get sharedPhotoAsset");
+            continue;
+        }
+        napi_set_element(env, photoAssetArray, elementIndex++, assetRet);
+    }
+    status = napi_set_named_property(env, result, "extraAssets", photoAssetArray);
+    if (status != napi_ok) {
+        NAPI_ERR_LOG("Set extraAssets named property error!");
     }
     status = napi_set_named_property(env, result, "extraUris", subUriArray);
     if (status != napi_ok) {
@@ -1739,6 +1841,14 @@ napi_value ChangeListenerNapi::SolveOnChange(napi_env env, UvChangeMsg *msg)
     }
     napi_create_object(env, &result);
     SetValueArray(env, "uris", msg->changeInfo_.uris_, result);
+    if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_URI) != std::string::npos) {
+        SetSharedAssetArray(env, "sharedPhotoAssets", msg->changeInfo.uris, result, true);
+    } else if (msg->strUri_.find(PhotoColumn::DEFAULT_PHOTO_ALBUM_URI) != std::string::npos) {
+        SetSharedAssetArray(env, "SharedAlbumAssets", msg->changeInfo.uris, result, false);
+    } else {
+        NAPI_DEBUG_LOG("other albums notify");
+    }
+
     if (msg->changeInfo_.uris_.size() == DEFAULT_ALBUM_COUNT) {
         if (msg->changeInfo_.uris_.front().ToString().compare(GetTrashAlbumUri()) == 0) {
             if (!MediaLibraryNapiUtils::IsSystemApp()) {

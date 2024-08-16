@@ -371,6 +371,25 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> MediaAssetRdbStore::QueryRdb(
     return resultSet;
 }
 
+bool IsSuppertSharedAssetQuery(Uri& uri, OperationObject& object, bool isIgnoreSELinux = false)
+{
+    if (access(MEDIA_DB_DIR.c_str(), E_OK) != 0) {
+        return false;
+    }
+    if (rdbStore_ == nullptr) {
+        if (TryGetRdbStore(isIgnoreSELinux) != NativeRdb::E_OK) {
+            MEDIA_ERR_LOG("fail to acquire rdb when query");
+            return false;
+        }
+    }
+    OperationType type = GetOprnTypeFromUri(uri);
+    if (OPERATION_TYPE_SET.count(type) == 0) {
+        return false;
+    }
+    object = GetOprnObjectFromUri(uri);
+    return true;
+}
+
 int32_t MediaAssetRdbStore::QueryTimeIdBatch(int32_t start, int32_t count, std::vector<std::string> &batchKeys)
 {
     MediaLibraryTracer tracer;
