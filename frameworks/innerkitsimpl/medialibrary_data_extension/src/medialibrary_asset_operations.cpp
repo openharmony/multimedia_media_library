@@ -108,6 +108,9 @@ int32_t MediaLibraryAssetOperations::HandleInsertOperation(MediaLibraryCommand &
         case OperationType::ADD_FILTERS:
             errCode = MediaLibraryPhotoOperations::AddFilters(cmd);
             break;
+        case OperationType::SCAN_WITHOUT_ALBUM_UPDATE:
+            errCode = MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(cmd);
+            break;
         default:
             MEDIA_ERR_LOG("unknown operation type %{public}d", cmd.GetOprnType());
             break;
@@ -1343,6 +1346,29 @@ void MediaLibraryAssetOperations::ScanFile(const string &path, bool isCreateThum
 
     int ret = MediaScannerManager::GetInstance()->ScanFileSync(path, scanAssetCallback, MediaLibraryApi::API_10,
         isForceScan, fileId);
+    if (ret != 0) {
+        MEDIA_ERR_LOG("Scan file failed with error: %{public}d", ret);
+    }
+}
+
+void MediaLibraryAssetOperations::ScanFileWithoutAlbumUpdate(const string &path, bool isCreateThumbSync,
+    bool isInvalidateThumb, bool isForceScan, int32_t fileId)
+{
+    // Force Scan means medialibrary will scan file without checking E_SCANNED
+    shared_ptr<ScanAssetCallback> scanAssetCallback = make_shared<ScanAssetCallback>();
+    if (scanAssetCallback == nullptr) {
+        MEDIA_ERR_LOG("Failed to create scan file callback object");
+        return;
+    }
+    if (isCreateThumbSync) {
+        scanAssetCallback->SetSync(true);
+    }
+    if (!isInvalidateThumb) {
+        scanAssetCallback->SetIsInvalidateThumb(false);
+    }
+
+    int ret = MediaScannerManager::GetInstance()->ScanFileSyncWithoutAlbumUpdate(path, scanAssetCallback,
+        MediaLibraryApi::API_10, isForceScan, fileId);
     if (ret != 0) {
         MEDIA_ERR_LOG("Scan file failed with error: %{public}d", ret);
     }
