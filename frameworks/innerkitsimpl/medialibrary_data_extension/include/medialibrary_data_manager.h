@@ -101,6 +101,7 @@ public:
     EXPORT int GetThumbnail(const std::string &uri);
     EXPORT void SetStartupParameter();
     EXPORT void ReCreateMediaDir();
+    EXPORT int32_t CheckCloudThumbnailDownloadFinish();
 
 private:
     int32_t InitMediaLibraryRdbStore();

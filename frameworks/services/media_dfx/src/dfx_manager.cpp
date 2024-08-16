@@ -353,6 +353,11 @@ void SetReported(bool isReported)
     prefs->PutBool(IS_REPORTED, isReported);
 }
 
+CloudSyncDfxManager::~CloudSyncDfxManager()
+{
+    ShutDownTimer();
+}
+
 CloudSyncDfxManager& CloudSyncDfxManager::GetInstance()
 {
     static CloudSyncDfxManager cloudSyncDfxManager;

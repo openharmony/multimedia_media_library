@@ -68,6 +68,7 @@ private:
     void UpdateCurrentStatus();
     void CheckHalfDayMissions();
     void UpdateBackgroundTimer();
+    void DoThumbnailOperation();
 };
 }  // namespace Media
 }  // namespace OHOS

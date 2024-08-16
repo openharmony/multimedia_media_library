@@ -18,6 +18,7 @@
 #include <fcntl.h>
 
 #include "dfx_manager.h"
+#include "dfx_utils.h"
 #include "directory_ex.h"
 #include "image_source.h"
 #include "media_exif.h"
@@ -102,17 +103,20 @@ bool IsLocalSourceAvailable(const std::string& path)
     char tmpPath[PATH_MAX] = { 0 };
     if (realpath(path.c_str(), tmpPath) == nullptr) {
         // it's alright if source loading fails here, just move on to next source
-        MEDIA_ERR_LOG("SourceLoader path to realPath is nullptr: %{public}s, errno: %{public}d", path.c_str(), errno);
+        MEDIA_ERR_LOG("SourceLoader path to realPath is nullptr: errno: %{public}d, %{public}s",
+            errno, DfxUtils::GetSafePath(path).c_str());
         return false;
     }
 
     FILE* filePtr = fopen(tmpPath, "rb");
     if (filePtr == nullptr) {
-        MEDIA_ERR_LOG("SourceLoader open local file fail: %{public}s, errno: %{public}d", path.c_str(), errno);
+        MEDIA_ERR_LOG("SourceLoader open local file fail: errno: %{public}d, %{public}s",
+            errno, DfxUtils::GetSafePath(path).c_str());
         return false;
     }
     if (fclose(filePtr) != E_OK) {
-        MEDIA_ERR_LOG("SourceLoader close filePtr fail: %{public}s, errno: %{public}d", path.c_str(), errno);
+        MEDIA_ERR_LOG("SourceLoader close filePtr fail: errno: %{public}d, %{public}s",
+            errno, DfxUtils::GetSafePath(path).c_str());
         return false;
     }
     return true;
@@ -122,13 +126,14 @@ bool IsCloudSourceAvailable(const std::string& path)
 {
     string absFilePath;
     if (!PathToRealPath(path, absFilePath)) {
-        MEDIA_ERR_LOG("Not real file path: %{private}s, errno: %{public}d", path.c_str(), errno);
+        MEDIA_ERR_LOG("Not real file path: errno: %{public}d, %{public}s", errno, DfxUtils::GetSafePath(path).c_str());
         return false;
     }
 
     int fd = open(absFilePath.c_str(), O_RDONLY);
     if (fd < 0) {
-        MEDIA_ERR_LOG("open cloud file fail: %{private}s, errno: %{public}d", absFilePath.c_str(), errno);
+        MEDIA_ERR_LOG("open cloud file fail: errno: %{public}d, %{public}s",
+            errno, DfxUtils::GetSafePath(path).c_str());
         return false;
     }
     close(fd);
@@ -272,15 +277,16 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
 
     ImageInfo imageInfo;
     if (!IsSizeAcceptable(imageSource, imageInfo)) {
-        MEDIA_ERR_LOG("SourceLoader CreateImagePixelMap size not acceptable, "
-            "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
+        MEDIA_ERR_LOG("SourceLoader CreateImagePixelMap size not acceptable, status:%{public}s, path:%{public}s",
+            STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
     DecodeOptions decodeOpts;
     decodeOpts.desiredDynamicRange = DecodeDynamicRange::SDR;
     Size targetSize = ConvertDecodeSize(data_, imageInfo.size, desiredSize_);
     if (!GenDecodeOpts(imageInfo.size, targetSize, decodeOpts)) {
-        MEDIA_ERR_LOG("SourceLoader failed to generate decodeOpts, pixelmap path %{private}s", data_.path.c_str());
+        MEDIA_ERR_LOG("SourceLoader failed to generate decodeOpts, pixelmap path %{public}s",
+            DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
     data_.source = imageSource->CreatePixelMap(decodeOpts, err);
@@ -290,7 +296,8 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
     }
     if (!NeedAutoResize(targetSize) && !ThumbnailUtils::ScaleTargetPixelMap(data_.source, targetSize,
         Media::AntiAliasingOption::MEDIUM)) {
-        MEDIA_ERR_LOG("SourceLoader Failed to scale target, pixelmap path %{private}s", data_.path.c_str());
+        MEDIA_ERR_LOG("SourceLoader Failed to scale target, pixelmap path %{public}s",
+            DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
     tracer.Finish();
@@ -298,18 +305,16 @@ bool SourceLoader::CreateImagePixelMap(const std::string &sourcePath)
     if (data_.orientation == 0) {
         err = imageSource->GetImagePropertyInt(0, PHOTO_DATA_IMAGE_ORIENTATION, data_.orientation);
         if (err != E_OK) {
-            MEDIA_ERR_LOG("SourceLoader Failed to get ImageProperty, path: %{private}s", data_.path.c_str());
+            MEDIA_ERR_LOG("SourceLoader Failed to get ImageProperty, path: %{public}s",
+                DfxUtils::GetSafePath(data_.path).c_str());
         }
     }
 
     if (data_.mediaType == MEDIA_TYPE_VIDEO) {
         data_.orientation = 0;
     }
-
     DfxManager::GetInstance()->HandleHighMemoryThumbnail(data_.path, MEDIA_TYPE_IMAGE, imageInfo.size.width,
         imageInfo.size.height);
-    MEDIA_DEBUG_LOG("SourceLoader status:%{public}s, width:%{public}d, height:%{public}d",
-        STATE_NAME_MAP.at(state_).c_str(), imageInfo.size.width, imageInfo.size.height);
     return true;
 }
 
@@ -326,13 +331,13 @@ bool SourceLoader::CreateSourcePixelMap()
 
     std::string sourcePath = GetSourcePath(data_, error_);
     if (sourcePath.empty()) {
-        MEDIA_ERR_LOG("SourceLoader source path unavailable,"
-            "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
+        MEDIA_ERR_LOG("SourceLoader source path unavailable, status:%{public}s, path:%{public}s",
+            STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
     if (!CreateImagePixelMap(sourcePath)) {
-        MEDIA_ERR_LOG("SourceLoader fail to create image pixel map,"
-            "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
+        MEDIA_ERR_LOG("SourceLoader fail to create image pixel map, status:%{public}s, path:%{public}s",
+            STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
     return true;
@@ -364,8 +369,8 @@ bool SourceLoader::RunLoading()
             }
 
             if (!CreateSourcePixelMap()) {
-                MEDIA_ERR_LOG("SourceLoader fail to create source pixel map, "
-                    "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
+                MEDIA_ERR_LOG("SourceLoader fail to create source pixel map, status:%{public}s, path:%{public}s",
+                    STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
                 break;
             }
             state_ = SourceState::FINISH;
@@ -376,8 +381,8 @@ bool SourceLoader::RunLoading()
         data_.source = nullptr;
     }
     if (data_.source == nullptr) {
-        MEDIA_ERR_LOG("SourceLoader source is nullptr, "
-            "status:%{public}s, path:%{private}s", STATE_NAME_MAP.at(state_).c_str(), data_.path.c_str());
+        MEDIA_ERR_LOG("SourceLoader source is nullptr, status:%{public}s, path:%{public}s",
+            STATE_NAME_MAP.at(state_).c_str(), DfxUtils::GetSafePath(data_.path).c_str());
         return false;
     }
     return true;
@@ -529,7 +534,8 @@ std::string CloudOriginSource::GetSourcePath(ThumbnailData &data, int32_t &error
 {
     if (data.mediaType == MEDIA_TYPE_VIDEO) {
         // avoid opening cloud origin video file.
-        MEDIA_ERR_LOG("avoid opening cloud origin video file path:%{private}s", data.path.c_str());
+        MEDIA_ERR_LOG("avoid opening cloud origin video file path:%{public}s",
+            DfxUtils::GetSafePath(data.path).c_str());
         return "";
     }
     int64_t startTime = MediaFileUtils::UTCTimeMilliSeconds();

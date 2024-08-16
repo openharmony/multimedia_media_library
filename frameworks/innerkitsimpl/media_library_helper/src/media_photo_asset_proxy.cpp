@@ -111,7 +111,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
     }
     string displayName = photoProxy->GetTitle() + "." + photoProxy->GetExtension();
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    if (mediaType != MEDIA_TYPE_IMAGE) {
+    if ((mediaType != MEDIA_TYPE_IMAGE) && (mediaType != MEDIA_TYPE_VIDEO)) {
         MEDIA_ERR_LOG("Failed to create Asset, invalid file type %{public}d", static_cast<int32_t>(mediaType));
         return;
     }
@@ -379,6 +379,9 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
     MEDIA_INFO_LOG("photoId: %{public}s", photoProxy->GetPhotoId().c_str());
     tracer.Start("PhotoAssetProxy CreatePhotoAsset");
     CreatePhotoAsset(photoProxy);
+    if (cameraShotType_ == CameraShotType::VIDEO) {
+        return;
+    }
     if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW) {
         UpdatePhotoQuality(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(subType_));
     }

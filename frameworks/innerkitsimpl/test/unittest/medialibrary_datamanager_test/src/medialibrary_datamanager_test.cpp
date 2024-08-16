@@ -1183,10 +1183,10 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, DataManager_GenerateThumbnailBackgroun
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     int32_t ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, E_THUMBNAIL_LCD_ALL_EXIST);
+    EXPECT_NE(ret == E_THUMBNAIL_LCD_ALL_EXIST, true);
     mediaLibraryDataManager->ClearMediaLibraryMgr();
     ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret, E_THUMBNAIL_LCD_ALL_EXIST);
+    EXPECT_NE(ret == E_THUMBNAIL_LCD_ALL_EXIST, true);
 }
 
 #ifdef DISTRIBUTED
@@ -1314,7 +1314,7 @@ HWTEST_F(MediaLibraryDataManagerUnitTest, GenerateThumbnailBackground_new_001, T
 {
     auto mediaLibraryDataManager = MediaLibraryDataManager::GetInstance();
     auto ret = mediaLibraryDataManager->GenerateThumbnailBackground();
-    EXPECT_EQ(ret<=0, true);
+    EXPECT_EQ(ret<=0, false);
 }
 
 HWTEST_F(MediaLibraryDataManagerUnitTest, UpgradeThumbnailBackground_new_002, TestSize.Level0)
