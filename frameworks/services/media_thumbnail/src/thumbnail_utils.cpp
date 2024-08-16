@@ -1591,17 +1591,13 @@ bool ThumbnailUtils::CheckResultSetCount(const shared_ptr<ResultSet> &resultSet,
     }
     int rowCount = 0;
     err = resultSet->GetRowCount(rowCount);
-    if (err != E_OK) {
+    if (err != E_OK || rowCount < 0) {
         MEDIA_ERR_LOG("Failed to get row count %{public}d", err);
         return false;
-    }
-
-    if (rowCount <= 0) {
+    } else if (rowCount == 0) {
         MEDIA_ERR_LOG("CheckCount No match!");
-        err = E_EMPTY_VALUES_BUCKET;
         return false;
     }
-
     return true;
 }
 
