@@ -19,6 +19,7 @@
 
 #include <fcntl.h>
 #include <regex>
+#include <sstream>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 
@@ -99,12 +100,16 @@ static int32_t GetExtraDataSize(const UniqueFd &livePhotoFd, int64_t &extraDataS
     // extra data with cinemagraph
     CHECK_AND_RETURN_RET_LOG(totalSize > MIN_STANDARD_SIZE + CINEMAGRAPH_INFO_SIZE_LEN, E_INVALID_LIVE_PHOTO,
         "Failed to check live photo with cinemagraph, total size is %{public}" PRId64, totalSize);
-    char cinemagraphSize[CINEMAGRAPH_INFO_SIZE_LEN + 1];
+    char cinemagraphSize[CINEMAGRAPH_INFO_SIZE_LEN];
     CHECK_AND_RETURN_RET_LOG(lseek(livePhotoFd.Get(), -(MIN_STANDARD_SIZE + CINEMAGRAPH_INFO_SIZE_LEN), SEEK_END) != -1,
         E_HAS_FS_ERROR, "Failed to lseek cinemagraph size, errno:%{public}d", errno);
     CHECK_AND_RETURN_RET_LOG(read(livePhotoFd.Get(), cinemagraphSize, CINEMAGRAPH_INFO_SIZE_LEN) != -1, E_HAS_FS_ERROR,
         "Failed to read cinemagraph size, errno:%{public}d", errno);
-    extraDataSize = MIN_STANDARD_SIZE + std::stoi(cinemagraphSize, 0, 16); // cinemagraphSize is hexadecimal
+    stringstream cinemagraphSizeStream;
+    for (int32_t i = 0; i < CINEMAGRAPH_INFO_SIZE_LEN; i++) {
+        cinemagraphSizeStream << hex << static_cast<int32_t>(cinemagraphSize[i]);
+    }
+    extraDataSize = MIN_STANDARD_SIZE + std::stoi(cinemagraphSizeStream.str(), 0, 16); // size is hexadecimal
     return E_OK;
 }
 
