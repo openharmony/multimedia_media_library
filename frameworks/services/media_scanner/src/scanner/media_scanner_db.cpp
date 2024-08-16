@@ -590,7 +590,7 @@ int32_t MediaScannerDb::GetFileBasicInfo(const string &path, unique_ptr<Metadata
 
     vector<string> args;
     if (oprnObject == OperationObject::FILESYSTEM_PHOTO || oprnObject == OperationObject::FILESYSTEM_AUDIO) {
-        if (fileId != 0) {
+        if (fileId > 0) {
             whereClause = MediaColumn::MEDIA_ID + " = ? ";
             args = { to_string(fileId) };
         } else {
