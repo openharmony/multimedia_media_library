@@ -90,6 +90,8 @@ public:
 
     void SetFileId(int32_t fileId);
 
+    void SetIsSkipAlbumUpdate(bool isSkipAlbumUpdate);
+
 private:
     /* file */
     EXPORT int32_t ScanFile();
@@ -144,6 +146,7 @@ private:
     MediaLibraryApi api_;
     bool isForceScan_ = false;
     int32_t fileId_ = 0;
+    bool isSkipAlbumUpdate_ = false;
 };
 
 class ScanErrCallback : public IMediaScannerCallback {
