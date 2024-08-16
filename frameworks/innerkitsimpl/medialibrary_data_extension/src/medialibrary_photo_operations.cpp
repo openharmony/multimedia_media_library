@@ -1338,7 +1338,7 @@ static int32_t RevertMetadata(int32_t fileId, int64_t time, int32_t effectMode, 
     int32_t rowId = 0;
     int32_t result = rdbStore->Update(cmd, rowId);
     if (result != NativeRdb::E_OK || rowId <= 0) {
-        MEDIA_ERR_LOG("Update File pending failed. Result %{public}d.", result);
+        MEDIA_ERR_LOG("Failed to revert metadata. Result %{public}d.", result);
         return E_HAS_DB_ERROR;
     }
     return E_OK;
@@ -1570,8 +1570,8 @@ static int32_t Move(const string& srcPath, const string& destPath)
     return ret;
 }
 
-static bool IsNeedRevertEffectMode(MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset,
-    int32_t& effectMode)
+bool MediaLibraryPhotoOperations::IsNeedRevertEffectMode(MediaLibraryCommand& cmd,
+    const shared_ptr<FileAsset>& fileAsset, int32_t& effectMode)
 {
     if ((fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
         fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) ||
@@ -1624,7 +1624,7 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     string editDataCameraPath = GetEditDataCameraPath(imagePath);
     if (!MediaFileUtils::IsFileExists(editDataCameraPath)) {
         errCode = Move(sourceImagePath, imagePath);
-        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_FS_ERROR, 
+        CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_FS_ERROR,
             "Failed to move image from %{private}s to %{private}s",
             sourceImagePath.c_str(), imagePath.c_str());
         isNeedScan = true;
