@@ -111,7 +111,7 @@ void PhotoAssetProxy::CreatePhotoAsset(const sptr<PhotoProxy> &photoProxy)
     }
     string displayName = photoProxy->GetTitle() + "." + photoProxy->GetExtension();
     MediaType mediaType = MediaFileUtils::GetMediaType(displayName);
-    if (mediaType != MEDIA_TYPE_IMAGE) {
+    if ((mediaType != MEDIA_TYPE_IMAGE) && (mediaType != MEDIA_TYPE_VIDEO)) {
         MEDIA_ERR_LOG("Failed to create Asset, invalid file type %{public}d", static_cast<int32_t>(mediaType));
         return;
     }
@@ -154,12 +154,15 @@ static bool isHighQualityPhotoExist(string uri)
 
 int32_t CloseFd(const shared_ptr<DataShare::DataShareHelper> &dataShareHelper, const string &uri, const int32_t fd)
 {
+    MediaLibraryTracer tracer;
+    tracer.Start("CloseFd");
+
     int32_t retVal = E_FAIL;
     DataShare::DataShareValuesBucket valuesBucket;
     valuesBucket.Put(MEDIA_DATA_DB_URI, uri);
 
     if (dataShareHelper != nullptr) {
-        string uriStr = PAH_CLOSE_PHOTO;
+        string uriStr = PAH_SCAN_WITHOUT_ALBUM_UPDATE;
         MediaFileUtils::UriAppendKeyValue(uriStr, API_VERSION, to_string(MEDIA_API_VERSION_V10));
         Uri closeAssetUri(uriStr);
 
@@ -363,7 +366,7 @@ void PhotoAssetProxy::DealWithLowQualityPhoto(shared_ptr<DataShare::DataShareHel
         SaveImage(fd, uri, photoProxy->GetPhotoId(), photoProxy->GetFileDataAddr(), photoProxy->GetFileSize());
     }
     photoProxy->Release();
-    close(fd);
+    CloseFd(dataShareHelper, uri, fd);
     MEDIA_INFO_LOG("end");
 }
 
@@ -379,6 +382,9 @@ void PhotoAssetProxy::AddPhotoProxy(const sptr<PhotoProxy> &photoProxy)
     MEDIA_INFO_LOG("photoId: %{public}s", photoProxy->GetPhotoId().c_str());
     tracer.Start("PhotoAssetProxy CreatePhotoAsset");
     CreatePhotoAsset(photoProxy);
+    if (cameraShotType_ == CameraShotType::VIDEO) {
+        return;
+    }
     if (photoProxy->GetPhotoQuality() == PhotoQuality::LOW) {
         UpdatePhotoQuality(dataShareHelper_, photoProxy, fileId_, static_cast<int32_t>(subType_));
     }

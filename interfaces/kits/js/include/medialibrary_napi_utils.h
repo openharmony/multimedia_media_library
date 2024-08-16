@@ -326,7 +326,7 @@ const std::vector<std::string> dynamicRangeTypeEnum {
 };
 
 const std::vector<std::string> movingPhotoEffectModeEnum {
-    "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE", "IMAGE_ONLY", "CINEMA_GRAPH"
+    "DEFAULT", "BOUNCE_PLAY", "LOOP_PLAY", "LONG_EXPOSURE", "MULTI_EXPOSURE", "CINEMA_GRAPH"
 };
 
 const std::vector<std::string> fileKeyEnumValues {

@@ -109,7 +109,7 @@ static void UpdateAstcInfo(ThumbRdbOpt &opts, std::string id)
 
     ValuesBucket values;
     int changedRows;
-    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, static_cast<int64_t>(ThumbnailReady::GENERATE_THUMB_COMPLETED));
+    values.PutLong(PhotoColumn::PHOTO_THUMBNAIL_READY, MediaFileUtils::UTCTimeMilliSeconds());
     int32_t err = opts.store->Update(changedRows, opts.table, values, MEDIA_DATA_DB_ID + " = ?", vector<string> { id });
     if (err != NativeRdb::E_OK) {
         MEDIA_ERR_LOG("RdbStore Update failed! %{public}d", err);
@@ -640,6 +640,14 @@ void ThumbnailService::UpdateAstcWithNewDateAdded(const std::string &fileId, con
 
     IThumbnailHelper::AddThumbnailGenerateTask(IThumbnailHelper::UpdateAstcDateAdded,
         opts, data, ThumbnailTaskType::BACKGROUND, ThumbnailTaskPriority::HIGH);
+}
+
+int32_t ThumbnailService::CheckCloudThumbnailDownloadFinish()
+{
+    if (!ThumbnailUtils::CheckCloudThumbnailDownloadFinish(rdbStorePtr_)) {
+        return E_CLOUD_THUMBNAIL_NOT_DOWNLOAD_FINISH;
+    }
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS

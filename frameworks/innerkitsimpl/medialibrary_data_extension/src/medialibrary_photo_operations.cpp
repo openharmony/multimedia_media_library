@@ -196,9 +196,38 @@ static bool GetValidOrderClause(const DataSharePredicates &predicate, string &cl
     return (count == 1);
 }
 
-static shared_ptr<NativeRdb::ResultSet> HandleAlbumIndexOfUri(const vector<string> &columns, const string &photoId,
+static bool AppendValidOrderClause(MediaLibraryCommand &cmd, RdbPredicates &predicates, const string &photoId)
+{
+    constexpr int32_t FIELD_IDX = 0;
+    const auto &items = cmd.GetDataSharePred().GetOperationList();
+    int32_t count = 0;
+    string columnName = " (" + MediaColumn::MEDIA_DATE_ADDED + ", " + MediaColumn::MEDIA_ID + ") ";
+    string value = " (SELECT " + MediaColumn::MEDIA_DATE_ADDED + ", " + MediaColumn::MEDIA_ID + " FROM " +
+        PhotoColumn::PHOTOS_TABLE + " WHERE " + MediaColumn::MEDIA_ID + " = " + photoId + ") ";
+    string whereClause = predicates.GetWhereClause();
+    for (const auto &item : items) {
+        if (item.operation == ORDER_BY_ASC) {
+            count++;
+            whereClause += " AND " + columnName + " <= " + value;
+        } else if (item.operation == ORDER_BY_DESC) {
+            count++;
+            whereClause += " AND " + columnName + " >= " + value;
+        }
+    }
+    predicates.SetWhereClause(whereClause);
+
+    // only support orderby with one item
+    return (count == 1);
+}
+
+static shared_ptr<NativeRdb::ResultSet> HandleAlbumIndexOfUri(MediaLibraryCommand &cmd, const string &photoId,
     const string &albumId)
 {
+    string orderClause;
+    CHECK_AND_RETURN_RET_LOG(GetValidOrderClause(cmd.GetDataSharePred(), orderClause), nullptr, "invalid orderby");
+    vector<string> columns;
+    columns.push_back(orderClause);
+    columns.push_back(MediaColumn::MEDIA_ID);
     RdbPredicates predicates(PhotoColumn::PHOTOS_TABLE);
     CHECK_AND_RETURN_RET_LOG(GetPredicatesByAlbumId(albumId, predicates) == E_SUCCESS, nullptr, "invalid album uri");
     return MediaLibraryRdbStore::GetIndexOfUri(predicates, columns, photoId);
@@ -207,20 +236,18 @@ static shared_ptr<NativeRdb::ResultSet> HandleAlbumIndexOfUri(const vector<strin
 static shared_ptr<NativeRdb::ResultSet> HandleIndexOfUri(MediaLibraryCommand &cmd, RdbPredicates &predicates,
     const string &photoId, const string &albumId)
 {
-    string orderClause;
-    CHECK_AND_RETURN_RET_LOG(GetValidOrderClause(cmd.GetDataSharePred(), orderClause), nullptr, "invalid orderby");
-    vector<string> columns;
-    columns.push_back(orderClause);
-    columns.push_back(MediaColumn::MEDIA_ID);
     if (!albumId.empty()) {
-        return HandleAlbumIndexOfUri(columns, photoId, albumId);
-    } else {
-        predicates.And()->EqualTo(
-            PhotoColumn::PHOTO_SYNC_STATUS, std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
-        predicates.And()->EqualTo(
-            PhotoColumn::PHOTO_CLEAN_FLAG, std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
-        return MediaLibraryRdbStore::GetIndexOfUri(predicates, columns, photoId);
+        return HandleAlbumIndexOfUri(cmd, photoId, albumId);
     }
+    string indexClause = " COUNT(*) as " + PHOTO_INDEX;
+    vector<string> columns;
+    columns.push_back(indexClause);
+    predicates.And()->EqualTo(
+        PhotoColumn::PHOTO_SYNC_STATUS, std::to_string(static_cast<int32_t>(SyncStatusType::TYPE_VISIBLE)));
+    predicates.And()->EqualTo(
+        PhotoColumn::PHOTO_CLEAN_FLAG, std::to_string(static_cast<int32_t>(CleanType::TYPE_NOT_CLEAN)));
+    CHECK_AND_RETURN_RET_LOG(AppendValidOrderClause(cmd, predicates, photoId), nullptr, "invalid orderby");
+    return MediaLibraryRdbStore::GetIndexOfUriForPhotos(predicates, columns, photoId);
 }
 
 static shared_ptr<NativeRdb::ResultSet> HandleAnalysisIndex(MediaLibraryCommand &cmd,
@@ -283,11 +310,11 @@ const static vector<string> PHOTO_COLUMN_VECTOR = {
     PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
 };
 
-bool IsSourceMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
+bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string& request)
 {
     return photoSubType == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
-    (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY) &&
-    request == SOURCE_REQUEST);
+        (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY) &&
+        request == SOURCE_REQUEST);
 }
 
 int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string &mode)
@@ -321,7 +348,7 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     string movingPhotoOprnKey = cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD);
     if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO) {
         CHECK_AND_RETURN_RET_LOG(
-            IsSourceMovingPhoto(fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode(),
+            CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode(),
             cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)), E_INVALID_VALUES,
             "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
             id.c_str(), fileAsset->GetPhotoSubType());
@@ -913,7 +940,8 @@ int32_t MediaLibraryPhotoOperations::BatchSetUserComment(MediaLibraryCommand& cm
 int32_t MediaLibraryPhotoOperations::UpdateFileAsset(MediaLibraryCommand &cmd)
 {
     vector<string> columns = { PhotoColumn::MEDIA_ID, PhotoColumn::MEDIA_FILE_PATH, PhotoColumn::MEDIA_TYPE,
-        PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, MediaColumn::MEDIA_HIDDEN };
+        PhotoColumn::MEDIA_NAME, PhotoColumn::PHOTO_SUBTYPE, PhotoColumn::PHOTO_EDIT_TIME, MediaColumn::MEDIA_HIDDEN,
+        PhotoColumn::MOVING_PHOTO_EFFECT_MODE };
     shared_ptr<FileAsset> fileAsset = GetFileAssetFromDb(*(cmd.GetAbsRdbPredicates()),
         OperationObject::FILESYSTEM_PHOTO, columns);
     if (fileAsset == nullptr) {
@@ -1108,7 +1136,7 @@ static int32_t CheckFileAssetStatus(const shared_ptr<FileAsset>& fileAsset, bool
     CHECK_AND_RETURN_RET_LOG(fileAsset->GetTimePending() == 0, E_IS_PENDING_ERROR, "FileAsset is in pending");
     if (checkMovingPhoto) {
         CHECK_AND_RETURN_RET_LOG((fileAsset->GetPhotoSubType() == static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) ||
-        fileAsset->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)),
+            fileAsset->GetMovingPhotoEffectMode() == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)),
             E_INVALID_VALUES, "FileAsset is not moving photo");
     }
     return E_OK;
@@ -1183,8 +1211,9 @@ int32_t MediaLibraryPhotoOperations::RequestEditSource(MediaLibraryCommand &cmd)
         cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD) == OPEN_MOVING_PHOTO_VIDEO;
     if (isMovingPhotoVideoRequest) {
         CHECK_AND_RETURN_RET_LOG(
-            IsSourceMovingPhoto(fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode(),
-            cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)), E_INVALID_VALUES,
+            CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode(),
+                cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)),
+            E_INVALID_VALUES,
             "Non-moving photo requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
             id.c_str(), fileAsset->GetPhotoSubType());
         movingPhotoVideoPath = MediaFileUtils::GetMovingPhotoVideoPath(path);
@@ -1277,7 +1306,7 @@ static int32_t UpdateEditTime(int32_t fileId, int64_t time)
     return E_OK;
 }
 
-static int32_t RevertEffectMode(int32_t fileId, int32_t effectMode, int32_t photoSubType)
+static int32_t RevertMetadata(int32_t fileId, int64_t time, int32_t effectMode, int32_t photoSubType)
 {
     auto rdbStore = MediaLibraryUnistoreManager::GetInstance().GetRdbStoreRaw();
     if (rdbStore == nullptr) {
@@ -1286,6 +1315,7 @@ static int32_t RevertEffectMode(int32_t fileId, int32_t effectMode, int32_t phot
     MediaLibraryCommand cmd(OperationObject::FILESYSTEM_PHOTO, OperationType::UPDATE);
     cmd.GetAbsRdbPredicates()->EqualTo(MediaColumn::MEDIA_ID, to_string(fileId));
     ValuesBucket updateValues;
+    updateValues.PutLong(PhotoColumn::PHOTO_EDIT_TIME, time);
     if (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE,
             static_cast<int32_t>(MovingPhotoEffectMode::DEFAULT));
@@ -1458,13 +1488,8 @@ int32_t MediaLibraryPhotoOperations::DoRevertEdit(const std::shared_ptr<FileAsse
     string editDataPath = GetEditDataPath(path);
     CHECK_AND_RETURN_RET_LOG(!editDataPath.empty(), E_INVALID_URI, "Cannot get editdata path, id=%{public}d", fileId);
 
-    errCode = UpdateEditTime(fileId, 0);
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update edit time, fileId=%{public}d",
-        fileId);
-
-    errCode = RevertEffectMode(fileId, fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetPhotoSubType());
-    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to revert effect mode, fileId=%{public}d",
-        fileId);
+    errCode = RevertMetadata(fileId, 0, fileAsset->GetMovingPhotoEffectMode(), fileAsset->GetPhotoSubType());
+    CHECK_AND_RETURN_RET_LOG(errCode == E_OK, E_HAS_DB_ERROR, "Failed to update data, fileId=%{public}d", fileId);
     if (MediaFileUtils::IsFileExists(editDataPath)) {
         CHECK_AND_RETURN_RET_LOG(MediaFileUtils::DeleteFile(editDataPath), E_HAS_FS_ERROR,
             "Failed to delete edit data, path:%{private}s", editDataPath.c_str());
@@ -1542,7 +1567,7 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     isNeedScan = false;
     int32_t photoSubType = fileAsset->GetPhotoSubType();
     if ((photoSubType != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
-        photoSubType != static_cast<int32_t>(PhotoSubType::DEFAULT)) ||
+        fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) ||
         fileAsset->GetPhotoEditTime() != 0) {
         return E_OK;
     }
@@ -1557,8 +1582,7 @@ int32_t MediaLibraryPhotoOperations::RevertToOriginalEffectMode(
     updateValues.PutInt(PhotoColumn::MOVING_PHOTO_EFFECT_MODE, effectMode);
     if (effectMode == static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::DEFAULT));
-    } else if (photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT) &&
-        effectMode != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) {
+    } else if (photoSubType == static_cast<int32_t>(PhotoSubType::DEFAULT)) {
         updateValues.PutInt(PhotoColumn::PHOTO_SUBTYPE, static_cast<int32_t>(PhotoSubType::MOVING_PHOTO));
     }
 
@@ -2250,6 +2274,22 @@ shared_ptr<NativeRdb::ResultSet> MediaLibraryPhotoOperations::ScanMovingPhoto(Me
     string fileId = MediaFileUri::GetPhotoId(uri);
     MediaLibraryObjectUtils::ScanFileAsync(path, fileId, MediaLibraryApi::API_10);
     return nullptr;
+}
+
+int32_t MediaLibraryPhotoOperations::ScanFileWithoutAlbumUpdate(MediaLibraryCommand &cmd)
+{
+    if (!PermissionUtils::IsNativeSAApp()) {
+        MEDIA_DEBUG_LOG("do not have permission");
+        return E_VIOLATION_PARAMETERS;
+    }
+    const ValuesBucket &values = cmd.GetValueBucket();
+    string uriString;
+    if (!GetStringFromValuesBucket(values, MEDIA_DATA_DB_URI, uriString)) {
+        return E_INVALID_VALUES;
+    }
+    string path = MediaFileUri::GetPathFromUri(uriString, true);
+    MediaLibraryAssetOperations::ScanFile(path, false, false, true, FILE_ID_WHICH_NO_NEED_UPDATE_ALBUM_INFO_IN_SCAN);
+    return E_OK;
 }
 } // namespace Media
 } // namespace OHOS
