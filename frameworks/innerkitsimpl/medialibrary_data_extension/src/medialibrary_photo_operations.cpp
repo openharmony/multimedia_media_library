@@ -317,14 +317,13 @@ bool CheckOpenMovingPhoto(int32_t photoSubType, int32_t effectMode, const string
         request == SOURCE_REQUEST);
 }
 
-int32_t ProcMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<FileAsset>& fileAsset, const string& id,
+static int32_t ProcessMovingPhotoOprnKey(MediaLibraryCommand& cmd, shared_ptr<FileAsset>& fileAsset, const string& id,
     bool& isMovingPhotoVideo)
 {
     string movingPhotoOprnKey = cmd.GetQuerySetParam(MEDIA_MOVING_PHOTO_OPRN_KEYWORD);
     if (movingPhotoOprnKey == OPEN_MOVING_PHOTO_VIDEO) {
-        CHECK_AND_RETURN_RET_LOG(
-            CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(), fileAsset->GetMovingPhotoEffectMode(),
-                cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)),
+        CHECK_AND_RETURN_RET_LOG(CheckOpenMovingPhoto(fileAsset->GetPhotoSubType(),
+            fileAsset->GetMovingPhotoEffectMode(), cmd.GetQuerySetParam(MEDIA_OPERN_KEYWORD)),
             E_INVALID_VALUES,
             "Non-moving photo is requesting moving photo operation, file id: %{public}s, actual subtype: %{public}d",
             id.c_str(), fileAsset->GetPhotoSubType());
@@ -362,10 +361,10 @@ int32_t MediaLibraryPhotoOperations::Open(MediaLibraryCommand &cmd, const string
     }
 
     bool isMovingPhotoVideo = false;
-    if (ProcMovingPhotoOprnKey(cmd, fileAsset, id, isMovingPhotoVideo) != E_OK) {
-        return E_INVALID_VALUES;
+    errCode = ProcessMovingPhotoOprnKey(cmd, fileAsset, id, isMovingPhotoVideo);
+    if (errCode != E_OK) {
+        return errCode;
     }
-
     if (cmd.GetTableName() == PhotoColumn::PHOTOS_TABLE) {
         int32_t changedRows = 0;
         std::vector<string> perms = { PERM_READ_IMAGEVIDEO, PERM_WRITE_IMAGEVIDEO };
@@ -1571,7 +1570,8 @@ static int32_t Move(const string& srcPath, const string& destPath)
     return ret;
 }
 
-bool IsNeedRevertEffectMode(MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset, int32_t& effectMode)
+static bool IsNeedRevertEffectMode(MediaLibraryCommand& cmd, const shared_ptr<FileAsset>& fileAsset,
+    int32_t& effectMode)
 {
     if ((fileAsset->GetPhotoSubType() != static_cast<int32_t>(PhotoSubType::MOVING_PHOTO) &&
         fileAsset->GetMovingPhotoEffectMode() != static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)) ||
