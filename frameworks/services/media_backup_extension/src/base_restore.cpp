@@ -512,30 +512,32 @@ NativeRdb::ValuesBucket BaseRestore::GetAudioInsertValue(const FileInfo &fileInf
     return value;
 }
 
-static void MoveExtraData(const FileInfo &fileInfo, int32_t sceneCode)
+static bool MoveExtraData(const FileInfo &fileInfo, int32_t sceneCode)
 {
     string localExtraDataDir = BackupFileUtils::GetReplacedPathByPrefixType(
         PrefixType::CLOUD, PrefixType::LOCAL, MovingPhotoFileUtils::GetMovingPhotoExtraDataDir(fileInfo.cloudPath));
     if (localExtraDataDir.empty()) {
         MEDIA_WARN_LOG("Failed to get local extra data dir");
-        return;
+        return false;
     }
     if (!MediaFileUtils::IsFileExists(localExtraDataDir) && !MediaFileUtils::CreateDirectory(localExtraDataDir)) {
         MEDIA_WARN_LOG("Failed to create local extra data dir, errno:%{public}d", errno);
-        return;
+        return false;
     }
 
     string localExtraDataPath = BackupFileUtils::GetReplacedPathByPrefixType(
         PrefixType::CLOUD, PrefixType::LOCAL, MovingPhotoFileUtils::GetMovingPhotoExtraDataPath(fileInfo.cloudPath));
     if (localExtraDataPath.empty()) {
         MEDIA_WARN_LOG("Failed to get local extra data path");
-        return;
+        return false;
     }
     if (!BackupFileUtils::MoveFile(fileInfo.extraDataPath, localExtraDataPath, sceneCode)) {
         MEDIA_WARN_LOG("MoveFile failed, src:%{public}s, dest:%{public}s, errno:%{public}d",
             BackupFileUtils::GarbleFilePath(fileInfo.extraDataPath, sceneCode).c_str(),
             BackupFileUtils::GarbleFilePath(localExtraDataPath, sceneCode).c_str(), errno);
+        return false;
     }
+    return true;
 }
 
 static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
@@ -561,7 +563,7 @@ static bool MoveAndModifyFile(const FileInfo &fileInfo, int32_t sceneCode)
             return false;
         }
         BackupFileUtils::ModifyFile(localVideoPath, fileInfo.dateModified);
-        MoveExtraData(fileInfo, sceneCode); // extraData is not necessary, contine cloning if fail
+        return MoveExtraData(fileInfo, sceneCode);
     }
     return true;
 }
