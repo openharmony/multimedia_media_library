@@ -30,7 +30,9 @@ const std::string CURRENT_ANALYSIS_VERSION = "1.0"; // update-to-date face analy
 const std::string GALLERY_TABLE_MERGE_FACE = "merge_face";
 const std::string GALLERY_TABLE_MERGE_TAG = "merge_tag";
 const std::string GALLERY_TABLE_MEDIA = "gallery_media";
+const std::string GALLERY_TABLE_FACE = "face";
 const std::string GALLERY_TAG_ID = "tag_id";
+const std::string GALLERY_FACE_ID = "face_id";
 const std::string GALLERY_GROUP_TAG = "merge_tag.group_tag";
 const std::string GALLERY_TAG_NAME = "merge_tag.tag_name";
 const std::string GALLERY_USER_OPERATION = "merge_tag.user_operation";
@@ -42,15 +44,17 @@ const std::string GALLERY_SCALE_HEIGHT = "merge_face.scale_height";
 const std::string GALLERY_PITCH = "merge_face.pitch";
 const std::string GALLERY_YAW = "merge_face.yaw";
 const std::string GALLERY_ROLL = "merge_face.roll";
-const std::string GALLERY_PROB = "merge_face.prob";
+const std::string GALLERY_PROB = "face.prob";
 const std::string GALLERY_TOTAL_FACE = "merge_face.total_face";
-const std::string GALLERY_FACE_ID = "merge_face.face_id";
 const std::string GALLERY_LANDMARKS = "merge_face.landmarks";
 const std::string GALLERY_MERGE_FACE_HASH = GALLERY_TABLE_MERGE_FACE + "." + GALLERY_HASH;
 const std::string GALLERY_MERGE_FACE_TAG_ID = GALLERY_TABLE_MERGE_FACE + "." + GALLERY_TAG_ID;
 const std::string GALLERY_MERGE_TAG_TAG_ID = GALLERY_TABLE_MERGE_TAG + "." + GALLERY_TAG_ID;
 const std::string GALLERY_MEDIA_ID = GALLERY_TABLE_MEDIA + "." + GALLERY_ID;
 const std::string GALLERY_MEDIA_HASH = GALLERY_TABLE_MEDIA + "." + GALLERY_HASH;
+const std::string GALLERY_FACE_HASH = GALLERY_TABLE_FACE + "." + GALLERY_HASH;
+const std::string GALLERY_MERGE_FACE_FACE_ID = GALLERY_TABLE_MERGE_FACE + "." + GALLERY_FACE_ID;
+const std::string GALLERY_FACE_FACE_ID = GALLERY_TABLE_FACE + "." + GALLERY_FACE_ID;
 const std::string E_VERSION = "-1";
 const std::string TAG_ID_PREFIX = "ser_";
 const std::string TAG_ID_UNPROCESSED = "-1";
@@ -66,6 +70,9 @@ const std::string GALLERY_FACE_TABLE_JOIN_TAG = GALLERY_TABLE_MERGE_FACE + " INN
     " ON " + GALLERY_MERGE_FACE_TAG_ID + " = " + GALLERY_MERGE_TAG_TAG_ID + " INNER JOIN " + GALLERY_TABLE_MEDIA +
     " ON " + GALLERY_MERGE_FACE_HASH + " = " + GALLERY_MEDIA_HASH + " GROUP BY " + GALLERY_MERGE_FACE_HASH + ", " +
     GALLERY_FACE_ID;
+const std::string GALLERY_FACE_TABLE_FULL = GALLERY_TABLE_MERGE_FACE + " INNER JOIN " + GALLERY_TABLE_FACE + " ON " +
+    GALLERY_MERGE_FACE_HASH + " = " + GALLERY_FACE_HASH + " AND " + GALLERY_MERGE_FACE_FACE_ID + " = " +
+    GALLERY_FACE_FACE_ID;
 } // namespace Media
 } // namespace OHOS
 

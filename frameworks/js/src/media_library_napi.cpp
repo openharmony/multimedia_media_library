@@ -3204,6 +3204,36 @@ static napi_value ParseArgsGrantPhotoUriPermission(napi_env env, napi_callback_i
     return result;
 }
 
+static bool ParseUriTypes(std::string &appid, int &permissionType, std::vector<std::string> &uris,
+    unique_ptr<MediaLibraryAsyncContext> &context)
+{
+    // used for deduplication
+    std::set<int32_t> fileIdSet;
+    for (const auto &uri : uris) {
+        OHOS::DataShare::DataShareValuesBucket valuesBucket;
+        int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromAssetUri(uri);
+        if (fileId < 0) {
+            return false;
+        }
+        if (fileIdSet.find(fileId) != fileIdSet.end()) {
+            continue;
+        }
+        fileIdSet.insert(fileId);
+        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
+        valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
+        valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
+
+        // parse uriType. parse fileId ensured uri is photo or audio.
+        if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
+            valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_PHOTO);
+        } else {
+            valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, AppUriPermissionColumn::URI_AUDIO);
+        }
+        context->valuesBucketArray.push_back(move(valuesBucket));
+    }
+    return true;
+}
+
 static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_info info,
     unique_ptr<MediaLibraryAsyncContext> &context)
 {
@@ -3236,26 +3266,14 @@ static napi_value ParseArgsGrantPhotoUrisPermission(napi_env env, napi_callback_
     int32_t permissionType;
     NAPI_ASSERT(env, MediaLibraryNapiUtils::GetInt32(env, context->argv[ARGS_TWO], permissionType) ==
         napi_ok, "Failed to get permissionType");
+    if (AppUriPermissionColumn::PERMISSION_TYPES_PICKER.find((int)permissionType) ==
+        AppUriPermissionColumn::PERMISSION_TYPES_PICKER.end()) {
+        NAPI_ERR_LOG("invalid picker permissionType, permissionType=%{public}d", permissionType);
+        return nullptr;
+    }
 
-    for (const auto &uri : uris) {
-        OHOS::DataShare::DataShareValuesBucket valuesBucket;
-        valuesBucket.Put(AppUriPermissionColumn::APP_ID, appid);
-        int32_t fileId = MediaLibraryNapiUtils::GetFileIdFromAssetUri(uri);
-        if (fileId < 0) {
-            return nullptr;
-        }
-        valuesBucket.Put(AppUriPermissionColumn::FILE_ID, fileId);
-        valuesBucket.Put(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
-        // parse uriType
-        int uriType;
-        // parse fileId ensured uri is photo or audio.
-        if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
-            uriType = AppUriPermissionColumn::URI_PHOTO;
-        } else {
-            uriType = AppUriPermissionColumn::URI_AUDIO;
-        }
-        valuesBucket.Put(AppUriPermissionColumn::URI_TYPE, uriType);
-        context->valuesBucketArray.push_back(move(valuesBucket));
+    if (!ParseUriTypes(appid, permissionType, uris, context)) {
+        return nullptr;
     }
 
     napi_value result = nullptr;
@@ -3302,6 +3320,16 @@ static napi_value ParseArgsCancelPhotoUriPermission(napi_env env, napi_callback_
         return nullptr;
     }
     context->predicates.And()->EqualTo(AppUriPermissionColumn::PERMISSION_TYPE, permissionType);
+
+    // parse uriType
+    int uriType = 0;
+    // parse fileId ensured uri is photo or audio.
+    if (uri.find(PhotoColumn::PHOTO_URI_PREFIX) != string::npos) {
+        uriType = AppUriPermissionColumn::URI_PHOTO;
+    } else {
+        uriType = AppUriPermissionColumn::URI_AUDIO;
+    }
+    context->predicates.And()->EqualTo(AppUriPermissionColumn::URI_TYPE, uriType);
 
     napi_value result = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &result));
@@ -4841,7 +4869,17 @@ napi_value MediaLibraryNapi::CreateResourceTypeEnum(napi_env env)
 
 napi_value MediaLibraryNapi::CreateMovingPhotoEffectModeEnum(napi_env env)
 {
-    return CreateNumberEnumProperty(env, movingPhotoEffectModeEnum, sMovingPhotoEffectModeEnumRef_);
+    napi_value result = nullptr;
+    CHECK_ARGS(env, napi_create_object(env, &result), JS_INNER_FAIL);
+    for (int32_t i = 0; i <movingPhotoEffectModeEnum.size(); i++) {
+        CHECK_ARGS(env, AddIntegerNamedProperty(env, result, movingPhotoEffectModeEnum[i], i),
+            JS_INNER_FAIL);
+    }
+    CHECK_ARGS(env, AddIntegerNamedProperty(env, result, "IMAGE_ONLY",
+        static_cast<int32_t>(MovingPhotoEffectMode::IMAGE_ONLY)), JS_INNER_FAIL);
+    CHECK_ARGS(env, napi_create_reference(env, result, NAPI_INIT_REF_COUNT, &sMovingPhotoEffectModeEnumRef_),
+        JS_INNER_FAIL);
+    return result;
 }
 
 static napi_value ParseArgsCreatePhotoAlbum(napi_env env, napi_callback_info info,

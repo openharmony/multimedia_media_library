@@ -55,6 +55,9 @@ napi_value MediaLibraryCommNapi::CreatePhotoAssetNapi(
         fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::BURST));
         fileAsset->SetMediaType(MediaType::MEDIA_TYPE_IMAGE);
         fileAsset->SetBurstKey(burstKey);
+    } else if (cameraShotType == static_cast<int32_t>(CameraShotType::VIDEO)) {
+        fileAsset->SetPhotoSubType(static_cast<int32_t>(PhotoSubType::CAMERA));
+        fileAsset->SetMediaType(MediaType::MEDIA_TYPE_VIDEO);
     } else {
         NAPI_ERR_LOG("invalid cameraShotKey: %{public}d", cameraShotType);
     }

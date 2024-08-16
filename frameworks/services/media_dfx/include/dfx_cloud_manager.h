@@ -63,7 +63,7 @@ struct StateProcessFunc {
 
 class CloudSyncDfxManager {
 public:
-    ~CloudSyncDfxManager() = default;
+    ~CloudSyncDfxManager();
     static CloudSyncDfxManager& GetInstance();
     void ShutDownTimer();
     void RunDfx();

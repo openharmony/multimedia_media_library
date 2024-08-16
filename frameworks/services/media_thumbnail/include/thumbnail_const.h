@@ -152,6 +152,11 @@ constexpr float FLOAT_EPSILON = 1e-6;
 // request photo type
 const std::string REQUEST_PHOTO_TYPE = "requestPhotoType";
 
+const int32_t CLOUD_PHOTO_POSITION = 2;
+const int32_t CLOUD_THUMB_STATUS_DOWNLOAD = 0;
+const int32_t CLOUD_THUMBNAIL_DOWNLOAD_FINISH_NUMBER = 1000;
+const std::string RDB_QUERY_COUNT = "count";
+
 static inline std::string GetThumbnailPath(const std::string &path, const std::string &key)
 {
     if (path.length() < ROOT_MEDIA_DIR.length()) {
