@@ -165,7 +165,7 @@ std::shared_ptr<NativeRdb::AbsSharedResultSet> UserFileClient::QueryRdb(Uri &uri
 {
     shared_ptr<NativeRdb::AbsSharedResultSet> resultSet = nullptr;
     OperationObject object = OperationObject::UNKNOWN_OBJECT;
-    if (MediaAssetRdbStore::GetInstance()->IsQueryAccessibleViaSandBox(uri, object, predicates)) {
+    if (MediaAssetRdbStore::GetInstance()->IsSuppertSharedAssetQuery(uri, object)) {
         resultSet = MediaAssetRdbStore::GetInstance()->QueryRdb(predicates, columns, object);
     }
     return resultSet;
