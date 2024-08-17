@@ -27,6 +27,7 @@ export struct PhotoPickerComponent {
   onEnterPhotoBrowser?: (photoBrowserInfo: PhotoBrowserInfo) => boolean;
   onExitPhotoBrowser?: (photoBrowserInfo: PhotoBrowserInfo) => boolean;
   onPickerControllerReady?: () => void;
+  onPhotoBrowserChanged?: (browserItemInfo: BaseItemInfo) => boolean;
   @ObjectLink @Watch('onChanged') pickerController: PickerController;
   private proxy: UIExtensionProxy | undefined;
 
@@ -47,6 +48,9 @@ export struct PhotoPickerComponent {
       this.proxy.send({'totalCount': map?.get(MaxCountType.TOTAL_MAX_COUNT),
         'photoCount': map?.get(MaxCountType.PHOTO_MAX_COUNT), 'videoCount': map?.get(MaxCountType.VIDEO_MAX_COUNT)});
       console.info('PhotoPickerComponent onChanged: SET_MAX_SELECT_COUNT');
+    } else if (data?.has('SET_PHOTO_BROWSER_ITEM')) {
+      this.proxy.send({'itemUri': data?.get('SET_PHOTO_BROWSER_ITEM') as string});
+      console.info('PhotoPickerComponent onChanged: SET_PHOTO_BROWSER_ITEM');
     } else {
       console.info('PhotoPickerComponent onChanged: other case');
     }
@@ -112,6 +116,8 @@ export struct PhotoPickerComponent {
         this.onPickerControllerReady();
         console.info('PhotoPickerComponent onReceive: onPickerControllerReady');
       }
+    } else if (dataType === 'onPhotoBrowserChanged') {
+      this.handlePhotoBrowserChange(wantParam);
     } else {
       console.info('PhotoPickerComponent onReceive: other case');
     }
@@ -192,6 +198,15 @@ export struct PhotoPickerComponent {
     console.info('PhotoPickerComponent onReceive: onPhotoBrowserStateChanged = ' + isEnter);
   }
 
+  private handlePhotoBrowserChange(wantParam: Record<string, Object>): void {
+    let browserItemInfo: BaseItemInfo = new BaseItemInfo();
+    browserItemInfo.uri = wantParam['uri'] as string;
+    if (this.onPhotoBrowserChanged) {
+      this.onPhotoBrowserChanged(browserItemInfo);
+    }
+    console.info('PhotoPickerComponent onReceive: onPhotoBrowserChanged = ' + browserItemInfo.uri);
+  }
+
   private convertMIMETypeToFilterType(mimeType: photoAccessHelper.PhotoViewMIMETypes): string {
     let filterType: string;
     if (mimeType === photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE) {
@@ -239,6 +254,11 @@ export class PickerController {
       console.info('PhotoPickerComponent SET_MAX_SELECT_COUNT' + JSON.stringify(maxSelected));
     }
   }
+
+  setPhotoBrowserItem(uri: string) {
+    this.data = new Map([['SET_PHOTO_BROWSER_ITEM', uri]]);
+    console.info('PhotoPickerComponent SET_PHOTO_BROWSER_ITEM' + JSON.stringify(uri));
+  }
 }
 
 export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
@@ -254,14 +274,17 @@ export class PickerOptions extends photoAccessHelper.BaseSelectOptions {
   maxVideoSelectNumber?: number;
 }
 
-export class ItemInfo {
-  itemType?: ItemType;
+export class BaseItemInfo {
   uri?: string;
   mimeType?: string;
   width?: number;
   height?: number;
   size?: number;
   duration?: number;
+}
+
+export class ItemInfo extends BaseItemInfo {
+  itemType?: ItemType;
 }
 
 export class PhotoBrowserInfo {
