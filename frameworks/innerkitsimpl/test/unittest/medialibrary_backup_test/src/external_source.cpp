@@ -22,7 +22,7 @@ const string ExternalOpenCall::CREATE_EXTERNAL_FILES = string("CREATE TABLE IF N
     "(_id INTEGER PRIMARY KEY AUTOINCREMENT, _data TEXT COLLATE NOCASE, _size INTEGER, date_added INTEGER," +
     "date_modified INTEGER, title TEXT, _display_name TEXT, orientation INTEGER, duration INTEGER," +
     "bucket_id TEXT, media_type INTEGER, storage_id INTEGER, width INTEGER, height INTEGER, " +
-    "is_pending INTEGER, is_favorite INTEGER);";
+    "is_pending INTEGER, is_favorite INTEGER, special_file_type INTEGER);";
 
 int ExternalOpenCall::OnCreate(NativeRdb::RdbStore &store)
 {
