@@ -62,6 +62,7 @@ const std::string PHOTO_DIR = "Photo";
 const std::string AUDIO_DIR = "Audio";
 const std::string THUMBS_DIR = ".thumbs";
 const std::string EDIT_DATA_DIR = ".editData";
+const std::string CLOUD_FILE_PATH = "/storage/cloud/files";
 const std::vector<std::string> SET_LISTEN_DIR = {
     PHOTO_DIR, AUDIO_DIR, THUMBS_DIR, EDIT_DATA_DIR
 };
@@ -181,14 +182,23 @@ int32_t MediaFileUtils::RemoveDirectory(const string &path)
     return nftw(path.c_str(), UnlinkCb, OPEN_FDS, FTW_DEPTH | FTW_PHYS);
 }
 
+std::string MediaFileUtils::DesensitizePath(const std::string &path)
+{
+    string result = path;
+    if (result.length() <= CLOUD_FILE_PATH.length()) {
+        return result;
+    }
+    return result.replace(0, CLOUD_FILE_PATH.length(), "*");
+}
+
 void MediaFileUtils::PrintStatInformation(const std::string& path)
 {
     struct stat statInfo {};
     if ((stat(path.c_str(), &statInfo)) == E_SUCCESS) {
         MEDIA_INFO_LOG("path:%{public}s uid:%{public}d, gid:%{public}d, mode:%{public}d",
-            path.c_str(), statInfo.st_uid, statInfo.st_uid, statInfo.st_mode);
+            DesensitizePath(path).c_str(), statInfo.st_uid, statInfo.st_gid, statInfo.st_mode);
     } else {
-        MEDIA_INFO_LOG("path:%{public}s is not exist", path.c_str());
+        MEDIA_INFO_LOG("path:%{public}s is not exist", DesensitizePath(path).c_str());
     }
 }
 
@@ -200,7 +210,7 @@ bool MediaFileUtils::Mkdir(const string &subStr, shared_ptr<int> errCodePtr)
             *errCodePtr = errno;
         }
         int err = errno;
-        MEDIA_ERR_LOG("Failed to create directory %{public}d, path:%{public}s", err, subStr.c_str());
+        MEDIA_ERR_LOG("Failed to create directory %{public}d, path:%{public}s", err, DesensitizePath(subStr).c_str());
         if (err == EACCES) {
             PrintStatInformation(GetParentPath(subStr));
         }
@@ -1040,11 +1050,11 @@ int32_t MediaFileUtils::ModifyAsset(const string &oldPath, const string &newPath
     }
     err = rename(oldPath.c_str(), newPath.c_str());
     if (err < 0) {
-        int err = errno;
+        int errorno = errno;
         MEDIA_ERR_LOG("Failed rename, errno: %{public}d, old path: %{public}s exists: %{public}d, "
-            "new path: %{public}s exists: %{public}d", err, oldPath.c_str(), IsFileExists(
-                oldPath), newPath.c_str(), IsFileExists(newPath));
-        if (err == EACCES) {
+            "new path: %{public}s exists: %{public}d", errorno, DesensitizePath(oldPath).c_str(),
+            IsFileExists(oldPath), DesensitizePath(newPath).c_str(), IsFileExists(newPath));
+        if (errorno == EACCES) {
             PrintStatInformation(GetParentPath(oldPath));
         }
         return E_FILE_OPER_FAIL;
