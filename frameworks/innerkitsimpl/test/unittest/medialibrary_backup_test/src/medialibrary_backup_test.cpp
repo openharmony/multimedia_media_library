@@ -2304,5 +2304,40 @@ HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_restore_portrait, TestSize
     ClearData(rdbStore);
     MEDIA_INFO_LOG("medialib_backup_test_restore_portrait end");
 }
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_is_livephoto, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_is_livephoto start");
+    FileInfo info;
+    info.specialFileType = 50;
+    EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), true);
+    info.specialFileType = 0;
+    EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), false);
+    info.specialFileType = 1000;
+    EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), false);
+    info.specialFileType = -50;
+    EXPECT_EQ(BackupFileUtils::IsLivePhoto(info), false);
+    MEDIA_INFO_LOG("medialib_backup_test_is_livephoto end");
+}
+
+HWTEST_F(MediaLibraryBackupTest, medialib_backup_test_convert_to_moving_photo, TestSize.Level0)
+{
+    MEDIA_INFO_LOG("medialib_backup_test_convert_to_moving_photo start");
+    string livePhotoPath = "/data/test/backup_test_livephoto.jpg";
+    EXPECT_EQ(MediaFileUtils::CreateDirectory("/data/test/"), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(livePhotoPath), true);
+    string movingPhotoVideoPath;
+    string extraDataPath;
+    BackupFileUtils::ConvertToMovingPhoto(livePhotoPath, movingPhotoVideoPath, extraDataPath);
+    EXPECT_EQ(movingPhotoVideoPath, "/data/test/backup_test_livephoto.jpg.mp4");
+    EXPECT_EQ(extraDataPath, "/data/test/backup_test_livephoto.jpg.extra");
+
+    EXPECT_EQ(MediaFileUtils::CreateFile(movingPhotoVideoPath), true);
+    EXPECT_EQ(MediaFileUtils::CreateFile(extraDataPath), true);
+    BackupFileUtils::ConvertToMovingPhoto(livePhotoPath, movingPhotoVideoPath, extraDataPath);
+    EXPECT_EQ(movingPhotoVideoPath, "/data/test/backup_test_livephoto.jpg.dup.mp4");
+    EXPECT_EQ(extraDataPath, "/data/test/backup_test_livephoto.jpg.dup.extra");
+    MEDIA_INFO_LOG("medialib_backup_test_convert_to_moving_photo end");
+}
 } // namespace Media
 } // namespace OHOS

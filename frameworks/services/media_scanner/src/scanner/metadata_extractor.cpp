@@ -435,11 +435,7 @@ int32_t MetadataExtractor::ExtractAVMetadata(std::unique_ptr<Metadata> &data, in
     }
 
     string filePath = data->GetFilePath();
-    if (filePath.empty()) {
-        MEDIA_ERR_LOG("AV metadata file path is empty");
-        return E_AVMETADATA;
-    }
-
+    CHECK_AND_RETURN_RET_LOG(!filePath.empty(), E_AVMETADATA, "AV metadata file path is empty");
     int32_t fd = open(filePath.c_str(), O_RDONLY);
     if (fd <= 0) {
         MEDIA_ERR_LOG("Open file descriptor failed, errno = %{public}d", errno);
